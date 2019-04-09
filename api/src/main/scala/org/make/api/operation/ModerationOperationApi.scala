@@ -104,7 +104,8 @@ trait ModerationOperationApi extends Directives {
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "operationKind", paramType = "query", required = false, dataType = "string")
     )
   )
   @Path(value = "/")
@@ -161,7 +162,8 @@ trait DefaultModerationOperationApiComponent
                           userId = auth.user.userId,
                           slug = request.slug,
                           defaultLanguage = request.defaultLanguage,
-                          allowedSources = request.allowedSources
+                          allowedSources = request.allowedSources,
+                          operationKind = request.operationKind
                         )
                       ) { operationId =>
                         complete(StatusCodes.Created -> OperationIdResponse(operationId))
@@ -198,7 +200,8 @@ trait DefaultModerationOperationApiComponent
                             slug = Some(request.slug),
                             status = OperationStatus.statusMap.get(request.status),
                             defaultLanguage = Some(request.defaultLanguage),
-                            allowedSources = Some(request.allowedSources)
+                            allowedSources = Some(request.allowedSources),
+                            operationKind = Some(request.operationKind)
                           )
                         ) {
                           case Some(id) => complete(StatusCodes.OK -> OperationIdResponse(id))
@@ -235,12 +238,15 @@ trait DefaultModerationOperationApiComponent
       get {
         path("moderation" / "operations") {
           makeOperation("ModerationGetOperations") { _ =>
-            parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'slug.?)) {
+            parameters(
+              ('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'slug.?, 'operationKind.as[OperationKind].?)
+            ) {
               (start: Option[Int],
                end: Option[Int],
                sort: Option[String],
                order: Option[String],
-               slug: Option[String]) =>
+               slug: Option[String],
+               operationKind: Option[OperationKind]) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireModerationRole(auth.user) {
                     order.foreach { orderValue =>
@@ -254,10 +260,17 @@ trait DefaultModerationOperationApiComponent
                           )
                       )
                     }
-                    provideAsync(operationService.count(slug = slug)) { count =>
+                    provideAsync(operationService.count(slug = slug, operationKind = operationKind)) { count =>
                       provideAsync(
                         operationService
-                          .findSimple(start = start.getOrElse(0), end = end, sort = sort, order = order, slug = slug)
+                          .findSimple(
+                            start = start.getOrElse(0),
+                            end = end,
+                            sort = sort,
+                            order = order,
+                            slug = slug,
+                            operationKind = operationKind
+                          )
                       ) { operations =>
                         val operationResponses: Seq[ModerationOperationResponse] =
                           operations.map(operation => ModerationOperationResponse(operation))

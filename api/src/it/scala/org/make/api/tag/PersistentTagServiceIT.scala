@@ -51,6 +51,7 @@ class PersistentTagServiceIT
     slug = "fake-operation",
     defaultLanguage = Language("fr"),
     allowedSources = Seq.empty,
+    operationKind = OperationKind.PublicConsultation,
     createdAt = None,
     updatedAt = None
   )

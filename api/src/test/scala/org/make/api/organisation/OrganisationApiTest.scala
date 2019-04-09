@@ -31,7 +31,7 @@ import org.make.api.proposal._
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
-import org.make.core.operation.{Operation, OperationId, OperationStatus}
+import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
 import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -264,6 +264,7 @@ class OrganisationApiTest
             slug = "operation1",
             defaultLanguage = Language("fr"),
             allowedSources = Seq("core"),
+            operationKind = OperationKind.PublicConsultation,
             events = List.empty,
             createdAt = Some(DateHelper.now()),
             updatedAt = None,

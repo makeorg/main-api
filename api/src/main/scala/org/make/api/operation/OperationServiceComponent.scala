@@ -46,18 +46,24 @@ trait OperationService extends ShortenedNames {
                  end: Option[Int] = None,
                  sort: Option[String] = None,
                  order: Option[String] = None,
-                 slug: Option[String] = None): Future[Seq[SimpleOperation]]
+                 slug: Option[String] = None,
+                 operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
-  def create(userId: UserId, slug: String, defaultLanguage: Language, allowedSources: Seq[String]): Future[OperationId]
+  def create(userId: UserId,
+             slug: String,
+             defaultLanguage: Language,
+             allowedSources: Seq[String],
+             operationKind: OperationKind): Future[OperationId]
   def update(operationId: OperationId,
              userId: UserId,
              slug: Option[String] = None,
              defaultLanguage: Option[Language] = None,
              status: Option[OperationStatus] = None,
-             allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]]
-  def count(slug: Option[String]): Future[Int]
+             allowedSources: Option[Seq[String]] = None,
+             operationKind: Option[OperationKind]): Future[Option[OperationId]]
+  def count(slug: Option[String], operationKind: Option[OperationKind]): Future[Int]
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
@@ -80,9 +86,17 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                             end: Option[Int] = None,
                             sort: Option[String] = None,
                             order: Option[String] = None,
-                            slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
+                            slug: Option[String] = None,
+                            operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]] = {
 
-      persistentOperationService.findSimple(start = start, end = end, sort = sort, order = order, slug = slug)
+      persistentOperationService.findSimple(
+        start = start,
+        end = end,
+        sort = sort,
+        order = order,
+        slug = slug,
+        operationKind = operationKind
+      )
     }
 
     override def findOne(operationId: OperationId): Future[Option[Operation]] = {
@@ -100,7 +114,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     override def create(userId: UserId,
                         slug: String,
                         defaultLanguage: Language,
-                        allowedSources: Seq[String]): Future[OperationId] = {
+                        allowedSources: Seq[String],
+                        operationKind: OperationKind): Future[OperationId] = {
       val now = DateHelper.now()
 
       val operation: SimpleOperation = SimpleOperation(
@@ -109,6 +124,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         slug = slug,
         defaultLanguage = defaultLanguage,
         allowedSources = allowedSources,
+        operationKind = operationKind,
         createdAt = Some(now),
         updatedAt = Some(now)
       )
@@ -132,7 +148,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                         slug: Option[String] = None,
                         defaultLanguage: Option[Language] = None,
                         status: Option[OperationStatus] = None,
-                        allowedSources: Option[Seq[String]] = None): Future[Option[OperationId]] = {
+                        allowedSources: Option[Seq[String]] = None,
+                        operationKind: Option[OperationKind]): Future[Option[OperationId]] = {
 
       persistentOperationService
         .getById(operationId)
@@ -145,6 +162,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
               slug = slug.getOrElse(operation.slug),
               allowedSources = allowedSources.getOrElse(operation.allowedSources),
               defaultLanguage = defaultLanguage.getOrElse(operation.defaultLanguage),
+              operationKind = operationKind.getOrElse(operation.operationKind),
               createdAt = operation.createdAt,
               updatedAt = operation.updatedAt
             )
@@ -174,8 +192,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         .toString
     }
 
-    override def count(slug: Option[String]): Future[Int] = {
-      persistentOperationService.count(slug = slug)
+    override def count(slug: Option[String], operationKind: Option[OperationKind]): Future[Int] = {
+      persistentOperationService.count(slug = slug, operationKind = operationKind)
     }
 
   }

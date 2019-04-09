@@ -77,6 +77,7 @@ class PersistentOperationOfQuestionServiceIT
       slug = s"slug-operation-${operationOfQuestion.operationId.value}",
       allowedSources = Seq.empty,
       defaultLanguage = Language("fr"),
+      operationKind = OperationKind.PublicConsultation,
       createdAt = None,
       updatedAt = None
     )

@@ -28,7 +28,7 @@ import org.make.api.ShardingActorTest
 import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualifications}
 import org.make.core.idea.IdeaId
-import org.make.core.operation.{Operation, OperationId, OperationStatus}
+import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal._
@@ -100,6 +100,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     slug = "operation-1",
     defaultLanguage = Language("en"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     events = List.empty,
     questions = Seq.empty,
     createdAt = None,
@@ -111,10 +112,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     slug = "operation-2",
     defaultLanguage = Language("en"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     events = List.empty,
     questions = Seq.empty,
     createdAt = None,
-    updatedAt = None,
+    updatedAt = None
   )
 
   val CREATED_DATE_SECOND_MINUS: Int = 10

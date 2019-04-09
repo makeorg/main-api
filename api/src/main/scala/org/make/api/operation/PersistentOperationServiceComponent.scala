@@ -54,14 +54,15 @@ trait PersistentOperationService {
                  end: Option[Int],
                  sort: Option[String],
                  order: Option[String],
-                 slug: Option[String] = None): Future[Seq[SimpleOperation]]
+                 slug: Option[String] = None,
+                 operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def getSimpleById(operationId: OperationId): Future[Option[SimpleOperation]]
   def getBySlug(slug: String): Future[Option[Operation]]
   def persist(operation: SimpleOperation): Future[SimpleOperation]
   def modify(operation: SimpleOperation): Future[SimpleOperation]
   def addActionToOperation(action: OperationAction, operationId: OperationId): Future[Boolean]
-  def count(slug: Option[String] = None): Future[Int]
+  def count(slug: Option[String] = None, operationKind: Option[OperationKind]): Future[Int]
 }
 
 trait DefaultPersistentOperationServiceComponent extends PersistentOperationServiceComponent {
@@ -87,11 +88,13 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         .leftJoin(PersistentQuestion.as(questionAlias))
         .on(questionAlias.questionId, operationOfQuestionAlias.questionId)
     private def operationWhereOpts(slug: Option[String],
+                                   operationKind: Option[OperationKind],
                                    country: Option[Country],
                                    openAt: Option[LocalDate]): Option[SQLSyntax] =
       sqls.toAndConditionOpt(
-        slug.map(slug       => sqls.eq(operationAlias.slug, slug)),
-        country.map(country => sqls.eq(questionAlias.country, country.value)),
+        slug.map(slug                   => sqls.eq(operationAlias.slug, slug)),
+        operationKind.map(operationKind => sqls.eq(operationAlias.operationKind, operationKind.shortName)),
+        country.map(country             => sqls.eq(questionAlias.country, country.value)),
         openAt.map(
           openAt =>
             sqls
@@ -113,7 +116,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
           withSQL[PersistentOperation] {
-            selectOperation.where(operationWhereOpts(slug, country, openAt))
+            selectOperation.where(operationWhereOpts(slug, None, country, openAt))
           }.one(PersistentOperation.apply())
             .toManies(
               PersistentOperationAction.opt(operationActionAlias),
@@ -136,7 +139,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
                             end: Option[Int],
                             sort: Option[String],
                             order: Option[String],
-                            slug: Option[String] = None): Future[Seq[SimpleOperation]] = {
+                            slug: Option[String] = None,
+                            operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
@@ -144,7 +148,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
               select
                 .from(PersistentOperation.as(operationAlias))
-                .where(operationWhereOpts(slug, None, None))
+                .where(operationWhereOpts(slug, operationKind, None, None))
 
             val queryOrdered = (sort, order.map(_.toUpperCase)) match {
               case (Some(field), Some("DESC")) if PersistentOperation.columnNames.contains(field) =>
@@ -181,6 +185,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.defaultLanguage -> operation.defaultLanguage.value,
               column.allowedSources -> session.connection
                 .createArrayOf("VARCHAR", operation.allowedSources.toArray),
+              column.operationKind -> operation.operationKind.shortName,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )
@@ -263,6 +268,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage.value,
               column.allowedSources -> session.connection.createArrayOf("VARCHAR", operation.allowedSources.toArray),
+              column.operationKind -> operation.operationKind.shortName,
               column.updatedAt -> nowDate
             )
             .where(
@@ -290,13 +296,13 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       })
     }
 
-    override def count(slug: Option[String] = None): Future[Int] = {
+    override def count(slug: Option[String] = None, operationKind: Option[OperationKind]): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL[PersistentOperation] {
           select(sqls.count)
             .from(PersistentOperation.as(operationAlias))
-            .where(operationWhereOpts(slug, None, None))
+            .where(operationWhereOpts(slug, operationKind, None, None))
         }.map(_.int(1)).single.apply().getOrElse(0)
       })
     }
@@ -319,6 +325,7 @@ object DefaultPersistentOperationServiceComponent {
                                  slug: String,
                                  defaultLanguage: String,
                                  allowedSources: Seq[String],
+                                 operationKind: String,
                                  createdAt: ZonedDateTime,
                                  updatedAt: ZonedDateTime) {
 
@@ -331,6 +338,7 @@ object DefaultPersistentOperationServiceComponent {
         slug = slug,
         defaultLanguage = Language(defaultLanguage),
         allowedSources = allowedSources,
+        operationKind = OperationKind.kindMap(operationKind),
         events = operationActions
           .map(
             action =>
@@ -353,7 +361,8 @@ object DefaultPersistentOperationServiceComponent {
         defaultLanguage = Language(defaultLanguage),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt),
-        allowedSources = allowedSources
+        allowedSources = allowedSources,
+        operationKind = OperationKind.kindMap(operationKind)
       )
   }
 
@@ -391,7 +400,7 @@ object DefaultPersistentOperationServiceComponent {
 
   object PersistentOperation extends SQLSyntaxSupport[PersistentOperation] with ShortenedNames with StrictLogging {
     override val columnNames: Seq[String] =
-      Seq("uuid", "status", "slug", "default_language", "allowed_sources", "created_at", "updated_at")
+      Seq("uuid", "status", "slug", "default_language", "allowed_sources", "operation_kind", "created_at", "updated_at")
 
     override val tableName: String = "operation"
 
@@ -409,6 +418,7 @@ object DefaultPersistentOperationServiceComponent {
           .arrayOpt(operationResultName.allowedSources)
           .map(_.getArray.asInstanceOf[Array[String]].toSeq)
           .getOrElse(Seq.empty),
+        operationKind = resultSet.string(operationResultName.operationKind),
         operationActions = Seq.empty,
         questions = Seq.empty,
         createdAt = resultSet.zonedDateTime(operationResultName.createdAt),

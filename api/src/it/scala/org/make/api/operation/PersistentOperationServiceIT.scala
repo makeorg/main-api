@@ -119,6 +119,7 @@ class PersistentOperationServiceIT
     slug = "hello-operation",
     defaultLanguage = Language("fr"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     events = List(
       OperationAction(
         date = now,
@@ -195,6 +196,7 @@ class PersistentOperationServiceIT
            |status = Pending
            |slug = "hello-operation"
            |defaultLanguage = fr
+           |kind = "PUBLIC_CONSULTATION"
            |""".stripMargin)
       When("""I persist it""")
       And("I get the persisted operation")
@@ -205,6 +207,7 @@ class PersistentOperationServiceIT
         slug = fullOperation.slug,
         allowedSources = fullOperation.allowedSources,
         defaultLanguage = fullOperation.defaultLanguage,
+        operationKind = OperationKind.PublicConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -238,6 +241,8 @@ class PersistentOperationServiceIT
         operation.slug should be("hello-operation")
         And("""operation default translation should be "fr" """)
         operation.defaultLanguage should be(Language("fr"))
+        And("""operation kind should be "consultation" """)
+        operation.operationKind.shortName should be(OperationKind.PublicConsultation.shortName)
         And("""operation should have 2 questions""")
         operation.questions.size should be(2)
         And(s"""operation landing sequence id for FR configuration should be "${sequenceIdFR.value}" """)
@@ -269,6 +274,7 @@ class PersistentOperationServiceIT
         status = OperationStatus.Active,
         allowedSources = Seq.empty,
         defaultLanguage = Language("fr"),
+        operationKind = OperationKind.PublicConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -298,6 +304,7 @@ class PersistentOperationServiceIT
           status = OperationStatus.Active,
           allowedSources = Seq.empty,
           defaultLanguage = Language("fr"),
+          operationKind = OperationKind.PublicConsultation,
           createdAt = None,
           updatedAt = None
         )
@@ -329,6 +336,7 @@ class PersistentOperationServiceIT
         slug = "simple-operation",
         allowedSources = Seq.empty,
         defaultLanguage = Language("fr"),
+        operationKind = OperationKind.PublicConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -352,6 +360,7 @@ class PersistentOperationServiceIT
         slug = s"${operationId.value}-sorted-slug",
         allowedSources = Seq.empty,
         defaultLanguage = Language("fr"),
+        operationKind = OperationKind.PublicConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -365,7 +374,8 @@ class PersistentOperationServiceIT
           start = 1,
           end = Some(2),
           sort = Some("uuid"),
-          order = Some("DESC")
+          order = Some("DESC"),
+          operationKind = Some(OperationKind.PublicConsultation),
         )
       } yield results
 

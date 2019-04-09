@@ -26,7 +26,7 @@ import akka.stream.Materializer
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
 import org.make.core.idea.IdeaId
-import org.make.core.operation.OperationId
+import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
@@ -97,6 +97,16 @@ trait ParameterExtractors {
   implicit val operationIdFromStringUnmarshaller: Unmarshaller[String, OperationId] =
     Unmarshaller.strict[String, OperationId] { string ⇒
       OperationId(string)
+    }
+
+  implicit val operationKindStringUnmarshaller: Unmarshaller[String, OperationKind] =
+    Unmarshaller.strict[String, OperationKind] { string =>
+      OperationKind.kindMap.getOrElse(
+        string,
+        throw ValidationFailedError(
+          Seq(ValidationError("operationKind", Some(s"$string is not a valid operation kind")))
+        )
+      )
     }
 
   implicit val questionIdFromStringUnmarshaller: Unmarshaller[String, QuestionId] =

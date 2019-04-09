@@ -34,7 +34,7 @@ import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.userhistory._
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.history.HistoryActions.Trusted
-import org.make.core.operation.{Operation, OperationId, OperationStatus}
+import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
 import org.make.core.question.{Question, QuestionId}
@@ -84,6 +84,7 @@ class CrmServiceComponentTest
     slug = "default",
     defaultLanguage = Language("fr"),
     allowedSources = Seq.empty,
+    operationKind = OperationKind.PublicConsultation,
     events = List.empty,
     createdAt = None,
     updatedAt = None,
