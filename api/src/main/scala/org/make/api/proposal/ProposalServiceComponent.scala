@@ -924,7 +924,15 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def anonymizeByUserId(userId: UserId): Future[Unit] = {
       search(
         None,
-        SearchQuery(filters = Some(SearchFilters(user = Some(UserSearchFilter(userId))))),
+        SearchQuery(
+          filters = Some(
+            SearchFilters(
+              user = Some(UserSearchFilter(userId)),
+              status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+            )
+          ),
+          limit = Some(10000)
+        ),
         RequestContext.empty
       ).map(_.results.foreach { proposal =>
         proposalCoordinatorService.anonymize(AnonymizeProposalCommand(proposal.id))
