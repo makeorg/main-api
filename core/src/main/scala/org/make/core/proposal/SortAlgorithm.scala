@@ -20,10 +20,10 @@
 package org.make.core.proposal
 
 import com.sksamuel.elastic4s.ElasticApi
-import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, randomScore, scriptScore}
+import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, scriptScore}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
-import com.sksamuel.elastic4s.searches.queries.funcscorer.CombineFunction
+import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, RandomScoreFunction}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 
 sealed trait SortAlgorithm {
@@ -43,7 +43,8 @@ final case class RandomAlgorithm(override val maybeSeed: Option[Int] = None)
       for {
         seed  <- maybeSeed
         query <- request.query
-      } yield request.query(functionScoreQuery().query(query).functions(randomScore(seed)))
+      } yield
+        request.query(functionScoreQuery().query(query).functions(RandomScoreFunction(seed = seed, fieldName = "id")))
     ).getOrElse(request)
 
   }
@@ -77,7 +78,10 @@ final case class TaggedFirstAlgorithm(override val maybeSeed: Option[Int] = None
           .query(
             functionScoreQuery()
               .query(query)
-              .functions(scriptScore(Script(script = orderingByActorVoteAndTagsCountScript)), randomScore(seed))
+              .functions(
+                scriptScore(Script(script = orderingByActorVoteAndTagsCountScript)),
+                RandomScoreFunction(seed = seed, fieldName = "id")
+              )
               .scoreMode("sum")
               .boostMode(CombineFunction.Sum)
           )
@@ -110,7 +114,10 @@ final case class ActorVoteAlgorithm(override val maybeSeed: Option[Int] = None)
           .query(
             functionScoreQuery()
               .query(query)
-              .functions(scriptScore(Script(script = actorVoteScript)), randomScore(seed))
+              .functions(
+                scriptScore(Script(script = actorVoteScript)),
+                RandomScoreFunction(seed = seed, fieldName = "id")
+              )
               .scoreMode("sum")
               .boostMode(CombineFunction.Sum)
           )
