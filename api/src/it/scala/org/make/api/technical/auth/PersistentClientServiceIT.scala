@@ -47,7 +47,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
         secret = Some("secret"),
         scope = None,
-        redirectUri = None
+        redirectUri = None,
+        defaultUserId = None
       )
 
       When("I persist apiclient")
@@ -102,7 +103,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         allowedGrantTypes = Seq("grant_type_custom"),
         secret = Some("secret"),
         scope = None,
-        redirectUri = None
+        redirectUri = None,
+        defaultUserId = None
       )
 
       When("I persist client with existing clientId")

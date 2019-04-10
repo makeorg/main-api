@@ -40,8 +40,8 @@ class MakeDocumentation(override val apiClasses: Set[Class[_]], ssl: Boolean)
 
   override val securitySchemeDefinitions: Map[String, SecuritySchemeDefinition] = Map("MakeApi" -> {
     val definition = new OAuth2Definition()
-    definition.setFlow(OAuthGrantType.PASSWORD)
-    definition.setTokenUrl("/oauth/make_access_token")
+    definition.setFlow(OAuthGrantType.IMPLICIT)
+    definition.setAuthorizationUrl("/oauth/authenticate")
     definition.setType("oauth2")
     definition.setScopes(Map("user" -> "application user", "admin" -> "application admin").asJava)
     definition

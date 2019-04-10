@@ -25,10 +25,10 @@ import java.util.{Date, NoSuchElementException}
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.DateHelper
-import org.make.core.auth.{Client, ClientId, Token, UserRights}
+import org.make.core.auth._
 import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,6 +41,10 @@ trait MakeDataHandlerComponent {
 }
 
 trait MakeDataHandler extends DataHandler[UserRights] {
+  def createAuthorizationCode(userId: UserId,
+                              clientId: ClientId,
+                              scope: Option[String],
+                              redirectUri: Option[String]): Future[AuthCode]
   def removeTokenByUserId(userId: UserId): Future[Int]
 }
 
@@ -49,6 +53,8 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     with PersistentUserServiceComponent
     with PersistentClientServiceComponent
     with OauthTokenGeneratorComponent
+    with IdGeneratorComponent
+    with PersistentAuthCodeServiceComponent
     with MakeSettingsComponent =>
 
   val oauth2DataHandler = new DefaultMakeDataHandler
@@ -93,20 +99,48 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def findUser(maybeCredential: Option[ClientCredential],
                           request: AuthorizationRequest): Future[Option[UserRights]] = {
-      //TODO: client.scope must be considered in the user serialization
-      maybeCredential match {
-        case Some(ClientCredential(clientId, secret)) =>
-          val futureClient: Future[Option[Client]] = persistentClientService.findByClientIdAndSecret(clientId, secret)
-          def futureFoundUser: Future[Option[User]] =
-            persistentUserService.findByEmailAndPassword(
-              request.requireParam("username").toLowerCase(),
-              request.requireParam("password")
-            )
-          futureClient.flatMap {
-            case Some(_) =>
-              futureFoundUser.map(_.map(user => UserRights(user.userId, user.roles, user.availableQuestions)))
-            case _ => Future.successful(None)
+
+      val findClient: Future[Option[Client]] = request match {
+        // if client information is not provided in password flow, use the default ones
+        case _: PasswordRequest =>
+          maybeCredential match {
+            case Some(ClientCredential(clientId, clientSecret)) =>
+              persistentClientService.findByClientIdAndSecret(clientId, clientSecret)
+            case None =>
+              persistentClientService.get(ClientId(makeSettings.Authentication.defaultClientId))
           }
+        // For other flows going here, the client is retrieved normally
+        // this means ClientCredentials and Implicit flows. Implicit will probably need more work
+        case _ =>
+          maybeCredential match {
+            case Some(ClientCredential(clientId, clientSecret)) =>
+              persistentClientService.findByClientIdAndSecret(clientId, clientSecret)
+            case None => Future.successful(None)
+          }
+      }
+      def findUser(client: Client): Future[Option[User]] =
+        request match {
+          case passwordRequest: PasswordRequest =>
+            persistentUserService.findByEmailAndPassword(
+              passwordRequest.username.toLowerCase(),
+              passwordRequest.password
+            )
+          case _: ClientCredentialsRequest =>
+            client.defaultUserId match {
+              case Some(userId) => persistentUserService.get(userId)
+              case None         => Future.successful(None)
+            }
+          case _: ImplicitRequest =>
+            // TODO: implement.me when needed
+            Future.successful(None)
+          case _ =>
+            // Other flows don't call this method
+            Future.successful(None)
+        }
+
+      findClient.flatMap {
+        case Some(client) =>
+          findUser(client).map(_.map(user => UserRights(user.userId, user.roles, user.availableQuestions)))
         case _ => Future.successful(None)
       }
     }
@@ -163,13 +197,27 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def findAuthInfoByCode(code: String): Future[Option[AuthInfo[UserRights]]] = {
-      // TODO: implement when needed Authorization Code Grant
-      ???
+      persistentAuthCodeService.findByCode(code).flatMap {
+        case None => Future.successful(None)
+        case Some(authCode) =>
+          persistentUserService
+            .get(authCode.user)
+            .map(
+              _.map(
+                user =>
+                  AuthInfo(
+                    user = UserRights(user.userId, user.roles, user.availableQuestions),
+                    clientId = Some(authCode.client.value),
+                    scope = authCode.scope,
+                    redirectUri = authCode.redirectUri
+                )
+              )
+            )
+      }
     }
 
     override def deleteAuthCode(code: String): Future[Unit] = {
-      // TODO: implement when needed Authorization Code Grant
-      ???
+      persistentAuthCodeService.deleteByCode(code)
     }
 
     override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[UserRights]]] = {
@@ -221,6 +269,23 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def removeTokenByUserId(userId: UserId): Future[Int] = {
       persistentTokenService.deleteByUserId(userId)
+    }
+
+    override def createAuthorizationCode(userId: UserId,
+                                         clientId: ClientId,
+                                         scope: Option[String],
+                                         redirectUri: Option[String]): Future[AuthCode] = {
+      persistentAuthCodeService.persist(
+        AuthCode(
+          authorizationCode = idGenerator.nextId(),
+          scope = scope,
+          redirectUri = redirectUri,
+          createdAt = DateHelper.now(),
+          expiresIn = validityDurationAccessTokenSeconds,
+          user = userId,
+          client = clientId
+        )
+      )
     }
   }
 }

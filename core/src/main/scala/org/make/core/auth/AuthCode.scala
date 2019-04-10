@@ -21,12 +21,19 @@ package org.make.core.auth
 
 import java.time.ZonedDateTime
 
-import org.make.core.user.User
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveEncoder
+import org.make.core.CirceFormatters
+import org.make.core.user.UserId
 
 case class AuthCode(authorizationCode: String,
                     scope: Option[String],
                     redirectUri: Option[String],
                     createdAt: ZonedDateTime,
                     expiresIn: Int,
-                    user: User,
-                    client: Client)
+                    user: UserId,
+                    client: ClientId)
+
+object AuthCode extends CirceFormatters {
+  implicit val encoder: Encoder[AuthCode] = deriveEncoder[AuthCode]
+}

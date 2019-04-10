@@ -19,26 +19,27 @@
 
 package org.make.api.technical.auth
 
-import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.ObjectEncoder
+import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto.deriveEncoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
+import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.core.HttpCodes
-import org.make.core.auth.UserRights
+import org.make.core.auth.{ClientId, UserRights}
+import scalaoauth2.provider._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scalaoauth2.provider._
 
 @Api(value = "Authentication")
 @Path(value = "/")
@@ -103,7 +104,33 @@ trait AuthenticationApi extends Directives {
   @Path(value = "/logout")
   def logoutRoute: Route
 
-  def routes: Route = getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute
+  @ApiOperation(
+    value = "OAuth-Code",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "application/json",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(paramType = "body", dataType = "org.make.core.auth.AuthCode")))
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CreateAuthorizationCodeRequest]))
+  )
+  @Path(value = "/oauth/code")
+  def createAuthorizationCode: Route
+
+  def form: Route
+
+  def routes: Route =
+    getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute ~ form ~ createAuthorizationCode
 }
 
 object AuthenticationApi {
@@ -140,6 +167,27 @@ trait DefaultAuthenticationApiComponent
   def tokenEndpoint: TokenEndpoint
 
   override lazy val authenticationApi: AuthenticationApi = new AuthenticationApi {
+
+    override def createAuthorizationCode: Route = {
+      post {
+        path("oauth" / "code") {
+          makeOperation("CreateAuthCode") { _ =>
+            makeOAuth2 { user =>
+              decodeRequest {
+                entity(as[CreateAuthorizationCodeRequest]) { request =>
+                  provideAsync(
+                    oauth2DataHandler
+                      .createAuthorizationCode(user.user.userId, request.clientId, request.scope, request.redirectUri)
+                  ) { code =>
+                    complete(StatusCodes.OK -> code)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     override def accessTokenRoute: Route = pathPrefix("oauth") {
       path("access_token") {
@@ -248,6 +296,12 @@ trait DefaultAuthenticationApiComponent
       }
     }
 
+    override def form: Route = get {
+      path("oauth" / "authenticate") {
+        getFromResource("authentication/index.html")
+      }
+    }
+
     override def logoutRoute: Route = post {
       path("logout") {
         makeOperation("OauthLogout") { _ =>
@@ -291,4 +345,10 @@ trait DefaultAuthenticationApiComponent
     }
 
   }
+}
+
+case class CreateAuthorizationCodeRequest(clientId: ClientId, scope: Option[String], redirectUri: Option[String])
+
+object CreateAuthorizationCodeRequest {
+  implicit val decoder: Decoder[CreateAuthorizationCodeRequest] = deriveDecoder[CreateAuthorizationCodeRequest]
 }
