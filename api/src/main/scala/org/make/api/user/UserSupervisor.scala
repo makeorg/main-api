@@ -20,6 +20,7 @@
 package org.make.api.user
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import org.make.api.crmTemplates.CrmTemplatesServiceComponent
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.{
@@ -50,7 +51,12 @@ class UserSupervisor(userHistoryCoordinator: ActorRef, dependencies: UserSupervi
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
           UserEmailConsumerActor
-            .props(dependencies.userService, dependencies.questionService, dependencies.operationOfQuestionService),
+            .props(
+              dependencies.userService,
+              dependencies.questionService,
+              dependencies.operationOfQuestionService,
+              dependencies.crmTemplatesService
+            ),
           UserEmailConsumerActor.name
         )
       context.actorOf(props, name)
@@ -96,6 +102,7 @@ object UserSupervisor {
     with ElasticsearchConfigurationComponent
     with QuestionServiceComponent
     with OperationOfQuestionServiceComponent
+    with CrmTemplatesServiceComponent
 
   val name: String = "users"
   def props(userHistoryCoordinator: ActorRef, dependencies: UserSupervisorDependencies): Props =

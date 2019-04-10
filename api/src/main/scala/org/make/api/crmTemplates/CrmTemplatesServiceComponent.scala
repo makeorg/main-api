@@ -44,7 +44,9 @@ trait CrmTemplatesService extends ShortenedNames {
 trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
   this: PersistentCrmTemplatesServiceComponent with IdGeneratorComponent =>
 
-  val crmTemplatesService: CrmTemplatesService = new CrmTemplatesService {
+  val crmTemplatesService: CrmTemplatesService = new DefaultCrmTemplatesService
+
+  class DefaultCrmTemplatesService extends CrmTemplatesService {
 
     override def getCrmTemplates(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]] = {
       persistentCrmTemplatesService.getById(crmTemplatesId)

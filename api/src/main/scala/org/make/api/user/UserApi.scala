@@ -220,21 +220,6 @@ trait UserApi extends Directives {
   )
   def resetPasswordRoute: Route
 
-  @ApiOperation(value = "Resend validation email", httpMethod = "POST", code = HttpCodes.NoContent)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/{userId}/resend-validation-email")
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "userId",
-        paramType = "path",
-        dataType = "string",
-        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
-      )
-    )
-  )
-  def resendValidationEmail: Route
-
   @ApiOperation(value = "subscribe-newsletter", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiImplicitParams(
     value = Array(
@@ -787,29 +772,6 @@ trait DefaultUserApiComponent
                       }
                     }
                 }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    override def resendValidationEmail: Route = post {
-      path("user" / userId / "resend-validation-email") { userId =>
-        makeOperation("ResendValidateEmail") { requestContext =>
-          makeOAuth2 { userAuth =>
-            authorize(userId == userAuth.user.userId || userAuth.user.roles.contains(RoleAdmin)) {
-              provideAsyncOrNotFound(persistentUserService.get(userId)) { user =>
-                eventBusService.publish(
-                  ResendValidationEmailEvent(
-                    userId = userId,
-                    connectedUserId = userAuth.user.userId,
-                    country = user.country,
-                    language = user.language,
-                    requestContext = requestContext
-                  )
-                )
-                complete(StatusCodes.NoContent)
               }
             }
           }

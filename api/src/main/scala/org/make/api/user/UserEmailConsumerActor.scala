@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
+import org.make.api.crmTemplates.CrmTemplatesService
 import org.make.api.extensions.{MailJetTemplateConfigurationExtension, MakeSettingsExtension}
 import org.make.api.operation.{OperationOfQuestionService, SearchOperationsOfQuestions}
 import org.make.api.question.{QuestionService, SearchQuestionRequest}
@@ -33,6 +34,7 @@ import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, K
 import org.make.api.userhistory.UserEvent._
 import org.make.core.ApplicationName.{MainFrontend, Widget}
 import org.make.core.RequestContext
+import org.make.core.crmTemplate.CrmTemplates
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 
@@ -41,7 +43,8 @@ import scala.concurrent.Future
 
 class UserEmailConsumerActor(userService: UserService,
                              questionService: QuestionService,
-                             operationOfQuestionService: OperationOfQuestionService)
+                             operationOfQuestionService: OperationOfQuestionService,
+                             crmTemplatesService: CrmTemplatesService)
     extends KafkaConsumerActor[UserEventWrapper]
     with MakeSettingsExtension
     with MailJetTemplateConfigurationExtension
@@ -61,7 +64,7 @@ class UserEmailConsumerActor(userService: UserService,
       case event: UserValidatedAccountEvent       => handleUserValidatedAccountEvent(event)
       case event: UserConnectedEvent              => doNothing(event)
       case event: UserUpdatedTagEvent             => doNothing(event)
-      case event: ResendValidationEmailEvent      => handleResendValidationEmailEvent(event)
+      case event: ResendValidationEmailEvent      => doNothing(event)
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
       case event: OrganisationInitializationEvent => handleOrganisationAskPassword(event)
@@ -149,33 +152,37 @@ class UserEmailConsumerActor(userService: UserService,
         val requestContext = event.requestContext
         val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, requestContext)
         futureQuestionSlug.map { questionSlug =>
-          val templateConfiguration = mailJetTemplateConfiguration.welcome(questionSlug, country, language)
-
-          if (templateConfiguration.enabled) {
-            eventBusService.publish(
-              SendEmail.create(
-                templateId = Some(templateConfiguration.templateId),
-                recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-                from = Some(
-                  Recipient(
-                    name = Some(mailJetTemplateConfiguration.fromName),
-                    email = mailJetTemplateConfiguration.from
-                  )
-                ),
-                variables = Some(
-                  Map(
-                    "firstname" -> user.firstName.getOrElse(""),
-                    "registration_context" -> questionSlug,
-                    "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
-                    "question" -> event.requestContext.question.getOrElse(""),
-                    "location" -> event.requestContext.location.getOrElse(""),
-                    "source" -> event.requestContext.source.getOrElse("")
-                  )
-                ),
-                customCampaign = templateConfiguration.customCampaign,
-                monitoringCategory = templateConfiguration.monitoringCategory
+          val locale = s"${language.value}_${country.value}"
+          val questionId = event.requestContext.questionId
+          crmTemplatesService.find(0, None, questionId, Some(locale)).map {
+            case Seq(crmTemplates) =>
+              eventBusService.publish(
+                SendEmail.create(
+                  templateId = Some(crmTemplates.welcome.value.toInt),
+                  recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+                  from = Some(
+                    Recipient(
+                      name = Some(mailJetTemplateConfiguration.fromName),
+                      email = mailJetTemplateConfiguration.from
+                    )
+                  ),
+                  variables = Some(
+                    Map(
+                      "firstname" -> user.firstName.getOrElse(""),
+                      "registration_context" -> questionSlug,
+                      "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
+                      "question" -> event.requestContext.question.getOrElse(""),
+                      "location" -> event.requestContext.location.getOrElse(""),
+                      "source" -> event.requestContext.source.getOrElse("")
+                    )
+                  ),
+                  customCampaign = None,
+                  monitoringCategory = Some(CrmTemplates.MonitoringCategory.welcome)
+                )
               )
-            )
+            case seq if seq.length > 1 =>
+              log.warning(s"Concurrent templates for question: $questionId and locale $locale. Mail not sent.")
+            case _ => log.warning(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
           }
         }
       }
@@ -188,13 +195,10 @@ class UserEmailConsumerActor(userService: UserService,
         val language = event.language
         val country = event.country
 
-        val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, event.requestContext)
-
-        futureQuestionSlug.map { questionSlug =>
-          val registration =
-            mailJetTemplateConfiguration.registration(questionSlug, country, language)
-
-          if (registration.enabled) {
+        val locale = s"${language.value}_${country.value}"
+        val questionId = event.requestContext.questionId
+        crmTemplatesService.find(0, None, questionId, Some(locale)).map {
+          case Seq(crmTemplates) =>
             val verificationToken: String = user.verificationToken match {
               case Some(token) => token
               case _           => throw new IllegalStateException
@@ -202,7 +206,7 @@ class UserEmailConsumerActor(userService: UserService,
 
             eventBusService.publish(
               SendEmail.create(
-                templateId = Some(registration.templateId),
+                templateId = Some(crmTemplates.registration.value.toInt),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
                   Recipient(
@@ -220,14 +224,17 @@ class UserEmailConsumerActor(userService: UserService,
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = registration.customCampaign,
-                monitoringCategory = registration.monitoringCategory
+                customCampaign = None,
+                monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
               )
             )
-          }
+          case seq if seq.length > 1 =>
+            log.warning(s"Concurrent templates for question: $questionId and locale $locale. Mail not sent.")
+          case _ => log.warning(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
         }
       }
     }
+
   }
 
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
@@ -235,13 +242,10 @@ class UserEmailConsumerActor(userService: UserService,
       maybeUser.foreach { user =>
         val language = event.language
         val country = event.country
-
-        val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, event.requestContext)
-
-        futureQuestionSlug.map { questionSlug =>
-          val forgottenPassword = mailJetTemplateConfiguration.forgottenPassword(questionSlug, country, language)
-
-          if (forgottenPassword.enabled) {
+        val locale = s"${language.value}_${country.value}"
+        val questionId = event.requestContext.questionId
+        crmTemplatesService.find(0, None, questionId, Some(locale)).map {
+          case Seq(crmTemplates) =>
             val resetToken: String = user.resetToken match {
               case Some(token) => token
               case _           => throw new IllegalStateException("reset token required")
@@ -249,7 +253,7 @@ class UserEmailConsumerActor(userService: UserService,
 
             context.system.eventStream.publish(
               SendEmail.create(
-                templateId = Some(forgottenPassword.templateId),
+                templateId = Some(crmTemplates.forgottenPassword.value.toInt),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
                   Recipient(
@@ -267,64 +271,15 @@ class UserEmailConsumerActor(userService: UserService,
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = forgottenPassword.customCampaign,
-                monitoringCategory = forgottenPassword.monitoringCategory
+                customCampaign = None,
+                monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
               )
             )
-          }
+          case seq if seq.length > 1 =>
+            log.warning(s"Concurrent templates for question: $questionId and locale $locale. Mail not sent.")
+          case _ => log.warning(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
         }
-      }
-    }
-  }
 
-  /**
-    * Handles the resend validation email event and publishes as the send email event to the event bus
-    * @param event resend validation email event
-    * @return Future[Unit]
-    */
-  private def handleResendValidationEmailEvent(event: ResendValidationEmailEvent): Future[Unit] = {
-    getUserWithValidEmail(event.userId).map { maybeUser =>
-      maybeUser.foreach { user =>
-        val language = event.requestContext.language.getOrElse(Language("fr"))
-        val country = event.requestContext.country.getOrElse(Country("FR"))
-
-        val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, event.requestContext)
-
-        futureQuestionSlug.map { questionSlug =>
-          val resendAccountValidationLink =
-            mailJetTemplateConfiguration.resendAccountValidationLink(questionSlug, country, language)
-
-          if (resendAccountValidationLink.enabled) {
-            val verificationToken: String = user.verificationToken match {
-              case Some(token) => token
-              case _           => throw new IllegalStateException("validation token required")
-            }
-
-            eventBusService.publish(
-              SendEmail.create(
-                templateId = Some(resendAccountValidationLink.templateId),
-                recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-                from = Some(
-                  Recipient(
-                    name = Some(mailJetTemplateConfiguration.fromName),
-                    email = mailJetTemplateConfiguration.from
-                  )
-                ),
-                variables = Some(
-                  Map(
-                    "firstname" -> user.firstName.getOrElse(""),
-                    "email_validation_url" -> getAccountValidationUrl(user, verificationToken, event.requestContext),
-                    "operation" -> event.requestContext.operationId.map(_.value).getOrElse(""),
-                    "location" -> event.requestContext.location.getOrElse(""),
-                    "source" -> event.requestContext.source.getOrElse("")
-                  )
-                ),
-                customCampaign = resendAccountValidationLink.customCampaign,
-                monitoringCategory = resendAccountValidationLink.monitoringCategory
-              )
-            )
-          }
-        }
       }
     }
   }
@@ -335,13 +290,10 @@ class UserEmailConsumerActor(userService: UserService,
         val language = event.language
         val country = event.country
 
-        val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, event.requestContext)
-
-        futureQuestionSlug.map { questionSlug =>
-          val forgottenPassword =
-            mailJetTemplateConfiguration.organisationInitialization(questionSlug, country, language)
-
-          if (forgottenPassword.enabled) {
+        val locale = s"${language.value}_${country.value}"
+        val questionId = event.requestContext.questionId
+        crmTemplatesService.find(0, None, questionId, Some(locale)).map {
+          case Seq(crmTemplates) =>
             val resetToken: String = user.resetToken match {
               case Some(token) => token
               case _           => throw new IllegalStateException("reset token required")
@@ -349,7 +301,7 @@ class UserEmailConsumerActor(userService: UserService,
 
             context.system.eventStream.publish(
               SendEmail.create(
-                templateId = Some(forgottenPassword.templateId),
+                templateId = Some(crmTemplates.forgottenPasswordOrganisation.value.toInt),
                 recipients = Seq(Recipient(email = user.email, name = user.fullName)),
                 from = Some(
                   Recipient(
@@ -367,13 +319,16 @@ class UserEmailConsumerActor(userService: UserService,
                     "source" -> event.requestContext.source.getOrElse("")
                   )
                 ),
-                customCampaign = forgottenPassword.customCampaign,
-                monitoringCategory = forgottenPassword.monitoringCategory
+                customCampaign = None,
+                monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
               )
             )
-          }
+          case seq if seq.length > 1 =>
+            log.warning(s"Concurrent templates for question: $questionId and locale $locale. Mail not sent.")
+          case _ => log.warning(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
         }
       }
+
     }
   }
 
@@ -390,7 +345,8 @@ class UserEmailConsumerActor(userService: UserService,
 object UserEmailConsumerActor {
   def props(userService: UserService,
             questionService: QuestionService,
-            operationOfQuestionService: OperationOfQuestionService): Props =
-    Props(new UserEmailConsumerActor(userService, questionService, operationOfQuestionService))
+            operationOfQuestionService: OperationOfQuestionService,
+            crmTemplatesService: CrmTemplatesService): Props =
+    Props(new UserEmailConsumerActor(userService, questionService, operationOfQuestionService, crmTemplatesService))
   val name: String = "user-events-consumer"
 }

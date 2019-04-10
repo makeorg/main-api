@@ -21,6 +21,7 @@ package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.operation.OperationOfQuestionServiceComponent
+import org.make.api.crmTemplates.CrmTemplatesServiceComponent
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
 import org.make.api.question.QuestionServiceComponent
@@ -66,7 +67,12 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalEmailConsumerActor
-          .props(dependencies.userService, proposalCoordinatorService, dependencies.questionService)
+          .props(
+            dependencies.userService,
+            proposalCoordinatorService,
+            dependencies.questionService,
+            dependencies.crmTemplatesService
+          )
           .withDispatcher(kafkaDispatcher),
         ProposalEmailConsumerActor.name
       )
@@ -101,6 +107,7 @@ object ProposalSupervisor {
     with ProposalIndexerServiceComponent
     with SequenceConfigurationComponent
     with OperationOfQuestionServiceComponent
+    with CrmTemplatesServiceComponent
 
   val name: String = "proposal"
   def props(userHistoryCoordinator: ActorRef,
