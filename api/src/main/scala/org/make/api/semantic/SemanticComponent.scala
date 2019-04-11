@@ -26,6 +26,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
@@ -44,7 +45,7 @@ import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus}
 import org.make.core.question.QuestionId
 import org.make.core.reference.Language
-import org.make.core.tag.{Tag, TagId, TagTypeId}
+import org.make.core.tag.{TagId, TagTypeId}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.annotation.meta.field
@@ -59,7 +60,7 @@ trait SemanticService {
   def indexProposal(indexedProposal: IndexedProposal): Future[Unit]
   def indexProposals(indexedProposals: Seq[IndexedProposal]): Future[Unit]
   def getSimilarIdeas(indexedProposal: IndexedProposal, nSimilar: Int): Future[Seq[SimilarIdea]]
-  def getPredictedTagsForProposal(proposal: Proposal): Future[TagsWithModelResponse]
+  def getPredictedTagsForProposal(proposal: Proposal): Future[GetPredictedTagsResponse]
 }
 
 case class IndexProposalsWrapper(proposals: Seq[SemanticProposal])
@@ -77,7 +78,7 @@ trait DefaultSemanticComponent extends SemanticComponent {
     with StrictLogging
     with TagServiceComponent =>
 
-  private val httpThreads = 5
+  private val httpThreads = 12
   implicit private val executionContext: ExecutionContext =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
 
@@ -86,7 +87,11 @@ trait DefaultSemanticComponent extends SemanticComponent {
   lazy val semanticHttpFlow
     : Flow[(HttpRequest, Promise[HttpResponse]), (Try[HttpResponse], Promise[HttpResponse]), Http.HostConnectionPool] =
     Http(actorSystem)
-      .cachedHostConnectionPool[Promise[HttpResponse]](host = semanticUrl.getHost, port = semanticUrl.getPort)
+      .cachedHostConnectionPool[Promise[HttpResponse]](
+        host = semanticUrl.getHost,
+        port = semanticUrl.getPort,
+        settings = ConnectionPoolSettings(actorSystem).withMaxConnections(httpThreads)
+      )
 
   private lazy val semanticBufferSize = semanticConfiguration.httpBufferSize
 
@@ -142,26 +147,28 @@ trait DefaultSemanticComponent extends SemanticComponent {
     }
 
     override def getSimilarIdeas(indexedProposal: IndexedProposal, nSimilar: Int): Future[Seq[SimilarIdea]] = {
-      Marshal(SimilarIdeasRequest(SemanticProposal(indexedProposal), nSimilar)).to[RequestEntity].flatMap { entity =>
-        val request = HttpRequest(
-          method = HttpMethods.POST,
-          uri = Uri(s"${semanticConfiguration.url}/similar/get-similar-ideas"),
-          entity = entity
-        )
-
-        doHttpCall(request).flatMap {
-          case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
-            Unmarshal(responseEntity).to[SimilarIdeasResponse].flatMap { similarIdeas =>
-              logSimilarIdeas(indexedProposal, similarIdeas.similar, similarIdeas.algoLabel.getOrElse("Semantic API"))
-              buildSimilarIdeas(similarIdeas.similar)
-            }
-
-          case error => Future.failed(new RuntimeException(s"Error with semantic request: $error"))
-        }
-      }
+// TODO: un-comment me when similars work well
+//      Marshal(SimilarIdeasRequest(SemanticProposal(indexedProposal), nSimilar)).to[RequestEntity].flatMap { entity =>
+//        val request = HttpRequest(
+//          method = HttpMethods.POST,
+//          uri = Uri(s"${semanticConfiguration.url}/similar/get-similar-ideas"),
+//          entity = entity
+//        )
+//
+//        doHttpCall(request).flatMap {
+//          case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+//            Unmarshal(responseEntity).to[SimilarIdeasResponse].flatMap { similarIdeas =>
+//              logSimilarIdeas(indexedProposal, similarIdeas.similar, similarIdeas.algoLabel.getOrElse("Semantic API"))
+//              buildSimilarIdeas(similarIdeas.similar)
+//            }
+//
+//          case error => Future.failed(new RuntimeException(s"Error with semantic request: $error"))
+//        }
+//      }
+      Future.successful(Seq.empty)
     }
 
-    override def getPredictedTagsForProposal(proposal: Proposal): Future[TagsWithModelResponse] = {
+    override def getPredictedTagsForProposal(proposal: Proposal): Future[GetPredictedTagsResponse] = {
       (proposal.questionId, proposal.language) match {
         case (Some(questionId), Some(language)) =>
           val modelName = "auto"
@@ -185,11 +192,7 @@ trait DefaultSemanticComponent extends SemanticComponent {
 
             doHttpCall(request).flatMap {
               case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
-                Unmarshal(responseEntity).to[GetPredictedTagsResponse].flatMap { predictedTagsResponse =>
-                  tagService
-                    .findByTagIds(predictedTagsResponse.tags.map(_.tagId))
-                    .map(tags => TagsWithModelResponse(tags = tags, modelName = predictedTagsResponse.modelName))
-                }
+                Unmarshal(responseEntity).to[GetPredictedTagsResponse]
               case error => Future.failed(new RuntimeException(s"Error with semantic request: $error"))
             }
           }
@@ -197,7 +200,7 @@ trait DefaultSemanticComponent extends SemanticComponent {
           logger.warn(
             s"Cannot get predicted tags for proposal ${proposal.proposalId} because question or language is missing"
           )
-          Future.successful(TagsWithModelResponse.empty)
+          Future.successful(GetPredictedTagsResponse(Seq.empty, "none"))
       }
     }
   }
@@ -332,12 +335,4 @@ case class GetPredictedTagsResponse(tags: Seq[PredictedTag], modelName: String)
 
 object GetPredictedTagsResponse {
   implicit val decoder: Decoder[GetPredictedTagsResponse] = deriveDecoder[GetPredictedTagsResponse]
-}
-
-case class TagsWithModelResponse(tags: Seq[Tag], modelName: String)
-
-object TagsWithModelResponse {
-  implicit val decoder: Decoder[TagsWithModelResponse] = deriveDecoder[TagsWithModelResponse]
-
-  val empty = TagsWithModelResponse(tags = Seq.empty, modelName = "")
 }

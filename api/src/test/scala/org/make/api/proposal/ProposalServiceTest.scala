@@ -25,7 +25,7 @@ import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
-import org.make.api.semantic.{PredictedTagsEvent, SemanticComponent, SemanticService, TagsWithModelResponse}
+import org.make.api.semantic._
 import org.make.api.sessionhistory.{
   ConcurrentModification,
   RequestSessionVoteValues,
@@ -875,7 +875,14 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
       Mockito
         .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(Future.successful(TagsWithModelResponse(tags = Seq(tag("id-3")), modelName = "auto")))
+        .thenReturn(
+          Future.successful(
+            GetPredictedTagsResponse(
+              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0D)),
+              modelName = "auto"
+            )
+          )
+        )
 
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq.empty))
@@ -905,7 +912,14 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
       Mockito
         .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(Future.successful(TagsWithModelResponse(tags = Seq(tag("id-3")), modelName = "auto")))
+        .thenReturn(
+          Future.successful(
+            GetPredictedTagsResponse(
+              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0D)),
+              modelName = "auto"
+            )
+          )
+        )
 
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
@@ -942,7 +956,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Seq.empty))
       Mockito
         .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(Future.successful(TagsWithModelResponse.empty))
+        .thenReturn(Future.successful(GetPredictedTagsResponse(Seq.empty, "auto")))
 
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
