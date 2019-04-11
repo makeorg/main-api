@@ -28,7 +28,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.{IdeaMappingServiceComponent, IdeaServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
-import org.make.api.semantic.{PredictedTagsEvent, SemanticComponent, SimilarIdea, TagsWithModelResponse}
+import org.make.api.semantic.{GetPredictedTagsResponse, PredictedTagsEvent, SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
@@ -941,20 +941,21 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {
       proposal.questionId.map { questionId =>
-        def futurePredictedTags: Future[TagsWithModelResponse] =
+        def futurePredictedTags: Future[GetPredictedTagsResponse] =
           semanticService.getPredictedTagsForProposal(proposal).recover {
             case error: Exception =>
               logger.error("", error)
-              TagsWithModelResponse(Seq.empty, "")
+              GetPredictedTagsResponse(Seq.empty, "")
           }
-        val futureTags: Future[(Seq[Tag], TagsWithModelResponse)] = for {
+        val futureTags: Future[(Seq[Tag], GetPredictedTagsResponse)] = for {
           questionTags  <- tagService.findByQuestionId(questionId)
           predictedTags <- futurePredictedTags
         } yield (questionTags, predictedTags)
         futureTags.map {
           case (questionTags, predictedTags) =>
+            val predictedSet = predictedTags.tags.map(_.tagId).toSet
             val tags = questionTags.map { tag =>
-              val predicted = predictedTags.tags.map(_.tagId).contains(tag.tagId)
+              val predicted = predictedSet.contains(tag.tagId)
               val checked = proposal.tags.contains(tag.tagId) || (proposal.tags.isEmpty && predicted)
               TagForProposalResponse(tag = tag, checked = checked, predicted = predicted)
             }
