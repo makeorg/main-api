@@ -79,31 +79,31 @@ case class SequenceConfiguration(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
   @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  newProposalsRatio: Double = 0.5,
+  newProposalsRatio: Double = 0.3,
   @(ApiModelProperty @field)(dataType = "int", example = "100")
-  newProposalsVoteThreshold: Int = 100,
+  newProposalsVoteThreshold: Int = 10,
   @(ApiModelProperty @field)(dataType = "double", example = "0.8")
-  testedProposalsEngagementThreshold: Option[Double] = Some(0.8),
+  testedProposalsEngagementThreshold: Option[Double] = None,
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
   testedProposalsScoreThreshold: Option[Double] = None,
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
   testedProposalsControversyThreshold: Option[Double] = None,
   @(ApiModelProperty @field)(dataType = "int", example = "1500")
-  testedProposalsMaxVotesThreshold: Option[Int] = Some(1500),
+  testedProposalsMaxVotesThreshold: Option[Int] = None,
   @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  intraIdeaEnabled: Boolean = false,
+  intraIdeaEnabled: Boolean = true,
   @(ApiModelProperty @field)(dataType = "int", example = "1")
   intraIdeaMinCount: Int = 1,
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
   intraIdeaProposalsRatio: Double = 0.0,
   @(ApiModelProperty @field)(dataType = "boolean", example = "false")
-  interIdeaCompetitionEnabled: Boolean = false,
+  interIdeaCompetitionEnabled: Boolean = true,
   @(ApiModelProperty @field)(dataType = "int", example = "50")
-  interIdeaCompetitionTargetCount: Int = 50,
+  interIdeaCompetitionTargetCount: Int = 20,
   @(ApiModelProperty @field)(dataType = "double", example = "0.0")
   interIdeaCompetitionControversialRatio: Double = 0.0,
   @(ApiModelProperty @field)(dataType = "int", example = "0")
-  interIdeaCompetitionControversialCount: Int = 0,
+  interIdeaCompetitionControversialCount: Int = 2,
   @(ApiModelProperty @field)(dataType = "int", example = "1000")
   maxTestedProposalCount: Int = 1000,
   @(ApiModelProperty @field)(dataType = "int", example = "12")

@@ -35,7 +35,7 @@ object ProposalScorerHelper extends StrictLogging {
 
   val topScoreComponents: Seq[ScoreComponent] = Seq(
     ScoreComponent("engagement", 1, 0.8, 0.1),
-    ScoreComponent("agreement", 1, 0.75, 0.1),
+    ScoreComponent("agreement", 1, 0.75, 0.15),
     ScoreComponent("adhesion", 1, 0.075, 0.07),
     ScoreComponent("realistic", 2, 0.1, 0.07),
     ScoreComponent("platitude", -2, 0.05, 0.05)
@@ -95,7 +95,7 @@ object ProposalScorerHelper extends StrictLogging {
       loveCount = verifiedQualificationCount(votes, Agree, LikeIt),
       hateCount = verifiedQualificationCount(votes, Disagree, NoWay),
       doableCount = verifiedQualificationCount(votes, Agree, Doable),
-      impossibleCount = verifiedQualificationCount(votes, Agree, Impossible)
+      impossibleCount = verifiedQualificationCount(votes, Disagree, Impossible)
     )
   }
 
@@ -293,7 +293,7 @@ object ProposalScorerHelper extends StrictLogging {
 
   /*
    * Note on confidence intervals:
-   * For a normal (gausssian) random variable, the 95% confidence interval is mean +/- 2 * standard error
+   * For a normal (gaussian) random variable, the 95% confidence interval is mean +/- 2 * standard error
    */
   val ConfidenceInterval95Percent = 2
 
