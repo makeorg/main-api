@@ -21,10 +21,17 @@ package org.make.api.question
 import java.time.LocalDate
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
-import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
+import org.make.core.operation.{
+  Metas,
+  Operation,
+  OperationId,
+  OperationKind,
+  OperationOfQuestion,
+  SequenceCardsConfiguration
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -55,13 +62,94 @@ object ModerationQuestionResponse {
   implicit val decoder: Decoder[ModerationQuestionResponse] = deriveDecoder[ModerationQuestionResponse]
 }
 
+final case class WordingResponse(title: String, question: String, metas: Metas)
+
+object WordingResponse {
+  implicit val encoder: Encoder[WordingResponse] = deriveEncoder[WordingResponse]
+  implicit val decoder: Decoder[WordingResponse] = deriveDecoder[WordingResponse]
+}
+
+final case class IntroCardResponse(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+                                   title: Option[String],
+                                   description: Option[String])
+object IntroCardResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[IntroCardResponse] = deriveEncoder[IntroCardResponse]
+  implicit val decoder: Decoder[IntroCardResponse] = deriveDecoder[IntroCardResponse]
+}
+
+final case class PushProposalCardResponse(
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean
+)
+object PushProposalCardResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[PushProposalCardResponse] = deriveEncoder[PushProposalCardResponse]
+  implicit val decoder: Decoder[PushProposalCardResponse] = deriveDecoder[PushProposalCardResponse]
+}
+
+final case class SignUpCardResponse(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+                                    title: Option[String],
+                                    nextCtaText: Option[String])
+object SignUpCardResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[SignUpCardResponse] = deriveEncoder[SignUpCardResponse]
+  implicit val decoder: Decoder[SignUpCardResponse] = deriveDecoder[SignUpCardResponse]
+}
+
+final case class FinalCardResponse(
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") withSharing: Boolean,
+  title: Option[String],
+  share: Option[String],
+  learnMoreTitle: Option[String],
+  learnMoreTextButton: Option[String],
+  linkUrl: Option[String]
+)
+object FinalCardResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[FinalCardResponse] = deriveEncoder[FinalCardResponse]
+  implicit val decoder: Decoder[FinalCardResponse] = deriveDecoder[FinalCardResponse]
+}
+
+final case class SequenceCardsConfigurationResponse(introCard: IntroCardResponse,
+                                                    pushProposalCard: PushProposalCardResponse,
+                                                    signUpCard: SignUpCardResponse,
+                                                    finalCard: FinalCardResponse)
+
+object SequenceCardsConfigurationResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[SequenceCardsConfigurationResponse] =
+    deriveEncoder[SequenceCardsConfigurationResponse]
+  implicit val decoder: Decoder[SequenceCardsConfigurationResponse] = deriveDecoder[SequenceCardsConfigurationResponse]
+
+  def apply(sequenceCardConfiguration: SequenceCardsConfiguration): SequenceCardsConfigurationResponse = {
+    SequenceCardsConfigurationResponse(
+      introCard = IntroCardResponse(
+        enabled = sequenceCardConfiguration.introCard.enabled,
+        title = sequenceCardConfiguration.introCard.title,
+        description = sequenceCardConfiguration.introCard.description
+      ),
+      pushProposalCard = PushProposalCardResponse(enabled = sequenceCardConfiguration.pushProposalCard.enabled),
+      signUpCard = SignUpCardResponse(
+        enabled = sequenceCardConfiguration.signUpCard.enabled,
+        title = sequenceCardConfiguration.signUpCard.title,
+        nextCtaText = sequenceCardConfiguration.signUpCard.nextCtaText
+      ),
+      finalCard = FinalCardResponse(
+        enabled = sequenceCardConfiguration.finalCard.enabled,
+        withSharing = sequenceCardConfiguration.finalCard.sharingEnabled,
+        title = sequenceCardConfiguration.finalCard.title,
+        share = sequenceCardConfiguration.finalCard.shareDescription,
+        learnMoreTitle = sequenceCardConfiguration.finalCard.learnMoreTitle,
+        learnMoreTextButton = sequenceCardConfiguration.finalCard.learnMoreTextButton,
+        linkUrl = sequenceCardConfiguration.finalCard.linkUrl
+      )
+    )
+  }
+}
+
 case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId,
+  wording: WordingResponse,
   slug: String,
-  question: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -73,8 +161,11 @@ case class QuestionDetailsResponse(
   endDate: Option[LocalDate],
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
-  operationTitle: String,
-  canPropose: Boolean
+  canPropose: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  operationKind: OperationKind,
+  sequenceConfig: SequenceCardsConfigurationResponse,
+  aboutUrl: Option[String]
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -83,16 +174,22 @@ object QuestionDetailsResponse extends CirceFormatters {
             operationOfQuestion: OperationOfQuestion): QuestionDetailsResponse = QuestionDetailsResponse(
     questionId = question.questionId,
     operationId = operation.operationId,
+    wording = WordingResponse(
+      title = operationOfQuestion.operationTitle,
+      question = question.question,
+      metas = operationOfQuestion.metas
+    ),
     slug = question.slug,
-    question = question.question,
     country = question.country,
     language = question.language,
     allowedSources = operation.allowedSources,
     startDate = operationOfQuestion.startDate,
     endDate = operationOfQuestion.endDate,
     landingSequenceId = operationOfQuestion.landingSequenceId,
-    operationTitle = operationOfQuestion.operationTitle,
-    canPropose = operationOfQuestion.canPropose
+    canPropose = operationOfQuestion.canPropose,
+    operationKind = operation.operationKind,
+    sequenceConfig = SequenceCardsConfigurationResponse.apply(operationOfQuestion.sequenceCardsConfiguration),
+    aboutUrl = operationOfQuestion.aboutUrl
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]

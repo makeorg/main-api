@@ -34,7 +34,16 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
-import org.make.core.operation.{OperationId, OperationOfQuestion}
+import org.make.core.operation.{
+  FinalCard,
+  IntroCard,
+  Metas,
+  OperationId,
+  OperationOfQuestion,
+  PushProposalCard,
+  SequenceCardsConfiguration,
+  SignUpCard
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -108,7 +117,23 @@ class WidgetApiTest
       None,
       "Foo operation",
       SequenceId("sequence-id"),
-      canPropose = true
+      canPropose = true,
+      sequenceCardsConfiguration = SequenceCardsConfiguration(
+        introCard = IntroCard(enabled = true, title = None, description = None),
+        pushProposalCard = PushProposalCard(enabled = true),
+        signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+        finalCard = FinalCard(
+          enabled = true,
+          sharingEnabled = false,
+          title = None,
+          shareDescription = None,
+          learnMoreTitle = None,
+          learnMoreTextButton = None,
+          linkUrl = None
+        )
+      ),
+      aboutUrl = None,
+      metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
     )
 
     scenario("valid question") {

@@ -94,7 +94,23 @@ class QuestionApiTest
     endDate = None,
     operationTitle = "operation title",
     landingSequenceId = SequenceId("sequenceId"),
-    canPropose = true
+    canPropose = true,
+    sequenceCardsConfiguration = SequenceCardsConfiguration(
+      introCard = IntroCard(enabled = true, title = None, description = None),
+      pushProposalCard = PushProposalCard(enabled = true),
+      signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+      finalCard = FinalCard(
+        enabled = true,
+        sharingEnabled = false,
+        title = None,
+        shareDescription = None,
+        learnMoreTitle = None,
+        learnMoreTextButton = None,
+        linkUrl = None
+      )
+    ),
+    aboutUrl = None,
+    metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
   )
 
   feature("start sequence by question id") {
@@ -105,7 +121,23 @@ class QuestionApiTest
       None,
       "Foo operation",
       SequenceId("sequence-id"),
-      canPropose = true
+      canPropose = true,
+      sequenceCardsConfiguration = SequenceCardsConfiguration(
+        introCard = IntroCard(enabled = true, title = None, description = None),
+        pushProposalCard = PushProposalCard(enabled = true),
+        signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+        finalCard = FinalCard(
+          enabled = true,
+          sharingEnabled = false,
+          title = None,
+          shareDescription = None,
+          learnMoreTitle = None,
+          learnMoreTextButton = None,
+          linkUrl = None
+        )
+      ),
+      aboutUrl = None,
+      metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
     )
     scenario("valid question") {
       when(persistentOperationOfQuestionService.getById(any[QuestionId]))
@@ -154,7 +186,7 @@ class QuestionApiTest
         questionDetailsResponse.allowedSources should be(baseOperation.allowedSources)
         questionDetailsResponse.country should be(baseQuestion.country)
         questionDetailsResponse.language should be(baseQuestion.language)
-        questionDetailsResponse.operationTitle should be(baseOperationOfQuestion.operationTitle)
+        questionDetailsResponse.wording.title should be(baseOperationOfQuestion.operationTitle)
         questionDetailsResponse.startDate should be(baseOperationOfQuestion.startDate)
         questionDetailsResponse.endDate should be(baseOperationOfQuestion.endDate)
       }

@@ -22,7 +22,17 @@ package org.make.api.migrations
 import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.RequestContext
-import org.make.core.operation.{Operation, OperationKind, OperationOfQuestion}
+import org.make.core.operation.{
+  FinalCard,
+  IntroCard,
+  Metas,
+  Operation,
+  OperationKind,
+  OperationOfQuestion,
+  PushProposalCard,
+  SequenceCardsConfiguration,
+  SignUpCard
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.Language
 import org.make.core.sequence.SequenceId
@@ -65,7 +75,23 @@ trait OperationHelper {
             endDate = configuration.endDate,
             operationTitle = configuration.title,
             landingSequenceId = sequenceId,
-            canPropose = configuration.canPropose
+            canPropose = configuration.canPropose,
+            aboutUrl = configuration.aboutUrl,
+            sequenceCardsConfiguration = SequenceCardsConfiguration(
+              introCard = IntroCard(enabled = true, title = None, description = None),
+              pushProposalCard = PushProposalCard(enabled = true),
+              signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+              finalCard = FinalCard(
+                enabled = true,
+                sharingEnabled = false,
+                title = None,
+                shareDescription = None,
+                learnMoreTitle = None,
+                learnMoreTextButton = None,
+                linkUrl = None
+              )
+            ),
+            metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
           )
         )
       }

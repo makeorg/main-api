@@ -35,7 +35,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation.{validate, validateUserInput}
 import org.make.core.auth.UserRights
-import org.make.core.operation.{OperationId, OperationOfQuestion}
+import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, SequenceCardsConfiguration}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -338,7 +338,10 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 .copy(
                                   startDate = request.startDate,
                                   endDate = request.endDate,
-                                  canPropose = request.canPropose
+                                  canPropose = request.canPropose,
+                                  sequenceCardsConfiguration = request.sequenceCardsConfiguration,
+                                  aboutUrl = request.aboutUrl,
+                                  metas = request.metas
                                 ),
                               updatedQuestion
                             )
@@ -387,7 +390,10 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           country = body.country,
                           language = body.language,
                           question = body.question,
-                          canPropose = body.canPropose
+                          canPropose = body.canPropose,
+                          sequenceCardsConfiguration = body.sequenceCardsConfiguration,
+                          aboutUrl = body.aboutUrl,
+                          metas = body.metas
                         )
                       )
                     ) { operationOfQuestion =>
@@ -411,7 +417,10 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   @(ApiModelProperty @field)(example = "2019-03-23")
                                                   endDate: Option[LocalDate],
                                                   question: String,
-                                                  canPropose: Boolean) {
+                                                  canPropose: Boolean,
+                                                  sequenceCardsConfiguration: SequenceCardsConfiguration,
+                                                  aboutUrl: Option[String],
+                                                  metas: Metas) {
   validate(validateUserInput("question", question, None))
 }
 
@@ -436,7 +445,10 @@ final case class CreateOperationOfQuestionRequest(
   question: String,
   questionSlug: String,
   @(ApiModelProperty @field)(dataType = "boolean", example = "true")
-  canPropose: Boolean
+  canPropose: Boolean,
+  sequenceCardsConfiguration: SequenceCardsConfiguration,
+  aboutUrl: Option[String],
+  metas: Metas
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),
@@ -469,7 +481,10 @@ final case class OperationOfQuestionResponse(
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
-  canPropose: Boolean
+  canPropose: Boolean,
+  sequenceCardsConfiguration: SequenceCardsConfiguration,
+  aboutUrl: Option[String],
+  metas: Metas
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -488,7 +503,10 @@ object OperationOfQuestionResponse extends CirceFormatters {
       question = question.question,
       country = question.country,
       language = question.language,
-      canPropose = operationOfQuestion.canPropose
+      canPropose = operationOfQuestion.canPropose,
+      sequenceCardsConfiguration = operationOfQuestion.sequenceCardsConfiguration,
+      aboutUrl = operationOfQuestion.aboutUrl,
+      metas = operationOfQuestion.metas
     )
   }
 }

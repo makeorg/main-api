@@ -26,7 +26,17 @@ import org.make.api.question.DefaultPersistentQuestionServiceComponent.Persisten
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
-import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionWithDetails}
+import org.make.core.operation.{
+  FinalCard,
+  IntroCard,
+  Metas,
+  OperationId,
+  OperationOfQuestion,
+  PushProposalCard,
+  QuestionWithDetails,
+  SequenceCardsConfiguration,
+  SignUpCard
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -131,7 +141,25 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.landingSequenceId -> operationOfQuestion.landingSequenceId.value,
                 PersistentOperationOfQuestion.column.createdAt -> now,
                 PersistentOperationOfQuestion.column.updatedAt -> now,
-                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose
+                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose,
+                PersistentOperationOfQuestion.column.introCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.introCard.enabled,
+                PersistentOperationOfQuestion.column.introCardTitle -> operationOfQuestion.sequenceCardsConfiguration.introCard.title,
+                PersistentOperationOfQuestion.column.introCardDescription -> operationOfQuestion.sequenceCardsConfiguration.introCard.description,
+                PersistentOperationOfQuestion.column.pushProposalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.pushProposalCard.enabled,
+                PersistentOperationOfQuestion.column.signupCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.enabled,
+                PersistentOperationOfQuestion.column.signupCardTitle -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.title,
+                PersistentOperationOfQuestion.column.signupCardNextCta -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.nextCtaText,
+                PersistentOperationOfQuestion.column.finalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.enabled,
+                PersistentOperationOfQuestion.column.finalCardSharingEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled,
+                PersistentOperationOfQuestion.column.finalCardTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.title,
+                PersistentOperationOfQuestion.column.finalCardShareDescription -> operationOfQuestion.sequenceCardsConfiguration.finalCard.shareDescription,
+                PersistentOperationOfQuestion.column.finalCardLearnMoreTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTitle,
+                PersistentOperationOfQuestion.column.finalCardLearnMoreButton -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTextButton,
+                PersistentOperationOfQuestion.column.finalCardLinkUrl -> operationOfQuestion.sequenceCardsConfiguration.finalCard.linkUrl,
+                PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
+                PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
+                PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
+                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture
               )
           }.execute().apply()
         }).map(_ => operationOfQuestion)
@@ -148,7 +176,25 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.endDate -> operationOfQuestion.endDate,
                 PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
                 PersistentOperationOfQuestion.column.updatedAt -> now,
-                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose
+                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose,
+                PersistentOperationOfQuestion.column.introCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.introCard.enabled,
+                PersistentOperationOfQuestion.column.introCardTitle -> operationOfQuestion.sequenceCardsConfiguration.introCard.title,
+                PersistentOperationOfQuestion.column.introCardDescription -> operationOfQuestion.sequenceCardsConfiguration.introCard.description,
+                PersistentOperationOfQuestion.column.pushProposalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.pushProposalCard.enabled,
+                PersistentOperationOfQuestion.column.signupCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.enabled,
+                PersistentOperationOfQuestion.column.signupCardTitle -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.title,
+                PersistentOperationOfQuestion.column.signupCardNextCta -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.nextCtaText,
+                PersistentOperationOfQuestion.column.finalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.enabled,
+                PersistentOperationOfQuestion.column.finalCardSharingEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled,
+                PersistentOperationOfQuestion.column.finalCardTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.title,
+                PersistentOperationOfQuestion.column.finalCardShareDescription -> operationOfQuestion.sequenceCardsConfiguration.finalCard.shareDescription,
+                PersistentOperationOfQuestion.column.finalCardLearnMoreTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTitle,
+                PersistentOperationOfQuestion.column.finalCardLearnMoreButton -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTextButton,
+                PersistentOperationOfQuestion.column.finalCardLinkUrl -> operationOfQuestion.sequenceCardsConfiguration.finalCard.linkUrl,
+                PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
+                PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
+                PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
+                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture
               )
               .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
           }.execute().apply()
@@ -237,7 +283,25 @@ final case class PersistentOperationOfQuestion(questionId: String,
                                                landingSequenceId: String,
                                                createdAt: ZonedDateTime,
                                                updatedAt: ZonedDateTime,
-                                               canPropose: Boolean) {
+                                               canPropose: Boolean,
+                                               introCardEnabled: Boolean,
+                                               introCardTitle: Option[String],
+                                               introCardDescription: Option[String],
+                                               pushProposalCardEnabled: Boolean,
+                                               signupCardEnabled: Boolean,
+                                               signupCardTitle: Option[String],
+                                               signupCardNextCta: Option[String],
+                                               finalCardEnabled: Boolean,
+                                               finalCardSharingEnabled: Boolean,
+                                               finalCardTitle: Option[String],
+                                               finalCardShareDescription: Option[String],
+                                               finalCardLearnMoreTitle: Option[String],
+                                               finalCardLearnMoreButton: Option[String],
+                                               finalCardLinkUrl: Option[String],
+                                               aboutUrl: Option[String],
+                                               metaTitle: String,
+                                               metaDescription: String,
+                                               metaPicture: String) {
   def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     questionId = QuestionId(this.questionId),
     operationId = OperationId(this.operationId),
@@ -245,7 +309,31 @@ final case class PersistentOperationOfQuestion(questionId: String,
     endDate = this.endDate,
     operationTitle = this.operationTitle,
     landingSequenceId = SequenceId(this.landingSequenceId),
-    canPropose = this.canPropose
+    canPropose = this.canPropose,
+    sequenceCardsConfiguration = SequenceCardsConfiguration(
+      introCard = IntroCard(
+        enabled = this.introCardEnabled,
+        title = this.introCardTitle,
+        description = this.introCardDescription
+      ),
+      pushProposalCard = PushProposalCard(enabled = this.pushProposalCardEnabled),
+      signUpCard = SignUpCard(
+        enabled = this.signupCardEnabled,
+        title = this.signupCardTitle,
+        nextCtaText = this.signupCardNextCta
+      ),
+      finalCard = FinalCard(
+        enabled = this.finalCardEnabled,
+        sharingEnabled = this.finalCardSharingEnabled,
+        title = this.finalCardTitle,
+        shareDescription = this.finalCardShareDescription,
+        learnMoreTitle = this.finalCardLearnMoreTitle,
+        learnMoreTextButton = this.finalCardLearnMoreButton,
+        linkUrl = this.finalCardLinkUrl
+      )
+    ),
+    aboutUrl = this.aboutUrl,
+    metas = Metas(title = this.metaTitle, description = this.metaDescription, picture = this.metaPicture)
   )
 }
 
@@ -264,7 +352,25 @@ object PersistentOperationOfQuestion
                                            endDate: Option[LocalDate],
                                            operationTitle: String,
                                            landingSequenceId: String,
-                                           canPropose: Boolean) {
+                                           canPropose: Boolean,
+                                           introCardEnabled: Boolean,
+                                           introCardTitle: Option[String],
+                                           introCardDescription: Option[String],
+                                           pushProposalCardEnabled: Boolean,
+                                           signupCardEnabled: Boolean,
+                                           signupCardTitle: Option[String],
+                                           signupCardNextCta: Option[String],
+                                           finalCardEnabled: Boolean,
+                                           finalCardSharingEnabled: Boolean,
+                                           finalCardTitle: Option[String],
+                                           finalCardShareDescription: Option[String],
+                                           finalCardLearnMoreTitle: Option[String],
+                                           finalCardLearnMoreButton: Option[String],
+                                           finalCardLinkUrl: Option[String],
+                                           aboutUrl: Option[String],
+                                           metaTitle: String,
+                                           metaDescription: String,
+                                           metaPicture: String) {
     def toQuestionAndDetails: QuestionWithDetails = {
       QuestionWithDetails(
         question = Question(
@@ -283,7 +389,25 @@ object PersistentOperationOfQuestion
           endDate = endDate,
           operationTitle = operationTitle,
           landingSequenceId = SequenceId(landingSequenceId),
-          canPropose = canPropose
+          canPropose = canPropose,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard =
+              IntroCard(enabled = introCardEnabled, title = introCardTitle, description = introCardDescription),
+            pushProposalCard = PushProposalCard(enabled = pushProposalCardEnabled),
+            signUpCard =
+              SignUpCard(enabled = signupCardEnabled, title = signupCardTitle, nextCtaText = signupCardNextCta),
+            finalCard = FinalCard(
+              enabled = finalCardEnabled,
+              sharingEnabled = finalCardSharingEnabled,
+              title = finalCardTitle,
+              shareDescription = finalCardShareDescription,
+              learnMoreTitle = finalCardLearnMoreTitle,
+              learnMoreTextButton = finalCardLearnMoreButton,
+              linkUrl = finalCardLinkUrl
+            )
+          ),
+          aboutUrl = aboutUrl,
+          metas = Metas(title = metaTitle, description = metaDescription, picture = metaPicture)
         )
       )
 
@@ -316,7 +440,25 @@ object PersistentOperationOfQuestion
         endDate = resultSet.localDateOpt(operationOfQuestionAlias.endDate),
         operationTitle = operationTitle,
         landingSequenceId = landingSequenceId,
-        canPropose = resultSet.boolean(operationOfQuestionAlias.canPropose)
+        canPropose = resultSet.boolean(operationOfQuestionAlias.canPropose),
+        introCardEnabled = resultSet.boolean(operationOfQuestionAlias.introCardEnabled),
+        introCardTitle = resultSet.stringOpt(operationOfQuestionAlias.introCardTitle),
+        introCardDescription = resultSet.stringOpt(operationOfQuestionAlias.introCardDescription),
+        pushProposalCardEnabled = resultSet.boolean(operationOfQuestionAlias.pushProposalCardEnabled),
+        signupCardEnabled = resultSet.boolean(operationOfQuestionAlias.signupCardEnabled),
+        signupCardTitle = resultSet.stringOpt(operationOfQuestionAlias.signupCardTitle),
+        signupCardNextCta = resultSet.stringOpt(operationOfQuestionAlias.signupCardNextCta),
+        finalCardEnabled = resultSet.boolean(operationOfQuestionAlias.finalCardEnabled),
+        finalCardSharingEnabled = resultSet.boolean(operationOfQuestionAlias.finalCardSharingEnabled),
+        finalCardTitle = resultSet.stringOpt(operationOfQuestionAlias.finalCardTitle),
+        finalCardShareDescription = resultSet.stringOpt(operationOfQuestionAlias.finalCardShareDescription),
+        finalCardLearnMoreTitle = resultSet.stringOpt(operationOfQuestionAlias.finalCardLearnMoreTitle),
+        finalCardLearnMoreButton = resultSet.stringOpt(operationOfQuestionAlias.finalCardLearnMoreButton),
+        finalCardLinkUrl = resultSet.stringOpt(operationOfQuestionAlias.finalCardLinkUrl),
+        aboutUrl = resultSet.stringOpt(operationOfQuestionAlias.aboutUrl),
+        metaTitle = resultSet.string(operationOfQuestionAlias.metaTitle),
+        metaDescription = resultSet.string(operationOfQuestionAlias.metaDescription),
+        metaPicture = resultSet.string(operationOfQuestionAlias.metaPicture)
       )
   }
 
@@ -330,7 +472,25 @@ object PersistentOperationOfQuestion
       "landing_sequence_id",
       "created_at",
       "updated_at",
-      "can_propose"
+      "can_propose",
+      "intro_card_enabled",
+      "intro_card_title",
+      "intro_card_description",
+      "push_proposal_card_enabled",
+      "signup_card_enabled",
+      "signup_card_title",
+      "signup_card_next_cta",
+      "final_card_enabled",
+      "final_card_sharing_enabled",
+      "final_card_title",
+      "final_card_share_description",
+      "final_card_learn_more_title",
+      "final_card_learn_more_button",
+      "final_card_link_url",
+      "about_url",
+      "meta_title",
+      "meta_description",
+      "meta_picture"
     )
 
   override val tableName: String = "operation_of_question"
@@ -349,7 +509,25 @@ object PersistentOperationOfQuestion
       landingSequenceId = resultSet.string(resultName.landingSequenceId),
       createdAt = resultSet.zonedDateTime(resultName.createdAt),
       updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
-      canPropose = resultSet.boolean(resultName.canPropose)
+      canPropose = resultSet.boolean(resultName.canPropose),
+      introCardEnabled = resultSet.boolean(resultName.introCardEnabled),
+      introCardTitle = resultSet.stringOpt(resultName.introCardTitle),
+      introCardDescription = resultSet.stringOpt(resultName.introCardDescription),
+      pushProposalCardEnabled = resultSet.boolean(resultName.pushProposalCardEnabled),
+      signupCardEnabled = resultSet.boolean(resultName.signupCardEnabled),
+      signupCardTitle = resultSet.stringOpt(resultName.signupCardTitle),
+      signupCardNextCta = resultSet.stringOpt(resultName.signupCardNextCta),
+      finalCardEnabled = resultSet.boolean(resultName.finalCardEnabled),
+      finalCardSharingEnabled = resultSet.boolean(resultName.finalCardSharingEnabled),
+      finalCardTitle = resultSet.stringOpt(resultName.finalCardTitle),
+      finalCardShareDescription = resultSet.stringOpt(resultName.finalCardShareDescription),
+      finalCardLearnMoreTitle = resultSet.stringOpt(resultName.finalCardLearnMoreTitle),
+      finalCardLearnMoreButton = resultSet.stringOpt(resultName.finalCardLearnMoreButton),
+      finalCardLinkUrl = resultSet.stringOpt(resultName.finalCardLinkUrl),
+      aboutUrl = resultSet.stringOpt(resultName.aboutUrl),
+      metaTitle = resultSet.string(resultName.metaTitle),
+      metaDescription = resultSet.string(resultName.metaDescription),
+      metaPicture = resultSet.string(resultName.metaPicture)
     )
   }
 }

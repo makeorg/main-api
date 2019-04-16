@@ -58,7 +58,23 @@ class PersistentOperationOfQuestionServiceIT
     endDate = None,
     operationTitle = "title",
     landingSequenceId = sequenceIdFR,
-    canPropose = true
+    canPropose = true,
+    sequenceCardsConfiguration = SequenceCardsConfiguration(
+      introCard = IntroCard(enabled = true, title = None, description = None),
+      pushProposalCard = PushProposalCard(enabled = true),
+      signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+      finalCard = FinalCard(
+        enabled = true,
+        sharingEnabled = false,
+        title = None,
+        shareDescription = None,
+        learnMoreTitle = None,
+        learnMoreTextButton = None,
+        linkUrl = None
+      )
+    ),
+    aboutUrl = None,
+    metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
   )
 
   def createOperationOfQuestion(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
@@ -102,6 +118,9 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.isDefined shouldBe true
         operationOfQuestion.map(_.questionId) shouldBe Some(baseOperationOfQuestion.questionId)
         operationOfQuestion.map(_.operationId) shouldBe Some(baseOperationOfQuestion.operationId)
+        operationOfQuestion.map(_.canPropose) shouldBe Some(true)
+        operationOfQuestion.map(_.sequenceCardsConfiguration.introCard.enabled) shouldBe Some(true)
+        operationOfQuestion.map(_.sequenceCardsConfiguration.finalCard.sharingEnabled) shouldBe Some(false)
       }
     }
   }
@@ -170,7 +189,12 @@ class PersistentOperationOfQuestionServiceIT
         _ <- createOperationOfQuestion(baseOperationOfQuestion)
         _ <- persistentOperationOfQuestionService.modify(
           baseOperationOfQuestion
-            .copy(operationTitle = s"${baseOperationOfQuestion.operationTitle} modified", canPropose = false)
+            .copy(
+              operationTitle = s"${baseOperationOfQuestion.operationTitle} modified",
+              canPropose = false,
+              sequenceCardsConfiguration =
+                baseOperationOfQuestion.sequenceCardsConfiguration.copy(pushProposalCard = PushProposalCard(false))
+            )
         )
         result <- persistentOperationOfQuestionService.getById(baseOperationOfQuestion.questionId)
       } yield result
@@ -181,6 +205,7 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.map(_.operationId) shouldBe Some(baseOperationOfQuestion.operationId)
         operationOfQuestion.map(_.operationTitle) shouldBe Some(s"${baseOperationOfQuestion.operationTitle} modified")
         operationOfQuestion.map(_.canPropose) shouldBe Some(false)
+        operationOfQuestion.map(_.sequenceCardsConfiguration.pushProposalCard.enabled) shouldBe Some(false)
       }
     }
   }

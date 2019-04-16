@@ -71,13 +71,67 @@ object OperationId {
   }
 }
 
+final case class IntroCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+                           title: Option[String],
+                           description: Option[String])
+object IntroCard extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[IntroCard] = deriveEncoder[IntroCard]
+  implicit val decoder: Decoder[IntroCard] = deriveDecoder[IntroCard]
+}
+
+final case class PushProposalCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean)
+object PushProposalCard extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[PushProposalCard] = deriveEncoder[PushProposalCard]
+  implicit val decoder: Decoder[PushProposalCard] = deriveDecoder[PushProposalCard]
+}
+
+final case class SignUpCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+                            title: Option[String],
+                            nextCtaText: Option[String])
+object SignUpCard extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[SignUpCard] = deriveEncoder[SignUpCard]
+  implicit val decoder: Decoder[SignUpCard] = deriveDecoder[SignUpCard]
+}
+
+final case class FinalCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+                           @(ApiModelProperty @field)(dataType = "boolean", example = "true") sharingEnabled: Boolean,
+                           title: Option[String],
+                           shareDescription: Option[String],
+                           learnMoreTitle: Option[String],
+                           learnMoreTextButton: Option[String],
+                           linkUrl: Option[String])
+object FinalCard extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[FinalCard] = deriveEncoder[FinalCard]
+  implicit val decoder: Decoder[FinalCard] = deriveDecoder[FinalCard]
+}
+
+final case class SequenceCardsConfiguration(introCard: IntroCard,
+                                            pushProposalCard: PushProposalCard,
+                                            signUpCard: SignUpCard,
+                                            finalCard: FinalCard)
+
+object SequenceCardsConfiguration extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[SequenceCardsConfiguration] = deriveEncoder[SequenceCardsConfiguration]
+  implicit val decoder: Decoder[SequenceCardsConfiguration] = deriveDecoder[SequenceCardsConfiguration]
+}
+
+final case class Metas(title: String, description: String, picture: String)
+
+object Metas extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[Metas] = deriveEncoder[Metas]
+  implicit val decoder: Decoder[Metas] = deriveDecoder[Metas]
+}
+
 final case class OperationOfQuestion(questionId: QuestionId,
                                      operationId: OperationId,
                                      startDate: Option[LocalDate],
                                      endDate: Option[LocalDate],
                                      operationTitle: String,
                                      landingSequenceId: SequenceId,
-                                     canPropose: Boolean)
+                                     canPropose: Boolean,
+                                     sequenceCardsConfiguration: SequenceCardsConfiguration,
+                                     aboutUrl: Option[String],
+                                     metas: Metas)
 
 @ApiModel
 final case class OperationCountryConfiguration(

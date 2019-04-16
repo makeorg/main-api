@@ -30,7 +30,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.auth.UserRights
-import org.make.core.operation.{OperationId, OperationOfQuestion}
+import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -109,7 +109,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         endDate = request.endDate,
         operationTitle = request.operationTitle,
         landingSequenceId = SequenceId("some-sequence"),
-        canPropose = true
+        canPropose = true,
+        sequenceCardsConfiguration = SequenceCardsConfiguration(
+          introCard = IntroCard(enabled = true, title = None, description = None),
+          pushProposalCard = PushProposalCard(enabled = true),
+          signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+          finalCard = FinalCard(
+            enabled = true,
+            sharingEnabled = false,
+            title = None,
+            shareDescription = None,
+            learnMoreTitle = None,
+            learnMoreTextButton = None,
+            linkUrl = None
+          )
+        ),
+        aboutUrl = None,
+        metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
       )
     )
   }
@@ -125,7 +141,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           endDate = None,
           operationTitle = "some title",
           landingSequenceId = SequenceId("some-sequence"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         )
       )
     )
@@ -166,7 +198,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           endDate = None,
           operationTitle = "opération en Français",
           landingSequenceId = SequenceId("landing-1"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -175,7 +223,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           endDate = None,
           operationTitle = "Operation in English",
           landingSequenceId = SequenceId("landing-2"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         )
       )
     )
@@ -235,7 +299,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           endDate = None,
           operationTitle = "some title",
           landingSequenceId = SequenceId("sequence-1"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -244,7 +324,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           endDate = None,
           operationTitle = "some title",
           landingSequenceId = SequenceId("sequence-2"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         )
       )
     )
@@ -380,7 +476,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             language = Language("fr"),
             question = "how to save the world?",
             questionSlug = "make-the-world-great-again",
-            canPropose = true
+            canPropose = true,
+            sequenceCardsConfiguration = SequenceCardsConfiguration(
+              introCard = IntroCard(enabled = true, title = None, description = None),
+              pushProposalCard = PushProposalCard(enabled = true),
+              signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+              finalCard = FinalCard(
+                enabled = true,
+                sharingEnabled = false,
+                title = None,
+                shareDescription = None,
+                learnMoreTitle = None,
+                learnMoreTextButton = None,
+                linkUrl = None
+              )
+            ),
+            aboutUrl = None,
+            metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -401,7 +513,23 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             startDate = Some(LocalDate.parse("2018-12-01")),
             endDate = None,
             canPropose = true,
-            question = "question ?"
+            question = "question ?",
+            sequenceCardsConfiguration = SequenceCardsConfiguration(
+              introCard = IntroCard(enabled = true, title = None, description = None),
+              pushProposalCard = PushProposalCard(enabled = true),
+              signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+              finalCard = FinalCard(
+                enabled = true,
+                sharingEnabled = false,
+                title = None,
+                shareDescription = None,
+                learnMoreTitle = None,
+                learnMoreTextButton = None,
+                linkUrl = None
+              )
+            ),
+            aboutUrl = None,
+            metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
           ).asJson.toString()
         ) ~> routes ~> check {
 
