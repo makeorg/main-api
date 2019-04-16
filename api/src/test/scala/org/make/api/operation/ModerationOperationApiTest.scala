@@ -138,6 +138,7 @@ class ModerationOperationApiTest
     slug = "first-operation",
     defaultLanguage = Language("fr"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())
   )
@@ -148,6 +149,7 @@ class ModerationOperationApiTest
     slug = "first-operation",
     defaultLanguage = Language("fr"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     events = List(
       OperationAction(
         date = now,
@@ -188,6 +190,7 @@ class ModerationOperationApiTest
     slug = "second-operation",
     defaultLanguage = Language("it"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())
   )
@@ -206,7 +209,8 @@ class ModerationOperationApiTest
       |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
       |    }
       |  ],
-      |  "allowedSources": ["core"]
+      |  "allowedSources": ["core"],
+      |  "operationKind": "PUBLIC_CONSULTATION"
       |}
     """.stripMargin
 
@@ -227,7 +231,8 @@ class ModerationOperationApiTest
       |      "endDate": "2018-05-02"
       |    }
       |  ],
-      |  "allowedSources": ["core"]
+      |  "allowedSources": ["core"],
+      |  "operationKind": "GREAT_CAUSE"
       |}
     """.stripMargin
 
@@ -277,13 +282,21 @@ class ModerationOperationApiTest
   when(operationService.findOneSimple(OperationId("firstOperation")))
     .thenReturn(Future.successful(Some(firstOperation)))
   when(operationService.findOneSimple(OperationId("fakeid"))).thenReturn(Future.successful(None))
-  when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = Some("second-operation")))
-    .thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.count(slug = Some("second-operation")))
+  when(
+    operationService.findSimple(
+      start = 0,
+      end = None,
+      sort = None,
+      order = None,
+      slug = Some("second-operation"),
+      operationKind = None
+    )
+  ).thenReturn(Future.successful(Seq(secondOperation)))
+  when(operationService.count(slug = Some("second-operation"), operationKind = None))
     .thenReturn(Future.successful(1))
-  when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = None))
+  when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = None, operationKind = None))
     .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
-  when(operationService.count(slug = None)).thenReturn(Future.successful(2))
+  when(operationService.count(slug = None, operationKind = None)).thenReturn(Future.successful(2))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(
     Future.successful(
       Seq(
@@ -315,7 +328,8 @@ class ModerationOperationApiTest
       userId = tyrion.userId,
       slug = "my-create-operation",
       defaultLanguage = Language("fr"),
-      allowedSources = Seq("core")
+      allowedSources = Seq("core"),
+      operationKind = OperationKind.PublicConsultation
     )
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
 
@@ -328,7 +342,8 @@ class ModerationOperationApiTest
       status = Some(OperationStatus.Active),
       slug = Some("my-update-operation"),
       defaultLanguage = Some(Language("fr")),
-      allowedSources = Some(Seq("core"))
+      allowedSources = Some(Seq("core")),
+      operationKind = Some(OperationKind.GreatCause)
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
   when(
@@ -338,7 +353,8 @@ class ModerationOperationApiTest
       status = Some(OperationStatus.Active),
       slug = Some("existing-operation-slug-second"),
       defaultLanguage = Some(Language("fr")),
-      allowedSources = Some(Seq("core"))
+      allowedSources = Some(Seq("core")),
+      operationKind = Some(OperationKind.GreatCause)
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
 

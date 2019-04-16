@@ -22,7 +22,7 @@ package org.make.api.migrations
 import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.RequestContext
-import org.make.core.operation.{Operation, OperationOfQuestion}
+import org.make.core.operation.{Operation, OperationKind, OperationOfQuestion}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.Language
 import org.make.core.sequence.SequenceId
@@ -90,7 +90,8 @@ trait OperationHelper {
         userId = moderatorId,
         slug = operationSlug,
         defaultLanguage = defaultLanguage,
-        allowedSources = allowedSources
+        allowedSources = allowedSources,
+        operationKind = OperationKind.PublicConsultation
       )
       .flatMap(api.operationService.findOne)
       .map(_.get)

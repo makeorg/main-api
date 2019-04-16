@@ -52,7 +52,7 @@ object Country {
 case class Language(value: String) extends StringValue {
   override def toString: String = value
 
-  validate(maxLength("country", 3, value))
+  validate(maxLength("language", 3, value))
 }
 
 object Language {

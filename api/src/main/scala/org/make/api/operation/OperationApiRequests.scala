@@ -24,16 +24,20 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.Validation
 import org.make.core.Validation.{validateUserInput, _}
-import org.make.core.operation.{OperationId, OperationStatus}
+import org.make.core.operation.{OperationId, OperationKind, OperationStatus}
 import org.make.core.reference.Language
 
 import scala.annotation.meta.field
 
 @ApiModel
-final case class ModerationCreateOperationRequest(slug: String,
-                                                  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-                                                  defaultLanguage: Language,
-                                                  allowedSources: Seq[String]) {
+final case class ModerationCreateOperationRequest(
+  slug: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  defaultLanguage: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  operationKind: OperationKind,
+  allowedSources: Seq[String]
+) {
   OperationValidation.validateCreate(defaultLanguage = defaultLanguage, slug = slug, allowedSources = allowedSources)
 }
 
@@ -41,11 +45,15 @@ object ModerationCreateOperationRequest {
   implicit val decoder: Decoder[ModerationCreateOperationRequest] = deriveDecoder[ModerationCreateOperationRequest]
 }
 @ApiModel
-final case class ModerationUpdateOperationRequest(status: String,
-                                                  slug: String,
-                                                  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-                                                  defaultLanguage: Language,
-                                                  allowedSources: Seq[String]) {
+final case class ModerationUpdateOperationRequest(
+  status: String,
+  slug: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  defaultLanguage: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  operationKind: OperationKind,
+  allowedSources: Seq[String]
+) {
   OperationValidation.validateUpdate(
     defaultLanguage = defaultLanguage,
     status = status,

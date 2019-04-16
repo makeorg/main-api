@@ -46,7 +46,9 @@ final case class OperationResponse(
   createdAt: Option[ZonedDateTime],
   @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   updatedAt: Option[ZonedDateTime],
-  countriesConfiguration: Seq[OperationCountryConfiguration]
+  countriesConfiguration: Seq[OperationCountryConfiguration],
+  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  operationKind: OperationKind
 )
 
 object OperationResponse extends CirceFormatters {
@@ -73,7 +75,8 @@ object OperationResponse extends CirceFormatters {
           questionId = Some(question.question.questionId),
           endDate = question.details.endDate
         )
-      }
+      },
+      operationKind = operation.operationKind
     )
   }
 }
@@ -91,7 +94,9 @@ final case class ModerationOperationResponse(
   createdAt: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T11:20:00.000Z")
   updatedAt: Option[ZonedDateTime],
-  allowedSources: Seq[String]
+  allowedSources: Seq[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  operationKind: OperationKind
 )
 
 object ModerationOperationResponse extends CirceFormatters {
@@ -106,7 +111,8 @@ object ModerationOperationResponse extends CirceFormatters {
       defaultLanguage = operation.defaultLanguage,
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
-      allowedSources = operation.allowedSources
+      allowedSources = operation.allowedSources,
+      operationKind = operation.operationKind
     )
   }
 }

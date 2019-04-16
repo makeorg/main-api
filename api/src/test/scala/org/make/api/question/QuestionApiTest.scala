@@ -80,6 +80,7 @@ class QuestionApiTest
     slug = "operation-slug",
     defaultLanguage = Language("fr"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     events = List.empty,
     questions = Seq.empty,
     createdAt = Some(DateHelper.now()),

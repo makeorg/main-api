@@ -61,6 +61,7 @@ class OperationApiTest
     slug = "first-operation",
     defaultLanguage = Language("fr"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     events = List(
       OperationAction(
         date = now,
@@ -121,6 +122,7 @@ class OperationApiTest
     slug = "second-operation",
     defaultLanguage = Language("it"),
     allowedSources = Seq("core"),
+    operationKind = OperationKind.PublicConsultation,
     events = List(
       OperationAction(
         date = now,

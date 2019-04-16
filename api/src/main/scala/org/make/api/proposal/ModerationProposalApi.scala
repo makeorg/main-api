@@ -21,11 +21,9 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import akka.http.scaladsl.model.headers.{`Content-Disposition`, ContentDispositionTypes}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
@@ -45,7 +43,6 @@ import org.make.core.auth.UserRights
 import org.make.core.common.indexed.{Order, SortRequest}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
-import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.question.{Question, QuestionId}
@@ -84,26 +81,6 @@ trait ModerationProposalApi extends Directives {
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
   @Path(value = "/{proposalId}")
   def getModerationProposal: Route
-
-  @ApiOperation(
-    value = "export-proposals",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsSearchResult]))
-  )
-  @Path(value = "/export")
-  def exportProposals: Route
 
   //noinspection ScalaStyle
   @ApiOperation(
@@ -424,7 +401,6 @@ trait ModerationProposalApi extends Directives {
       acceptProposal ~
       refuseProposal ~
       postponeProposal ~
-      exportProposals ~
       lock ~
       patchProposal ~
       getDuplicates ~
@@ -480,80 +456,6 @@ trait DefaultModerationProposalApiComponent
             }
           }
 
-        }
-      }
-    }
-
-    def exportProposals: Route = {
-      get {
-        path("moderation" / "proposals" / "export") {
-          makeOperation("ExportProposal") { requestContext =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                parameters(
-                  (
-                    'format, // TODO Use Accept header to get the format
-                    'filename,
-                    'tags.as[immutable.Seq[TagId]].?,
-                    'content.?,
-                    'operation.as[OperationId].?,
-                    'source.?,
-                    'question.?,
-                    'language.as[Language].?
-                  )
-                ) {
-                  (_: String,
-                   fileName: String,
-                   tags: Option[Seq[TagId]],
-                   content: Option[String],
-                   operation: Option[OperationId],
-                   source: Option[String],
-                   question: Option[String],
-                   language: Option[Language]) =>
-                    provideAsync(themeService.findAll()) { themes =>
-                      provideAsync(
-                        operationService.find(slug = None, country = None, maybeSource = None, openAt = None)
-                      ) { operations =>
-                        provideAsync(
-                          proposalService.search(
-                            userId = Some(auth.user.userId),
-                            query = ExhaustiveSearchRequest(
-                              tagsIds = tags,
-                              content = content,
-                              context =
-                                Some(ContextFilterRequest(operation = operation, source = source, question = question)),
-                              language = language,
-                              status = Some(Seq(Accepted)),
-                              limit = Some(5000) //TODO get limit value for export into config files
-                            ).toSearchQuery(requestContext),
-                            requestContext = requestContext
-                          )
-                        ) { proposals =>
-                          { // TODO: add question
-                            complete {
-                              HttpResponse(
-                                entity = HttpEntity(
-                                  ContentTypes.`text/csv(UTF-8)`,
-                                  ByteString(
-                                    (Seq(ProposalCsvSerializer.proposalsCsvHeaders) ++ ProposalCsvSerializer
-                                      .proposalsToRow(proposals.results, themes, operations)).mkString("\n")
-                                  )
-                                )
-                              ).withHeaders(
-                                `Content-Disposition`(
-                                  ContentDispositionTypes.attachment,
-                                  Map("filename" -> s"$fileName.csv")
-                                )
-                              )
-                            }
-                          }
-                        }
-                      }
-                    }
-                }
-              }
-            }
-          }
         }
       }
     }

@@ -67,6 +67,7 @@ class OperationServiceTest
     slug = "first-operation",
     defaultLanguage = Language("fr"),
     allowedSources = Seq.empty,
+    operationKind = OperationKind.PublicConsultation,
     events = List(
       OperationAction(
         date = now,

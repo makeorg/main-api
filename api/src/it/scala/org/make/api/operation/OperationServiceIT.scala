@@ -113,7 +113,8 @@ class OperationServiceIT
     status = OperationStatus.Pending,
     slug = "hello-operation",
     defaultLanguage = languageFr,
-    allowedSources = Seq.empty
+    allowedSources = Seq.empty,
+    operationKind = OperationKind.PublicConsultation
   )
 
   feature("An operation can be created") {
@@ -134,13 +135,15 @@ class OperationServiceIT
           userId = userId,
           slug = simpleOperation.slug,
           defaultLanguage = simpleOperation.defaultLanguage,
-          allowedSources = simpleOperation.allowedSources
+          allowedSources = simpleOperation.allowedSources,
+          operationKind = simpleOperation.operationKind
         )
         _ <- operationService.update(
           operationId = operationId,
           slug = Some("hello-updated-operation"),
           defaultLanguage = Some(Language("pt")),
-          userId = userId
+          userId = userId,
+          operationKind = Some(OperationKind.GreatCause)
         )
         operation <- operationService.findOne(operationId)
       } yield operation
@@ -150,6 +153,7 @@ class OperationServiceIT
         Then("operations should be an instance of Seq[Operation]")
         operation shouldBe a[Operation]
         operation.slug shouldBe "hello-updated-operation"
+        operation.operationKind shouldBe OperationKind.GreatCause
         And("operations events should contain a create event")
         operation.events
           .filter(_.actionType == OperationCreateAction.name)

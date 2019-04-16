@@ -45,6 +45,7 @@ final case class Operation(status: OperationStatus,
                            allowedSources: Seq[String],
                            events: List[OperationAction],
                            questions: Seq[QuestionWithDetails],
+                           operationKind: OperationKind,
                            override val createdAt: Option[ZonedDateTime],
                            override val updatedAt: Option[ZonedDateTime])
     extends MakeSerializable
@@ -172,10 +173,44 @@ case class SimpleOperation(operationId: OperationId,
                            slug: String,
                            allowedSources: Seq[String],
                            defaultLanguage: Language,
+                           operationKind: OperationKind,
                            createdAt: Option[ZonedDateTime],
                            updatedAt: Option[ZonedDateTime])
 
 object SimpleOperation extends CirceFormatters {
   implicit val encoder: ObjectEncoder[SimpleOperation] = deriveEncoder[SimpleOperation]
   implicit val decoder: Decoder[SimpleOperation] = deriveDecoder[SimpleOperation]
+}
+
+sealed trait OperationKind { def shortName: String }
+
+object OperationKind {
+  val kindMap: Map[String, OperationKind] =
+    Map(GreatCause.shortName -> GreatCause, PublicConsultation.shortName -> PublicConsultation)
+
+  implicit lazy val operationKindEncoder: Encoder[OperationKind] = (kind: OperationKind) =>
+    Json.fromString(kind.shortName)
+
+  implicit lazy val operationKindDecoder: Decoder[OperationKind] =
+    Decoder.decodeString.emap { value: String =>
+      kindMap.get(value) match {
+        case Some(kind) => Right(kind)
+        case None       => Left(s"$value is not a operation kind")
+      }
+    }
+
+  implicit val operationKindFormatted: JsonFormat[OperationKind] = new JsonFormat[OperationKind] {
+    override def read(json: JsValue): OperationKind = json match {
+      case JsString(s) => OperationKind.kindMap(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: OperationKind): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
+
+  case object GreatCause extends OperationKind { override val shortName: String = "GREAT_CAUSE" }
+  case object PublicConsultation extends OperationKind { override val shortName: String = "PUBLIC_CONSULTATION" }
+  case object PrivateConsultation extends OperationKind { override val shortName: String = "PRIVATE_CONSULTATION" }
 }

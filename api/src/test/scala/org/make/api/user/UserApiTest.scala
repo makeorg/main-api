@@ -49,7 +49,7 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
-import org.make.core.operation.{Operation, OperationId, OperationStatus}
+import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -1027,6 +1027,7 @@ class UserApiTest
               slug = "operation1",
               defaultLanguage = Language("fr"),
               allowedSources = Seq("core"),
+              operationKind = OperationKind.PublicConsultation,
               events = List.empty,
               createdAt = Some(DateHelper.now()),
               updatedAt = None,
@@ -1184,6 +1185,7 @@ class UserApiTest
               slug = "operation1",
               defaultLanguage = Language("fr"),
               allowedSources = Seq("core"),
+              operationKind = OperationKind.PublicConsultation,
               events = List.empty,
               createdAt = Some(DateHelper.now()),
               updatedAt = None,

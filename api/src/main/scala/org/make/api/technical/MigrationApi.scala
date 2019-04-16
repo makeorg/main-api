@@ -50,7 +50,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorServiceComponent
 }
 import org.make.core.auth.UserRights
-import org.make.core.operation.OperationOfQuestion
+import org.make.core.operation.{OperationKind, OperationOfQuestion}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.question.{Question, QuestionId}
@@ -193,7 +193,13 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
     def createOperation(userId: UserId, slug: String, sequenceSize: Int): Future[OperationOfQuestion] =
       for {
-        operationId <- operationService.create(userId, slug, Language("fr"), Seq.empty)
+        operationId <- operationService.create(
+          userId,
+          slug,
+          Language("fr"),
+          Seq.empty,
+          operationKind = OperationKind.PublicConsultation
+        )
         opOfQuestion <- operationOfQuestionService.create(
           CreateOperationOfQuestion(
             operationId = operationId,
