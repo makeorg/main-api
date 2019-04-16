@@ -22,7 +22,6 @@ package org.make.api.proposal
 import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
@@ -32,7 +31,6 @@ import scala.concurrent.Future
 class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with ActorEventBusServiceComponent
-    with MailJetTemplateConfigurationExtension
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey

@@ -63,7 +63,12 @@ import org.make.api.tagtype.{
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.{ConfigurationsApi, DefaultConfigurationsApiComponent}
-import org.make.api.technical.crm.{CrmApi, DefaultCrmApiComponent, DefaultCrmServiceComponent}
+import org.make.api.technical.crm.{
+  CrmApi,
+  DefaultCrmApiComponent,
+  DefaultCrmServiceComponent,
+  DefaultSendMailPublisherServiceComponent
+}
 import org.make.api.technical.elasticsearch.{
   DefaultElasticSearchApiComponent,
   DefaultElasticsearchClientComponent,
@@ -118,12 +123,13 @@ trait MakeApi
     with DefaultGoogleApiComponent
     with DefaultHealthCheckApiComponent
     with DefaultHealthCheckServiceComponent
+    with DefaultIdGeneratorComponent
     with DefaultIdeaMappingServiceComponent
     with DefaultIdeaSearchEngineComponent
     with DefaultIdeaServiceComponent
-    with DefaultIdGeneratorComponent
     with DefaultIndexationComponent
     with DefaultMailJetConfigurationComponent
+    with DefaultMailJetTemplateConfigurationComponent
     with DefaultMakeDataHandlerComponent
     with DefaultMakeSettingsComponent
     with DefaultMigrationApiComponent
@@ -175,6 +181,7 @@ trait MakeApi
     with DefaultSelectionAlgorithmComponent
     with DefaultSemanticComponent
     with DefaultSemanticConfigurationComponent
+    with DefaultSendMailPublisherServiceComponent
     with DefaultSequenceApiComponent
     with DefaultSequenceConfigurationComponent
     with DefaultSequenceServiceComponent

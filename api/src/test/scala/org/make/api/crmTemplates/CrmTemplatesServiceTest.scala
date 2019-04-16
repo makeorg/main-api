@@ -24,6 +24,8 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
 import org.make.core.question.QuestionId
 import org.mockito.{ArgumentMatchers, Mockito}
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import scala.concurrent.duration.DurationInt
 
 import scala.concurrent.Future
 
@@ -142,29 +144,88 @@ class CrmTemplatesServiceTest
         )
       )
 
-      whenReady(futureCrmTemplates) { crmResult =>
+      whenReady(futureCrmTemplates, Timeout(3.seconds)) { crmResult =>
         crmResult shouldBe Some(updateCrmTemplates)
       }
     }
   }
 
   feature("find crmTemplates") {
-    scenario("find crmTemplates from CrmTemplatesId with questionId ignore locale") {
-      crmTemplatesService.find(0, None, Some(QuestionId("toto")), Some("locale-ignored"))
+    val aCrmTemplates = CrmTemplates(
+      crmTemplatesId = CrmTemplatesId("id"),
+      questionId = Some(QuestionId("toto")),
+      locale = Some("locale"),
+      registration = TemplateId("registration"),
+      welcome = TemplateId("welcome"),
+      proposalAccepted = TemplateId("proposalAccepted"),
+      proposalRefused = TemplateId("proposalRefused"),
+      forgottenPassword = TemplateId("forgottenPassword"),
+      proposalAcceptedOrganisation = TemplateId("proposalAcceptedOrganisation"),
+      proposalRefusedOrganisation = TemplateId("proposalRefusedOrganisation"),
+      forgottenPasswordOrganisation = TemplateId("forgottenPasswordOrganisation")
+    )
 
-      Mockito.verify(persistentCrmTemplatesService).find(0, None, Some(QuestionId("toto")), None)
+    scenario("find crmTemplates from CrmTemplatesId with questionId and locale fallback") {
+      Mockito
+        .when(
+          persistentCrmTemplatesService.find(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some(QuestionId("toto"))),
+            ArgumentMatchers.eq(None)
+          )
+        )
+        .thenReturn(Future.successful(Seq.empty))
+      Mockito
+        .when(
+          persistentCrmTemplatesService.find(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some("locale-fallback"))
+          )
+        )
+        .thenReturn(Future.successful(Seq(aCrmTemplates, aCrmTemplates)))
+      whenReady(
+        crmTemplatesService.find(0, None, Some(QuestionId("toto")), Some("locale-fallback")),
+        Timeout(3.seconds)
+      ) { result =>
+        result.size shouldBe 2
+      }
     }
 
     scenario("find crmTemplates from CrmTemplatesId without questionId with locale") {
-      crmTemplatesService.find(0, None, None, Some("locale"))
+      Mockito
+        .when(
+          persistentCrmTemplatesService.find(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some("locale"))
+          )
+        )
+        .thenReturn(Future.successful(Seq(aCrmTemplates)))
 
-      Mockito.verify(persistentCrmTemplatesService).find(0, None, None, Some("locale"))
+      whenReady(crmTemplatesService.find(0, None, None, Some("locale")), Timeout(3.seconds)) { result =>
+        result.head.crmTemplatesId shouldBe CrmTemplatesId("id")
+      }
     }
 
     scenario("find crmTemplates from CrmTemplatesId without params") {
-      crmTemplatesService.find(0, None, None, None)
+      Mockito
+        .when(
+          persistentCrmTemplatesService.find(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None)
+          )
+        )
+        .thenReturn(Future.successful(Seq.empty))
 
-      Mockito.verify(persistentCrmTemplatesService).find(0, None, None, None)
+      whenReady(crmTemplatesService.find(0, None, None, None), Timeout(3.seconds)) { result =>
+        result.isEmpty shouldBe true
+      }
     }
   }
 

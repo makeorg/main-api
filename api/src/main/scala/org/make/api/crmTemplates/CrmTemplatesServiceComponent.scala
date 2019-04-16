@@ -98,7 +98,10 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
         case Some(_) => None
         case None    => locale
       }
-      persistentCrmTemplatesService.find(start, end, questionId, searchByLocale)
+      persistentCrmTemplatesService.find(start, end, questionId, searchByLocale).flatMap {
+        case crmTemplates if crmTemplates.nonEmpty || locale.isEmpty => Future.successful(crmTemplates)
+        case _                                                       => persistentCrmTemplatesService.find(start, end, None, locale)
+      }
     }
 
     override def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int] = {

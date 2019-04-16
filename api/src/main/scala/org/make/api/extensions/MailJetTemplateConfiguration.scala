@@ -19,8 +19,9 @@
 
 package org.make.api.extensions
 
-import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.Extension
 import com.typesafe.config.Config
+import org.make.api.ActorSystemComponent
 
 class MailJetTemplateConfiguration(config: Config) extends Extension with ConfigurationSupport {
   val from: String = config.getString("from")
@@ -38,18 +39,13 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
 
 }
 
-object MailJetTemplateConfiguration extends ExtensionId[MailJetTemplateConfiguration] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): MailJetTemplateConfiguration =
-    new MailJetTemplateConfiguration(system.settings.config.getConfig("make-api.mail-jet.templates"))
-
-  override def lookup(): ExtensionId[MailJetTemplateConfiguration] = MailJetTemplateConfiguration
-  override def get(system: ActorSystem): MailJetTemplateConfiguration = super.get(system)
-}
-
 trait MailJetTemplateConfigurationComponent {
   def mailJetTemplateConfiguration: MailJetTemplateConfiguration
 }
 
-trait MailJetTemplateConfigurationExtension extends MailJetTemplateConfigurationComponent { this: Actor =>
-  val mailJetTemplateConfiguration: MailJetTemplateConfiguration = MailJetTemplateConfiguration(context.system)
+trait DefaultMailJetTemplateConfigurationComponent extends MailJetTemplateConfigurationComponent {
+  this: ActorSystemComponent =>
+  override lazy val mailJetTemplateConfiguration: MailJetTemplateConfiguration =
+    new MailJetTemplateConfiguration(actorSystem.settings.config.getConfig("make-api.mail-jet.templates"))
+
 }

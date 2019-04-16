@@ -29,6 +29,7 @@ import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
+import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
@@ -67,12 +68,7 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalEmailConsumerActor
-          .props(
-            dependencies.userService,
-            proposalCoordinatorService,
-            dependencies.questionService,
-            dependencies.crmTemplatesService
-          )
+          .props(dependencies.sendMailPublisherService)
           .withDispatcher(kafkaDispatcher),
         ProposalEmailConsumerActor.name
       )
@@ -97,17 +93,19 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
 
 object ProposalSupervisor {
 
-  type ProposalSupervisorDependencies = UserServiceComponent
+  type ProposalSupervisorDependencies = CrmTemplatesServiceComponent
+    with UserServiceComponent
     with OrganisationServiceComponent
-    with TagServiceComponent
-    with SequenceServiceComponent
-    with QuestionServiceComponent
-    with SemanticComponent
     with ProposalSearchEngineComponent
     with ProposalIndexerServiceComponent
+    with QuestionServiceComponent
+    with SemanticComponent
+    with SendMailPublisherServiceComponent
     with SequenceConfigurationComponent
     with OperationOfQuestionServiceComponent
     with CrmTemplatesServiceComponent
+    with SequenceServiceComponent
+    with TagServiceComponent
 
   val name: String = "proposal"
   def props(userHistoryCoordinator: ActorRef,

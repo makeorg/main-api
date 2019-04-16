@@ -25,10 +25,10 @@ final case class CreateTemplatesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: TemplateId
 ) {
   def getLocale: Option[String] =
-    (country, language) match {
-      case (Some(c), Some(l)) => Some(s"${l.value.toLowerCase}_${c.value.toUpperCase}")
-      case _                  => None
-    }
+    for {
+      c <- country
+      l <- language
+    } yield s"${l.value.toLowerCase}_${c.value.toUpperCase}"
 
   Validation.validate(
     Validation.requirePresent(
