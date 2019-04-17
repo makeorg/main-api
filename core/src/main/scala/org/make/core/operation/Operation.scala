@@ -186,7 +186,11 @@ sealed trait OperationKind { def shortName: String }
 
 object OperationKind {
   val kindMap: Map[String, OperationKind] =
-    Map(GreatCause.shortName -> GreatCause, PublicConsultation.shortName -> PublicConsultation)
+    Map(
+      GreatCause.shortName -> GreatCause,
+      PublicConsultation.shortName -> PublicConsultation,
+      PrivateConsultation.shortName -> PrivateConsultation
+    )
 
   implicit lazy val operationKindEncoder: Encoder[OperationKind] = (kind: OperationKind) =>
     Json.fromString(kind.shortName)
