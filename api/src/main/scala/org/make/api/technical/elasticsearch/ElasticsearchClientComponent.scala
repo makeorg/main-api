@@ -24,6 +24,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl.{addAlias, aliasExists, aliases, c
 import com.sksamuel.elastic4s.http.index.admin.AliasExistsResponse
 import com.sksamuel.elastic4s.http.{ElasticClient, ElasticProperties}
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.ActorSystemComponent
 import org.make.api.technical.security.SecurityHelper
 import org.make.core.DateHelper
 
@@ -46,7 +47,7 @@ trait ElasticsearchClientComponent {
 }
 
 trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent with StrictLogging {
-  self: ElasticsearchConfigurationComponent =>
+  self: ElasticsearchConfigurationComponent with ActorSystemComponent =>
 
   override lazy val elasticsearchClient: ElasticsearchClient = new ElasticsearchClient {
 
