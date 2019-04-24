@@ -22,6 +22,7 @@ package org.make.api.technical
 import java.util.UUID
 
 import org.make.api.idea.IdeaMappingId
+import org.make.core.crmTemplate.CrmTemplatesId
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -46,6 +47,7 @@ trait IdGenerator {
   def nextTagId(): TagId = TagId(nextId())
   def nextTagTypeId(): TagTypeId = TagTypeId(nextId())
   def nextIdeaMappingId(): IdeaMappingId = IdeaMappingId(nextId())
+  def nextCrmTemplatesId(): CrmTemplatesId = CrmTemplatesId(nextId())
   def nextId(): String
 }
 

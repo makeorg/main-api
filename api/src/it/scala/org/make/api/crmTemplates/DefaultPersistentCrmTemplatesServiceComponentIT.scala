@@ -17,7 +17,7 @@
  *
  */
 
-package org.make.api.crmTemplate
+package org.make.api.crmTemplates
 
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
