@@ -299,9 +299,9 @@ final case class PersistentOperationOfQuestion(questionId: String,
                                                finalCardLearnMoreButton: Option[String],
                                                finalCardLinkUrl: Option[String],
                                                aboutUrl: Option[String],
-                                               metaTitle: String,
-                                               metaDescription: String,
-                                               metaPicture: String) {
+                                               metaTitle: Option[String],
+                                               metaDescription: Option[String],
+                                               metaPicture: Option[String]) {
   def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     questionId = QuestionId(this.questionId),
     operationId = OperationId(this.operationId),
@@ -368,9 +368,9 @@ object PersistentOperationOfQuestion
                                            finalCardLearnMoreButton: Option[String],
                                            finalCardLinkUrl: Option[String],
                                            aboutUrl: Option[String],
-                                           metaTitle: String,
-                                           metaDescription: String,
-                                           metaPicture: String) {
+                                           metaTitle: Option[String],
+                                           metaDescription: Option[String],
+                                           metaPicture: Option[String]) {
     def toQuestionAndDetails: QuestionWithDetails = {
       QuestionWithDetails(
         question = Question(
@@ -456,9 +456,9 @@ object PersistentOperationOfQuestion
         finalCardLearnMoreButton = resultSet.stringOpt(operationOfQuestionAlias.finalCardLearnMoreButton),
         finalCardLinkUrl = resultSet.stringOpt(operationOfQuestionAlias.finalCardLinkUrl),
         aboutUrl = resultSet.stringOpt(operationOfQuestionAlias.aboutUrl),
-        metaTitle = resultSet.string(operationOfQuestionAlias.metaTitle),
-        metaDescription = resultSet.string(operationOfQuestionAlias.metaDescription),
-        metaPicture = resultSet.string(operationOfQuestionAlias.metaPicture)
+        metaTitle = resultSet.stringOpt(operationOfQuestionAlias.metaTitle),
+        metaDescription = resultSet.stringOpt(operationOfQuestionAlias.metaDescription),
+        metaPicture = resultSet.stringOpt(operationOfQuestionAlias.metaPicture)
       )
   }
 
@@ -525,9 +525,9 @@ object PersistentOperationOfQuestion
       finalCardLearnMoreButton = resultSet.stringOpt(resultName.finalCardLearnMoreButton),
       finalCardLinkUrl = resultSet.stringOpt(resultName.finalCardLinkUrl),
       aboutUrl = resultSet.stringOpt(resultName.aboutUrl),
-      metaTitle = resultSet.string(resultName.metaTitle),
-      metaDescription = resultSet.string(resultName.metaDescription),
-      metaPicture = resultSet.string(resultName.metaPicture)
+      metaTitle = resultSet.stringOpt(resultName.metaTitle),
+      metaDescription = resultSet.stringOpt(resultName.metaDescription),
+      metaPicture = resultSet.stringOpt(resultName.metaPicture)
     )
   }
 }

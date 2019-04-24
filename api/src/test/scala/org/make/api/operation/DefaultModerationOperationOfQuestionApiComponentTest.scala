@@ -125,7 +125,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           )
         ),
         aboutUrl = None,
-        metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+        metas = Metas(title = None, description = None, picture = None)
       )
     )
   }
@@ -157,7 +157,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         )
       )
     )
@@ -214,7 +214,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -239,7 +239,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         )
       )
     )
@@ -315,7 +315,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -340,7 +340,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         )
       )
     )
@@ -492,7 +492,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
               )
             ),
             aboutUrl = None,
-            metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+            metas = Metas(title = None, description = None, picture = None)
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -529,7 +529,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
               )
             ),
             aboutUrl = None,
-            metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+            metas = Metas(title = None, description = None, picture = None)
           ).asJson.toString()
         ) ~> routes ~> check {
 
