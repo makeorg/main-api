@@ -24,12 +24,17 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.{ProposalCoordinatorServiceComponent, UpdateProposalVotesVerifiedCommand}
+import org.make.api.proposal.{
+  ProposalCoordinatorServiceComponent,
+  ProposalServiceComponent,
+  UpdateProposalVotesVerifiedCommand
+}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.UserServiceComponent
@@ -41,6 +46,7 @@ import org.make.api.userhistory.{
 }
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.{ProposalId, Vote}
+import org.make.core.question.QuestionId
 import org.make.core.tag.{Tag => _}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, HttpCodes, RequestContext}
@@ -68,6 +74,21 @@ trait MigrationApi extends Directives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @Path(value = "/replay-user-registration")
   def replayUserRegistrationEvent: Route
+
+  @ApiOperation(
+    value = "replay-user-vote-event",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @Path(value = "/replay-user-vote")
+  def replayUserVoteEvent: Route
 
   @ApiOperation(
     value = "replay-user-history-event",
@@ -99,7 +120,8 @@ trait MigrationApi extends Directives {
   @Path(value = "/reset-qualification-count")
   def resetQualificationCount: Route
 
-  def routes: Route = emptyRoute ~ replayUserRegistrationEvent ~ replayUserHistoryEvent ~ resetQualificationCount
+  def routes: Route =
+    emptyRoute ~ replayUserRegistrationEvent ~ replayUserVoteEvent ~ replayUserHistoryEvent ~ resetQualificationCount
 }
 
 trait MigrationApiComponent {
@@ -111,6 +133,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with IdGeneratorComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent
+    with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with UserServiceComponent
     with UserHistoryCoordinatorComponent
@@ -162,6 +185,43 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                     }
                 }
               complete(StatusCodes.NoContent)
+            }
+          }
+        }
+      }
+    }
+
+    override def replayUserVoteEvent: Route = post {
+      path("migrations" / "replay-user-vote") {
+        makeOperation("ReplayVoteEvent") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+              val streamUser = userService.getUsersWithoutRegisterQuestion.flatMap { users =>
+                Source(users.toIndexedSeq)
+                  .mapAsync(5) { user =>
+                    proposalService
+                      .searchProposalsVotedByUser(
+                        userId = user.userId,
+                        filterVotes = None,
+                        filterQualifications = None,
+                        requestContext = requestContext
+                      )
+                      .map((_, user))
+                  }
+                  .mapAsync(5) {
+                    case (proposals, user) =>
+                      val registerQuestionId: Option[QuestionId] = proposals.results.headOption.flatMap(_.questionId)
+                      userService.update(
+                        user.copy(profile = user.profile.map(_.copy(registerQuestionId = registerQuestionId))),
+                        requestContext
+                      )
+                  }
+                  .runWith(Sink.ignore)
+              }
+              provideAsync(streamUser) { _ =>
+                complete(StatusCodes.NoContent)
+              }
             }
           }
         }

@@ -331,6 +331,7 @@ trait PersistentUserService {
   def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
   def findOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
+  def findUsersWithoutRegisterQuestion: Future[Seq[User]]
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
@@ -614,6 +615,19 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             .desc
             .limit(limit)
             .offset(page * limit - limit)
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
+    }
+
+    override def findUsersWithoutRegisterQuestion: Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.isNull(userAlias.registerQuestionId))
         }.map(PersistentUser.apply()).list.apply
       })
 

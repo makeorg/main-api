@@ -80,6 +80,7 @@ trait UserService extends ShortenedNames {
   def getUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
   def getOptInUsers(page: Int, limit: Int): Future[Seq[User]]
   def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
+  def getUsersWithoutRegisterQuestion: Future[Seq[User]]
   def anonymize(user: User): Future[Unit]
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId): Future[UserId]
@@ -498,6 +499,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]] = {
       persistentUserService.findOptOutUsers(page: Int, limit: Int)
+    }
+
+    override def getUsersWithoutRegisterQuestion: Future[Seq[User]] = {
+      persistentUserService.findUsersWithoutRegisterQuestion
     }
 
     private def updateProposalVotedByOrganisation(user: User): Future[Unit] = {

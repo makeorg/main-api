@@ -241,6 +241,12 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       Some(MailingErrorLog(error = "my error", date = ZonedDateTime.parse("2018-12-12T12:30:40+01:00[Europe/Paris]")))
   )
 
+  val noRegisterQuestionUser: User = johnDoe.copy(
+    email = "noregistration@question.com",
+    userId = UserId("no-question"),
+    profile = Some(profile.copy(registerQuestionId = None))
+  )
+
   val userOrganisationCIA = User(
     userId = UserId("CIA"),
     email = "cia@secret-agency.com",
@@ -968,6 +974,20 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         maybeUser.toSeq.flatMap(_.availableQuestions) should be(Seq(QuestionId("first"), QuestionId("second")))
       }
 
+    }
+  }
+
+  feature("get users without operation creation") {
+    scenario("get users without operation creation") {
+
+      val usersWithoutRegisterQuestion: Future[Seq[User]] = for {
+        _    <- persistentUserService.persist(noRegisterQuestionUser)
+        user <- persistentUserService.findUsersWithoutRegisterQuestion
+      } yield user
+
+      whenReady(usersWithoutRegisterQuestion, Timeout(3.seconds)) { users =>
+        users.map(_.userId).contains(noRegisterQuestionUser.userId) should be(true)
+      }
     }
   }
 
