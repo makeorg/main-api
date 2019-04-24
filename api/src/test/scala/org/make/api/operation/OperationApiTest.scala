@@ -90,7 +90,23 @@ class OperationApiTest
           endDate = None,
           operationTitle = "première operation",
           landingSequenceId = SequenceId("first-sequence-id-BR"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         )
       ),
       QuestionWithDetails(
@@ -110,7 +126,23 @@ class OperationApiTest
           endDate = None,
           operationTitle = "first operation",
           landingSequenceId = SequenceId("first-sequence-id-BR"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         )
       )
     )
@@ -151,7 +183,23 @@ class OperationApiTest
           endDate = None,
           operationTitle = "secondo operazione",
           landingSequenceId = SequenceId("second-sequence-id"),
-          canPropose = true
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
         )
       )
     )

@@ -23,7 +23,7 @@ import java.time.LocalDate
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.operation.{OperationId, OperationOfQuestion}
+import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, SequenceCardsConfiguration}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
@@ -71,7 +71,10 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            country: Country,
                                            language: Language,
                                            question: String,
-                                           canPropose: Boolean)
+                                           canPropose: Boolean,
+                                           sequenceCardsConfiguration: SequenceCardsConfiguration,
+                                           aboutUrl: Option[String],
+                                           metas: Metas)
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]],
                                              operationId: Option[OperationId],
@@ -176,10 +179,14 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         endDate = parameters.endDate,
         operationTitle = parameters.operationTitle,
         landingSequenceId = sequenceId,
-        canPropose = parameters.canPropose
+        canPropose = parameters.canPropose,
+        sequenceCardsConfiguration = parameters.sequenceCardsConfiguration,
+        aboutUrl = parameters.aboutUrl,
+        metas = parameters.metas
       )
 
-      val sequenceConfiguration = SequenceConfiguration(sequenceId = sequenceId, questionId = questionId)
+      val sequenceConfiguration =
+        SequenceConfiguration(sequenceId = sequenceId, questionId = questionId)
 
       for {
         _         <- persistentQuestionService.persist(question)
