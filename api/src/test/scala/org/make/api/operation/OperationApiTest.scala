@@ -106,7 +106,7 @@ class OperationApiTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         )
       ),
       QuestionWithDetails(
@@ -142,7 +142,7 @@ class OperationApiTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         )
       )
     )
@@ -199,7 +199,7 @@ class OperationApiTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         )
       )
     )

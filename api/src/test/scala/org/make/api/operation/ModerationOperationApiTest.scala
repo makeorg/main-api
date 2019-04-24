@@ -194,7 +194,7 @@ class ModerationOperationApiTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = "metas title", description = "metas description", picture = "metas.picture")
+          metas = Metas(title = None, description = None, picture = None)
         )
       )
     )

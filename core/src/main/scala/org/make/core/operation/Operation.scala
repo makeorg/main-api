@@ -115,7 +115,7 @@ object SequenceCardsConfiguration extends CirceFormatters {
   implicit val decoder: Decoder[SequenceCardsConfiguration] = deriveDecoder[SequenceCardsConfiguration]
 }
 
-final case class Metas(title: String, description: String, picture: String)
+final case class Metas(title: Option[String], description: Option[String], picture: Option[String])
 
 object Metas extends CirceFormatters {
   implicit val encoder: ObjectEncoder[Metas] = deriveEncoder[Metas]
