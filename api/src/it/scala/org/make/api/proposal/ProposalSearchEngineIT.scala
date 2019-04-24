@@ -30,7 +30,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
 import io.circe.syntax._
-import org.make.api.ItMakeTest
+import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
@@ -58,7 +58,10 @@ class ProposalSearchEngineIT
     with DockerElasticsearchService
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent
-    with DefaultElasticsearchClientComponent {
+    with DefaultElasticsearchClientComponent
+    with ActorSystemComponent {
+
+  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 

@@ -25,7 +25,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
 import org.make.api.sessionhistory._
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom}
 import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
@@ -124,7 +124,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                 )
               ),
               limit = Some(sequenceConfiguration.maxTestedProposalCount),
-              sortAlgorithm = Some(RandomAlgorithm())
+              sortAlgorithm = Some(RandomAlgorithm(MakeRandom.random.nextInt()))
             )
           )
           .map(_.results)

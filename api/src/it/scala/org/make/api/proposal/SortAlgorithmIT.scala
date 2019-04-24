@@ -26,7 +26,7 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
 import io.circe.syntax._
-import org.make.api.ItMakeTest
+import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
@@ -55,7 +55,10 @@ class SortAlgorithmIT
     with DockerElasticsearchService
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent
-    with DefaultElasticsearchClientComponent {
+    with DefaultElasticsearchClientComponent
+    with ActorSystemComponent {
+
+  override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
@@ -73,7 +76,7 @@ class SortAlgorithmIT
   }
 
   private def initializeElasticsearch(): Unit = {
-    implicit val actorSystem: ActorSystem = ActorSystem()
+    implicit val system: ActorSystem = actorSystem
 
     val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
     val proposalMapping =
@@ -244,7 +247,7 @@ class SortAlgorithmIT
 
   feature("random algorithm") {
     scenario("results are the same for the same seed") {
-      val query = SearchQuery(sortAlgorithm = Some(RandomAlgorithm(Some(42))))
+      val query = SearchQuery(sortAlgorithm = Some(RandomAlgorithm(42)))
       val identicalResults = for {
         first  <- elasticsearchProposalAPI.searchProposals(query)
         second <- elasticsearchProposalAPI.searchProposals(query)
@@ -255,8 +258,8 @@ class SortAlgorithmIT
       }
     }
     scenario("results are different for a different seed") {
-      val firstQuery = SearchQuery(sortAlgorithm = Some(RandomAlgorithm(Some(42))))
-      val secondQuery = SearchQuery(sortAlgorithm = Some(RandomAlgorithm(Some(21))))
+      val firstQuery = SearchQuery(sortAlgorithm = Some(RandomAlgorithm(42)))
+      val secondQuery = SearchQuery(sortAlgorithm = Some(RandomAlgorithm(21)))
 
       val randomResults = for {
         first  <- elasticsearchProposalAPI.searchProposals(firstQuery)
@@ -271,7 +274,7 @@ class SortAlgorithmIT
 
   feature("actor vote algorithm") {
     scenario("sort by most number of actor votes") {
-      val query = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(None)))
+      val query = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(42)))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 4L
@@ -283,8 +286,8 @@ class SortAlgorithmIT
     }
 
     scenario("sort by most number of actor votes and order by random") {
-      val firstQuery = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(Some(42))))
-      val secondQuery = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(Some(84))))
+      val firstQuery = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(42)))
+      val secondQuery = SearchQuery(sortAlgorithm = Some(ActorVoteAlgorithm(84)))
 
       whenReady(elasticsearchProposalAPI.searchProposals(firstQuery), Timeout(3.seconds)) { firstResult =>
         firstResult.total should be > 4L
@@ -307,7 +310,7 @@ class SortAlgorithmIT
 
   feature("trending algorithms") {
     scenario("controversy algorithm") {
-      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm(Some(42))))
+      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm))
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(2)
         result.results.forall(_.trending.contains("controversy")) should be(true)
@@ -316,7 +319,7 @@ class SortAlgorithmIT
 
     scenario("controversy algorithm with other filters") {
       val query = SearchQuery(
-        sortAlgorithm = Some(ControversyAlgorithm(Some(42))),
+        sortAlgorithm = Some(ControversyAlgorithm),
         filters = Some(SearchFilters(country = Some(CountrySearchFilter(Country("42")))))
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -327,7 +330,7 @@ class SortAlgorithmIT
     }
 
     scenario("popular algorithm") {
-      val query = SearchQuery(sortAlgorithm = Some(PopularAlgorithm(Some(42))))
+      val query = SearchQuery(sortAlgorithm = Some(PopularAlgorithm))
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(2)
         result.results.forall(_.trending.contains("popular")) should be(true)
@@ -336,7 +339,7 @@ class SortAlgorithmIT
 
     scenario("popular algorithm with other filters") {
       val query = SearchQuery(
-        sortAlgorithm = Some(PopularAlgorithm(Some(42))),
+        sortAlgorithm = Some(PopularAlgorithm),
         filters = Some(SearchFilters(country = Some(CountrySearchFilter(Country("42")))))
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -349,7 +352,7 @@ class SortAlgorithmIT
 
   feature("tagged first algorithm") {
     scenario("sort by tagged proposals votes") {
-      val query = SearchQuery(sortAlgorithm = Some(TaggedFirstAlgorithm(None)))
+      val query = SearchQuery(sortAlgorithm = Some(TaggedFirstLegacyAlgorithm(42)))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 4L

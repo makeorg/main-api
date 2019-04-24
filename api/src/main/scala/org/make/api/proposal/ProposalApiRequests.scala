@@ -190,7 +190,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
       // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
       .orElse(isRandom.flatMap { randomise =>
         if (randomise) {
-          Some(RandomAlgorithm(Some(randomSeed)))
+          Some(RandomAlgorithm(randomSeed))
         } else {
           None
         }
