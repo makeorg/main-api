@@ -62,9 +62,13 @@ trait DefaultMonitoringService extends MonitoringServiceComponent {
       getHistogram(HistogramName(applicationName, "connect")).record(metrics.connectEnd - metrics.connectStart)
       getHistogram(HistogramName(applicationName, "domain_lookup"))
         .record(metrics.domainLookupEnd - metrics.domainLookupStart)
-      getHistogram(HistogramName(applicationName, "dom_complete")).record(metrics.domComplete - metrics.responseEnd)
-      getHistogram(HistogramName(applicationName, "dom_interactive"))
-        .record(metrics.domInteractive - metrics.responseEnd)
+      if (metrics.domComplete > 0) {
+        getHistogram(HistogramName(applicationName, "dom_complete")).record(metrics.domComplete - metrics.responseEnd)
+      }
+      if (metrics.domInteractive > 0) {
+        getHistogram(HistogramName(applicationName, "dom_interactive"))
+          .record(metrics.domInteractive - metrics.responseEnd)
+      }
       getHistogram(HistogramName(applicationName, "dom_loading")).record(metrics.domLoading - metrics.responseEnd)
       getHistogram(HistogramName(applicationName, "request_time")).record(metrics.responseEnd - metrics.requestStart)
       getHistogram(HistogramName(applicationName, "first_byte")).record(metrics.responseStart - metrics.requestStart)
