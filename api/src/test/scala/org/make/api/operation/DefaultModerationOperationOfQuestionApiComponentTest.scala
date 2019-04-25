@@ -475,24 +475,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             country = Country("FR"),
             language = Language("fr"),
             question = "how to save the world?",
-            questionSlug = "make-the-world-great-again",
-            canPropose = true,
-            sequenceCardsConfiguration = SequenceCardsConfiguration(
-              introCard = IntroCard(enabled = true, title = None, description = None),
-              pushProposalCard = PushProposalCard(enabled = true),
-              signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-              finalCard = FinalCard(
-                enabled = true,
-                sharingEnabled = false,
-                title = None,
-                shareDescription = None,
-                learnMoreTitle = None,
-                learnMoreTextButton = None,
-                linkUrl = None
-              )
-            ),
-            aboutUrl = None,
-            metas = Metas(title = None, description = None, picture = None)
+            questionSlug = "make-the-world-great-again"
           ).asJson.toString()
         ) ~> routes ~> check {
 

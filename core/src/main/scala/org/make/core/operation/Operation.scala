@@ -113,6 +113,21 @@ final case class SequenceCardsConfiguration(introCard: IntroCard,
 object SequenceCardsConfiguration extends CirceFormatters {
   implicit val encoder: ObjectEncoder[SequenceCardsConfiguration] = deriveEncoder[SequenceCardsConfiguration]
   implicit val decoder: Decoder[SequenceCardsConfiguration] = deriveDecoder[SequenceCardsConfiguration]
+
+  val default: SequenceCardsConfiguration = SequenceCardsConfiguration(
+    introCard = IntroCard(enabled = true, title = None, description = None),
+    pushProposalCard = PushProposalCard(enabled = true),
+    signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+    finalCard = FinalCard(
+      enabled = true,
+      sharingEnabled = true,
+      title = None,
+      shareDescription = None,
+      learnMoreTitle = None,
+      learnMoreTextButton = None,
+      linkUrl = None
+    )
+  )
 }
 
 final case class Metas(title: Option[String], description: Option[String], picture: Option[String])
