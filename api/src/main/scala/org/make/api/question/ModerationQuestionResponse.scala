@@ -149,6 +149,7 @@ case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId,
   wording: WordingResponse,
+  question: String,
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
@@ -179,6 +180,7 @@ object QuestionDetailsResponse extends CirceFormatters {
       question = question.question,
       metas = operationOfQuestion.metas
     ),
+    question = question.question,
     slug = question.slug,
     country = question.country,
     language = question.language,
