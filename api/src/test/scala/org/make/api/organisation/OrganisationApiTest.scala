@@ -378,7 +378,12 @@ class OrganisationApiTest
       total = proposalsList.total,
       results = proposalsList.results.map(
         proposalResult =>
-          ProposalResultWithUserVote(proposal = proposalResult, vote = Agree, voteDate = DateHelper.now())
+          ProposalResultWithUserVote(
+            proposal = proposalResult,
+            vote = Agree,
+            voteDate = DateHelper.now(),
+            voteDetails = None
+        )
       ),
       seed = None
     )

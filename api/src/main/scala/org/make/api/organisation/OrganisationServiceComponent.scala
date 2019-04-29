@@ -346,7 +346,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                   ProposalResultWithUserVote(
                     proposal,
                     proposalVoteAndQualification.voteKey,
-                    proposalVoteAndQualification.date
+                    proposalVoteAndQualification.date,
+                    proposal.votes.find(_.voteKey == proposalVoteAndQualification.voteKey)
                   )
                 },
                 seed = None
