@@ -389,11 +389,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           slug = body.questionSlug,
                           country = body.country,
                           language = body.language,
-                          question = body.question,
-                          canPropose = body.canPropose,
-                          sequenceCardsConfiguration = body.sequenceCardsConfiguration,
-                          aboutUrl = body.aboutUrl,
-                          metas = body.metas
+                          question = body.question
                         )
                       )
                     ) { operationOfQuestion =>
@@ -443,12 +439,7 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   question: String,
-  questionSlug: String,
-  @(ApiModelProperty @field)(dataType = "boolean", example = "true")
-  canPropose: Boolean,
-  sequenceCardsConfiguration: SequenceCardsConfiguration,
-  aboutUrl: Option[String],
-  metas: Metas
+  questionSlug: String
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),

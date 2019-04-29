@@ -70,11 +70,7 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            slug: String,
                                            country: Country,
                                            language: Language,
-                                           question: String,
-                                           canPropose: Boolean,
-                                           sequenceCardsConfiguration: SequenceCardsConfiguration,
-                                           aboutUrl: Option[String],
-                                           metas: Metas)
+                                           question: String)
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]],
                                              operationId: Option[OperationId],
@@ -179,10 +175,10 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         endDate = parameters.endDate,
         operationTitle = parameters.operationTitle,
         landingSequenceId = sequenceId,
-        canPropose = parameters.canPropose,
-        sequenceCardsConfiguration = parameters.sequenceCardsConfiguration,
-        aboutUrl = parameters.aboutUrl,
-        metas = parameters.metas
+        canPropose = true,
+        sequenceCardsConfiguration = SequenceCardsConfiguration.default,
+        aboutUrl = None,
+        metas = Metas(None, None, None)
       )
 
       val sequenceConfiguration =
