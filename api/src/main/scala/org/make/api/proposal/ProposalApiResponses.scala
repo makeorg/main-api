@@ -202,7 +202,8 @@ final case class ProposalResultWithUserVote(
   @(ApiModelProperty @field)(dataType = "string", example = "agree")
   vote: VoteKey,
   @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
-  voteDate: ZonedDateTime
+  voteDate: ZonedDateTime,
+  voteDetails: Option[VoteResponse]
 )
 object ProposalResultWithUserVote extends CirceFormatters {
   implicit val encoder: ObjectEncoder[ProposalResultWithUserVote] = deriveEncoder[ProposalResultWithUserVote]
