@@ -42,7 +42,7 @@ services:
         SCHEMA_REGISTRY_LISTENERS: http://kafka:8081
     restart: on-failure:2
   cockroach:
-    image: cockroachdb/cockroach:v2.0.2
+    image: cockroachdb/cockroach:v2.1.6
     command: start --insecure
     ports:
       - 26257:26257

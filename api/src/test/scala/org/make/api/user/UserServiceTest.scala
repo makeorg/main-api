@@ -114,9 +114,6 @@ class UserServiceTest
     availableQuestions = Seq.empty
   )
 
-  Mockito.when(userTokenGenerator.generateVerificationToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
-  Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
-
   val johnDoeProfile: Profile = Profile(
     dateOfBirth = Some(LocalDate.parse("1984-10-11")),
     avatarUrl = Some("facebook.com/picture"),
@@ -205,6 +202,10 @@ class UserServiceTest
             .persist(any[User])
         )
         .thenReturn(Future.successful(returnedUser))
+
+      Mockito
+        .when(userTokenGenerator.generateVerificationToken())
+        .thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
       val futureUser = userService.register(
         UserRegisterData(
@@ -602,18 +603,15 @@ class UserServiceTest
   feature("password recovery") {
     scenario("successfully reset password") {
 
-      val userId = UserId("user-reset-password-successfully")
-
       Mockito
-        .when(
-          persistentUserService
-            .requestResetPassword(ArgumentMatchers.eq(userId), any[String], any[Option[ZonedDateTime]])
-        )
+        .when(persistentUserService.requestResetPassword(any[UserId], any[String], any[Option[ZonedDateTime]]))
         .thenReturn(Future.successful(true))
 
-      val futureResetPassword = userService.requestPasswordReset(userId)
+      Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
-      whenReady(futureResetPassword, Timeout(3.seconds)) { result =>
+      val userId = UserId("user-reset-password-successfully")
+
+      whenReady(userService.requestPasswordReset(userId), Timeout(3.seconds)) { result =>
         result shouldBe true
       }
     }
@@ -923,6 +921,10 @@ class UserServiceTest
       Mockito
         .when(persistentUserService.emailExists(isEqual("yopmail+some-other-hash@make.org")))
         .thenReturn(Future.successful(false))
+
+      Mockito
+        .when(userTokenGenerator.generateVerificationToken())
+        .thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
       val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"), Language("fr"))
 
