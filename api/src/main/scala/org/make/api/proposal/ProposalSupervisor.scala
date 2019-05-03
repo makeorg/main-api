@@ -20,6 +20,7 @@
 package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import org.make.api.operation.OperationOfQuestionServiceComponent
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
 import org.make.api.question.QuestionServiceComponent
@@ -99,6 +100,7 @@ object ProposalSupervisor {
     with ProposalSearchEngineComponent
     with ProposalIndexerServiceComponent
     with SequenceConfigurationComponent
+    with OperationOfQuestionServiceComponent
 
   val name: String = "proposal"
   def props(userHistoryCoordinator: ActorRef,

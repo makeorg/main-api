@@ -23,8 +23,10 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
+import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence.{SequenceConfigurationComponent, SequenceConfigurationService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
@@ -40,6 +42,8 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
                             override val proposalCoordinatorService: ProposalCoordinatorService,
                             override val userService: UserService,
                             override val organisationService: OrganisationService,
+                            override val operationOfQuestionService: OperationOfQuestionService,
+                            override val questionService: QuestionService,
                             override val tagService: TagService,
                             override val semanticService: SemanticService,
                             override val elasticsearchProposalAPI: ProposalSearchEngine,
@@ -98,6 +102,8 @@ object ProposalConsumerActor {
       with ProposalSearchEngineComponent
       with ProposalIndexerServiceComponent
       with SequenceConfigurationComponent
+      with OperationOfQuestionServiceComponent
+      with QuestionServiceComponent
 
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             dependencies: ProposalConsumerActorDependencies): Props =
@@ -107,6 +113,8 @@ object ProposalConsumerActor {
         proposalCoordinatorService,
         dependencies.userService,
         dependencies.organisationService,
+        dependencies.operationOfQuestionService,
+        dependencies.questionService,
         dependencies.tagService,
         dependencies.semanticService,
         dependencies.elasticsearchProposalAPI,

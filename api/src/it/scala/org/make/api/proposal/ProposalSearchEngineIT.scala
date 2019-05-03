@@ -172,7 +172,8 @@ class ProposalSearchEngineIT
     votesVerifiedCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
-    context = Some(Context(operation = None, location = None, question = None, source = None)),
+    context =
+      Some(Context(operation = None, location = None, question = None, source = None, getParameters = Seq.empty)),
     author = Author(
       firstName = None,
       organisationName = None,
@@ -191,7 +192,7 @@ class ProposalSearchEngineIT
     status = ProposalStatus.Refused,
     ideaId = None,
     operationId = None,
-    questionId = None,
+    question = None,
     sequencePool = SequencePool.New,
     initialProposal = false,
     refusalReason = None
@@ -240,7 +241,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 287,
       toEnrich = true,
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 84),
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -257,7 +259,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -304,7 +306,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 310,
       toEnrich = true,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -321,7 +324,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -370,7 +373,8 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -385,7 +389,7 @@ class ProposalSearchEngineIT
       themeId = None,
       tags = Seq(),
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -434,7 +438,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 353,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -451,7 +456,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -498,7 +503,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 368,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -515,7 +521,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -581,7 +587,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -645,7 +651,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -709,7 +715,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None
@@ -761,7 +767,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 178,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -778,7 +785,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None
@@ -827,7 +834,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 131,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -844,7 +852,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None
@@ -893,7 +901,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 356,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -910,7 +919,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None
@@ -959,7 +968,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 347,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -976,7 +986,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None
@@ -1023,7 +1033,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -1040,7 +1051,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None
@@ -1087,7 +1098,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 204,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -1104,7 +1116,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None
@@ -1152,7 +1164,8 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 254,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -1169,7 +1182,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None

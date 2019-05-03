@@ -255,7 +255,7 @@ object SemanticProposal {
   def apply(indexedProposal: IndexedProposal): SemanticProposal = {
     new SemanticProposal(
       id = indexedProposal.id,
-      questionId = indexedProposal.questionId.getOrElse(QuestionId("None")),
+      questionId = indexedProposal.question.map(_.questionId).getOrElse(QuestionId("None")),
       language = indexedProposal.language,
       ideaId = indexedProposal.ideaId,
       content = indexedProposal.content,

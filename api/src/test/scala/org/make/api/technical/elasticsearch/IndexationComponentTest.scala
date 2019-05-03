@@ -23,6 +23,7 @@ import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.{DefaultPersistentIdeaServiceComponent, IdeaSearchEngine, IdeaSearchEngineComponent}
+import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.{
   ProposalCoordinatorService,
@@ -30,6 +31,7 @@ import org.make.api.proposal.{
   ProposalSearchEngine,
   ProposalSearchEngineComponent
 }
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence._
 import org.make.api.tag.{TagService, TagServiceComponent}
@@ -66,7 +68,9 @@ class IndexationComponentTest
     with DefaultPersistentIdeaServiceComponent
     with MakeDBExecutionContextComponent
     with SemanticComponent
-    with UserHistoryCoordinatorServiceComponent {
+    with UserHistoryCoordinatorServiceComponent
+    with OperationOfQuestionServiceComponent
+    with QuestionServiceComponent {
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
@@ -87,6 +91,8 @@ class IndexationComponentTest
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
+  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
+  override val questionService: QuestionService = mock[QuestionService]
 
   override val tagService: TagService = mock[TagService]
 

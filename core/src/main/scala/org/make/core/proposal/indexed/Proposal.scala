@@ -94,7 +94,7 @@ object ProposalElasticsearchFieldNames {
   val authorFirstName: String = "author.firstName"
   val authorPostalCode: String = "author.postalCode"
   val authorAge: String = "author.age"
-  val questionId: String = "questionId"
+  val questionId: String = "question.questionId"
   val themeId: String = "themeId"
   val country: String = "country"
   val language: String = "language"
@@ -143,8 +143,7 @@ case class IndexedProposal(
   language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
   themeId: Option[ThemeId],
-  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
-  questionId: Option[QuestionId],
+  question: Option[IndexedProposalQuestion],
   tags: Seq[IndexedTag],
   @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
   ideaId: Option[IdeaId],
@@ -161,18 +160,39 @@ object IndexedProposal extends CirceFormatters {
   implicit val decoder: Decoder[IndexedProposal] = deriveDecoder[IndexedProposal]
 }
 
+final case class IndexedProposalQuestion(
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  questionId: QuestionId,
+  slug: String,
+  title: String,
+  question: String
+)
+
+object IndexedProposalQuestion extends CirceFormatters {
+  implicit val encoder: Encoder[IndexedProposalQuestion] = deriveEncoder[IndexedProposalQuestion]
+  implicit val decoder: Decoder[IndexedProposalQuestion] = deriveDecoder[IndexedProposalQuestion]
+}
+
 @ApiModel
 final case class Context(
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operation: Option[OperationId],
   source: Option[String],
   location: Option[String],
-  question: Option[String]
+  question: Option[String],
+  getParameters: Seq[IndexedGetParameters]
 )
 
 object Context {
   implicit val encoder: Encoder[Context] = deriveEncoder[Context]
   implicit val decoder: Decoder[Context] = deriveDecoder[Context]
+}
+
+final case class IndexedGetParameters(key: String, value: String)
+
+object IndexedGetParameters {
+  implicit val encoder: Encoder[IndexedGetParameters] = deriveEncoder[IndexedGetParameters]
+  implicit val decoder: Decoder[IndexedGetParameters] = deriveDecoder[IndexedGetParameters]
 }
 
 final case class Author(firstName: Option[String],

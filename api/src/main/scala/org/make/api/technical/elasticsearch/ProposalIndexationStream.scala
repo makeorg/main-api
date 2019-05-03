@@ -30,6 +30,7 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.operation.OperationOfQuestionServiceComponent
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
@@ -37,22 +38,26 @@ import org.make.api.proposal.{
   ProposalSearchEngine,
   ProposalSearchEngineComponent
 }
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
+import org.make.core.operation.OperationOfQuestion
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
   Author,
+  IndexedGetParameters,
   IndexedOrganisationInfo,
   IndexedProposal,
+  IndexedProposalQuestion,
   IndexedScores,
   IndexedVote,
   Context => ProposalContext
 }
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.User
 
@@ -65,6 +70,8 @@ trait ProposalIndexationStream
     with ProposalCoordinatorServiceComponent
     with UserServiceComponent
     with OrganisationServiceComponent
+    with OperationOfQuestionServiceComponent
+    with QuestionServiceComponent
     with TagServiceComponent
     with ProposalSearchEngineComponent
     with SequenceConfigurationComponent
@@ -146,6 +153,18 @@ trait ProposalIndexationStream
       case None => Future.successful[Option[SequenceConfiguration]](None)
     }
 
+    def getQuestion: Option[QuestionId] => Future[Option[Question]] = {
+      case Some(questionId) =>
+        questionService.getQuestion(questionId)
+      case None => Future.successful[Option[Question]](None)
+    }
+
+    def getOperationOfQuestion: Option[QuestionId] => Future[Option[OperationOfQuestion]] = {
+      case Some(questionId) =>
+        operationOfQuestionService.findByQuestionId(questionId)
+      case None => Future.successful[Option[OperationOfQuestion]](None)
+    }
+
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
@@ -157,6 +176,8 @@ trait ProposalIndexationStream
           }
           .map[Option[Seq[User]]](organisations => Some(organisations.flatten))
       )
+      question              <- OptionT(getQuestion(proposal.questionId))
+      operationOfQuestion   <- OptionT(getOperationOfQuestion(proposal.questionId))
       sequenceConfiguration <- OptionT(getSequenceConfiguration(proposal.questionId))
     } yield {
       val isBeforeContextSourceFeature: Boolean =
@@ -195,7 +216,12 @@ trait ProposalIndexationStream
               case other                                => other
             },
             location = proposal.creationContext.location,
-            question = proposal.creationContext.question
+            question = proposal.creationContext.question,
+            getParameters = proposal.creationContext.getParameters
+              .map(_.toSeq.map {
+                case (key, value) => IndexedGetParameters(key, value)
+              })
+              .getOrElse(Seq.empty)
           )
         ),
         trending = None,
@@ -225,7 +251,15 @@ trait ProposalIndexationStream
         tags = tags,
         ideaId = proposal.idea,
         operationId = proposal.operation,
-        questionId = proposal.questionId,
+        question = proposal.questionId.map(
+          questionId =>
+            IndexedProposalQuestion(
+              questionId = questionId,
+              slug = question.slug,
+              title = operationOfQuestion.operationTitle,
+              question = question.question
+          )
+        ),
         sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status),
         initialProposal = proposal.initialProposal,
         refusalReason = proposal.refusalReason

@@ -110,7 +110,8 @@ class ElasticSearchHealthCheckActorIT
       votesVerifiedCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context = Some(Context(source = None, operation = None, location = None, question = None)),
+      context =
+        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
       trending = None,
       labels = Seq(),
       author = Author(
@@ -127,7 +128,7 @@ class ElasticSearchHealthCheckActorIT
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None

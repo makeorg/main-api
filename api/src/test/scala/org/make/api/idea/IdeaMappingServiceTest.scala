@@ -144,7 +144,7 @@ class IdeaMappingServiceTest
           country = Country("FR"),
           language = Language("fr"),
           themeId = None,
-          questionId = None,
+          question = None,
           tags = tags.map(tagId => IndexedTag(TagId(tagId), tagId, display = true)),
           ideaId = Some(IdeaId(ideaId)),
           operationId = None,

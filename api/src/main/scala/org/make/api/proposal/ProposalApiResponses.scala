@@ -22,7 +22,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.user.UserResponse
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -101,6 +101,27 @@ object ProposalIdResponse {
   implicit val encoder: ObjectEncoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
 }
 
+final case class IndexedProposalQuestionResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
+  questionId: QuestionId,
+  slug: String,
+  wording: IndexedProposalQuestionWordingResponse
+)
+
+object IndexedProposalQuestionResponse extends CirceFormatters {
+  implicit val encoder: Encoder[IndexedProposalQuestionResponse] = deriveEncoder[IndexedProposalQuestionResponse]
+  implicit val decoder: Decoder[IndexedProposalQuestionResponse] = deriveDecoder[IndexedProposalQuestionResponse]
+}
+
+final case class IndexedProposalQuestionWordingResponse(title: String, question: String)
+
+object IndexedProposalQuestionWordingResponse extends CirceFormatters {
+  implicit val encoder: Encoder[IndexedProposalQuestionWordingResponse] =
+    deriveEncoder[IndexedProposalQuestionWordingResponse]
+  implicit val decoder: Decoder[IndexedProposalQuestionWordingResponse] =
+    deriveDecoder[IndexedProposalQuestionWordingResponse]
+}
+
 @ApiModel
 final case class ProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
@@ -131,8 +152,7 @@ final case class ProposalResponse(
   myProposal: Boolean,
   @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
   idea: Option[IdeaId],
-  @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
-  questionId: Option[QuestionId],
+  question: Option[IndexedProposalQuestionResponse],
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operationId: Option[OperationId],
   proposalKey: String
@@ -172,7 +192,14 @@ object ProposalResponse extends CirceFormatters {
       tags = indexedProposal.tags,
       myProposal = myProposal,
       idea = indexedProposal.ideaId,
-      questionId = indexedProposal.questionId,
+      question = indexedProposal.question.map { proposalQuestion =>
+        IndexedProposalQuestionResponse(
+          questionId = proposalQuestion.questionId,
+          slug = proposalQuestion.slug,
+          wording =
+            IndexedProposalQuestionWordingResponse(title = proposalQuestion.title, question = proposalQuestion.question)
+        )
+      },
       operationId = indexedProposal.operationId,
       proposalKey = proposalKey
     )

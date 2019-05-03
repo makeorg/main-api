@@ -680,9 +680,26 @@
           "type": "keyword",
           "index": true
         },
-        "questionId": {
-          "type": "keyword",
-          "index": true
+        "question": {
+          "type": "object",
+          "properties": {
+            "questionId": {
+              "type": "keyword",
+              "index": true
+            },
+            "slug": {
+              "type": "keyword",
+              "index": true
+            },
+            "title": {
+              "type": "text",
+              "index": false
+            },
+            "question": {
+              "type": "text",
+              "index": false
+            }
+          }
         },
         "content": {
           "type": "text",
@@ -992,6 +1009,19 @@
             "question": {
               "type": "keyword",
               "index": true
+            },
+            "getParameters": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "keyword",
+                  "index": true
+                },
+                "value": {
+                  "type": "keyword",
+                  "index": true
+                }
+              }
             }
           }
         },

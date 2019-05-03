@@ -965,7 +965,7 @@ class UserApiTest
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = Some(OperationId("operation1")),
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.New,
       initialProposal = false,
       refusalReason = None
@@ -1125,7 +1125,7 @@ class UserApiTest
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = Some(OperationId("operation1")),
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.New,
       initialProposal = false,
       refusalReason = None
