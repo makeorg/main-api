@@ -20,7 +20,7 @@
 package org.make.api.partner
 
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
-import org.make.core.partner.{Partner, PartnerId, PartnerKind}
+import org.make.core.partner.{Partner, PartnerId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 
@@ -33,10 +33,16 @@ trait PartnerServiceComponent {
 
 trait PartnerService extends ShortenedNames {
   def getPartner(partnerId: PartnerId): Future[Option[Partner]]
-  def createPartner(entity: CreatePartner): Future[Partner]
-  def updatePartner(entity: UpdatePartner): Future[Option[Partner]]
-  def find(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Seq[Partner]]
+  def find(start: Int,
+           end: Option[Int],
+           sort: Option[String],
+           order: Option[String],
+           questionId: Option[QuestionId],
+           organisationId: Option[UserId]): Future[Seq[Partner]]
   def count(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Int]
+  def createPartner(request: CreatePartnerRequest): Future[Partner]
+  def updatePartner(partnerId: PartnerId, request: UpdatePartnerRequest): Future[Option[Partner]]
+  def deletePartner(partnerId: PartnerId): Future[Unit]
 }
 
 trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
@@ -50,32 +56,32 @@ trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
       persistentPartnerService.getById(partnerId)
     }
 
-    override def createPartner(entity: CreatePartner): Future[Partner] = {
+    override def createPartner(request: CreatePartnerRequest): Future[Partner] = {
       val partner: Partner = Partner(
         partnerId = idGenerator.nextPartnerId(),
-        name = entity.name,
-        logo = entity.logo,
-        link = entity.link,
-        organisationId = entity.organisationId,
-        partnerKind = entity.partnerKind,
-        questionId = entity.questionId,
-        weight = entity.weight
+        name = request.name,
+        logo = request.logo,
+        link = request.link,
+        organisationId = request.organisationId,
+        partnerKind = request.partnerKind,
+        questionId = request.questionId,
+        weight = request.weight
       )
       persistentPartnerService.persist(partner)
     }
 
-    override def updatePartner(entity: UpdatePartner): Future[Option[Partner]] = {
-      persistentPartnerService.getById(entity.partnerId).flatMap {
+    override def updatePartner(partnerId: PartnerId, request: UpdatePartnerRequest): Future[Option[Partner]] = {
+      persistentPartnerService.getById(partnerId).flatMap {
         case Some(partner) =>
           persistentPartnerService
             .modify(
               partner.copy(
-                name = entity.name,
-                logo = entity.logo,
-                link = entity.link,
-                organisationId = entity.organisationId,
-                partnerKind = entity.partnerKind,
-                weight = entity.weight
+                name = request.name,
+                logo = request.logo,
+                link = request.link,
+                organisationId = request.organisationId,
+                partnerKind = request.partnerKind,
+                weight = request.weight
               )
             )
             .map(Some.apply)
@@ -83,29 +89,22 @@ trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
       }
     }
 
-    override def find(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Seq[Partner]] = {
-      persistentPartnerService.find(questionId, organisationId)
+    override def find(start: Int,
+                      end: Option[Int],
+                      sort: Option[String],
+                      order: Option[String],
+                      questionId: Option[QuestionId],
+                      organisationId: Option[UserId]): Future[Seq[Partner]] = {
+      persistentPartnerService.find(start, end, sort, order, questionId, organisationId)
     }
 
     override def count(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Int] = {
       persistentPartnerService.count(questionId, organisationId)
     }
 
+    override def deletePartner(partnerId: PartnerId): Future[Unit] = {
+      persistentPartnerService.delete(partnerId)
+    }
+
   }
 }
-
-final case class CreatePartner(name: String,
-                               logo: Option[String],
-                               link: Option[String],
-                               organisationId: Option[UserId],
-                               partnerKind: PartnerKind,
-                               questionId: QuestionId,
-                               weight: Float)
-
-final case class UpdatePartner(partnerId: PartnerId,
-                               name: String,
-                               logo: Option[String],
-                               link: Option[String],
-                               organisationId: Option[UserId],
-                               partnerKind: PartnerKind,
-                               weight: Float)

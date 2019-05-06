@@ -56,7 +56,7 @@ class PartnerServiceTest
 
       whenReady(
         partnerService.createPartner(
-          entity = CreatePartner(
+          request = CreatePartnerRequest(
             name = "name",
             logo = Some("logo"),
             link = Some("link"),
@@ -79,8 +79,8 @@ class PartnerServiceTest
 
       whenReady(
         partnerService.updatePartner(
-          UpdatePartner(
-            partnerId = PartnerId("not-found"),
+          partnerId = PartnerId("not-found"),
+          UpdatePartnerRequest(
             name = "name",
             logo = Some("logo"),
             link = Some("link"),
@@ -105,8 +105,8 @@ class PartnerServiceTest
 
       whenReady(
         partnerService.updatePartner(
-          UpdatePartner(
-            partnerId = PartnerId("partner"),
+          partnerId = PartnerId("partner"),
+          UpdatePartnerRequest(
             name = "update-name",
             logo = Some("logo"),
             link = Some("link"),

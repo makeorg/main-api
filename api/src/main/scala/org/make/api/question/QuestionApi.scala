@@ -106,9 +106,17 @@ trait DefaultQuestionApiComponent
             provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(question.questionId)) {
               operationOfQuestion =>
                 provideAsyncOrNotFound(operationService.findOne(operationOfQuestion.operationId)) { operation =>
-                  provideAsync(partnerService.find(questionId = Some(question.questionId), organisationId = None)) {
-                    partners =>
-                      complete(QuestionDetailsResponse(question, operation, operationOfQuestion, partners))
+                  provideAsync(
+                    partnerService.find(
+                      questionId = Some(question.questionId),
+                      organisationId = None,
+                      start = 0,
+                      end = None,
+                      sort = None,
+                      order = None
+                    )
+                  ) { partners =>
+                    complete(QuestionDetailsResponse(question, operation, operationOfQuestion, partners))
                   }
                 }
             }
