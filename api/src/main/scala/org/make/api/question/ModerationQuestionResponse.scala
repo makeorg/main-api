@@ -23,7 +23,7 @@ import java.time.LocalDate
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, SlugHelper}
 import org.make.core.operation.{
   Metas,
   Operation,
@@ -32,9 +32,11 @@ import org.make.core.operation.{
   OperationOfQuestion,
   SequenceCardsConfiguration
 }
+import org.make.core.partner.{Partner, PartnerKind}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
+import org.make.core.user.UserId
 
 import scala.annotation.meta.field
 
@@ -143,6 +145,40 @@ object SequenceCardsConfigurationResponse extends CirceFormatters {
   }
 }
 
+final case class OrganisationPartnerResponse(organisationId: UserId, slug: String)
+
+object OrganisationPartnerResponse {
+  implicit val encoder: Encoder[OrganisationPartnerResponse] = deriveEncoder[OrganisationPartnerResponse]
+  implicit val decoder: Decoder[OrganisationPartnerResponse] = deriveDecoder[OrganisationPartnerResponse]
+}
+
+final case class QuestionPartnerResponse(
+  name: String,
+  logo: Option[String],
+  link: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
+  organisation: Option[OrganisationPartnerResponse],
+  @(ApiModelProperty @field)(dataType = "string", example = "FOUNDER")
+  partnerKind: PartnerKind,
+  weight: Float
+)
+
+object QuestionPartnerResponse extends CirceFormatters {
+  def apply(partner: Partner): QuestionPartnerResponse = QuestionPartnerResponse(
+    name = partner.name,
+    logo = partner.logo,
+    link = partner.link,
+    organisation = partner.organisationId.map { id =>
+      OrganisationPartnerResponse(organisationId = id, slug = SlugHelper(partner.name))
+    },
+    partnerKind = partner.partnerKind,
+    weight = partner.weight
+  )
+
+  implicit val encoder: Encoder[QuestionPartnerResponse] = deriveEncoder[QuestionPartnerResponse]
+  implicit val decoder: Decoder[QuestionPartnerResponse] = deriveDecoder[QuestionPartnerResponse]
+}
+
 case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
@@ -166,13 +202,15 @@ case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
   operationKind: OperationKind,
   sequenceConfig: SequenceCardsConfigurationResponse,
-  aboutUrl: Option[String]
+  aboutUrl: Option[String],
+  partners: Seq[QuestionPartnerResponse]
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
   def apply(question: Question,
             operation: Operation,
-            operationOfQuestion: OperationOfQuestion): QuestionDetailsResponse = QuestionDetailsResponse(
+            operationOfQuestion: OperationOfQuestion,
+            partners: Seq[Partner]): QuestionDetailsResponse = QuestionDetailsResponse(
     questionId = question.questionId,
     operationId = operation.operationId,
     wording = WordingResponse(
@@ -191,7 +229,8 @@ object QuestionDetailsResponse extends CirceFormatters {
     canPropose = operationOfQuestion.canPropose,
     operationKind = operation.operationKind,
     sequenceConfig = SequenceCardsConfigurationResponse.apply(operationOfQuestion.sequenceCardsConfiguration),
-    aboutUrl = operationOfQuestion.aboutUrl
+    aboutUrl = operationOfQuestion.aboutUrl,
+    partners = partners.map(QuestionPartnerResponse.apply)
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]
