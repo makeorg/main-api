@@ -64,6 +64,7 @@ trait CrmService {
   def addUsersToOptInList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
   def addUsersToUnsubscribeList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
   def addUsersToHardBounceList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
+  def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit]
 
   def getPropertiesFromUser(user: User, questions: Seq[Question]): Future[ContactProperties]
 }
@@ -278,7 +279,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           contacts = users.map { user =>
             Contact(
               email = user.email,
-              name = user.fullName.getOrElse(user.email),
+              name = user.fullName.orElse(Some(user.email)),
               properties = properties.get(user.userId)
             )
           },
@@ -310,7 +311,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             contacts = users.map { user =>
               Contact(
                 email = user.email,
-                name = user.fullName.getOrElse(user.email),
+                name = user.fullName.orElse(Some(user.email)),
                 properties = properties.get(user.userId)
               )
             },
@@ -341,7 +342,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             contacts = users.map { user =>
               Contact(
                 email = user.email,
-                name = user.fullName.getOrElse(user.email),
+                name = user.fullName.orElse(Some(user.email)),
                 properties = properties.get(user.userId)
               )
             },
@@ -356,6 +357,23 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         }
 
       }
+    }
+
+    override def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
+
+      manageContactListMailJetRequest(
+        manageContactList = ManageManyContacts(
+          contacts = emails.map(email => Contact(email = email)),
+          contactList = Seq(
+            ContactList(mailJetConfiguration.hardBounceListId, ManageContactAction.Remove),
+            ContactList(mailJetConfiguration.unsubscribeListId, ManageContactAction.Remove),
+            ContactList(mailJetConfiguration.optInListId, ManageContactAction.Remove)
+          )
+        )
+      ).map { response =>
+        logMailjetResponse(response, "Hard remove emails from all lists", None)
+      }
+
     }
 
     override def updateUserProperties(user: User): Future[Unit] = {
