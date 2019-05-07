@@ -647,9 +647,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         if (newHash == key) {
           Trusted
         } else {
+          logger.warn(s"Bad proposal key found while voting on proposal $proposalId, requestContext is $requestContext")
           Troll
         }
-      }.getOrElse(Troll)
+      }.getOrElse {
+        logger.warn(s"No proposal key found while voting on proposal $proposalId, requestContext is $requestContext")
+        Troll
+      }
     }
 
     override def voteProposal(proposalId: ProposalId,

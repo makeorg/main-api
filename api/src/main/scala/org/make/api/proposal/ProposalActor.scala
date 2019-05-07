@@ -308,35 +308,23 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         val maybeQualification = state
           .flatMap(_.proposal.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        if (maybeQualification.exists(_.count == 0)) {
-          log.warning(s"Qualification returned a 0 value [1]. ${command.toString}")
-        }
+
+        log.warning(s"Qualification was not increased: user hasn't voted on proposal. ${command.toString}")
         sender() ! Right(maybeQualification)
       case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
         val maybeQualification = state
           .flatMap(_.proposal.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        if (maybeQualification.exists(_.count == 0)) {
-          log.warning(s"Qualification returned a 0 value [2]. ${command.toString}")
-        }
+        log.warning(s"Qualification was not increased: user has already qualified with this value. ${command.toString}")
         sender() ! Right(maybeQualification)
       case Some(vote) if !checkQualification(vote.voteKey, command.voteKey, command.qualificationKey) =>
         val maybeQualification = state
           .flatMap(_.proposal.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        if (maybeQualification.exists(_.count == 0)) {
-          log.warning(s"Qualification returned a 0 value [3]. ${command.toString}")
-        }
+        log.warning(s"Qualification was not increased: qualification doesn't belong to vote type. ${command.toString}")
         sender() ! Right(maybeQualification)
-      case Some(vote) if !vote.trust.isTrusted =>
-        val maybeQualification = state
-          .flatMap(_.proposal.votes.find(_.key == command.voteKey))
-          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        if (maybeQualification.exists(_.count == 0)) {
-          log.warning(s"Qualification returned a 0 value [3]. ${command.toString}")
-        }
-        sender() ! Right(maybeQualification)
-      case _ =>
+      case Some(vote) =>
+        val resolvedTrust = if (!vote.trust.isTrusted) { vote.trust } else { command.voteTrust }
         persistAndPublishEventAsync(
           ProposalQualified(
             id = proposalId,
@@ -345,7 +333,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             requestContext = command.requestContext,
             voteKey = command.voteKey,
             qualificationKey = command.qualificationKey,
-            voteTrust = command.voteTrust
+            voteTrust = resolvedTrust
           )
         ) { event =>
           val originalSender = sender()
@@ -356,7 +344,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
                 .flatMap(_.qualifications.find(_.key == command.qualificationKey))
               originalSender ! Right(maybeQualification)
               if (maybeQualification.exists(_.count == 0)) {
-                log.warning(s"Qualification returned a 0 value [4]. ${command.toString}")
+                log.warning(s"Qualification returned a 0 value for an unknown reason. ${command.toString}")
               }
             case Failure(e) => Left(e)
           }
