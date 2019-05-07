@@ -338,6 +338,7 @@ trait PersistentUserService {
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def countOrganisations(): Future[Int]
   def countModerators(email: Option[String], firstName: Option[String]): Future[Int]
+  def findAllByEmail(emails: Seq[String]): Future[Seq[User]]
 }
 
 trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
@@ -1075,6 +1076,19 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
       })
+    }
+
+    override def findAllByEmail(emails: Seq[String]): Future[Seq[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.in(userAlias.email, emails))
+        }.map(PersistentUser.apply()).list.apply
+      })
+
+      futurePersistentUsers.map(_.map(_.toUser))
     }
   }
 }

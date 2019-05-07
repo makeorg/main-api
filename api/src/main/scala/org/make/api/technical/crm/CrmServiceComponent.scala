@@ -28,13 +28,14 @@ import java.util.concurrent.{Executors, ThreadFactory}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.persistence.query.EventEnvelope
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream._
 import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Printer
 import io.circe.syntax._
+import io.circe.{Decoder, Printer}
 import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
@@ -47,6 +48,7 @@ import org.make.core.DateHelper
 import org.make.core.operation.Operation
 import org.make.core.question.Question
 import org.make.core.user.{User, UserId}
+import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
@@ -56,6 +58,8 @@ trait CrmService {
   def sendEmail(message: SendEmail): Future[Unit]
   def startCrmContactSynchronization(questions: Seq[Question]): Future[Unit]
   def getPropertiesFromUser(user: User, questions: Seq[Question]): Future[ContactProperties]
+
+  def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail]
 }
 trait CrmServiceComponent {
   def crmService: CrmService
@@ -68,8 +72,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with QuestionServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with UserServiceComponent
+    with PersistentUserToAnonymizeServiceComponent
     with ReadJournalComponent
-    with PersistentUserToAnonymizeServiceComponent =>
+    with CirceHttpSupport =>
 
   private lazy val batchSize: Int = mailJetConfiguration.userListBatchSize
   private val poolSize: Int = 10
@@ -607,6 +612,24 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           logger.error(s"send email failed with status $code: $entity")
       }
     }
+
+    override def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail] = {
+      implicit val system = actorSystem
+      implicit val materializer: ActorMaterializer = ActorMaterializer()
+      val params = s"ContactsList=$listId&Limit=$limit&Offset=$offset"
+      val request = HttpRequest(
+        method = HttpMethods.GET,
+        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact?$params"),
+        headers = immutable.Seq(authorization)
+      )
+      doHttpCall(request).flatMap {
+        case HttpResponse(code, _, entity, _) if code.isSuccess() =>
+          Unmarshal(entity).to[GetUsersMail]
+        case HttpResponse(code, _, entity, _) =>
+          logger.error(s"getUsersMailFromList failed with status $code: $entity")
+          Future.successful(GetUsersMail(0, 0, Seq.empty))
+      }
+    }
   }
 }
 
@@ -678,4 +701,14 @@ final case class UserProperties(userId: UserId,
       case _ => this
     }
   }
+}
+
+final case class GetUsersMail(count: Int, total: Int, data: Seq[ContactMail])
+object GetUsersMail {
+  implicit val decoder: Decoder[GetUsersMail] = Decoder.forProduct3("Count", "Total", "Data")(GetUsersMail.apply)
+}
+
+final case class ContactMail(email: String)
+object ContactMail {
+  implicit val decoder: Decoder[ContactMail] = Decoder.forProduct1("Email")(ContactMail.apply)
 }
