@@ -29,12 +29,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical.AvroSerializers
 import org.make.api.technical.crm.PublishedCrmContactEvent._
-import org.make.api.user.{
-  PersistentUserToAnonymizeService,
-  PersistentUserToAnonymizeServiceComponent,
-  UserService,
-  UserServiceComponent
-}
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{KafkaTest, KafkaTestConsumerActor}
 import org.make.core.profile.Profile
 import org.make.core.reference.{Country, Language}
@@ -55,8 +50,7 @@ class CrmContactEventConsumerActorIt
     with AvroSerializers
     with UserServiceComponent
     with CrmServiceComponent
-    with QuestionServiceComponent
-    with PersistentUserToAnonymizeServiceComponent {
+    with QuestionServiceComponent {
   override val kafkaName: String = "kafkacrmcontacteventconsumer"
   override val registryName: String = "registrycrmcontacteventconsumer"
   override val zookeeperName: String = "zookeepercrmcontacteventconsumer"
@@ -66,8 +60,6 @@ class CrmContactEventConsumerActorIt
   override val userService: UserService = mock[UserService]
   override val crmService: CrmService = mock[CrmService]
   override val questionService: QuestionService = mock[QuestionService]
-  override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
-    mock[PersistentUserToAnonymizeService]
 
   implicit def toAnswerWithArguments[T](f: InvocationOnMock => T): Answer[T] =
     (invocation: InvocationOnMock) => f(invocation)
@@ -80,12 +72,7 @@ class CrmContactEventConsumerActorIt
       val probe = TestProbe()
       val consumer = system.actorOf(
         CrmContactEventConsumerActor
-          .props(
-            userService = userService,
-            crmService = crmService,
-            questionService = questionService,
-            persistentUserToAnonymizeService = persistentUserToAnonymizeService
-          ),
+          .props(userService = userService, crmService = crmService, questionService = questionService),
         "CrmContactNewEvent"
       )
       val format = RecordFormat[CrmContactEventWrapper]

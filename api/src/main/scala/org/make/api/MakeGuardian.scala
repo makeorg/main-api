@@ -90,12 +90,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
           CrmContactEventConsumerActor
-            .props(
-              makeApi.userService,
-              makeApi.crmService,
-              makeApi.questionService,
-              makeApi.persistentUserToAnonymizeService
-            )
+            .props(makeApi.userService, makeApi.crmService, makeApi.questionService)
             .withDispatcher(kafkaDispatcher),
           CrmContactEventConsumerActor.name
         )
