@@ -56,7 +56,6 @@ class UserServiceTest
     with UserTokenGeneratorComponent
     with UserHistoryCoordinatorServiceComponent
     with PersistentUserServiceComponent
-    with PersistentUserToAnonymizeServiceComponent
     with ProposalServiceComponent
     with CrmServiceComponent
     with TokenGeneratorComponent
@@ -68,8 +67,6 @@ class UserServiceTest
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalService: ProposalService = mock[ProposalService]
   override val crmService: CrmService = mock[CrmService]
-  override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
-    mock[PersistentUserToAnonymizeService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
 
@@ -800,7 +797,6 @@ class UserServiceTest
   }
 
   feature("anonymize user") {
-    Mockito.when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.successful({}))
     scenario("anonymize user") {
       Mockito
         .when(persistentUserService.updateUser(ArgumentMatchers.any[User]))

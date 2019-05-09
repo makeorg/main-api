@@ -246,7 +246,7 @@ object ManageContactAction {
   }
 }
 
-case class Contact(email: String, name: Option[String] = None, properties: Option[ContactProperties] = None)
+case class Contact(email: String, name: String, properties: Option[ContactProperties] = None)
 object Contact {
   implicit val encoder: Encoder[Contact] = Encoder.forProduct3("Email", "Name", "Properties") { contact: Contact =>
     (contact.email, contact.name, contact.properties)
