@@ -548,16 +548,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def update(user: User, requestContext: RequestContext): Future[User] = {
-      val futureUser: Future[User] = for {
+      for {
         updatedUser <- persistentUserService.updateUser(user)
         _           <- updateProposalVotedByOrganisation(updatedUser)
         _           <- updateProposalsSubmitByUser(updatedUser, requestContext)
       } yield updatedUser
-
-      futureUser.map { value =>
-        eventBusService.publish(UserUpdatedEvent(userId = Some(value.userId), eventDate = DateHelper.now()))
-        value
-      }
     }
 
     override def anonymize(user: User): Future[Unit] = {

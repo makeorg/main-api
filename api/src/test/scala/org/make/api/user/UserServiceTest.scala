@@ -751,12 +751,6 @@ class UserServiceTest
 
       whenReady(futureUser, Timeout(3.seconds)) { result =>
         result shouldBe a[User]
-        val captor: ArgumentCaptor[UserUpdatedEvent] = ArgumentCaptor
-          .forClass(classOf[UserUpdatedEvent])
-        verify(eventBusService, times(1))
-          .publish(captor.capture())
-
-        captor.getValue.userId should be(Some(result.userId))
       }
     }
   }

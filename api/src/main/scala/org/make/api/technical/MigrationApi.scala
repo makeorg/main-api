@@ -23,7 +23,7 @@ import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.persistence.query.EventEnvelope
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -193,34 +193,39 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
     override def replayUserVoteEvent: Route = post {
       path("migrations" / "replay-user-vote") {
-        makeOperation("ReplayVoteEvent") { requestContext =>
-          makeOAuth2 { userAuth =>
-            requireAdminRole(userAuth.user) {
-              implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-              val streamUser = userService.getUsersWithoutRegisterQuestion.flatMap { users =>
-                Source(users.toIndexedSeq)
-                  .mapAsync(5) { user =>
-                    proposalService
-                      .searchProposalsVotedByUser(
-                        userId = user.userId,
-                        filterVotes = None,
-                        filterQualifications = None,
-                        requestContext = requestContext
-                      )
-                      .map((_, user))
-                  }
-                  .mapAsync(5) {
-                    case (proposals, user) =>
-                      val registerQuestionId: Option[QuestionId] = proposals.results.headOption.flatMap(_.questionId)
-                      userService.update(
-                        user.copy(profile = user.profile.map(_.copy(registerQuestionId = registerQuestionId))),
-                        requestContext
-                      )
-                  }
-                  .runWith(Sink.ignore)
-              }
-              provideAsync(streamUser) { _ =>
-                complete(StatusCodes.NoContent)
+        withoutRequestTimeout {
+          makeOperation("ReplayVoteEvent") { requestContext =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                val decider: Supervision.Decider = Supervision.resumingDecider
+                implicit val materializer: ActorMaterializer = ActorMaterializer(
+                  ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
+                )(actorSystem)
+                val streamUser = userService.getUsersWithoutRegisterQuestion.flatMap { users =>
+                  Source(users.toIndexedSeq)
+                    .mapAsync(5) { user =>
+                      proposalService
+                        .searchProposalsVotedByUser(
+                          userId = user.userId,
+                          filterVotes = None,
+                          filterQualifications = None,
+                          requestContext = requestContext
+                        )
+                        .map((_, user))
+                    }
+                    .mapAsync(5) {
+                      case (proposals, user) =>
+                        val registerQuestionId: Option[QuestionId] = proposals.results.headOption.flatMap(_.questionId)
+                        userService.update(
+                          user.copy(profile = user.profile.map(_.copy(registerQuestionId = registerQuestionId))),
+                          requestContext
+                        )
+                    }
+                    .runWith(Sink.ignore)
+                }
+                provideAsync(streamUser) { _ =>
+                  complete(StatusCodes.NoContent)
+                }
               }
             }
           }
