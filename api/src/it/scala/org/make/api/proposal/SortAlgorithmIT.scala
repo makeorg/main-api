@@ -167,7 +167,7 @@ class SortAlgorithmIT
     status = ProposalStatus.Accepted,
     ideaId = None,
     operationId = None,
-    questionId = None,
+    question = None,
     sequencePool = SequencePool.New,
     initialProposal = false,
     refusalReason = None

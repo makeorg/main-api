@@ -850,7 +850,7 @@ trait DefaultModerationProposalApiComponent
             makeOAuth2 { auth =>
               requireModerationRole(auth.user) {
                 provideAsyncOrNotFound(proposalService.getProposalById(proposalId, requestContext)) { proposal =>
-                  requireRightsOnQuestion(auth.user, proposal.questionId) {
+                  requireRightsOnQuestion(auth.user, proposal.question.map(_.questionId)) {
                     provideAsync(proposalService.getSimilar(auth.user.userId, proposal, requestContext)) { proposals =>
                       complete(proposals)
                     }

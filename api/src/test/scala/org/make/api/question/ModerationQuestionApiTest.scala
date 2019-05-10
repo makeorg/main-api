@@ -279,7 +279,7 @@ class ModerationQuestionApiTest
                 votesVerifiedCount = 0,
                 toEnrich = true,
                 operationId = None,
-                questionId = None,
+                question = None,
                 initialProposal = true,
                 ideaId = None,
                 refusalReason = None,

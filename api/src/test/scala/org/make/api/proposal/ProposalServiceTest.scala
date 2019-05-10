@@ -222,7 +222,7 @@ class ProposalServiceTest
       tags = Seq.empty,
       ideaId = None,
       operationId = None,
-      questionId = None,
+      question = None,
       sequencePool = SequencePool.New,
       initialProposal = false,
       refusalReason = None

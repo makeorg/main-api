@@ -215,7 +215,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                     }
                     .mapAsync(5) {
                       case (proposals, user) =>
-                        val registerQuestionId: Option[QuestionId] = proposals.results.headOption.flatMap(_.questionId)
+                        val registerQuestionId: Option[QuestionId] =
+                          proposals.results.headOption.flatMap(_.question.map(_.questionId))
                         userService.update(
                           user.copy(profile = user.profile.map(_.copy(registerQuestionId = registerQuestionId))),
                           requestContext

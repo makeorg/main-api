@@ -545,7 +545,7 @@ class ModerationProposalApiTest
     myProposal = false,
     idea = None,
     operationId = None,
-    questionId = None,
+    question = None,
     proposalKey = "pr0p0541k3y"
   )
 
@@ -672,7 +672,16 @@ class ModerationProposalApiTest
     )
 
   val indexedProposal: IndexedProposal = mock[IndexedProposal]
-  when(indexedProposal.questionId).thenReturn(Some(QuestionId("question-fire-and-ice")))
+  when(indexedProposal.question).thenReturn(
+    Some(
+      IndexedProposalQuestion(
+        questionId = QuestionId("question-fire-and-ice"),
+        slug = "question-fire-and-ice",
+        title = "title",
+        question = "question ?"
+      )
+    )
+  )
 
   when(proposalService.getProposalById(matches(ProposalId("123456")), any[RequestContext]))
     .thenReturn(Future.successful(Some(indexedProposal)))

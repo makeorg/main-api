@@ -93,7 +93,8 @@ class ProposalSearchEngineTest
     votesVerifiedCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
-    context = Some(Context(source = None, operation = None, location = None, question = None)),
+    context =
+      Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
     trending = None,
     labels = Seq.empty,
     author = Author(
@@ -110,7 +111,7 @@ class ProposalSearchEngineTest
     status = ProposalStatus.Accepted,
     ideaId = Some(IdeaId("idea-id")),
     operationId = None,
-    questionId = None,
+    question = None,
     sequencePool = SequencePool.New,
     initialProposal = false,
     refusalReason = None

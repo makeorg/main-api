@@ -128,7 +128,8 @@ class OrganisationApiTest
         createdAt = ZonedDateTime.now(),
         updatedAt = Some(ZonedDateTime.now()),
         votes = Seq.empty,
-        context = Some(Context(source = None, operation = None, location = None, question = None)),
+        context =
+          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
         trending = None,
         labels = Seq.empty,
         author = Author(
@@ -146,7 +147,7 @@ class OrganisationApiTest
         idea = Some(IdeaId("idea-id")),
         operationId = Some(OperationId("operation1")),
         myProposal = false,
-        questionId = None,
+        question = None,
         proposalKey = "pr0p0541k3y"
       ),
       ProposalResponse(
@@ -159,7 +160,8 @@ class OrganisationApiTest
         createdAt = ZonedDateTime.now(),
         updatedAt = Some(ZonedDateTime.now()),
         votes = Seq.empty,
-        context = Some(Context(source = None, operation = None, location = None, question = None)),
+        context =
+          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
         trending = None,
         labels = Seq.empty,
         author = Author(
@@ -177,7 +179,7 @@ class OrganisationApiTest
         idea = Some(IdeaId("other-idea-id")),
         operationId = Some(OperationId("operation1")),
         myProposal = false,
-        questionId = None,
+        question = None,
         proposalKey = "pr0p0541k3y"
       ),
       ProposalResponse(
@@ -190,7 +192,8 @@ class OrganisationApiTest
         createdAt = ZonedDateTime.now(),
         updatedAt = Some(ZonedDateTime.now()),
         votes = Seq.empty,
-        context = Some(Context(source = None, operation = None, location = None, question = None)),
+        context =
+          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
         trending = None,
         labels = Seq.empty,
         author = Author(
@@ -208,7 +211,7 @@ class OrganisationApiTest
         idea = Some(IdeaId("other-idea-id")),
         operationId = Some(OperationId("operation2")),
         myProposal = false,
-        questionId = None,
+        question = None,
         proposalKey = "pr0p0541k3y"
       ),
       ProposalResponse(
@@ -221,7 +224,8 @@ class OrganisationApiTest
         createdAt = ZonedDateTime.now(),
         updatedAt = Some(ZonedDateTime.now()),
         votes = Seq.empty,
-        context = Some(Context(source = None, operation = None, location = None, question = None)),
+        context =
+          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
         trending = None,
         labels = Seq.empty,
         author = Author(
@@ -239,7 +243,7 @@ class OrganisationApiTest
         idea = Some(IdeaId("other-idea-id")),
         operationId = None,
         myProposal = false,
-        questionId = None,
+        question = None,
         proposalKey = "pr0p0541k3y"
       )
     ),

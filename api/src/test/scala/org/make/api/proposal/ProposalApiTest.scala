@@ -270,7 +270,7 @@ class ProposalApiTest
     myProposal = false,
     idea = None,
     operationId = None,
-    questionId = None,
+    question = None,
     proposalKey = "pr0p0541k3y"
   )
   when(

@@ -104,7 +104,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       country = Country("FR"),
       language = Language("fr"),
       themeId = None,
-      questionId = Some(QuestionId("test-question")),
+      question = Some(
+        IndexedProposalQuestion(
+          questionId = QuestionId("test-question"),
+          slug = "test-question",
+          title = "test question",
+          question = "test question ?"
+        )
+      ),
       tags = Seq.empty,
       ideaId = idea,
       operationId = None,
@@ -145,7 +152,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       country = Country("FR"),
       language = Language("fr"),
       themeId = None,
-      questionId = Some(QuestionId("test-question")),
+      question = Some(
+        IndexedProposalQuestion(
+          questionId = QuestionId("test-question"),
+          slug = "test-question",
+          title = "test question",
+          question = "test question ?"
+        )
+      ),
       tags = Seq.empty,
       ideaId = idea,
       operationId = None,
