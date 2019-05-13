@@ -575,7 +575,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.isHardBounce, true))
+            .where(sqls.eq(userAlias.isHardBounce, true).and(sqls.notLike(userAlias.email, "yopmail+%@make.org")))
             .orderBy(userAlias.createdAt)
             .desc
             .limit(limit)
@@ -593,7 +593,12 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.optInNewsletter, true).and(sqls.eq(userAlias.isHardBounce, false)))
+            .where(
+              sqls
+                .eq(userAlias.optInNewsletter, true)
+                .and(sqls.eq(userAlias.isHardBounce, false))
+                .and(sqls.notLike(userAlias.email, "yopmail+%@make.org"))
+            )
             .orderBy(userAlias.createdAt)
             .desc
             .limit(limit)
@@ -610,7 +615,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.optInNewsletter, false))
+            .where(sqls.eq(userAlias.optInNewsletter, false).and(sqls.notLike(userAlias.email, "yopmail+%@make.org")))
             .orderBy(userAlias.createdAt)
             .desc
             .limit(limit)

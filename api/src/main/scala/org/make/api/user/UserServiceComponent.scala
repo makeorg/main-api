@@ -111,6 +111,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
   this: IdGeneratorComponent
     with UserTokenGeneratorComponent
     with PersistentUserServiceComponent
+    with PersistentUserToAnonymizeServiceComponent
     with ProposalServiceComponent
     with CrmServiceComponent
     with EventBusServiceComponent
@@ -556,6 +557,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def anonymize(user: User): Future[Unit] = {
+      val email = user.email
       val anonymizedUser: User = user.copy(
         email = s"yopmail+${user.userId.value}@make.org",
         firstName = Some("DELETE_REQUESTED"),
@@ -579,6 +581,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         publicProfile = false
       )
       val futureDelete: Future[Unit] = for {
+        _ <- persistentUserToAnonymizeService.create(email)
         _ <- persistentUserService.updateUser(anonymizedUser)
         _ <- persistentUserService.removeAnonymizedUserFromFollowedUserTable(user.userId)
         _ <- proposalService.anonymizeByUserId(user.userId)

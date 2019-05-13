@@ -30,14 +30,17 @@ import org.make.api.extensions.{KafkaConfigurationExtension, MailJetConfiguratio
 import org.make.api.question.{QuestionService, SearchQuestionRequest}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.crm.PublishedCrmContactEvent._
-import org.make.api.user.UserService
+import org.make.api.user.{PersistentUserToAnonymizeService, UserService}
 import org.make.core.question.Question
 import org.make.core.user.User
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class CrmContactEventConsumerActor(userService: UserService, crmService: CrmService, questionService: QuestionService)
+class CrmContactEventConsumerActor(userService: UserService,
+                                   crmService: CrmService,
+                                   questionService: QuestionService,
+                                   persistentUserToAnonymizeService: PersistentUserToAnonymizeService)
     extends KafkaConsumerActor[CrmContactEventWrapper]
     with KafkaConfigurationExtension
     with MailJetConfigurationComponent
@@ -169,14 +172,22 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
       asyncPageToPageSource(getOptInUsers)
         .mapAsync(1)(crmService.addUsersToOptInList(questions))
         .runForeach(_ => {})
+    def anonymize: Future[Seq[String]] =
+      persistentUserToAnonymizeService
+        .findAll()
+        .flatMap(emails => crmService.hardRemoveEmailsFromAllLists(emails).map(_ => emails))
+    def validateAnonymized(emails: Seq[String]): Future[Done] =
+      persistentUserToAnonymizeService.removeAllByEmails(emails).map(_ => Done)
 
     (for {
       questions <- questionService.searchQuestion(SearchQuestionRequest())
       _         <- optOut(questions)
       _         <- hardBounce(questions)
       _         <- optIn(questions)
+      emails    <- anonymize
+      _         <- validateAnonymized(emails)
     } yield {}).onComplete {
-      case Failure(exception) => log.error(s"Mailjet synchro failed:", exception)
+      case Failure(exception) => log.error(exception, s"Mailjet synchro failed:")
       case Success(_)         => log.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
     }
 
@@ -199,7 +210,10 @@ class CrmContactEventConsumerActor(userService: UserService, crmService: CrmServ
 }
 
 object CrmContactEventConsumerActor {
-  def props(userService: UserService, crmService: CrmService, questionService: QuestionService): Props =
-    Props(new CrmContactEventConsumerActor(userService, crmService, questionService))
+  def props(userService: UserService,
+            crmService: CrmService,
+            questionService: QuestionService,
+            persistentUserToAnonymizeService: PersistentUserToAnonymizeService): Props =
+    Props(new CrmContactEventConsumerActor(userService, crmService, questionService, persistentUserToAnonymizeService))
   val name: String = "crm-contact-events-consumer"
 }

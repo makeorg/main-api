@@ -35,6 +35,12 @@ There are two methods here:
 - Run MakeMain in Debug mode from idea. This method requires two VM options to be defined:
     - Set the javaagent: type `sbt "show aspectj:aspectjWeaverOptions"` and copy the javaagent in vm parameters.
 
+## Run tests
+
+To run Unit Tests: `sbt test`
+To run Integration Tests: `sbt it:test`
+If you want to run one test class : `sbt "testOnly *org.make.ref.to.class"`
+If you want to run one specific integration test : `sbt "it:testOnly *org.make.ref.to.class -- -z testName"`
 
 ### Access the Api documentation
 
