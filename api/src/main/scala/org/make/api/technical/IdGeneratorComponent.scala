@@ -25,6 +25,7 @@ import org.make.api.idea.IdeaMappingId
 import org.make.core.crmTemplate.CrmTemplatesId
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
+import org.make.core.partner.PartnerId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
@@ -48,6 +49,7 @@ trait IdGenerator {
   def nextTagTypeId(): TagTypeId = TagTypeId(nextId())
   def nextIdeaMappingId(): IdeaMappingId = IdeaMappingId(nextId())
   def nextCrmTemplatesId(): CrmTemplatesId = CrmTemplatesId(nextId())
+  def nextPartnerId(): PartnerId = PartnerId(nextId())
   def nextId(): String
 }
 
