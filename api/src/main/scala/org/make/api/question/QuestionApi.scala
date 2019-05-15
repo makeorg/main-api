@@ -32,6 +32,7 @@ import org.make.api.operation.{
   OperationServiceComponent,
   PersistentOperationOfQuestionServiceComponent
 }
+import org.make.api.partner.PartnerServiceComponent
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -88,7 +89,8 @@ trait DefaultQuestionApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
     with OperationServiceComponent
-    with OperationOfQuestionServiceComponent =>
+    with OperationOfQuestionServiceComponent
+    with PartnerServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new QuestionApi {
 
@@ -104,7 +106,10 @@ trait DefaultQuestionApiComponent
             provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(question.questionId)) {
               operationOfQuestion =>
                 provideAsyncOrNotFound(operationService.findOne(operationOfQuestion.operationId)) { operation =>
-                  complete(QuestionDetailsResponse(question, operation, operationOfQuestion))
+                  provideAsync(partnerService.find(questionId = Some(question.questionId), organisationId = None)) {
+                    partners =>
+                      complete(QuestionDetailsResponse(question, operation, operationOfQuestion, partners))
+                  }
                 }
             }
           }

@@ -37,6 +37,7 @@ import org.make.api.extensions._
 import org.make.api.idea._
 import org.make.api.operation._
 import org.make.api.organisation._
+import org.make.api.partner.{DefaultPartnerServiceComponent, DefaultPersistentPartnerServiceComponent}
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
@@ -139,6 +140,7 @@ trait MakeApi
     with DefaultOrganisationApiComponent
     with DefaultOrganisationSearchEngineComponent
     with DefaultOrganisationServiceComponent
+    with DefaultPartnerServiceComponent
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmTemplatesServiceComponent
@@ -146,6 +148,7 @@ trait MakeApi
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
     with DefaultPersistentOperationServiceComponent
+    with DefaultPersistentPartnerServiceComponent
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentSequenceConfigurationServiceComponent
     with DefaultPersistentTagServiceComponent

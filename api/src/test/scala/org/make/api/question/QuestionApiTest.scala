@@ -20,16 +20,19 @@
 package org.make.api.question
 
 import java.time.LocalDate
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
+import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.{DateHelper, RequestContext}
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
+import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -53,6 +56,7 @@ class QuestionApiTest
     with IdGeneratorComponent
     with OperationServiceComponent
     with OperationOfQuestionServiceComponent
+    with PartnerServiceComponent
     with MakeSettingsComponent
     with MakeAuthentication {
 
@@ -62,6 +66,7 @@ class QuestionApiTest
     mock[PersistentOperationOfQuestionService]
   override val operationService: OperationService = mock[OperationService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
+  override val partnerService: PartnerService = mock[PartnerService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -166,6 +171,18 @@ class QuestionApiTest
 
   feature("get question details") {
 
+    val partner: Partner = Partner(
+      partnerId = PartnerId("partner1"),
+      name = "partner1",
+      logo = Some("logo"),
+      link = None,
+      organisationId = None,
+      partnerKind = PartnerKind.Founder,
+      questionId = baseQuestion.questionId,
+      weight = 20F
+    )
+    val partner2: Partner = partner.copy(partnerId = PartnerId("partner2"), name = "partner2")
+
     when(questionService.getQuestionByQuestionIdValueOrSlug(baseQuestion.slug))
       .thenReturn(Future.successful(Some(baseQuestion)))
     when(questionService.getQuestionByQuestionIdValueOrSlug(baseQuestion.questionId.value))
@@ -173,6 +190,8 @@ class QuestionApiTest
     when(operationOfQuestionService.findByQuestionId(baseQuestion.questionId))
       .thenReturn(Future.successful(Some(baseOperationOfQuestion)))
     when(operationService.findOne(baseQuestion.operationId.get)).thenReturn(Future.successful(Some(baseOperation)))
+    when(partnerService.find(questionId = Some(baseQuestion.questionId), organisationId = None))
+      .thenReturn(Future.successful(Seq(partner, partner2)))
 
     scenario("get by id") {
       Given("a registered question")
