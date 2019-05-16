@@ -54,7 +54,9 @@ trait OrganisationService extends ShortenedNames {
   def getOrganisations: Future[Seq[User]]
   def find(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]]
   def count(): Future[Int]
-  def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult]
+  def search(organisationName: Option[String],
+             slug: Option[String],
+             organisationIds: Option[Seq[UserId]]): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisation: User, mayebEmail: Option[String], requestContext: RequestContext): Future[UserId]
   def getVotedProposals(organisationId: UserId,
@@ -112,14 +114,17 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       * This method fetch the organisations from elasticsearch
       * organisations can be search by name or slug
       */
-    override def search(organisationName: Option[String], slug: Option[String]): Future[OrganisationSearchResult] = {
+    override def search(organisationName: Option[String],
+                        slug: Option[String],
+                        organisationIds: Option[Seq[UserId]]): Future[OrganisationSearchResult] = {
       elasticsearchOrganisationAPI.searchOrganisations(
         OrganisationSearchQuery(
           filters = OrganisationSearchFilters
             .parse(
               organisationName =
                 organisationName.map(orgaName => OrganisationNameSearchFilter(orgaName, Some(Fuzziness.Auto))),
-              slug = slug.map(user.SlugSearchFilter.apply)
+              slug = slug.map(user.SlugSearchFilter.apply),
+              organisationIds = organisationIds.map(OrganisationIdsSearchFilter.apply)
             )
         )
       )

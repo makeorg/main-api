@@ -31,6 +31,7 @@ import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, Vot
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.{TagId, TagTypeId}
+import org.make.core.user.UserId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -72,6 +73,11 @@ trait ParameterExtractors {
   implicit val proposalIdFromStringUnmarshaller: Unmarshaller[String, ProposalId] =
     Unmarshaller.strict[String, ProposalId] { string ⇒
       ProposalId(string)
+    }
+
+  implicit val userIdFromStringUnmarshaller: Unmarshaller[String, UserId] =
+    Unmarshaller.strict[String, UserId] { string ⇒
+      UserId(string)
     }
 
   implicit val themeIdFromStringUnmarshaller: Unmarshaller[String, ThemeId] =
