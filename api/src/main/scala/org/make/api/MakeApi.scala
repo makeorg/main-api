@@ -156,6 +156,7 @@ trait MakeApi
     with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
     with DefaultPersistentUserServiceComponent
+    with DefaultPersistentUserToAnonymizeServiceComponent
     with DefaultProposalApiComponent
     with DefaultProposalCoordinatorServiceComponent
     with DefaultProposalIndexerServiceComponent
