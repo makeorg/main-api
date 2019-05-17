@@ -300,14 +300,34 @@ class OrganisationApiTest
 
   feature("search organisations") {
     Mockito
-      .when(organisationService.search(ArgumentMatchers.eq(Some("Make.org")), ArgumentMatchers.eq(None)))
+      .when(
+        organisationService
+          .search(ArgumentMatchers.eq(Some("Make.org")), ArgumentMatchers.eq(None), ArgumentMatchers.eq(None))
+      )
       .thenReturn(
         Future.successful(
           OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
         )
       )
     Mockito
-      .when(organisationService.search(ArgumentMatchers.eq(None), ArgumentMatchers.eq(Some("make-org"))))
+      .when(
+        organisationService
+          .search(ArgumentMatchers.eq(None), ArgumentMatchers.eq(Some("make-org")), ArgumentMatchers.eq(None))
+      )
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
+        )
+      )
+    Mockito
+      .when(
+        organisationService
+          .search(
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some(Seq(UserId("make-org"), UserId("toto"))))
+          )
+      )
       .thenReturn(
         Future.successful(
           OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
@@ -324,6 +344,14 @@ class OrganisationApiTest
 
     scenario("search by slug") {
       Get("/organisations?slug=make-org") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        organisationResults.total should be(1)
+        organisationResults.results.head.organisationId should be(UserId("make-org"))
+      }
+    }
+    scenario("search by organisationIds") {
+      Get("/organisations?organisationIds=make-org,toto") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
         organisationResults.total should be(1)

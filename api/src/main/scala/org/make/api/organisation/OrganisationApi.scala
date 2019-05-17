@@ -20,6 +20,7 @@
 package org.make.api.organisation
 
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
+import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
@@ -38,7 +39,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
-import org.make.core.proposal._
+import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.user.UserId
 import org.make.core.user.indexed.OrganisationSearchResult
 import org.make.core.{HttpCodes, ParameterExtractors}
@@ -61,6 +62,7 @@ trait OrganisationApi extends Directives {
   @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "organisationIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "organisationName", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string")
     )
@@ -141,11 +143,12 @@ trait DefaultOrganisationApiComponent
       get {
         path("organisations") {
           makeOperation("GetOrganisations") { _ =>
-            parameters(('organisationName.as[String].?, 'slug.as[String].?)) {
-              (organisationName: Option[String], slug: Option[String]) =>
-                provideAsync(organisationService.search(organisationName, slug)) { results =>
-                  complete(results)
-                }
+            parameters(
+              ('organisationIds.as[immutable.Seq[UserId]].?, 'organisationName.as[String].?, 'slug.as[String].?)
+            ) { (organisationIds: Option[Seq[UserId]], organisationName: Option[String], slug: Option[String]) =>
+              provideAsync(organisationService.search(organisationName, slug, organisationIds)) { results =>
+                complete(results)
+              }
             }
           }
         }

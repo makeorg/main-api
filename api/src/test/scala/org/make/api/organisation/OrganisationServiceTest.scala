@@ -369,9 +369,31 @@ class OrganisationServiceTest
           )
         )
       )
+    Mockito
+      .when(
+        elasticsearchOrganisationAPI.searchOrganisations(
+          ArgumentMatchers.eq(
+            OrganisationSearchQuery(
+              filters = Some(
+                OrganisationSearchFilters(
+                  organisationIds = Some(OrganisationIdsSearchFilter(Seq(UserId("AAA-BBB-CCC"))))
+                )
+              )
+            )
+          )
+        )
+      )
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(
+            total = 1L,
+            results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
+          )
+        )
+      )
 
     scenario("search all") {
-      val futureAllOrganisation = organisationService.search(None, None)
+      val futureAllOrganisation = organisationService.search(None, None, None)
 
       whenReady(futureAllOrganisation, Timeout(2.seconds)) { organisationsList =>
         organisationsList.total shouldBe 2
@@ -379,11 +401,20 @@ class OrganisationServiceTest
     }
 
     scenario("search by organisationName") {
-      val futureJohnDoeCorp = organisationService.search(Some("John Doe Corp."), None)
+      val futureJohnDoeCorp = organisationService.search(Some("John Doe Corp."), None, None)
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
         organisationsList.total shouldBe 1
         organisationsList.results.head.organisationName shouldBe Some("John Doe Corp.")
+      }
+    }
+
+    scenario("search by organisationIds") {
+      val futureJohnDoeCorp = organisationService.search(None, None, Some(Seq(UserId("AAA-BBB-CCC"))))
+
+      whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
+        organisationsList.total shouldBe 1
+        organisationsList.results.head.organisationId shouldBe UserId("AAA-BBB-CCC")
       }
     }
   }
