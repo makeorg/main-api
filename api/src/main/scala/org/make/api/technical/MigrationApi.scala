@@ -19,22 +19,17 @@
 
 package org.make.api.technical
 
+import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.persistence.query.EventEnvelope
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import akka.Done
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.{DefaultMailJetConfigurationComponent, MakeSettingsComponent}
-import org.make.api.proposal.{
-  ProposalCoordinatorServiceComponent,
-  ProposalServiceComponent,
-  UpdateProposalVotesVerifiedCommand
-}
+import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.crm.CrmServiceComponent
@@ -43,22 +38,14 @@ import org.make.api.user.{
   PersistentUserToAnonymizeServiceComponent,
   UserServiceComponent
 }
-import org.make.api.userhistory.UserEvent.{SnapshotUser, UserRegisteredEvent}
-import org.make.api.userhistory.{
-  LogUserSearchSequencesEvent,
-  LogUserUpdateSequenceEvent,
-  UserHistoryCoordinatorComponent
-}
-import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.{ProposalId, Vote}
-import org.make.core.question.QuestionId
+import org.make.api.userhistory.UserEvent.UserRegisteredEvent
 import org.make.core.tag.{Tag => _}
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, HttpCodes, RequestContext}
+import org.make.core.{HttpCodes, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -67,7 +54,7 @@ trait MigrationApi extends Directives {
   def emptyRoute: Route
 
   @ApiOperation(
-    value = "replay-user-registration-event",
+    value = "replay-social-register-question-id",
     httpMethod = "POST",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -78,53 +65,8 @@ trait MigrationApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @Path(value = "/replay-user-registration")
-  def replayUserRegistrationEvent: Route
-
-  @ApiOperation(
-    value = "replay-user-vote-event",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @Path(value = "/replay-user-vote")
-  def replayUserVoteEvent: Route
-
-  @ApiOperation(
-    value = "replay-user-history-event",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
-  @Path(value = "/replay-user-history")
-  def replayUserHistoryEvent: Route
-
-  @ApiOperation(
-    value = "reset-qualification-count",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @Path(value = "/reset-qualification-count")
-  def resetQualificationCount: Route
+  @Path(value = "/replay-social-register-question-id")
+  def replaySocialRegisterQuestionId: Route
 
   @ApiOperation(
     value = "extract-mailjet-anonymized-users",
@@ -142,7 +84,7 @@ trait MigrationApi extends Directives {
   def extractAnonUser: Route
 
   def routes: Route =
-    emptyRoute ~ replayUserRegistrationEvent ~ replayUserHistoryEvent ~ resetQualificationCount ~ extractAnonUser
+    emptyRoute ~ extractAnonUser ~ replaySocialRegisterQuestionId
 }
 
 trait MigrationApiComponent {
@@ -154,16 +96,13 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with IdGeneratorComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent
-    with ProposalServiceComponent
-    with ProposalCoordinatorServiceComponent
-    with UserServiceComponent
-    with PersistentUserServiceComponent
-    with PersistentUserToAnonymizeServiceComponent
-    with UserHistoryCoordinatorComponent
-    with ReadJournalComponent
     with ActorSystemComponent
     with CrmServiceComponent
-    with DefaultMailJetConfigurationComponent =>
+    with PersistentUserServiceComponent
+    with PersistentUserToAnonymizeServiceComponent
+    with MailJetConfigurationComponent
+    with ReadJournalComponent
+    with UserServiceComponent =>
 
   override lazy val migrationApi: MigrationApi = new MigrationApi {
     override def emptyRoute: Route =
@@ -173,167 +112,43 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
         }
       }
 
-    override def replayUserRegistrationEvent: Route = post {
-      path("migrations" / "replay-user-registration") {
-        makeOperation("ReplayRegistrationEvent") { _ =>
+    override def replaySocialRegisterQuestionId: Route = post {
+      path("migrations" / "replay-social-register-question-id") {
+        makeOperation("ReplaySocialRegisterQuestionId") { _ =>
           makeOAuth2 { userAuth =>
             requireAdminRole(userAuth.user) {
               implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-              userJournal
-                .currentPersistenceIds()
-                .runForeach { id =>
-                  userJournal
-                    .currentEventsByPersistenceId(id, 0, Long.MaxValue)
-                    .filter {
-                      case EventEnvelope(_, _, _, _: UserRegisteredEvent) => true
-                      case _                                              => false
-                    }
-                    .runForeach { eventEnvelope =>
-                      val event = eventEnvelope.event.asInstanceOf[UserRegisteredEvent]
-                      if (event.registerQuestionId != event.requestContext.questionId) {
-                        userService.getUser(UserId(id)).map { maybeUser =>
-                          maybeUser.map { user =>
-                            userService.update(
-                              user.copy(
-                                profile = user.profile.map(
-                                  _.copy(
+              val streamUsers: Future[Done] =
+                userJournal
+                  .currentPersistenceIds()
+                  .flatMapMerge(1, {
+                    id =>
+                      userJournal
+                        .currentEventsByPersistenceId(id, 0, Long.MaxValue)
+                        .filter {
+                          case EventEnvelope(_, _, _, _: UserRegisteredEvent) => true
+                          case _                                              => false
+                        }
+                        .mapAsync(1) { eventEnvelope =>
+                          val event = eventEnvelope.event.asInstanceOf[UserRegisteredEvent]
+                          userService
+                            .getUser(UserId(id))
+                            .map(_.map {
+                              case user if user.profile.flatMap(_.registerQuestionId).isDefined =>
+                                Future.successful(user)
+                              case user =>
+                                userService.update(user = user.copy(profile = user.profile.map { p =>
+                                  p.copy(
                                     registerQuestionId =
                                       event.registerQuestionId.orElse(event.requestContext.questionId)
                                   )
-                                )
-                              ),
-                              RequestContext.empty
-                            )
-                          }
+                                }), requestContext = RequestContext.empty)
+                            })
                         }
-                      }
-                    }
-                }
-              complete(StatusCodes.NoContent)
-            }
-          }
-        }
-      }
-    }
-
-    override def replayUserVoteEvent: Route = post {
-      path("migrations" / "replay-user-vote") {
-        withoutRequestTimeout {
-          makeOperation("ReplayVoteEvent") { requestContext =>
-            makeOAuth2 { userAuth =>
-              requireAdminRole(userAuth.user) {
-                val decider: Supervision.Decider = Supervision.resumingDecider
-                implicit val materializer: ActorMaterializer = ActorMaterializer(
-                  ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider)
-                )(actorSystem)
-                val streamUser = userService.getUsersWithoutRegisterQuestion.flatMap { users =>
-                  Source(users.toIndexedSeq)
-                    .mapAsync(5) { user =>
-                      proposalService
-                        .searchProposalsVotedByUser(
-                          userId = user.userId,
-                          filterVotes = None,
-                          filterQualifications = None,
-                          requestContext = requestContext
-                        )
-                        .map((_, user))
-                    }
-                    .mapAsync(5) {
-                      case (proposals, user) =>
-                        val registerQuestionId: Option[QuestionId] =
-                          proposals.results.headOption.flatMap(_.question.map(_.questionId))
-                        userService.update(
-                          user.copy(profile = user.profile.map(_.copy(registerQuestionId = registerQuestionId))),
-                          requestContext
-                        )
-                    }
-                    .runWith(Sink.ignore)
-                }
-                provideAsync(streamUser) { _ =>
-                  complete(StatusCodes.NoContent)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    override def replayUserHistoryEvent: Route = post {
-      path("migrations" / "replay-user-history") {
-        makeOperation("ReplayHistoryEvent") { _ =>
-          makeOAuth2 { userAuth =>
-            requireAdminRole(userAuth.user) {
-              implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-              userJournal
-                .currentPersistenceIds()
-                .runForeach { id =>
-                  userJournal
-                    .currentEventsByPersistenceId(id, 0, Long.MaxValue)
-                    .filter {
-                      case EventEnvelope(_, _, _, _: LogUserUpdateSequenceEvent)  => true
-                      case EventEnvelope(_, _, _, _: LogUserSearchSequencesEvent) => true
-                      case _                                                      => false
-                    }
-                    .runForeach {
-                      case EventEnvelope(_, persistenceId, sequenceNr, _: LogUserUpdateSequenceEvent) =>
-                        logger.warn(
-                          s"Event of type LogUserUpdateSequenceEvent with persistenceId=$persistenceId and sequenceNr=$sequenceNr"
-                        )
-                      case EventEnvelope(_, persistenceId, sequenceNr, _: LogUserSearchSequencesEvent) =>
-                        logger.warn(
-                          s"Event of type LogUserSearchSequencesEvent with persistenceId=$persistenceId and sequenceNr=$sequenceNr"
-                        )
-                      case _ => ()
-                    }
-                  userHistoryCoordinator ! SnapshotUser(UserId(id))
-                }
-              complete(StatusCodes.NoContent)
-            }
-          }
-        }
-      }
-    }
-
-    override def resetQualificationCount: Route = post {
-      path("migrations" / "reset-qualification-count") {
-        withoutRequestTimeout {
-          makeOperation("ResetQualificationCount") { requestContext =>
-            makeOAuth2 { userAuth =>
-              requireAdminRole(userAuth.user) {
-                implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-                val futureToComplete: Future[Done] = proposalJournal
-                  .currentPersistenceIds()
-                  .mapAsync(4) { id =>
-                    val proposalId = ProposalId(id)
-                    proposalCoordinatorService.getProposal(proposalId)
-                  }
-                  .filter { proposal =>
-                    proposal.isDefined && proposal.exists(_.status == Accepted)
-                  }
-                  .mapAsync(4) { maybeProposal =>
-                    val proposal = maybeProposal.get
-                    def updateCommand(votes: Seq[Vote]): UpdateProposalVotesVerifiedCommand = {
-                      val votesResetQualifVerified = votes.map { vote =>
-                        vote.copy(
-                          countVerified = vote.count,
-                          qualifications = vote.qualifications.map(q => q.copy(countVerified = q.count))
-                        )
-                      }
-                      UpdateProposalVotesVerifiedCommand(
-                        moderator = userAuth.user.userId,
-                        proposalId = proposal.proposalId,
-                        requestContext = requestContext,
-                        updatedAt = DateHelper.now(),
-                        votesVerified = votesResetQualifVerified
-                      )
-                    }
-                    proposalCoordinatorService.updateVotesVerified(updateCommand(proposal.votes))
-                  }
-                  .runForeach(_ => Done)
-                provideAsync(futureToComplete) { _ =>
-                  complete(StatusCodes.NoContent)
-                }
+                  })
+                  .runWith(Sink.ignore)
+              provideAsync(streamUsers) { _ =>
+                complete(StatusCodes.NoContent)
               }
             }
           }

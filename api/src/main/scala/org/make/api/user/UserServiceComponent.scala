@@ -66,6 +66,7 @@ trait UserService extends ShortenedNames {
   def update(user: User, requestContext: RequestContext): Future[User]
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                    clientIp: Option[String],
+                                   questionId: Option[QuestionId],
                                    requestContext: RequestContext): Future[User]
   def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean]
@@ -246,18 +247,20 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                               clientIp: Option[String],
+                                              questionId: Option[QuestionId],
                                               requestContext: RequestContext): Future[User] = {
 
       val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
         case Some(user) => updateUserFromSocial(user, userInfo, clientIp)
-        case None       => createUserFromSocial(requestContext, userInfo, clientIp)
+        case None       => createUserFromSocial(requestContext, userInfo, questionId, clientIp)
       }
     }
 
     private def createUserFromSocial(requestContext: RequestContext,
                                      userInfo: UserInfo,
+                                     questionId: Option[QuestionId],
                                      clientIp: Option[String]): Future[User] = {
 
       val country = BusinessConfig.validateCountry(Country(userInfo.country))
@@ -273,7 +276,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             case "female" => Female
             case _        => Other
           },
-          genderName = userInfo.gender
+          genderName = userInfo.gender,
+          registerQuestionId = questionId
         )
 
       val user = User(

@@ -529,48 +529,58 @@ trait DefaultUserApiComponent
             entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
               extractClientIP { clientIp =>
                 val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
-                onSuccess(
-                  socialService
-                    .login(
-                      request.provider,
-                      request.token,
-                      request.country.orElse(requestContext.country).getOrElse(Country("FR")),
-                      request.language.orElse(requestContext.language).getOrElse(Language("fr")),
-                      Some(ip),
-                      requestContext
-                    )
-                    .flatMap { social =>
-                      sessionHistoryCoordinatorService
-                        .convertSession(requestContext.sessionId, social.userId)
-                        .map(_ => social)
-                    }
-                ) { social =>
-                  mapResponseHeaders { responseHeaders =>
-                    if (responseHeaders.exists(
-                          header =>
-                            header.name() == `Set-Cookie`.name && header
-                              .asInstanceOf[`Set-Cookie`]
-                              .cookie
-                              .name == makeSettings.SessionCookie.name
-                        )) {
-                      responseHeaders
-                    } else {
-                      responseHeaders ++ Seq(
-                        `Set-Cookie`(
-                          HttpCookie(
-                            name = makeSettings.SessionCookie.name,
-                            value = social.token.access_token,
-                            secure = makeSettings.SessionCookie.isSecure,
-                            httpOnly = true,
-                            maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                            path = Some("/"),
-                            domain = Some(makeSettings.SessionCookie.domain)
+                val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
+                val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+
+                val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
+                  case Some(questionId) => questionService.getQuestion(questionId)
+                  case _                => Future.successful(None)
+                }
+                provideAsync(futureMaybeQuestion) { maybeQuestion =>
+                  onSuccess(
+                    socialService
+                      .login(
+                        request.provider,
+                        request.token,
+                        country,
+                        language,
+                        Some(ip),
+                        maybeQuestion.map(_.questionId),
+                        requestContext
+                      )
+                      .flatMap { social =>
+                        sessionHistoryCoordinatorService
+                          .convertSession(requestContext.sessionId, social.userId)
+                          .map(_ => social)
+                      }
+                  ) { social =>
+                    mapResponseHeaders { responseHeaders =>
+                      if (responseHeaders.exists(
+                            header =>
+                              header.name() == `Set-Cookie`.name && header
+                                .asInstanceOf[`Set-Cookie`]
+                                .cookie
+                                .name == makeSettings.SessionCookie.name
+                          )) {
+                        responseHeaders
+                      } else {
+                        responseHeaders ++ Seq(
+                          `Set-Cookie`(
+                            HttpCookie(
+                              name = makeSettings.SessionCookie.name,
+                              value = social.token.access_token,
+                              secure = makeSettings.SessionCookie.isSecure,
+                              httpOnly = true,
+                              maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+                              path = Some("/"),
+                              domain = Some(makeSettings.SessionCookie.domain)
+                            )
                           )
                         )
-                      )
+                      }
+                    } {
+                      complete(StatusCodes.Created -> social.token)
                     }
-                  } {
-                    complete(StatusCodes.Created -> social.token)
                   }
                 }
               }
@@ -629,14 +639,10 @@ trait DefaultUserApiComponent
               val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
               val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
 
-              val futureMaybeQuestion: Future[Option[Question]] =
-                questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                  maybeOperationId = None,
-                  maybeQuestionId = request.questionId,
-                  maybeThemeId = None,
-                  country = country,
-                  language = language
-                )
+              val futureMaybeQuestion: Future[Option[Question]] = request.questionId match {
+                case Some(questionId) => questionService.getQuestion(questionId)
+                case _                => Future.successful(None)
+              }
 
               provideAsync(futureMaybeQuestion) { maybeQuestion =>
                 onSuccess(
