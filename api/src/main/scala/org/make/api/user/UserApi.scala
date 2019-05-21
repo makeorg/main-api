@@ -48,7 +48,6 @@ import org.make.api.technical.{
   MakeAuthenticationDirectives,
   ReadJournalComponent
 }
-import org.make.api.user.UserUpdateEvent.{UserUpdateValidatedEvent, UserUpdatedOptInNewsletterEvent}
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
@@ -701,9 +700,6 @@ trait DefaultUserApiComponent
                           eventDate = DateHelper.now()
                         )
                       )
-                      eventBusService
-                        .publish(UserUpdateValidatedEvent(userId = Some(user.userId), eventDate = DateHelper.now()))
-
                       result
                     }
                 ) { _ =>
@@ -989,8 +985,11 @@ trait DefaultUserApiComponent
                       if (optInNewsletterHasChanged && !user.isOrganisation) {
                         eventBusService.publish(
                           UserUpdatedOptInNewsletterEvent(
-                            userId = Some(user.userId),
-                            eventDate = DateHelper.now(),
+                            connectedUserId = Some(userAuth.user.userId),
+                            userId = user.userId,
+                            requestContext = requestContext,
+                            country = user.country,
+                            language = user.language,
                             optInNewsletter = user.profile.exists(_.optInNewsletter)
                           )
                         )
@@ -1047,7 +1046,7 @@ trait DefaultUserApiComponent
 
     override def deleteUser: Route = post {
       path("user" / userId / "delete") { userId: UserId =>
-        makeOperation("deleteUser") { _ =>
+        makeOperation("deleteUser") { requestContext =>
           decodeRequest {
             entity(as[DeleteUserRequest]) { request: DeleteUserRequest =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
@@ -1056,7 +1055,7 @@ trait DefaultUserApiComponent
                 } else {
                   provideAsync(userService.getUserByUserIdAndPassword(userId, request.password)) {
                     case Some(user) =>
-                      provideAsync(userService.anonymize(user)) { _ =>
+                      provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext)) { _ =>
                         provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
                           complete(StatusCodes.OK)
                         }
@@ -1075,7 +1074,7 @@ trait DefaultUserApiComponent
     override def followUser: Route =
       post {
         path("user" / userId / "follow") { userId =>
-          makeOperation("FollowUser") { _ =>
+          makeOperation("FollowUser") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               provideAsyncOrNotFound(userService.getUser(userId)) { user =>
                 if (!user.publicProfile) {
@@ -1085,7 +1084,7 @@ trait DefaultUserApiComponent
                     if (followedUsers.contains(userId)) {
                       complete(StatusCodes.BadRequest)
                     } else {
-                      onSuccess(userService.followUser(followedUserId = userId, userId = userAuth.user.userId)) { _ =>
+                      onSuccess(userService.followUser(userId, userAuth.user.userId, requestContext)) { _ =>
                         complete(StatusCodes.OK)
                       }
                     }
@@ -1100,14 +1099,14 @@ trait DefaultUserApiComponent
     override def unfollowUser: Route =
       post {
         path("user" / userId / "unfollow") { userId =>
-          makeOperation("FollowUser") { _ =>
+          makeOperation("FollowUser") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               provideAsyncOrNotFound(userService.getUser(userId)) { _ =>
                 provideAsync(userService.getFollowedUsers(userAuth.user.userId)) { followedUsers =>
                   if (!followedUsers.contains(userId)) {
                     complete(StatusCodes.BadRequest -> Seq(ValidationError("userId", Some("User already unfollowed"))))
                   } else {
-                    onSuccess(userService.unfollowUser(followedUserId = userId, userId = userAuth.user.userId)) { _ =>
+                    onSuccess(userService.unfollowUser(userId, userAuth.user.userId, requestContext)) { _ =>
                       complete(StatusCodes.OK)
                     }
                   }

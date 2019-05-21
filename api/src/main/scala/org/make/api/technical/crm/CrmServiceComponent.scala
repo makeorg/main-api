@@ -25,20 +25,13 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
 
-import akka.NotUsed
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.persistence.query.EventEnvelope
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
-import akka.stream.{
-  ActorAttributes,
-  ActorMaterializer,
-  ActorMaterializerSettings,
-  OverflowStrategy,
-  QueueOfferResult,
-  Supervision
-}
+import akka.stream._
+import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Printer
 import io.circe.syntax._
@@ -46,8 +39,9 @@ import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
-import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.ReadJournalComponent
+import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
 import org.make.api.userhistory._
 import org.make.core.DateHelper
 import org.make.core.operation.Operation
@@ -59,20 +53,8 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Pro
 import scala.util.{Failure, Success, Try}
 
 trait CrmService {
-  def addUserToOptInList(user: User): Future[Unit]
-  def removeUserFromOptInList(user: User): Future[Unit]
-  def removeUserFromHardBounceList(user: User): Future[Unit]
-  def removeUserFromUnsubscribeList(user: User): Future[Unit]
-  def addUserToHardBounceList(user: User): Future[Unit]
-  def addUserToUnsubscribeList(user: User): Future[Unit]
   def sendEmail(message: SendEmail): Future[Unit]
-  def updateUserProperties(user: User): Future[Unit]
-
-  def addUsersToOptInList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
-  def addUsersToUnsubscribeList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
-  def addUsersToHardBounceList(questions: Seq[Question])(users: Seq[User]): Future[Unit]
-  def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit]
-
+  def startCrmContactSynchronization(questions: Seq[Question]): Future[Unit]
   def getPropertiesFromUser(user: User, questions: Seq[Question]): Future[ContactProperties]
 }
 trait CrmServiceComponent {
@@ -85,8 +67,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with OperationServiceComponent
     with QuestionServiceComponent
     with UserHistoryCoordinatorServiceComponent
-    with ReadJournalComponent =>
+    with UserServiceComponent
+    with ReadJournalComponent
+    with PersistentUserToAnonymizeServiceComponent =>
 
+  private lazy val batchSize: Int = mailJetConfiguration.userListBatchSize
   private val poolSize: Int = 10
   implicit val executionContext: ExecutionContextExecutor =
     ExecutionContext.fromExecutor(Executors.newFixedThreadPool(poolSize, new ThreadFactory {
@@ -176,70 +161,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   }
 
   override lazy val crmService: CrmService = new CrmService {
-
-    override def addUserToOptInList(user: User): Future[Unit] = {
-      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
-        getPropertiesFromUser(user, questions).flatMap { properties =>
-          manageContactMailJetRequest(
-            listId = mailJetConfiguration.optInListId,
-            manageContact = ManageContact(
-              user.email,
-              user.fullName.getOrElse(user.email),
-              action = ManageContactAction.AddNoForce,
-              properties = Some(properties)
-            )
-          ).map { response =>
-            logMailjetResponse(response, "Add single to optin list", Some(user.email))
-          }
-        }
-      }
-    }
-
-    override def removeUserFromOptInList(user: User): Future[Unit] = {
-      manageContactMailJetRequest(
-        listId = mailJetConfiguration.optInListId,
-        manageContact =
-          ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { response =>
-        logMailjetResponse(response, "Remove single from optin list", Some(user.email))
-      }
-    }
-
-    override def addUserToHardBounceList(user: User): Future[Unit] = {
-      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
-        getPropertiesFromUser(user, questions).flatMap { properties =>
-          manageContactMailJetRequest(
-            listId = mailJetConfiguration.hardBounceListId,
-            manageContact = ManageContact(
-              user.email,
-              user.fullName.getOrElse(user.email),
-              action = ManageContactAction.AddNoForce,
-              properties = Some(properties)
-            )
-          ).map { response =>
-            logMailjetResponse(response, "Add single to hardbounce list", Some(user.email))
-          }
-        }
-      }
-    }
-
-    override def addUserToUnsubscribeList(user: User): Future[Unit] = {
-      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
-        getPropertiesFromUser(user, questions).flatMap { properties =>
-          manageContactMailJetRequest(
-            listId = mailJetConfiguration.unsubscribeListId,
-            manageContact = ManageContact(
-              user.email,
-              user.fullName.getOrElse(user.email),
-              action = ManageContactAction.AddNoForce,
-              properties = Some(properties)
-            )
-          ).map { response =>
-            logMailjetResponse(response, "Add single to unsubscribe list", Some(user.email))
-          }
-        }
-      }
-    }
+    implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 
     override def sendEmail(message: SendEmail): Future[Unit] = {
       val messages = SendMessages(message)
@@ -248,27 +170,65 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def removeUserFromHardBounceList(user: User): Future[Unit] = {
-      manageContactMailJetRequest(
-        listId = mailJetConfiguration.hardBounceListId,
-        manageContact =
-          ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { response =>
-        logMailjetResponse(response, "Remove from hardbounce list", Some(user.email))
+    override def startCrmContactSynchronization(questions: Seq[Question]): Future[Unit] = {
+
+      val getHardBounceUsers: Int => Future[Seq[User]] = (page: Int) =>
+        userService.getUsersWithHardBounce(limit = batchSize, page = page)
+      val getOptOutUsers: Int => Future[Seq[User]] = (page: Int) =>
+        userService.getOptOutUsers(limit = batchSize, page = page)
+      val getOptInUsers: Int => Future[Seq[User]] = (page: Int) =>
+        userService.getOptInUsers(limit = batchSize, page = page)
+
+      val startTime: Long = System.currentTimeMillis()
+
+      def optOut: Future[Done] =
+        asyncPageToPageSource(getOptOutUsers)
+          .mapAsync(1)(addUsersToUnsubscribeList(questions))
+          .runForeach(_ => {})
+      def hardBounce: Future[Done] =
+        asyncPageToPageSource(getHardBounceUsers)
+          .mapAsync(1)(addUsersToHardBounceList(questions: Seq[Question]))
+          .runForeach(_ => {})
+      def optIn: Future[Done] =
+        asyncPageToPageSource(getOptInUsers)
+          .mapAsync(1)(addUsersToOptInList(questions: Seq[Question]))
+          .runForeach(_ => {})
+      def anonymize: Future[Seq[String]] =
+        persistentUserToAnonymizeService
+          .findAll()
+          .flatMap(emails => hardRemoveEmailsFromAllLists(emails).map(_ => emails))
+      def validateAnonymized(emails: Seq[String]): Future[Done] =
+        persistentUserToAnonymizeService.removeAllByEmails(emails).map(_ => Done)
+
+      (for {
+        _      <- optOut
+        _      <- hardBounce
+        _      <- optIn
+        emails <- anonymize
+        _      <- validateAnonymized(emails)
+      } yield {}).onComplete {
+        case Failure(exception) => logger.error(s"Mailjet synchro failed:", exception)
+        case Success(_)         => logger.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
+      }
+
+      Future.successful {}
+    }
+
+    private def asyncPageToPageSource(pageFunc: Int => Future[Seq[User]]): Source[Seq[User], NotUsed] = {
+      Source.unfoldAsync(1) { page =>
+        val futureUsers: Future[Seq[User]] = pageFunc(page)
+        futureUsers.map { users =>
+          if (users.isEmpty) {
+            None
+          } else {
+            Some((page + 1, users))
+          }
+        }
+
       }
     }
 
-    override def removeUserFromUnsubscribeList(user: User): Future[Unit] = {
-      manageContactMailJetRequest(
-        listId = mailJetConfiguration.unsubscribeListId,
-        manageContact =
-          ManageContact(user.email, user.fullName.getOrElse(user.email), action = ManageContactAction.Remove)
-      ).map { response =>
-        logMailjetResponse(response, "Remove from unsubscribe list", Some(user.email))
-      }
-    }
-
-    override def addUsersToOptInList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
+    private def addUsersToOptInList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
       if (users.isEmpty) {
         Future.successful {}
       }
@@ -303,7 +263,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def addUsersToUnsubscribeList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
+    private def addUsersToUnsubscribeList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
       val properties: Future[Map[UserId, ContactProperties]] = Future
         .traverse(users) { user =>
           getPropertiesFromUser(user, questions).map { properties =>
@@ -334,7 +294,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def addUsersToHardBounceList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
+    private def addUsersToHardBounceList(questions: Seq[Question])(users: Seq[User]): Future[Unit] = {
       val properties: Future[Map[UserId, ContactProperties]] = Future
         .traverse(users) { user =>
           getPropertiesFromUser(user, questions).map { properties =>
@@ -366,7 +326,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
+    private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
 
       manageContactListMailJetRequest(
         manageContactList = ManageManyContacts(
@@ -381,20 +341,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         logMailjetResponse(response, "Hard remove emails from all lists", None)
       }
 
-    }
-
-    override def updateUserProperties(user: User): Future[Unit] = {
-      questionService.searchQuestion(SearchQuestionRequest()).flatMap { questions =>
-        getPropertiesFromUser(user, questions).flatMap { properties =>
-          val contactData = properties.toContactPropertySeq
-
-          updateContactProperties(ContactData(data = contactData), user.email).map { response =>
-            logMailjetResponse(response, "Update user properties", Some(user.email))
-          }
-        }
-
-        Future.successful {}
-      }
     }
 
     private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00'Z'")

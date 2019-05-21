@@ -343,6 +343,30 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       )
     )
 
+    val userAnonymizedEvent = LogUserAnonymizedEvent(
+      userId = userId,
+      requestContext = requestContext,
+      action = UserAction(
+        date = eventDate,
+        actionType = UserAnonymized.actionType,
+        arguments = UserAnonymized(userId = UserId("anoned"), adminId = UserId("admin"))
+      )
+    )
+
+    val userOptInNewsletterEvent = LogUserOptInNewsletterEvent(
+      userId = userId,
+      requestContext = requestContext,
+      action =
+        UserAction(date = eventDate, actionType = UserUpdatedOptIn.actionType, arguments = UserUpdatedOptIn(true))
+    )
+
+    val userOptOutNewsletterEvent = LogUserOptOutNewsletterEvent(
+      userId = userId,
+      requestContext = requestContext,
+      action =
+        UserAction(date = eventDate, actionType = UserUpdatedOptIn.actionType, arguments = UserUpdatedOptIn(false))
+    )
+
     val defaultDate = ZonedDateTime.parse("2018-10-10T00:00:00Z")
 
     val userVotesAndQualifications = UserVotesAndQualifications(
@@ -416,6 +440,9 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
         multipleVoteAndQualifications,
         Some("to validate source migration with old votes and multiple proposals")
       ),
+      sample(userAnonymizedEvent),
+      sample(userOptInNewsletterEvent),
+      sample(userOptOutNewsletterEvent),
       sample(
         UserHistory(
           List(

@@ -66,7 +66,6 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
 
     context.watch(context.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name))
     context.watch(context.actorOf(MailJetProducerActor.props, MailJetProducerActor.name))
-    context.watch(context.actorOf(CrmContactProducerActor.props, CrmContactProducerActor.name))
 
     context.watch(context.actorOf(SemanticProducerActor.props, SemanticProducerActor.name))
     context.watch(context.actorOf(SemanticPredictionsProducerActor.props, SemanticPredictionsProducerActor.name))
@@ -82,22 +81,6 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
         MakeBackoffSupervisor.propsAndName(
           MailJetEventConsumerActor.props(makeApi.userService).withDispatcher(kafkaDispatcher),
           MailJetEventConsumerActor.name
-        )
-      context.actorOf(props, name)
-    }
-
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(
-          CrmContactEventConsumerActor
-            .props(
-              makeApi.userService,
-              makeApi.crmService,
-              makeApi.questionService,
-              makeApi.persistentUserToAnonymizeService
-            )
-            .withDispatcher(kafkaDispatcher),
-          CrmContactEventConsumerActor.name
         )
       context.actorOf(props, name)
     }

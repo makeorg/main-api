@@ -369,11 +369,11 @@ trait DefaultAdminUserApiComponent
 
     override def anonymizeUser: Route = delete {
       path("admin" / "users" / moderatorId) { userId: UserId =>
-        makeOperation("adminDeleteUser") { _ =>
+        makeOperation("adminDeleteUser") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               provideAsyncOrNotFound(userService.getUser(userId)) { user =>
-                provideAsync(userService.anonymize(user)) { _ =>
+                provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext)) { _ =>
                   provideAsync(oauth2DataHandler.removeTokenByUserId(userId)) { _ =>
                     complete(StatusCodes.OK)
                   }
@@ -387,13 +387,13 @@ trait DefaultAdminUserApiComponent
 
     override def anonymizeUserByEmail: Route = post {
       path("admin" / "users" / "anonymize") {
-        makeOperation("anonymizeUserByEmail") { _ =>
+        makeOperation("anonymizeUserByEmail") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[AnonymizeUserRequest]) { request =>
                   provideAsyncOrNotFound(userService.getUserByEmail(request.email)) { user =>
-                    provideAsync(userService.anonymize(user)) { _ =>
+                    provideAsync(userService.anonymize(user, userAuth.user.userId, requestContext)) { _ =>
                       provideAsync(oauth2DataHandler.removeTokenByUserId(user.userId)) { _ =>
                         complete(StatusCodes.OK)
                       }

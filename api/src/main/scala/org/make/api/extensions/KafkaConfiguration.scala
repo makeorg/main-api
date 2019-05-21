@@ -33,8 +33,6 @@ class KafkaConfiguration(override protected val configuration: Config) extends E
     "duplicates-predicted" -> configuration.getString("topics.duplicates-predicted"),
     "tracking-events" -> configuration.getString("topics.tracking-events"),
     "ideas" -> configuration.getString("topics.ideas"),
-    "crm-contact" -> configuration.getString("topics.crm-contact"),
-    "users-update" -> configuration.getString("topics.users-update"),
     "predictions" -> configuration.getString("topics.predictions")
   )
 

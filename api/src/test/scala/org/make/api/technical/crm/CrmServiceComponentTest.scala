@@ -26,11 +26,18 @@ import akka.actor.ActorSystem
 import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
 import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
+import com.typesafe.config.ConfigFactory
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
+import org.make.api.user.{
+  PersistentUserToAnonymizeService,
+  PersistentUserToAnonymizeServiceComponent,
+  UserService,
+  UserServiceComponent
+}
 import org.make.api.userhistory._
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.history.HistoryActions.Trusted
@@ -56,7 +63,9 @@ class CrmServiceComponentTest
     with MailJetConfigurationComponent
     with ActorSystemComponent
     with UserHistoryCoordinatorServiceComponent
-    with ReadJournalComponent {
+    with UserServiceComponent
+    with ReadJournalComponent
+    with PersistentUserToAnonymizeServiceComponent {
 
   trait MakeReadJournalForMocks
       extends ReadJournal
@@ -71,12 +80,19 @@ class CrmServiceComponentTest
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
   override val operationService: OperationService = mock[OperationService]
   override val questionService: QuestionService = mock[QuestionService]
+  override val userService: UserService = mock[UserService]
+  override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
+    mock[PersistentUserToAnonymizeService]
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
   val zonedDateTimeNow: ZonedDateTime = DateHelper.now()
 
-  when(mailJetConfiguration.url).thenReturn("")
+  when(mailJetConfiguration.url).thenReturn("http://localhost:1234")
+  when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
+  when(mailJetConfiguration.httpBufferSize).thenReturn(200)
+  when(mailJetConfiguration.campaignApiKey).thenReturn("api-key")
+  when(mailJetConfiguration.campaignSecretKey).thenReturn("secret-key")
 
   val defaultOperation: Operation = Operation(
     status = OperationStatus.Active,
@@ -459,4 +475,33 @@ class CrmServiceComponentTest
       }
     }
   }
+}
+
+object ProposalProducerActorIT {
+  // This configuration cannot be dynamic, port values _must_ match reality
+  val configuration: String =
+    """
+      |akka.log-dead-letters-during-shutdown = off
+      |make-api {
+      |  kafka {
+      |    connection-string = "127.0.0.1:29092"
+      |    poll-timeout = 1000
+      |    schema-registry = "http://localhost:28081"
+      |    topics {
+      |      users = "users"
+      |      emails = "emails"
+      |      proposals = "proposals"
+      |      mailjet-events = "mailjet-events"
+      |      duplicates-predicted = "duplicates-predicted"
+      |      sequences = "sequences"
+      |      tracking-events = "tracking-events"
+      |      ideas = "ideas"
+      |      predictions = "predictions"
+      |    }
+      |  }
+      |}
+    """.stripMargin
+
+  val actorSystem = ActorSystem("ProposalProducerIT", ConfigFactory.parseString(configuration))
+
 }

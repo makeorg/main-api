@@ -29,23 +29,22 @@ import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.UserUpdateEvent._
 import org.make.api.user.social.models.UserInfo
-import org.make.api.userhistory.UserEvent.UserRegisteredEvent
+import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Gender.Female
-import org.make.core.reference.{Country, Language}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.SearchQuery
 import org.make.core.question.QuestionId
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers._
+import org.mockito.ArgumentMatchers.{eq => isEqual, _}
 import org.mockito.Mockito.{times, verify}
 import org.mockito._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.mockito.ArgumentMatchers.{eq => isEqual}
+
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -310,10 +309,9 @@ class UserServiceTest
         user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
 
-        verify(eventBusService, times(2))
+        verify(eventBusService, times(1))
           .publish(ArgumentMatchers.argThat[AnyRef] {
             case event: UserRegisteredEvent => event.userId == returnedUser.userId
-            case event: UserCreatedEvent    => event.userId.contains(returnedUser.userId)
             case _                          => false
           })
 
@@ -391,10 +389,9 @@ class UserServiceTest
         user.profile.get.gender should be(Some(Female))
         user.profile.get.genderName should be(Some("female"))
 
-        verify(eventBusService, times(2))
+        verify(eventBusService, times(1))
           .publish(ArgumentMatchers.argThat[AnyRef] {
             case event: UserRegisteredEvent => event.userId == returnedUserWithGender.userId
-            case event: UserCreatedEvent    => event.userId.contains(returnedUserWithGender.userId)
             case _                          => false
           })
       }
@@ -657,7 +654,7 @@ class UserServiceTest
         Mockito
           .verify(eventBusService, Mockito.times(1))
           .publish(ArgumentMatchers.argThat[UserUpdatedOptInNewsletterEvent] { event =>
-            event.email.contains("user@example.com")
+            event.optInNewsletter == true
           })
       }
     }
@@ -741,7 +738,7 @@ class UserServiceTest
     scenario("update a user") {
       Given("a user")
       When("I update fields")
-      Then("fields are updated into user and UserUpdatedEvent is published")
+      Then("fields are updated into user")
 
       Mockito
         .when(persistentUserService.updateUser(ArgumentMatchers.eq(fooUser)))
@@ -783,11 +780,6 @@ class UserServiceTest
 
       Then("The update success")
       whenReady(futureBoolean, Timeout(3.seconds)) { result =>
-        Mockito
-          .verify(eventBusService, Mockito.times(1))
-          .publish(ArgumentMatchers.argThat[UserUpdatedPasswordEvent] { event =>
-            event.userId.contains(johnChangePassword.userId)
-          })
         result shouldBe true
       }
     }
@@ -806,14 +798,15 @@ class UserServiceTest
 
       Given("a user")
       When("I anonymize this user")
-      val futureAnonymizeUser = userService.anonymize(johnDoeUser)
+      val adminId = UserId("admin")
+      val futureAnonymizeUser = userService.anonymize(johnDoeUser, adminId, RequestContext.empty)
 
       Then("an event is sent")
       whenReady(futureAnonymizeUser, Timeout(3.seconds)) { _ =>
         Mockito
           .verify(eventBusService, Mockito.times(1))
           .publish(ArgumentMatchers.argThat[UserAnonymizedEvent] { event =>
-            event.userId.contains(johnDoeUser.userId)
+            event.userId == johnDoeUser.userId && event.adminId == adminId
           })
       }
     }
@@ -827,7 +820,7 @@ class UserServiceTest
         .thenReturn(Future.successful({}))
 
       val futureFollowOrganisation =
-        userService.followUser(UserId("user-id"), UserId("me"))
+        userService.followUser(UserId("user-id"), UserId("me"), RequestContext.empty)
 
       whenReady(futureFollowOrganisation, Timeout(2.seconds)) { _ =>
         verify(eventBusService, times(1)).publish(any[UserFollowEvent])
@@ -843,7 +836,7 @@ class UserServiceTest
         .thenReturn(Future.successful({}))
 
       val futureFollowOrganisation =
-        userService.unfollowUser(UserId("make-org"), UserId("me"))
+        userService.unfollowUser(UserId("make-org"), UserId("me"), RequestContext.empty)
 
       whenReady(futureFollowOrganisation, Timeout(2.seconds)) { _ =>
         verify(eventBusService, times(1)).publish(any[UserUnfollowEvent])

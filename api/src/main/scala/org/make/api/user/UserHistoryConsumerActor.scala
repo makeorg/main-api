@@ -25,7 +25,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory.UserEvent._
-import org.make.api.userhistory.{LogRegisterCitizenEvent, UserAction, UserRegistered}
+import org.make.api.userhistory._
 
 import scala.concurrent.Future
 
@@ -52,6 +52,10 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
       case event: OrganisationInitializationEvent => doNothing(event)
+      case event: UserUpdatedOptInNewsletterEvent => handleUserUpdatedOptInNewsletterEvent(event)
+      case event: UserAnonymizedEvent             => handleUserAnonymizedEvent(event)
+      case event: UserFollowEvent                 => doNothing(event)
+      case event: UserUnfollowEvent               => doNothing(event)
     }
   }
 
@@ -78,6 +82,45 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     Future.successful {}
   }
 
+  def handleUserUpdatedOptInNewsletterEvent(event: UserUpdatedOptInNewsletterEvent): Future[Unit] = {
+    if (event.optInNewsletter) {
+      userHistoryCoordinator ! LogUserOptInNewsletterEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogUserOptInNewsletterEvent.action,
+          arguments = UserUpdatedOptIn(newOptIn = event.optInNewsletter)
+        )
+      )
+    } else {
+      userHistoryCoordinator ! LogUserOptOutNewsletterEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogUserOptOutNewsletterEvent.action,
+          arguments = UserUpdatedOptIn(newOptIn = event.optInNewsletter)
+        )
+      )
+    }
+
+    Future.successful {}
+  }
+
+  def handleUserAnonymizedEvent(event: UserAnonymizedEvent): Future[Unit] = {
+    userHistoryCoordinator ! LogUserAnonymizedEvent(
+      userId = event.userId,
+      requestContext = event.requestContext,
+      action = UserAction(
+        date = event.eventDate,
+        actionType = LogUserAnonymizedEvent.action,
+        arguments = UserAnonymized(userId = event.userId, adminId = event.adminId)
+      )
+    )
+
+    Future.successful {}
+  }
 }
 
 object UserHistoryConsumerActor {

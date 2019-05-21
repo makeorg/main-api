@@ -53,6 +53,10 @@ object UserEvent {
       OrganisationRegisteredEvent :+:
       OrganisationUpdatedEvent :+:
       OrganisationInitializationEvent :+:
+      UserUpdatedOptInNewsletterEvent :+:
+      UserAnonymizedEvent :+:
+      UserFollowEvent :+:
+      UserUnfollowEvent :+:
       CNil
 
   final case class UserEventWrapper(version: Int,
@@ -74,6 +78,10 @@ object UserEvent {
         case e: OrganisationRegisteredEvent     => Coproduct[AnyUserEvent](e)
         case e: OrganisationUpdatedEvent        => Coproduct[AnyUserEvent](e)
         case e: OrganisationInitializationEvent => Coproduct[AnyUserEvent](e)
+        case e: UserUpdatedOptInNewsletterEvent => Coproduct[AnyUserEvent](e)
+        case e: UserAnonymizedEvent             => Coproduct[AnyUserEvent](e)
+        case e: UserFollowEvent                 => Coproduct[AnyUserEvent](e)
+        case e: UserUnfollowEvent               => Coproduct[AnyUserEvent](e)
       }
   }
 
@@ -96,6 +104,11 @@ object UserEvent {
     implicit val atOrganisationAskPasswordEvent
       : Case.Aux[OrganisationInitializationEvent, OrganisationInitializationEvent] =
       at(identity)
+    implicit val atUserUpdatedOptInNewsletterEvent
+      : Case.Aux[UserUpdatedOptInNewsletterEvent, UserUpdatedOptInNewsletterEvent] = at(identity)
+    implicit val atUserAnonymizedEvent: Case.Aux[UserAnonymizedEvent, UserAnonymizedEvent] = at(identity)
+    implicit val atUserFollowEvent: Case.Aux[UserFollowEvent, UserFollowEvent] = at(identity)
+    implicit val atUserUnfollowEvent: Case.Aux[UserUnfollowEvent, UserUnfollowEvent] = at(identity)
   }
 
   private val defaultCountry = Country("FR")
@@ -245,4 +258,48 @@ object UserEvent {
 
   //TODO: remove
   case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
+
+  case class UserUpdatedOptInNewsletterEvent(override val connectedUserId: Option[UserId] = None,
+                                             override val eventDate: ZonedDateTime = DateHelper.now(),
+                                             override val userId: UserId,
+                                             override val requestContext: RequestContext,
+                                             override val country: Country = defaultCountry,
+                                             override val language: Language = defaultLanguage,
+                                             optInNewsletter: Boolean)
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  case class UserAnonymizedEvent(override val connectedUserId: Option[UserId] = None,
+                                 override val eventDate: ZonedDateTime = DateHelper.now(),
+                                 override val userId: UserId,
+                                 override val requestContext: RequestContext,
+                                 override val country: Country = defaultCountry,
+                                 override val language: Language = defaultLanguage,
+                                 adminId: UserId)
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  case class UserFollowEvent(override val connectedUserId: Option[UserId] = None,
+                             override val eventDate: ZonedDateTime = DateHelper.now(),
+                             override val userId: UserId,
+                             override val requestContext: RequestContext,
+                             override val country: Country = defaultCountry,
+                             override val language: Language = defaultLanguage,
+                             followedUserId: UserId)
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  case class UserUnfollowEvent(override val connectedUserId: Option[UserId] = None,
+                               override val eventDate: ZonedDateTime = DateHelper.now(),
+                               override val userId: UserId,
+                               override val requestContext: RequestContext,
+                               override val country: Country = defaultCountry,
+                               override val language: Language = defaultLanguage,
+                               unfollowedUserId: UserId)
+      extends UserEvent {
+    override def version(): Int = MakeSerializable.V1
+  }
 }
