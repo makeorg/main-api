@@ -64,7 +64,9 @@ trait QuestionServiceComponent {
 trait DefaultQuestionService extends QuestionServiceComponent {
   this: PersistentQuestionServiceComponent with IdGeneratorComponent =>
 
-  override lazy val questionService: QuestionService = new QuestionService {
+  override lazy val questionService: QuestionService = new DefaultQuestionService
+
+  class DefaultQuestionService extends QuestionService {
 
     override def getQuestions(questionIds: Seq[QuestionId]): Future[Seq[Question]] = {
       persistentQuestionService.getByIds(questionIds)

@@ -27,7 +27,6 @@ import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
-import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -81,7 +80,6 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
     with EventBusServiceComponent
     with MailJetConfigurationComponent
     with CrmServiceComponent
-    with QuestionServiceComponent
     with EventBusServiceComponent
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent
@@ -163,11 +161,9 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireAdminRole(auth.user) {
             makeOperation("SyncCrmData") { _ =>
-              provideAsync(questionService.searchQuestion(SearchQuestionRequest())) { questions =>
-                provideAsync(crmService.startCrmContactSynchronization(questions)) { _ =>
-                  complete(StatusCodes.NoContent)
+              provideAsync(crmService.startCrmContactSynchronization()) { _ =>
+                complete(StatusCodes.NoContent)
 
-                }
               }
             }
           }

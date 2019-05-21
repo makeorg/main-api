@@ -25,14 +25,13 @@ import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials, OA
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.testkit.TestDuration
 import io.circe._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
-import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.auth._
 import org.make.api.technical.crm._
 import org.make.core.auth.UserRights
-import org.make.core.question.Question
 import org.make.core.session.VisitorId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -40,23 +39,20 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import scalaoauth2.provider.{AccessToken, AuthInfo}
-import scala.concurrent.duration.DurationInt
-import akka.testkit.TestDuration
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class CrmApiTest
     extends MakeApiTestBase
     with DefaultCrmApiComponent
     with CrmServiceComponent
-    with QuestionServiceComponent
     with MailJetConfigurationComponent
     with ShortenedNames
     with MakeAuthentication {
 
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
   override val crmService: CrmService = mock[CrmService]
-  override val questionService: QuestionService = mock[QuestionService]
 
   when(mailJetConfiguration.basicAuthLogin).thenReturn("login")
   when(mailJetConfiguration.basicAuthPassword).thenReturn("password")
@@ -238,16 +234,14 @@ class CrmApiTest
   }
 
   feature("crm synchro") {
-    when(questionService.searchQuestion(any[SearchQuestionRequest])).thenReturn(Future.successful(Seq.empty))
-    when(crmService.startCrmContactSynchronization(any[Seq[Question]])).thenReturn(Future.successful(()))
+    when(crmService.startCrmContactSynchronization()).thenReturn(Future.successful(()))
     scenario("admin triggers sync") {
       implicit val timeout: RouteTestTimeout = RouteTestTimeout(15.seconds.dilated)
 
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
-        verify(questionService, times(1)).searchQuestion(any[SearchQuestionRequest])
-        verify(crmService, times(1)).startCrmContactSynchronization(any[Seq[Question]])
+        verify(crmService, times(1)).startCrmContactSynchronization()
       }
     }
     scenario("moderator triggers sync") {

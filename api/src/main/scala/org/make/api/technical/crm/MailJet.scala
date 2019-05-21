@@ -296,7 +296,8 @@ object ContactData {
       case a @ ContactProperty(_, Some(_: String))  => a.asInstanceOf[ContactProperty[String]].asJson
       case a @ ContactProperty(_, Some(_: Int))     => a.asInstanceOf[ContactProperty[Int]].asJson
       case a @ ContactProperty(_, Some(_: Boolean)) => a.asInstanceOf[ContactProperty[Boolean]].asJson
-      case other                                    => throw new IllegalStateException(s"Unable to convert ${other.toString}")
+      case other =>
+        throw new IllegalStateException(s"Unable to convert ${other.toString}")
     }
   }
 }
@@ -311,7 +312,7 @@ case class ContactProperties(userId: Option[UserId],
                              accountCreationDate: Option[String],
                              accountCreationSource: Option[String],
                              accountCreationOrigin: Option[String],
-                             accountCreationOperation: Option[String],
+                             accountCreationSlug: Option[String],
                              accountCreationCountry: Option[String],
                              countriesActivity: Option[String],
                              lastCountryActivity: Option[String],
@@ -325,7 +326,6 @@ case class ContactProperties(userId: Option[UserId],
                              activeCore: Option[Boolean],
                              daysOfActivity: Option[Int],
                              daysOfActivity30: Option[Int],
-                             numberOfThemes: Option[Int],
                              userType: Option[String],
                              updatedAt: Option[String]) {
   def toContactPropertySeq: Seq[ContactProperty[_]] = {
@@ -340,7 +340,7 @@ case class ContactProperties(userId: Option[UserId],
       ContactProperty("Account_Creation_Date", accountCreationDate),
       ContactProperty("Account_creation_source", accountCreationSource),
       ContactProperty("Account_creation_origin", accountCreationOrigin),
-      ContactProperty("Account_Creation_Operation", accountCreationOperation),
+      ContactProperty("Account_Creation_Operation", accountCreationSlug),
       ContactProperty("Account_Creation_Country", accountCreationCountry),
       ContactProperty("Countries_activity", countriesActivity),
       ContactProperty("Last_country_activity", lastCountryActivity),
@@ -354,7 +354,6 @@ case class ContactProperties(userId: Option[UserId],
       ContactProperty("Active_core", activeCore),
       ContactProperty("Days_of_Activity", daysOfActivity),
       ContactProperty("Days_of_Activity_30d", daysOfActivity30),
-      ContactProperty("Number_of_themes", numberOfThemes),
       ContactProperty("User_type", userType),
       ContactProperty("Updated_at", updatedAt)
     )
@@ -375,7 +374,7 @@ object ContactProperties {
         ("Account_Creation_Date", contactProperties.accountCreationDate.asJson),
         ("Account_creation_source", contactProperties.accountCreationSource.asJson),
         ("Account_creation_origin", contactProperties.accountCreationOrigin.asJson),
-        ("Account_Creation_Operation", contactProperties.accountCreationOperation.asJson),
+        ("Account_Creation_Operation", contactProperties.accountCreationSlug.asJson),
         ("Account_Creation_Country", contactProperties.accountCreationCountry.asJson),
         ("Countries_activity", contactProperties.countriesActivity.asJson),
         ("Last_country_activity", contactProperties.lastCountryActivity.asJson),
@@ -389,7 +388,6 @@ object ContactProperties {
         ("Active_core", contactProperties.activeCore.asJson),
         ("Days_of_Activity", contactProperties.daysOfActivity.asJson),
         ("Days_of_Activity_30d", contactProperties.daysOfActivity30.asJson),
-        ("Number_of_themes", contactProperties.numberOfThemes.asJson),
         ("User_type", contactProperties.userType.asJson),
         ("Updated_at", contactProperties.updatedAt.asJson)
       )
