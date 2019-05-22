@@ -190,8 +190,16 @@ class QuestionApiTest
     when(operationOfQuestionService.findByQuestionId(baseQuestion.questionId))
       .thenReturn(Future.successful(Some(baseOperationOfQuestion)))
     when(operationService.findOne(baseQuestion.operationId.get)).thenReturn(Future.successful(Some(baseOperation)))
-    when(partnerService.find(questionId = Some(baseQuestion.questionId), organisationId = None))
-      .thenReturn(Future.successful(Seq(partner, partner2)))
+    when(
+      partnerService.find(
+        questionId = Some(baseQuestion.questionId),
+        organisationId = None,
+        start = 0,
+        end = None,
+        sort = None,
+        order = None
+      )
+    ).thenReturn(Future.successful(Seq(partner, partner2)))
 
     scenario("get by id") {
       Given("a registered question")

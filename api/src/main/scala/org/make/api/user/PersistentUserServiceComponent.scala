@@ -517,7 +517,7 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
             case (Some(field), _) =>
               logger.warn(s"Unsupported filter '$field'")
               query.orderBy(userAlias.email).asc.offset(start)
-            case (_, _) => query.asc.offset(start)
+            case (_, _) => query.orderBy(userAlias.organisationName).asc.offset(start)
           }
           end match {
             case Some(limit) => queryOrdered.limit(limit)

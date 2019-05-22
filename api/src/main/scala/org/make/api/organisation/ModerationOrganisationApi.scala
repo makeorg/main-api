@@ -30,7 +30,6 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.api.user._
 import org.make.core.Validation.{maxLength, validate, _}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
@@ -93,13 +92,15 @@ trait ModerationOrganisationApi extends Directives {
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationResponse]))
+  )
   @Path(value = "/{organisationId}")
   def moderationGetOrganisation: Route
 
   @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[UserResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[OrganisationResponse]]))
   )
   @Path(value = "/")
   def moderationGetOrganisations: Route

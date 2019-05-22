@@ -37,7 +37,12 @@ import org.make.api.extensions._
 import org.make.api.idea._
 import org.make.api.operation._
 import org.make.api.organisation._
-import org.make.api.partner.{DefaultPartnerServiceComponent, DefaultPersistentPartnerServiceComponent}
+import org.make.api.partner.{
+  AdminPartnerApi,
+  DefaultAdminPartnerApiComponent,
+  DefaultPartnerServiceComponent,
+  DefaultPersistentPartnerServiceComponent
+}
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
@@ -88,8 +93,7 @@ import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceCompo
 import org.make.core.{ValidationError, ValidationFailedError}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 import org.mdedetrich.akka.stream.support.CirceStreamSupport.JsonParsingException
-import scalaoauth2.provider.OAuthGrantType
-import scalaoauth2.provider._
+import scalaoauth2.provider.{OAuthGrantType, _}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -127,6 +131,7 @@ trait MakeApi
     with DefaultModerationOperationApiComponent
     with DefaultModerationOperationOfQuestionApiComponent
     with DefaultModerationOrganisationApiComponent
+    with DefaultAdminPartnerApiComponent
     with DefaultModerationProposalApiComponent
     with DefaultModerationQuestionComponent
     with DefaultModerationSequenceApiComponent
@@ -289,7 +294,8 @@ trait MakeApi
       classOf[WidgetApi],
       classOf[AdminUserApi],
       classOf[AdminIdeaMappingApi],
-      classOf[SecurityApi]
+      classOf[SecurityApi],
+      classOf[AdminPartnerApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -326,6 +332,7 @@ trait MakeApi
       moderationOperationApi.routes ~
       moderationOperationOfQuestionApi.routes ~
       moderationOrganisationApi.routes ~
+      moderationPartnerApi.routes ~
       moderationProposalApi.routes ~
       moderationQuestionApi.routes ~
       moderationSequenceApi.routes ~

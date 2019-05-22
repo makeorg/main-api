@@ -79,9 +79,16 @@ class PersistentPartnerServiceIT
   feature("search partners") {
     scenario("search all") {
       val futurePartner = for {
-        _        <- persistentPartnerService.persist(partner.copy(partnerId = PartnerId("partner2")))
-        _        <- persistentPartnerService.persist(partner.copy(partnerId = PartnerId("partner3")))
-        partners <- persistentPartnerService.find(questionId = None, organisationId = None)
+        _ <- persistentPartnerService.persist(partner.copy(partnerId = PartnerId("partner2")))
+        _ <- persistentPartnerService.persist(partner.copy(partnerId = PartnerId("partner3")))
+        partners <- persistentPartnerService.find(
+          questionId = None,
+          organisationId = None,
+          start = 0,
+          end = None,
+          sort = None,
+          order = None
+        )
       } yield partners
 
       whenReady(futurePartner, Timeout(2.seconds)) { partners =>
@@ -98,7 +105,14 @@ class PersistentPartnerServiceIT
         _ <- persistentPartnerService.persist(
           partner.copy(partnerId = PartnerId("partner5"), questionId = QuestionId("question2"))
         )
-        partners <- persistentPartnerService.find(questionId = Some(QuestionId("question2")), organisationId = None)
+        partners <- persistentPartnerService.find(
+          questionId = Some(QuestionId("question2")),
+          organisationId = None,
+          start = 0,
+          end = None,
+          sort = None,
+          order = None
+        )
       } yield partners
 
       whenReady(futurePartner, Timeout(2.seconds)) { partners =>

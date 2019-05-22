@@ -39,8 +39,14 @@ trait PersistentPartnerService {
   def persist(partner: Partner): Future[Partner]
   def modify(partner: Partner): Future[Partner]
   def getById(partnerId: PartnerId): Future[Option[Partner]]
-  def find(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Seq[Partner]]
+  def find(start: Int,
+           end: Option[Int],
+           sort: Option[String],
+           order: Option[String],
+           questionId: Option[QuestionId],
+           organisationId: Option[UserId]): Future[Seq[Partner]]
   def count(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Int]
+  def delete(partnerId: PartnerId): Future[Unit]
 }
 
 trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceComponent {
@@ -53,6 +59,8 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
     private val partnerAlias = PersistentPartner.partnerAlias
 
     private val column = PersistentPartner.column
+
+    private val defaultLimit = 10
 
     override def persist(partner: Partner): Future[Partner] = {
       implicit val context: EC = writeExecutionContext
@@ -104,11 +112,16 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
       }).map(_.map(_.toPartner))
     }
 
-    override def find(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Seq[Partner]] = {
+    override def find(start: Int,
+                      end: Option[Int],
+                      sort: Option[String],
+                      order: Option[String],
+                      questionId: Option[QuestionId],
+                      organisationId: Option[UserId]): Future[Seq[Partner]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
-          select
+          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
             .from(PersistentPartner.as(partnerAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -116,6 +129,20 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
                 organisationId.map(organisationId => sqls.eq(partnerAlias.organisationId, organisationId.value))
               )
             )
+
+          val queryOrdered = (sort, order) match {
+            case (Some(field), Some("DESC")) if PersistentPartner.columnNames.contains(field) =>
+              query.orderBy(partnerAlias.field(field)).desc.offset(start)
+            case (Some(field), _) if PersistentPartner.columnNames.contains(field) =>
+              query.orderBy(partnerAlias.field(field)).asc.offset(start)
+            case (Some(_), _) =>
+              query.orderBy(partnerAlias.name).asc.offset(start)
+            case (_, _) => query.orderBy(partnerAlias.name).asc.offset(start)
+          }
+          end match {
+            case Some(limit) => queryOrdered.limit(limit)
+            case None        => queryOrdered.limit(defaultLimit)
+          }
         }.map(PersistentPartner.apply()).list().apply()
       }).map(_.map(_.toPartner))
     }
@@ -134,6 +161,16 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
       })
+    }
+
+    override def delete(partnerId: PartnerId): Future[Unit] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          deleteFrom(PersistentPartner)
+            .where(sqls.eq(PersistentPartner.column.id, partnerId.value))
+        }.execute().apply()
+      }).map(_ => ())
     }
 
   }
