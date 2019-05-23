@@ -35,7 +35,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation.{validate, validateUserInput}
 import org.make.core.auth.UserRights
-import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, SequenceCardsConfiguration}
+import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, PushProposalCard, SequenceCardsConfiguration}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -332,6 +332,17 @@ trait DefaultModerationOperationOfQuestionApiComponent
                       provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
                         operationOfQuestion =>
                           val updatedQuestion = question.copy(question = request.question)
+                          val updatedSequenceCardsConfiguration =
+                            request.sequenceCardsConfiguration.copy(
+                              pushProposalCard = PushProposalCard(
+                                enabled = request.canPropose &&
+                                  request.sequenceCardsConfiguration.pushProposalCard.enabled
+                              ),
+                              finalCard = request.sequenceCardsConfiguration.finalCard.copy(
+                                sharingEnabled = request.sequenceCardsConfiguration.finalCard.enabled &&
+                                  request.sequenceCardsConfiguration.finalCard.sharingEnabled
+                              )
+                            )
                           onSuccess(
                             operationOfQuestionService.update(
                               operationOfQuestion
@@ -339,7 +350,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                   startDate = request.startDate,
                                   endDate = request.endDate,
                                   canPropose = request.canPropose,
-                                  sequenceCardsConfiguration = request.sequenceCardsConfiguration,
+                                  sequenceCardsConfiguration = updatedSequenceCardsConfiguration,
                                   aboutUrl = request.aboutUrl,
                                   metas = request.metas
                                 ),
