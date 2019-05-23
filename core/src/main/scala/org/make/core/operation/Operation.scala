@@ -19,7 +19,7 @@
 
 package org.make.core.operation
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
@@ -139,8 +139,8 @@ object Metas extends CirceFormatters {
 
 final case class OperationOfQuestion(questionId: QuestionId,
                                      operationId: OperationId,
-                                     startDate: Option[LocalDate],
-                                     endDate: Option[LocalDate],
+                                     startDate: Option[ZonedDateTime],
+                                     endDate: Option[ZonedDateTime],
                                      operationTitle: String,
                                      landingSequenceId: SequenceId,
                                      canPropose: Boolean,
@@ -155,10 +155,10 @@ final case class OperationCountryConfiguration(
   @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
-  startDate: Option[LocalDate],
+  startDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: Option[QuestionId],
-  endDate: Option[LocalDate]
+  endDate: Option[ZonedDateTime]
 )
 
 object OperationCountryConfiguration extends CirceFormatters {

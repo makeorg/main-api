@@ -19,7 +19,7 @@
 
 package org.make.core
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
@@ -56,8 +56,9 @@ trait ParameterExtractors {
     }
 
   implicit val zonedDateTimeFromStringUnmarshaller: Unmarshaller[String, ZonedDateTime] =
-    Unmarshaller.strict[String, ZonedDateTime] { string ⇒
-      ZonedDateTime.parse(string)
+    Unmarshaller.strict[String, ZonedDateTime] {
+      case value if value.contains('T') => ZonedDateTime.parse(value)
+      case value                        => LocalDate.parse(value).atStartOfDay(ZoneId.systemDefault())
     }
 
   implicit val languageFromStringUnmarshaller: Unmarshaller[String, Language] =

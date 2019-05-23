@@ -19,7 +19,7 @@
 
 package org.make.api.question
 
-import java.time.LocalDate
+import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
@@ -30,7 +30,6 @@ import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.{DateHelper, RequestContext}
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.proposal.ProposalId
@@ -39,6 +38,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
+import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -95,7 +95,7 @@ class QuestionApiTest
   val baseOperationOfQuestion = OperationOfQuestion(
     questionId = baseQuestion.questionId,
     operationId = baseOperation.operationId,
-    startDate = Some(LocalDate.parse("2018-10-21")),
+    startDate = Some(ZonedDateTime.parse("2018-10-21T10:15:30+00:00")),
     endDate = None,
     operationTitle = "operation title",
     landingSequenceId = SequenceId("sequenceId"),

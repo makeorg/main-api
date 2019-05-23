@@ -19,7 +19,7 @@
 
 package org.make.api.operation
 
-import java.time.LocalDate
+import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
@@ -233,7 +233,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                     '_order.?,
                     'questionId.as[immutable.Seq[QuestionId]].?,
                     'operationId.as[OperationId].?,
-                    'openAt.as[LocalDate].?
+                    'openAt.as[ZonedDateTime].?
                   )
                 ) {
                   (start: Option[Int],
@@ -419,10 +419,10 @@ trait DefaultModerationOperationOfQuestionApiComponent
 }
 
 @ApiModel
-final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(example = "2019-01-23")
-                                                  startDate: Option[LocalDate],
-                                                  @(ApiModelProperty @field)(example = "2019-03-23")
-                                                  endDate: Option[LocalDate],
+final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(example = "2019-01-23T00:00Z")
+                                                  startDate: Option[ZonedDateTime],
+                                                  @(ApiModelProperty @field)(example = "2019-03-23T00:00Z")
+                                                  endDate: Option[ZonedDateTime],
                                                   question: String,
                                                   canPropose: Boolean,
                                                   sequenceCardsConfiguration: SequenceCardsConfiguration,
@@ -440,10 +440,10 @@ object ModifyOperationOfQuestionRequest extends CirceFormatters {
 final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId,
-  @(ApiModelProperty @field)(example = "2019-01-23")
-  startDate: Option[LocalDate],
-  @(ApiModelProperty @field)(example = "2019-03-23")
-  endDate: Option[LocalDate],
+  @(ApiModelProperty @field)(example = "2019-01-23T00:00Z")
+  startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(example = "2019-03-23T00:00Z")
+  endDate: Option[ZonedDateTime],
   operationTitle: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
@@ -470,10 +470,10 @@ final case class OperationOfQuestionResponse(
   id: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId,
-  @(ApiModelProperty @field)(example = "2019-01-23")
-  startDate: Option[LocalDate],
-  @(ApiModelProperty @field)(example = "2019-03-23")
-  endDate: Option[LocalDate],
+  @(ApiModelProperty @field)(example = "2019-01-23T00:00Z")
+  startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(example = "2019-03-23T00:00Z")
+  endDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
   operationTitle: String,

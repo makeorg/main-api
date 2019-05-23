@@ -18,25 +18,18 @@
  */
 
 package org.make.api.question
-import java.time.LocalDate
+import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.{CirceFormatters, SlugHelper}
-import org.make.core.operation.{
-  Metas,
-  Operation,
-  OperationId,
-  OperationKind,
-  OperationOfQuestion,
-  SequenceCardsConfiguration
-}
+import org.make.core.operation._
 import org.make.core.partner.{Partner, PartnerKind}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
+import org.make.core.{CirceFormatters, SlugHelper}
 
 import scala.annotation.meta.field
 
@@ -192,10 +185,10 @@ case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   allowedSources: Seq[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01")
-  startDate: Option[LocalDate],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01")
-  endDate: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00Z")
+  startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00Z")
+  endDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
   canPropose: Boolean,

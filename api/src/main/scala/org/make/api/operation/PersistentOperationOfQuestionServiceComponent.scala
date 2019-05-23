@@ -18,7 +18,7 @@
  */
 
 package org.make.api.operation
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
@@ -26,17 +26,7 @@ import org.make.api.question.DefaultPersistentQuestionServiceComponent.Persisten
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
-import org.make.core.operation.{
-  FinalCard,
-  IntroCard,
-  Metas,
-  OperationId,
-  OperationOfQuestion,
-  PushProposalCard,
-  QuestionWithDetails,
-  SequenceCardsConfiguration,
-  SignUpCard
-}
+import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -51,7 +41,7 @@ trait PersistentOperationOfQuestionService {
              order: Option[String],
              questionIds: Option[Seq[QuestionId]],
              operationId: Option[OperationId],
-             openAt: Option[LocalDate]): Future[Seq[OperationOfQuestion]]
+             openAt: Option[ZonedDateTime]): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def getById(id: QuestionId): Future[Option[OperationOfQuestion]]
@@ -59,7 +49,7 @@ trait PersistentOperationOfQuestionService {
   def delete(questionId: QuestionId): Future[Unit]
   def count(questionIds: Option[Seq[QuestionId]],
             operationId: Option[OperationId],
-            openAt: Option[LocalDate]): Future[Int]
+            openAt: Option[ZonedDateTime]): Future[Int]
 }
 
 trait PersistentOperationOfQuestionServiceComponent {
@@ -80,7 +70,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                           order: Option[String],
                           questionIds: Option[Seq[QuestionId]],
                           operationId: Option[OperationId],
-                          openAt: Option[LocalDate]): Future[scala.Seq[OperationOfQuestion]] = {
+                          openAt: Option[ZonedDateTime]): Future[scala.Seq[OperationOfQuestion]] = {
         implicit val context: EC = readExecutionContext
         Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL[PersistentOperationOfQuestion] {
@@ -240,7 +230,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
       override def count(questionIds: Option[Seq[QuestionId]],
                          operationId: Option[OperationId],
-                         openAt: Option[LocalDate]): Future[Int] = {
+                         openAt: Option[ZonedDateTime]): Future[Int] = {
         implicit val context: EC = readExecutionContext
         Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL[PersistentOperationOfQuestion] {
@@ -277,8 +267,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
 final case class PersistentOperationOfQuestion(questionId: String,
                                                operationId: String,
-                                               startDate: Option[LocalDate],
-                                               endDate: Option[LocalDate],
+                                               startDate: Option[ZonedDateTime],
+                                               endDate: Option[ZonedDateTime],
                                                operationTitle: String,
                                                landingSequenceId: String,
                                                createdAt: ZonedDateTime,
@@ -348,8 +338,8 @@ object PersistentOperationOfQuestion
                                            question: String,
                                            slug: String,
                                            operationId: String,
-                                           startDate: Option[LocalDate],
-                                           endDate: Option[LocalDate],
+                                           startDate: Option[ZonedDateTime],
+                                           endDate: Option[ZonedDateTime],
                                            operationTitle: String,
                                            landingSequenceId: String,
                                            canPropose: Boolean,
@@ -436,8 +426,8 @@ object PersistentOperationOfQuestion
         question = question,
         slug = questionSlug,
         operationId = operationId,
-        startDate = resultSet.localDateOpt(operationOfQuestionAlias.startDate),
-        endDate = resultSet.localDateOpt(operationOfQuestionAlias.endDate),
+        startDate = resultSet.zonedDateTimeOpt(operationOfQuestionAlias.startDate),
+        endDate = resultSet.zonedDateTimeOpt(operationOfQuestionAlias.endDate),
         operationTitle = operationTitle,
         landingSequenceId = landingSequenceId,
         canPropose = resultSet.boolean(operationOfQuestionAlias.canPropose),
@@ -503,8 +493,8 @@ object PersistentOperationOfQuestion
     PersistentOperationOfQuestion(
       questionId = resultSet.string(resultName.questionId),
       operationId = resultSet.string(resultName.operationId),
-      startDate = resultSet.localDateOpt(resultName.startDate),
-      endDate = resultSet.localDateOpt(resultName.endDate),
+      startDate = resultSet.zonedDateTimeOpt(resultName.startDate),
+      endDate = resultSet.zonedDateTimeOpt(resultName.endDate),
       operationTitle = resultSet.string(resultName.operationTitle),
       landingSequenceId = resultSet.string(resultName.landingSequenceId),
       createdAt = resultSet.zonedDateTime(resultName.createdAt),

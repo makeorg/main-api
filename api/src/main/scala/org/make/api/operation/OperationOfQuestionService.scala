@@ -18,7 +18,7 @@
  */
 
 package org.make.api.operation
-import java.time.LocalDate
+import java.time.ZonedDateTime
 
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
@@ -64,8 +64,8 @@ trait OperationOfQuestionService {
 }
 
 final case class CreateOperationOfQuestion(operationId: OperationId,
-                                           startDate: Option[LocalDate],
-                                           endDate: Option[LocalDate],
+                                           startDate: Option[ZonedDateTime],
+                                           endDate: Option[ZonedDateTime],
                                            operationTitle: String,
                                            slug: String,
                                            country: Country,
@@ -74,7 +74,7 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]],
                                              operationId: Option[OperationId],
-                                             openAt: Option[LocalDate])
+                                             openAt: Option[ZonedDateTime])
 
 trait OperationOfQuestionServiceComponent {
   def operationOfQuestionService: OperationOfQuestionService
