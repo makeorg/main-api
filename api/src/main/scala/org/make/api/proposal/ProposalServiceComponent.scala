@@ -655,6 +655,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
               "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
             )
+            .increment()
           Troll
         }
       }.getOrElse {
@@ -665,6 +666,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
             "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
           )
+          .increment()
         Troll
       }
     }
