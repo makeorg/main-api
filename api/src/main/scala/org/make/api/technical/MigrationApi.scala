@@ -19,17 +19,17 @@
 
 package org.make.api.technical
 
-import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.persistence.query.EventEnvelope
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.Done
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.extensions.{DefaultMailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
   ProposalServiceComponent,
@@ -37,7 +37,12 @@ import org.make.api.proposal.{
 }
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.user.UserServiceComponent
+import org.make.api.technical.crm.CrmServiceComponent
+import org.make.api.user.{
+  PersistentUserServiceComponent,
+  PersistentUserToAnonymizeServiceComponent,
+  UserServiceComponent
+}
 import org.make.api.userhistory.UserEvent.{SnapshotUser, UserRegisteredEvent}
 import org.make.api.userhistory.{
   LogUserSearchSequencesEvent,
@@ -52,6 +57,7 @@ import org.make.core.user.UserId
 import org.make.core.{DateHelper, HttpCodes, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 
 @Api(value = "Migrations")
@@ -120,8 +126,23 @@ trait MigrationApi extends Directives {
   @Path(value = "/reset-qualification-count")
   def resetQualificationCount: Route
 
+  @ApiOperation(
+    value = "extract-mailjet-anonymized-users",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @Path(value = "/extract-anon-users")
+  def extractAnonUser: Route
+
   def routes: Route =
-    emptyRoute ~ replayUserRegistrationEvent ~ replayUserVoteEvent ~ replayUserHistoryEvent ~ resetQualificationCount
+    emptyRoute ~ replayUserRegistrationEvent ~ replayUserHistoryEvent ~ resetQualificationCount ~ extractAnonUser
 }
 
 trait MigrationApiComponent {
@@ -136,9 +157,13 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with ProposalServiceComponent
     with ProposalCoordinatorServiceComponent
     with UserServiceComponent
+    with PersistentUserServiceComponent
+    with PersistentUserToAnonymizeServiceComponent
     with UserHistoryCoordinatorComponent
     with ReadJournalComponent
-    with ActorSystemComponent =>
+    with ActorSystemComponent
+    with CrmServiceComponent
+    with DefaultMailJetConfigurationComponent =>
 
   override lazy val migrationApi: MigrationApi = new MigrationApi {
     override def emptyRoute: Route =
@@ -307,6 +332,57 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                   }
                   .runForeach(_ => Done)
                 provideAsync(futureToComplete) { _ =>
+                  complete(StatusCodes.NoContent)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    private def addMailsToUserToAnonymize(listId: String): Future[Done] = {
+      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+      val limit = 1000
+      Source
+        .unfoldAsync(1) { page =>
+          crmService.getUsersMailFromList(listId = listId, offset = (page - 1) * limit, limit = limit).map {
+            getUsersMails =>
+              if (getUsersMails.data.isEmpty) {
+                None
+              } else {
+                Some((page + 1, getUsersMails.data.map(_.email)))
+              }
+          }
+        }
+        .mapAsync(1)(
+          mailjetMails =>
+            persistentUserService
+              .findAllByEmail(mailjetMails)
+              .map(users => (users.map(_.email), mailjetMails))
+        )
+        .map {
+          case (usersMail, mailjetMails) => mailjetMails.filterNot(usersMail.contains).distinct
+        }
+        .mapConcat(_.toList)
+        .mapAsync(10)(persistentUserToAnonymizeService.create)
+        .groupedWithin(1000, 500.milliseconds)
+        .map(n => logger.info(s"${n.size} mails where added to user_to_anonymize"))
+        .runForeach(_ => ())
+    }
+
+    override def extractAnonUser: Route = post {
+      path("migrations" / "extract-anon-users") {
+        withoutRequestTimeout {
+          makeOperation("ExtractAnonUser") { _ =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                val futureAnonDone: Future[Done.type] = for {
+                  _ <- addMailsToUserToAnonymize(mailJetConfiguration.optInListId)
+                  _ <- addMailsToUserToAnonymize(mailJetConfiguration.hardBounceListId)
+                  _ <- addMailsToUserToAnonymize(mailJetConfiguration.unsubscribeListId)
+                } yield Done
+                provideAsync(futureAnonDone) { _ =>
                   complete(StatusCodes.NoContent)
                 }
               }

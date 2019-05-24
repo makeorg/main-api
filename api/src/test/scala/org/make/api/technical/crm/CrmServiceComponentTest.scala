@@ -48,6 +48,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
+import org.mdedetrich.akka.http.support.CirceHttpSupport
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -61,6 +62,7 @@ class CrmServiceComponentTest
     with OperationServiceComponent
     with QuestionServiceComponent
     with MailJetConfigurationComponent
+    with CirceHttpSupport
     with ActorSystemComponent
     with UserHistoryCoordinatorServiceComponent
     with UserServiceComponent
