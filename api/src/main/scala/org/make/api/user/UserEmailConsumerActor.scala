@@ -19,7 +19,7 @@
 
 package org.make.api.user
 
-import java.time.LocalDate
+import java.time.ZonedDateTime
 
 import akka.actor.Props
 import akka.util.Timeout
@@ -128,7 +128,7 @@ class UserEmailConsumerActor(userService: UserService,
               None,
               None,
               None,
-              SearchOperationsOfQuestions(questionIds = None, operationId = None, openAt = Some(LocalDate.now()))
+              SearchOperationsOfQuestions(questionIds = None, operationId = None, openAt = Some(ZonedDateTime.now()))
             )
             .flatMap { opOfQuestion =>
               questionService

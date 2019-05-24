@@ -19,7 +19,7 @@
 
 package org.make.api.migrations
 
-import java.time.LocalDate
+import java.time.ZonedDateTime
 import java.util.concurrent.Executors
 
 import org.make.api.MakeApi
@@ -53,8 +53,8 @@ object CreateOperation {
                                          slug: String,
                                          question: String,
                                          title: String,
-                                         startDate: Option[LocalDate],
-                                         endDate: Option[LocalDate],
+                                         startDate: Option[ZonedDateTime],
+                                         endDate: Option[ZonedDateTime],
                                          sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default,
                                          canPropose: Boolean = true,
                                          aboutUrl: Option[String])

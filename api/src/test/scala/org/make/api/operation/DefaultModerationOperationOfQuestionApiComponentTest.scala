@@ -18,7 +18,7 @@
  */
 
 package org.make.api.operation
-import java.time.LocalDate
+import java.time.ZonedDateTime
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -469,7 +469,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           ContentTypes.`application/json`,
           CreateOperationOfQuestionRequest(
             operationId = OperationId("some-operation"),
-            startDate = Some(LocalDate.parse("2018-12-01")),
+            startDate = Some(ZonedDateTime.parse("2018-12-01T10:15:30+00:00")),
             endDate = None,
             operationTitle = "my-operation",
             country = Country("FR"),
@@ -493,7 +493,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         .withEntity(
           ContentTypes.`application/json`,
           ModifyOperationOfQuestionRequest(
-            startDate = Some(LocalDate.parse("2018-12-01")),
+            startDate = Some(ZonedDateTime.parse("2018-12-01T10:15:30+00:00")),
             endDate = None,
             canPropose = true,
             question = "question ?",

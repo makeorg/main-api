@@ -19,7 +19,7 @@
 
 package org.make.api.operation
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 import java.util.{Date, UUID}
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -174,7 +174,7 @@ class ModerationOperationApiTest
         details = OperationOfQuestion(
           questionId = QuestionId("first-question-id"),
           operationId = OperationId("firstOperation"),
-          startDate = Some(LocalDate.parse("2018-02-02")),
+          startDate = Some(ZonedDateTime.parse("2018-02-02T10:15:30+00:00")),
           endDate = None,
           operationTitle = "première operation",
           landingSequenceId = SequenceId("first-sequence-id"),
