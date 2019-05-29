@@ -46,6 +46,33 @@ import scala.annotation.meta.field
 trait AdminUserApi extends Directives {
 
   @ApiOperation(
+    value = "get-users",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "role", paramType = "query", dataType = "string", defaultValue = "ROLE_MODERATOR")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[AdminUserResponse]]))
+  )
+  @Path(value = "/users")
+  def getUsers: Route
+
+  @ApiOperation(
     value = "get-moderator",
     httpMethod = "GET",
     code = HttpCodes.OK,
@@ -198,7 +225,7 @@ trait AdminUserApi extends Directives {
   def anonymizeUserByEmail: Route
 
   def routes: Route =
-    getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser ~ anonymizeUserByEmail
+    getUsers ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser ~ anonymizeUserByEmail
 }
 
 trait AdminUserApiComponent {
@@ -221,6 +248,44 @@ trait DefaultAdminUserApiComponent
   override lazy val adminUserApi: AdminUserApi = new AdminUserApi {
 
     val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
+
+    override def getUsers: Route = get {
+      path("admin" / "users") {
+        makeOperation("GetUsers") { _ =>
+          parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'email.?, 'role.as[String].?)) {
+            (start: Option[Int],
+             end: Option[Int],
+             sort: Option[String],
+             order: Option[String],
+             email: Option[String],
+             maybeRole: Option[String]) =>
+              makeOAuth2 { auth: AuthInfo[UserRights] =>
+                requireAdminRole(auth.user) {
+                  val role: Role = maybeRole.flatMap(Role.roles.get).getOrElse(Role.RoleModerator)
+                  provideAsync(userService.adminCountUsers(email = email, firstName = None, role = Some(role))) {
+                    count =>
+                      provideAsync(
+                        userService.adminFindUsers(
+                          start.getOrElse(0),
+                          end,
+                          sort,
+                          order,
+                          email = email,
+                          firstName = None,
+                          role = Some(role)
+                        )
+                      ) { users =>
+                        complete(
+                          (StatusCodes.OK, List(TotalCountHeader(count.toString)), users.map(AdminUserResponse.apply))
+                        )
+                      }
+                  }
+                }
+              }
+          }
+        }
+      }
+    }
 
     private def isModerator(user: User): Boolean = {
       user.roles.contains(Role.RoleModerator) || user.roles.contains(Role.RoleAdmin)
@@ -256,16 +321,23 @@ trait DefaultAdminUserApiComponent
              firstName: Option[String]) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
-                  provideAsync(userService.countModerators(email, firstName)) { count =>
-                    provideAsync(userService.findModerators(start.getOrElse(0), end, sort, order, email, firstName)) {
-                      moderators =>
-                        complete(
-                          (
-                            StatusCodes.OK,
-                            List(TotalCountHeader(count.toString)),
-                            moderators.map(ModeratorResponse.apply)
-                          )
-                        )
+                  provideAsync(
+                    userService.adminCountUsers(email = email, firstName = firstName, role = Some(Role.RoleModerator))
+                  ) { count =>
+                    provideAsync(
+                      userService.adminFindUsers(
+                        start.getOrElse(0),
+                        end,
+                        sort,
+                        order,
+                        email = email,
+                        firstName = None,
+                        role = Some(Role.RoleModerator)
+                      )
+                    ) { users =>
+                      complete(
+                        (StatusCodes.OK, List(TotalCountHeader(count.toString)), users.map(ModeratorResponse.apply))
+                      )
                     }
                   }
                 }
@@ -523,5 +595,36 @@ object ModeratorResponse extends CirceFormatters {
     country = user.country,
     language = user.language,
     availableQuestions = user.availableQuestions
+  )
+}
+
+case class AdminUserResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  organisationName: Option[String],
+  @(ApiModelProperty @field)(dataType = "boolean") isOrganisation: Boolean,
+  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language
+) {
+  validate(validateUserInput("email", email, None))
+}
+
+object AdminUserResponse extends CirceFormatters {
+  implicit val encoder: ObjectEncoder[AdminUserResponse] = deriveEncoder[AdminUserResponse]
+  implicit val decoder: Decoder[AdminUserResponse] = deriveDecoder[AdminUserResponse]
+
+  def apply(user: User): AdminUserResponse = AdminUserResponse(
+    id = user.userId,
+    email = user.email,
+    firstName = user.firstName,
+    organisationName = user.organisationName,
+    isOrganisation = user.isOrganisation,
+    lastName = user.lastName,
+    roles = user.roles,
+    country = user.country,
+    language = user.language
   )
 }

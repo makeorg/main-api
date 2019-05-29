@@ -182,7 +182,9 @@ class AdminUserApiTest
       )
     val listModerator = Seq(moderator1, moderator2, admin1)
 
-    Mockito.when(userService.countModerators(None, None)).thenReturn(Future.successful(listModerator.size))
+    Mockito
+      .when(userService.adminCountUsers(None, None, Some(Role.RoleModerator)))
+      .thenReturn(Future.successful(listModerator.size))
 
     scenario("unauthenticate user unauthorized to get moderator") {
       Get("/admin/moderators") ~> routes ~> check {
@@ -206,7 +208,7 @@ class AdminUserApiTest
 
     scenario("get all moderators") {
       Mockito
-        .when(userService.findModerators(0, None, None, None, None, None))
+        .when(userService.adminFindUsers(0, None, None, None, None, None, Some(Role.RoleModerator)))
         .thenReturn(Future.successful(listModerator))
       Get("/admin/moderators")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
