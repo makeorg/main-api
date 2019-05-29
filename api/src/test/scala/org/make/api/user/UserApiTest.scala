@@ -172,15 +172,7 @@ class UserApiTest
   feature("register user") {
 
     Mockito
-      .when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          ArgumentMatchers.any[Option[QuestionId]],
-          ArgumentMatchers.any[Option[ThemeId]],
-          ArgumentMatchers.any[Option[OperationId]],
-          ArgumentMatchers.any[Country],
-          ArgumentMatchers.any[Language]
-        )
-      )
+      .when(questionService.getQuestion(ArgumentMatchers.any[QuestionId]))
       .thenReturn(
         Future.successful(
           Some(
@@ -286,7 +278,7 @@ class UserApiTest
               profession = Some("football player"),
               country = Country("FR"),
               language = Language("fr"),
-              questionId = Some(QuestionId("thequestionid"))
+              questionId = None
             )
           ),
           any[RequestContext]
@@ -500,7 +492,15 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[Country], any[Language], any[Option[String]], any[RequestContext])
+            .login(
+              any[String],
+              any[String],
+              any[Country],
+              any[Language],
+              any[Option[String]],
+              any[Option[QuestionId]],
+              any[RequestContext]
+            )
         )
         .thenReturn(
           Future.successful(
@@ -536,6 +536,7 @@ class UserApiTest
           matches(Country("FR")),
           matches(Language("fr")),
           matches(Some("192.0.0.1")),
+          any[Option[QuestionId]],
           any[RequestContext]
         )
       }
@@ -545,7 +546,15 @@ class UserApiTest
       Mockito
         .when(
           socialService
-            .login(any[String], any[String], any[Country], any[Language], any[Option[String]], any[RequestContext])
+            .login(
+              any[String],
+              any[String],
+              any[Country],
+              any[Language],
+              any[Option[String]],
+              any[Option[QuestionId]],
+              any[RequestContext]
+            )
         )
         .thenReturn(
           Future.successful(

@@ -25,6 +25,7 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.{social, UserServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 
@@ -43,6 +44,7 @@ trait SocialService {
             country: Country,
             language: Language,
             clientIp: Option[String],
+            questionId: Option[QuestionId],
             requestContext: RequestContext): Future[UserIdAndToken]
 }
 
@@ -68,6 +70,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               country: Country,
               language: Language,
               clientIp: Option[String],
+              questionId: Option[QuestionId],
               requestContext: RequestContext): Future[UserIdAndToken] = {
 
       val futureUserInfo: Future[UserInfo] = provider match {
@@ -103,7 +106,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
 
       for {
         userInfo <- futureUserInfo
-        user     <- userService.createOrUpdateUserFromSocial(userInfo, clientIp, requestContext)
+        user     <- userService.createOrUpdateUserFromSocial(userInfo, clientIp, questionId, requestContext)
         accessToken <- oauth2DataHandler.createAccessToken(
           authInfo = AuthInfo(
             user = UserRights(user.userId, user.roles, user.availableQuestions),

@@ -255,7 +255,12 @@ class UserServiceTest
         picture = Some("facebook.com/picture")
       )
 
-      val futureUser = userService.createOrUpdateUserFromSocial(info, Some("127.0.0.1"), RequestContext.empty)
+      val futureUser = userService.createOrUpdateUserFromSocial(
+        info,
+        Some("127.0.0.1"),
+        Some(QuestionId("question")),
+        RequestContext.empty
+      )
 
       val returnedProfile = Profile(
         dateOfBirth = Some(LocalDate.parse("1984-10-11")),
@@ -271,7 +276,8 @@ class UserServiceTest
         postalCode = None,
         karmaLevel = None,
         locale = None,
-        socioProfessionalCategory = None
+        socioProfessionalCategory = None,
+        registerQuestionId = Some(QuestionId("question"))
       )
 
       val returnedUser = User(
@@ -308,6 +314,7 @@ class UserServiceTest
         user.firstName should be(info.firstName)
         user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
+        user.profile.flatMap(_.registerQuestionId) should be(Some(QuestionId("question")))
 
         verify(eventBusService, times(1))
           .publish(ArgumentMatchers.argThat[AnyRef] {
@@ -378,7 +385,7 @@ class UserServiceTest
         .thenReturn(Future.successful(returnedUserWithGender))
 
       val futureUserWithGender =
-        userService.createOrUpdateUserFromSocial(infoWithGender, Some("127.0.0.1"), RequestContext.empty)
+        userService.createOrUpdateUserFromSocial(infoWithGender, Some("127.0.0.1"), None, RequestContext.empty)
 
       whenReady(futureUserWithGender, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
@@ -452,7 +459,7 @@ class UserServiceTest
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
       Mockito.when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
-      val futureUser = userService.createOrUpdateUserFromSocial(info, Some("NEW 127.0.0.1"), RequestContext.empty)
+      val futureUser = userService.createOrUpdateUserFromSocial(info, Some("NEW 127.0.0.1"), None, RequestContext.empty)
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
@@ -521,7 +528,7 @@ class UserServiceTest
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
-      val futureUser = userService.createOrUpdateUserFromSocial(info, returnedUser.lastIp, RequestContext.empty)
+      val futureUser = userService.createOrUpdateUserFromSocial(info, returnedUser.lastIp, None, RequestContext.empty)
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
@@ -592,7 +599,7 @@ class UserServiceTest
         picture = Some("facebook.com/picture")
       )
 
-      userService.createOrUpdateUserFromSocial(info, None, RequestContext.empty)
+      userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty)
 
       verify(eventBusService, Mockito.never())
         .publish(ArgumentMatchers.any[AnyRef])
