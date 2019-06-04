@@ -257,7 +257,9 @@ trait ProposalIndexationStream
               questionId = questionId,
               slug = question.slug,
               title = operationOfQuestion.operationTitle,
-              question = question.question
+              question = question.question,
+              startDate = operationOfQuestion.startDate,
+              endDate = operationOfQuestion.endDate
           )
         ),
         sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status),

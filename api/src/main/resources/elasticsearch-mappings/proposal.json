@@ -698,6 +698,16 @@
             "question": {
               "type": "text",
               "index": false
+            },
+            "startDate": {
+              "type": "date",
+              "format": "date_time",
+              "index": false
+            },
+            "endDate": {
+              "type": "date",
+              "format": "date_time",
+              "index": false
             }
           }
         },
