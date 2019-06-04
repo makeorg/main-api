@@ -109,7 +109,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           questionId = QuestionId("test-question"),
           slug = "test-question",
           title = "test question",
-          question = "test question ?"
+          question = "test question ?",
+          startDate = None,
+          endDate = None
         )
       ),
       tags = Seq.empty,
@@ -157,7 +159,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           questionId = QuestionId("test-question"),
           slug = "test-question",
           title = "test question",
-          question = "test question ?"
+          question = "test question ?",
+          startDate = None,
+          endDate = None
         )
       ),
       tags = Seq.empty,

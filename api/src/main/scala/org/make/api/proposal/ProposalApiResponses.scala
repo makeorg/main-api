@@ -105,7 +105,9 @@ final case class IndexedProposalQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   questionId: QuestionId,
   slug: String,
-  wording: IndexedProposalQuestionWordingResponse
+  wording: IndexedProposalQuestionWordingResponse,
+  startDate: Option[ZonedDateTime],
+  endDate: Option[ZonedDateTime]
 )
 
 object IndexedProposalQuestionResponse extends CirceFormatters {
@@ -196,8 +198,12 @@ object ProposalResponse extends CirceFormatters {
         IndexedProposalQuestionResponse(
           questionId = proposalQuestion.questionId,
           slug = proposalQuestion.slug,
-          wording =
-            IndexedProposalQuestionWordingResponse(title = proposalQuestion.title, question = proposalQuestion.question)
+          wording = IndexedProposalQuestionWordingResponse(
+            title = proposalQuestion.title,
+            question = proposalQuestion.question
+          ),
+          startDate = proposalQuestion.startDate,
+          endDate = proposalQuestion.endDate
         )
       },
       operationId = indexedProposal.operationId,

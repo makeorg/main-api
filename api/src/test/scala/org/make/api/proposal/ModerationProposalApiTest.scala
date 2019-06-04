@@ -678,7 +678,9 @@ class ModerationProposalApiTest
         questionId = QuestionId("question-fire-and-ice"),
         slug = "question-fire-and-ice",
         title = "title",
-        question = "question ?"
+        question = "question ?",
+        startDate = None,
+        endDate = None
       )
     )
   )

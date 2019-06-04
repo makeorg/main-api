@@ -165,7 +165,9 @@ final case class IndexedProposalQuestion(
   questionId: QuestionId,
   slug: String,
   title: String,
-  question: String
+  question: String,
+  startDate: Option[ZonedDateTime],
+  endDate: Option[ZonedDateTime]
 )
 
 object IndexedProposalQuestion extends CirceFormatters {
