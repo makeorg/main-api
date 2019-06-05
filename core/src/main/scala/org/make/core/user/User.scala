@@ -74,6 +74,16 @@ object Role extends StrictLogging {
     val shortName: String = "ROLE_ACTOR"
   }
 }
+
+final case class CustomRole(override val shortName: String) extends Role
+
+object CustomRole extends StrictLogging {
+  implicit lazy val customRoleEncoder: Encoder[CustomRole] =
+    (customRole: CustomRole) => Json.fromString(customRole.shortName)
+  implicit lazy val customRoleDecoder: Decoder[CustomRole] =
+    Decoder.decodeString.map(CustomRole(_))
+}
+
 case class MailingErrorLog(error: String, date: ZonedDateTime)
 
 case class User(userId: UserId,
