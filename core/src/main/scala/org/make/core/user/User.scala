@@ -54,6 +54,10 @@ object Role extends StrictLogging {
     maybeRole
   }
 
+  def matchCustomRole(role: String): Role = {
+    roles.getOrElse(role, CustomRole(role))
+  }
+
   case object RoleAdmin extends Role {
     val shortName: String = "ROLE_ADMIN"
   }

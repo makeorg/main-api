@@ -33,7 +33,7 @@ import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{MailingErrorLog, Role, User, UserId}
+import org.make.core.user._
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 
@@ -107,7 +107,7 @@ object PersistentUserServiceComponent {
         verificationTokenExpiresAt = verificationTokenExpiresAt,
         resetToken = resetToken,
         resetTokenExpiresAt = resetTokenExpiresAt,
-        roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toList),
+        roles = roles.split(ROLE_SEPARATOR).map(Role.matchCustomRole),
         country = Country(country),
         language = Language(language),
         profile = toProfile,
@@ -126,12 +126,11 @@ object PersistentUserServiceComponent {
     def toUserRights: UserRights = {
       UserRights(
         userId = UserId(uuid),
-        roles = roles.split(ROLE_SEPARATOR).flatMap(role => toRole(role).toSeq),
+        roles = roles.split(ROLE_SEPARATOR).map(Role.matchCustomRole),
         availableQuestions = availableQuestions.toSeq.map(QuestionId.apply)
       )
     }
 
-    private def toRole: String                      => Option[Role] = Role.matchRole
     private def toGender: String                    => Option[Gender] = Gender.matchGender
     private def toSocioProfessionalCategory: String => Option[SocioProfessionalCategory] =
       SocioProfessionalCategory.matchSocioProfessionalCategory

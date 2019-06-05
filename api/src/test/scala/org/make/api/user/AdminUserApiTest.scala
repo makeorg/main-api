@@ -32,7 +32,7 @@ import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{CustomRole, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
@@ -618,5 +618,224 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
       }
     }
+  }
+
+  feature("admin get users") {
+
+    val totoUser =
+      newModerator.copy(userId = UserId("toto-id"), email = "toto@user.fr", roles = Seq(Role.RoleCitizen))
+    val tataUser =
+      newModerator.copy(userId = UserId("tata-id"), email = "tata@user.fr", roles = Seq(CustomRole("some-custom-role")))
+    val admin =
+      newModerator.copy(
+        userId = UserId("admin1-id"),
+        email = "ad@min1.com",
+        roles = Seq(Role.RoleModerator, Role.RoleAdmin)
+      )
+    val listUsers = Seq(totoUser, tataUser, admin)
+
+    scenario("unauthenticate user unauthorized to get user") {
+      Get("/admin/users") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("citizen forbidden to get user") {
+      Get("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("moderator forbidden to get user") {
+      Get("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("get all users") {
+      Mockito
+        .when(userService.adminCountUsers(None, None, Some(Role.RoleModerator)))
+        .thenReturn(Future.successful(listUsers.size))
+      Mockito
+        .when(userService.adminFindUsers(0, None, None, None, None, None, Some(Role.RoleModerator)))
+        .thenReturn(Future.successful(listUsers))
+
+      Mockito
+        .when(userService.adminCountUsers(None, None, Some(CustomRole("some-custom-role"))))
+        .thenReturn(Future.successful(1))
+      Mockito
+        .when(userService.adminFindUsers(0, None, None, None, None, None, Some(CustomRole("some-custom-role"))))
+        .thenReturn(Future.successful(Seq(tataUser)))
+      Get("/admin/users")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val users = entityAs[Seq[AdminUserResponse]]
+        users.size should be(listUsers.size)
+      }
+
+      Get("/admin/users?role=some-custom-role")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val users = entityAs[Seq[AdminUserResponse]]
+        users.size should be(1)
+        users.head.id should be(tataUser.userId)
+      }
+    }
+  }
+
+  feature("admin update user") {
+
+    scenario("citizen forbidden to update user") {
+      Put(s"/admin/users/${citizenId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("random user unauthorized to update user") {
+      Put(s"/admin/users/${citizenId.value}") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    Mockito.when(userService.getUser(citizenId)).thenReturn(Future.successful(Some(newModerator)))
+    Mockito.when(userService.getUserByEmail(any[String])).thenReturn(Future.successful(None))
+
+    scenario("moderator forbidden to update user") {
+      Put(s"/admin/users/${moderatorId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("admin successfully update user") {
+      Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
+      val request =
+        """{
+          |  "email": "toto@user.com",
+          |  "firstName": "New Us",
+          |  "lastName": "New Er",
+          |  "isOrganisation": false,
+          |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
+          |  "country": "GB",
+          |  "language": "en",
+          |  "availableQuestions": []
+          |}
+        """.stripMargin
+
+      Put(s"/admin/users/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+
+        verify(userService)
+          .update(ArgumentMatchers.argThat[User] { user: User =>
+            user.userId == moderatorId &&
+            user.email == "toto@user.com" &&
+            user.firstName.contains("New Us") &&
+            user.lastName.contains("New Er") &&
+            user.lastIp.isEmpty &&
+            user.hashedPassword.isEmpty &&
+            user.roles == Seq(RoleModerator, RolePolitical, RoleCitizen) &&
+            user.country == Country("GB") &&
+            user.language == Language("en")
+          }, any[RequestContext])
+      }
+    }
+
+    scenario("failed because email exists") {
+      Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
+      Mockito
+        .when(userService.getUserByEmail(any[String]))
+        .thenReturn(Future.successful(Some(newModerator.copy(userId = UserId("other")))))
+      val request =
+        """{
+          |  "email": "toto@modo.com",
+          |  "firstName": "New Mod",
+          |  "lastName": "New Erator",
+          |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
+          |  "country": "GB",
+          |  "language": "en",
+          |  "availableQuestions": []
+          |}
+        """.stripMargin
+
+      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val emailError = errors.find(_.field == "email")
+        emailError should be(Some(ValidationError("email", Some("Email toto@modo.com already exists"))))
+      }
+    }
+
+    scenario("failed because new email is invalid") {
+      Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
+      Mockito.when(userService.getUserByEmail(any[String])).thenReturn(Future.successful(None))
+      val request =
+        """{
+          |  "email": "toto@modo",
+          |  "firstName": "New Mod",
+          |  "lastName": "New Erator",
+          |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
+          |  "country": "GB",
+          |  "language": "en",
+          |  "availableQuestions": []
+          |}
+        """.stripMargin
+
+      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val emailError = errors.find(_.field == "email")
+        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
+      }
+    }
+
+    scenario("moderator tries to change roles") {
+      Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
+      val request =
+        """{
+          |  "email": "mod.erator@modo.com",
+          |  "firstName": "New Mod",
+          |  "lastName": "New Erator",
+          |  "roles": ["ROLE_MODERATOR", "ROLE_CITIZEN", "ROLE_POLITICAL", "ROLE_ADMIN"],
+          |  "country": "GB",
+          |  "language": "en",
+          |  "availableQuestions": []
+          |}
+        """.stripMargin
+
+      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("validation failed for invalid roles") {
+      val request =
+        """{
+          |  "email": "mod.erator@modo.com",
+          |  "firstName": "New Mod",
+          |  "lastName": "New Erator",
+          |  "roles": "foo",
+          |  "country": "GB",
+          |  "language": "en",
+          |  "availableQuestions": []
+          |}
+        """.stripMargin
+
+      Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val rolesError = errors.find(_.field == "roles")
+        rolesError.isDefined should be(true)
+        rolesError.map(_.field) should be(Some("roles"))
+      }
+    }
+
   }
 }

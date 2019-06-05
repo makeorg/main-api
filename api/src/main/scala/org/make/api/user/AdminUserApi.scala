@@ -36,7 +36,7 @@ import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{CustomRole, Role, User, UserId}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -71,6 +71,34 @@ trait AdminUserApi extends Directives {
   )
   @Path(value = "/users")
   def getUsers: Route
+
+  @ApiOperation(
+    value = "update-user",
+    httpMethod = "PUT",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.AdminUpdateUserRequest"),
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[AdminUserResponse]))
+  )
+  @Path(value = "/users/{userId}")
+  def updateUser: Route
 
   @ApiOperation(
     value = "get-moderator",
@@ -225,7 +253,7 @@ trait AdminUserApi extends Directives {
   def anonymizeUserByEmail: Route
 
   def routes: Route =
-    getUsers ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser ~ anonymizeUserByEmail
+    getUsers ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser ~ anonymizeUserByEmail
 }
 
 trait AdminUserApiComponent {
@@ -248,10 +276,11 @@ trait DefaultAdminUserApiComponent
   override lazy val adminUserApi: AdminUserApi = new AdminUserApi {
 
     val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
+    val userId: PathMatcher1[UserId] = Segment.map(UserId.apply)
 
     override def getUsers: Route = get {
       path("admin" / "users") {
-        makeOperation("GetUsers") { _ =>
+        makeOperation("AdminGetUsers") { _ =>
           parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'email.?, 'role.as[String].?)) {
             (start: Option[Int],
              end: Option[Int],
@@ -261,7 +290,8 @@ trait DefaultAdminUserApiComponent
              maybeRole: Option[String]) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
-                  val role: Role = maybeRole.flatMap(Role.roles.get).getOrElse(Role.RoleModerator)
+                  val role: Role =
+                    maybeRole.map(Role.matchCustomRole).getOrElse(Role.RoleModerator)
                   provideAsync(userService.adminCountUsers(email = email, firstName = None, role = Some(role))) {
                     count =>
                       provideAsync(
@@ -286,6 +316,57 @@ trait DefaultAdminUserApiComponent
         }
       }
     }
+
+    override def updateUser: Route =
+      put {
+        path("admin" / "users" / userId) { userId =>
+          makeOperation("AdminUpdateUser") { requestContext =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireAdminRole(userAuth.user) {
+                decodeRequest {
+                  entity(as[AdminUpdateUserRequest]) { request: AdminUpdateUserRequest =>
+                    provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                      val lowerCasedEmail: String = request.email.getOrElse(user.email).toLowerCase()
+                      provideAsync(userService.getUserByEmail(lowerCasedEmail)) { maybeUser =>
+                        maybeUser.foreach { userToCheck =>
+                          Validation.validate(
+                            Validation.validateField(
+                              field = "email",
+                              condition = userToCheck.userId.value == user.userId.value,
+                              message = s"Email $lowerCasedEmail already exists"
+                            )
+                          )
+                        }
+
+                        onSuccess(
+                          userService.update(
+                            user.copy(
+                              email = lowerCasedEmail,
+                              firstName = request.firstName.orElse(user.firstName),
+                              lastName = request.lastName.orElse(user.lastName),
+                              country = request.country.getOrElse(user.country),
+                              language = request.language.getOrElse(user.language),
+                              organisationName = request.organisationName,
+                              isOrganisation = request.isOrganisation,
+                              roles = request.roles.map(_.map(Role.matchCustomRole)).getOrElse(user.roles),
+                              availableQuestions = request.availableQuestions
+                            ),
+                            requestContext
+                          )
+                        ) { user: User =>
+                          complete(StatusCodes.OK -> ModeratorResponse(user))
+                        }
+                      }
+                    }
+                  }
+
+                }
+              }
+
+            }
+          }
+        }
+      }
 
     private def isModerator(user: User): Boolean = {
       user.roles.contains(Role.RoleModerator) || user.roles.contains(Role.RoleAdmin)
@@ -368,7 +449,7 @@ trait DefaultAdminUserApiComponent
                           optIn = Some(false),
                           optInPartner = Some(false),
                           roles = request.roles
-                            .map(_.flatMap(Role.matchRole))
+                            .map(_.map(Role.matchCustomRole))
                             .getOrElse(Seq(Role.RoleModerator, Role.RoleCitizen)),
                           availableQuestions = request.availableQuestions
                         ),
@@ -395,7 +476,8 @@ trait DefaultAdminUserApiComponent
                 decodeRequest {
                   entity(as[UpdateModeratorRequest]) { request: UpdateModeratorRequest =>
                     provideAsyncOrNotFound(userService.getUser(moderatorId)) { user =>
-                      val roles = request.roles.map(_.flatMap(Role.matchRole)).getOrElse(user.roles)
+                      val roles =
+                        request.roles.map(_.map(Role.matchCustomRole)).getOrElse(user.roles)
                       authorize {
                         roles != user.roles && isAdmin || roles == user.roles
                       } {
@@ -499,12 +581,7 @@ final case class CreateModeratorRequest(
     validateEmail("email", email.toLowerCase),
     validateUserInput("email", email, None),
     mandatoryField("language", language),
-    mandatoryField("country", country),
-    validateField(
-      "roles",
-      roles.forall(rolesValue => rolesValue.forall(r => Role.matchRole(r).isDefined)),
-      s"roles should be none or some of these specified values: ${Role.roles.keys.mkString(",")}"
-    )
+    mandatoryField("country", country)
   )
 }
 
@@ -532,15 +609,7 @@ final case class UpdateModeratorRequest(
     firstName.map(value   => validateUserInput("firstName", value, None)),
     lastName.map(value    => validateUserInput("lastName", value, None)),
     country.map(country   => maxLength("country", maxCountryLength, country.value)),
-    language.map(language => maxLength("language", maxLanguageLength, language.value)),
-    roles.map(
-      roles =>
-        validateField(
-          "roles",
-          roles.forall(r => Role.matchRole(r).isDefined),
-          s"roles should be none or some of these specified values: ${Role.roles.keys.mkString(",")}"
-      )
-    )
+    language.map(language => maxLength("language", maxLanguageLength, language.value))
   )
 }
 
@@ -605,9 +674,11 @@ case class AdminUserResponse(
   lastName: Option[String],
   organisationName: Option[String],
   @(ApiModelProperty @field)(dataType = "boolean") isOrganisation: Boolean,
-  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
+  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[CustomRole],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  availableQuestions: Seq[QuestionId]
 ) {
   validate(validateUserInput("email", email, None))
 }
@@ -623,8 +694,36 @@ object AdminUserResponse extends CirceFormatters {
     organisationName = user.organisationName,
     isOrganisation = user.isOrganisation,
     lastName = user.lastName,
-    roles = user.roles,
+    roles = user.roles.map(role => CustomRole(role.shortName)),
     country = user.country,
-    language = user.language
+    language = user.language,
+    availableQuestions = user.availableQuestions
   )
+}
+
+final case class AdminUpdateUserRequest(
+  email: Option[String],
+  firstName: Option[String],
+  lastName: Option[String],
+  organisationName: Option[String],
+  @(ApiModelProperty @field)(dataType = "boolean") isOrganisation: Boolean,
+  roles: Option[Seq[String]],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
+  availableQuestions: Seq[QuestionId]
+) {
+  private val maxLanguageLength = 3
+  private val maxCountryLength = 3
+
+  validate(
+    email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
+    email.map(email       => validateUserInput("email", email, None)),
+    country.map(country   => maxLength("country", maxCountryLength, country.value)),
+    language.map(language => maxLength("language", maxLanguageLength, language.value))
+  )
+}
+
+object AdminUpdateUserRequest {
+  implicit val decoder: Decoder[AdminUpdateUserRequest] = deriveDecoder[AdminUpdateUserRequest]
 }
