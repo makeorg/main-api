@@ -30,11 +30,11 @@ import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.DateHelper
 import org.make.core.auth._
 import org.make.core.user.{User, UserId}
+import scalaoauth2.provider._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Success
-import scalaoauth2.provider._
 
 trait MakeDataHandlerComponent {
   def oauth2DataHandler: MakeDataHandler
@@ -86,6 +86,9 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       )
     }
 
+    private def userIsRelatedToClient(client: Client)(user: User): Boolean =
+      client.roles.isEmpty || user.roles.exists(client.roles.contains)
+
     override def validateClient(maybeCredential: Option[ClientCredential],
                                 request: AuthorizationRequest): Future[Boolean] = {
       maybeCredential match {
@@ -121,14 +124,24 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       def findUser(client: Client): Future[Option[User]] =
         request match {
           case passwordRequest: PasswordRequest =>
-            persistentUserService.findByEmailAndPassword(
-              passwordRequest.username.toLowerCase(),
-              passwordRequest.password
-            )
+            persistentUserService
+              .findByEmailAndPassword(passwordRequest.username.toLowerCase(), passwordRequest.password)
+              .flatMap {
+                case Some(user) if !userIsRelatedToClient(client)(user) =>
+                  Future.failed(ClientAccessUnauthorizedException(user, client))
+                case other => Future.successful(other)
+              }
           case _: ClientCredentialsRequest =>
             client.defaultUserId match {
-              case Some(userId) => persistentUserService.get(userId)
-              case None         => Future.successful(None)
+              case Some(userId) =>
+                persistentUserService
+                  .get(userId)
+                  .flatMap {
+                    case Some(user) if !userIsRelatedToClient(client)(user) =>
+                      Future.failed(ClientAccessUnauthorizedException(user, client))
+                    case other => Future.successful(other)
+                  }
+              case None => Future.successful(None)
             }
           case _: ImplicitRequest =>
             // TODO: implement.me when needed
@@ -200,19 +213,28 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       persistentAuthCodeService.findByCode(code).flatMap {
         case None => Future.successful(None)
         case Some(authCode) =>
-          persistentUserService
-            .get(authCode.user)
-            .map(
-              _.map(
-                user =>
-                  AuthInfo(
-                    user = UserRights(user.userId, user.roles, user.availableQuestions),
-                    clientId = Some(authCode.client.value),
-                    scope = authCode.scope,
-                    redirectUri = authCode.redirectUri
-                )
-              )
-            )
+          persistentClientService.get(authCode.client).flatMap {
+            case Some(client) =>
+              persistentUserService
+                .get(authCode.user)
+                .flatMap {
+                  case Some(user) if userIsRelatedToClient(client)(user) =>
+                    Future.successful(
+                      Some(
+                        AuthInfo(
+                          user = UserRights(user.userId, user.roles, user.availableQuestions),
+                          clientId = Some(authCode.client.value),
+                          scope = authCode.scope,
+                          redirectUri = authCode.redirectUri
+                        )
+                      )
+                    )
+                  case None => Future.successful(None)
+                  case Some(user) =>
+                    Future.failed(ClientAccessUnauthorizedException(user, client))
+                }
+            case _ => Future.successful(None)
+          }
       }
     }
 
@@ -289,3 +311,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
   }
 }
+
+case class ClientAccessUnauthorizedException(user: User, client: Client)
+    extends Exception(
+      s"User: ${user.userId} tried to connect to client ${client.clientId} with insufficient roles. " +
+        s"Expected one of: ${client.roles.map(_.shortName).mkString(", ")}." +
+        s"Actual: ${user.roles.map(_.shortName).mkString(", ")}"
+    )

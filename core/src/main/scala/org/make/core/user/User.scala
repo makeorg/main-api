@@ -35,8 +35,7 @@ sealed trait Role {
 
 object Role extends StrictLogging {
   implicit lazy val roleEncoder: Encoder[Role] = (role: Role) => Json.fromString(role.shortName)
-  implicit lazy val roleDecoder: Decoder[Role] =
-    Decoder.decodeString.emap(role => Role.matchRole(role).map(Right.apply).getOrElse(Left(s"$role is not a Role")))
+  implicit lazy val roleDecoder: Decoder[Role] = Decoder.decodeString.map(Role.matchRole)
 
   val roles: Map[String, Role] = Map(
     RoleAdmin.shortName -> RoleAdmin,
@@ -46,15 +45,7 @@ object Role extends StrictLogging {
     RoleActor.shortName -> RoleActor
   )
 
-  def matchRole(role: String): Option[Role] = {
-    val maybeRole = roles.get(role)
-    if (maybeRole.isEmpty) {
-      logger.warn(s"$role is not a role")
-    }
-    maybeRole
-  }
-
-  def matchCustomRole(role: String): Role = {
+  def matchRole(role: String): Role = {
     roles.getOrElse(role, CustomRole(role))
   }
 

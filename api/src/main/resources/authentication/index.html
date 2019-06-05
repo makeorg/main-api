@@ -66,6 +66,9 @@
               window.location.href = redirectUri + 'code=' + code;
 
             });
+          } else if (response.status == 403) {
+            console.log('error when creating authorization code', response)
+            alert('Can not connect to this OAuth client. Please contact your Make.org administrator.')
           } else {
             console.log('error when creating authorization code', response)
             alert('Connection failed')
@@ -106,7 +109,10 @@
             var token = json.access_token;
             onceSignedIn(token);
           });
-        } else {
+        } else if (response.status == 403) {
+            console.log('error when creating authorization code', response)
+            alert('Can not connect to this OAuth client. Please contact your Make.org administrator.')
+          } else {
           console.log('error when connecting', response.json())
           alert('Connection failed')
         }
@@ -132,7 +138,10 @@
             var token = json.access_token;
             onceSignedIn(token);
           });
-        } else {
+        } else if (response.status == 403) {
+            console.log('error when creating authorization code', response)
+            alert('Can not connect to this OAuth client. Please contact your Make.org administrator.')
+          } else {
           console.log('error when connecting', response.json())
           alert('Connection failed')
         }

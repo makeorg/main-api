@@ -291,7 +291,7 @@ trait DefaultAdminUserApiComponent
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   val role: Role =
-                    maybeRole.map(Role.matchCustomRole).getOrElse(Role.RoleModerator)
+                    maybeRole.map(Role.matchRole).getOrElse(Role.RoleModerator)
                   provideAsync(userService.adminCountUsers(email = email, firstName = None, role = Some(role))) {
                     count =>
                       provideAsync(
@@ -348,7 +348,7 @@ trait DefaultAdminUserApiComponent
                               language = request.language.getOrElse(user.language),
                               organisationName = request.organisationName,
                               isOrganisation = request.isOrganisation,
-                              roles = request.roles.map(_.map(Role.matchCustomRole)).getOrElse(user.roles),
+                              roles = request.roles.map(_.map(Role.matchRole)).getOrElse(user.roles),
                               availableQuestions = request.availableQuestions
                             ),
                             requestContext
@@ -359,7 +359,6 @@ trait DefaultAdminUserApiComponent
                       }
                     }
                   }
-
                 }
               }
 
@@ -449,7 +448,7 @@ trait DefaultAdminUserApiComponent
                           optIn = Some(false),
                           optInPartner = Some(false),
                           roles = request.roles
-                            .map(_.map(Role.matchCustomRole))
+                            .map(_.map(Role.matchRole))
                             .getOrElse(Seq(Role.RoleModerator, Role.RoleCitizen)),
                           availableQuestions = request.availableQuestions
                         ),
@@ -477,7 +476,7 @@ trait DefaultAdminUserApiComponent
                   entity(as[UpdateModeratorRequest]) { request: UpdateModeratorRequest =>
                     provideAsyncOrNotFound(userService.getUser(moderatorId)) { user =>
                       val roles =
-                        request.roles.map(_.map(Role.matchCustomRole)).getOrElse(user.roles)
+                        request.roles.map(_.map(Role.matchRole)).getOrElse(user.roles)
                       authorize {
                         roles != user.roles && isAdmin || roles == user.roles
                       } {
@@ -674,7 +673,7 @@ case class AdminUserResponse(
   lastName: Option[String],
   organisationName: Option[String],
   @(ApiModelProperty @field)(dataType = "boolean") isOrganisation: Boolean,
-  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[CustomRole],
+  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "list[string]")

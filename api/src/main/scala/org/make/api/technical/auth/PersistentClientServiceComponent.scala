@@ -28,7 +28,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId}
-import org.make.core.user.UserId
+import org.make.core.user.{Role, UserId}
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -40,6 +40,7 @@ trait PersistentClientServiceComponent {
 object PersistentClientServiceComponent {
 
   val GRANT_TYPE_SEPARATOR = ","
+  val ROLE_SEPARATOR = ","
 
   case class PersistentClient(uuid: String,
                               allowedGrantTypes: String,
@@ -48,7 +49,8 @@ object PersistentClientServiceComponent {
                               redirectUri: Option[String],
                               createdAt: ZonedDateTime,
                               updatedAt: ZonedDateTime,
-                              defaultUserId: Option[String]) {
+                              defaultUserId: Option[String],
+                              roles: String) {
     def toClient: Client =
       Client(
         clientId = ClientId(uuid),
@@ -58,7 +60,8 @@ object PersistentClientServiceComponent {
         redirectUri = redirectUri,
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt),
-        defaultUserId = defaultUserId.map(UserId(_))
+        defaultUserId = defaultUserId.map(UserId(_)),
+        roles = roles.split(ROLE_SEPARATOR).map(Role.matchRole)
       )
   }
 
@@ -73,7 +76,8 @@ object PersistentClientServiceComponent {
         "redirect_uri",
         "created_at",
         "updated_at",
-        "default_user_id"
+        "default_user_id",
+        "roles"
       )
 
     override val tableName: String = "oauth_client"
@@ -91,7 +95,8 @@ object PersistentClientServiceComponent {
         redirectUri = resultSet.stringOpt(clientResultName.redirectUri),
         createdAt = resultSet.zonedDateTime(clientResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(clientResultName.updatedAt),
-        defaultUserId = resultSet.stringOpt(clientResultName.defaultUserId)
+        defaultUserId = resultSet.stringOpt(clientResultName.defaultUserId),
+        roles = resultSet.string(clientResultName.roles)
       )
     }
   }
@@ -161,7 +166,8 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
               column.scope -> client.scope,
               column.createdAt -> DateHelper.now(),
               column.updatedAt -> DateHelper.now(),
-              column.defaultUserId -> client.defaultUserId.map(_.value)
+              column.defaultUserId -> client.defaultUserId.map(_.value),
+              column.roles -> client.roles.map(_.shortName).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR)
             )
         }.execute().apply()
       }).map(_ => client)

@@ -388,6 +388,8 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
       )
     case ConcurrentModification(message) =>
       complete(StatusCodes.Conflict -> message)
+    case e: ClientAccessUnauthorizedException =>
+      complete(StatusCodes.Forbidden -> ValidationError("aurhentication", Some(e.getMessage)))
     case e =>
       logger.error(s"Error on request $routeName with id $requestId", e)
       complete(
