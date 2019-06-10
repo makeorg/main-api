@@ -299,12 +299,13 @@ trait PersistentUserService {
   def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
   def findByUserIdAndPassword(userId: UserId, hashedPassword: String): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
-  def findModerators(start: Int,
+  def adminFindUsers(start: Int,
                      end: Option[Int],
                      sort: Option[String],
                      order: Option[String],
                      email: Option[String],
-                     firstName: Option[String]): Future[Seq[User]]
+                     firstName: Option[String],
+                     maybeRole: Option[Role]): Future[Seq[User]]
   def findAllOrganisations(): Future[Seq[User]]
   def findOrganisations(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
@@ -337,7 +338,7 @@ trait PersistentUserService {
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def countOrganisations(): Future[Int]
-  def countModerators(email: Option[String], firstName: Option[String]): Future[Int]
+  def adminCountUsers(email: Option[String], firstName: Option[String], maybeRole: Option[Role]): Future[Int]
   def findAllByEmail(emails: Seq[String]): Future[Seq[User]]
 }
 
@@ -438,30 +439,24 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findModerators(start: Int,
+    override def adminFindUsers(start: Int,
                                 end: Option[Int],
                                 sort: Option[String],
                                 order: Option[String],
                                 email: Option[String],
-                                firstName: Option[String]): Future[Seq[User]] = {
+                                firstName: Option[String],
+                                maybeRole: Option[Role]): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
             .from(PersistentUser.as(userAlias))
             .where(
-              sqls
-                .roundBracket(
-                  sqls
-                    .like(userAlias.roles, s"%${Role.RoleAdmin.shortName}%")
-                    .or(sqls.like(userAlias.roles, s"%${Role.RoleModerator.shortName}%"))
-                )
-                .and(
-                  sqls.toAndConditionOpt(
-                    email.map(email         => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
-                    firstName.map(firstName => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%"))
-                  )
-                )
+              sqls.toAndConditionOpt(
+                email.map(email         => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
+                firstName.map(firstName => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
+                maybeRole.map(role      => sqls.like(userAlias.roles, s"%${role.shortName}%"))
+              )
             )
 
           val queryOrdered = (sort, order) match {
@@ -1054,25 +1049,20 @@ trait DefaultPersistentUserServiceComponent extends PersistentUserServiceCompone
       })
     }
 
-    override def countModerators(email: Option[String], firstName: Option[String]): Future[Int] = {
+    override def adminCountUsers(email: Option[String],
+                                 firstName: Option[String],
+                                 maybeRole: Option[Role]): Future[Int] = {
       implicit val ctx: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentUser.as(userAlias))
             .where(
-              sqls
-                .roundBracket(
-                  sqls
-                    .like(userAlias.roles, s"%${Role.RoleAdmin.shortName}%")
-                    .or(sqls.like(userAlias.roles, s"%${Role.RoleModerator.shortName}%"))
-                )
-                .and(
-                  sqls.toAndConditionOpt(
-                    email.map(email         => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
-                    firstName.map(firstName => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%"))
-                  )
-                )
+              sqls.toAndConditionOpt(
+                email.map(email         => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
+                firstName.map(firstName => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
+                maybeRole.map(role      => sqls.like(userAlias.roles, s"%${role.shortName}%"))
+              )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
       })

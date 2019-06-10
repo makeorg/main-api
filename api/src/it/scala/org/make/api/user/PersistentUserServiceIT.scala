@@ -73,7 +73,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(profile),
@@ -115,7 +115,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin),
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator),
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
@@ -136,7 +136,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin),
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator),
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
@@ -157,7 +157,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin),
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator),
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
@@ -330,7 +330,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     resetToken = None,
     resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(profile),
@@ -350,7 +350,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           |    - lastName: Doe
           |    - email: doe@example.com
           |    - emailVerified: true
-          |    - roles: ROLE_ADMIN, ROLE_CITIZEN
+          |    - roles: ROLE_ADMIN, ROLE_MODERATOR, ROLE_CITIZEN
         """.stripMargin)
       And("""a John Doe profile with values:
           |    - gender: Male
@@ -386,8 +386,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           role shouldBe a[Role]
         })
 
-        And("the user has roles ROLE_ADMIN AND ROLE_CITIZEN")
-        user.roles shouldBe Seq(Role.RoleAdmin, Role.RoleCitizen)
+        And("the user has roles ROLE_ADMIN, ROLE_MODERATOR AND ROLE_CITIZEN")
+        user.roles shouldBe Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen)
 
         And("the user gender must be Male")
         user.profile.get.gender.get shouldBe Gender.Male
@@ -486,7 +486,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
               |    - lastName: Doe
               |    - email: doe@example.com
               |    - emailVerified: true
-              |    - roles: ROLE_ADMIN, ROLE_CITIZEN
+              |    - roles: ROLE_ADMIN, ROLE_MODERATOR, ROLE_CITIZEN
             """.stripMargin)
       When("I search the userId by email doe@example.com")
       val futureUserId: Future[Option[UserId]] = persistentUserService
@@ -617,15 +617,18 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
   feature("find moderators") {
     scenario("find all moderators") {
-      whenReady(persistentUserService.findModerators(0, None, None, None, None, None), Timeout(3.seconds)) {
-        moderators =>
-          moderators.size should be(7)
+      whenReady(
+        persistentUserService.adminFindUsers(0, None, None, None, None, None, Some(Role.RoleModerator)),
+        Timeout(3.seconds)
+      ) { moderators =>
+        moderators.size should be(6)
       }
     }
 
     scenario("find moderators with email filter") {
       whenReady(
-        persistentUserService.findModerators(0, None, None, None, Some("doe@example.com"), None),
+        persistentUserService
+          .adminFindUsers(0, None, None, None, Some("doe@example.com"), None, None),
         Timeout(3.seconds)
       ) { moderators =>
         moderators.size should be(1)

@@ -56,12 +56,13 @@ trait UserService extends ShortenedNames {
   def getUserByEmail(email: String): Future[Option[User]]
   def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
-  def findModerators(start: Int,
+  def adminFindUsers(start: Int,
                      end: Option[Int],
                      sort: Option[String],
                      order: Option[String],
                      email: Option[String],
-                     firstName: Option[String]): Future[Seq[User]]
+                     firstName: Option[String],
+                     role: Option[Role]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
   def update(user: User, requestContext: RequestContext): Future[User]
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
@@ -86,7 +87,7 @@ trait UserService extends ShortenedNames {
   def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
-  def countModerators(email: Option[String], firstName: Option[String]): Future[Int]
+  def adminCountUsers(email: Option[String], firstName: Option[String], role: Option[Role]): Future[Int]
 }
 
 case class UserRegisterData(email: String,
@@ -140,13 +141,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.findAllByUserIds(ids)
     }
 
-    override def findModerators(start: Int,
+    override def adminFindUsers(start: Int,
                                 end: Option[Int],
                                 sort: Option[String],
                                 order: Option[String],
                                 email: Option[String],
-                                firstName: Option[String]): Future[Seq[User]] = {
-      persistentUserService.findModerators(start, end, sort, order, email, firstName)
+                                firstName: Option[String],
+                                role: Option[Role]): Future[Seq[User]] = {
+      persistentUserService.adminFindUsers(start, end, sort, order, email, firstName, role)
     }
 
     private def registerUser(userRegisterData: UserRegisterData,
@@ -644,8 +646,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def countModerators(email: Option[String], firstName: Option[String]): Future[Int] = {
-      persistentUserService.countModerators(email, firstName)
+    override def adminCountUsers(email: Option[String], firstName: Option[String], role: Option[Role]): Future[Int] = {
+      persistentUserService.adminCountUsers(email, firstName, role)
     }
   }
 }
