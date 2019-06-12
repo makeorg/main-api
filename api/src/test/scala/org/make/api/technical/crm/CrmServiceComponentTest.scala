@@ -29,6 +29,7 @@ import akka.stream.scaladsl
 import com.typesafe.config.ConfigFactory
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
+import org.make.api.proposal.{ProposalCoordinatorService, ProposalCoordinatorServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -43,7 +44,7 @@ import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.history.HistoryActions.Trusted
 import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
-import org.make.core.proposal.{ProposalId, ProposalVoteAction, VoteKey}
+import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
@@ -67,6 +68,7 @@ class CrmServiceComponentTest
     with UserHistoryCoordinatorServiceComponent
     with UserServiceComponent
     with ReadJournalComponent
+    with ProposalCoordinatorServiceComponent
     with PersistentUserToAnonymizeServiceComponent {
 
   trait MakeReadJournalForMocks
@@ -86,6 +88,8 @@ class CrmServiceComponentTest
   override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
     mock[PersistentUserToAnonymizeService]
 
+  override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
+
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
   val zonedDateTimeNow: ZonedDateTime = DateHelper.now()
@@ -95,6 +99,63 @@ class CrmServiceComponentTest
   when(mailJetConfiguration.httpBufferSize).thenReturn(200)
   when(mailJetConfiguration.campaignApiKey).thenReturn("api-key")
   when(mailJetConfiguration.campaignSecretKey).thenReturn("secret-key")
+
+  val questionFr = Question(
+    questionId = QuestionId("question-fr"),
+    slug = "question-fr",
+    country = Country("FR"),
+    language = Language("fr"),
+    question = "question ?",
+    operationId = Some(OperationId("999-99-99")),
+    themeId = None
+  )
+
+  val questionGb = Question(
+    questionId = QuestionId("question-gb"),
+    slug = "question-gb",
+    country = Country("GB"),
+    language = Language("en"),
+    question = "question ?",
+    operationId = Some(OperationId("888-88-88")),
+    themeId = None
+  )
+
+  val questionIt = Question(
+    questionId = QuestionId("question-it"),
+    slug = "question-it",
+    country = Country("IT"),
+    language = Language("it"),
+    question = "question ?",
+    operationId = Some(OperationId("777-77-77")),
+    themeId = None
+  )
+
+  val proposalFr: Proposal = Proposal(
+    proposalId = ProposalId("proposalId-fr"),
+    slug = "slug",
+    content = "content",
+    author = UserId("author"),
+    labels = Seq.empty,
+    theme = None,
+    status = ProposalStatus.Accepted,
+    creationContext = RequestContext.empty,
+    createdAt = None,
+    updatedAt = None,
+    events = Nil,
+    votes = Seq.empty,
+    questionId = Some(questionFr.questionId)
+  )
+  val proposalGb: Proposal =
+    proposalFr.copy(proposalId = ProposalId("proposalId-gb"), questionId = Some(questionGb.questionId))
+  val proposalIt: Proposal =
+    proposalFr.copy(proposalId = ProposalId("proposalId-it"), questionId = Some(questionIt.questionId))
+
+  when(proposalCoordinatorService.getProposal(ProposalId("proposalId-fr")))
+    .thenReturn(Future.successful(Some(proposalFr)))
+  when(proposalCoordinatorService.getProposal(ProposalId("proposalId-gb")))
+    .thenReturn(Future.successful(Some(proposalGb)))
+  when(proposalCoordinatorService.getProposal(ProposalId("proposalId-it")))
+    .thenReturn(Future.successful(Some(proposalIt)))
 
   val defaultOperation: Operation = Operation(
     status = OperationStatus.Active,
@@ -219,7 +280,7 @@ class CrmServiceComponentTest
       action = UserAction(
         date = zonedDateTimeInThePast,
         actionType = ProposalVoteAction.name,
-        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Neutral, trust = Trusted)
+        arguments = UserVote(proposalId = ProposalId("proposalId-gb"), voteKey = VoteKey.Neutral, trust = Trusted)
       )
     )
   )
@@ -239,7 +300,7 @@ class CrmServiceComponentTest
       action = UserAction(
         date = zonedDateTimeInThePast,
         actionType = ProposalVoteAction.name,
-        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree, trust = Trusted)
+        arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
     )
   )
@@ -259,7 +320,7 @@ class CrmServiceComponentTest
       action = UserAction(
         date = zonedDateTimeInThePastAt31daysBefore,
         actionType = ProposalVoteAction.name,
-        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree, trust = Trusted)
+        arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
     )
   )
@@ -279,7 +340,7 @@ class CrmServiceComponentTest
       action = UserAction(
         date = zonedDateTimeInThePastAt31daysBefore.plusDays(2),
         actionType = ProposalVoteAction.name,
-        arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree, trust = Trusted)
+        arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
     )
   )
@@ -331,7 +392,8 @@ class CrmServiceComponentTest
       Given("a registered user without register event")
       When("I get user properties")
 
-      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEvent, Seq.empty)
+      val futureProperties =
+        crmService.getPropertiesFromUser(userWithoutRegisteredEvent, new QuestionResolver(Seq.empty, Map.empty))
       Then("data are normalized")
       whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
         maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
@@ -344,7 +406,7 @@ class CrmServiceComponentTest
         maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
         maybeProperties.accountCreationSource shouldBe Some("core")
         maybeProperties.accountCreationOrigin shouldBe None
-        maybeProperties.accountCreationOperation shouldBe None
+        maybeProperties.accountCreationSlug shouldBe None
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR")
         maybeProperties.lastCountryActivity shouldBe Some("FR")
@@ -357,7 +419,6 @@ class CrmServiceComponentTest
         maybeProperties.activeCore shouldBe None
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
-        maybeProperties.numberOfThemes shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
@@ -370,7 +431,10 @@ class CrmServiceComponentTest
 
       val dateFormatter: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
-      val futureProperties = crmService.getPropertiesFromUser(userWithoutRegisteredEventAfterDateFix, Seq.empty)
+      val futureProperties = crmService.getPropertiesFromUser(
+        userWithoutRegisteredEventAfterDateFix,
+        new QuestionResolver(Seq.empty, Map.empty)
+      )
       Then("data are not normalized")
       whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
         maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
@@ -383,7 +447,7 @@ class CrmServiceComponentTest
         maybeProperties.accountCreationDate shouldBe Some(zonedDateTimeNow.format(dateFormatter))
         maybeProperties.accountCreationSource shouldBe None
         maybeProperties.accountCreationOrigin shouldBe None
-        maybeProperties.accountCreationOperation shouldBe None
+        maybeProperties.accountCreationSlug shouldBe None
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR")
         maybeProperties.lastCountryActivity shouldBe Some("FR")
@@ -396,7 +460,6 @@ class CrmServiceComponentTest
         maybeProperties.activeCore shouldBe None
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
-        maybeProperties.numberOfThemes shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
@@ -428,19 +491,39 @@ class CrmServiceComponentTest
 
       Then("The properties are calculated from UserHistory")
 
+      val questions = Seq(
+        Question(
+          questionId = QuestionId("vff-fr"),
+          slug = "vff-fr",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "200-20-11",
+          operationId = Some(OperationId("200-20-11")),
+          None
+        ),
+        Question(
+          questionId = QuestionId("culture"),
+          slug = "culture",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "345-34-89",
+          operationId = Some(OperationId("345-34-89")),
+          None
+        ),
+        Question(
+          questionId = QuestionId("chance-aux-jeunes"),
+          slug = "chance-aux-jeunes",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "999-99-99",
+          operationId = Some(OperationId("999-99-99")),
+          None
+        )
+      )
+
       val futureProperties = crmService.getPropertiesFromUser(
         fooUser,
-        Seq(
-          Question(
-            QuestionId("question-id"),
-            "question",
-            Country("FR"),
-            Language("fr"),
-            "question ?",
-            Some(OperationId("999-99-99")),
-            None
-          )
-        )
+        new QuestionResolver(questions, operations.map(operation => operation.slug -> operation.operationId).toMap)
       )
       whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
         maybeProperties.userId shouldBe Some(UserId("1"))
@@ -453,7 +536,7 @@ class CrmServiceComponentTest
         maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
         maybeProperties.accountCreationSource shouldBe Some("core")
         maybeProperties.accountCreationOrigin shouldBe None
-        maybeProperties.accountCreationOperation shouldBe Some("999-99-99")
+        maybeProperties.accountCreationSlug shouldBe Some("chance-aux-jeunes")
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR,IT,GB")
         maybeProperties.lastCountryActivity shouldBe Some("FR")
@@ -466,11 +549,10 @@ class CrmServiceComponentTest
             .plusDays(2)
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC))
         )
-        maybeProperties.operationActivity shouldBe Some("999-99-99,200-20-11,345-34-89,invalidoperation")
+        maybeProperties.operationActivity shouldBe Some("chance-aux-jeunes,vff-fr,culture")
         maybeProperties.activeCore shouldBe Some(true)
         maybeProperties.daysOfActivity shouldBe Some(3)
         maybeProperties.daysOfActivity30 shouldBe Some(1)
-        maybeProperties.numberOfThemes shouldBe Some(1)
         maybeProperties.userType shouldBe Some("B2C")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true

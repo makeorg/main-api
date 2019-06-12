@@ -47,7 +47,7 @@ trait OperationService extends ShortenedNames {
                  sort: Option[String] = None,
                  order: Option[String] = None,
                  slug: Option[String] = None,
-                 operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]]
+                 operationKind: Option[OperationKind] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
@@ -72,7 +72,9 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     with PersistentTagServiceComponent
     with PersistentQuestionServiceComponent =>
 
-  val operationService: OperationService = new OperationService {
+  lazy val operationService: OperationService = new DefaultOperationService
+
+  class DefaultOperationService extends OperationService {
 
     override def find(slug: Option[String] = None,
                       country: Option[Country] = None,
