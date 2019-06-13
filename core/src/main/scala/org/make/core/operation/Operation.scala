@@ -258,7 +258,8 @@ object OperationKind {
     Map(
       GreatCause.shortName -> GreatCause,
       PublicConsultation.shortName -> PublicConsultation,
-      PrivateConsultation.shortName -> PrivateConsultation
+      PrivateConsultation.shortName -> PrivateConsultation,
+      BusinessConsultation.shortName -> BusinessConsultation
     )
 
   implicit lazy val operationKindEncoder: Encoder[OperationKind] = (kind: OperationKind) =>
@@ -286,4 +287,5 @@ object OperationKind {
   case object GreatCause extends OperationKind { override val shortName: String = "GREAT_CAUSE" }
   case object PublicConsultation extends OperationKind { override val shortName: String = "PUBLIC_CONSULTATION" }
   case object PrivateConsultation extends OperationKind { override val shortName: String = "PRIVATE_CONSULTATION" }
+  case object BusinessConsultation extends OperationKind { override val shortName: String = "BUSINESS_CONSULTATION" }
 }
