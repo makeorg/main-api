@@ -34,6 +34,13 @@ case class CrmTemplates(crmTemplatesId: CrmTemplatesId,
                         proposalAcceptedOrganisation: TemplateId,
                         proposalRefusedOrganisation: TemplateId,
                         forgottenPasswordOrganisation: TemplateId)
+object CrmTemplates {
+  object MonitoringCategory {
+    val account = "account"
+    val welcome = "welcome"
+    val moderation = "moderation"
+  }
+}
 
 case class CrmTemplatesId(value: String) extends StringValue
 

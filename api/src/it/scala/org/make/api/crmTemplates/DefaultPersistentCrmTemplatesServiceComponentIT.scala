@@ -154,7 +154,11 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
       val crmTemplates4 =
         crmTemplates1.copy(crmTemplatesId = CrmTemplatesId("template-id-4"), questionId = None, locale = Some("fr_FR"))
       val crmTemplates5 =
-        crmTemplates1.copy(crmTemplatesId = CrmTemplatesId("template-id-5"), questionId = None, locale = Some("en_GB"))
+        crmTemplates1.copy(
+          crmTemplatesId = CrmTemplatesId("template-id-5"),
+          questionId = None,
+          locale = Some("other_locale")
+        )
 
       val insertDependencies = for {
         _ <- persistentQuestionService.persist(createQuestion(questionId1))
@@ -178,14 +182,14 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
       }
 
       whenReady(persistentCrmTemplatesService.find(0, None, None, Some("fr_FR")), Timeout(2.seconds)) { result =>
-        result.map(_.crmTemplatesId.value).sorted should be(Seq("template-id-4"))
+        result.map(_.crmTemplatesId.value).contains("template-id-4") should be(true)
       }
 
       whenReady(persistentCrmTemplatesService.count(Some(QuestionId("unknown")), None)) { _ should be(0) }
 
       whenReady(persistentCrmTemplatesService.count(Some(questionId3), None)) { _ should be(1) }
 
-      whenReady(persistentCrmTemplatesService.count(None, Some("en_GB"))) { _ should be(1) }
+      whenReady(persistentCrmTemplatesService.count(None, Some("other_locale"))) { _ should be(1) }
     }
   }
 

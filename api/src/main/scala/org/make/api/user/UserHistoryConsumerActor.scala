@@ -22,7 +22,6 @@ package org.make.api.user
 import akka.actor.{ActorRef, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.extensions.MailJetTemplateConfigurationExtension
 import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory._
@@ -31,7 +30,6 @@ import scala.concurrent.Future
 
 class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     extends KafkaConsumerActor[UserEventWrapper]
-    with MailJetTemplateConfigurationExtension
     with ActorEventBusServiceComponent
     with AvroSerializers {
 

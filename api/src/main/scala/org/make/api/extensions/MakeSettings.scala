@@ -69,6 +69,7 @@ class MakeSettings(config: Config) extends Extension {
     val environmentType: String = config.getString("dev.environment-type")
   }
 
+  val environment: String = config.getString("environment")
 }
 object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): MakeSettings =

@@ -21,6 +21,7 @@ package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import org.make.api.operation.OperationOfQuestionServiceComponent
+import org.make.api.crmTemplates.CrmTemplatesServiceComponent
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
 import org.make.api.question.QuestionServiceComponent
@@ -28,6 +29,7 @@ import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
+import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
@@ -66,7 +68,7 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalEmailConsumerActor
-          .props(dependencies.userService, proposalCoordinatorService, dependencies.questionService)
+          .props(dependencies.sendMailPublisherService)
           .withDispatcher(kafkaDispatcher),
         ProposalEmailConsumerActor.name
       )
@@ -91,16 +93,19 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
 
 object ProposalSupervisor {
 
-  type ProposalSupervisorDependencies = UserServiceComponent
+  type ProposalSupervisorDependencies = CrmTemplatesServiceComponent
+    with UserServiceComponent
     with OrganisationServiceComponent
-    with TagServiceComponent
-    with SequenceServiceComponent
-    with QuestionServiceComponent
-    with SemanticComponent
     with ProposalSearchEngineComponent
     with ProposalIndexerServiceComponent
+    with QuestionServiceComponent
+    with SemanticComponent
+    with SendMailPublisherServiceComponent
     with SequenceConfigurationComponent
     with OperationOfQuestionServiceComponent
+    with CrmTemplatesServiceComponent
+    with SequenceServiceComponent
+    with TagServiceComponent
 
   val name: String = "proposal"
   def props(userHistoryCoordinator: ActorRef,

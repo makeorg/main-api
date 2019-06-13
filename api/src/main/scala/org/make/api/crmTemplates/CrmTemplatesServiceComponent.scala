@@ -44,7 +44,9 @@ trait CrmTemplatesService extends ShortenedNames {
 trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
   this: PersistentCrmTemplatesServiceComponent with IdGeneratorComponent =>
 
-  val crmTemplatesService: CrmTemplatesService = new CrmTemplatesService {
+  val crmTemplatesService: CrmTemplatesService = new DefaultCrmTemplatesService
+
+  class DefaultCrmTemplatesService extends CrmTemplatesService {
 
     override def getCrmTemplates(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]] = {
       persistentCrmTemplatesService.getById(crmTemplatesId)
@@ -96,7 +98,10 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
         case Some(_) => None
         case None    => locale
       }
-      persistentCrmTemplatesService.find(start, end, questionId, searchByLocale)
+      persistentCrmTemplatesService.find(start, end, questionId, searchByLocale).flatMap {
+        case crmTemplates if crmTemplates.nonEmpty || locale.isEmpty => Future.successful(crmTemplates)
+        case _                                                       => persistentCrmTemplatesService.find(start, end, None, locale)
+      }
     }
 
     override def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int] = {
