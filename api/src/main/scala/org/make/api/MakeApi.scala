@@ -108,7 +108,9 @@ trait MakeApi
     with AvroSerializers
     with BuildInfoRoutes
     with DefaultAdminCrmTemplatesApiComponent
+    with DefaultAdminFeaturedOperationApiComponent
     with DefaultAdminIdeaMappingApiComponent
+    with DefaultAdminPartnerApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAuthenticationApiComponent
     with DefaultConfigurationsApiComponent
@@ -120,6 +122,7 @@ trait MakeApi
     with DefaultElasticsearchConfigurationComponent
     with DefaultEventBusServiceComponent
     with DefaultFacebookApiComponent
+    with DefaultFeaturedOperationServiceComponent
     with DefaultGoogleApiComponent
     with DefaultHealthCheckApiComponent
     with DefaultHealthCheckServiceComponent
@@ -137,7 +140,6 @@ trait MakeApi
     with DefaultModerationOperationApiComponent
     with DefaultModerationOperationOfQuestionApiComponent
     with DefaultModerationOrganisationApiComponent
-    with DefaultAdminPartnerApiComponent
     with DefaultModerationProposalApiComponent
     with DefaultModerationQuestionComponent
     with DefaultModerationSequenceApiComponent
@@ -155,6 +157,7 @@ trait MakeApi
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmTemplatesServiceComponent
+    with DefaultPersistentFeaturedOperationServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent
@@ -302,7 +305,8 @@ trait MakeApi
       classOf[AdminUserApi],
       classOf[AdminIdeaMappingApi],
       classOf[SecurityApi],
-      classOf[AdminPartnerApi]
+      classOf[AdminPartnerApi],
+      classOf[AdminFeaturedOperationApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -327,6 +331,7 @@ trait MakeApi
       buildRoutes ~
 
       adminCrmTemplateApi.routes ~
+      adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
       adminUserApi.routes ~
       authenticationApi.routes ~

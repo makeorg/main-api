@@ -289,3 +289,41 @@ object OperationKind {
   case object PrivateConsultation extends OperationKind { override val shortName: String = "PRIVATE_CONSULTATION" }
   case object BusinessConsultation extends OperationKind { override val shortName: String = "BUSINESS_CONSULTATION" }
 }
+
+case class FeaturedOperation(featuredOperationId: FeaturedOperationId,
+                             questionId: Option[QuestionId],
+                             title: String,
+                             description: Option[String],
+                             landscapePicture: String,
+                             portraitPicture: String,
+                             altPicture: String,
+                             label: String,
+                             buttonLabel: String,
+                             internalLink: Option[String],
+                             externalLink: Option[String],
+                             slot: Int)
+
+object FeaturedOperation {
+  implicit lazy val featuredOperationEncoder: ObjectEncoder[FeaturedOperation] = deriveEncoder[FeaturedOperation]
+  implicit lazy val featuredOperationDecoder: Decoder[FeaturedOperation] = deriveDecoder[FeaturedOperation]
+}
+
+case class FeaturedOperationId(value: String) extends StringValue
+
+object FeaturedOperationId {
+  implicit lazy val featuredOperationIdEncoder: Encoder[FeaturedOperationId] =
+    (a: FeaturedOperationId) => Json.fromString(a.value)
+  implicit lazy val featuredOperationIdDecoder: Decoder[FeaturedOperationId] =
+    Decoder.decodeString.map(FeaturedOperationId(_))
+
+  implicit val featuredOperationIdFormatter: JsonFormat[FeaturedOperationId] = new JsonFormat[FeaturedOperationId] {
+    override def read(json: JsValue): FeaturedOperationId = json match {
+      case JsString(s) => FeaturedOperationId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: FeaturedOperationId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+}
