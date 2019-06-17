@@ -173,13 +173,15 @@ trait DefaultAdminCrmTemplatesApiComponent
                       provideAsync(
                         request.questionId.map(questionService.getQuestion).getOrElse(Future.successful(None))
                       ) { question =>
+                        val validateOptionalQuestion: Boolean = request.questionId.isEmpty || question.isDefined
                         Validation.validate(
                           Validation.validateEquals(
                             fieldName = "questionId",
                             message = Some("CRM templates already exist for this questionId or locale."),
                             userValue = count,
                             expectedValue = 0
-                          )
+                          ),
+                          Validation.validateField("questionId", validateOptionalQuestion, "Question is invalid")
                         )
                         onSuccess(
                           crmTemplatesService.createCrmTemplates(

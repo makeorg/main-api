@@ -134,16 +134,19 @@ trait DefaultSendMailPublisherServiceComponent
   }
 
   private def sendModerationMail(proposalId: ProposalId,
-                                 templateId: Boolean         => TemplateId,
-                                 variables: (User, Proposal) => Map[String, String]): Future[Unit] = {
+                                 questionId: Option[QuestionId],
+                                 templateId: (CrmTemplates, Boolean) => TemplateId,
+                                 variables: (User, Proposal)         => Map[String, String]): Future[Unit] = {
     val maybePublish: OptionT[Future, Unit] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
+      locale = s"${user.language.value}_${user.country.value}"
+      crmTemplates <- OptionT(findCrmTemplates(questionId, locale))
     } yield {
       if (user.emailVerified) {
         eventBusService.publish(
           SendEmail.create(
-            templateId = Some(templateId(user.isOrganisation).value.toInt),
+            templateId = Some(templateId(crmTemplates, user.isOrganisation).value.toInt),
             recipients = Seq(Recipient(email = user.email, name = user.fullName)),
             from = Some(
               Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
@@ -160,6 +163,19 @@ trait DefaultSendMailPublisherServiceComponent
         new IllegalStateException(s"proposal or user not found or user not verified for proposal ${proposalId.value}")
       )
     )
+  }
+
+  private def findCrmTemplates(questionId: Option[QuestionId], locale: String): Future[Option[CrmTemplates]] = {
+    crmTemplatesService.find(start = 0, end = None, questionId = questionId, locale = Some(locale)).map {
+      case Seq(crmTemplates) => Some(crmTemplates)
+      case seq if seq.length > 1 =>
+        logger
+          .warn(s"Concurrent templates for question: $questionId and locale $locale. Using ${seq.head.crmTemplatesId}.")
+        Some(seq.head)
+      case _ =>
+        logger.error(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
+        None
+    }
   }
 
   override def sendMailPublisherService: SendMailPublisherService = new DefaultSendMailPublisherService
@@ -195,16 +211,10 @@ trait DefaultSendMailPublisherServiceComponent
           )
         )
 
-      futureQuestionSlug.map { questionSlug =>
-        crmTemplatesService.find(0, None, questionId, Some(locale)).map {
-          case Seq(crmTemplates) => publishSendEmail(questionSlug, crmTemplates)
-          case seq if seq.length > 1 =>
-            logger.warn(
-              s"Concurrent templates for question: $questionId and locale $locale. Using ${seq.head.crmTemplatesId}."
-            )
-            publishSendEmail(questionSlug, seq.head)
-          case _ => logger.error(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
-        }
+      futureQuestionSlug.flatMap { questionSlug =>
+        findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+          publishSendEmail(questionSlug, crmTemplates)
+        })
       }
     }
 
@@ -242,16 +252,9 @@ trait DefaultSendMailPublisherServiceComponent
           )
         )
 
-      crmTemplatesService.find(0, None, questionId, Some(locale)).map {
-        case Seq(crmTemplates) => publishSendEmail(crmTemplates)
-        case seq if seq.length > 1 =>
-          logger.warn(
-            s"Concurrent templates for question: $questionId and locale $locale. Using ${seq.head.crmTemplatesId}."
-          )
-          publishSendEmail(seq.head)
-        case _ => logger.error(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
-      }
-
+      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+        publishSendEmail(crmTemplates)
+      })
     }
 
     override def publishForgottenPassword(user: User,
@@ -287,16 +290,9 @@ trait DefaultSendMailPublisherServiceComponent
           )
         )
 
-      crmTemplatesService.find(0, None, questionId, Some(locale)).map {
-        case Seq(crmTemplates) => publishSendEmail(crmTemplates)
-        case seq if seq.length > 1 =>
-          logger.warn(
-            s"Concurrent templates for question: $questionId and locale $locale. Using ${seq.head.crmTemplatesId}."
-          )
-          publishSendEmail(seq.head)
-        case _ => logger.error(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
-      }
-
+      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+        publishSendEmail(crmTemplates)
+      })
     }
 
     override def publishForgottenPasswordOrganisation(organisation: User,
@@ -332,16 +328,9 @@ trait DefaultSendMailPublisherServiceComponent
           )
         )
 
-      crmTemplatesService.find(0, None, questionId, Some(locale)).map {
-        case Seq(crmTemplates) => publishSendEmail(crmTemplates)
-        case seq if seq.length > 1 =>
-          logger.warn(
-            s"Concurrent templates for question: $questionId and locale $locale. Using ${seq.head.crmTemplatesId}."
-          )
-          publishSendEmail(seq.head)
-        case _ => logger.warn(s"No templates found for question: $questionId and locale $locale. Mail not sent.")
-      }
-
+      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+        publishSendEmail(crmTemplates)
+      })
     }
 
     override def publishAcceptProposal(proposalId: ProposalId,
@@ -372,23 +361,12 @@ trait DefaultSendMailPublisherServiceComponent
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse("")
           )
-        def template(crmTemplates: CrmTemplates)(isOrga: Boolean): TemplateId =
+        def template(crmTemplates: CrmTemplates, isOrga: Boolean): TemplateId =
           if (isOrga)
             crmTemplates.proposalAcceptedOrganisation
           else
             crmTemplates.proposalAccepted
-        crmTemplatesService.find(0, None, maybeQuestionId, locale).map {
-          case Seq(crmTemplates) =>
-            sendModerationMail(proposalId, template(crmTemplates), variables)
-          case seq if seq.length > 1 =>
-            logger.warn(
-              s"Concurrent templates for question: $maybeQuestionId and locale $locale. Using ${seq.head.crmTemplatesId}"
-            )
-            sendModerationMail(proposalId, template(seq.head), variables)
-          case _ =>
-            logger.error(s"No templates found for question: $maybeQuestionId and locale $locale. Mail not sent.")
-            ()
-        }
+        sendModerationMail(proposalId, maybeQuestionId, template, variables)
       }
     }
 
@@ -418,23 +396,12 @@ trait DefaultSendMailPublisherServiceComponent
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse("")
           )
-        def template(crmTemplates: CrmTemplates)(isOrga: Boolean): TemplateId =
+        def template(crmTemplates: CrmTemplates, isOrga: Boolean): TemplateId =
           if (isOrga)
             crmTemplates.proposalRefusedOrganisation
           else
             crmTemplates.proposalRefused
-        crmTemplatesService.find(0, None, maybeQuestionId, locale).map {
-          case Seq(crmTemplates) =>
-            sendModerationMail(proposalId, template(crmTemplates), variables)
-          case seq if seq.length > 1 =>
-            logger.warn(
-              s"Concurrent templates for question: $maybeQuestionId and locale $locale. Using ${seq.head.crmTemplatesId}"
-            )
-            sendModerationMail(proposalId, template(seq.head), variables)
-          case _ =>
-            logger.error(s"No templates found for question: $maybeQuestionId and locale $locale. Mail not sent.")
-            ()
-        }
+        sendModerationMail(proposalId, maybeQuestionId, template, variables)
       }
 
     }

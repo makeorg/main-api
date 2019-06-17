@@ -53,14 +53,14 @@ class CrmTemplatesServiceTest
         CreateCrmTemplates(
           questionId = Some(QuestionId("questionId")),
           locale = Some("locale"),
-          registration = TemplateId("registration"),
-          welcome = TemplateId("welcome"),
-          proposalAccepted = TemplateId("proposalAccepted"),
-          proposalRefused = TemplateId("proposalRefused"),
-          forgottenPassword = TemplateId("forgottenPassword"),
-          proposalAcceptedOrganisation = TemplateId("proposalAcceptedOrganisation"),
-          proposalRefusedOrganisation = TemplateId("proposalRefusedOrganisation"),
-          forgottenPasswordOrganisation = TemplateId("forgottenPasswordOrganisation")
+          registration = TemplateId("123456"),
+          welcome = TemplateId("123456"),
+          proposalAccepted = TemplateId("123456"),
+          proposalRefused = TemplateId("123456"),
+          forgottenPassword = TemplateId("123456"),
+          proposalAcceptedOrganisation = TemplateId("123456"),
+          proposalRefusedOrganisation = TemplateId("123456"),
+          forgottenPasswordOrganisation = TemplateId("123456")
         )
       )
 
@@ -72,14 +72,14 @@ class CrmTemplatesServiceTest
               crmTemplatesId = CrmTemplatesId("next-id"),
               questionId = Some(QuestionId("questionId")),
               locale = Some("locale"),
-              registration = TemplateId("registration"),
-              welcome = TemplateId("welcome"),
-              proposalAccepted = TemplateId("proposalAccepted"),
-              proposalRefused = TemplateId("proposalRefused"),
-              forgottenPassword = TemplateId("forgottenPassword"),
-              proposalAcceptedOrganisation = TemplateId("proposalAcceptedOrganisation"),
-              proposalRefusedOrganisation = TemplateId("proposalRefusedOrganisation"),
-              forgottenPasswordOrganisation = TemplateId("forgottenPasswordOrganisation")
+              registration = TemplateId("123456"),
+              welcome = TemplateId("123456"),
+              proposalAccepted = TemplateId("123456"),
+              proposalRefused = TemplateId("123456"),
+              forgottenPassword = TemplateId("123456"),
+              proposalAcceptedOrganisation = TemplateId("123456"),
+              proposalRefusedOrganisation = TemplateId("123456"),
+              forgottenPasswordOrganisation = TemplateId("123456")
             )
           )
         )
@@ -93,14 +93,14 @@ class CrmTemplatesServiceTest
       val futureCrmTemplates: Future[Option[CrmTemplates]] = crmTemplatesService.updateCrmTemplates(
         UpdateCrmTemplates(
           crmTemplatesId = CrmTemplatesId("fake"),
-          registration = TemplateId("registration"),
-          welcome = TemplateId("welcome"),
-          proposalAccepted = TemplateId("proposalAccepted"),
-          proposalRefused = TemplateId("proposalRefused"),
-          forgottenPassword = TemplateId("forgottenPassword"),
-          proposalAcceptedOrganisation = TemplateId("proposalAcceptedOrganisation"),
-          proposalRefusedOrganisation = TemplateId("proposalRefusedOrganisation"),
-          forgottenPasswordOrganisation = TemplateId("forgottenPasswordOrganisation")
+          registration = TemplateId("123456"),
+          welcome = TemplateId("123456"),
+          proposalAccepted = TemplateId("123456"),
+          proposalRefused = TemplateId("123456"),
+          forgottenPassword = TemplateId("123456"),
+          proposalAcceptedOrganisation = TemplateId("123456"),
+          proposalRefusedOrganisation = TemplateId("123456"),
+          forgottenPasswordOrganisation = TemplateId("123456")
         )
       )
 
@@ -114,14 +114,14 @@ class CrmTemplatesServiceTest
         crmTemplatesId = CrmTemplatesId("id"),
         questionId = Some(QuestionId("questionId")),
         locale = None,
-        registration = TemplateId("registration"),
-        welcome = TemplateId("welcome"),
-        proposalAccepted = TemplateId("proposalAccepted"),
-        proposalRefused = TemplateId("proposalRefused"),
-        forgottenPassword = TemplateId("forgottenPassword"),
-        proposalAcceptedOrganisation = TemplateId("proposalAcceptedOrganisation"),
-        proposalRefusedOrganisation = TemplateId("proposalRefusedOrganisation"),
-        forgottenPasswordOrganisation = TemplateId("forgottenPasswordOrganisation")
+        registration = TemplateId("123456"),
+        welcome = TemplateId("123456"),
+        proposalAccepted = TemplateId("123456"),
+        proposalRefused = TemplateId("123456"),
+        forgottenPassword = TemplateId("123456"),
+        proposalAcceptedOrganisation = TemplateId("123456"),
+        proposalRefusedOrganisation = TemplateId("123456"),
+        forgottenPasswordOrganisation = TemplateId("123456")
       )
       Mockito
         .when(persistentCrmTemplatesService.getById(CrmTemplatesId("id")))
@@ -133,14 +133,14 @@ class CrmTemplatesServiceTest
       val futureCrmTemplates: Future[Option[CrmTemplates]] = crmTemplatesService.updateCrmTemplates(
         UpdateCrmTemplates(
           crmTemplatesId = CrmTemplatesId("id"),
-          registration = TemplateId("registration"),
-          welcome = TemplateId("welcome"),
-          proposalAccepted = TemplateId("proposalAccepted"),
-          proposalRefused = TemplateId("proposalRefused"),
-          forgottenPassword = TemplateId("forgottenPassword"),
-          proposalAcceptedOrganisation = TemplateId("proposalAcceptedOrganisation"),
-          proposalRefusedOrganisation = TemplateId("proposalRefusedOrganisation"),
-          forgottenPasswordOrganisation = TemplateId("forgottenPasswordOrganisation")
+          registration = TemplateId("123456"),
+          welcome = TemplateId("123456"),
+          proposalAccepted = TemplateId("123456"),
+          proposalRefused = TemplateId("123456"),
+          forgottenPassword = TemplateId("123456"),
+          proposalAcceptedOrganisation = TemplateId("123456"),
+          proposalRefusedOrganisation = TemplateId("123456"),
+          forgottenPasswordOrganisation = TemplateId("123456")
         )
       )
 
@@ -155,14 +155,14 @@ class CrmTemplatesServiceTest
       crmTemplatesId = CrmTemplatesId("id"),
       questionId = Some(QuestionId("toto")),
       locale = Some("locale"),
-      registration = TemplateId("registration"),
-      welcome = TemplateId("welcome"),
-      proposalAccepted = TemplateId("proposalAccepted"),
-      proposalRefused = TemplateId("proposalRefused"),
-      forgottenPassword = TemplateId("forgottenPassword"),
-      proposalAcceptedOrganisation = TemplateId("proposalAcceptedOrganisation"),
-      proposalRefusedOrganisation = TemplateId("proposalRefusedOrganisation"),
-      forgottenPasswordOrganisation = TemplateId("forgottenPasswordOrganisation")
+      registration = TemplateId("123456"),
+      welcome = TemplateId("123456"),
+      proposalAccepted = TemplateId("123456"),
+      proposalRefused = TemplateId("123456"),
+      forgottenPassword = TemplateId("123456"),
+      proposalAcceptedOrganisation = TemplateId("123456"),
+      proposalRefusedOrganisation = TemplateId("123456"),
+      forgottenPasswordOrganisation = TemplateId("123456")
     )
 
     scenario("find crmTemplates from CrmTemplatesId with questionId and locale fallback") {

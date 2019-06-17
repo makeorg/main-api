@@ -25,6 +25,9 @@ import org.make.core.question.QuestionId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.Validation._
+
+import scala.util.Try
 
 trait CrmTemplatesServiceComponent {
   def crmTemplatesService: CrmTemplatesService
@@ -123,7 +126,30 @@ final case class CreateCrmTemplates(questionId: Option[QuestionId],
                                     forgottenPassword: TemplateId,
                                     proposalAcceptedOrganisation: TemplateId,
                                     proposalRefusedOrganisation: TemplateId,
-                                    forgottenPasswordOrganisation: TemplateId)
+                                    forgottenPasswordOrganisation: TemplateId) {
+  validate(
+    validateField("registration", Try(registration.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("welcome", Try(welcome.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("proposalAccepted", Try(proposalAccepted.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("proposalRefused", Try(proposalRefused.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("forgottenPassword", Try(forgottenPassword.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField(
+      "proposalAcceptedOrganisation",
+      Try(proposalAcceptedOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "proposalRefusedOrganisation",
+      Try(proposalRefusedOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "forgottenPasswordOrganisation",
+      Try(forgottenPasswordOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    )
+  )
+}
 
 final case class UpdateCrmTemplates(crmTemplatesId: CrmTemplatesId,
                                     registration: TemplateId,
@@ -133,4 +159,28 @@ final case class UpdateCrmTemplates(crmTemplatesId: CrmTemplatesId,
                                     forgottenPassword: TemplateId,
                                     proposalAcceptedOrganisation: TemplateId,
                                     proposalRefusedOrganisation: TemplateId,
-                                    forgottenPasswordOrganisation: TemplateId)
+                                    forgottenPasswordOrganisation: TemplateId) {
+  validate(
+    validateField("registration", Try(registration.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("welcome", Try(welcome.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("proposalAccepted", Try(proposalAccepted.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("proposalRefused", Try(proposalRefused.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("forgottenPassword", Try(forgottenPassword.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField(
+      "proposalAcceptedOrganisation",
+      Try(proposalAcceptedOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "proposalRefusedOrganisation",
+      Try(proposalRefusedOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "forgottenPasswordOrganisation",
+      Try(forgottenPasswordOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    )
+  )
+
+}
