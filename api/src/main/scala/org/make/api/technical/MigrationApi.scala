@@ -19,15 +19,24 @@
 
 package org.make.api.technical
 
+import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
+import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
+import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.proposal.{ProposalCoordinatorServiceComponent, UpdateProposalVotesVerifiedCommand}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.core.{DateHelper, HttpCodes}
+import org.make.core.proposal.{ProposalId, Vote}
+import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.tag.{Tag => _}
+
+import scala.concurrent.Future
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -35,8 +44,22 @@ trait MigrationApi extends Directives {
 
   def emptyRoute: Route
 
-  def routes: Route =
-    emptyRoute
+  @ApiOperation(
+    value = "reset-qualification-count",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
+  @Path(value = "/reset-qualification-count")
+  def resetQualificationCount: Route
+
+  def routes: Route = resetQualificationCount
 }
 
 trait MigrationApiComponent {
@@ -47,9 +70,14 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
   this: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
+    with ProposalCoordinatorServiceComponent
+    with ActorSystemComponent
+    with ReadJournalComponent
     with SessionHistoryCoordinatorServiceComponent =>
 
-  override lazy val migrationApi: MigrationApi = new MigrationApi {
+  override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
+
+  class DefaultMigrationApi extends MigrationApi {
     override def emptyRoute: Route =
       get {
         path("migrations") {
@@ -57,6 +85,49 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
         }
       }
 
+    override def resetQualificationCount: Route = post {
+      path("migrations" / "reset-qualification-count") {
+        withoutRequestTimeout {
+          makeOperation("ResetQualificationCount") { requestContext =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+                val futureToComplete: Future[Done] = proposalJournal
+                  .currentPersistenceIds()
+                  .mapAsync(4) { id =>
+                    val proposalId = ProposalId(id)
+                    proposalCoordinatorService.getProposal(proposalId)
+                  }
+                  .filter(_.exists(_.status == Accepted))
+                  .mapAsync(4) { maybeProposal =>
+                    val proposal = maybeProposal.get
+                    def updateCommand(votes: Seq[Vote]): UpdateProposalVotesVerifiedCommand = {
+                      val votesResetQualifVerified = votes.map { vote =>
+                        vote.copy(
+                          countVerified = vote.count,
+                          qualifications = vote.qualifications.map(q => q.copy(countVerified = q.count))
+                        )
+                      }
+                      UpdateProposalVotesVerifiedCommand(
+                        moderator = userAuth.user.userId,
+                        proposalId = proposal.proposalId,
+                        requestContext = requestContext,
+                        updatedAt = DateHelper.now(),
+                        votesVerified = votesResetQualifVerified
+                      )
+                    }
+                    proposalCoordinatorService.updateVotesVerified(updateCommand(proposal.votes))
+                  }
+                  .runForeach(_ => Done)
+                provideAsync(futureToComplete) { _ =>
+                  complete(StatusCodes.NoContent)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
 }
