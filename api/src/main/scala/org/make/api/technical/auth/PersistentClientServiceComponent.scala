@@ -43,6 +43,7 @@ object PersistentClientServiceComponent {
   val ROLE_SEPARATOR = ","
 
   case class PersistentClient(uuid: String,
+                              name: String,
                               allowedGrantTypes: String,
                               secret: Option[String],
                               scope: Option[String],
@@ -54,6 +55,7 @@ object PersistentClientServiceComponent {
     def toClient: Client =
       Client(
         clientId = ClientId(uuid),
+        name = name,
         allowedGrantTypes = allowedGrantTypes.split(GRANT_TYPE_SEPARATOR),
         secret = secret,
         scope = scope,
@@ -70,6 +72,7 @@ object PersistentClientServiceComponent {
     override val columnNames: Seq[String] =
       Seq(
         "uuid",
+        "name",
         "secret",
         "allowed_grant_types",
         "scope",
@@ -89,6 +92,7 @@ object PersistentClientServiceComponent {
     )(resultSet: WrappedResultSet): PersistentClient = {
       PersistentClient(
         uuid = resultSet.string(clientResultName.uuid),
+        name = resultSet.string(clientResultName.name),
         allowedGrantTypes = resultSet.string(clientResultName.allowedGrantTypes),
         secret = resultSet.stringOpt(clientResultName.secret),
         scope = resultSet.stringOpt(clientResultName.secret),
@@ -107,6 +111,9 @@ trait PersistentClientService {
   def get(clientId: ClientId): Future[Option[Client]]
   def findByClientIdAndSecret(clientId: String, secret: Option[String]): Future[Option[Client]]
   def persist(client: Client): Future[Client]
+  def update(client: Client): Future[Option[Client]]
+  def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]]
+  def count(name: Option[String]): Future[Int]
 }
 
 trait DefaultPersistentClientServiceComponent extends PersistentClientServiceComponent {
@@ -152,25 +159,103 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
     override def persist(client: Client): Future[Client] = {
       implicit val ctx: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
       Future(NamedDB('WRITE).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentClient)
             .namedValues(
               column.uuid -> client.clientId.value,
+              column.name -> client.name,
               column.allowedGrantTypes -> client.allowedGrantTypes.mkString(
                 PersistentClientServiceComponent.GRANT_TYPE_SEPARATOR
               ),
               column.secret -> client.secret,
               column.redirectUri -> client.redirectUri,
               column.scope -> client.scope,
-              column.createdAt -> DateHelper.now(),
-              column.updatedAt -> DateHelper.now(),
+              column.createdAt -> nowDate,
+              column.updatedAt -> nowDate,
               column.defaultUserId -> client.defaultUserId.map(_.value),
               column.roles -> client.roles.map(_.shortName).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR)
             )
         }.execute().apply()
       }).map(_ => client)
+    }
+
+    override def update(client: Client): Future[Option[Client]] = {
+      implicit val ctx: EC = writeExecutionContext
+      val nowDate: ZonedDateTime = DateHelper.now()
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          scalikejdbc
+            .update(PersistentClient)
+            .set(
+              column.name -> client.name,
+              column.allowedGrantTypes -> client.allowedGrantTypes.mkString(
+                PersistentClientServiceComponent.GRANT_TYPE_SEPARATOR
+              ),
+              column.secret -> client.secret,
+              column.redirectUri -> client.redirectUri,
+              column.scope -> client.scope,
+              column.createdAt -> nowDate,
+              column.updatedAt -> nowDate,
+              column.defaultUserId -> client.defaultUserId.map(_.value),
+              column.roles -> client.roles.map(_.shortName).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR)
+            )
+            .where(sqls.eq(column.uuid, client.clientId.value))
+        }.executeUpdate().apply()
+      }).map {
+        case 1 => Some(client)
+        case 0 =>
+          logger.error(s"Client '${client.clientId.value}' not found")
+          None
+      }
+    }
+
+    override def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]] = {
+      implicit val context: EC = readExecutionContext
+
+      val futurePersistentClients: Future[List[PersistentClient]] = Future(NamedDB('READ).retryableTx {
+        implicit session =>
+          withSQL {
+
+            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+              select
+                .from(PersistentClient.as(clientAlias))
+                .where(
+                  sqls.toAndConditionOpt(
+                    name
+                      .map(n => sqls.like(sqls"lower(${clientAlias.name})", s"%${n.toLowerCase.replace("%", "\\%")}%"))
+                  )
+                )
+                .offset(start)
+
+            end match {
+              case Some(limit) => query.limit(limit)
+              case None        => query
+            }
+          }.map(PersistentClient.apply()).list.apply
+      })
+
+      futurePersistentClients.map(_.map(_.toClient))
+    }
+
+    override def count(name: Option[String]): Future[Int] = {
+      implicit val context: EC = readExecutionContext
+
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+
+          select(sqls.count)
+            .from(PersistentClient.as(clientAlias))
+            .where(
+              sqls.toAndConditionOpt(
+                name
+                  .map(n => sqls.like(sqls"lower(${clientAlias.name})", s"%${n.toLowerCase.replace("%", "\\%")}%"))
+              )
+            )
+        }.map(_.int(1)).single.apply().getOrElse(0)
+      })
     }
   }
 }

@@ -26,6 +26,7 @@ import org.make.core.user.{Role, UserId}
 import org.make.core.{StringValue, Timestamped}
 
 case class Client(clientId: ClientId,
+                  name: String,
                   allowedGrantTypes: Seq[String],
                   secret: Option[String],
                   scope: Option[String],

@@ -30,6 +30,8 @@ import scala.concurrent.{Await, Future}
 
 class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClientServiceComponent {
 
+  override protected val cockroachExposedPort: Int = 40006
+
   feature("Persist a oauth client") {
     info("As a programmer")
     info("I want to be able to persist a oauth client")
@@ -44,6 +46,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         """.stripMargin)
       val client = Client(
         clientId = ClientId("apiclient"),
+        name = "client",
         allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
         secret = Some("secret"),
         scope = None,
@@ -101,6 +104,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         """.stripMargin)
       val duplicateClient = Client(
         clientId = ClientId("apiclient"),
+        name = "client",
         allowedGrantTypes = Seq("grant_type_custom"),
         secret = Some("secret"),
         scope = None,
@@ -120,5 +124,90 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
     }
   }
 
-  override protected val cockroachExposedPort: Int = 40006
+  feature("A list of oauth clients can be retrieved") {
+    val baseClient = Client(
+      clientId = ClientId("apiclient-base"),
+      name = "client",
+      allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
+      secret = Some("secret"),
+      scope = None,
+      redirectUri = None,
+      defaultUserId = None,
+      roles = Seq.empty
+    )
+
+    scenario("Get a list of all oauth clients") {
+
+      val futurePersistedClientList: Future[Seq[Client]] = for {
+        c1 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("apiclient-one")))
+        c2 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("apiclient-two")))
+        c3 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("apiclient-three")))
+      } yield Seq(c1, c2, c3)
+
+      val futureClientsLists: Future[Seq[Client]] = for {
+        _            <- futurePersistedClientList
+        foundClients <- persistentClientService.search(start = 0, end = None, name = None)
+      } yield foundClients
+
+      whenReady(futureClientsLists, Timeout(3.seconds)) { clientsList =>
+        clientsList.size >= 3 shouldBe true
+        clientsList.map(_.clientId.value).contains("apiclient-three") shouldBe true
+      }
+    }
+
+    scenario("Search oauth clients from name") {
+
+      val futurePersistedClientList: Future[Seq[Client]] = for {
+        c1 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("42"), name = "name-toto-42"))
+        c2 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("21"), name = "name-toto-21"))
+        c3 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("1"), name = "other"))
+      } yield Seq(c1, c2, c3)
+
+      val futureClientsLists: Future[Seq[Client]] = for {
+        _            <- futurePersistedClientList
+        foundClients <- persistentClientService.search(start = 0, end = None, name = Some("name-toto"))
+      } yield foundClients
+
+      whenReady(futureClientsLists, Timeout(3.seconds)) { clientsList =>
+        clientsList.size shouldBe 2
+        clientsList.map(_.clientId.value).contains("other") shouldBe false
+      }
+    }
+  }
+
+  feature("One client can be updated") {
+    val baseClient = Client(
+      clientId = ClientId("update-apiclient-base"),
+      name = "client",
+      allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
+      secret = Some("secret"),
+      scope = None,
+      redirectUri = None,
+      defaultUserId = None,
+      roles = Seq.empty
+    )
+
+    scenario("Update client") {
+      val futureClient: Future[Option[Client]] = for {
+        _ <- persistentClientService.persist(baseClient)
+        c <- persistentClientService.update(baseClient.copy(name = "updated name"))
+      } yield c
+
+      whenReady(futureClient, Timeout(3.seconds)) { result =>
+        result.map(_.clientId.value) shouldBe Some(baseClient.clientId.value)
+        result.map(_.name) shouldBe Some("updated name")
+      }
+    }
+
+    scenario("Update client that does not exists") {
+      val futureClientId: Future[Option[Client]] =
+        persistentClientService.update(baseClient.copy(clientId = ClientId("fake")))
+
+      whenReady(futureClientId, Timeout(3.seconds)) { result =>
+        Then("result should be None")
+        result shouldBe None
+      }
+    }
+  }
+
 }

@@ -88,6 +88,7 @@ class MakeDataHandlerComponentTest
 
   val exampleClient = Client(
     clientId = ClientId(clientId),
+    name = "client",
     allowedGrantTypes = Seq("grant_type", "other_grant_type"),
     secret = secret,
     scope = None,
@@ -98,6 +99,7 @@ class MakeDataHandlerComponentTest
 
   val exampleClientWithRoles = Client(
     clientId = ClientId(clientWithRolesId),
+    name = "client-with-roles",
     allowedGrantTypes = Seq("grant_type", "other_grant_type"),
     secret = secret,
     scope = None,
