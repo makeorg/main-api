@@ -58,28 +58,36 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   }
 
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
-    getUserWithValidEmail(event.userId).map(_.foreach { user =>
-      sendMailPublisherService.publishWelcome(user, event.country, event.language, event.requestContext)
-    })
+    getUserWithValidEmail(event.userId).flatMap {
+      case Some(user) =>
+        sendMailPublisherService.publishWelcome(user, event.country, event.language, event.requestContext)
+      case None => Future.successful({})
+    }
   }
 
   def handleUserRegisteredEventEvent(event: UserRegisteredEvent): Future[Unit] = {
-    getUserWithValidEmail(event.userId).map(_.foreach { user =>
-      sendMailPublisherService.publishRegistration(user, event.country, event.language, event.requestContext)
-    })
+    getUserWithValidEmail(event.userId).flatMap {
+      case Some(user) =>
+        sendMailPublisherService.publishRegistration(user, event.country, event.language, event.requestContext)
+      case None => Future.successful({})
+    }
   }
 
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
-    getUserWithValidEmail(event.userId).map(_.foreach { user =>
-      sendMailPublisherService.publishForgottenPassword(user, event.country, event.language, event.requestContext)
-    })
+    getUserWithValidEmail(event.userId).flatMap {
+      case Some(user) =>
+        sendMailPublisherService.publishForgottenPassword(user, event.country, event.language, event.requestContext)
+      case None => Future.successful({})
+    }
   }
 
   private def handleOrganisationAskPassword(event: OrganisationInitializationEvent): Future[Unit] = {
-    getUserWithValidEmail(event.userId).map(_.foreach { organisation =>
-      sendMailPublisherService
-        .publishForgottenPasswordOrganisation(organisation, event.country, event.language, event.requestContext)
-    })
+    getUserWithValidEmail(event.userId).flatMap {
+      case Some(organisation) =>
+        sendMailPublisherService
+          .publishForgottenPasswordOrganisation(organisation, event.country, event.language, event.requestContext)
+      case None => Future.successful({})
+    }
   }
 
   private def getUserWithValidEmail(userId: UserId): Future[Option[User]] = {
@@ -87,7 +95,10 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case Some(user) if user.isHardBounce =>
         log.info(s"a hardbounced user (${user.userId}) will be ignored by email consumer")
         None
-      case other => other
+      case Some(user) => Some(user)
+      case None =>
+        log.warning(s"can't find user with id $userId")
+        None
     }
   }
 }

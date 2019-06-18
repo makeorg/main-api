@@ -326,7 +326,7 @@ class AdminCrmTemplatesApiTest
   feature("update a crmTemplates") {
     val updateCrmTemplateData =
       """{
-         |  "registration": "updated",
+         |  "registration": "999999",
          |  "welcome": "12341",
          |  "proposalAccepted": "12342",
          |  "proposalRefused": "12343",
@@ -360,6 +360,26 @@ class AdminCrmTemplatesApiTest
 
     scenario("update crmTemplates with an invalid request") {
       Put("/admin/crm/templates/fake")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("update crmTemplates with an invalid template id") {
+      val updateCrmTemplateData =
+        """{
+          |  "registration": "textual",
+          |  "welcome": "12341",
+          |  "proposalAccepted": "12342",
+          |  "proposalRefused": "12343",
+          |  "forgottenPassword": "12344",
+          |  "proposalAcceptedOrganisation": "12345",
+          |  "proposalRefusedOrganisation": "12346",
+          |  "forgottenPasswordOrganisation": "12347"
+          |}""".stripMargin
+
+      Put("/admin/crm/templates/fake")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, updateCrmTemplateData))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
