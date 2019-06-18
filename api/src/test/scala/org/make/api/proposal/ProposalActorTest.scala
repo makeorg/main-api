@@ -2359,6 +2359,80 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unvote.count should be(0)
       unvote.countVerified should be(0)
     }
+
+    scenario("trusted vote and troll revote") {
+      val proposalId = ProposalId("trusted vote and troll revote")
+
+      coordinator ! ProposeCommand(
+        proposalId,
+        requestContext = RequestContext.empty,
+        user = user,
+        createdAt = DateHelper.now(),
+        content = "trusted vote and troll revote",
+        question = questionOnNothingFr,
+        initialProposal = false
+      )
+
+      expectMsgPF[Unit]() {
+        case None => fail("Proposal was not correctly proposed")
+        case _    => // ok
+      }
+
+      coordinator ! AcceptProposalCommand(
+        proposalId = proposalId,
+        moderator = UserId("some user"),
+        requestContext = RequestContext.empty,
+        sendNotificationEmail = true,
+        newContent = None,
+        labels = Seq(LabelId("action")),
+        tags = Seq(TagId("some tag id")),
+        idea = None,
+        question = questionOnTheme
+      )
+
+      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+
+      coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
+
+      val vote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to vote"))
+        .getOrElse(fail("unable to vote"))
+
+      vote.count should be(1)
+      vote.countVerified should be(1)
+
+      coordinator ! VoteProposalCommand(
+        proposalId,
+        None,
+        RequestContext.empty,
+        VoteKey.Neutral,
+        None,
+        Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
+        Troll
+      )
+      val revote = expectMsgType[Either[Exception, Option[Vote]]]
+        .getOrElse(fail("unable to revote"))
+        .getOrElse(fail("unable to revote"))
+
+      revote.count should be(1)
+      revote.countVerified should be(0)
+
+      coordinator ! GetProposal(proposalId, RequestContext.empty)
+
+      val maybeVotedProposal = expectMsgType[Option[Proposal]]
+      maybeVotedProposal should be(defined)
+      val votedProposal = maybeVotedProposal.get
+      val proposalAgree = votedProposal.votes.find(_.key == VoteKey.Agree)
+      proposalAgree should be(defined)
+      proposalAgree.map(_.count) should be(Some(0))
+      proposalAgree.map(_.countVerified) should be(Some(0))
+
+      val proposalNeutral = votedProposal.votes.find(_.key == VoteKey.Neutral)
+      proposalNeutral should be(defined)
+      proposalNeutral.map(_.count) should be(Some(1))
+      proposalNeutral.map(_.countVerified) should be(Some(0))
+
+    }
   }
 
   feature("troll detection on qualifications") {

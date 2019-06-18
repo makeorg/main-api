@@ -170,7 +170,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           requestContext = command.requestContext,
           voteKey = vote.voteKey,
           maybeOrganisationId = command.maybeOrganisationId,
-          voteTrust = command.voteTrust,
+          voteTrust = vote.trust,
           selectedQualifications = vote.qualificationKeys.keys.toSeq
         )
         val voteEvent = ProposalVoted(
