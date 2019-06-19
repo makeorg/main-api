@@ -388,6 +388,7 @@ trait DefaultSendMailPublisherServiceComponent
         def variables(user: User, proposal: Proposal): Map[String, String] =
           Map(
             "proposal_url" -> getProposalUrl(proposal, slug),
+            "proposal_text" -> proposal.content,
             "refusal_reason" -> proposal.refusalReason.getOrElse(""),
             "firstname" -> user.firstName.getOrElse(""),
             "organisation_name" -> user.organisationName.getOrElse(""),
