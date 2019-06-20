@@ -350,3 +350,38 @@ object FeaturedOperationId {
     }
   }
 }
+
+case class CurrentOperation(currentOperationId: CurrentOperationId,
+                            questionId: QuestionId,
+                            label: String,
+                            description: String,
+                            picture: String,
+                            altPicture: String,
+                            linkLabel: String,
+                            internalLink: Option[String],
+                            externalLink: Option[String])
+
+object CurrentOperation {
+  implicit lazy val currentOperationEncoder: ObjectEncoder[CurrentOperation] = deriveEncoder[CurrentOperation]
+  implicit lazy val currentOperationDecoder: Decoder[CurrentOperation] = deriveDecoder[CurrentOperation]
+}
+
+case class CurrentOperationId(value: String) extends StringValue
+
+object CurrentOperationId {
+  implicit lazy val currentOperationIdEncoder: Encoder[CurrentOperationId] =
+    (a: CurrentOperationId) => Json.fromString(a.value)
+  implicit lazy val currentOperationIdDecoder: Decoder[CurrentOperationId] =
+    Decoder.decodeString.map(CurrentOperationId(_))
+
+  implicit val currentOperationIdFormatter: JsonFormat[CurrentOperationId] = new JsonFormat[CurrentOperationId] {
+    override def read(json: JsValue): CurrentOperationId = json match {
+      case JsString(s) => CurrentOperationId(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: CurrentOperationId): JsValue = {
+      JsString(obj.value)
+    }
+  }
+}

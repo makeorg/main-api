@@ -108,6 +108,7 @@ trait MakeApi
     with AvroSerializers
     with BuildInfoRoutes
     with DefaultAdminCrmTemplatesApiComponent
+    with DefaultAdminCurrentOperationApiComponent
     with DefaultAdminFeaturedOperationApiComponent
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminPartnerApiComponent
@@ -117,6 +118,7 @@ trait MakeApi
     with DefaultCrmApiComponent
     with DefaultCrmServiceComponent
     with DefaultCrmTemplatesServiceComponent
+    with DefaultCurrentOperationServiceComponent
     with DefaultElasticSearchApiComponent
     with DefaultElasticsearchClientComponent
     with DefaultElasticsearchConfigurationComponent
@@ -157,6 +159,7 @@ trait MakeApi
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmTemplatesServiceComponent
+    with DefaultPersistentCurrentOperationServiceComponent
     with DefaultPersistentFeaturedOperationServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
@@ -306,7 +309,8 @@ trait MakeApi
       classOf[AdminIdeaMappingApi],
       classOf[SecurityApi],
       classOf[AdminPartnerApi],
-      classOf[AdminFeaturedOperationApi]
+      classOf[AdminFeaturedOperationApi],
+      classOf[AdminCurrentOperationApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -331,6 +335,7 @@ trait MakeApi
       buildRoutes ~
 
       adminCrmTemplateApi.routes ~
+      adminCurrentOperationApi.routes ~
       adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
       adminUserApi.routes ~
