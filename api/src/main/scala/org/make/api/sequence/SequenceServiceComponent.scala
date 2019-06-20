@@ -76,11 +76,60 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   includedProposals: Seq[ProposalId],
                                   tagsIds: Option[Seq[TagId]],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
-      logStartSequenceUserHisory(None, Some(sequenceId), maybeUserId, includedProposals, requestContext)
+      logStartSequenceUserHistory(None, Some(sequenceId), maybeUserId, includedProposals, requestContext)
 
       sequenceConfigurationService.getSequenceConfiguration(sequenceId).flatMap { sequenceConfiguration =>
-        startSequence(maybeUserId, sequenceConfiguration, includedProposals, tagsIds, requestContext)
+        startSequence(maybeUserId, sequenceConfiguration, includedProposals, tagsIds, requestContext).flatMap {
+          case Some(sequenceResult) if sequenceResult.proposals.size < sequenceConfiguration.sequenceSize =>
+            fallbackEmptySequence(maybeUserId, sequenceConfiguration, sequenceResult.proposals, requestContext)
+          case other => Future.successful(other)
+        }
       }
+    }
+
+    private def fallbackEmptySequence(maybeUserId: Option[UserId],
+                                      sequenceConfiguration: SequenceConfiguration,
+                                      initialSequenceProposals: Seq[ProposalResponse],
+                                      requestContext: RequestContext): Future[Option[SequenceResult]] = {
+
+      logger.warn(s"Sequence ${sequenceConfiguration.sequenceId.value} fallback for user ${requestContext.sessionId}")
+
+      for {
+        selectedProposals <- elasticsearchProposalAPI
+          .searchProposals(
+            proposal.SearchQuery(
+              filters = Some(
+                proposal.SearchFilters(question = Some(QuestionSearchFilter(Seq(sequenceConfiguration.questionId))))
+              ),
+              limit = Some(sequenceConfiguration.sequenceSize - initialSequenceProposals.size),
+              sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.DESC)))
+            )
+          )
+        sequenceVotes <- futureVotedProposalsAndVotes(maybeUserId, requestContext, selectedProposals.results.map(_.id))
+      } yield
+        Some(
+          SequenceResult(
+            id = sequenceConfiguration.sequenceId,
+            title = "deprecated",
+            slug = "deprecated",
+            proposals = selectedProposals.results
+              .map(indexed => {
+                val proposalKey =
+                  SecurityHelper.generateProposalKeyHash(
+                    indexed.id,
+                    requestContext.sessionId,
+                    requestContext.location,
+                    securityConfiguration.secureVoteSalt
+                  )
+                ProposalResponse(
+                  indexed,
+                  maybeUserId.contains(indexed.userId),
+                  sequenceVotes.get(indexed.id),
+                  proposalKey
+                )
+              }) ++ initialSequenceProposals
+          )
+        )
     }
 
     private def startSequence(maybeUserId: Option[UserId],
@@ -185,11 +234,11 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
-    private def logStartSequenceUserHisory(sequenceSlug: Option[String],
-                                           sequenceId: Option[SequenceId],
-                                           maybeUserId: Option[UserId],
-                                           includedProposals: Seq[ProposalId],
-                                           requestContext: RequestContext): Unit = {
+    private def logStartSequenceUserHistory(sequenceSlug: Option[String],
+                                            sequenceId: Option[SequenceId],
+                                            maybeUserId: Option[UserId],
+                                            includedProposals: Seq[ProposalId],
+                                            requestContext: RequestContext): Unit = {
 
       (maybeUserId, requestContext.sessionId) match {
         case (Some(userId), _) =>
