@@ -74,7 +74,9 @@ class PersistentOperationOfQuestionServiceIT
       )
     ),
     aboutUrl = None,
-    metas = Metas(title = None, description = None, picture = None)
+    metas = Metas(title = None, description = None, picture = None),
+    theme = QuestionTheme.default,
+    description = OperationOfQuestion.defaultDescription
   )
 
   def createOperationOfQuestion(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
@@ -193,7 +195,8 @@ class PersistentOperationOfQuestionServiceIT
               operationTitle = s"${baseOperationOfQuestion.operationTitle} modified",
               canPropose = false,
               sequenceCardsConfiguration =
-                baseOperationOfQuestion.sequenceCardsConfiguration.copy(pushProposalCard = PushProposalCard(false))
+                baseOperationOfQuestion.sequenceCardsConfiguration.copy(pushProposalCard = PushProposalCard(false)),
+              theme = baseOperationOfQuestion.theme.copy(color = "#424242")
             )
         )
         result <- persistentOperationOfQuestionService.getById(baseOperationOfQuestion.questionId)
@@ -206,6 +209,7 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.map(_.operationTitle) shouldBe Some(s"${baseOperationOfQuestion.operationTitle} modified")
         operationOfQuestion.map(_.canPropose) shouldBe Some(false)
         operationOfQuestion.map(_.sequenceCardsConfiguration.pushProposalCard.enabled) shouldBe Some(false)
+        operationOfQuestion.map(_.theme.color) shouldBe Some("#424242")
       }
     }
   }

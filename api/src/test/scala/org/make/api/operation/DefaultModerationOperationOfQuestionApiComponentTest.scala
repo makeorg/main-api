@@ -125,7 +125,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           )
         ),
         aboutUrl = None,
-        metas = Metas(title = None, description = None, picture = None)
+        metas = Metas(title = None, description = None, picture = None),
+        theme = QuestionTheme.default,
+        description = OperationOfQuestion.defaultDescription
       )
     )
   }
@@ -157,7 +159,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None)
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription
         )
       )
     )
@@ -214,7 +218,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None)
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -239,7 +245,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None)
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription
         )
       )
     )
@@ -315,7 +323,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None)
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -340,7 +350,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None)
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription
         )
       )
     )
@@ -512,11 +524,44 @@ class DefaultModerationOperationOfQuestionApiComponentTest
               )
             ),
             aboutUrl = None,
-            metas = Metas(title = None, description = None, picture = None)
+            metas = Metas(title = None, description = None, picture = None),
+            theme = QuestionTheme.default,
+            description = OperationOfQuestion.defaultDescription
           ).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("update with bad color") {
+
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withEntity(ContentTypes.`application/json`, """{
+            | "startDate": "2018-12-01T10:15:30+00:00",
+            | "canPropose": true,
+            | "question": "question ?",
+            | "sequenceCardsConfiguration": {
+            |   "introCard": { "enabled": true },
+            |   "pushProposalCard": { "enabled": true },
+            |   "signUpCard": { "enabled": true },
+            |   finalCard = {
+            |     "enabled": true,
+            |     "sharingEnabled": false
+            |   }
+            | },
+            | metas = { "title": "metas" },
+            | theme = {
+            |   "gradientStart": "wrongFormattedColor",
+            |   "gradientEnd": "#000000",
+            |   "color": "#000000",
+            |   "footerFontColor": "#000000"
+            | },
+            | description = "description"
+          }""".stripMargin) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
       }
     }
   }

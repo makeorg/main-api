@@ -108,4 +108,27 @@ class ValidationTest extends FeatureSpec {
 
   }
 
+  feature("color validation") {
+    val fieldName = "colorInput"
+    scenario("valid color") {
+      val color = "#424242"
+      def validation(): Unit = Validation.validate(Validation.validateColor(fieldName, color, None))
+      Matchers.noException should be thrownBy validation()
+    }
+
+    scenario("invalid color") {
+      val color1 = "red"
+      def validation1(): Unit = Validation.validate(Validation.validateColor(fieldName, color1, None))
+      an[ValidationFailedError] should be thrownBy validation1()
+
+      val color2 = "424242"
+      def validation2(): Unit = Validation.validate(Validation.validateColor(fieldName, color2, None))
+      an[ValidationFailedError] should be thrownBy validation2()
+
+      val color3 = "#42AHOD"
+      def validation3(): Unit = Validation.validate(Validation.validateColor(fieldName, color3, None))
+      an[ValidationFailedError] should be thrownBy validation3()
+    }
+  }
+
 }

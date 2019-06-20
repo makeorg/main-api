@@ -30,6 +30,7 @@ import org.make.core.operation.{
   OperationKind,
   OperationOfQuestion,
   PushProposalCard,
+  QuestionTheme,
   SequenceCardsConfiguration,
   SignUpCard
 }
@@ -91,7 +92,9 @@ trait OperationHelper {
                 linkUrl = None
               )
             ),
-            metas = Metas(title = None, description = None, picture = None)
+            metas = Metas(title = None, description = None, picture = None),
+            theme = QuestionTheme.default,
+            description = OperationOfQuestion.defaultDescription
           )
         )
       }

@@ -137,6 +137,23 @@ object Metas extends CirceFormatters {
   implicit val decoder: Decoder[Metas] = deriveDecoder[Metas]
 }
 
+final case class QuestionTheme(gradientStart: String, gradientEnd: String, color: String, footerFontColor: String)
+
+object QuestionTheme {
+  implicit val encoder: ObjectEncoder[QuestionTheme] = deriveEncoder[QuestionTheme]
+  implicit val decoder: Decoder[QuestionTheme] = deriveDecoder[QuestionTheme]
+
+  val default: QuestionTheme = {
+    val defaultColor = "#000000"
+    QuestionTheme(
+      gradientStart = defaultColor,
+      gradientEnd = defaultColor,
+      color = defaultColor,
+      footerFontColor = defaultColor
+    )
+  }
+}
+
 final case class OperationOfQuestion(questionId: QuestionId,
                                      operationId: OperationId,
                                      startDate: Option[ZonedDateTime],
@@ -146,7 +163,13 @@ final case class OperationOfQuestion(questionId: QuestionId,
                                      canPropose: Boolean,
                                      sequenceCardsConfiguration: SequenceCardsConfiguration,
                                      aboutUrl: Option[String],
-                                     metas: Metas)
+                                     metas: Metas,
+                                     theme: QuestionTheme,
+                                     description: String)
+
+object OperationOfQuestion {
+  val defaultDescription: String = ""
+}
 
 @ApiModel
 final case class OperationCountryConfiguration(

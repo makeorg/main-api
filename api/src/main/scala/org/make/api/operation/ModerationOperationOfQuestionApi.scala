@@ -33,9 +33,16 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.Validation.{validate, validateUserInput}
+import org.make.core.Validation.{validate, validateColor, validateUserInput}
 import org.make.core.auth.UserRights
-import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, PushProposalCard, SequenceCardsConfiguration}
+import org.make.core.operation.{
+  Metas,
+  OperationId,
+  OperationOfQuestion,
+  PushProposalCard,
+  QuestionTheme,
+  SequenceCardsConfiguration
+}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -352,7 +359,9 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                   canPropose = request.canPropose,
                                   sequenceCardsConfiguration = updatedSequenceCardsConfiguration,
                                   aboutUrl = request.aboutUrl,
-                                  metas = request.metas
+                                  metas = request.metas,
+                                  theme = request.theme,
+                                  description = request.description
                                 ),
                               updatedQuestion
                             )
@@ -427,8 +436,17 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   canPropose: Boolean,
                                                   sequenceCardsConfiguration: SequenceCardsConfiguration,
                                                   aboutUrl: Option[String],
-                                                  metas: Metas) {
-  validate(validateUserInput("question", question, None))
+                                                  metas: Metas,
+                                                  theme: QuestionTheme,
+                                                  description: String) {
+  validate(
+    validateUserInput("question", question, None),
+    validateUserInput("description", description, None),
+    validateColor("gradientStart", theme.gradientStart, None),
+    validateColor("gradientEnd", theme.gradientEnd, None),
+    validateColor("color", theme.color, None),
+    validateColor("footerFontColor", theme.footerFontColor, None)
+  )
 }
 
 object ModifyOperationOfQuestionRequest extends CirceFormatters {
@@ -486,7 +504,9 @@ final case class OperationOfQuestionResponse(
   canPropose: Boolean,
   sequenceCardsConfiguration: SequenceCardsConfiguration,
   aboutUrl: Option[String],
-  metas: Metas
+  metas: Metas,
+  theme: QuestionTheme,
+  description: String
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -508,7 +528,9 @@ object OperationOfQuestionResponse extends CirceFormatters {
       canPropose = operationOfQuestion.canPropose,
       sequenceCardsConfiguration = operationOfQuestion.sequenceCardsConfiguration,
       aboutUrl = operationOfQuestion.aboutUrl,
-      metas = operationOfQuestion.metas
+      metas = operationOfQuestion.metas,
+      theme = operationOfQuestion.theme,
+      description = operationOfQuestion.description
     )
   }
 }
