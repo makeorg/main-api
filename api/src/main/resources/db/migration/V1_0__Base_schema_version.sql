@@ -1,3 +1,4 @@
+SAVEPOINT cockroach_restart;
 CREATE TABLE make_user (
 	"uuid" STRING NOT NULL,
 	created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -195,4 +196,5 @@ CREATE TABLE theme_translation (
 	FAMILY "primary" (theme_uuid, language, title, slug)
 );
 
+RELEASE SAVEPOINT cockroach_restart;
 COMMIT;
