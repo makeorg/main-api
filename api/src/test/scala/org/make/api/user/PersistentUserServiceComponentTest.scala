@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
-import org.make.core.user.Role
+import org.make.core.user.{CustomRole, Role}
 import org.mockito.{ArgumentMatchers, Mockito}
 import scalikejdbc.WrappedResultSet
 
@@ -56,15 +56,15 @@ class PersistentUserServiceComponentTest
       user.roles should be(Seq[Role](Role.RoleAdmin, Role.RoleModerator))
     }
 
-    scenario("User should not fail to return roles when invalid roles") {
+    scenario("User should not fail to return roles when custom roles") {
       Given("a WrappedResultSet with a faulty role")
       Mockito.when(rs.string(ArgumentMatchers.eq(roles))).thenReturn("faulty_role")
 
       When("transformed to user")
       val user = PersistentUser.apply()(rs).toUser
 
-      Then("Role must be empty")
-      user.roles should be(empty)
+      Then("Role must be custom")
+      user.roles should be(Seq(CustomRole("faulty_role")))
     }
 
     scenario("User's Profile should be consistent") {
