@@ -27,7 +27,13 @@ dockerBaseImage := "makeorg/centos-java:latest"
 // Open 4k for jmx and 9k for http
 dockerExposedPorts := Seq(4000, 9000)
 dockerRepository := Some("nexus.prod.makeorg.tech")
-daemonUser in Docker := "user"
+
+Docker / daemonUser := "core-api"
+Docker / daemonUserUid := Some("300")
+
+Docker / daemonGroup := "apps"
+Docker / daemonGroupGid := Some("200")
+
 packageName in Docker := "make-api"
 
 dockerCommands += Cmd(
@@ -44,7 +50,13 @@ dockerCmd := Seq(
   "-J-XX:+UseG1GC",
   "-J-XX:MaxGCPauseMillis=100",
   "-J-XX:MaxMetaspaceSize=1G",
-  "-J-XX:MetaspaceSize=1G"
+  "-J-XX:MetaspaceSize=1G",
+  "-J-XX:+PrintGCDetails",
+  "-J-XX:+PrintGCDateStamps",
+  "-J-Xloggc:/var/run/gc/%t-gc.log",
+  "-J-XX:GCLogFileSize=5M",
+  "-J-XX:+PrintGCCause",
+  "-J-XX:+UseGCLogFileRotation"
 )
 
 publishLocal := {
