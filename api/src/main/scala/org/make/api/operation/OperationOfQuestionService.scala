@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, SequenceCardsConfiguration}
+import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, QuestionTheme, SequenceCardsConfiguration}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
@@ -178,7 +178,9 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         canPropose = true,
         sequenceCardsConfiguration = SequenceCardsConfiguration.default,
         aboutUrl = None,
-        metas = Metas(None, None, None)
+        metas = Metas(None, None, None),
+        theme = QuestionTheme.default,
+        description = OperationOfQuestion.defaultDescription
       )
 
       val sequenceConfiguration =

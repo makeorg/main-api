@@ -41,6 +41,8 @@ object Validation extends StrictLogging {
       "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a" +
       "\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])").r
 
+  val colorRegex: Regex = "^#[0-9a-fA-F]{6}$".r
+
   def validate(maybeRequire: Option[Requirement]*)(implicit d: DummyImplicit): Unit = validate(maybeRequire.flatten: _*)
 
   def validate(require: Requirement*): Unit = {
@@ -208,6 +210,11 @@ object Validation extends StrictLogging {
           LocalDate.now().minusYears(13).plusDays(1).isAfter(date)
     )
     validateField(fieldName, condition, message.getOrElse("Invalid date: age must be between 13 and 120"))
+  }
+
+  def validateColor(fieldName: String, userColorInput: => String, message: Option[String]): Requirement = {
+    val condition = colorRegex.findFirstIn(userColorInput).isDefined
+    validateField(fieldName, condition, message.getOrElse("Invalid color. Must be formatted '#123456'"))
   }
 
   private def exists(value: Any): Boolean = {

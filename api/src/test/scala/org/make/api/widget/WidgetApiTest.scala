@@ -41,6 +41,7 @@ import org.make.core.operation.{
   OperationId,
   OperationOfQuestion,
   PushProposalCard,
+  QuestionTheme,
   SequenceCardsConfiguration,
   SignUpCard
 }
@@ -133,7 +134,9 @@ class WidgetApiTest
         )
       ),
       aboutUrl = None,
-      metas = Metas(title = None, description = None, picture = None)
+      metas = Metas(title = None, description = None, picture = None),
+      theme = QuestionTheme.default,
+      description = OperationOfQuestion.defaultDescription
     )
 
     scenario("valid question") {

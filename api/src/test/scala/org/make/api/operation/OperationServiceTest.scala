@@ -112,7 +112,9 @@ class OperationServiceTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None)
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription
         )
       ),
       QuestionWithDetails(
@@ -148,7 +150,9 @@ class OperationServiceTest
             )
           ),
           aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None)
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription
         )
       )
     )

@@ -149,7 +149,12 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
                 PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
                 PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
-                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture
+                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture,
+                PersistentOperationOfQuestion.column.gradientStart -> operationOfQuestion.theme.gradientStart,
+                PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
+                PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
+                PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
+                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description
               )
           }.execute().apply()
         }).map(_ => operationOfQuestion)
@@ -184,7 +189,12 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
                 PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
                 PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
-                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture
+                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture,
+                PersistentOperationOfQuestion.column.gradientStart -> operationOfQuestion.theme.gradientStart,
+                PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
+                PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
+                PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
+                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description
               )
               .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
           }.execute().apply()
@@ -260,7 +270,6 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
           }.map(_.int(1)).single.apply().getOrElse(0)
         })
       }
-
     }
 
 }
@@ -291,7 +300,12 @@ final case class PersistentOperationOfQuestion(questionId: String,
                                                aboutUrl: Option[String],
                                                metaTitle: Option[String],
                                                metaDescription: Option[String],
-                                               metaPicture: Option[String]) {
+                                               metaPicture: Option[String],
+                                               gradientStart: String,
+                                               gradientEnd: String,
+                                               color: String,
+                                               footerFontColor: String,
+                                               description: String) {
   def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     questionId = QuestionId(this.questionId),
     operationId = OperationId(this.operationId),
@@ -323,7 +337,14 @@ final case class PersistentOperationOfQuestion(questionId: String,
       )
     ),
     aboutUrl = this.aboutUrl,
-    metas = Metas(title = this.metaTitle, description = this.metaDescription, picture = this.metaPicture)
+    metas = Metas(title = this.metaTitle, description = this.metaDescription, picture = this.metaPicture),
+    theme = QuestionTheme(
+      gradientStart = this.gradientStart,
+      gradientEnd = this.gradientEnd,
+      color = this.color,
+      footerFontColor = this.footerFontColor
+    ),
+    description = this.description
   )
 }
 
@@ -360,7 +381,12 @@ object PersistentOperationOfQuestion
                                            aboutUrl: Option[String],
                                            metaTitle: Option[String],
                                            metaDescription: Option[String],
-                                           metaPicture: Option[String]) {
+                                           metaPicture: Option[String],
+                                           gradientStart: String,
+                                           gradientEnd: String,
+                                           color: String,
+                                           footerFontColor: String,
+                                           description: String) {
     def toQuestionAndDetails: QuestionWithDetails = {
       QuestionWithDetails(
         question = Question(
@@ -397,7 +423,14 @@ object PersistentOperationOfQuestion
             )
           ),
           aboutUrl = aboutUrl,
-          metas = Metas(title = metaTitle, description = metaDescription, picture = metaPicture)
+          metas = Metas(title = metaTitle, description = metaDescription, picture = metaPicture),
+          theme = QuestionTheme(
+            gradientStart = this.gradientStart,
+            gradientEnd = this.gradientEnd,
+            color = this.color,
+            footerFontColor = this.footerFontColor
+          ),
+          description = this.description
         )
       )
 
@@ -448,7 +481,12 @@ object PersistentOperationOfQuestion
         aboutUrl = resultSet.stringOpt(operationOfQuestionAlias.aboutUrl),
         metaTitle = resultSet.stringOpt(operationOfQuestionAlias.metaTitle),
         metaDescription = resultSet.stringOpt(operationOfQuestionAlias.metaDescription),
-        metaPicture = resultSet.stringOpt(operationOfQuestionAlias.metaPicture)
+        metaPicture = resultSet.stringOpt(operationOfQuestionAlias.metaPicture),
+        gradientStart = resultSet.string(operationOfQuestionAlias.gradientStart),
+        gradientEnd = resultSet.string(operationOfQuestionAlias.gradientEnd),
+        color = resultSet.string(operationOfQuestionAlias.color),
+        footerFontColor = resultSet.string(operationOfQuestionAlias.footerFontColor),
+        description = resultSet.string(operationOfQuestionAlias.description)
       )
   }
 
@@ -480,7 +518,12 @@ object PersistentOperationOfQuestion
       "about_url",
       "meta_title",
       "meta_description",
-      "meta_picture"
+      "meta_picture",
+      "gradient_start",
+      "gradient_end",
+      "color",
+      "footer_font_color",
+      "description"
     )
 
   override val tableName: String = "operation_of_question"
@@ -517,7 +560,12 @@ object PersistentOperationOfQuestion
       aboutUrl = resultSet.stringOpt(resultName.aboutUrl),
       metaTitle = resultSet.stringOpt(resultName.metaTitle),
       metaDescription = resultSet.stringOpt(resultName.metaDescription),
-      metaPicture = resultSet.stringOpt(resultName.metaPicture)
+      metaPicture = resultSet.stringOpt(resultName.metaPicture),
+      gradientStart = resultSet.string(resultName.gradientStart),
+      gradientEnd = resultSet.string(resultName.gradientEnd),
+      color = resultSet.string(resultName.color),
+      footerFontColor = resultSet.string(resultName.footerFontColor),
+      description = resultSet.string(resultName.description)
     )
   }
 }

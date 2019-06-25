@@ -57,7 +57,7 @@ object ModerationQuestionResponse {
   implicit val decoder: Decoder[ModerationQuestionResponse] = deriveDecoder[ModerationQuestionResponse]
 }
 
-final case class WordingResponse(title: String, question: String, metas: Metas)
+final case class WordingResponse(title: String, question: String, description: String, metas: Metas)
 
 object WordingResponse {
   implicit val encoder: Encoder[WordingResponse] = deriveEncoder[WordingResponse]
@@ -196,7 +196,8 @@ case class QuestionDetailsResponse(
   operationKind: OperationKind,
   sequenceConfig: SequenceCardsConfigurationResponse,
   aboutUrl: Option[String],
-  partners: Seq[QuestionPartnerResponse]
+  partners: Seq[QuestionPartnerResponse],
+  theme: QuestionTheme
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -209,6 +210,7 @@ object QuestionDetailsResponse extends CirceFormatters {
     wording = WordingResponse(
       title = operationOfQuestion.operationTitle,
       question = question.question,
+      description = operationOfQuestion.description,
       metas = operationOfQuestion.metas
     ),
     question = question.question,
@@ -223,7 +225,8 @@ object QuestionDetailsResponse extends CirceFormatters {
     operationKind = operation.operationKind,
     sequenceConfig = SequenceCardsConfigurationResponse.apply(operationOfQuestion.sequenceCardsConfiguration),
     aboutUrl = operationOfQuestion.aboutUrl,
-    partners = partners.map(QuestionPartnerResponse.apply)
+    partners = partners.map(QuestionPartnerResponse.apply),
+    theme = operationOfQuestion.theme
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]
