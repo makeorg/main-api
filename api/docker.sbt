@@ -32,7 +32,7 @@ Docker / daemonUser := "core-api"
 Docker / daemonUserUid := Some("300")
 
 Docker / daemonGroup := "apps"
-Docker / daemonGroupGid := Some("200")
+Docker / daemonGroupGid := Some("2000")
 
 packageName in Docker := "make-api"
 
