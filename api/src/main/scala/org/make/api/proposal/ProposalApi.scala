@@ -206,9 +206,9 @@ trait DefaultProposalApiComponent
     with QuestionServiceComponent
     with SecurityConfigurationComponent =>
 
-  override lazy val proposalApi: DefualtProposalApi = new DefualtProposalApi
+  override lazy val proposalApi: DefaultProposalApi = new DefaultProposalApi
 
-  class DefualtProposalApi extends ProposalApi {
+  class DefaultProposalApi extends ProposalApi {
     val proposalId: PathMatcher1[ProposalId] =
       Segment.flatMap(id => Try(ProposalId(id)).toOption)
 

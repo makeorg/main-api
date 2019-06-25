@@ -26,14 +26,14 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
 import io.circe.syntax._
-import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
-import org.make.core.idea.CountrySearchFilter
+import org.make.api.{ActorSystemComponent, ItMakeTest}
+import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language}
@@ -209,40 +209,14 @@ class SortAlgorithmIT
         tags =
           Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
-    newEmptyProposal("controversy-1").copy(
-      trending = Some("controversy"),
-      votes = Seq(
-        IndexedVote(key = VoteKey.Agree, count = 42, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Disagree, count = 54, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Neutral, count = 4, qualifications = Seq.empty)
-      )
-    ),
-    newEmptyProposal("controversy-2").copy(
-      trending = Some("controversy"),
-      country = Country("42"),
-      votes = Seq(
-        IndexedVote(key = VoteKey.Agree, count = 41, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Disagree, count = 53, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Neutral, count = 2, qualifications = Seq.empty)
-      )
-    ),
-    newEmptyProposal("popular-1").copy(
-      trending = Some("popular"),
-      votes = Seq(
-        IndexedVote(key = VoteKey.Agree, count = 84, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Disagree, count = 6, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Neutral, count = 10, qualifications = Seq.empty)
-      )
-    ),
-    newEmptyProposal("popular-2").copy(
-      trending = Some("popular"),
-      country = Country("42"),
-      votes = Seq(
-        IndexedVote(key = VoteKey.Agree, count = 84, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Disagree, count = 6, qualifications = Seq.empty),
-        IndexedVote(key = VoteKey.Neutral, count = 10, qualifications = Seq.empty)
-      )
-    )
+    newEmptyProposal("controversy-1").copy(scores = IndexedScores.empty.copy(controversy = 42)),
+    newEmptyProposal("controversy-2").copy(scores = IndexedScores.empty.copy(controversy = 427)),
+    newEmptyProposal("controversy-3")
+      .copy(scores = IndexedScores.empty.copy(controversy = 21), operationId = Some(OperationId("ope-controversy"))),
+    newEmptyProposal("popular-1").copy(scores = IndexedScores.empty.copy(topScore = 42)),
+    newEmptyProposal("popular-2").copy(scores = IndexedScores.empty.copy(topScore = 21)),
+    newEmptyProposal("popular-3")
+      .copy(scores = IndexedScores.empty.copy(topScore = 456), operationId = Some(OperationId("ope-popular")))
   )
 
   feature("random algorithm") {
@@ -310,44 +284,45 @@ class SortAlgorithmIT
 
   feature("trending algorithms") {
     scenario("controversy algorithm") {
-      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm))
+      val query = SearchQuery(sortAlgorithm = Some(ControversyAlgorithm), limit = Some(2))
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(2)
-        result.results.forall(_.trending.contains("controversy")) should be(true)
+        result.results.headOption.map(_.id.value) should be(Some("controversy-2"))
       }
     }
 
     scenario("controversy algorithm with other filters") {
       val query = SearchQuery(
+        filters = Some(SearchFilters(operation = Some(OperationSearchFilter(OperationId("ope-controversy"))))),
         sortAlgorithm = Some(ControversyAlgorithm),
-        filters = Some(SearchFilters(country = Some(CountrySearchFilter(Country("42")))))
+        limit = Some(2)
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(1)
-        result.results.forall(_.trending.contains("controversy")) should be(true)
-        result.results.forall(_.id == ProposalId("controversy-2")) should be(true)
+        result.results.headOption.map(_.id.value) should be(Some("controversy-3"))
       }
     }
 
     scenario("popular algorithm") {
-      val query = SearchQuery(sortAlgorithm = Some(PopularAlgorithm))
+      val query = SearchQuery(sortAlgorithm = Some(PopularAlgorithm), limit = Some(2))
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(2)
-        result.results.forall(_.trending.contains("popular")) should be(true)
+        result.results.headOption.map(_.id.value) should be(Some("popular-3"))
       }
     }
 
     scenario("popular algorithm with other filters") {
       val query = SearchQuery(
+        filters = Some(SearchFilters(operation = Some(OperationSearchFilter(OperationId("ope-popular"))))),
         sortAlgorithm = Some(PopularAlgorithm),
-        filters = Some(SearchFilters(country = Some(CountrySearchFilter(Country("42")))))
+        limit = Some(2)
       )
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.results.size should be(1)
-        result.results.forall(_.trending.contains("popular")) should be(true)
-        result.results.forall(_.id == ProposalId("popular-2")) should be(true)
+        result.results.headOption.map(_.id.value) should be(Some("popular-3"))
       }
     }
+
   }
 
   feature("tagged first algorithm") {

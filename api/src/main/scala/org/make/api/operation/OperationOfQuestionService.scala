@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.operation.{Metas, OperationId, OperationOfQuestion, QuestionTheme, SequenceCardsConfiguration}
+import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
@@ -74,6 +74,7 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]],
                                              operationId: Option[OperationId],
+                                             operationKind: Option[Seq[OperationKind]],
                                              openAt: Option[ZonedDateTime])
 
 trait OperationOfQuestionServiceComponent {
@@ -100,6 +101,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         order,
         request.questionIds,
         request.operationId,
+        request.operationKind,
         request.openAt
       )
     }
