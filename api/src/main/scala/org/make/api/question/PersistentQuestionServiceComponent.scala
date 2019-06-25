@@ -67,9 +67,10 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
             .from(PersistentQuestion.as(questionAlias))
             .where(
               sqls.toAndConditionOpt(
-                request.country.map(country              => sqls.eq(questionAlias.country, country.value)),
-                request.language.map(language            => sqls.eq(questionAlias.language, language.value)),
-                request.maybeOperationId.map(operationId => sqls.eq(questionAlias.operationId, operationId.value)),
+                request.country.map(country   => sqls.eq(questionAlias.country, country.value)),
+                request.language.map(language => sqls.eq(questionAlias.language, language.value)),
+                request.maybeOperationIds
+                  .map(operationIds                      => sqls.in(questionAlias.operationId, operationIds.map(_.value))),
                 request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
                 request.maybeSlug.map(slug               => sqls.eq(questionAlias.slug, slug)),
                 request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
@@ -106,9 +107,10 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
             .from(PersistentQuestion.as(questionAlias))
             .where(
               sqls.toAndConditionOpt(
-                request.country.map(country              => sqls.eq(questionAlias.country, country.value)),
-                request.language.map(language            => sqls.eq(questionAlias.language, language.value)),
-                request.maybeOperationId.map(operationId => sqls.eq(questionAlias.operationId, operationId.value)),
+                request.country.map(country   => sqls.eq(questionAlias.country, country.value)),
+                request.language.map(language => sqls.eq(questionAlias.language, language.value)),
+                request.maybeOperationIds
+                  .map(operationIds                      => sqls.in(questionAlias.operationId, operationIds.map(_.value))),
                 request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
                 request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )

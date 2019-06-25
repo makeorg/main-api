@@ -263,7 +263,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           language = Language("fr"),
           slug = "question-1",
           question = "Est-ce que ?",
-          operationId = request.maybeOperationId,
+          operationId = request.maybeOperationIds.flatMap(_.headOption),
           themeId = None
         ),
         Question(
@@ -272,7 +272,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           language = Language("en"),
           slug = "question-2",
           question = "Is it?",
-          operationId = request.maybeOperationId,
+          operationId = request.maybeOperationIds.flatMap(_.headOption),
           themeId = None
         )
       )

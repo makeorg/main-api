@@ -39,7 +39,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
   val labelValue = "Label"
   val labelsFilter = LabelsSearchFilter(Seq(LabelId(labelValue)))
   val operationValue = "Operation"
-  val operationFilter = OperationSearchFilter(OperationId(operationValue))
+  val operationFilter = OperationSearchFilter(Seq(OperationId(operationValue)))
   val trendingValue = "Trending"
   val trendingFilter = TrendingSearchFilter(trendingValue)
   val textValue = "text to search"

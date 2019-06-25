@@ -41,7 +41,7 @@ trait PersistentOperationOfQuestionService {
              sort: Option[String],
              order: Option[String],
              questionIds: Option[Seq[QuestionId]],
-             operationId: Option[OperationId],
+             operationIds: Option[Seq[OperationId]],
              operationKind: Option[Seq[OperationKind]],
              openAt: Option[ZonedDateTime]): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
@@ -50,7 +50,7 @@ trait PersistentOperationOfQuestionService {
   def find(operationId: Option[OperationId] = None): Future[Seq[OperationOfQuestion]]
   def delete(questionId: QuestionId): Future[Unit]
   def count(questionIds: Option[Seq[QuestionId]],
-            operationId: Option[OperationId],
+            operationIds: Option[Seq[OperationId]],
             openAt: Option[ZonedDateTime]): Future[Int]
 }
 
@@ -72,7 +72,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                           sort: Option[String],
                           order: Option[String],
                           questionIds: Option[Seq[QuestionId]],
-                          operationId: Option[OperationId],
+                          operationIds: Option[Seq[OperationId]],
                           operationKind: Option[Seq[OperationKind]],
                           openAt: Option[ZonedDateTime]): Future[scala.Seq[OperationOfQuestion]] = {
         implicit val context: EC = readExecutionContext
@@ -84,8 +84,9 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               .on(operationOfQuestionAlias.operationId, operationAlias.uuid)
               .where(
                 sqls.toAndConditionOpt(
-                  operationId
-                    .map(operation => sqls.eq(PersistentOperationOfQuestion.column.operationId, operation.value)),
+                  operationIds.map(
+                    operations => sqls.in(PersistentOperationOfQuestion.column.operationId, operations.map(_.value))
+                  ),
                   questionIds.map(
                     questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
                   ),
@@ -247,7 +248,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       }
 
       override def count(questionIds: Option[Seq[QuestionId]],
-                         operationId: Option[OperationId],
+                         operationIds: Option[Seq[OperationId]],
                          openAt: Option[ZonedDateTime]): Future[Int] = {
         implicit val context: EC = readExecutionContext
         Future(NamedDB('READ).retryableTx { implicit session =>
@@ -256,12 +257,10 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
               .where(
                 sqls.toAndConditionOpt(
-                  operationId
-                    .map(operation => sqls.eq(PersistentOperationOfQuestion.column.operationId, operation.value)),
+                  operationIds
+                    .map(opIds => sqls.in(PersistentOperationOfQuestion.column.operationId, opIds.map(_.value))),
                   questionIds
-                    .map(
-                      questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
-                    ),
+                    .map(qIds => sqls.in(PersistentOperationOfQuestion.column.questionId, qIds.map(_.value))),
                   openAt.map(
                     openAt =>
                       sqls

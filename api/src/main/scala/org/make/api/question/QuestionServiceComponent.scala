@@ -48,7 +48,7 @@ trait QuestionService {
 
 case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
                                  maybeThemeId: Option[ThemeId] = None,
-                                 maybeOperationId: Option[OperationId] = None,
+                                 maybeOperationIds: Option[Seq[OperationId]] = None,
                                  country: Option[Country] = None,
                                  language: Option[Language] = None,
                                  maybeSlug: Option[String] = None,
@@ -109,7 +109,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
               SearchQuestionRequest(
                 country = Some(country),
                 language = Some(language),
-                maybeOperationId = maybeOperationId,
+                maybeOperationIds = maybeOperationId.map(operationId => Seq(operationId)),
                 maybeThemeId = maybeThemeId
               )
             )

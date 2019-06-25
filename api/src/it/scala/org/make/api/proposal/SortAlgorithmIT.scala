@@ -293,7 +293,7 @@ class SortAlgorithmIT
 
     scenario("controversy algorithm with other filters") {
       val query = SearchQuery(
-        filters = Some(SearchFilters(operation = Some(OperationSearchFilter(OperationId("ope-controversy"))))),
+        filters = Some(SearchFilters(operation = Some(OperationSearchFilter(Seq(OperationId("ope-controversy")))))),
         sortAlgorithm = Some(ControversyAlgorithm),
         limit = Some(2)
       )
@@ -313,7 +313,7 @@ class SortAlgorithmIT
 
     scenario("popular algorithm with other filters") {
       val query = SearchQuery(
-        filters = Some(SearchFilters(operation = Some(OperationSearchFilter(OperationId("ope-popular"))))),
+        filters = Some(SearchFilters(operation = Some(OperationSearchFilter(Seq(OperationId("ope-popular")))))),
         sortAlgorithm = Some(PopularAlgorithm),
         limit = Some(2)
       )

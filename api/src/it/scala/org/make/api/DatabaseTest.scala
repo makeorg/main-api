@@ -27,9 +27,11 @@ import org.make.api.docker.DockerCockroachService
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
+import scala.concurrent.duration.DurationInt
 
 trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExecutionContextComponent {
 
@@ -68,6 +70,8 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
     ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource))
     ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource))
 
+    Thread.sleep(1.second.toMillis)
+
     val flyway: Flyway = Flyway
       .configure()
       .dataSource(dataSource)
@@ -85,7 +89,18 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
       )
       .load()
 
-    flyway.migrate()
+    @tailrec
+    def migrateFlyway(nRetries: Int = 3): Unit =
+      Try(flyway.migrate()) match {
+        case Success(_)                  =>
+        case Failure(e) if nRetries <= 0 => throw e
+        case _ =>
+          flyway.repair()
+          migrateFlyway(nRetries - 1)
+      }
+
+    migrateFlyway()
+
     Try(flyway.validate()) match {
       case Success(_) => logger.info("Database schema created")
       case Failure(e) => logger.warn("Cannot migrate database:", e)

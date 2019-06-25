@@ -94,6 +94,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
+import org.make.api.views.{DefaultViewApiComponent, ViewApi}
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{ValidationError, ValidationFailedError}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
@@ -126,6 +127,7 @@ trait MakeApi
     with DefaultFacebookApiComponent
     with DefaultFeaturedOperationServiceComponent
     with DefaultGoogleApiComponent
+    with DefaultViewApiComponent
     with DefaultHealthCheckApiComponent
     with DefaultHealthCheckServiceComponent
     with DefaultIdGeneratorComponent
@@ -310,7 +312,8 @@ trait MakeApi
       classOf[SecurityApi],
       classOf[AdminPartnerApi],
       classOf[AdminFeaturedOperationApi],
-      classOf[AdminCurrentOperationApi]
+      classOf[AdminCurrentOperationApi],
+      classOf[ViewApi],
     )
 
   private lazy val optionsCors: Route = options {
@@ -344,6 +347,7 @@ trait MakeApi
       crmApi.routes ~
       elasticSearchApi.routes ~
       healthCheckApi.routes ~
+      viewApi.routes ~
       migrationApi.routes ~
       moderationIdeaApi.routes ~
       moderationOperationApi.routes ~

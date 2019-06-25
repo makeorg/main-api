@@ -294,12 +294,18 @@ object SearchFilters extends ElasticDsl {
   }
 
   def buildOperationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    val operationFilter: Option[Query] = for {
-      filters   <- searchQuery.filters
-      operation <- filters.operation
-    } yield ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operation.operationId.value)
-
-    operationFilter
+    searchQuery.filters.flatMap {
+      _.operation match {
+        case Some(OperationSearchFilter(Seq(operationId))) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operationId.value))
+        case Some(OperationSearchFilter(operationIds)) =>
+          Some(
+            ElasticApi
+              .termsQuery(ProposalElasticsearchFieldNames.operationId, operationIds.map(_.value))
+          )
+        case _ => None
+      }
+    }
   }
 
   @Deprecated
@@ -560,7 +566,7 @@ case class LabelsSearchFilter(labelIds: Seq[LabelId]) {
   validate(validateField("labelIds", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
 }
 
-case class OperationSearchFilter(operationId: OperationId)
+case class OperationSearchFilter(operationIds: Seq[OperationId])
 
 case class TrendingSearchFilter(trending: String) {
   validate(validateField("trending", trending.nonEmpty, "trending cannot be empty in search filters"))

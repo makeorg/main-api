@@ -55,14 +55,14 @@ trait PersistentOperationService {
                  sort: Option[String],
                  order: Option[String],
                  slug: Option[String] = None,
-                 operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]]
+                 operationKinds: Option[Seq[OperationKind]]): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def getSimpleById(operationId: OperationId): Future[Option[SimpleOperation]]
   def getBySlug(slug: String): Future[Option[Operation]]
   def persist(operation: SimpleOperation): Future[SimpleOperation]
   def modify(operation: SimpleOperation): Future[SimpleOperation]
   def addActionToOperation(action: OperationAction, operationId: OperationId): Future[Boolean]
-  def count(slug: Option[String] = None, operationKind: Option[OperationKind]): Future[Int]
+  def count(slug: Option[String] = None, operationKinds: Option[Seq[OperationKind]]): Future[Int]
 }
 
 trait DefaultPersistentOperationServiceComponent extends PersistentOperationServiceComponent {
@@ -88,13 +88,13 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         .leftJoin(PersistentQuestion.as(questionAlias))
         .on(questionAlias.questionId, operationOfQuestionAlias.questionId)
     private def operationWhereOpts(slug: Option[String],
-                                   operationKind: Option[OperationKind],
+                                   operationKinds: Option[Seq[OperationKind]],
                                    country: Option[Country],
                                    openAt: Option[LocalDate]): Option[SQLSyntax] =
       sqls.toAndConditionOpt(
-        slug.map(slug                   => sqls.eq(operationAlias.slug, slug)),
-        operationKind.map(operationKind => sqls.eq(operationAlias.operationKind, operationKind.shortName)),
-        country.map(country             => sqls.eq(questionAlias.country, country.value)),
+        slug.map(slug              => sqls.eq(operationAlias.slug, slug)),
+        operationKinds.map(opKinds => sqls.in(operationAlias.operationKind, opKinds.map(_.shortName))),
+        country.map(country        => sqls.eq(questionAlias.country, country.value)),
         openAt.map(
           openAt =>
             sqls
@@ -140,7 +140,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
                             sort: Option[String],
                             order: Option[String],
                             slug: Option[String] = None,
-                            operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]] = {
+                            operationKinds: Option[Seq[OperationKind]]): Future[Seq[SimpleOperation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
         implicit session =>
@@ -148,7 +148,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
               select
                 .from(PersistentOperation.as(operationAlias))
-                .where(operationWhereOpts(slug, operationKind, None, None))
+                .where(operationWhereOpts(slug, operationKinds, None, None))
 
             val queryOrdered = (sort, order.map(_.toUpperCase)) match {
               case (Some(field), Some("DESC")) if PersistentOperation.columnNames.contains(field) =>
@@ -296,13 +296,13 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       })
     }
 
-    override def count(slug: Option[String] = None, operationKind: Option[OperationKind]): Future[Int] = {
+    override def count(slug: Option[String] = None, operationKinds: Option[Seq[OperationKind]]): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL[PersistentOperation] {
           select(sqls.count)
             .from(PersistentOperation.as(operationAlias))
-            .where(operationWhereOpts(slug, operationKind, None, None))
+            .where(operationWhereOpts(slug, operationKinds, None, None))
         }.map(_.int(1)).single.apply().getOrElse(0)
       })
     }

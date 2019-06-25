@@ -307,14 +307,15 @@ class ModerationOperationApiTest
       sort = None,
       order = None,
       slug = Some("second-operation"),
-      operationKind = None
+      operationKinds = None
     )
   ).thenReturn(Future.successful(Seq(secondOperation)))
-  when(operationService.count(slug = Some("second-operation"), operationKind = None))
+  when(operationService.count(slug = Some("second-operation"), operationKinds = None))
     .thenReturn(Future.successful(1))
-  when(operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = None, operationKind = None))
-    .thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
-  when(operationService.count(slug = None, operationKind = None)).thenReturn(Future.successful(2))
+  when(
+    operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = None, operationKinds = None)
+  ).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
+  when(operationService.count(slug = None, operationKinds = None)).thenReturn(Future.successful(2))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(
     Future.successful(
       Seq(

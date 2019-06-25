@@ -21,9 +21,9 @@ package org.make.api.proposal
 
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.{SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
 import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery}
+import com.sksamuel.elastic4s.searches.{SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
@@ -31,7 +31,8 @@ import org.make.core.DateHelper
 import org.make.core.DateHelper._
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
+import org.make.core.question.QuestionId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -48,6 +49,7 @@ trait ProposalSearchEngine {
                          random: Boolean = true): Future[Seq[IndexedProposal]]
   def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
   def countProposals(searchQuery: SearchQuery): Future[Long]
+  def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]]): Future[Map[QuestionId, Long]]
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
   def indexProposals(records: Seq[IndexedProposal],
@@ -126,6 +128,34 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       client.executeAsFuture(request).map { response =>
         response.totalHits
+      }
+
+    }
+
+    override def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]]): Future[Map[QuestionId, Long]] = {
+      // parse json string to build search query
+      val searchQuery = SearchQuery(
+        filters = maybeQuestionIds.map(qIds => SearchFilters(question = Some(QuestionSearchFilter(qIds))))
+      )
+      val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+
+      val request = searchWithType(proposalAlias)
+        .bool(BoolQuery(must = searchFilters))
+
+      val finalRequest = maybeQuestionIds match {
+        case Some(_) =>
+          request
+            .aggregations(termsAgg("questions", ProposalElasticsearchFieldNames.questionId))
+            .limit(0)
+        case None => request.limit(0)
+      }
+
+      client.executeAsFuture(finalRequest).map { response =>
+        response.aggregations
+          .terms("questions")
+          .buckets
+          .map(termBucket => QuestionId(termBucket.key) -> termBucket.docCount)
+          .toMap
       }
 
     }
