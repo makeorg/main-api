@@ -67,7 +67,7 @@ trait AdminCurrentOperationApi extends Directives {
   @Path(value = "/")
   def adminPostCurrentOperation: Route
 
-  @ApiOperation(value = "put-current-operation", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "put-current-operation", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CurrentOperationIdResponse]))
   )
