@@ -39,13 +39,13 @@ object StaminaTestUtils {
 
   private val initialCharactersToSkip: Int = 2
 
-  def deserializeEventFromJson[A](eventKey: String, eventAsJsonString: String): A = {
+  def deserializeEventFromJson[A](eventKey: String, eventAsJsonString: String, version: Int = 1): A = {
     implicit val byteOrder: ByteOrder = java.nio.ByteOrder.LITTLE_ENDIAN
     val makeEventSerializer: MakeEventSerializer = new MakeEventSerializer()
     val bytes: Array[Byte] = ByteString.newBuilder
       .putInt(eventKey.length)
       .putBytes(eventKey.getBytes("UTF-8"))
-      .putInt(1)
+      .putInt(version)
       .append(ByteString(eventAsJsonString))
       .result
       .toArray
