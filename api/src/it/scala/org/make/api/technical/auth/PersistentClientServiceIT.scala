@@ -48,7 +48,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         secret = Some("secret"),
         scope = None,
         redirectUri = None,
-        defaultUserId = None
+        defaultUserId = None,
+        roles = Seq.empty
       )
 
       When("I persist apiclient")
@@ -104,7 +105,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         secret = Some("secret"),
         scope = None,
         redirectUri = None,
-        defaultUserId = None
+        defaultUserId = None,
+        roles = Seq.empty
       )
 
       When("I persist client with existing clientId")

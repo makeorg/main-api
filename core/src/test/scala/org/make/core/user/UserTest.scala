@@ -55,7 +55,7 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       When("call matchRole with ROLE_ADMIN as Role string")
       val role = Role.matchRole("ROLE_ADMIN")
       Then("Role object are returned")
-      role shouldBe Some(RoleAdmin)
+      role shouldBe RoleAdmin
     }
 
     scenario("pass ROLE_MODERATOR string to matchRole function") {
@@ -63,7 +63,7 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       When("call matchRole with ROLE_MODERATOR as Role string")
       val role = Role.matchRole("ROLE_MODERATOR")
       Then("Role object are returned")
-      role shouldBe Some(RoleModerator)
+      role shouldBe RoleModerator
     }
 
     scenario("pass ROLE_POLITICAL string to matchRole function") {
@@ -71,7 +71,7 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       When("call matchRole with ROLE_POLITICAL as Role string")
       val role = Role.matchRole("ROLE_POLITICAL")
       Then("Role object are returned")
-      role shouldBe Some(RolePolitical)
+      role shouldBe RolePolitical
     }
 
     scenario("pass ROLE_CITIZEN string to matchRole function") {
@@ -79,7 +79,7 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       When("call matchRole with ROLE_CITIZEN as Role string")
       val role = Role.matchRole("ROLE_CITIZEN")
       Then("Role object are returned")
-      role shouldBe Some(RoleCitizen)
+      role shouldBe RoleCitizen
     }
 
     scenario("pass ROLE_ACTOR string to matchRole function") {
@@ -87,7 +87,15 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       When("call matchRole with ROLE_ACTOR as Role string")
       val role = Role.matchRole("ROLE_ACTOR")
       Then("Role object are returned")
-      role shouldBe Some(RoleActor)
+      role shouldBe RoleActor
+    }
+
+    scenario("pass any custom role string to matchRole function") {
+      Given("a Role as a string")
+      When("call matchRole with CUSTOM_ROLE_FOR_OAUTH as Role string")
+      val role = Role.matchRole("CUSTOM_ROLE_FOR_OAUTH")
+      Then("Role object are returned")
+      role shouldBe CustomRole("CUSTOM_ROLE_FOR_OAUTH")
     }
   }
 

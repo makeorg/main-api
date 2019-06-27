@@ -71,7 +71,8 @@ class PersistentTokenServiceIT
     secret = Some("secret"),
     scope = None,
     redirectUri = None,
-    defaultUserId = None
+    defaultUserId = None,
+    roles = Seq.empty
   )
   val exampleToken = Token(
     accessToken = "ACCESS_TOKEN",

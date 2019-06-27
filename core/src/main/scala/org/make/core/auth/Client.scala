@@ -22,7 +22,7 @@ package org.make.core.auth
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.user.UserId
+import org.make.core.user.{Role, UserId}
 import org.make.core.{StringValue, Timestamped}
 
 case class Client(clientId: ClientId,
@@ -32,7 +32,8 @@ case class Client(clientId: ClientId,
                   redirectUri: Option[String],
                   override val createdAt: Option[ZonedDateTime] = None,
                   override val updatedAt: Option[ZonedDateTime] = None,
-                  defaultUserId: Option[UserId])
+                  defaultUserId: Option[UserId],
+                  roles: Seq[Role])
     extends Timestamped
 
 case class ClientId(value: String) extends StringValue

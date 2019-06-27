@@ -30,7 +30,7 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ShortenedNames
 import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.session.VisitorId
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{CustomRole, Role, User, UserId}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{doReturn, spy, verify, when}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -59,6 +59,7 @@ class MakeDataHandlerComponentTest
   override val persistentAuthCodeService: PersistentAuthCodeService = mock[PersistentAuthCodeService]
 
   val clientId = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
+  val clientWithRolesId = "d45efaff-b8af-46ea-873b-d93a38f667b1"
   val secret = Some("secret")
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
@@ -91,17 +92,33 @@ class MakeDataHandlerComponentTest
     secret = secret,
     scope = None,
     redirectUri = None,
-    defaultUserId = None
+    defaultUserId = None,
+    roles = Seq.empty
+  )
+
+  val exampleClientWithRoles = Client(
+    clientId = ClientId(clientWithRolesId),
+    allowedGrantTypes = Seq("grant_type", "other_grant_type"),
+    secret = secret,
+    scope = None,
+    redirectUri = None,
+    defaultUserId = None,
+    roles = Seq(CustomRole("role-client"), CustomRole("role-admin-client"))
   )
 
   val validUsername = "john.doe@example.com"
   val validHashedPassword = "hash:abcde"
 
+  val validUsernameWithRoles = "admin@example.com"
+  val validHashedPasswordWithRoles = "hash:abcdef"
+
   val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
   val persistentUserService: PersistentUserService = mock[PersistentUserService]
   val persistentClientService: PersistentClientService = mock[PersistentClientService]
   val request: AuthorizationRequest = mock[AuthorizationRequest]
+  val requestWithRoles: AuthorizationRequest = mock[AuthorizationRequest]
   val exampleUser: User = mock[User]
+  val exampleUserWithRoles: User = mock[User]
   val exampleToken = Token(
     accessToken = "access_token",
     refreshToken = Some("refresh_token"),
@@ -121,13 +138,22 @@ class MakeDataHandlerComponentTest
   )
 
   when(request.params).thenReturn(Map[String, Seq[String]]())
-  when(request.requireParam(ArgumentMatchers.eq("username"))).thenReturn("john")
+  when(request.requireParam(ArgumentMatchers.eq("username"))).thenReturn(validUsername)
   when(request.requireParam(ArgumentMatchers.eq("password"))).thenReturn("passpass")
+
+  when(requestWithRoles.params).thenReturn(Map[String, Seq[String]]())
+  when(requestWithRoles.requireParam(ArgumentMatchers.eq("username"))).thenReturn(validUsernameWithRoles)
+  when(requestWithRoles.requireParam(ArgumentMatchers.eq("password"))).thenReturn("passpass")
 
   //A valid client
   when(persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(clientId), ArgumentMatchers.eq(secret)))
     .thenReturn(Future.successful(Some(exampleClient)))
   when(persistentClientService.get(ClientId(clientId))).thenReturn(Future(Some(exampleClient)))
+
+  when(
+    persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(clientWithRolesId), ArgumentMatchers.eq(secret))
+  ).thenReturn(Future.successful(Some(exampleClientWithRoles)))
+  when(persistentClientService.get(ClientId(clientWithRolesId))).thenReturn(Future(Some(exampleClientWithRoles)))
 
   //A invalid client
   when(persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(invalidClientId), ArgumentMatchers.eq(None)))
@@ -137,11 +163,17 @@ class MakeDataHandlerComponentTest
   when(request.params).thenReturn(Map("username" -> Seq(validUsername), "password" -> Seq(validHashedPassword)))
   when(request.headers).thenReturn(TreeMap[String, Seq[String]]())
 
+  //A valid request
+  when(requestWithRoles.params)
+    .thenReturn(Map("username" -> Seq(validUsernameWithRoles), "password" -> Seq(validHashedPasswordWithRoles)))
+  when(requestWithRoles.headers).thenReturn(TreeMap[String, Seq[String]]())
+
   //A valid user impl
   when(persistentUserService.persist(exampleUser))
     .thenReturn(Future.successful(exampleUser))
-  when(persistentUserService.findByEmailAndPassword(ArgumentMatchers.any[String], ArgumentMatchers.any[String]))
+  when(persistentUserService.findByEmailAndPassword(ArgumentMatchers.eq(validUsername), ArgumentMatchers.any[String]))
     .thenReturn(Future.successful(Some(exampleUser)))
+  when(exampleUser.roles).thenReturn(Seq.empty)
 
   when(persistentUserService.verificationTokenExists(ArgumentMatchers.any[String])).thenReturn(Future(false))
 
@@ -192,6 +224,48 @@ class MakeDataHandlerComponentTest
         maybeUser shouldBe None
       }
     }
+
+    scenario("user with insufficient roles") {
+      Given("a valid client")
+      val clientCredential = ClientCredential(clientId = clientWithRolesId, clientSecret = secret)
+      And("a valid user in a valid request")
+
+      When("findUser is called")
+      val futureMaybeUser: Future[Option[UserRights]] =
+        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
+
+      Then("the User is returned")
+      whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
+        maybeUser.isDefined shouldBe false
+      }
+
+    }
+
+    scenario("user with one of the client roles") {
+      when(persistentUserService.persist(exampleUserWithRoles))
+        .thenReturn(Future.successful(exampleUserWithRoles))
+      when(
+        persistentUserService
+          .findByEmailAndPassword(ArgumentMatchers.eq(validUsernameWithRoles), ArgumentMatchers.any[String])
+      ).thenReturn(Future.successful(Some(exampleUserWithRoles)))
+      when(exampleUserWithRoles.roles).thenReturn(Seq(CustomRole("role-client"), CustomRole("role-admin-client")))
+
+      Given("a valid client")
+      val clientCredential = ClientCredential(clientId = clientWithRolesId, clientSecret = secret)
+      println(clientCredential.toString)
+      And("a valid user in a valid request")
+
+      When("findUser is called")
+      val futureMaybeUser: Future[Option[UserRights]] =
+        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(requestWithRoles))
+
+      Then("the User is returned")
+      whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
+        println(maybeUser)
+        maybeUser.isDefined shouldBe true
+      }
+    }
+
   }
 
   feature("Create a new AccessToken") {

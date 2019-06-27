@@ -107,7 +107,7 @@ object PersistentUserServiceComponent {
         verificationTokenExpiresAt = verificationTokenExpiresAt,
         resetToken = resetToken,
         resetTokenExpiresAt = resetTokenExpiresAt,
-        roles = roles.split(ROLE_SEPARATOR).map(Role.matchCustomRole),
+        roles = roles.split(ROLE_SEPARATOR).map(Role.matchRole),
         country = Country(country),
         language = Language(language),
         profile = toProfile,
@@ -126,7 +126,7 @@ object PersistentUserServiceComponent {
     def toUserRights: UserRights = {
       UserRights(
         userId = UserId(uuid),
-        roles = roles.split(ROLE_SEPARATOR).map(Role.matchCustomRole),
+        roles = roles.split(ROLE_SEPARATOR).map(Role.matchRole),
         availableQuestions = availableQuestions.toSeq.map(QuestionId.apply)
       )
     }
