@@ -113,9 +113,7 @@ object PersistentAuthCode extends SQLSyntaxSupport[PersistentAuthCode] with Shor
 
   override val tableName: String = "auth_code"
 
-  lazy val authCodeAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentAuthCode], PersistentAuthCode] = syntax(
-    "auth_code"
-  )
+  lazy val authCodeAlias: SyntaxProvider[PersistentAuthCode] = syntax("auth_code")
 
   def apply(
     authCodeResultName: ResultName[PersistentAuthCode] = authCodeAlias.resultName

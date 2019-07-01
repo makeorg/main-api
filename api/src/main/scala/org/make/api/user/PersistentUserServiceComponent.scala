@@ -212,7 +212,7 @@ object PersistentUserServiceComponent {
 
     override val tableName: String = "make_user"
 
-    lazy val userAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentUser], PersistentUser] = syntax("u")
+    lazy val userAlias: SyntaxProvider[PersistentUser] = syntax("u")
 
     def apply(
       userResultName: ResultName[PersistentUser] = userAlias.resultName
@@ -341,11 +341,15 @@ trait PersistentUserService {
   def findAllByEmail(emails: Seq[String]): Future[Seq[User]]
 }
 
-trait DefaultPersistentUserServiceComponent extends PersistentUserServiceComponent {
+trait DefaultPersistentUserServiceComponent
+    extends PersistentUserServiceComponent
+    with ShortenedNames
+    with StrictLogging {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentUserService: PersistentUserService = new PersistentUserService with ShortenedNames
-  with StrictLogging {
+  override lazy val persistentUserService: PersistentUserService = new DefaultPersistentUserService
+
+  class DefaultPersistentUserService extends PersistentUserService {
 
     private val userAlias = PersistentUser.userAlias
     private val followedUsersAlias = FollowedUsers.followedUsersAlias
