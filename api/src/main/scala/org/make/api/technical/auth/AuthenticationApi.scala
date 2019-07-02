@@ -19,14 +19,15 @@
 
 package org.make.api.technical.auth
 
+import java.time.ZonedDateTime
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
-import io.circe.generic.semiauto.deriveEncoder
-import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -39,6 +40,7 @@ import scalaoauth2.provider._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 @Api(value = "Authentication")
@@ -288,6 +290,17 @@ trait DefaultAuthenticationApiComponent
                   path = Some("/"),
                   domain = Some(makeSettings.SessionCookie.domain)
                 )
+              ),
+              `Set-Cookie`(
+                HttpCookie(
+                  name = makeSettings.SessionCookie.expirationName,
+                  value = ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+                  secure = makeSettings.SessionCookie.isSecure,
+                  httpOnly = false,
+                  maxAge = Some(365.days.toSeconds),
+                  path = Some("/"),
+                  domain = Some(makeSettings.SessionCookie.domain)
+                )
               )
             )
           ) {
@@ -324,10 +337,32 @@ trait DefaultAuthenticationApiComponent
                     ),
                     `Set-Cookie`(
                       HttpCookie(
+                        name = sessionIdExpirationKey,
+                        value = ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+                        secure = makeSettings.SessionCookie.isSecure,
+                        httpOnly = false,
+                        maxAge = None,
+                        path = Some("/"),
+                        domain = Some(makeSettings.SessionCookie.domain)
+                      )
+                    ),
+                    `Set-Cookie`(
+                      HttpCookie(
                         name = makeSettings.SessionCookie.name,
                         value = "",
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = true,
+                        maxAge = Some(0),
+                        path = Some("/"),
+                        domain = Some(makeSettings.SessionCookie.domain)
+                      )
+                    ),
+                    `Set-Cookie`(
+                      HttpCookie(
+                        name = makeSettings.SessionCookie.expirationName,
+                        value = "",
+                        secure = makeSettings.SessionCookie.isSecure,
+                        httpOnly = false,
                         maxAge = Some(0),
                         path = Some("/"),
                         domain = Some(makeSettings.SessionCookie.domain)

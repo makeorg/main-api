@@ -19,6 +19,8 @@
 
 package org.make.api.technical
 
+import java.time.ZonedDateTime
+
 import akka.http.javadsl.model.headers.Origin
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
@@ -87,16 +89,38 @@ class MakeDirectivesTest
   feature("session id management") {
 
     scenario("new session id if no cookie is sent") {
+      var firstExpiration = ZonedDateTime.now
+
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
         val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "make-session-id")
+        val maybeSessionExpirationCookie: Option[HttpCookie] =
+          cookiesHeaders.find(_.name == "make-session-id-expiration")
 
         status should be(StatusCodes.OK)
 
         maybeSessionCookie.isEmpty shouldBe false
         maybeSessionCookie.get.secure shouldBe false
         maybeSessionCookie.get.httpOnly shouldBe true
+
+        maybeSessionExpirationCookie.isEmpty shouldBe false
+        maybeSessionExpirationCookie.get.secure shouldBe false
+        maybeSessionExpirationCookie.get.httpOnly shouldBe false
+
+        val expires = ZonedDateTime.parse(maybeSessionExpirationCookie.get.value)
+        expires.isAfter(firstExpiration) shouldBe true
+        firstExpiration = expires
+      }
+
+      Get("/test") ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        val maybeSessionExpirationCookie: Option[HttpCookie] =
+          cookiesHeaders.find(_.name == "make-session-id-expiration")
+        status should be(StatusCodes.OK)
+
+        ZonedDateTime.parse(maybeSessionExpirationCookie.get.value).isAfter(firstExpiration) shouldBe true
       }
     }
 

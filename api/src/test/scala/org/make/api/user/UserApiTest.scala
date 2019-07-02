@@ -99,6 +99,7 @@ class UserApiTest
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
+  when(sessionCookieConfiguration.expirationName).thenReturn("cookie-session-expiration")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
   when(idGenerator.nextId()).thenReturn("some-id")

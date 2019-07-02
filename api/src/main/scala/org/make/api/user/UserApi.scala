@@ -67,6 +67,7 @@ import scala.annotation.meta.field
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.util.{Success, Try}
 
 @Api(value = "User")
@@ -557,6 +558,18 @@ trait DefaultUserApiComponent
                               secure = makeSettings.SessionCookie.isSecure,
                               httpOnly = true,
                               maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+                              path = Some("/"),
+                              domain = Some(makeSettings.SessionCookie.domain)
+                            )
+                          ),
+                          `Set-Cookie`(
+                            HttpCookie(
+                              name = makeSettings.SessionCookie.expirationName,
+                              value =
+                                ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+                              secure = makeSettings.SessionCookie.isSecure,
+                              httpOnly = false,
+                              maxAge = Some(365.days.toSeconds),
                               path = Some("/"),
                               domain = Some(makeSettings.SessionCookie.domain)
                             )

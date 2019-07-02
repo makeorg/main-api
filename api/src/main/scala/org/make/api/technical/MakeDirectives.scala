@@ -19,18 +19,21 @@
 
 package org.make.api.technical
 
+import java.time.ZonedDateTime
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import kamon.Kamon
+import org.make.api.Predef._
 import kamon.akka.http.KamonTraceDirectives.operationName
 import org.make.api.MakeApi
-import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.monitoring.MonitoringMessageHelper
+import org.make.core.{reference, ApplicationName, CirceFormatters, RequestContext, SlugHelper}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -38,7 +41,6 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core.{reference, ApplicationName, CirceFormatters, RequestContext, SlugHelper}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.collection.immutable
@@ -54,6 +56,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   val sessionIdKey: String = "make-session-id"
   val visitorIdKey: String = "make-visitor-id"
+  val sessionIdExpirationKey: String = "make-session-id-expiration"
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
   lazy val sessionCookieName: String = makeSettings.SessionCookie.name
 
@@ -102,6 +105,17 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             secure = makeSettings.SessionCookie.isSecure,
             httpOnly = true,
             maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+            path = Some("/"),
+            domain = Some(makeSettings.SessionCookie.domain)
+          )
+        ),
+        `Set-Cookie`(
+          HttpCookie(
+            name = sessionIdExpirationKey,
+            value = ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+            secure = makeSettings.SessionCookie.isSecure,
+            httpOnly = false,
+            maxAge = None,
             path = Some("/"),
             domain = Some(makeSettings.SessionCookie.domain)
           )
