@@ -35,14 +35,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation.{validate, validateColor, validateUserInput}
 import org.make.core.auth.UserRights
-import org.make.core.operation.{
-  Metas,
-  OperationId,
-  OperationOfQuestion,
-  PushProposalCard,
-  QuestionTheme,
-  SequenceCardsConfiguration
-}
+import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -84,6 +77,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
       new ApiImplicitParam(name = "_order", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "operationKind", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string")
     )
   )
@@ -240,6 +234,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                     '_order.?,
                     'questionId.as[immutable.Seq[QuestionId]].?,
                     'operationId.as[OperationId].?,
+                    'operationKind.as[immutable.Seq[OperationKind]].?,
                     'openAt.as[ZonedDateTime].?
                   )
                 ) {
@@ -249,6 +244,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                    order: Option[String],
                    questionIds,
                    operationId,
+                   operationKind,
                    openAt) =>
                     order.foreach { orderValue =>
                       Validation.validate(
@@ -277,12 +273,12 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           end,
                           sort,
                           order,
-                          SearchOperationsOfQuestions(resolvedQuestions, operationId, openAt)
+                          SearchOperationsOfQuestions(resolvedQuestions, operationId, operationKind, openAt)
                         )
                     ) { result: Seq[OperationOfQuestion] =>
                       provideAsync(
                         operationOfQuestionService
-                          .count(SearchOperationsOfQuestions(resolvedQuestions, operationId, openAt))
+                          .count(SearchOperationsOfQuestions(resolvedQuestions, operationId, operationKind, openAt))
                       ) { count =>
                         provideAsync(questionService.getQuestions(result.map(_.questionId))) {
                           questions: Seq[Question] =>

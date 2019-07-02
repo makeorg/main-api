@@ -22,6 +22,7 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.operation.DefaultPersistentOperationServiceComponent.PersistentOperation
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
@@ -41,6 +42,7 @@ trait PersistentOperationOfQuestionService {
              order: Option[String],
              questionIds: Option[Seq[QuestionId]],
              operationId: Option[OperationId],
+             operationKind: Option[Seq[OperationKind]],
              openAt: Option[ZonedDateTime]): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
@@ -63,6 +65,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
     new PersistentOperationOfQuestionService with ShortenedNames with StrictLogging {
 
       private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
+      private val operationAlias = PersistentOperation.operationAlias
 
       override def search(start: Int,
                           end: Option[Int],
@@ -70,12 +73,15 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                           order: Option[String],
                           questionIds: Option[Seq[QuestionId]],
                           operationId: Option[OperationId],
+                          operationKind: Option[Seq[OperationKind]],
                           openAt: Option[ZonedDateTime]): Future[scala.Seq[OperationOfQuestion]] = {
         implicit val context: EC = readExecutionContext
         Future(NamedDB('READ).retryableTx { implicit session =>
           withSQL[PersistentOperationOfQuestion] {
             val query: scalikejdbc.PagingSQLBuilder[PersistentOperationOfQuestion] = select
               .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+              .innerJoin(PersistentOperation.as(operationAlias))
+              .on(operationOfQuestionAlias.operationId, operationAlias.uuid)
               .where(
                 sqls.toAndConditionOpt(
                   operationId
@@ -83,6 +89,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                   questionIds.map(
                     questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
                   ),
+                  operationKind
+                    .map(operationKind => sqls.in(operationAlias.operationKind, operationKind.map(_.shortName))),
                   openAt.map(
                     openAt =>
                       sqls

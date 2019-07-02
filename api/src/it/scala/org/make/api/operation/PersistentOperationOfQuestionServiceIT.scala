@@ -135,7 +135,7 @@ class PersistentOperationOfQuestionServiceIT
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _      <- createOperationOfQuestion(operationOfQuestion1)
         _      <- createOperationOfQuestion(operationOfQuestion2)
-        result <- persistentOperationOfQuestionService.search(0, None, None, None, None, None, None)
+        result <- persistentOperationOfQuestionService.search(0, None, None, None, None, None, None, None)
       } yield result
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
@@ -154,6 +154,7 @@ class PersistentOperationOfQuestionServiceIT
           None,
           None,
           Some(Seq(QuestionId("toBeFiltered"))),
+          None,
           None,
           None
         )

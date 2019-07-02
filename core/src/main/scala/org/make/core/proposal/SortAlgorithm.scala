@@ -19,7 +19,6 @@
 
 package org.make.core.proposal
 
-import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.ElasticApi._
 import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, scriptScore}
 import com.sksamuel.elastic4s.script.Script
@@ -135,21 +134,19 @@ final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorith
 }
 object ActorVoteAlgorithm { val shortName: String = "actorVote" }
 
-// Filter proposals by trending equal to "controversy"
+// Sort proposal by their controversy score
 case object ControversyAlgorithm extends SortAlgorithm {
   val shortName: String = "controversy"
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    request.postFilter(ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, ControversyAlgorithm.shortName))
+    request.sortByFieldDesc(ProposalElasticsearchFieldNames.controversy)
   }
 }
 
-// Filter proposals by trending equal to "popular"
+// Sort proposal by their top score
 case object PopularAlgorithm extends SortAlgorithm {
-
   val shortName: String = "popular"
-
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    request.postFilter(ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, PopularAlgorithm.shortName))
+    request.sortByFieldDesc(ProposalElasticsearchFieldNames.topScore)
   }
 }
 

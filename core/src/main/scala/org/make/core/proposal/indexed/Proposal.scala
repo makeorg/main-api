@@ -109,6 +109,8 @@ object ProposalElasticsearchFieldNames {
   val toEnrich: String = "toEnrich"
   val scores: String = "scores"
   val scoreUpperBound: String = "scores.scoreUpperBound"
+  val topScore: String = "scores.topScore"
+  val controversy: String = "scores.controversy"
   val sequencePool: String = "sequencePool"
   val initialProposal: String = "initialProposal"
   val refusalReason: String = "refusalReason"
