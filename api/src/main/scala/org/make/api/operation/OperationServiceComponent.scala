@@ -47,7 +47,7 @@ trait OperationService extends ShortenedNames {
                  sort: Option[String] = None,
                  order: Option[String] = None,
                  slug: Option[String] = None,
-                 operationKind: Option[OperationKind] = None): Future[Seq[SimpleOperation]]
+                 operationKinds: Option[Seq[OperationKind]] = None): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
@@ -63,7 +63,7 @@ trait OperationService extends ShortenedNames {
              status: Option[OperationStatus] = None,
              allowedSources: Option[Seq[String]] = None,
              operationKind: Option[OperationKind]): Future[Option[OperationId]]
-  def count(slug: Option[String], operationKind: Option[OperationKind]): Future[Int]
+  def count(slug: Option[String], operationKinds: Option[Seq[OperationKind]]): Future[Int]
 }
 
 trait DefaultOperationServiceComponent extends OperationServiceComponent with ShortenedNames {
@@ -89,7 +89,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                             sort: Option[String] = None,
                             order: Option[String] = None,
                             slug: Option[String] = None,
-                            operationKind: Option[OperationKind]): Future[Seq[SimpleOperation]] = {
+                            operationKinds: Option[Seq[OperationKind]]): Future[Seq[SimpleOperation]] = {
 
       persistentOperationService.findSimple(
         start = start,
@@ -97,7 +97,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         sort = sort,
         order = order,
         slug = slug,
-        operationKind = operationKind
+        operationKinds = operationKinds
       )
     }
 
@@ -194,8 +194,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
         .toString
     }
 
-    override def count(slug: Option[String], operationKind: Option[OperationKind]): Future[Int] = {
-      persistentOperationService.count(slug = slug, operationKind = operationKind)
+    override def count(slug: Option[String], operationKinds: Option[Seq[OperationKind]]): Future[Int] = {
+      persistentOperationService.count(slug = slug, operationKinds = operationKinds)
     }
 
   }

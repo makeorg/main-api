@@ -273,12 +273,24 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           end,
                           sort,
                           order,
-                          SearchOperationsOfQuestions(resolvedQuestions, operationId, operationKind, openAt)
+                          SearchOperationsOfQuestions(
+                            resolvedQuestions,
+                            operationId.map(opId => Seq(opId)),
+                            operationKind,
+                            openAt
+                          )
                         )
                     ) { result: Seq[OperationOfQuestion] =>
                       provideAsync(
                         operationOfQuestionService
-                          .count(SearchOperationsOfQuestions(resolvedQuestions, operationId, operationKind, openAt))
+                          .count(
+                            SearchOperationsOfQuestions(
+                              resolvedQuestions,
+                              operationId.map(opId => Seq(opId)),
+                              operationKind,
+                              openAt
+                            )
+                          )
                       ) { count =>
                         provideAsync(questionService.getQuestions(result.map(_.questionId))) {
                           questions: Seq[Question] =>

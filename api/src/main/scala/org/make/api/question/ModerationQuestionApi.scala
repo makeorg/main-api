@@ -332,7 +332,7 @@ trait DefaultModerationQuestionComponent
                 val request: SearchQuestionRequest = SearchQuestionRequest(
                   maybeQuestionIds = questionIds,
                   maybeThemeId = themeId,
-                  maybeOperationId = operationId,
+                  maybeOperationIds = operationId.map(op => Seq(op)),
                   country = country,
                   language = language,
                   maybeSlug = maybeSlug,

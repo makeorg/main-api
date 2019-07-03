@@ -36,6 +36,8 @@ import org.make.core.operation._
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
+import scala.collection.immutable
+
 @Api(
   value = "Moderation Operation",
   authorizations = Array(
@@ -239,14 +241,21 @@ trait DefaultModerationOperationApiComponent
         path("moderation" / "operations") {
           makeOperation("ModerationGetOperations") { _ =>
             parameters(
-              ('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'slug.?, 'operationKind.as[OperationKind].?)
+              (
+                '_start.as[Int].?,
+                '_end.as[Int].?,
+                '_sort.?,
+                '_order.?,
+                'slug.?,
+                'operationKind.as[immutable.Seq[OperationKind]].?
+              )
             ) {
               (start: Option[Int],
                end: Option[Int],
                sort: Option[String],
                order: Option[String],
                slug: Option[String],
-               operationKind: Option[OperationKind]) =>
+               operationKinds: Option[Seq[OperationKind]]) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireModerationRole(auth.user) {
                     order.foreach { orderValue =>
@@ -260,7 +269,7 @@ trait DefaultModerationOperationApiComponent
                           )
                       )
                     }
-                    provideAsync(operationService.count(slug = slug, operationKind = operationKind)) { count =>
+                    provideAsync(operationService.count(slug = slug, operationKinds = operationKinds)) { count =>
                       provideAsync(
                         operationService
                           .findSimple(
@@ -269,7 +278,7 @@ trait DefaultModerationOperationApiComponent
                             sort = sort,
                             order = order,
                             slug = slug,
-                            operationKind = operationKind
+                            operationKinds = operationKinds
                           )
                       ) { operations =>
                         val operationResponses: Seq[ModerationOperationResponse] =

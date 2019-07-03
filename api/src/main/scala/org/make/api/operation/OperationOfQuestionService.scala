@@ -35,11 +35,11 @@ trait OperationOfQuestionService {
   def findByQuestionId(questionId: QuestionId): Future[Option[OperationOfQuestion]]
   def findByOperationId(operationId: OperationId): Future[Seq[OperationOfQuestion]]
   def findByQuestionSlug(slug: String): Future[Option[OperationOfQuestion]]
-  def search(start: Int,
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             request: SearchOperationsOfQuestions): Future[Seq[OperationOfQuestion]]
+  def search(start: Int = 0,
+             end: Option[Int] = None,
+             sort: Option[String] = None,
+             order: Option[String] = None,
+             request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()): Future[Seq[OperationOfQuestion]]
   def update(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion]
   def count(request: SearchOperationsOfQuestions): Future[Int]
 
@@ -72,10 +72,10 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            language: Language,
                                            question: String)
 
-final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]],
-                                             operationId: Option[OperationId],
-                                             operationKind: Option[Seq[OperationKind]],
-                                             openAt: Option[ZonedDateTime])
+final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]] = None,
+                                             operationIds: Option[Seq[OperationId]] = None,
+                                             operationKind: Option[Seq[OperationKind]] = None,
+                                             openAt: Option[ZonedDateTime] = None)
 
 trait OperationOfQuestionServiceComponent {
   def operationOfQuestionService: OperationOfQuestionService
@@ -89,18 +89,20 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
 
   override lazy val operationOfQuestionService: OperationOfQuestionService = new OperationOfQuestionService {
 
-    override def search(start: Int,
-                        end: Option[Int],
-                        sort: Option[String],
-                        order: Option[String],
-                        request: SearchOperationsOfQuestions): Future[scala.Seq[OperationOfQuestion]] = {
+    override def search(
+      start: Int = 0,
+      end: Option[Int] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()
+    ): Future[scala.Seq[OperationOfQuestion]] = {
       persistentOperationOfQuestionService.search(
         start,
         end,
         sort,
         order,
         request.questionIds,
-        request.operationId,
+        request.operationIds,
         request.operationKind,
         request.openAt
       )
@@ -196,7 +198,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     }
 
     override def count(request: SearchOperationsOfQuestions): Future[Int] = {
-      persistentOperationOfQuestionService.count(request.questionIds, request.operationId, request.openAt)
+      persistentOperationOfQuestionService.count(request.questionIds, request.operationIds, request.openAt)
     }
   }
 }
