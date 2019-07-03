@@ -109,41 +109,32 @@ trait DefaultViewApiComponent
                                 language = requestContext.language,
                                 country = requestContext.country,
                                 maybeQuestionIds = maybeQuestionIds,
-                                maybeOperationIds = maybeOperationIds
                               )
                             )
                           ) { questions =>
                             provideAsync(
-                              operationOfQuestionService.search(
-                                request = SearchOperationsOfQuestions(
-                                  operationIds = Option(publicOperations.map(_.operationId)).filter(_.nonEmpty),
-                                  openAt = Some(ZonedDateTime.now())
+                              questionService.searchQuestion(
+                                SearchQuestionRequest(
+                                  language = requestContext.language,
+                                  country = requestContext.country,
+                                  maybeOperationIds = maybeOperationIds
                                 )
                               )
-                            ) { publicQuestions =>
+                            ) { questionsBusiness =>
                               provideAsync(
-                                proposalService.searchForUser(
-                                  userId = auth.map(_.user.userId),
-                                  query = SearchQuery(
-                                    limit = Some(2),
-                                    sortAlgorithm = Some(PopularAlgorithm),
-                                    filters = Some(
-                                      SearchFilters(
-                                        language = requestContext.language.map(LanguageSearchFilter.apply),
-                                        country = requestContext.country.map(CountrySearchFilter.apply),
-                                        question = Some(QuestionSearchFilter(publicQuestions.map(_.questionId)))
-                                      )
-                                    )
-                                  ),
-                                  requestContext = requestContext
+                                operationOfQuestionService.search(
+                                  request = SearchOperationsOfQuestions(
+                                    operationIds = Option(publicOperations.map(_.operationId)).filter(_.nonEmpty),
+                                    openAt = Some(ZonedDateTime.now())
+                                  )
                                 )
-                              ) { popularProposals =>
+                              ) { publicQuestions =>
                                 provideAsync(
                                   proposalService.searchForUser(
                                     userId = auth.map(_.user.userId),
                                     query = SearchQuery(
                                       limit = Some(2),
-                                      sortAlgorithm = Some(ControversyAlgorithm),
+                                      sortAlgorithm = Some(PopularAlgorithm),
                                       filters = Some(
                                         SearchFilters(
                                           language = requestContext.language.map(LanguageSearchFilter.apply),
@@ -154,56 +145,74 @@ trait DefaultViewApiComponent
                                     ),
                                     requestContext = requestContext
                                   )
-                                ) { controverseProposals =>
+                                ) { popularProposals =>
                                   provideAsync(
-                                    operationOfQuestionService
-                                      .search(request = SearchOperationsOfQuestions(operationIds = maybeOperationIds))
-                                  ) { businessDetails =>
-                                    val featuredConsultations = featured.map(
-                                      feat =>
-                                        FeaturedConsultationResponse(
-                                          feat,
-                                          feat.questionId
-                                            .flatMap(qId => questions.find(_.questionId == qId).map(_.slug))
-                                      )
-                                    )
-                                    val businessConsultations = business.flatMap { bus =>
-                                      def question(details: OperationOfQuestion): Option[Question] =
-                                        questions.find(_.questionId == details.questionId)
-                                      businessDetails
-                                        .filter(_.operationId == bus.operationId)
-                                        .map(
-                                          details =>
-                                            BusinessConsultationResponse(
-                                              theme = BusinessConsultationThemeResponse(
-                                                details.theme.gradientStart,
-                                                details.theme.gradientEnd
-                                              ),
-                                              startDate = details.startDate,
-                                              endDate = details.endDate,
-                                              slug = question(details).map(_.slug),
-                                              aboutUrl = details.aboutUrl,
-                                              title = details.operationTitle
+                                    proposalService.searchForUser(
+                                      userId = auth.map(_.user.userId),
+                                      query = SearchQuery(
+                                        limit = Some(2),
+                                        sortAlgorithm = Some(ControversyAlgorithm),
+                                        filters = Some(
+                                          SearchFilters(
+                                            language = requestContext.language.map(LanguageSearchFilter.apply),
+                                            country = requestContext.country.map(CountrySearchFilter.apply),
+                                            question = Some(QuestionSearchFilter(publicQuestions.map(_.questionId)))
                                           )
                                         )
+                                      ),
+                                      requestContext = requestContext
+                                    )
+                                  ) { controverseProposals =>
+                                    provideAsync(
+                                      operationOfQuestionService
+                                        .search(request = SearchOperationsOfQuestions(operationIds = maybeOperationIds))
+                                    ) { businessDetails =>
+                                      val featuredConsultations = featured.map(
+                                        feat =>
+                                          FeaturedConsultationResponse(
+                                            feat,
+                                            feat.questionId
+                                              .flatMap(qId => questions.find(_.questionId == qId).map(_.slug))
+                                        )
+                                      )
+                                      val businessConsultations = business.flatMap { bus =>
+                                        def question(details: OperationOfQuestion): Option[Question] =
+                                          questionsBusiness.find(_.questionId == details.questionId)
+                                        businessDetails
+                                          .filter(_.operationId == bus.operationId)
+                                          .map(
+                                            details =>
+                                              BusinessConsultationResponse(
+                                                theme = BusinessConsultationThemeResponse(
+                                                  details.theme.gradientStart,
+                                                  details.theme.gradientEnd
+                                                ),
+                                                startDate = details.startDate,
+                                                endDate = details.endDate,
+                                                slug = question(details).map(_.slug),
+                                                aboutUrl = details.aboutUrl,
+                                                title = details.operationTitle
+                                            )
+                                          )
+                                      }
+                                      val currentConsultations = current.map(
+                                        cur =>
+                                          CurrentConsultationResponse(
+                                            current = cur,
+                                            slug = questions.find(_.questionId == cur.questionId).map(_.slug),
+                                            proposalsNumber = proposalNumberByQuestion.getOrElse(cur.questionId, 0)
+                                        )
+                                      )
+                                      complete(
+                                        HomeViewResponse(
+                                          popularProposals = popularProposals.results,
+                                          controverseProposals = controverseProposals.results,
+                                          businessConsultations = businessConsultations,
+                                          featuredConsultations = featuredConsultations,
+                                          currentConsultations = currentConsultations
+                                        )
+                                      )
                                     }
-                                    val currentConsultations = current.map(
-                                      cur =>
-                                        CurrentConsultationResponse(
-                                          current = cur,
-                                          slug = questions.find(_.questionId == cur.questionId).map(_.slug),
-                                          proposalsNumber = proposalNumberByQuestion.getOrElse(cur.questionId, 0)
-                                      )
-                                    )
-                                    complete(
-                                      HomeViewResponse(
-                                        popularProposals = popularProposals.results,
-                                        controverseProposals = controverseProposals.results,
-                                        businessConsultations = businessConsultations,
-                                        featuredConsultations = featuredConsultations,
-                                        currentConsultations = currentConsultations
-                                      )
-                                    )
                                   }
                                 }
                               }
