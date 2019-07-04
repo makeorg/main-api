@@ -164,7 +164,8 @@ class PersistentOperationServiceIT
           aboutUrl = None,
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription
+          description = OperationOfQuestion.defaultDescription,
+          imageUrl = None
         )
       ),
       QuestionWithDetails(
@@ -202,7 +203,8 @@ class PersistentOperationServiceIT
           aboutUrl = None,
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription
+          description = OperationOfQuestion.defaultDescription,
+          imageUrl = None
         )
       )
     )

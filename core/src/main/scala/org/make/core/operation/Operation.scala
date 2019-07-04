@@ -165,7 +165,8 @@ final case class OperationOfQuestion(questionId: QuestionId,
                                      aboutUrl: Option[String],
                                      metas: Metas,
                                      theme: QuestionTheme,
-                                     description: String)
+                                     description: String,
+                                     imageUrl: Option[String])
 
 object OperationOfQuestion {
   val defaultDescription: String = ""

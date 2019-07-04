@@ -70,7 +70,8 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            slug: String,
                                            country: Country,
                                            language: Language,
-                                           question: String)
+                                           question: String,
+                                           imageUrl: Option[String])
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]] = None,
                                              operationIds: Option[Seq[OperationId]] = None,
@@ -184,7 +185,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         aboutUrl = None,
         metas = Metas(None, None, None),
         theme = QuestionTheme.default,
-        description = OperationOfQuestion.defaultDescription
+        description = OperationOfQuestion.defaultDescription,
+        imageUrl = parameters.imageUrl
       )
 
       val sequenceConfiguration =

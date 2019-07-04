@@ -163,7 +163,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
                 PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
                 PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
-                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description
+                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
+                PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
               )
           }.execute().apply()
         }).map(_ => operationOfQuestion)
@@ -203,7 +204,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
                 PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
                 PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
-                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description
+                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
+                PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
               )
               .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
           }.execute().apply()
@@ -312,7 +314,8 @@ final case class PersistentOperationOfQuestion(questionId: String,
                                                gradientEnd: String,
                                                color: String,
                                                footerFontColor: String,
-                                               description: String) {
+                                               description: String,
+                                               imageUrl: Option[String]) {
   def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     questionId = QuestionId(this.questionId),
     operationId = OperationId(this.operationId),
@@ -351,7 +354,8 @@ final case class PersistentOperationOfQuestion(questionId: String,
       color = this.color,
       footerFontColor = this.footerFontColor
     ),
-    description = this.description
+    description = this.description,
+    imageUrl = this.imageUrl
   )
 }
 
@@ -393,7 +397,8 @@ object PersistentOperationOfQuestion
                                            gradientEnd: String,
                                            color: String,
                                            footerFontColor: String,
-                                           description: String) {
+                                           description: String,
+                                           imageUrl: Option[String]) {
     def toQuestionAndDetails: QuestionWithDetails = {
       QuestionWithDetails(
         question = Question(
@@ -437,7 +442,8 @@ object PersistentOperationOfQuestion
             color = this.color,
             footerFontColor = this.footerFontColor
           ),
-          description = this.description
+          description = this.description,
+          imageUrl = this.imageUrl
         )
       )
 
@@ -493,7 +499,8 @@ object PersistentOperationOfQuestion
         gradientEnd = resultSet.string(operationOfQuestionAlias.gradientEnd),
         color = resultSet.string(operationOfQuestionAlias.color),
         footerFontColor = resultSet.string(operationOfQuestionAlias.footerFontColor),
-        description = resultSet.string(operationOfQuestionAlias.description)
+        description = resultSet.string(operationOfQuestionAlias.description),
+        imageUrl = resultSet.stringOpt(operationOfQuestionAlias.imageUrl)
       )
   }
 
@@ -530,7 +537,8 @@ object PersistentOperationOfQuestion
       "gradient_end",
       "color",
       "footer_font_color",
-      "description"
+      "description",
+      "image_url"
     )
 
   override val tableName: String = "operation_of_question"
@@ -572,7 +580,8 @@ object PersistentOperationOfQuestion
       gradientEnd = resultSet.string(resultName.gradientEnd),
       color = resultSet.string(resultName.color),
       footerFontColor = resultSet.string(resultName.footerFontColor),
-      description = resultSet.string(resultName.description)
+      description = resultSet.string(resultName.description),
+      imageUrl = resultSet.stringOpt(resultName.imageUrl)
     )
   }
 }

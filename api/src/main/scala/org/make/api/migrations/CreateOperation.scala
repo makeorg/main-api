@@ -57,7 +57,8 @@ object CreateOperation {
                                          endDate: Option[ZonedDateTime],
                                          sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default,
                                          canPropose: Boolean = true,
-                                         aboutUrl: Option[String])
+                                         aboutUrl: Option[String],
+                                         imageUrl: Option[String])
 
   final case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 
