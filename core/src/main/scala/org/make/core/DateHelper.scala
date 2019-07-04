@@ -24,6 +24,7 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 trait DateHelper {
   def now(): ZonedDateTime
   def computeBirthDate(age: Int): LocalDate
+  def isLast30daysDate(date: ZonedDateTime): Boolean
 }
 
 object DateHelper extends DateHelper {
@@ -31,6 +32,11 @@ object DateHelper extends DateHelper {
 
   def now(): ZonedDateTime = {
     ZonedDateTime.now(utc)
+  }
+
+  def isLast30daysDate(date: ZonedDateTime): Boolean = {
+    val days: Int = 30
+    date.isAfter(DateHelper.now().minusDays(days))
   }
 
   implicit object OrderedJavaTime extends Ordering[ZonedDateTime] {

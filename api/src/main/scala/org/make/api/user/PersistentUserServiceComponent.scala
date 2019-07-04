@@ -328,9 +328,10 @@ trait PersistentUserService {
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
   def updateSocialUser(user: User): Future[Boolean]
-  def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
-  def findOptInUsers(page: Int, limit: Int): Future[Seq[User]]
-  def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
+  def findUsersForCrmSynchro(optIn: Option[Boolean],
+                             hardBounce: Option[Boolean],
+                             page: Int,
+                             limit: Int): Future[Seq[User]]
   def findUsersWithoutRegisterQuestion: Future[Seq[User]]
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
@@ -568,57 +569,27 @@ trait DefaultPersistentUserServiceComponent
       futurePersistentUserId.map(_.map(UserId(_)))
     }
 
-    override def findUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]] = {
-      implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.isHardBounce, true).and(sqls.notLike(userAlias.email, "yopmail+%@make.org")))
-            .orderBy(userAlias.createdAt)
-            .asc
-            .limit(limit)
-            .offset(page * limit - limit)
-
-        }.map(PersistentUser.apply()).list.apply
-      })
-
-      futurePersistentUsers.map(_.map(_.toUser))
-    }
-
-    override def findOptInUsers(page: Int, limit: Int): Future[Seq[User]] = {
+    override def findUsersForCrmSynchro(optIn: Option[Boolean],
+                                        hardBounce: Option[Boolean],
+                                        page: Int,
+                                        limit: Int): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
             .where(
-              sqls
-                .eq(userAlias.optInNewsletter, true)
-                .and(sqls.eq(userAlias.isHardBounce, false))
-                .and(sqls.notLike(userAlias.email, "yopmail+%@make.org"))
+              sqls.toAndConditionOpt(
+                hardBounce.map(sqls.eq(userAlias.isHardBounce, _)),
+                optIn.map(sqls.eq(userAlias.optInNewsletter, _)),
+                Some(sqls.notLike(userAlias.email, "yopmail+%@make.org"))
+              )
             )
             .orderBy(userAlias.createdAt)
             .asc
             .limit(limit)
             .offset(page * limit - limit)
-        }.map(PersistentUser.apply()).list.apply
-      })
 
-      futurePersistentUsers.map(_.map(_.toUser))
-    }
-
-    override def findOptOutUsers(page: Int, limit: Int): Future[Seq[User]] = {
-      implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.optInNewsletter, false).and(sqls.notLike(userAlias.email, "yopmail+%@make.org")))
-            .orderBy(userAlias.createdAt)
-            .asc
-            .limit(limit)
-            .offset(page * limit - limit)
         }.map(PersistentUser.apply()).list.apply
       })
 

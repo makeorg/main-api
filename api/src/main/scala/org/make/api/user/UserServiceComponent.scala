@@ -78,9 +78,10 @@ trait UserService extends ShortenedNames {
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
-  def getUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]]
-  def getOptInUsers(page: Int, limit: Int): Future[Seq[User]]
-  def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]]
+  def findUsersForCrmSynchro(optIn: Option[Boolean],
+                             hardBounce: Option[Boolean],
+                             page: Int,
+                             limit: Int): Future[Seq[User]]
   def getUsersWithoutRegisterQuestion: Future[Seq[User]]
   def anonymize(user: User, adminId: UserId, requestContext: RequestContext): Future[Unit]
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
@@ -471,16 +472,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.updateLastMailingError(userId, lastMailingError)
     }
 
-    override def getUsersWithHardBounce(page: Int, limit: Int): Future[Seq[User]] = {
-      persistentUserService.findUsersWithHardBounce(page: Int, limit: Int)
-    }
-
-    override def getOptInUsers(page: Int, limit: Int): Future[Seq[User]] = {
-      persistentUserService.findOptInUsers(page: Int, limit: Int)
-    }
-
-    override def getOptOutUsers(page: Int, limit: Int): Future[Seq[User]] = {
-      persistentUserService.findOptOutUsers(page: Int, limit: Int)
+    override def findUsersForCrmSynchro(optIn: Option[Boolean],
+                                        hardBounce: Option[Boolean],
+                                        page: Int,
+                                        limit: Int): Future[Seq[User]] = {
+      persistentUserService.findUsersForCrmSynchro(optIn, hardBounce, page, limit)
     }
 
     override def getUsersWithoutRegisterQuestion: Future[Seq[User]] = {

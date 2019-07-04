@@ -66,7 +66,9 @@ import org.make.api.technical.businessconfig.{ConfigurationsApi, DefaultConfigur
 import org.make.api.technical.crm.{
   CrmApi,
   DefaultCrmApiComponent,
+  DefaultCrmClientComponent,
   DefaultCrmServiceComponent,
+  DefaultPersistentCrmUserServiceComponent,
   DefaultSendMailPublisherServiceComponent
 }
 import org.make.api.technical.elasticsearch.{
@@ -117,6 +119,7 @@ trait MakeApi
     with DefaultAuthenticationApiComponent
     with DefaultConfigurationsApiComponent
     with DefaultCrmApiComponent
+    with DefaultCrmClientComponent
     with DefaultCrmServiceComponent
     with DefaultCrmTemplatesServiceComponent
     with DefaultCurrentOperationServiceComponent
@@ -161,6 +164,7 @@ trait MakeApi
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmTemplatesServiceComponent
+    with DefaultPersistentCrmUserServiceComponent
     with DefaultPersistentCurrentOperationServiceComponent
     with DefaultPersistentFeaturedOperationServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent

@@ -234,14 +234,14 @@ class CrmApiTest
   }
 
   feature("crm synchro") {
-    when(crmService.startCrmContactSynchronization()).thenReturn(Future.successful(()))
+    when(crmService.synchronizeContactsWithCrm()).thenReturn(Future.successful(()))
     scenario("admin triggers sync") {
       implicit val timeout: RouteTestTimeout = RouteTestTimeout(15.seconds.dilated)
 
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.NoContent)
-        verify(crmService, times(1)).startCrmContactSynchronization()
+        status should be(StatusCodes.Accepted)
+        verify(crmService, times(1)).synchronizeContactsWithCrm()
       }
     }
     scenario("moderator triggers sync") {
