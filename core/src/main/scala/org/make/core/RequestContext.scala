@@ -19,6 +19,8 @@
 
 package org.make.core
 
+import java.time.ZonedDateTime
+
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
@@ -109,6 +111,8 @@ final case class RequestContext(
   sessionId: SessionId,
   @(ApiModelProperty @field)(dataType = "string", example = "e52d2ac3-a929-43ec-acfa-fb1f486a8c75")
   visitorId: Option[VisitorId] = None,
+  @(ApiModelProperty @field)(dataType = "date", example = "2019-07-18T10:26:39.582Z")
+  visitorCreatedAt: Option[ZonedDateTime] = None,
   externalId: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country],
@@ -133,7 +137,7 @@ final case class RequestContext(
   referrer: Option[String] = None
 )
 
-object RequestContext {
+object RequestContext extends CirceFormatters with SprayJsonFormatters {
   implicit val encoder: ObjectEncoder[RequestContext] = deriveEncoder[RequestContext]
   implicit val decoder: Decoder[RequestContext] = deriveDecoder[RequestContext]
 
@@ -144,6 +148,7 @@ object RequestContext {
       requestId = "",
       sessionId = SessionId(""),
       visitorId = None,
+      visitorCreatedAt = None,
       externalId = "",
       country = None,
       detectedCountry = None,
@@ -162,6 +167,6 @@ object RequestContext {
     )
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat20(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat21(RequestContext.apply)
 
 }
