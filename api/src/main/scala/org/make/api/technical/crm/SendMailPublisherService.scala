@@ -226,7 +226,8 @@ trait DefaultSendMailPublisherServiceComponent
       val questionId = requestContext.questionId
       val verificationToken: String = user.verificationToken match {
         case Some(token) => token
-        case _           => throw new IllegalStateException("verification token required but not provided")
+        case _ =>
+          throw new IllegalStateException(s"verification token required but not provided for user ${user.userId.value}")
       }
 
       def publishSendEmail(crmTemplates: CrmTemplates): Unit =
