@@ -127,7 +127,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         aboutUrl = None,
         metas = Metas(title = None, description = None, picture = None),
         theme = QuestionTheme.default,
-        description = OperationOfQuestion.defaultDescription
+        description = OperationOfQuestion.defaultDescription,
+        imageUrl = None
       )
     )
   }
@@ -161,7 +162,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           aboutUrl = None,
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription
+          description = OperationOfQuestion.defaultDescription,
+          imageUrl = None
         )
       )
     )
@@ -220,7 +222,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           aboutUrl = None,
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription
+          description = OperationOfQuestion.defaultDescription,
+          imageUrl = None
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -247,7 +250,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           aboutUrl = None,
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription
+          description = OperationOfQuestion.defaultDescription,
+          imageUrl = None
         )
       )
     )
@@ -325,7 +329,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           aboutUrl = None,
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription
+          description = OperationOfQuestion.defaultDescription,
+          imageUrl = None
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -352,7 +357,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           aboutUrl = None,
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription
+          description = OperationOfQuestion.defaultDescription,
+          imageUrl = None
         )
       )
     )
@@ -487,13 +493,32 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             country = Country("FR"),
             language = Language("fr"),
             question = "how to save the world?",
-            questionSlug = "make-the-world-great-again"
+            questionSlug = "make-the-world-great-again",
+            imageUrl = Some("https://example.com/image")
           ).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.Created)
         val operationOfQuestion = entityAs[OperationOfQuestionResponse]
         operationOfQuestion.canPropose shouldBe true
+      }
+    }
+
+    scenario("create as moderator with bad imageUrl format") {
+      Post("/moderation/operations-of-questions")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withEntity(ContentTypes.`application/json`, """{
+            |"operationId": "some-operation",
+            |"startDate": "2018-12-01T10:15:30+00:00",
+            |"question": "question ?",
+            |"questionSlug": "question-slug",
+            |"operationTitle": "my-operation",
+            |"country": "FR",
+            |"language": "fr",
+            |"imageUrl": "wrongurlformat"
+            |}""".stripMargin) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
       }
     }
   }
@@ -526,7 +551,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             aboutUrl = None,
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
-            description = OperationOfQuestion.defaultDescription
+            description = OperationOfQuestion.defaultDescription,
+            imageUrl = Some("https://example.com/image")
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -559,6 +585,38 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "footerFontColor": "#000000"
             | },
             | description = "description"
+          }""".stripMargin) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("update with bad imageUrl") {
+
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withEntity(ContentTypes.`application/json`, """{
+            | "startDate": "2018-12-01T10:15:30+00:00",
+            | "canPropose": true,
+            | "question": "question ?",
+            | "sequenceCardsConfiguration": {
+            |   "introCard": { "enabled": true },
+            |   "pushProposalCard": { "enabled": true },
+            |   "signUpCard": { "enabled": true },
+            |   finalCard = {
+            |     "enabled": true,
+            |     "sharingEnabled": false
+            |   }
+            | },
+            | metas = { "title": "metas" },
+            | theme = {
+            |   "gradientStart": "#000000",
+            |   "gradientEnd": "#000000",
+            |   "color": "#000000",
+            |   "footerFontColor": "#000000"
+            | },
+            | description = "description",
+            | imageUrl = "wrongurlformat"
           }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)

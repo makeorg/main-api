@@ -197,7 +197,8 @@ case class QuestionDetailsResponse(
   sequenceConfig: SequenceCardsConfigurationResponse,
   aboutUrl: Option[String],
   partners: Seq[QuestionPartnerResponse],
-  theme: QuestionTheme
+  theme: QuestionTheme,
+  imageUrl: Option[String]
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
@@ -226,7 +227,8 @@ object QuestionDetailsResponse extends CirceFormatters {
     sequenceConfig = SequenceCardsConfigurationResponse.apply(operationOfQuestion.sequenceCardsConfiguration),
     aboutUrl = operationOfQuestion.aboutUrl,
     partners = partners.map(QuestionPartnerResponse.apply),
-    theme = operationOfQuestion.theme
+    theme = operationOfQuestion.theme,
+    imageUrl = operationOfQuestion.imageUrl
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]

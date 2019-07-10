@@ -33,14 +33,14 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.Validation.{validate, validateColor, validateUserInput}
+import org.make.core.Validation.{validate, validateColor, validateField, validateUserInput}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors, Validation}
+import org.make.core._
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -369,7 +369,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                   aboutUrl = request.aboutUrl,
                                   metas = request.metas,
                                   theme = request.theme,
-                                  description = request.description
+                                  description = request.description,
+                                  imageUrl = request.imageUrl
                                 ),
                               updatedQuestion
                             )
@@ -417,7 +418,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           slug = body.questionSlug,
                           country = body.country,
                           language = body.language,
-                          question = body.question
+                          question = body.question,
+                          imageUrl = body.imageUrl
                         )
                       )
                     ) { operationOfQuestion =>
@@ -446,14 +448,16 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   aboutUrl: Option[String],
                                                   metas: Metas,
                                                   theme: QuestionTheme,
-                                                  description: String) {
+                                                  description: String,
+                                                  imageUrl: Option[String]) {
   validate(
     validateUserInput("question", question, None),
     validateUserInput("description", description, None),
     validateColor("gradientStart", theme.gradientStart, None),
     validateColor("gradientEnd", theme.gradientEnd, None),
     validateColor("color", theme.color, None),
-    validateColor("footerFontColor", theme.footerFontColor, None)
+    validateColor("footerFontColor", theme.footerFontColor, None),
+    validateField("imageUrl", imageUrl.forall(_.startsWith("https://")), "imageUrl must be a secure https url")
   )
 }
 
@@ -476,12 +480,14 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   question: String,
-  questionSlug: String
+  questionSlug: String,
+  imageUrl: Option[String]
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),
     validateUserInput("question", question, None),
-    validateUserInput("questionSlug", questionSlug, None)
+    validateUserInput("questionSlug", questionSlug, None),
+    validateField("imageUrl", imageUrl.forall(_.startsWith("https://")), "imageUrl must be a secure https url")
   )
 }
 
@@ -514,7 +520,8 @@ final case class OperationOfQuestionResponse(
   aboutUrl: Option[String],
   metas: Metas,
   theme: QuestionTheme,
-  description: String
+  description: String,
+  imageUrl: Option[String]
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -538,7 +545,8 @@ object OperationOfQuestionResponse extends CirceFormatters {
       aboutUrl = operationOfQuestion.aboutUrl,
       metas = operationOfQuestion.metas,
       theme = operationOfQuestion.theme,
-      description = operationOfQuestion.description
+      description = operationOfQuestion.description,
+      imageUrl = operationOfQuestion.imageUrl
     )
   }
 }
