@@ -70,6 +70,7 @@ trait DefaultFeaturedOperationServiceComponent extends FeaturedOperationServiceC
           persistentFeaturedOperationService
             .modify(
               featuredOperation.copy(
+                questionId = request.questionId,
                 title = request.title,
                 description = request.description,
                 landscapePicture = request.landscapePicture,
