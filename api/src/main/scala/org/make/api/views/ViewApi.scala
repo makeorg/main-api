@@ -167,14 +167,16 @@ trait DefaultViewApiComponent
                                       operationOfQuestionService
                                         .search(request = SearchOperationsOfQuestions(operationIds = maybeOperationIds))
                                     ) { businessDetails =>
-                                      val featuredConsultations = featured.map(
-                                        feat =>
-                                          FeaturedConsultationResponse(
-                                            feat,
-                                            feat.questionId
-                                              .flatMap(qId => questions.find(_.questionId == qId).map(_.slug))
+                                      val featuredConsultations = featured
+                                        .sortBy(_.slot)
+                                        .map(
+                                          feat =>
+                                            FeaturedConsultationResponse(
+                                              feat,
+                                              feat.questionId
+                                                .flatMap(qId => questions.find(_.questionId == qId).map(_.slug))
+                                          )
                                         )
-                                      )
                                       val businessConsultations = business.flatMap { bus =>
                                         def question(details: OperationOfQuestion): Option[Question] =
                                           questionsBusiness.find(_.questionId == details.questionId)
@@ -276,7 +278,8 @@ final case class FeaturedConsultationResponse(questionId: Option[QuestionId],
                                               label: String,
                                               buttonLabel: String,
                                               internalLink: Option[String],
-                                              externalLink: Option[String])
+                                              externalLink: Option[String],
+                                              slot: Int)
 
 object FeaturedConsultationResponse {
   implicit val encoder: ObjectEncoder[FeaturedConsultationResponse] = deriveEncoder[FeaturedConsultationResponse]
@@ -294,7 +297,8 @@ object FeaturedConsultationResponse {
       label = featured.label,
       buttonLabel = featured.buttonLabel,
       internalLink = featured.internalLink,
-      externalLink = featured.externalLink
+      externalLink = featured.externalLink,
+      slot = featured.slot
     )
 }
 
