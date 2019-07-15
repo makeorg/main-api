@@ -34,8 +34,8 @@ trait PersistentCrmUserServiceComponent {
 
 trait PersistentCrmUserService {
 
-  def persist(user: PersistentCrmUser): Future[PersistentCrmUser]
-  def list(optIn: Boolean, hardBounce: Boolean, page: Int, numberPerPage: Int): Future[Seq[PersistentCrmUser]]
+  def persist(users: Seq[PersistentCrmUser]): Future[Seq[PersistentCrmUser]]
+  def list(unsubscribed: Boolean, hardBounced: Boolean, page: Int, numberPerPage: Int): Future[Seq[PersistentCrmUser]]
   def truncateCrmUsers(): Future[Unit]
 
 }
@@ -47,42 +47,46 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
 
   class DefaultPersistentCrmUserService extends PersistentCrmUserService {
 
-    override def persist(user: PersistentCrmUser): Future[PersistentCrmUser] = {
+    override def persist(users: Seq[PersistentCrmUser]): Future[Seq[PersistentCrmUser]] = {
       implicit val cxt: EC = writeExecutionContext
       Future(NamedDB('WRITE).retryableTx { implicit session =>
-        withSQL {
-          insert
-            .into(PersistentCrmUser)
-            .namedValues(
-              PersistentCrmUser.column.userId -> user.userId,
-              PersistentCrmUser.column.accountCreationCountry -> user.accountCreationCountry,
-              PersistentCrmUser.column.accountCreationDate -> user.accountCreationDate,
-              PersistentCrmUser.column.accountCreationOperation -> user.accountCreationOperation,
-              PersistentCrmUser.column.accountCreationOrigin -> user.accountCreationOrigin,
-              PersistentCrmUser.column.accountCreationSource -> user.accountCreationSource,
-              PersistentCrmUser.column.activeCore -> user.activeCore,
-              PersistentCrmUser.column.countriesActivity -> user.countriesActivity,
-              PersistentCrmUser.column.dateOfBirth -> user.dateOfBirth,
-              PersistentCrmUser.column.daysOfActivity -> user.daysOfActivity,
-              PersistentCrmUser.column.daysOfActivity30d -> user.daysOfActivity30d,
-              PersistentCrmUser.column.email -> user.email,
-              PersistentCrmUser.column.emailHardbounceStatus -> user.emailHardbounceStatus,
-              PersistentCrmUser.column.emailValidationStatus -> user.emailValidationStatus,
-              PersistentCrmUser.column.firstContributionDate -> user.firstContributionDate,
-              PersistentCrmUser.column.firstname -> user.firstname,
-              PersistentCrmUser.column.lastContributionDate -> user.lastContributionDate,
-              PersistentCrmUser.column.lastCountryActivity -> user.lastCountryActivity,
-              PersistentCrmUser.column.lastLanguageActivity -> user.lastLanguageActivity,
-              PersistentCrmUser.column.operationActivity -> user.operationActivity,
-              PersistentCrmUser.column.sourceActivity -> user.sourceActivity,
-              PersistentCrmUser.column.totalNumberProposals -> user.totalNumberProposals,
-              PersistentCrmUser.column.totalNumberVotes -> user.totalNumberVotes,
-              PersistentCrmUser.column.unsubscribeStatus -> user.unsubscribeStatus,
-              PersistentCrmUser.column.userType -> user.userType,
-              PersistentCrmUser.column.zipcode -> user.zipcode
-            )
-        }.execute().apply()
-      }).map(_ => user)
+        users.foreach {
+          user =>
+            withSQL {
+              insert
+                .into(PersistentCrmUser)
+                .namedValues(
+                  PersistentCrmUser.column.userId -> user.userId,
+                  PersistentCrmUser.column.fullName -> user.fullName,
+                  PersistentCrmUser.column.accountCreationCountry -> user.accountCreationCountry,
+                  PersistentCrmUser.column.accountCreationDate -> user.accountCreationDate,
+                  PersistentCrmUser.column.accountCreationOperation -> user.accountCreationOperation,
+                  PersistentCrmUser.column.accountCreationOrigin -> user.accountCreationOrigin,
+                  PersistentCrmUser.column.accountCreationSource -> user.accountCreationSource,
+                  PersistentCrmUser.column.activeCore -> user.activeCore,
+                  PersistentCrmUser.column.countriesActivity -> user.countriesActivity,
+                  PersistentCrmUser.column.dateOfBirth -> user.dateOfBirth,
+                  PersistentCrmUser.column.daysOfActivity -> user.daysOfActivity,
+                  PersistentCrmUser.column.daysOfActivity30d -> user.daysOfActivity30d,
+                  PersistentCrmUser.column.email -> user.email,
+                  PersistentCrmUser.column.emailHardbounceStatus -> user.emailHardbounceStatus,
+                  PersistentCrmUser.column.emailValidationStatus -> user.emailValidationStatus,
+                  PersistentCrmUser.column.firstContributionDate -> user.firstContributionDate,
+                  PersistentCrmUser.column.firstname -> user.firstname,
+                  PersistentCrmUser.column.lastContributionDate -> user.lastContributionDate,
+                  PersistentCrmUser.column.lastCountryActivity -> user.lastCountryActivity,
+                  PersistentCrmUser.column.lastLanguageActivity -> user.lastLanguageActivity,
+                  PersistentCrmUser.column.operationActivity -> user.operationActivity,
+                  PersistentCrmUser.column.sourceActivity -> user.sourceActivity,
+                  PersistentCrmUser.column.totalNumberProposals -> user.totalNumberProposals,
+                  PersistentCrmUser.column.totalNumberVotes -> user.totalNumberVotes,
+                  PersistentCrmUser.column.unsubscribeStatus -> user.unsubscribeStatus,
+                  PersistentCrmUser.column.userType -> user.userType,
+                  PersistentCrmUser.column.zipcode -> user.zipcode
+                )
+            }.execute().apply()
+        }
+      }).map(_ => users)
     }
 
     override def list(optIn: Boolean,
@@ -121,6 +125,7 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
     Seq(
       "user_id",
       "email",
+      "full_name",
       "firstname",
       "zipcode",
       "date_of_birth",
@@ -157,6 +162,7 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
     PersistentCrmUser(
       userId = resultSet.string(resultName.userId),
       email = resultSet.string(resultName.email),
+      fullName = resultSet.string(resultName.fullName),
       firstname = resultSet.string(resultName.firstname),
       zipcode = resultSet.stringOpt(resultName.zipcode),
       dateOfBirth = resultSet.stringOpt(resultName.dateOfBirth),
@@ -184,10 +190,11 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
     )
   }
 
-  def fromContactProperty(email: String, contactProperties: ContactProperties): PersistentCrmUser = {
+  def fromContactProperty(email: String, fullName: String, contactProperties: ContactProperties): PersistentCrmUser = {
     PersistentCrmUser(
       userId = contactProperties.userId.map(_.value).getOrElse(""),
       email = email,
+      fullName = fullName,
       firstname = contactProperties.firstName.getOrElse(""),
       zipcode = contactProperties.postalCode,
       dateOfBirth = contactProperties.dateOfBirth,
@@ -218,6 +225,7 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
 
 case class PersistentCrmUser(userId: String,
                              email: String,
+                             fullName: String,
                              firstname: String,
                              zipcode: Option[String],
                              dateOfBirth: Option[String],

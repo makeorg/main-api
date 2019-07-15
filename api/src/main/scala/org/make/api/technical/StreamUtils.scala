@@ -17,12 +17,27 @@
  *
  */
 
-package org.make.core;
+package org.make.api.technical
 
-public class HttpCodes {
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 
-    public static final int OK = 200;
-    public static final int NoContent = 204;
-    public static final int Created = 201;
-    public static final int Accepted = 202;
+import scala.concurrent.{ExecutionContext, Future}
+
+object StreamUtils {
+  def asyncPageToPageSource[T](
+    pageFunc: Int => Future[Seq[T]]
+  )(implicit executionContext: ExecutionContext): Source[Seq[T], NotUsed] = {
+    Source.unfoldAsync(1) { page =>
+      val futureUsers: Future[Seq[T]] = pageFunc(page)
+      futureUsers.map { users =>
+        if (users.isEmpty) {
+          None
+        } else {
+          Some((page + 1, users))
+        }
+      }
+
+    }
+  }
 }

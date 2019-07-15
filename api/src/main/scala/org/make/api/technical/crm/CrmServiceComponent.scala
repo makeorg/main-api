@@ -19,33 +19,30 @@
 
 package org.make.api.technical.crm
 
-import java.net.{URL, URLEncoder}
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
 
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.persistence.query.EventEnvelope
 import akka.stream._
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.Source
 import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.syntax._
 import io.circe.{Decoder, Printer}
-import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.ProposalCoordinatorServiceComponent
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
+import org.make.api.technical.{ReadJournalComponent, StreamUtils}
 import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
 import org.make.api.userhistory._
+import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.operation.OperationId
 import org.make.core.question.Question
 import org.make.core.reference.Country
@@ -55,13 +52,13 @@ import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.util.{Failure, Success}
 
 trait CrmService {
   def sendEmail(message: SendEmail): Future[Unit]
-  def startCrmContactSynchronization(): Future[Unit]
   def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail]
+  def synchronizeContactsWithCrm(): Future[Unit]
 }
 trait CrmServiceComponent {
   def crmService: CrmService
@@ -78,6 +75,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with ReadJournalComponent
     with ProposalCoordinatorServiceComponent
     with PersistentUserToAnonymizeServiceComponent
+    with PersistentCrmUserServiceComponent
+    with CrmClientComponent
     with CirceHttpSupport =>
 
   class QuestionResolver(questions: Seq[Question], operations: Map[String, OperationId]) {
@@ -109,244 +108,152 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   }
 
   private lazy val batchSize: Int = mailJetConfiguration.userListBatchSize
-  private val poolSize: Int = 10
   private val retrievePropertiesParallelism = 10
-  implicit val executionContext: ExecutionContextExecutor =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(poolSize, new ThreadFactory {
-      val counter = new AtomicInteger()
-      override def newThread(runnable: Runnable): Thread =
-        new Thread(runnable, "crm-batch-" + counter.getAndIncrement())
-    }))
-
-  lazy val printer: Printer = Printer.noSpaces.copy(dropNullValues = false)
-  lazy val url = new URL(mailJetConfiguration.url)
-  val httpPort: Int = 443
-
-  lazy val httpFlow
-    : Flow[(HttpRequest, Promise[HttpResponse]), (Try[HttpResponse], Promise[HttpResponse]), Http.HostConnectionPool] =
-    Http(actorSystem).cachedHostConnectionPoolHttps[Promise[HttpResponse]](host = url.getHost, port = httpPort)
-
-  private lazy val bufferSize = mailJetConfiguration.httpBufferSize
-
-  lazy val queue: SourceQueueWithComplete[(HttpRequest, Promise[HttpResponse])] = Source
-    .queue[(HttpRequest, Promise[HttpResponse])](bufferSize = bufferSize, OverflowStrategy.backpressure)
-    .via(httpFlow)
-    .withAttributes(ActorAttributes.dispatcher(api.mailJetDispatcher))
-    .toMat(Sink.foreach {
-      case (Success(resp), p) => p.success(resp)
-      case (Failure(e), p)    => p.failure(e)
-    })(Keep.left)
-    .run()(ActorMaterializer()(actorSystem))
-
-  private lazy val authorization = Authorization(
-    BasicHttpCredentials(mailJetConfiguration.campaignApiKey, mailJetConfiguration.campaignSecretKey)
-  )
-
-  def manageContactMailJetRequest(listId: String, manageContact: ManageContact): Future[HttpResponse] = {
-    val request = HttpRequest(
-      method = HttpMethods.POST,
-      uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactslist/$listId/managecontact"),
-      headers = immutable.Seq(authorization),
-      entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContact.asJson))
-    )
-    doHttpCall(request)
-  }
-
-  def manageContactListMailJetRequest(manageContactList: ManageManyContacts): Future[HttpResponse] = {
-    val request =
-      HttpRequest(
-        method = HttpMethods.POST,
-        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts"),
-        headers = immutable.Seq(authorization),
-        entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContactList.asJson))
-      )
-    doHttpCall(request)
-  }
-
-  def updateContactProperties(contactData: ContactData, email: String): Future[HttpResponse] = {
-    val encodedEmail: String = URLEncoder.encode(email, "UTF-8")
-    val request =
-      HttpRequest(
-        method = HttpMethods.PUT,
-        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactdata/$encodedEmail"),
-        headers = immutable.Seq(authorization),
-        entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(contactData.asJson))
-      )
-    doHttpCall(request)
-  }
-
-  def sendEmailMailJetRequest(message: SendMessages): Future[HttpResponse] = {
-    val request: HttpRequest = HttpRequest(
-      method = HttpMethods.POST,
-      uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
-      headers = immutable
-        .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
-      entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(message.asJson))
-    )
-    doHttpCall(request)
-  }
-
-  private def doHttpCall(request: HttpRequest): Future[HttpResponse] = {
-    val promise = Promise[HttpResponse]()
-    queue.offer((request, promise)).flatMap {
-      case QueueOfferResult.Enqueued    => promise.future
-      case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
-      case QueueOfferResult.Failure(ex) => Future.failed(ex)
-      case QueueOfferResult.QueueClosed =>
-        Future
-          .failed(new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later."))
-    }
-  }
+  private val persistCrmUsersParallelism = 5
 
   override lazy val crmService: DefaultCrmService = new DefaultCrmService
 
   class DefaultCrmService extends CrmService {
 
-    implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+    private val poolSize: Int = 10
+    implicit private val executionContext: ExecutionContextExecutor =
+      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(poolSize, new ThreadFactory {
+        val counter = new AtomicInteger()
+        override def newThread(runnable: Runnable): Thread =
+          new Thread(runnable, "crm-batchs-" + counter.getAndIncrement())
+      }))
 
-    override def sendEmail(message: SendEmail): Future[Unit] = {
-      val messages = SendMessages(message)
-      sendEmailMailJetRequest(message = messages).map { response =>
-        logMailjetSendEmailResponse(messages, response)
-      }
-    }
-
-    private def synchronizeContacts(paging: Int => Future[Seq[User]],
-                                    actions: Seq[ContactList],
-                                    name: String,
-                                    questionResolver: QuestionResolver): Future[Unit] = {
-
-      asyncPageToPageSource(paging)
-        .mapConcat(users => immutable.Seq(users: _*))
-        .mapAsync(retrievePropertiesParallelism) { user =>
-          getPropertiesFromUser(user, questionResolver).map { properties =>
-            Contact(email = user.email, name = user.fullName.orElse(Some(user.email)), properties = Some(properties))
-          }
-        }
-        .groupedWithin(batchSize, 5.seconds)
-        .mapAsync(1) { contacts =>
-          manageContactListMailJetRequest(
-            manageContactList = ManageManyContacts(contacts = contacts, contactList = actions)
-          )
-        }
-        .wireTap(logMailjetResponse(_, s"Add to $name list", None))
-        .runForeach(_ => ())
-        .map(_ => ())
-    }
-
-    private def optOut(questionResolver: QuestionResolver): Future[Unit] =
-      synchronizeContacts(
-        userService.getOptOutUsers(_, batchSize),
-        Seq(
-          ContactList(mailJetConfiguration.hardBounceListId, Remove),
-          ContactList(mailJetConfiguration.unsubscribeListId, AddNoForce),
-          ContactList(mailJetConfiguration.optInListId, Remove)
-        ),
-        "optOut",
-        questionResolver
-      )
-
-    private def hardBounce(questionResolver: QuestionResolver): Future[Unit] =
-      synchronizeContacts(
-        userService.getUsersWithHardBounce(_, batchSize),
-        Seq(
-          ContactList(mailJetConfiguration.hardBounceListId, AddNoForce),
-          ContactList(mailJetConfiguration.unsubscribeListId, Remove),
-          ContactList(mailJetConfiguration.optInListId, Remove)
-        ),
-        "hardBounce",
-        questionResolver
-      )
-
-    private def optIn(questionResolver: QuestionResolver): Future[Unit] =
-      synchronizeContacts(
-        userService.getOptInUsers(_, batchSize),
-        Seq(
-          ContactList(mailJetConfiguration.hardBounceListId, Remove),
-          ContactList(mailJetConfiguration.unsubscribeListId, Remove),
-          ContactList(mailJetConfiguration.optInListId, AddNoForce)
-        ),
-        "optIn",
-        questionResolver
-      )
-
-    private def anonymize: Future[Seq[String]] =
-      persistentUserToAnonymizeService
-        .findAll()
-        .flatMap(emails => hardRemoveEmailsFromAllLists(emails).map(_ => emails))
-
-    private def validateAnonymized(emails: Seq[String]): Future[Done] =
-      persistentUserToAnonymizeService.removeAllByEmails(emails).map(_ => Done)
-
-    override def startCrmContactSynchronization(): Future[Unit] = {
-      val startTime: Long = System.currentTimeMillis()
-
-      def createQuestionResolver: Future[QuestionResolver] = {
-        val operationsAsMap = operationService
-          .findSimple()
-          .map(_.map(operation => operation.slug -> operation.operationId).toMap)
-        for {
-          questions  <- questionService.searchQuestion(SearchQuestionRequest())
-          operations <- operationsAsMap
-        } yield new QuestionResolver(questions, operations)
-      }
-
-      (for {
-        resolver <- createQuestionResolver
-        _        <- optOut(resolver)
-        _        <- hardBounce(resolver)
-        _        <- optIn(resolver)
-        emails   <- anonymize
-        _        <- validateAnonymized(emails)
-      } yield {}).onComplete {
-        case Failure(exception) =>
-          logger.error(s"Mailjet synchro failed:", exception)
-        case Success(_) =>
-          logger.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
-      }
-
-      Future.successful {}
-    }
-
-    private def asyncPageToPageSource(pageFunc: Int => Future[Seq[User]]): Source[Seq[User], NotUsed] = {
-      Source.unfoldAsync(1) { page =>
-        val futureUsers: Future[Seq[User]] = pageFunc(page)
-        futureUsers.map { users =>
-          if (users.isEmpty) {
-            None
-          } else {
-            Some((page + 1, users))
-          }
-        }
-
-      }
-    }
-
-    private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
-
-      manageContactListMailJetRequest(
-        manageContactList = ManageManyContacts(
-          contacts = emails.map(email => Contact(email = email)),
-          contactList = Seq(
-            ContactList(mailJetConfiguration.hardBounceListId, Remove),
-            ContactList(mailJetConfiguration.unsubscribeListId, Remove),
-            ContactList(mailJetConfiguration.optInListId, Remove)
-          )
-        )
-      ).map { response =>
-        logMailjetResponse(response, "Hard remove emails from all lists", None)
-      }
-
-    }
+    implicit private val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 
     private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00'Z'")
     private val dateFormatter: DateTimeFormatter =
       DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
     private val dayDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("ddMMyyyy").withZone(ZoneOffset.UTC)
 
-    private def isLast30daysDate(date: ZonedDateTime): Boolean = {
-      val days: Int = 30
-      date.isAfter(DateHelper.now().minusDays(days))
+    override def sendEmail(message: SendEmail): Future[Unit] = {
+      val messages = SendMessages(message)
+      crmClient.sendEmailMailJetRequest(message = messages).map { response =>
+        logMailjetSendEmailResponse(messages, response)
+      }
+    }
+
+    override def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail] = {
+      crmClient.getUsersMailFromList(listId, limit, offset).flatMap {
+        case HttpResponse(code, _, entity, _) if code.isSuccess() =>
+          Unmarshal(entity).to[GetUsersMail]
+        case HttpResponse(code, _, entity, _) =>
+          logger.error(s"getUsersMailFromList failed with status $code: $entity")
+          Future.successful(GetUsersMail(0, 0, Seq.empty))
+      }
+    }
+
+    override def synchronizeContactsWithCrm(): Future[Unit] = {
+      val startTime: Long = System.currentTimeMillis()
+      val synchronizationTime = DateHelper.now().toString
+
+      val crmSynchronization =
+        for {
+          _        <- persistentCrmUserService.truncateCrmUsers()
+          resolver <- createQuestionResolver
+          _        <- computeAndPersistCrmUsers(resolver)
+          _        <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptIn)
+          _        <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptOut)
+          _        <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.HardBounce)
+          _        <- anonymize
+        } yield {}
+
+      crmSynchronization.onComplete {
+        case Failure(exception) =>
+          logger.error(s"Mailjet synchro failed:", exception)
+        case Success(_) =>
+          logger.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
+      }
+
+      crmSynchronization
+    }
+
+    private def computeAndPersistCrmUsers(questionResolver: QuestionResolver): Future[Unit] = {
+      val start = System.currentTimeMillis()
+      StreamUtils
+        .asyncPageToPageSource(userService.findUsersForCrmSynchro(None, None, _, batchSize))
+        .mapConcat(users => immutable.Seq(users: _*))
+        .mapAsync(retrievePropertiesParallelism) { user =>
+          getPropertiesFromUser(user, questionResolver).map { properties =>
+            (user.email, user.fullName.getOrElse(user.email), properties)
+          }
+        }
+        .groupedWithin(batchSize, 5.seconds)
+        .map { contacts =>
+          contacts.map {
+            case (email, fullName, properties) => PersistentCrmUser.fromContactProperty(email, fullName, properties)
+          }
+        }
+        .mapAsync(persistCrmUsersParallelism) { crmUsers =>
+          persistentCrmUserService.persist(crmUsers)
+        }
+        .runForeach(_ => ())
+        .map(_ => logger.info(s"Crm users creation completed in ${System.currentTimeMillis() - start} ms"))
+    }
+
+    private def synchronizeList(formattedDate: String, list: CrmList): Future[Unit] = {
+
+      val actions = Seq(
+        ContactList(mailJetConfiguration.hardBounceListId, list.actionOnHardBounce),
+        ContactList(mailJetConfiguration.unsubscribeListId, list.actionOnOptOut),
+        ContactList(mailJetConfiguration.optInListId, list.actionOnOptIn)
+      )
+
+      StreamUtils
+        .asyncPageToPageSource(persistentCrmUserService.list(list.unsubscribed, list.hardBounced, _, batchSize))
+        .map { crmUsers =>
+          val contacts = crmUsers.map { crmUser =>
+            Contact(
+              email = crmUser.email,
+              name = Some(crmUser.fullName),
+              properties = Some(crmUser.toContactProperties(Some(formattedDate)))
+            )
+          }
+          ManageManyContacts(contacts = contacts, contactList = actions)
+        }
+        .mapAsync(1)(crmClient.manageContactListMailJetRequest)
+        .wireTap(logMailjetResponse(_, s"Add to ${list.name} list", None))
+        .runForeach(_ => ())
+        .map(_ => ())
+    }
+
+    private def anonymize: Future[Done] = {
+      for {
+        emails <- persistentUserToAnonymizeService.findAll()
+        _      <- hardRemoveEmailsFromAllLists(emails)
+        _      <- persistentUserToAnonymizeService.removeAllByEmails(emails)
+      } yield Done
+    }
+
+    private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
+      crmClient
+        .manageContactListMailJetRequest(
+          manageContactList = ManageManyContacts(
+            contacts = emails.map(email => Contact(email = email)),
+            contactList = Seq(
+              ContactList(mailJetConfiguration.hardBounceListId, Remove),
+              ContactList(mailJetConfiguration.unsubscribeListId, Remove),
+              ContactList(mailJetConfiguration.optInListId, Remove)
+            )
+          )
+        )
+        .map { response =>
+          logMailjetResponse(response, "Hard remove emails from all lists", None)
+        }
+    }
+
+    private def createQuestionResolver: Future[QuestionResolver] = {
+      val operationsAsMap = operationService
+        .findSimple()
+        .map(_.map(operation => operation.slug -> operation.operationId).toMap)
+      for {
+        questions  <- questionService.searchQuestion(SearchQuestionRequest())
+        operations <- operationsAsMap
+      } yield new QuestionResolver(questions, operations)
     }
 
     final def getPropertiesFromUser(user: User, resolver: QuestionResolver): Future[ContactProperties] = {
@@ -403,6 +310,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationSlug = question.map(_.slug)
       )
     }
+
     private def contactPropertiesFromUserProperties(userProperty: UserProperties): ContactProperties = {
       ContactProperties(
         userId = Some(userProperty.userId),
@@ -653,7 +561,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       )
     }
 
-    def logMailjetResponse(result: HttpResponse, operationName: String, maybeUserEmail: Option[String]): Unit = {
+    private def logMailjetResponse(result: HttpResponse,
+                                   operationName: String,
+                                   maybeUserEmail: Option[String]): Unit = {
       result match {
         case HttpResponse(code, _, _, _) if code.isSuccess() =>
           logger.debug(s"$operationName: call completed with status $code")
@@ -667,34 +577,15 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    val printer: Printer = Printer.noSpaces
-
-    def logMailjetSendEmailResponse(message: SendMessages, result: HttpResponse): Unit = {
+    private def logMailjetSendEmailResponse(message: SendMessages, result: HttpResponse): Unit = {
       result match {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
-          logger.info(s"Sent email: ${printer.pretty(message.asJson)} ->  $entity")
+          logger.info(s"Sent email: ${Printer.noSpaces.pretty(message.asJson)} ->  $entity")
         case HttpResponse(code, _, entity, _) =>
           logger.error(s"send email failed with status $code: $entity")
       }
     }
 
-    override def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail] = {
-      implicit val system = actorSystem
-      implicit val materializer: ActorMaterializer = ActorMaterializer()
-      val params = s"ContactsList=$listId&Limit=$limit&Offset=$offset"
-      val request = HttpRequest(
-        method = HttpMethods.GET,
-        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact?$params"),
-        headers = immutable.Seq(authorization)
-      )
-      doHttpCall(request).flatMap {
-        case HttpResponse(code, _, entity, _) if code.isSuccess() =>
-          Unmarshal(entity).to[GetUsersMail]
-        case HttpResponse(code, _, entity, _) =>
-          logger.error(s"getUsersMailFromList failed with status $code: $entity")
-          Future.successful(GetUsersMail(0, 0, Seq.empty))
-      }
-    }
   }
 }
 
@@ -758,4 +649,47 @@ object GetUsersMail {
 final case class ContactMail(email: String)
 object ContactMail {
   implicit val decoder: Decoder[ContactMail] = Decoder.forProduct1("Email")(ContactMail.apply)
+}
+
+sealed trait CrmList {
+  def name: String
+  def hardBounced: Boolean
+  def unsubscribed: Boolean
+
+  def actionOnHardBounce: ManageContactAction
+  def actionOnOptIn: ManageContactAction
+  def actionOnOptOut: ManageContactAction
+}
+
+object CrmList {
+  case object HardBounce extends CrmList {
+    override val name: String = "hardBounce"
+    override val hardBounced: Boolean = true
+    override val unsubscribed: Boolean = true
+
+    override val actionOnHardBounce: ManageContactAction = AddNoForce
+    override val actionOnOptIn: ManageContactAction = Remove
+    override val actionOnOptOut: ManageContactAction = Remove
+  }
+
+  case object OptIn extends CrmList {
+    override val name: String = "optIn"
+    override val hardBounced: Boolean = false
+    override val unsubscribed: Boolean = false
+
+    override val actionOnHardBounce: ManageContactAction = Remove
+    override val actionOnOptIn: ManageContactAction = AddNoForce
+    override val actionOnOptOut: ManageContactAction = Remove
+  }
+
+  case object OptOut extends CrmList {
+    override val name: String = "optOut"
+    override val hardBounced: Boolean = false
+    override val unsubscribed: Boolean = true
+
+    override val actionOnHardBounce: ManageContactAction = Remove
+    override val actionOnOptIn: ManageContactAction = Remove
+    override val actionOnOptOut: ManageContactAction = AddNoForce
+  }
+
 }

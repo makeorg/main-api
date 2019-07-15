@@ -64,7 +64,7 @@ trait CrmApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Ok", response = classOf[String])))
   @Path(value = "/technical/crm/synchronize")
   def syncCrmData: Route
 
@@ -161,10 +161,10 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
         makeOAuth2 { auth: AuthInfo[UserRights] =>
           requireAdminRole(auth.user) {
             makeOperation("SyncCrmData") { _ =>
-              provideAsync(crmService.startCrmContactSynchronization()) { _ =>
-                complete(StatusCodes.NoContent)
-
-              }
+              // The future will take a lot of time to complete,
+              // so it's better to leave it in the background
+              crmService.synchronizeContactsWithCrm()
+              complete(StatusCodes.Accepted)
             }
           }
         }

@@ -69,14 +69,16 @@ class CrmServiceComponentTest
     with UserServiceComponent
     with ReadJournalComponent
     with ProposalCoordinatorServiceComponent
-    with PersistentUserToAnonymizeServiceComponent {
+    with PersistentUserToAnonymizeServiceComponent
+    with CrmClientComponent
+    with PersistentCrmUserServiceComponent {
 
   trait MakeReadJournalForMocks
       extends ReadJournal
       with CurrentPersistenceIdsQuery
       with CurrentEventsByPersistenceIdQuery
 
-  override lazy val actorSystem: ActorSystem = ActorSystem()
+  override lazy val actorSystem: ActorSystem = CrmServiceComponentTest.actorSystem
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
   override val userJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
@@ -88,6 +90,8 @@ class CrmServiceComponentTest
   override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
     mock[PersistentUserToAnonymizeService]
 
+  override val crmClient: CrmClient = mock[CrmClient]
+  override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
@@ -561,31 +565,7 @@ class CrmServiceComponentTest
   }
 }
 
-object ProposalProducerActorIT {
-  // This configuration cannot be dynamic, port values _must_ match reality
-  val configuration: String =
-    """
-      |akka.log-dead-letters-during-shutdown = off
-      |make-api {
-      |  kafka {
-      |    connection-string = "127.0.0.1:29092"
-      |    poll-timeout = 1000
-      |    schema-registry = "http://localhost:28081"
-      |    topics {
-      |      users = "users"
-      |      emails = "emails"
-      |      proposals = "proposals"
-      |      mailjet-events = "mailjet-events"
-      |      duplicates-predicted = "duplicates-predicted"
-      |      sequences = "sequences"
-      |      tracking-events = "tracking-events"
-      |      ideas = "ideas"
-      |      predictions = "predictions"
-      |    }
-      |  }
-      |}
-    """.stripMargin
-
-  val actorSystem = ActorSystem("ProposalProducerIT", ConfigFactory.parseString(configuration))
-
+object CrmServiceComponentTest {
+  val configuration: String = "akka.log-dead-letters-during-shutdown = off"
+  val actorSystem = ActorSystem("CrmServiceComponentTest", ConfigFactory.parseString(configuration))
 }

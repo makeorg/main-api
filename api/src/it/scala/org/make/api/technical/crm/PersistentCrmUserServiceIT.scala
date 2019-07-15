@@ -28,6 +28,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
 
   val defaultUser = PersistentCrmUser(
     userId = "test-crm-user",
+    fullName = "Toto la Carotte",
     email = "test@make.org",
     firstname = "the user",
     zipcode = Some("12345"),
@@ -58,7 +59,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
   feature("persist crm users") {
     scenario("persist a user") {
 
-      whenReady(persistentCrmUserService.persist(defaultUser), Timeout(5.seconds)) { _ =>
+      whenReady(persistentCrmUserService.persist(Seq(defaultUser)), Timeout(5.seconds)) { _ =>
         ()
       }
 
@@ -75,7 +76,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
   feature("truncate table") {
     scenario("truncate table") {
 
-      whenReady(persistentCrmUserService.persist(defaultUser.copy(userId = "truncate table")), Timeout(5.seconds)) {
+      whenReady(persistentCrmUserService.persist(Seq(defaultUser.copy(userId = "truncate table"))), Timeout(5.seconds)) {
         _ =>
           ()
       }
@@ -105,48 +106,41 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
   feature("list users") {
     scenario("list users") {
 
-      val insertUsers = for {
-        _ <- persistentCrmUserService.persist(
-          defaultUser.copy(
-            userId = "inserted-1",
-            emailHardbounceStatus = true,
-            unsubscribeStatus = true,
-            accountCreationDate = Some("2019-07-01T01:01:01Z")
+      val insertUsers =
+        persistentCrmUserService.persist(
+          Seq(
+            defaultUser.copy(
+              userId = "inserted-1",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = true,
+              accountCreationDate = Some("2019-07-01T01:01:01Z")
+            ),
+            defaultUser.copy(
+              userId = "inserted-2",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = true,
+              accountCreationDate = Some("2019-07-01T03:03:013")
+            ),
+            defaultUser.copy(
+              userId = "inserted-3",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = true,
+              accountCreationDate = Some("2019-07-01T02:02:02Z")
+            ),
+            defaultUser.copy(
+              userId = "inserted-4",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = false,
+              accountCreationDate = Some("2019-07-01T01:01:01Z")
+            ),
+            defaultUser.copy(
+              userId = "inserted-5",
+              emailHardbounceStatus = true,
+              unsubscribeStatus = false,
+              accountCreationDate = Some("2019-07-01T02:02:02Z")
+            )
           )
         )
-        _ <- persistentCrmUserService.persist(
-          defaultUser.copy(
-            userId = "inserted-2",
-            emailHardbounceStatus = true,
-            unsubscribeStatus = true,
-            accountCreationDate = Some("2019-07-01T03:03:013")
-          )
-        )
-        _ <- persistentCrmUserService.persist(
-          defaultUser.copy(
-            userId = "inserted-3",
-            emailHardbounceStatus = true,
-            unsubscribeStatus = true,
-            accountCreationDate = Some("2019-07-01T02:02:02Z")
-          )
-        )
-        _ <- persistentCrmUserService.persist(
-          defaultUser.copy(
-            userId = "inserted-4",
-            emailHardbounceStatus = true,
-            unsubscribeStatus = false,
-            accountCreationDate = Some("2019-07-01T01:01:01Z")
-          )
-        )
-        _ <- persistentCrmUserService.persist(
-          defaultUser.copy(
-            userId = "inserted-5",
-            emailHardbounceStatus = true,
-            unsubscribeStatus = false,
-            accountCreationDate = Some("2019-07-01T02:02:02Z")
-          )
-        )
-      } yield {}
 
       whenReady(insertUsers, Timeout(5.seconds)) { _ =>
         ()
