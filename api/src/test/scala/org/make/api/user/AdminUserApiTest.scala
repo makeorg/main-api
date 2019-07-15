@@ -116,6 +116,30 @@ class AdminUserApiTest
     availableQuestions = Seq.empty
   )
 
+  private val newCitizen = User(
+    userId = citizenId,
+    email = "cit.izen@make.org",
+    firstName = Some("Cit"),
+    lastName = Some("Izen"),
+    lastIp = None,
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = false,
+    lastConnection = DateHelper.now(),
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq(RoleCitizen),
+    country = Country("FR"),
+    language = Language("fr"),
+    profile = None,
+    createdAt = None,
+    updatedAt = None,
+    lastMailingError = None,
+    availableQuestions = Seq.empty
+  )
+
   feature("get moderator") {
     scenario("unauthenticate user unauthorized to get moderator") {
       Get("/admin/moderators/moderator-id") ~> routes ~> check {
@@ -164,6 +188,48 @@ class AdminUserApiTest
         status should be(StatusCodes.OK)
         val moderator = entityAs[ModeratorResponse]
         moderator.id should be(moderatorId)
+      }
+    }
+  }
+
+  feature("get user") {
+    scenario("unauthenticate user unauthorized to get user") {
+      Get("/admin/users/user-id") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("citizen forbidden to get user") {
+      Get("/admin/users/user-id")
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("moderator forbidden to get user") {
+      Get("/admin/users/user-id")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("unexistant user") {
+      Mockito.when(userService.getUser(ArgumentMatchers.any[UserId])).thenReturn(Future.successful(None))
+      Get("/admin/users/user-id")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("successfully return user") {
+      Mockito
+        .when(userService.getUser(ArgumentMatchers.eq(citizenId)))
+        .thenReturn(Future.successful(Some(newCitizen)))
+      Get("/admin/users/citizen")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val user = entityAs[AdminUserResponse]
+        user.id should be(citizenId)
       }
     }
   }
@@ -404,6 +470,7 @@ class AdminUserApiTest
     }
 
     scenario("admin successfully update moderator") {
+      Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
       Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
       val request =
         """{
@@ -437,6 +504,7 @@ class AdminUserApiTest
     }
 
     scenario("failed because email exists") {
+      Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
       Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
       Mockito
         .when(userService.getUserByEmail(any[String]))
@@ -487,6 +555,7 @@ class AdminUserApiTest
     }
 
     scenario("moderator tries to change roles") {
+      Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
       Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
       val request =
         """{

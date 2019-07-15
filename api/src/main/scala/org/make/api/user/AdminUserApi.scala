@@ -117,7 +117,7 @@ trait AdminUserApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
-        name = "userId",
+        name = "moderatorId",
         paramType = "path",
         dataType = "string",
         example = "d22c8e70-f709-42ff-8a52-9398d159c753"
@@ -126,6 +126,33 @@ trait AdminUserApi extends Directives {
   )
   @Path(value = "/moderators/{moderatorId}")
   def getModerator: Route
+
+  @ApiOperation(
+    value = "get-user",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[AdminUserResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      )
+    )
+  )
+  @Path(value = "/users/{userId}")
+  def getUser: Route
 
   @ApiOperation(
     value = "get-moderators",
@@ -253,7 +280,8 @@ trait AdminUserApi extends Directives {
   def anonymizeUserByEmail: Route
 
   def routes: Route =
-    getUsers ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~ anonymizeUser ~ anonymizeUserByEmail
+    getUsers ~ getUser ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~
+      anonymizeUser ~ anonymizeUserByEmail
 }
 
 trait AdminUserApiComponent {
@@ -382,6 +410,20 @@ trait DefaultAdminUserApiComponent
                 } else {
                   complete(ModeratorResponse(moderator))
                 }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def getUser: Route = get {
+      path("admin" / "users" / userId) { userId =>
+        makeOperation("GetUser") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                complete(AdminUserResponse(user))
               }
             }
           }
