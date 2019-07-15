@@ -34,6 +34,7 @@ class MakeSettings(config: Config) extends Extension {
   object SessionCookie {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))
     val name: String = "make-secure"
+    val expirationName: String = "make-secure-expiration"
     val isSecure: Boolean = config.getBoolean("cookie-session.is-secure")
     val domain: String = config.getString("cookie-session.domain")
   }
