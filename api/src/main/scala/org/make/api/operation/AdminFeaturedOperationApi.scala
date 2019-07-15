@@ -254,10 +254,10 @@ final case class CreateFeaturedOperationRequest(
 ) {
   validate(
     maxLength("title", 90, title),
-    maxLength("description", 130, description.getOrElse("")),
+    maxLength("description", 140, description.getOrElse("")),
     maxLength("label", 25, label),
     maxLength("buttonLabel", 25, buttonLabel),
-    maxLength("altPicture", 80, altPicture),
+    maxLength("altPicture", 130, altPicture),
     Requirement(
       "questionId",
       () => internalLink.isDefined && questionId.isDefined || internalLink.isEmpty,
@@ -291,10 +291,10 @@ final case class UpdateFeaturedOperationRequest(
 ) {
   validate(
     maxLength("title", 90, title),
-    maxLength("description", 130, description.getOrElse("")),
+    maxLength("description", 140, description.getOrElse("")),
     maxLength("label", 25, label),
     maxLength("buttonLabel", 25, buttonLabel),
-    maxLength("altPicture", 80, altPicture),
+    maxLength("altPicture", 130, altPicture),
     Requirement(
       "questionId",
       () => internalLink.isDefined && questionId.isDefined || internalLink.isEmpty,
