@@ -28,13 +28,13 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
 import org.make.api.user.social.models.google.{UserInfo   => GoogleUserInfos}
 import org.make.api.user.{UserService, UserServiceComponent}
-import org.make.core.auth.UserRights
+import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider.{AccessToken, AuthInfo}
@@ -46,12 +46,14 @@ class SocialServiceComponentTest
     extends MakeUnitTest
     with DefaultSocialServiceComponent
     with UserServiceComponent
-    with MakeDataHandlerComponent {
+    with MakeDataHandlerComponent
+    with ClientServiceComponent {
 
   override val userService: UserService = mock[UserService]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val facebookApi: FacebookApi = mock[FacebookApi]
+  override val clientService: ClientService = mock[ClientService]
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -61,6 +63,15 @@ class SocialServiceComponentTest
   val expireInSeconds = 123000
   var refreshTokenValue = "my_refresh_token"
   var accessTokenValue = "my_access_token"
+
+  val defaultClient: Client =
+    Client(ClientId("default-client-id"), "default", Seq.empty, None, None, None, None, None, None, Seq.empty)
+  Mockito
+    .when(clientService.getClient(ArgumentMatchers.eq(ClientId("client"))))
+    .thenReturn(Future.successful(Some(defaultClient)))
+  Mockito
+    .when(clientService.getClient(ArgumentMatchers.eq(ClientId("fake-client"))))
+    .thenReturn(Future.successful(None))
 
   feature("login user from google provider") {
     scenario("successful create UserInfo Object") {
@@ -146,7 +157,8 @@ class SocialServiceComponentTest
           Language("fr"),
           None,
           None,
-          RequestContext.empty
+          RequestContext.empty,
+          ClientId("client")
         )
 
       whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
@@ -255,7 +267,8 @@ class SocialServiceComponentTest
           Language("fr"),
           None,
           None,
-          RequestContext.empty
+          RequestContext.empty,
+          ClientId("client")
         )
 
       whenReady(tokenResposnse, Timeout(3.seconds)) { _ =>
@@ -357,7 +370,16 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login("google", "token", Country("FR"), Language("fr"), None, None, RequestContext.empty)
+        socialService.login(
+          "google",
+          "token",
+          Country("FR"),
+          Language("fr"),
+          None,
+          None,
+          RequestContext.empty,
+          ClientId("client")
+        )
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
@@ -377,7 +399,16 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login("google", "token", Country("FR"), Language("fr"), None, None, RequestContext.empty)
+        socialService.login(
+          "google",
+          "token",
+          Country("FR"),
+          Language("fr"),
+          None,
+          None,
+          RequestContext.empty,
+          ClientId("client")
+        )
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[Exception]
@@ -462,7 +493,8 @@ class SocialServiceComponentTest
           Language("fr"),
           None,
           None,
-          RequestContext.empty
+          RequestContext.empty,
+          ClientId("client")
         )
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
@@ -562,7 +594,8 @@ class SocialServiceComponentTest
           Language("fr"),
           None,
           None,
-          RequestContext.empty
+          RequestContext.empty,
+          ClientId("client")
         )
 
       Then("my program call getOrCreateUserFromSocial with facebook data")
@@ -659,7 +692,8 @@ class SocialServiceComponentTest
           Language("fr"),
           None,
           None,
-          RequestContext.empty
+          RequestContext.empty,
+          ClientId("fake-client")
         )
 
       Then("my program should return a token response")
@@ -687,7 +721,8 @@ class SocialServiceComponentTest
           Language("fr"),
           None,
           None,
-          RequestContext.empty
+          RequestContext.empty,
+          ClientId("client")
         )
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
@@ -703,7 +738,16 @@ class SocialServiceComponentTest
 
       When("login user from instagram")
       val futureTokenResposnse =
-        socialService.login("instagram", "token", Country("FR"), Language("fr"), None, None, RequestContext.empty)
+        socialService.login(
+          "instagram",
+          "token",
+          Country("FR"),
+          Language("fr"),
+          None,
+          None,
+          RequestContext.empty,
+          ClientId("client")
+        )
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception shouldBe a[Exception]

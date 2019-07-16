@@ -110,6 +110,7 @@ trait MakeApi
     extends ActorSystemComponent
     with AvroSerializers
     with BuildInfoRoutes
+    with DefaultAdminClientApiComponent
     with DefaultAdminCrmTemplatesApiComponent
     with DefaultAdminCurrentOperationApiComponent
     with DefaultAdminFeaturedOperationApiComponent
@@ -117,6 +118,7 @@ trait MakeApi
     with DefaultAdminPartnerApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAuthenticationApiComponent
+    with DefaultClientServiceComponent
     with DefaultConfigurationsApiComponent
     with DefaultCrmApiComponent
     with DefaultCrmClientComponent
@@ -318,6 +320,7 @@ trait MakeApi
       classOf[AdminFeaturedOperationApi],
       classOf[AdminCurrentOperationApi],
       classOf[ViewApi],
+      classOf[AdminClientApi],
     )
 
   private lazy val optionsCors: Route = options {
@@ -341,6 +344,7 @@ trait MakeApi
       optionsAuthorized ~
       buildRoutes ~
 
+      adminClientApi.routes ~
       adminCrmTemplateApi.routes ~
       adminCurrentOperationApi.routes ~
       adminFeaturedOperationApi.routes ~

@@ -47,7 +47,7 @@ import org.make.api.user.social._
 import org.make.api.userhistory.UserEvent.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
-import org.make.core.auth.UserRights
+import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
@@ -95,13 +95,16 @@ class UserApiTest
 
   private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
+  private val authenticationConfiguration = mock[makeSettings.Authentication.type]
 
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
+  when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.expirationName).thenReturn("cookie-session-expiration")
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
+  when(authenticationConfiguration.defaultClientId).thenReturn("default-client")
   when(idGenerator.nextId()).thenReturn("some-id")
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
@@ -500,7 +503,8 @@ class UserApiTest
               any[Language],
               any[Option[String]],
               any[Option[QuestionId]],
-              any[RequestContext]
+              any[RequestContext],
+              any[ClientId]
             )
         )
         .thenReturn(
@@ -538,7 +542,8 @@ class UserApiTest
           matches(Language("fr")),
           matches(Some("192.0.0.1")),
           any[Option[QuestionId]],
-          any[RequestContext]
+          any[RequestContext],
+          any[ClientId]
         )
       }
     }
@@ -554,7 +559,8 @@ class UserApiTest
               any[Language],
               any[Option[String]],
               any[Option[QuestionId]],
-              any[RequestContext]
+              any[RequestContext],
+              any[ClientId]
             )
         )
         .thenReturn(
@@ -573,7 +579,8 @@ class UserApiTest
       val request =
         """
           |{
-          | "provider": "google"
+          | "provider": "google",
+          | "clientId": "client-id"
           |}
         """.stripMargin
 

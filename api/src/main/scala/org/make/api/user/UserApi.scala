@@ -53,7 +53,7 @@ import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.Validation._
 import org.make.core._
-import org.make.core.auth.UserRights
+import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -532,7 +532,8 @@ trait DefaultUserApiComponent
                         language,
                         Some(ip),
                         maybeQuestion.map(_.questionId),
-                        requestContext
+                        requestContext,
+                        request.clientId.getOrElse(ClientId(makeSettings.Authentication.defaultClientId))
                       )
                       .flatMap { social =>
                         sessionHistoryCoordinatorService
@@ -1229,7 +1230,8 @@ object UpdateUserRequest extends CirceFormatters {
 case class SocialLoginRequest(provider: String,
                               token: String,
                               @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-                              @(ApiModelProperty @field)(dataType = "string") language: Option[Language]) {
+                              @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
+                              clientId: Option[ClientId]) {
   validate(mandatoryField("language", language), mandatoryField("country", country))
 }
 

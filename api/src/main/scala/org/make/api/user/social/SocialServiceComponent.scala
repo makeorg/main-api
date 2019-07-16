@@ -19,12 +19,13 @@
 
 package org.make.api.user.social
 
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.auth.{ClientServiceComponent, MakeDataHandlerComponent}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.{social, UserServiceComponent}
 import org.make.core.RequestContext
-import org.make.core.auth.UserRights
+import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
@@ -45,13 +46,14 @@ trait SocialService {
             language: Language,
             clientIp: Option[String],
             questionId: Option[QuestionId],
-            requestContext: RequestContext): Future[UserIdAndToken]
+            requestContext: RequestContext,
+            clientId: ClientId): Future[UserIdAndToken]
 }
 
 case class UserIdAndToken(userId: UserId, token: TokenResponse)
 
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
-  self: UserServiceComponent with MakeDataHandlerComponent =>
+  self: UserServiceComponent with MakeDataHandlerComponent with ClientServiceComponent with StrictLogging =>
 
   override lazy val socialService: social.SocialService = new SocialService {
 
@@ -71,7 +73,8 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               language: Language,
               clientIp: Option[String],
               questionId: Option[QuestionId],
-              requestContext: RequestContext): Future[UserIdAndToken] = {
+              requestContext: RequestContext,
+              clientId: ClientId): Future[UserIdAndToken] = {
 
       val futureUserInfo: Future[UserInfo] = provider match {
         case GOOGLE_PROVIDER =>
@@ -104,13 +107,23 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
         case _ => Future.failed(new Exception(s"Social login failed: undefined provider $provider"))
       }
 
+      def futureClient(userId: UserId): Future[Option[ClientId]] = {
+        clientService.getClient(clientId).map {
+          case Some(foundClient) => Some(foundClient.clientId)
+          case None =>
+            logger.warn(s"Social login with an invalid client: $clientId. No client is defined for user $userId.")
+            None
+        }
+      }
+
       for {
         userInfo <- futureUserInfo
         user     <- userService.createOrUpdateUserFromSocial(userInfo, clientIp, questionId, requestContext)
+        client   <- futureClient(user.userId)
         accessToken <- oauth2DataHandler.createAccessToken(
           authInfo = AuthInfo(
             user = UserRights(user.userId, user.roles, user.availableQuestions),
-            clientId = None,
+            clientId = client.map(_.value),
             scope = None,
             redirectUri = None
           )
