@@ -97,7 +97,13 @@ trait DefaultFeaturedOperationServiceComponent extends FeaturedOperationServiceC
     }
 
     override def delete(featuredOperationId: FeaturedOperationId): Future[Unit] = {
-      persistentFeaturedOperationService.delete(featuredOperationId)
+      persistentFeaturedOperationService.delete(featuredOperationId).flatMap { _ =>
+        persistentFeaturedOperationService.getAll.map { operations =>
+          operations.sortBy(_.slot).zipWithIndex.map {
+            case (ope, index) => persistentFeaturedOperationService.modify(ope.copy(slot = index + 1))
+          }
+        }
+      }
     }
 
   }
