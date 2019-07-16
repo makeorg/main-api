@@ -42,7 +42,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
     message.event.fold(HandledMessages) match {
       case event: ResetPasswordEvent              => handleResetPasswordEvent(event)
-      case event: UserRegisteredEvent             => handleUserRegisteredEventEvent(event)
+      case event: UserRegisteredEvent             => handleUserRegisteredEvent(event)
       case event: UserValidatedAccountEvent       => handleUserValidatedAccountEvent(event)
       case event: UserConnectedEvent              => doNothing(event)
       case event: UserUpdatedTagEvent             => doNothing(event)
@@ -65,11 +65,11 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     }
   }
 
-  def handleUserRegisteredEventEvent(event: UserRegisteredEvent): Future[Unit] = {
+  def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(user) =>
+      case Some(user) if !event.isSocialLogin =>
         sendMailPublisherService.publishRegistration(user, event.country, event.language, event.requestContext)
-      case None => Future.successful({})
+      case _ => Future.successful({})
     }
   }
 
