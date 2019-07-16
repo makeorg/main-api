@@ -67,6 +67,7 @@ class PersistentTokenServiceIT
   )
   val exampleClient = Client(
     clientId = ClientId("apiclient"),
+    name = "client",
     allowedGrantTypes = Seq("grant_type", "other_grant_type"),
     secret = Some("secret"),
     scope = None,

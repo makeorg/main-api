@@ -22,6 +22,7 @@ package org.make.api.technical
 import java.util.UUID
 
 import org.make.api.idea.IdeaMappingId
+import org.make.core.auth.ClientId
 import org.make.core.crmTemplate.CrmTemplatesId
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{CurrentOperationId, FeaturedOperationId, OperationId}
@@ -38,20 +39,22 @@ trait IdGeneratorComponent {
 }
 
 trait IdGenerator {
+  def nextClientId(): ClientId = ClientId(nextId())
+  def nextCrmTemplatesId(): CrmTemplatesId = CrmTemplatesId(nextId())
+  def nextCurrentOperationId(): CurrentOperationId = CurrentOperationId(nextId())
+  def nextFeaturedOperationId(): FeaturedOperationId = FeaturedOperationId(nextId())
   def nextIdeaId(): IdeaId = IdeaId(nextId())
-  def nextUserId(): UserId = UserId(nextId())
-  def nextProposalId(): ProposalId = ProposalId(nextId())
-  def nextSequenceId(): SequenceId = SequenceId(nextId())
+  def nextIdeaMappingId(): IdeaMappingId = IdeaMappingId(nextId())
   def nextOperationId(): OperationId = OperationId(nextId())
-  def nextVisitorId(): VisitorId = VisitorId(nextId())
+  def nextPartnerId(): PartnerId = PartnerId(nextId())
+  def nextProposalId(): ProposalId = ProposalId(nextId())
   def nextQuestionId(): QuestionId = QuestionId(nextId())
+  def nextSequenceId(): SequenceId = SequenceId(nextId())
   def nextTagId(): TagId = TagId(nextId())
   def nextTagTypeId(): TagTypeId = TagTypeId(nextId())
-  def nextIdeaMappingId(): IdeaMappingId = IdeaMappingId(nextId())
-  def nextCrmTemplatesId(): CrmTemplatesId = CrmTemplatesId(nextId())
-  def nextPartnerId(): PartnerId = PartnerId(nextId())
-  def nextFeaturedOperationId(): FeaturedOperationId = FeaturedOperationId(nextId())
-  def nextCurrentOperationId(): CurrentOperationId = CurrentOperationId(nextId())
+  def nextUserId(): UserId = UserId(nextId())
+  def nextVisitorId(): VisitorId = VisitorId(nextId())
+
   def nextId(): String
 }
 
