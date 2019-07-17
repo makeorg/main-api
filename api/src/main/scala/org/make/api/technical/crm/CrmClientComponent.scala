@@ -19,44 +19,52 @@
 
 package org.make.api.technical.crm
 
-import java.net.{URL, URLEncoder}
+import java.net.URL
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
-import io.circe.Printer
+import io.circe._
 import io.circe.syntax._
 import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
+import org.make.api.technical.crm.BasicCrmResponse.{
+  ContactsResponse,
+  ManageManyContactsJobDetailsResponse,
+  ManageManyContactsResponse
+}
+import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 trait CrmClient {
-  def manageContactMailJetRequest(listId: String, manageContact: ManageContact)(
+
+  def manageContactList(manageContactList: ManageManyContacts)(
     implicit executionContext: ExecutionContext
-  ): Future[HttpResponse]
-  def manageContactListMailJetRequest(manageContactList: ManageManyContacts)(
+  ): Future[ManageManyContactsResponse]
+
+  def sendEmail(message: SendMessages)(implicit executionContext: ExecutionContext): Future[SendEmailResponse]
+
+  def getUsersInformationMailFromList(listId: String, limit: Int, offset: Int)(
     implicit executionContext: ExecutionContext
-  ): Future[HttpResponse]
-  def updateContactProperties(contactData: ContactData, email: String)(
+  ): Future[ContactsResponse]
+
+  def manageContactListJobDetails(jobId: String)(
     implicit executionContext: ExecutionContext
-  ): Future[HttpResponse]
-  def sendEmailMailJetRequest(message: SendMessages)(implicit executionContext: ExecutionContext): Future[HttpResponse]
-  def getUsersMailFromList(listId: String, limit: Int, offset: Int)(
-    implicit executionContext: ExecutionContext
-  ): Future[HttpResponse]
+  ): Future[ManageManyContactsJobDetailsResponse]
 }
 
 trait CrmClientComponent {
   def crmClient: CrmClient
 }
 
-trait DefaultCrmClientComponent extends CrmClientComponent {
+trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport {
   self: MailJetConfigurationComponent with ActorSystemComponent =>
 
   override lazy val crmClient: CrmClient = new DefaultCrmClient
@@ -74,6 +82,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent {
 
     private lazy val bufferSize = mailJetConfiguration.httpBufferSize
 
+    private implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
     lazy val queue: SourceQueueWithComplete[(HttpRequest, Promise[HttpResponse])] = Source
       .queue[(HttpRequest, Promise[HttpResponse])](bufferSize = bufferSize, OverflowStrategy.backpressure)
       .via(httpFlow)
@@ -82,27 +91,15 @@ trait DefaultCrmClientComponent extends CrmClientComponent {
         case (Success(resp), p) => p.success(resp)
         case (Failure(e), p)    => p.failure(e)
       })(Keep.left)
-      .run()(ActorMaterializer()(actorSystem))
+      .run()(materializer)
 
     private lazy val authorization = Authorization(
       BasicHttpCredentials(mailJetConfiguration.campaignApiKey, mailJetConfiguration.campaignSecretKey)
     )
 
-    override def manageContactMailJetRequest(listId: String, manageContact: ManageContact)(
-      implicit executionContext: ExecutionContext
-    ): Future[HttpResponse] = {
-      val request = HttpRequest(
-        method = HttpMethods.POST,
-        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactslist/$listId/managecontact"),
-        headers = immutable.Seq(authorization),
-        entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContact.asJson))
-      )
-      doHttpCall(request)
-    }
-
-    override def manageContactListMailJetRequest(
+    override def manageContactList(
       manageContactList: ManageManyContacts
-    )(implicit executionContext: ExecutionContext): Future[HttpResponse] = {
+    )(implicit executionContext: ExecutionContext): Future[ManageManyContactsResponse] = {
       val request =
         HttpRequest(
           method = HttpMethods.POST,
@@ -110,26 +107,16 @@ trait DefaultCrmClientComponent extends CrmClientComponent {
           headers = immutable.Seq(authorization),
           entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContactList.asJson))
         )
-      doHttpCall(request)
+      doHttpCall(request).flatMap {
+        case HttpResponse(StatusCodes.Created, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[ManageManyContactsResponse]
+        case error => Future.failed(CrmClientException(s"Error when synchronizing contacts: $error"))
+      }
     }
 
-    override def updateContactProperties(contactData: ContactData, email: String)(
-      implicit executionContext: ExecutionContext
-    ): Future[HttpResponse] = {
-      val encodedEmail: String = URLEncoder.encode(email, "UTF-8")
-      val request =
-        HttpRequest(
-          method = HttpMethods.PUT,
-          uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactdata/$encodedEmail"),
-          headers = immutable.Seq(authorization),
-          entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(contactData.asJson))
-        )
-      doHttpCall(request)
-    }
-
-    override def sendEmailMailJetRequest(
+    override def sendEmail(
       message: SendMessages
-    )(implicit executionContext: ExecutionContext): Future[HttpResponse] = {
+    )(implicit executionContext: ExecutionContext): Future[SendEmailResponse] = {
       val request: HttpRequest = HttpRequest(
         method = HttpMethods.POST,
         uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
@@ -137,33 +124,145 @@ trait DefaultCrmClientComponent extends CrmClientComponent {
           .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
         entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(message.asJson))
       )
-      doHttpCall(request)
+      doHttpCall(request).flatMap {
+        case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[SendEmailResponse]
+        case error => Future.failed(CrmClientException(s"Error when sending email: $error"))
+      }
     }
 
-    override def getUsersMailFromList(listId: String, limit: Int, offset: Int)(
+    override def getUsersInformationMailFromList(listId: String, limit: Int, offset: Int)(
       implicit executionContext: ExecutionContext
-    ): Future[HttpResponse] = {
+    ): Future[ContactsResponse] = {
       val params = s"ContactsList=$listId&Limit=$limit&Offset=$offset"
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact?$params"),
         headers = immutable.Seq(authorization)
       )
-      doHttpCall(request)
+      doHttpCall(request).flatMap {
+        case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[ContactsResponse]
+        case error => Future.failed(CrmClientException(s"Error when retrieving contacts: $error"))
+      }
+    }
+
+    override def manageContactListJobDetails(
+      jobId: String
+    )(implicit executionContext: ExecutionContext): Future[ManageManyContactsJobDetailsResponse] = {
+      val request = HttpRequest(
+        method = HttpMethods.GET,
+        uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts/$jobId"),
+        headers = immutable.Seq(authorization)
+      )
+      doHttpCall(request).flatMap {
+        case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[ManageManyContactsJobDetailsResponse]
+        case error => Future.failed(CrmClientException(s"Error when retrieving job details: $error"))
+      }
     }
 
     private def doHttpCall(request: HttpRequest)(implicit executionContext: ExecutionContext): Future[HttpResponse] = {
       val promise = Promise[HttpResponse]()
       queue.offer((request, promise)).flatMap {
         case QueueOfferResult.Enqueued    => promise.future
-        case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
+        case QueueOfferResult.Dropped     => Future.failed(CrmClientException("Queue overflowed. Try again later."))
         case QueueOfferResult.Failure(ex) => Future.failed(ex)
         case QueueOfferResult.QueueClosed =>
           Future
-            .failed(
-              new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later.")
-            )
+            .failed(CrmClientException("Queue was closed (pool shut down) while running the request. Try again later."))
       }
     }
   }
 }
+
+case class SendEmailResponse(sent: Seq[SentEmail])
+
+object SendEmailResponse {
+  implicit val decoder: Decoder[SendEmailResponse] =
+    Decoder.forProduct1("Sent")(SendEmailResponse.apply)
+}
+
+case class SentEmail(email: String, messageId: String, messageUuid: String)
+
+object SentEmail {
+  implicit val decoder: Decoder[SentEmail] =
+    Decoder.forProduct3("Email", "MessageID", "MessageUUID")(SentEmail.apply)
+}
+
+case class BasicCrmResponse[T](count: Int, total: Int, data: Seq[T])
+
+object BasicCrmResponse {
+  def createDecoder[T](implicit tDecoder: Decoder[T]): Decoder[BasicCrmResponse[T]] =
+    Decoder.forProduct3("Count", "Total", "Data")(BasicCrmResponse.apply)
+
+  type ContactsResponse = BasicCrmResponse[ContactDataResponse]
+  type ManageManyContactsResponse = BasicCrmResponse[JobId]
+  type ManageManyContactsJobDetailsResponse = BasicCrmResponse[JobDetailsResponse]
+
+  implicit val contactsResponseDecoder: Decoder[ContactsResponse] = createDecoder[ContactDataResponse]
+  implicit val manageManyContactsResponseDecoder: Decoder[ManageManyContactsResponse] = createDecoder[JobId]
+  implicit val manageManyContactsJobDetailsResponseDecoder: Decoder[ManageManyContactsJobDetailsResponse] =
+    createDecoder[JobDetailsResponse]
+
+}
+
+case class ContactDataResponse(isExcludedFromCampaigns: Boolean,
+                               name: String,
+                               createdAt: String,
+                               deliveredCount: Int,
+                               email: String,
+                               exclusionFromCampaignsUpdatedAt: String,
+                               id: Long,
+                               isOptInPending: Boolean,
+                               isSpamComplaining: Boolean,
+                               lastActivityAt: String,
+                               lastUpdateAt: String)
+
+object ContactDataResponse {
+  implicit val decoder: Decoder[ContactDataResponse] =
+    Decoder.forProduct11(
+      "IsExcludedFromCampaigns",
+      "Name",
+      "CreatedAt",
+      "DeliveredCount",
+      "Email",
+      "ExclusionFromCampaignsUpdatedAt",
+      "ID",
+      "IsOptInPending",
+      "IsSpamComplaining",
+      "LastActivityAt",
+      "LastUpdateAt"
+    )(ContactDataResponse.apply)
+}
+
+case class JobId(jobId: Long)
+
+object JobId {
+  implicit val decoder: Decoder[JobId] =
+    Decoder.forProduct1("JobID")(JobId.apply)
+}
+
+case class JobDetailsResponse(contactsLists: Seq[ContactListAndAction],
+                              count: Int,
+                              error: String,
+                              errorFile: String,
+                              jobEnd: String,
+                              jobStart: String,
+                              status: String)
+
+object JobDetailsResponse {
+  implicit val decoder: Decoder[JobDetailsResponse] =
+    Decoder.forProduct7("ContactsLists", "Count", "Error", "ErrorFile", "JobEnd", "JobStart", "Status")(
+      JobDetailsResponse.apply
+    )
+}
+
+case class ContactListAndAction(listId: Long, action: String)
+
+object ContactListAndAction {
+  implicit val decoder: Decoder[ContactListAndAction] =
+    Decoder.forProduct2("ListID", "Action")(ContactListAndAction.apply)
+}
+
+case class CrmClientException(message: String) extends Exception(message)
