@@ -39,7 +39,17 @@ import scala.util.Try
 @Api(value = "Client OAuth")
 @Path(value = "/admin/clients")
 trait AdminClientApi extends Directives {
-  @ApiOperation(value = "create-oauth-client", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(
+    value = "create-oauth-client",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -53,13 +63,23 @@ trait AdminClientApi extends Directives {
   @Path(value = "/")
   def createClient: Route
 
-  @ApiOperation(value = "update-oauth-client", httpMethod = "PUT", code = HttpCodes.OK)
+  @ApiOperation(
+    value = "update-oauth-client",
+    httpMethod = "PUT",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
         name = "body",
         paramType = "body",
-        dataType = "org.make.api.technical.auth.AdminUpdateClientRequest"
+        dataType = "org.make.api.technical.auth.AdminCreateClientRequest"
       ),
       new ApiImplicitParam(name = "clientId", paramType = "path", dataType = "string")
     )
@@ -68,7 +88,17 @@ trait AdminClientApi extends Directives {
   @Path(value = "/{clientId}")
   def updateClient: Route
 
-  @ApiOperation(value = "get-oauth-client", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(
+    value = "get-oauth-client",
+    httpMethod = "GET",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ClientResponse])))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "clientId", paramType = "path", dataType = "string")))
   @Path(value = "/{clientId}")
@@ -251,5 +281,6 @@ final case class AdminCreateClientRequest(name: String,
                                           roles: Seq[String])
 
 object AdminCreateClientRequest {
+  implicit val encoder: Encoder[AdminCreateClientRequest] = deriveEncoder[AdminCreateClientRequest]
   implicit val decoder: Decoder[AdminCreateClientRequest] = deriveDecoder[AdminCreateClientRequest]
 }
