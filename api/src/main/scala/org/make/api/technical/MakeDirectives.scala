@@ -57,6 +57,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
   val sessionIdKey: String = "make-session-id"
   val visitorIdKey: String = "make-visitor-id"
   val sessionIdExpirationKey: String = "make-session-id-expiration"
+  val visitorCreatedAtKey: String = "make-visitor-created-at"
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
   lazy val sessionCookieName: String = makeSettings.SessionCookie.name
 
@@ -84,10 +85,15 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       maybeVisitorId       <- optionalHeaderValueByName(VisitorIdHeader.name)
     } yield maybeCookieVisitorId.map(_.value).orElse(maybeVisitorId).getOrElse(idGenerator.nextVisitorId().value)
 
+  def visitorCreatedAt: Directive1[ZonedDateTime] =
+    optionalCookie(visitorCreatedAtKey)
+      .map(_.flatMap(cookie => Try(ZonedDateTime.parse(cookie.value)).toOption).getOrElse(ZonedDateTime.now))
+
   def addMakeHeaders(requestId: String,
                      routeName: String,
                      sessionId: String,
                      visitorId: String,
+                     visitorCreatedAt: ZonedDateTime,
                      startTime: Long,
                      externalId: String,
                      origin: Option[String]): Directive0 = {
@@ -130,6 +136,17 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             path = Some("/"),
             domain = Some(makeSettings.VisitorCookie.domain)
           )
+        ),
+        `Set-Cookie`(
+          HttpCookie(
+            name = visitorCreatedAtKey,
+            value = visitorCreatedAt.toString,
+            secure = makeSettings.VisitorCookie.isSecure,
+            httpOnly = true,
+            maxAge = Some(365.days.toSeconds),
+            path = Some("/"),
+            domain = Some(makeSettings.VisitorCookie.domain)
+          )
         )
       ) ++ defaultCorsHeaders(origin)
     }
@@ -157,16 +174,26 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     val slugifiedName: String = SlugHelper(name)
 
     for {
-      _                    <- encodeResponse
-      _                    <- operationName(slugifiedName)
-      requestId            <- requestId
-      startTime            <- startTime
-      sessionId            <- sessionId
-      visitorId            <- visitorId
-      externalId           <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-      origin               <- optionalHeaderValueByName(Origin.name)
-      _                    <- makeAuthCookieHandlers()
-      _                    <- addMakeHeaders(requestId, slugifiedName, sessionId, visitorId, startTime, externalId, origin)
+      _                <- encodeResponse
+      _                <- operationName(slugifiedName)
+      requestId        <- requestId
+      startTime        <- startTime
+      sessionId        <- sessionId
+      visitorId        <- visitorId
+      visitorCreatedAt <- visitorCreatedAt
+      externalId       <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      origin           <- optionalHeaderValueByName(Origin.name)
+      _                <- makeAuthCookieHandlers()
+      _ <- addMakeHeaders(
+        requestId,
+        slugifiedName,
+        sessionId,
+        visitorId,
+        visitorCreatedAt,
+        startTime,
+        externalId,
+        origin
+      )
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
       maybeTheme           <- optionalHeaderValueByName(ThemeIdHeader.name)
@@ -192,6 +219,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         requestId = requestId,
         sessionId = SessionId(sessionId),
         visitorId = Some(VisitorId(visitorId)),
+        visitorCreatedAt = Some(visitorCreatedAt),
         externalId = externalId,
         operationId = maybeOperation.map(OperationId(_)),
         source = maybeSource,
