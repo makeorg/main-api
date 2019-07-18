@@ -29,7 +29,7 @@ import scala.concurrent.Future
 
 class PersistentCurrentOperationServiceIT extends DatabaseTest with DefaultPersistentCurrentOperationServiceComponent {
 
-  override protected val cockroachExposedPort: Int = 40016
+  override protected val cockroachExposedPort: Int = 40018
 
   val currentOperation: CurrentOperation = CurrentOperation(
     currentOperationId = CurrentOperationId("current-operation-id"),
