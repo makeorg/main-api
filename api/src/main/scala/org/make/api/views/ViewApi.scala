@@ -193,7 +193,7 @@ trait DefaultViewApiComponent
                                                 endDate = details.endDate,
                                                 slug = question(details).map(_.slug),
                                                 aboutUrl = details.aboutUrl,
-                                                title = details.operationTitle
+                                                question = question(details).map(_.question).getOrElse("")
                                             )
                                           )
                                       }
@@ -261,7 +261,7 @@ final case class BusinessConsultationResponse(theme: BusinessConsultationThemeRe
                                               endDate: Option[ZonedDateTime],
                                               slug: Option[String],
                                               aboutUrl: Option[String],
-                                              title: String)
+                                              question: String)
 
 object BusinessConsultationResponse extends CirceFormatters {
   implicit val encoder: ObjectEncoder[BusinessConsultationResponse] = deriveEncoder[BusinessConsultationResponse]
