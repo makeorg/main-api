@@ -69,13 +69,11 @@ object IndexProposalsWrapper {
   implicit val decoder: Decoder[IndexProposalsWrapper] = deriveDecoder[IndexProposalsWrapper]
 }
 
-trait DefaultSemanticComponent extends SemanticComponent {
+trait DefaultSemanticComponent extends SemanticComponent with CirceHttpSupport with StrictLogging {
   this: ActorSystemComponent
     with SemanticConfigurationComponent
     with IdeaServiceComponent
     with EventBusServiceComponent
-    with CirceHttpSupport
-    with StrictLogging
     with TagServiceComponent =>
 
   private val httpThreads = 12

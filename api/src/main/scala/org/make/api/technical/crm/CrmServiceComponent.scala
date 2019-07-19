@@ -24,20 +24,19 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
 
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.persistence.query.EventEnvelope
 import akka.stream._
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Source}
 import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.syntax._
-import io.circe.{Decoder, Printer}
+import io.circe.Decoder
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.ProposalCoordinatorServiceComponent
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.technical.RichFutures._
+import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
 import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
 import org.make.api.technical.{ReadJournalComponent, StreamUtils}
 import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
@@ -132,18 +131,25 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     override def sendEmail(message: SendEmail): Future[Unit] = {
       val messages = SendMessages(message)
-      crmClient.sendEmailMailJetRequest(message = messages).map { response =>
-        logMailjetSendEmailResponse(messages, response)
+      val result = crmClient.sendEmail(message = messages)
+
+      result.onComplete {
+        case Success(response) =>
+          logger.info(s"Sent email $messages with reponse $response")
+        case Failure(e) =>
+          logger.error(s"Sent email $messages failed", e)
       }
+
+      result.map(_ => ())
     }
 
     override def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail] = {
-      crmClient.getUsersMailFromList(listId, limit, offset).flatMap {
-        case HttpResponse(code, _, entity, _) if code.isSuccess() =>
-          Unmarshal(entity).to[GetUsersMail]
-        case HttpResponse(code, _, entity, _) =>
-          logger.error(s"getUsersMailFromList failed with status $code: $entity")
-          Future.successful(GetUsersMail(0, 0, Seq.empty))
+      crmClient.getUsersInformationMailFromList(listId, limit, offset).map { response =>
+        GetUsersMail(
+          count = response.count,
+          total = response.total,
+          data = response.data.map(data => ContactMail(email = data.email))
+        )
       }
     }
 
@@ -215,10 +221,54 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           }
           ManageManyContacts(contacts = contacts, contactList = actions)
         }
-        .mapAsync(1)(crmClient.manageContactListMailJetRequest)
-        .wireTap(logMailjetResponse(_, s"Add to ${list.name} list", None))
-        .runForeach(_ => ())
+        .mapAsync(1)(crmClient.manageContactList(_).withoutFailure)
+        .wireTap(logMailjetResponse(_, s"Add to ${list.name} list"))
+        .collect {
+          case Right(BasicCrmResponse(_, _, Seq(JobId(jobId)))) => jobId.toString
+        }
+        .via(createJobVerificationGraph)
+        .runForeach {
+          case (id, jobStatus) =>
+            if (jobStatus.status == "Completed") {
+              logger.info(s"Job $id succeeded, with details $jobStatus")
+            } else {
+              logger.warn(s"Job $id had errors, details is $jobStatus")
+            }
+        }
         .map(_ => ())
+    }
+
+    private def createJobVerificationGraph: Flow[String, (String, JobDetailsResponse), NotUsed] = {
+      Flow.fromGraph(GraphDSL.create() { implicit builder =>
+        import GraphDSL.Implicits._
+
+        val merger = builder.add(Merge[String](2))
+
+        val partitionFunction: PartialFunction[(String, JobDetailsResponse), Int] = {
+          case (_, details) if details.status == "Completed" => 0
+          case (_, details) if details.status == "Error"     => 0
+          case _                                             => 1
+        }
+
+        val partitionner = builder.add(Partition[(String, JobDetailsResponse)](2, partitionFunction))
+
+        val callMailJet =
+          Flow[String]
+            .buffer(250, OverflowStrategy.backpressure)
+            .throttle(1, 1.second)
+            .mapAsync(3) { jobId =>
+              crmClient.manageContactListJobDetails(jobId).map { responses =>
+                responses.data.map(response => (jobId, response))
+              }
+            }
+            .mapConcat(response => immutable.Seq(response: _*))
+
+        merger ~> callMailJet ~> partitionner.in
+
+        partitionner.out(1) ~> Flow[(String, JobDetailsResponse)].map { case (id, _) => id } ~> merger.in(1)
+
+        FlowShape(merger.in(0), partitionner.out(0))
+      })
     }
 
     private def anonymize: Future[Done] = {
@@ -231,7 +281,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
       crmClient
-        .manageContactListMailJetRequest(
+        .manageContactList(
           manageContactList = ManageManyContacts(
             contacts = emails.map(email => Contact(email = email)),
             contactList = Seq(
@@ -241,8 +291,10 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             )
           )
         )
+        .map(Right(_))
+        .recoverWith { case e => Future.successful(Left(e)) }
         .map { response =>
-          logMailjetResponse(response, "Hard remove emails from all lists", None)
+          logMailjetResponse(response, "all lists")
         }
     }
 
@@ -561,31 +613,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       )
     }
 
-    private def logMailjetResponse(result: HttpResponse,
-                                   operationName: String,
-                                   maybeUserEmail: Option[String]): Unit = {
+    private def logMailjetResponse(result: Either[Throwable, ManageManyContactsResponse], listName: String): Unit = {
       result match {
-        case HttpResponse(code, _, _, _) if code.isSuccess() =>
-          logger.debug(s"$operationName: call completed with status $code")
-        case HttpResponse(code, _, entity, _) =>
-          maybeUserEmail match {
-            case Some(userEmail) =>
-              logger.error(s"$operationName for user '$userEmail' failed with status $code: $entity")
-            case _ => logger.error(s"$operationName failed with status $code: $entity")
-          }
-
+        case Right(ok) => logger.debug(s"Synchronizing list $listName answered $ok")
+        case Left(e)   => logger.error(s"Error when synchronizing list $listName", e)
       }
     }
-
-    private def logMailjetSendEmailResponse(message: SendMessages, result: HttpResponse): Unit = {
-      result match {
-        case HttpResponse(code, _, entity, _) if code.isSuccess() =>
-          logger.info(s"Sent email: ${Printer.noSpaces.pretty(message.asJson)} ->  $entity")
-        case HttpResponse(code, _, entity, _) =>
-          logger.error(s"send email failed with status $code: $entity")
-      }
-    }
-
   }
 }
 
