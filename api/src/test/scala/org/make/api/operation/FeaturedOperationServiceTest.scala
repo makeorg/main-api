@@ -147,4 +147,31 @@ class FeaturedOperationServiceTest
     }
   }
 
+  feature("delete featured operation") {
+    scenario("delete featured operation") {
+      val featuredOperation1 = featuredOperation
+      val featuredOperation3 =
+        featuredOperation.copy(featuredOperationId = FeaturedOperationId("ope-3"), title = "title 3", slot = 3)
+
+      Mockito
+        .when(persistentFeaturedOperationService.delete(FeaturedOperationId("to-delete")))
+        .thenReturn(Future.successful({}))
+
+      Mockito
+        .when(persistentFeaturedOperationService.getAll)
+        .thenReturn(Future.successful(Seq(featuredOperation1, featuredOperation3)))
+
+      whenReady(featuredOperationService.delete(FeaturedOperationId("to-delete")), Timeout(2.seconds)) { _ =>
+        Mockito
+          .verify(persistentFeaturedOperationService)
+          .modify(featuredOperation1)
+
+        Mockito
+          .verify(persistentFeaturedOperationService)
+          .modify(featuredOperation3.copy(slot = 2))
+      }
+
+    }
+  }
+
 }
