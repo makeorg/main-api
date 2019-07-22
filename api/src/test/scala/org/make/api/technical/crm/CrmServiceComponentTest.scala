@@ -50,12 +50,14 @@ import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
+import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class CrmServiceComponentTest
     extends MakeUnitTest
@@ -71,7 +73,8 @@ class CrmServiceComponentTest
     with ProposalCoordinatorServiceComponent
     with PersistentUserToAnonymizeServiceComponent
     with CrmClientComponent
-    with PersistentCrmUserServiceComponent {
+    with PersistentCrmUserServiceComponent
+    with PrivateMethodTester {
 
   trait MakeReadJournalForMocks
       extends ReadJournal
@@ -560,6 +563,61 @@ class CrmServiceComponentTest
         maybeProperties.userType shouldBe Some("B2C")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
+      }
+    }
+  }
+
+  feature("anonymize") {
+    val emails: Seq[String] = Seq("toto", "tata", "titi")
+
+    scenario("all users anonymized") {
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(true))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(true))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(true))
+
+      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
+
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
+        removedEmails.size shouldBe 3
+        removedEmails.contains("toto") shouldBe true
+        removedEmails.contains("tata") shouldBe true
+        removedEmails.contains("titi") shouldBe true
+      }
+    }
+
+    scenario("one users not found in mailjet") {
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(true))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(true))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(false))
+
+      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
+
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
+        removedEmails.size shouldBe 2
+        removedEmails.contains("toto") shouldBe true
+        removedEmails.contains("tata") shouldBe true
+        removedEmails.contains("titi") shouldBe false
+      }
+    }
+
+    scenario("zero users anonymized") {
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(false))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(false))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi"))(ArgumentMatchers.any[ExecutionContext]))
+        .thenReturn(Future.successful(false))
+
+      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
+
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
+        removedEmails.size shouldBe 0
       }
     }
   }

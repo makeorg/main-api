@@ -29,12 +29,12 @@ object StreamUtils {
     pageFunc: Int => Future[Seq[T]]
   )(implicit executionContext: ExecutionContext): Source[Seq[T], NotUsed] = {
     Source.unfoldAsync(1) { page =>
-      val futureUsers: Future[Seq[T]] = pageFunc(page)
-      futureUsers.map { users =>
-        if (users.isEmpty) {
+      val futureResults: Future[Seq[T]] = pageFunc(page)
+      futureResults.map { results =>
+        if (results.isEmpty) {
           None
         } else {
-          Some((page + 1, users))
+          Some((page + 1, results))
         }
       }
 

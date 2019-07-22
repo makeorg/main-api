@@ -26,7 +26,7 @@ import java.util.concurrent.{Executors, ThreadFactory}
 
 import akka.persistence.query.EventEnvelope
 import akka.stream._
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Source}
+import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Sink, Source}
 import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
@@ -52,13 +52,20 @@ import org.mdedetrich.akka.http.support.CirceHttpSupport
 import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait CrmService {
   def sendEmail(message: SendEmail): Future[Unit]
-  def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail]
   def synchronizeContactsWithCrm(): Future[Unit]
+  def getUsersMailFromList(listId: Option[String] = None,
+                           sort: Option[String] = None,
+                           order: Option[String] = None,
+                           countOnly: Option[Boolean] = None,
+                           limit: Int = 1000,
+                           offset: Int = 0): Future[GetUsersMail]
+  def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime): Future[Int]
 }
+
 trait CrmServiceComponent {
   def crmService: CrmService
 }
@@ -143,14 +150,55 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       result.map(_ => ())
     }
 
-    override def getUsersMailFromList(listId: String, limit: Int, offset: Int): Future[GetUsersMail] = {
-      crmClient.getUsersInformationMailFromList(listId, limit, offset).map { response =>
-        GetUsersMail(
-          count = response.count,
-          total = response.total,
-          data = response.data.map(data => ContactMail(email = data.email))
-        )
-      }
+    override def getUsersMailFromList(listId: Option[String] = None,
+                                      sort: Option[String] = None,
+                                      order: Option[String] = None,
+                                      countOnly: Option[Boolean] = None,
+                                      limit: Int = 1000,
+                                      offset: Int = 0): Future[GetUsersMail] = {
+      crmClient
+        .getUsersInformationMailFromList(listId, sort, order, countOnly, limit, offset)
+        .map { response =>
+          GetUsersMail(
+            count = response.count,
+            total = response.total,
+            data = response.data.map(data => ContactMail(contactId = data.id, email = data.email))
+          )
+        }
+        .recoverWith {
+          case CrmClientException(message) =>
+            logger.error(message)
+            Future.successful(GetUsersMail(0, 0, Seq.empty))
+          case e => Future.failed(e)
+        }
+    }
+
+    override def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime): Future[Int] = {
+      def isBefore(updatedAt: String): Boolean =
+        Try(ZonedDateTime.parse(updatedAt)).toOption.forall(_.isBefore(maxUpdatedAt))
+
+      StreamUtils
+        .asyncPageToPageSource(page => crmClient.getContactsProperties(offset = page * 1000).map(_.data))
+        .map(_.filter { contacts =>
+          contacts.properties.find(_.name == "updated_at").forall(property => isBefore(property.value))
+        }.map(_.contactId.toString))
+        .mapConcat(contacts => immutable.Seq(contacts: _*))
+        .mapAsync(5) { obsoleteContactId =>
+          crmClient
+            .deleteContactById(obsoleteContactId)
+            .map(_ => 1)
+            .recoverWith {
+              case CrmClientException(message) =>
+                logger.error(message)
+                Future.successful(0)
+              case e => Future.failed(e)
+            }
+        }
+        .runFold(0)(_ + _)
+        .map { total =>
+          logger.info(s"$total contacts has been removed from mailjet.")
+          total
+        }
     }
 
     override def synchronizeContactsWithCrm(): Future[Unit] = {
@@ -271,11 +319,21 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       })
     }
 
+    final def deleteAnonymizedContacts(emails: Seq[String]): Future[Seq[String]] = {
+      Source
+        .fromIterator(() => emails.toIterator)
+        .mapAsync(3)(email => crmClient.deleteContactByEmail(email).map(res => email -> res))
+        .collect { case (email, isAnon) if isAnon => email }
+        .runWith(Sink.seq)
+    }
+
     private def anonymize: Future[Done] = {
       for {
-        emails <- persistentUserToAnonymizeService.findAll()
-        _      <- hardRemoveEmailsFromAllLists(emails)
-        _      <- persistentUserToAnonymizeService.removeAllByEmails(emails)
+        foundEmails <- persistentUserToAnonymizeService.findAll()
+        _           <- hardRemoveEmailsFromAllLists(foundEmails)
+        emails      <- deleteAnonymizedContacts(foundEmails)
+        // Remove only the deleted mailjet contacts from user_to_anonymize table
+        _ <- persistentUserToAnonymizeService.removeAllByEmails(emails)
       } yield Done
     }
 
@@ -679,9 +737,9 @@ object GetUsersMail {
   implicit val decoder: Decoder[GetUsersMail] = Decoder.forProduct3("Count", "Total", "Data")(GetUsersMail.apply)
 }
 
-final case class ContactMail(email: String)
+final case class ContactMail(email: String, contactId: Long)
 object ContactMail {
-  implicit val decoder: Decoder[ContactMail] = Decoder.forProduct1("Email")(ContactMail.apply)
+  implicit val decoder: Decoder[ContactMail] = Decoder.forProduct2("Email", "ID")(ContactMail.apply)
 }
 
 sealed trait CrmList {
@@ -724,5 +782,4 @@ object CrmList {
     override val actionOnOptIn: ManageContactAction = Remove
     override val actionOnOptOut: ManageContactAction = AddNoForce
   }
-
 }

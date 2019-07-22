@@ -19,23 +19,29 @@
 
 package org.make.api.technical
 
+import java.time.ZonedDateTime
+
 import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
-import io.swagger.annotations._
+import io.circe.Decoder
+import io.swagger.annotations.{Authorization, _}
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
-import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalCoordinatorServiceComponent, UpdateProposalVotesVerifiedCommand}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.core.{DateHelper, HttpCodes}
-import org.make.core.proposal.{ProposalId, Vote}
+import org.make.api.technical.crm.CrmServiceComponent
 import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.proposal.{ProposalId, Vote}
 import org.make.core.tag.{Tag => _}
+import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Validation}
+import io.circe.generic.semiauto.deriveDecoder
 
+import scala.annotation.meta.field
 import scala.concurrent.Future
 
 @Api(value = "Migrations")
@@ -59,7 +65,31 @@ trait MigrationApi extends Directives {
   @Path(value = "/reset-qualification-count")
   def resetQualificationCount: Route
 
-  def routes: Route = resetQualificationCount
+  @ApiOperation(
+    value = "delete-mailjet-anoned-contacts",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.DeleteContactsRequest"
+      )
+    )
+  )
+  @Path(value = "/delete-mailjet-anoned-contacts")
+  def deleteMailjetAnonedContacts: Route
+
+  def routes: Route = resetQualificationCount ~ deleteMailjetAnonedContacts
 }
 
 trait MigrationApiComponent {
@@ -73,7 +103,9 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with ProposalCoordinatorServiceComponent
     with ActorSystemComponent
     with ReadJournalComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+    with SessionHistoryCoordinatorServiceComponent
+    with CrmServiceComponent
+    with MailJetConfigurationComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
@@ -128,6 +160,43 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
         }
       }
     }
+
+    override def deleteMailjetAnonedContacts: Route = post {
+      path("migrations" / "delete-mailjet-anoned-contacts") {
+        withoutRequestTimeout {
+          makeOperation("DeleteMailjetAnonedContacts") { _ =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                decodeRequest {
+                  entity(as[DeleteContactsRequest]) { req =>
+                    crmService.deleteAllContactsBefore(req.maxUpdatedAtBeforeDelete)
+                    complete(StatusCodes.Accepted)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
+
+}
+
+final case class DeleteContactsRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime
+) {
+  Validation.validate(
+    Validation.validateField(
+      "maxUpdatedAtBeforeDelete",
+      maxUpdatedAtBeforeDelete.isBefore(ZonedDateTime.now.minusDays(1)),
+      "DeleteFor cannot be set to a date more recent than yesterday."
+    )
+  )
+}
+
+object DeleteContactsRequest extends CirceFormatters {
+  implicit val decoder: Decoder[DeleteContactsRequest] = deriveDecoder[DeleteContactsRequest]
 
 }
