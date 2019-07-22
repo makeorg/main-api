@@ -102,8 +102,10 @@ trait AdminCurrentOperationApi extends Directives {
   @Path(value = "/{currentOperationId}")
   def adminGetCurrentOperation: Route
 
-  @ApiOperation(value = "delete-current-operation", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @ApiOperation(value = "delete-current-operation", httpMethod = "DELETE", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CurrentOperationIdResponse]))
+  )
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "currentOperationId", paramType = "path", dataType = "string"))
   )
@@ -224,7 +226,7 @@ trait DefaultAdminCurrentOperationApiComponent
               requireAdminRole(auth.user) {
                 provideAsyncOrNotFound(currentOperationService.getCurrentOperation(id)) { _ =>
                   provideAsync(currentOperationService.delete(id)) { _ =>
-                    complete(StatusCodes.NoContent)
+                    complete(StatusCodes.OK -> CurrentOperationIdResponse(id))
                   }
                 }
               }

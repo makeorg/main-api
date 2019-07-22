@@ -418,7 +418,7 @@ class AdminCurrentOperationApiTest
 
       Delete("/admin/views/home/current-operations/current-operation-id")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
-        status shouldBe StatusCodes.NoContent
+        status shouldBe StatusCodes.OK
       }
     }
 
