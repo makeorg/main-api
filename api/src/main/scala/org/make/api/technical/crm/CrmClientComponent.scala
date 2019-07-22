@@ -258,18 +258,43 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
   }
 }
 
-case class SendEmailResponse(sent: Seq[SentEmail])
+case class SendEmailResponse(messages: Seq[SentEmail])
 
 object SendEmailResponse {
   implicit val decoder: Decoder[SendEmailResponse] =
-    Decoder.forProduct1("Sent")(SendEmailResponse.apply)
+    Decoder.forProduct1("Messages")(SendEmailResponse.apply)
 }
 
-case class SentEmail(email: String, messageId: String, messageUuid: String)
+case class SentEmail(status: String,
+                     errors: Option[Seq[SendMessageError]],
+                     customId: String,
+                     to: Seq[MessageDetails],
+                     cc: Seq[MessageDetails],
+                     bcc: Seq[MessageDetails])
 
 object SentEmail {
   implicit val decoder: Decoder[SentEmail] =
-    Decoder.forProduct3("Email", "MessageID", "MessageUUID")(SentEmail.apply)
+    Decoder.forProduct6("Status", "Errors", "CustomID", "To", "Cc", "Bcc")(SentEmail.apply)
+}
+
+case class SendMessageError(errorIdentifier: String,
+                            errorCode: String,
+                            statusCode: Int,
+                            errorMessage: String,
+                            errorRelatedTo: String)
+
+object SendMessageError {
+  implicit val decoder: Decoder[SendMessageError] =
+    Decoder.forProduct5("ErrorIdentifier", "ErrorCode", "StatusCode", "ErrorMessage", "ErrorRelatedTo")(
+      SendMessageError.apply
+    )
+}
+
+case class MessageDetails(email: String, messageUuid: String, messageId: Long, messageHref: String)
+
+object MessageDetails {
+  implicit val decoder: Decoder[MessageDetails] =
+    Decoder.forProduct4("Email", "MessageUUID", "MessageID", "MessageHref")(MessageDetails.apply)
 }
 
 case class BasicCrmResponse[T](count: Int, total: Int, data: Seq[T])
