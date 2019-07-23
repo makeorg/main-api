@@ -165,7 +165,11 @@ trait DefaultViewApiComponent
                                   ) { controverseProposals =>
                                     provideAsync(
                                       operationOfQuestionService
-                                        .search(request = SearchOperationsOfQuestions(operationIds = maybeOperationIds))
+                                        .search(
+                                          request = SearchOperationsOfQuestions(
+                                            questionIds = Some(questionsBusiness.map(_.questionId))
+                                          )
+                                        )
                                     ) { businessDetails =>
                                       val featuredConsultations = featured
                                         .sortBy(_.slot)
