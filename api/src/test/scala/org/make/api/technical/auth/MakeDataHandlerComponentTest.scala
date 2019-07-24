@@ -458,16 +458,14 @@ class MakeDataHandlerComponentTest
     info("As a developer")
     info("I want to retrieve AuthInfo")
 
-    val refreshToken: String = "HJBM"
-    val accessToken: String = "AACCTT"
-    val accessTokenObj = accessTokenExample.copy(token = accessToken, refreshToken = Some(refreshToken))
-
     info("In order to authenticate a user")
     info("As a developer")
     info("I want to retrieve AuthInfo")
 
     scenario("Get AuthInfo by refreshToken") {
       Given("a refreshToken: \"HJBM\"")
+      val refreshToken: String = "HJBM"
+
       When("I call method findAuthInfoByRefreshToken")
       when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(refreshToken)))
         .thenReturn(Future.successful(Some(exampleToken)))
@@ -480,6 +478,8 @@ class MakeDataHandlerComponentTest
 
     scenario("Get AuthInfo with a nonexistent refreshToken") {
       Given("a refreshToken: \"OOOO\"")
+      val refreshToken: String = "0000"
+
       When("I call method findAuthInfoByRefreshToken")
       when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(refreshToken)))
         .thenReturn(Future.successful(None))
@@ -490,8 +490,26 @@ class MakeDataHandlerComponentTest
       }
     }
 
+    scenario("Get AuthInfo with an expired refreshToken") {
+      Given("a refreshToken: \"EXPIRED\"")
+      val refreshToken: String = "EXPIRED"
+
+      When("I call method findAuthInfoByRefreshToken")
+      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(refreshToken)))
+        .thenReturn(Future.successful(Some(exampleToken.copy(createdAt = Some(ZonedDateTime.now.minusDays(1))))))
+
+      Then("I get an empty result")
+      val futureAuthInfo = oauth2DataHandler.findAuthInfoByRefreshToken(refreshToken)
+      whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>
+        maybeAuthInfo shouldBe empty
+      }
+    }
+
     scenario("Get AuthInfo by accessToken") {
       Given("an AccessToken")
+      val refreshToken: String = "TTGGAA"
+      val accessToken: String = "AACCTT"
+      val accessTokenObj = accessTokenExample.copy(token = accessToken, refreshToken = Some(refreshToken))
 
       When("I call method findAuthInfoByAccessToken")
       when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenObj.token)))
@@ -555,5 +573,20 @@ class MakeDataHandlerComponentTest
       }
     }
 
+    scenario("Get an AccessToken from an expired token") {
+      Given("an expired access token: \"TOKENEXPIRED\"")
+      val accessToken = "TOKENEXPIRED"
+
+      When("I call method findAccessToken")
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+        .thenReturn(Future.successful(Some(exampleToken.copy(accessToken = accessToken, expiresIn = -1))))
+
+      val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
+
+      Then("The result should be None")
+      whenReady(futureAccessToken, Timeout(3.seconds)) { maybeAccessToken =>
+        maybeAccessToken.isDefined shouldBe false
+      }
+    }
   }
 }
