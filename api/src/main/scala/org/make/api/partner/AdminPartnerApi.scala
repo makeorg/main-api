@@ -244,11 +244,13 @@ final case class CreatePartnerRequest(name: String,
   validate(
     Requirement(
       field = "logo",
+      "madatory",
       condition = () => organisationId.isEmpty && logo.nonEmpty || organisationId.nonEmpty,
       message = ()   => "logo must not be empty"
     ),
     Requirement(
       field = "link",
+      "madatory",
       condition = () => partnerKind != PartnerKind.Founder || link.nonEmpty,
       message = ()   => "link must not be empty"
     )
@@ -268,11 +270,13 @@ final case class UpdatePartnerRequest(name: String,
   validate(
     Requirement(
       field = "logo",
+      "madatory",
       condition = () => organisationId.isEmpty && logo.nonEmpty || organisationId.nonEmpty,
       message = ()   => "logo must not be empty"
     ),
     Requirement(
       field = "link",
+      "madatory",
       condition = () => partnerKind != PartnerKind.Founder || link.nonEmpty,
       message = ()   => "link must not be empty"
     )

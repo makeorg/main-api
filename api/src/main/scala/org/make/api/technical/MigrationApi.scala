@@ -192,6 +192,7 @@ final case class DeleteContactsRequest(@(ApiModelProperty @field)(
   Validation.validate(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",
+      "invalid_date",
       maxUpdatedAtBeforeDelete.isBefore(ZonedDateTime.now.minusDays(1)),
       "DeleteFor cannot be set to a date more recent than yesterday."
     )

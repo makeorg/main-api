@@ -30,7 +30,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
-import org.make.core.Validation.{maxLength, validate, _}
+import org.make.core.Validation.{maxLength, validateOptional, _}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
 import org.make.core.reference.{Country, Language}
@@ -306,7 +306,7 @@ private object OrganisationValidation {
   private val maxDescriptionLength = 450
 
   def validateCreate(organisationName: String, email: String, description: Option[String]): Unit = {
-    validate(
+    validateOptional(
       Some(mandatoryField("email", email)),
       Some(mandatoryField("name", organisationName)),
       Some(maxLength("name", maxNameLength, organisationName)),
@@ -322,7 +322,7 @@ private object OrganisationValidation {
                      email: Option[String],
                      description: Option[String],
                      profile: Option[Profile]): Unit = {
-    validate(
+    validateOptional(
       organisationName.map(value => maxLength("organisationName", maxNameLength, value)),
       organisationName.map(value => validateUserInput("organisationName", value, None)),
       description.map(value      => maxLength("description", maxDescriptionLength, value)),
@@ -330,7 +330,7 @@ private object OrganisationValidation {
       email.map(value            => validateUserInput("email", value, None))
     )
 
-    validate(email.map(value => validateEmail("email", value, None)))
+    validateOptional(email.map(value => validateEmail("email", value, None)))
     profile.foreach(Profile.validateProfile)
   }
 }

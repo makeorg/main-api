@@ -457,7 +457,12 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
     validateColor("gradientEnd", theme.gradientEnd, None),
     validateColor("color", theme.color, None),
     validateColor("footerFontColor", theme.footerFontColor, None),
-    validateField("imageUrl", imageUrl.forall(_.startsWith("https://")), "imageUrl must be a secure https url")
+    validateField(
+      "imageUrl",
+      "not_secure",
+      imageUrl.forall(_.startsWith("https://")),
+      "imageUrl must be a secure https url"
+    )
   )
 }
 
@@ -487,7 +492,12 @@ final case class CreateOperationOfQuestionRequest(
     validateUserInput("operationTitle", operationTitle, None),
     validateUserInput("question", question, None),
     validateUserInput("questionSlug", questionSlug, None),
-    validateField("imageUrl", imageUrl.forall(_.startsWith("https://")), "imageUrl must be a secure https url")
+    validateField(
+      "imageUrl",
+      "not_secure",
+      imageUrl.forall(_.startsWith("https://")),
+      "imageUrl must be a secure https url"
+    )
   )
 }
 

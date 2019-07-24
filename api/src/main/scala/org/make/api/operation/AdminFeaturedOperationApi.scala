@@ -260,11 +260,13 @@ final case class CreateFeaturedOperationRequest(
     maxLength("altPicture", 130, altPicture),
     Requirement(
       "questionId",
+      "invalid_link",
       () => internalLink.isDefined && questionId.isDefined || internalLink.isEmpty,
       () => "QuestionId must be defined when an internalLink is defined"
     ),
     Requirement(
       "internalLink / externalLink",
+      "invalid_link",
       () => internalLink.isDefined && externalLink.isEmpty || internalLink.isEmpty && externalLink.isDefined,
       () => "Only one between internal or external link must be defined"
     )
@@ -297,11 +299,13 @@ final case class UpdateFeaturedOperationRequest(
     maxLength("altPicture", 130, altPicture),
     Requirement(
       "questionId",
+      "invalid_value",
       () => internalLink.isDefined && questionId.isDefined || internalLink.isEmpty,
       () => "QuestionId must be defined when an internalLink is defined"
     ),
     Requirement(
       "internalLink / externalLink",
+      "invalid_value",
       () => internalLink.isDefined && externalLink.isEmpty || internalLink.isEmpty && externalLink.isDefined,
       () => "Only one between internal or external link must be defined"
     )

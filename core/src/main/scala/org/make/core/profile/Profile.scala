@@ -177,7 +177,7 @@ object Profile extends CirceFormatters {
   implicit val decoder: Decoder[Profile] = deriveDecoder[Profile]
 
   def validateProfile(profile: Profile): Unit = {
-    Validation.validate(
+    Validation.validateOptional(
       profile.avatarUrl.map(value   => validateUserInput("avatarUrl", value, None)),
       profile.description.map(value => validateUserInput("description", value, None)),
       profile.facebookId.map(value  => validateUserInput("facebookId", value, None)),

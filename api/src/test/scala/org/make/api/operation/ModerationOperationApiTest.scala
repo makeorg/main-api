@@ -545,7 +545,9 @@ class ModerationOperationApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
-        contentError should be(Some(ValidationError("slug", Some("Slug 'existing-operation-slug' already exist"))))
+        contentError should be(
+          Some(ValidationError("slug", "non_empty", Some("Slug 'existing-operation-slug' already exist")))
+        )
       }
     }
 
@@ -599,7 +601,9 @@ class ModerationOperationApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
-        contentError should be(Some(ValidationError("slug", Some("Slug 'existing-operation-slug' already exist"))))
+        contentError should be(
+          Some(ValidationError("slug", "invalid_value", Some("Slug 'existing-operation-slug' already exist")))
+        )
       }
     }
 

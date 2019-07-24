@@ -181,7 +181,13 @@ trait DefaultAdminCrmTemplatesApiComponent
                             userValue = count,
                             expectedValue = 0
                           ),
-                          Validation.validateField("questionId", validateOptionalQuestion, "Question is invalid")
+                          Validation
+                            .validateField(
+                              "questionId",
+                              "invalid_content",
+                              validateOptionalQuestion,
+                              "Question is invalid"
+                            )
                         )
                         onSuccess(
                           crmTemplatesService.createCrmTemplates(

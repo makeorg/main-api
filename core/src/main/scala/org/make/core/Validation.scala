@@ -43,15 +43,15 @@ object Validation extends StrictLogging {
 
   val colorRegex: Regex = "^#[0-9a-fA-F]{6}$".r
 
-  def validate(maybeRequire: Option[Requirement]*)(implicit d: DummyImplicit): Unit = validate(maybeRequire.flatten: _*)
+  def validateOptional(maybeRequire: Option[Requirement]*): Unit = validate(maybeRequire.flatten: _*)
 
   def validate(require: Requirement*): Unit = {
     val messages: Seq[ValidationError] = require.flatMap { requirement =>
       Try(requirement.condition()) match {
         case Failure(e) =>
-          Seq(ValidationError(requirement.field, Option(e.getMessage)))
+          Seq(ValidationError(requirement.field, requirement.key, Option(e.getMessage)))
         case Success(false) =>
-          Seq(ValidationError(requirement.field, Option(requirement.message())))
+          Seq(ValidationError(requirement.field, requirement.key, Option(requirement.message())))
         case _ => Nil
       }
     }
@@ -60,8 +60,8 @@ object Validation extends StrictLogging {
     }
   }
 
-  def validateField(field: String, condition: => Boolean, message: => String): Requirement =
-    Requirement(field, () => condition, () => message)
+  def validateField(field: String, key: String, condition: => Boolean, message: => String): Requirement =
+    Requirement(field, key, () => condition, () => message)
 
   def maxLength(field: String,
                 maxLength: Int,
@@ -75,7 +75,7 @@ object Validation extends StrictLogging {
       computeLength <= maxLength
     }
 
-    Requirement(field, () => isValid, () => {
+    Requirement(field, "too_long", () => isValid, () => {
       if (isValid) {
         ""
       } else {
@@ -97,7 +97,7 @@ object Validation extends StrictLogging {
       computeLength >= minLength
     }
 
-    Requirement(field, () => isValid, () => {
+    Requirement(field, "too_short", () => isValid, () => {
       if (isValid) {
         ""
       } else {
@@ -112,7 +112,7 @@ object Validation extends StrictLogging {
       val value = fieldValue
       exists(value) && value != None
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is mandatory"))
+    validateField(fieldName, "mandatory", condition(), message.getOrElse(s"$fieldName is mandatory"))
   }
 
   def validateEmail(fieldName: String, fieldValue: => String, message: Option[String] = None): Requirement = {
@@ -121,22 +121,22 @@ object Validation extends StrictLogging {
       val maybeEmail = emailRegex.findFirstIn(value)
       exists(value) && maybeEmail.isDefined && maybeEmail.contains(value)
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid email"))
+    validateField(fieldName, "invalid_email", condition(), message.getOrElse(s"$fieldName is not a valid email"))
   }
 
   def requireNonEmpty(fieldName: String, fieldValue: => Seq[_], message: Option[String] = None): Requirement = {
-    validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
+    validateField(fieldName, "mandatory", fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
   }
 
   def requirePresent(fieldName: String, fieldValue: => Option[_], message: Option[String] = None): Requirement = {
-    validateField(fieldName, fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
+    validateField(fieldName, "mandatory", fieldValue.nonEmpty, message.getOrElse(s"$fieldName should not be empty"))
   }
 
   def validateUserInput(fieldName: String, fieldValue: => String, message: Option[String]): Requirement = {
     val condition: () => Boolean = () => {
       new Cleaner(Whitelist.none()).isValid(Jsoup.parse(fieldValue))
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid user input"))
+    validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }
 
   def validateOptionalUserInput(fieldName: String,
@@ -145,7 +145,7 @@ object Validation extends StrictLogging {
     val condition: () => Boolean = () => {
       fieldValue.forall(value => new Cleaner(Whitelist.none()).isValid(Jsoup.parse(value)))
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not a valid user input"))
+    validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }
 
   def requireValidSlug(fieldName: String,
@@ -153,17 +153,18 @@ object Validation extends StrictLogging {
                        message: Option[String] = None): Requirement = {
     validateField(
       fieldName,
+      "invalid_slug",
       fieldValue.getOrElse("") == SlugHelper.apply(fieldValue.getOrElse("")),
       message.getOrElse(s"$fieldName should not be empty")
     )
   }
 
   def requireEmpty(fieldName: String, fieldValue: => Seq[_], message: Option[String] = None): Requirement = {
-    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
+    validateField(fieldName, "non_empty", fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
   }
 
   def requireNotPresent(fieldName: String, fieldValue: => Option[_], message: Option[String] = None): Requirement = {
-    validateField(fieldName, fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
+    validateField(fieldName, "non_empty", fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
   }
 
   def validMatch(fieldName: String,
@@ -174,7 +175,7 @@ object Validation extends StrictLogging {
       val value: String = fieldValue
       exists(value) && regex.findFirstIn(value).isDefined
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
+    validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
   def validChoices(fieldName: String,
@@ -184,7 +185,7 @@ object Validation extends StrictLogging {
     val condition: () => Boolean = () => {
       userChoices.forall(validChoices.contains)
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
+    validateField(fieldName, "invalid_value", condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
   def validateEquals(fieldName: String,
@@ -194,13 +195,13 @@ object Validation extends StrictLogging {
     val condition: () => Boolean = () => {
       userValue.equals(expectedValue)
     }
-    validateField(fieldName, condition(), message.getOrElse(s"$fieldName is not valid"))
+    validateField(fieldName, "invalid_value", condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
   def validateEntity(fieldName: String,
                      message: Option[String] = None,
                      userValue: Option[MakeSerializable]): Requirement = {
-    validateField(fieldName, userValue.nonEmpty, message.getOrElse(s"$fieldName does not exist"))
+    validateField(fieldName, "mandatory", userValue.nonEmpty, message.getOrElse(s"$fieldName does not exist"))
   }
 
   def validateAge(fieldName: String, userDateInput: Option[LocalDate], message: Option[String] = None): Requirement = {
@@ -209,12 +210,22 @@ object Validation extends StrictLogging {
         LocalDate.now().minusYears(120).isBefore(date) &&
           LocalDate.now().minusYears(13).plusDays(1).isAfter(date)
     )
-    validateField(fieldName, condition, message.getOrElse("Invalid date: age must be between 13 and 120"))
+    validateField(
+      fieldName,
+      "invalid_age",
+      condition,
+      message.getOrElse("Invalid date: age must be between 13 and 120")
+    )
   }
 
   def validateColor(fieldName: String, userColorInput: => String, message: Option[String]): Requirement = {
     val condition = colorRegex.findFirstIn(userColorInput).isDefined
-    validateField(fieldName, condition, message.getOrElse("Invalid color. Must be formatted '#123456'"))
+    validateField(
+      fieldName,
+      "invalid_color",
+      condition,
+      message.getOrElse("Invalid color. Must be formatted '#123456'")
+    )
   }
 
   private def exists(value: Any): Boolean = {
@@ -223,13 +234,13 @@ object Validation extends StrictLogging {
 
 }
 
-case class Requirement(field: String, condition: () => Boolean, message: () => String)
+case class Requirement(field: String, key: String, condition: () => Boolean, message: () => String)
 
 case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception {
   override def getMessage: String = { errors.asJson.toString }
 }
 
-case class ValidationError(field: String, message: Option[String])
+case class ValidationError(field: String, key: String, message: Option[String])
 
 object ValidationError {
   implicit val encoder: ObjectEncoder[ValidationError] = deriveEncoder[ValidationError]

@@ -353,7 +353,9 @@ class ProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "content")
-        contentError should be(Some(ValidationError("content", Some("content should not be longer than 140"))))
+        contentError should be(
+          Some(ValidationError("content", "too_long", Some("content should not be longer than 140")))
+        )
       }
     }
 
@@ -373,7 +375,9 @@ class ProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "content")
-        contentError should be(Some(ValidationError("content", Some("content should not be shorter than 12"))))
+        contentError should be(
+          Some(ValidationError("content", "too_short", Some("content should not be shorter than 12")))
+        )
       }
     }
 
@@ -393,7 +397,9 @@ class ProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "question")
-        contentError should be(Some(ValidationError("question", Some("This proposal refers to no known question"))))
+        contentError should be(
+          Some(ValidationError("question", "mandatory", Some("This proposal refers to no known question")))
+        )
       }
     }
 
@@ -413,7 +419,9 @@ class ProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "language")
-        contentError should be(Some(ValidationError("language", Some("The field [.language] is missing."))))
+        contentError should be(
+          Some(ValidationError("language", "malformed", Some("The field [.language] is missing.")))
+        )
       }
     }
 
@@ -433,7 +441,7 @@ class ProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "country")
-        contentError should be(Some(ValidationError("country", Some("The field [.country] is missing."))))
+        contentError should be(Some(ValidationError("country", "malformed", Some("The field [.country] is missing."))))
       }
     }
 

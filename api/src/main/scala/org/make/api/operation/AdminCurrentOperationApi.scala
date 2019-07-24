@@ -265,6 +265,7 @@ final case class CreateCurrentOperationRequest(
     maxLength("linkLabel", 25, linkLabel),
     Requirement(
       "internalLink / externalLink",
+      "invalid_link",
       () => internalLink.isDefined && externalLink.isEmpty || internalLink.isEmpty && externalLink.isDefined,
       () => "Only one between internal or external link must be defined"
     )
@@ -300,6 +301,7 @@ final case class UpdateCurrentOperationRequest(
     maxLength("linkLabel", 25, linkLabel),
     Requirement(
       "internalLink / externalLink",
+      "invalid_link",
       () => internalLink.isDefined && externalLink.isEmpty || internalLink.isEmpty && externalLink.isDefined,
       () => "Only one between internal or external link must be defined"
     )

@@ -1261,7 +1261,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("Mod2 fails to lock the proposal")
-      expectMsg(Left(ValidationFailedError(Seq(ValidationError("moderatorName", Some("Mod1"))))))
+      expectMsg(Left(ValidationFailedError(Seq(ValidationError("moderatorName", "already_locked", Some("Mod1"))))))
     }
 
     scenario("reset lock by moderating the proposal") {

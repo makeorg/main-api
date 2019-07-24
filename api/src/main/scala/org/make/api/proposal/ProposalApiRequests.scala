@@ -83,7 +83,7 @@ final case class UpdateProposalRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "auto")
   predictedTagsModelName: Option[String]
 ) {
-  validate(newContent.map(value => validateUserInput("newContent", value, None)))
+  validateOptional(newContent.map(value => validateUserInput("newContent", value, None)))
 }
 
 object UpdateProposalRequest {
@@ -106,7 +106,7 @@ final case class ValidateProposalRequest(
   @(ApiModelProperty @field)(dataType = "string")
   predictedTagsModelName: Option[String]
 ) {
-  validate(newContent.map(value => validateUserInput("newContent", value, None)))
+  validateOptional(newContent.map(value => validateUserInput("newContent", value, None)))
 }
 
 object ValidateProposalRequest {
@@ -124,7 +124,7 @@ object UpdateProposalVotesVerifiedRequest {
 
 final case class RefuseProposalRequest(sendNotificationEmail: Boolean, refusalReason: Option[String]) {
   validate(Validation.mandatoryField("refusalReason", refusalReason))
-  validate(refusalReason.map(value => validateUserInput("refusalReason", value, None)))
+  validateOptional(refusalReason.map(value => validateUserInput("refusalReason", value, None)))
 }
 
 object RefuseProposalRequest {

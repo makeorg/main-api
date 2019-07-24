@@ -883,6 +883,7 @@ trait DefaultModerationProposalApiComponent
                         Validation.validate(
                           Validation.validateField(
                             field = "proposalIds",
+                            "invalid_value",
                             message = s"Some proposal ids are invalid: $invalidProposalIdValuesString",
                             condition = invalidProposalIdValues.isEmpty
                           )

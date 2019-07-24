@@ -262,7 +262,9 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
           case None =>
             Future.failed(
               ValidationFailedError(
-                Seq(ValidationError("questionId", Some(s"Question ${questionId.value} doesn't exist")))
+                Seq(
+                  ValidationError("questionId", "invalid_content", Some(s"Question ${questionId.value} doesn't exist"))
+                )
               )
             )
           case Some(question) =>
