@@ -20,7 +20,7 @@
 package org.make.api.sequence
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
-import akka.pattern.{pipe, Backoff, BackoffSupervisor}
+import akka.pattern.{pipe, BackoffOpts, BackoffSupervisor}
 import org.make.api.sequence.SequenceConfigurationActor._
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
@@ -94,14 +94,15 @@ object SequenceConfigurationActor {
   def props(persistentSequenceConfigurationService: PersistentSequenceConfigurationService): Props = {
     val maxNrOfRetries = 50
     BackoffSupervisor.props(
-      Backoff.onStop(
-        Props(new SequenceConfigurationActor(persistentSequenceConfigurationService)),
-        childName = internalName,
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2,
-        maxNrOfRetries = maxNrOfRetries
-      )
+      BackoffOpts
+        .onStop(
+          Props(new SequenceConfigurationActor(persistentSequenceConfigurationService)),
+          childName = internalName,
+          minBackoff = 3.seconds,
+          maxBackoff = 30.seconds,
+          randomFactor = 0.2
+        )
+        .withMaxNrOfRetries(maxNrOfRetries)
     )
   }
 

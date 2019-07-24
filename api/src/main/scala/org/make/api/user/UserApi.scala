@@ -19,10 +19,8 @@
 
 package org.make.api.user
 
-import java.net.URLEncoder
 import java.time.{LocalDate, ZonedDateTime}
 
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
@@ -220,16 +218,6 @@ trait UserApi extends Directives {
     )
   )
   def resetPasswordRoute: Route
-
-  @ApiOperation(value = "subscribe-newsletter", httpMethod = "POST", code = HttpCodes.NoContent)
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SubscribeToNewsLetter")
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
-  @Path(value = "/newsletter")
-  def subscribeToNewsLetter: Route
 
   @ApiOperation(
     value = "reload-history",
@@ -433,7 +421,6 @@ trait UserApi extends Directives {
       resetPasswordRequestRoute ~
       resetPasswordCheckRoute ~
       resetPasswordRoute ~
-      subscribeToNewsLetter ~
       validateAccountRoute ~
       getVotedProposalsByUser ~
       getProposalsByUser ~
@@ -785,42 +772,6 @@ trait DefaultUserApiComponent
                         complete(StatusCodes.NoContent)
                       }
                     }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    override def subscribeToNewsLetter: Route = post {
-      path("user" / "newsletter") {
-        makeOperation("SubscribeToNewsletter") { _ =>
-          decodeRequest {
-            entity(as[SubscribeToNewsLetter]) { request: SubscribeToNewsLetter =>
-              // Keep as info in case sending form would fail
-              logger.info(s"inscribing ${request.email} to newsletter")
-
-              val encodedEmailFieldName = URLEncoder.encode("fields[Email]", "UTF-8")
-              val encodedEmail = URLEncoder.encode(request.email.toLowerCase, "UTF-8")
-              val encodedName = URLEncoder.encode("VFF Séquence Test", "UTF-8")
-
-              val httpRequest = HttpRequest(
-                method = HttpMethods.POST,
-                uri = makeSettings.newsletterUrl,
-                entity = HttpEntity(
-                  ContentType(MediaTypes.`application/x-www-form-urlencoded`, HttpCharsets.`UTF-8`),
-                  s"$encodedEmailFieldName=$encodedEmail&name=$encodedName"
-                )
-              )
-              logger.debug(s"Subscribe newsletter request: ${httpRequest.toString}")
-              val futureHttpResponse: Future[HttpResponse] =
-                Http(actorSystem).singleRequest(httpRequest)
-
-              onSuccess(futureHttpResponse) { httpResponse =>
-                httpResponse.status match {
-                  case StatusCodes.OK => complete(StatusCodes.NoContent)
-                  case _              => complete(StatusCodes.ServiceUnavailable)
                 }
               }
             }

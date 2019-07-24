@@ -169,7 +169,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
               requireAdminRole(userAuth.user) {
                 decodeRequest {
                   entity(as[DeleteContactsRequest]) { req =>
-                    crmService.deleteAllContactsBefore(req.maxUpdatedAtBeforeDelete)
+                    crmService.deleteAllContactsBefore(req.maxUpdatedAtBeforeDelete, req.deleteEmptyProperties)
                     complete(StatusCodes.Accepted)
                   }
                 }
@@ -184,9 +184,11 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
 }
 
-final case class DeleteContactsRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime
-) {
+final case class DeleteContactsRequest(@(ApiModelProperty @field)(
+                                         dataType = "string",
+                                         example = "2019-07-11T11:21:40.508Z"
+                                       ) maxUpdatedAtBeforeDelete: ZonedDateTime,
+                                       @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean) {
   Validation.validate(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",

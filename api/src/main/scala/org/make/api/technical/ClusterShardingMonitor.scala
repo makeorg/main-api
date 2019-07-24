@@ -23,7 +23,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.cluster.Cluster
 import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ShardRegion.{ClusterShardingStats, GetClusterShardingStats}
-import akka.pattern.{ask, AskTimeoutException, Backoff, BackoffSupervisor}
+import akka.pattern.{ask, AskTimeoutException, BackoffOpts, BackoffSupervisor}
 import akka.util.Timeout
 import com.typesafe.config.Config
 import kamon.Kamon
@@ -98,14 +98,15 @@ object ClusterShardingMonitor {
   val props: Props = {
     val maxNrOfRetries = 50
     BackoffSupervisor.props(
-      Backoff.onStop(
-        Props[ClusterShardingMonitor],
-        childName = "actor-sharding-monitor",
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2,
-        maxNrOfRetries = maxNrOfRetries
-      )
+      BackoffOpts
+        .onStop(
+          Props[ClusterShardingMonitor],
+          childName = "actor-sharding-monitor",
+          minBackoff = 3.seconds,
+          maxBackoff = 30.seconds,
+          randomFactor = 0.2
+        )
+        .withMaxNrOfRetries(maxNrOfRetries)
     )
   }
 

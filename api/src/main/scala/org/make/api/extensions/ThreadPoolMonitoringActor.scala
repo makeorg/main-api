@@ -20,7 +20,7 @@
 package org.make.api.extensions
 
 import akka.actor.{Actor, Props}
-import akka.pattern.{Backoff, BackoffSupervisor}
+import akka.pattern.{BackoffOpts, BackoffSupervisor}
 import kamon.Kamon
 import kamon.metric.GaugeMetric
 import org.make.api.extensions.ThreadPoolMonitoringActor.{ExecutorWithGauges, Monitor, MonitorThreadPool}
@@ -64,15 +64,9 @@ object ThreadPoolMonitoringActor {
   val name: String = "BackoffThreadPoolMonitoringActor"
   private val maxNrOfRetries = 50
   val props: Props = BackoffSupervisor.props(
-    Backoff
-      .onStop(
-        innerProps,
-        childName = innerName,
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2,
-        maxNrOfRetries = maxNrOfRetries
-      )
+    BackoffOpts
+      .onStop(innerProps, childName = innerName, minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
+      .withMaxNrOfRetries(maxNrOfRetries)
   )
 
   case object Monitor

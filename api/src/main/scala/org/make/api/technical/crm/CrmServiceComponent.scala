@@ -63,7 +63,7 @@ trait CrmService {
                            countOnly: Option[Boolean] = None,
                            limit: Int = 1000,
                            offset: Int = 0): Future[GetUsersMail]
-  def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime): Future[Int]
+  def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime, deleteEmptyProperties: Boolean): Future[Int]
 }
 
 trait CrmServiceComponent {
@@ -173,17 +173,19 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         }
     }
 
-    override def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime): Future[Int] = {
+    override def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime, deleteEmptyProperties: Boolean): Future[Int] = {
       def isBefore(updatedAt: String): Boolean =
         Try(ZonedDateTime.parse(updatedAt)).toOption.forall(_.isBefore(maxUpdatedAt))
 
       StreamUtils
         .asyncPageToPageSource(page => crmClient.getContactsProperties(offset = page * 1000).map(_.data))
         .map(_.filter { contacts =>
-          contacts.properties.find(_.name == "updated_at").forall(property => isBefore(property.value))
+          deleteEmptyProperties && contacts.properties.isEmpty ||
+          contacts.properties.find(_.name == "updated_at").exists(updatedAt => isBefore(updatedAt.value))
         }.map(_.contactId.toString))
         .mapConcat(contacts => immutable.Seq(contacts: _*))
-        .mapAsync(5) { obsoleteContactId =>
+        .throttle(1, 1.second)
+        .mapAsync(1) { obsoleteContactId =>
           crmClient
             .deleteContactById(obsoleteContactId)
             .map(_ => 1)

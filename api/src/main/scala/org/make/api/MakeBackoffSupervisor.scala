@@ -20,7 +20,7 @@
 package org.make.api
 
 import akka.actor.Props
-import akka.pattern.{Backoff, BackoffSupervisor}
+import akka.pattern.{BackoffOpts, BackoffSupervisor}
 
 import scala.concurrent.duration.DurationInt
 
@@ -33,14 +33,9 @@ object MakeBackoffSupervisor {
   private def props(props: Props, name: String): Props = {
     val maxNrOfRetries = 50
     BackoffSupervisor.props(
-      Backoff.onStop(
-        props,
-        childName = name,
-        minBackoff = 3.seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.2,
-        maxNrOfRetries = maxNrOfRetries
-      )
+      BackoffOpts
+        .onStop(props, childName = name, minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2)
+        .withMaxNrOfRetries(maxNrOfRetries)
     )
   }
 
