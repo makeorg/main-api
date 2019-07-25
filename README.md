@@ -25,7 +25,7 @@ make run
 ```
 
 
-#### Running the app in Debug Mode:
+### Running the app in Debug Mode:
 
 There are two methods here:
 
@@ -35,16 +35,25 @@ There are two methods here:
 - Run MakeMain in Debug mode from idea. This method requires two VM options to be defined:
     - Set the javaagent: type `sbt "show aspectj:aspectjWeaverOptions"` and copy the javaagent in vm parameters.
 
-## Run tests
+### Run tests
 
 To run Unit Tests: `sbt test`
 To run Integration Tests: `sbt it:test`
 If you want to run one test class : `sbt "testOnly *org.make.ref.to.class"`
 If you want to run one specific integration test : `sbt "it:testOnly *org.make.ref.to.class -- -z testName"`
 
-### Access the Api documentation
+## Access the Api documentation
 
 When application is running you can access to the swagger interface from the address: [http://localhost:9000/swagger](http://localhost:9000/swagger)
+
+## Make the images available to the front
+
+if your images, uploaded on the API are not visible (with an authentication error), run the following script:
+
+```
+./init-swift.sh
+```
+
 
 ## Sending emails
 

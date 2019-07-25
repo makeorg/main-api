@@ -101,3 +101,5 @@ infra-stop:
 
 infra-up:
 	docker-compose -f $(DOCKER_COMPOSE_FILE) up -d
+	sleep 30s
+	./init-swift.sh
