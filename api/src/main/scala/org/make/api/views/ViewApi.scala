@@ -22,40 +22,46 @@ package org.make.api.views
 import java.time.ZonedDateTime
 
 import akka.http.scaladsl.server.{Directives, Route}
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
-import io.swagger.annotations.{ApiModelProperty, _}
+import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation._
-import org.make.api.proposal.{ProposalResponse, ProposalSearchEngineComponent, ProposalServiceComponent}
+import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation.{OperationId, _}
+import org.make.core.operation.{OperationId, OperationKind, OperationOfQuestion}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors}
+import org.make.core.reference.{Country, Language}
+import org.make.core.user.indexed.OrganisationSearchResult
+import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
-import scala.annotation.meta.field
-
 @Api(value = "Home view")
-@Path(value = "/views/home")
+@Path(value = "/views")
 trait ViewApi extends Directives {
 
   @ApiOperation(value = "get-home-view", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[HomeViewResponse]))
   )
-  @Path(value = "/")
+  @Path(value = "/home")
   def homeView: Route
 
-  def routes: Route = homeView
+  @ApiOperation(value = "get-search-view", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SearchViewResponse]))
+  )
+  @Path(value = "/search")
+  def searchView: Route
+
+  def routes: Route = homeView ~ searchView
 }
 
 trait ViewApiComponent {
@@ -245,109 +251,57 @@ trait DefaultViewApiComponent
       }
     }
 
+    override def searchView: Route = {
+      get {
+        path("views" / "search") {
+          makeOperation("GetSearchView") { requestContext =>
+            optionalMakeOAuth2 { auth: Option[AuthInfo[UserRights]] =>
+              parameters(
+                (
+                  'content,
+                  'proposalLimit.as[Int].?,
+                  'questionLimit.as[Int].?,
+                  'organisationLimit.as[Int].?,
+                  'country.as[Country].?,
+                  'language.as[Language].?
+                )
+              ) { (content, proposalLimit, _ /*questionLimit*/, _ /*organisationLimit*/, country, language) =>
+                val query = SearchQuery(
+                  filters = Some(
+                    SearchFilters(
+                      content = Some(ContentSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
+                      operationKinds = Some(
+                        OperationKindsSearchFilter(
+                          Seq(
+                            OperationKind.GreatCause,
+                            OperationKind.PublicConsultation,
+                            OperationKind.BusinessConsultation
+                          )
+                        )
+                      ),
+                      country = country.map(CountrySearchFilter.apply),
+                      language = language.map(LanguageSearchFilter.apply)
+                    )
+                  ),
+                  limit = proposalLimit
+                )
+                provideAsync(proposalService.searchForUser(auth.map(_.user.userId), query, requestContext)) {
+                  proposals =>
+                    complete(
+                      SearchViewResponse(
+                        proposals = proposals,
+                        questions = Seq.empty,
+                        organisations = OrganisationSearchResult.empty
+                      )
+                    )
+                }
+              }
+            }
+          }
+        }
+      }
+
+    }
   }
 
-}
-
-final case class HomeViewResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  popularProposals: Seq[ProposalResponse],
-  controverseProposals: Seq[ProposalResponse],
-  businessConsultations: Seq[BusinessConsultationResponse],
-  featuredConsultations: Seq[FeaturedConsultationResponse],
-  currentConsultations: Seq[CurrentConsultationResponse]
-)
-
-object HomeViewResponse {
-  implicit val encoder: Encoder[HomeViewResponse] = deriveEncoder[HomeViewResponse]
-}
-
-final case class BusinessConsultationThemeResponse(gradientStart: String, gradientEnd: String)
-
-object BusinessConsultationThemeResponse {
-  implicit val encoder: Encoder[BusinessConsultationThemeResponse] =
-    deriveEncoder[BusinessConsultationThemeResponse]
-  implicit val decoder: Decoder[BusinessConsultationThemeResponse] = deriveDecoder[BusinessConsultationThemeResponse]
-}
-
-final case class BusinessConsultationResponse(theme: BusinessConsultationThemeResponse,
-                                              startDate: Option[ZonedDateTime],
-                                              endDate: Option[ZonedDateTime],
-                                              slug: Option[String],
-                                              aboutUrl: Option[String],
-                                              question: String)
-
-object BusinessConsultationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[BusinessConsultationResponse] = deriveEncoder[BusinessConsultationResponse]
-  implicit val decoder: Decoder[BusinessConsultationResponse] = deriveDecoder[BusinessConsultationResponse]
-}
-
-final case class FeaturedConsultationResponse(questionId: Option[QuestionId],
-                                              questionSlug: Option[String],
-                                              title: String,
-                                              description: Option[String],
-                                              landscapePicture: String,
-                                              portraitPicture: String,
-                                              altPicture: String,
-                                              label: String,
-                                              buttonLabel: String,
-                                              internalLink: Option[String],
-                                              externalLink: Option[String],
-                                              slot: Int)
-
-object FeaturedConsultationResponse {
-  implicit val encoder: Encoder[FeaturedConsultationResponse] = deriveEncoder[FeaturedConsultationResponse]
-  implicit val decoder: Decoder[FeaturedConsultationResponse] = deriveDecoder[FeaturedConsultationResponse]
-
-  def apply(featured: FeaturedOperation, slug: Option[String]): FeaturedConsultationResponse =
-    FeaturedConsultationResponse(
-      questionId = featured.questionId,
-      questionSlug = slug,
-      title = featured.title,
-      description = featured.description,
-      landscapePicture = featured.landscapePicture,
-      portraitPicture = featured.portraitPicture,
-      altPicture = featured.altPicture,
-      label = featured.label,
-      buttonLabel = featured.buttonLabel,
-      internalLink = featured.internalLink,
-      externalLink = featured.externalLink,
-      slot = featured.slot
-    )
-}
-
-final case class CurrentConsultationResponse(questionId: Option[QuestionId],
-                                             questionSlug: Option[String],
-                                             picture: String,
-                                             altPicture: String,
-                                             description: String,
-                                             linkLabel: String,
-                                             internalLink: Option[String],
-                                             externalLink: Option[String],
-                                             proposalsNumber: Long,
-                                             startDate: Option[ZonedDateTime],
-                                             endDate: Option[ZonedDateTime])
-
-object CurrentConsultationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[CurrentConsultationResponse] = deriveEncoder[CurrentConsultationResponse]
-  implicit val decoder: Decoder[CurrentConsultationResponse] = deriveDecoder[CurrentConsultationResponse]
-
-  def apply(current: CurrentOperation,
-            slug: Option[String],
-            startDate: Option[ZonedDateTime],
-            endDate: Option[ZonedDateTime],
-            proposalsNumber: Long): CurrentConsultationResponse =
-    CurrentConsultationResponse(
-      questionId = Some(current.questionId),
-      questionSlug = slug,
-      picture = current.picture,
-      altPicture = current.altPicture,
-      description = current.description,
-      linkLabel = current.linkLabel,
-      internalLink = current.internalLink,
-      externalLink = current.externalLink,
-      proposalsNumber = proposalsNumber,
-      startDate = startDate,
-      endDate = endDate,
-    )
 }

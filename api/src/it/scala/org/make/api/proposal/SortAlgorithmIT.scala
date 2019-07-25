@@ -170,7 +170,8 @@ class SortAlgorithmIT
     question = None,
     sequencePool = SequencePool.New,
     initialProposal = false,
-    refusalReason = None
+    refusalReason = None,
+    operationKind = None
   )
 
   private val proposals: Seq[IndexedProposal] = Seq(

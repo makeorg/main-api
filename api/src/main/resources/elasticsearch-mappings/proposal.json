@@ -1133,6 +1133,10 @@
         "initialProposal": {
           "type": "boolean",
           "index": true
+        },
+        "operationKind": {
+          "type": "keyword",
+          "index": true
         }
       }
     }

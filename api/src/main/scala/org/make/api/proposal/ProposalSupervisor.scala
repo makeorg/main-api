@@ -20,7 +20,7 @@
 package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.make.api.operation.OperationOfQuestionServiceComponent
+import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.crmTemplates.CrmTemplatesServiceComponent
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
@@ -102,6 +102,7 @@ object ProposalSupervisor {
     with SemanticComponent
     with SendMailPublisherServiceComponent
     with SequenceConfigurationComponent
+    with OperationServiceComponent
     with OperationOfQuestionServiceComponent
     with CrmTemplatesServiceComponent
     with SequenceServiceComponent

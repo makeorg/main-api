@@ -150,7 +150,8 @@ class IdeaMappingServiceTest
           operationId = None,
           sequencePool = SequencePool.New,
           initialProposal = false,
-          refusalReason = None
+          refusalReason = None,
+          operationKind = None
         )
 
       def tag(tagId: String, tagTypeId: String, weight: Float): Tag =

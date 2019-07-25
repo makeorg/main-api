@@ -23,7 +23,12 @@ import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.{DefaultPersistentIdeaServiceComponent, IdeaSearchEngine, IdeaSearchEngineComponent}
-import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
+import org.make.api.operation.{
+  OperationOfQuestionService,
+  OperationOfQuestionServiceComponent,
+  OperationService,
+  OperationServiceComponent
+}
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.{
   ProposalCoordinatorService,
@@ -69,6 +74,7 @@ class IndexationComponentTest
     with MakeDBExecutionContextComponent
     with SemanticComponent
     with UserHistoryCoordinatorServiceComponent
+    with OperationServiceComponent
     with OperationOfQuestionServiceComponent
     with QuestionServiceComponent {
 
@@ -92,6 +98,7 @@ class IndexationComponentTest
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
+  override val operationService: OperationService = mock[OperationService]
   override val questionService: QuestionService = mock[QuestionService]
 
   override val tagService: TagService = mock[TagService]

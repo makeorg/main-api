@@ -30,7 +30,7 @@ import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
-import org.make.core.operation.OperationId
+import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.question.QuestionId
 import org.make.core.reference.{LabelId, Language}
@@ -79,7 +79,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          toEnrich: Option[ToEnrichSearchFilter] = None,
                          minScore: Option[MinScoreSearchFilter] = None,
                          createdAt: Option[CreatedAtSearchFilter] = None,
-                         sequencePool: Option[SequencePoolSearchFilter] = None)
+                         sequencePool: Option[SequencePoolSearchFilter] = None,
+                         operationKinds: Option[OperationKindsSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -103,7 +104,8 @@ object SearchFilters extends ElasticDsl {
             toEnrich: Option[ToEnrichSearchFilter] = None,
             minScore: Option[MinScoreSearchFilter] = None,
             createdAt: Option[CreatedAtSearchFilter] = None,
-            sequencePool: Option[SequencePoolSearchFilter] = None): Option[SearchFilters] = {
+            sequencePool: Option[SequencePoolSearchFilter] = None,
+            operationKinds: Option[OperationKindsSearchFilter] = None): Option[SearchFilters] = {
 
     (
       proposals,
@@ -125,9 +127,11 @@ object SearchFilters extends ElasticDsl {
       toEnrich,
       minScore,
       createdAt,
-      sequencePool
+      sequencePool,
+      operationKinds
     ) match {
       case (
+          None,
           None,
           None,
           None,
@@ -172,7 +176,8 @@ object SearchFilters extends ElasticDsl {
             toEnrich,
             minScore,
             createdAt,
-            sequencePool
+            sequencePool,
+            operationKinds
           )
         )
     }
@@ -208,7 +213,8 @@ object SearchFilters extends ElasticDsl {
       buildToEnrichSearchFilter(searchQuery),
       buildMinScoreSearchFilter(searchQuery),
       buildCreatedAtSearchFilter(searchQuery),
-      buildSequencePoolSearchFilter(searchQuery)
+      buildSequencePoolSearchFilter(searchQuery),
+      buildOperationKindSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -548,6 +554,19 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
+//TODO: To avoid a pattern matching to precise, can't we just use `termsQuery` ?
+  def buildOperationKindSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    searchQuery.filters.flatMap {
+      _.operationKinds match {
+        case Some(OperationKindsSearchFilter(Seq(operationKind))) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationKind, operationKind.shortName))
+        case Some(OperationKindsSearchFilter(operationKinds)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.operationKind, operationKinds.map(_.shortName)))
+        case _ => None
+      }
+    }
+  }
+
 }
 
 case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -595,3 +614,4 @@ case class MinVotesCountSearchFilter(minVotesCount: Int)
 case class ToEnrichSearchFilter(toEnrich: Boolean)
 case class MinScoreSearchFilter(minScore: Float)
 case class SequencePoolSearchFilter(sequencePool: String)
+case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
