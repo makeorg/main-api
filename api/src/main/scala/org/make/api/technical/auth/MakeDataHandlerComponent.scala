@@ -244,6 +244,8 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[UserRights]]] = {
       persistentTokenService.findByRefreshToken(refreshToken).flatMap {
+        case Some(token) if toAccessToken(token.copy(expiresIn = validityDurationRefreshTokenSeconds)).isExpired =>
+          Future.successful(None)
         case Some(token) =>
           Future.successful(
             Some(
@@ -280,7 +282,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {
       Option(accessTokenCache.getIfPresent(token)).map(token => Future.successful(Some(token))).getOrElse {
-        val future = persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken))
+        val future = persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken).filter(!_.isExpired))
         future.onComplete {
           case Success(Some(userToken)) => accessTokenCache.put(token, userToken)
           case _                        =>
