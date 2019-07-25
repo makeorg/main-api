@@ -559,17 +559,17 @@ case class InitialProposalFilter(isInitialProposal: Boolean)
 case class QuestionSearchFilter(questionIds: Seq[QuestionId])
 
 case class TagsSearchFilter(tagIds: Seq[TagId]) {
-  validate(validateField("tagId", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
+  validate(validateField("tagId", "mandatory", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
 }
 
 case class LabelsSearchFilter(labelIds: Seq[LabelId]) {
-  validate(validateField("labelIds", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
+  validate(validateField("labelIds", "mandatory", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
 }
 
 case class OperationSearchFilter(operationIds: Seq[OperationId])
 
 case class TrendingSearchFilter(trending: String) {
-  validate(validateField("trending", trending.nonEmpty, "trending cannot be empty in search filters"))
+  validate(validateField("trending", "mandatory", trending.nonEmpty, "trending cannot be empty in search filters"))
 }
 
 case class CreatedAtSearchFilter(before: Option[ZonedDateTime], after: Option[ZonedDateTime])

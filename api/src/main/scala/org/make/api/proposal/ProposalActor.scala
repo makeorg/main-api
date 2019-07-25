@@ -501,7 +501,11 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         lock match {
           case Some(Lock(moderatorId, moderatorName, expirationDate))
               if moderatorId != command.moderatorId && expirationDate.isAfter(DateHelper.now()) =>
-            sender() ! Left(ValidationFailedError(errors = Seq(ValidationError("moderatorName", Some(moderatorName)))))
+            sender() ! Left(
+              ValidationFailedError(
+                errors = Seq(ValidationError("moderatorName", "already_locked", Some(moderatorName)))
+              )
+            )
           case _ =>
             persistAndPublishEvent(
               ProposalLocked(
@@ -529,6 +533,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               errors = Seq(
                 ValidationError(
                   "proposalId",
+                  "invalid_state",
                   Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
                 )
               )
@@ -571,6 +576,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               errors = Seq(
                 ValidationError(
                   "proposalId",
+                  "invalid_state",
                   Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
                 )
               )
@@ -604,6 +610,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               errors = Seq(
                 ValidationError(
                   "status",
+                  "invalid_state",
                   Some(s"Proposal ${command.proposalId.value} is archived and cannot be validated")
                 )
               )
@@ -614,8 +621,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           // other modifications should use the proposal update method
           Left(
             ValidationFailedError(
-              errors =
-                Seq(ValidationError("status", Some(s"Proposal ${command.proposalId.value} is already validated")))
+              errors = Seq(
+                ValidationError(
+                  "status",
+                  "invalid_state",
+                  Some(s"Proposal ${command.proposalId.value} is already validated")
+                )
+              )
             )
           )
         } else {
@@ -655,6 +667,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               errors = Seq(
                 ValidationError(
                   "status",
+                  "invalid_state",
                   Some(s"Proposal ${command.proposalId.value} is archived and cannot be refused")
                 )
               )
@@ -665,7 +678,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
           // other modifications should use the proposal update command
           Left(
             ValidationFailedError(
-              errors = Seq(ValidationError("status", Some(s"Proposal ${command.proposalId.value} is already refused")))
+              errors = Seq(
+                ValidationError(
+                  "status",
+                  "invalid_state",
+                  Some(s"Proposal ${command.proposalId.value} is already refused")
+                )
+              )
             )
           )
         } else {
@@ -697,6 +716,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               errors = Seq(
                 ValidationError(
                   "status",
+                  "invalid_state",
                   Some(s"Proposal ${command.proposalId.value} is archived and cannot be postponed")
                 )
               )
@@ -708,6 +728,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
               errors = Seq(
                 ValidationError(
                   "status",
+                  "invalid_state",
                   Some(s"Proposal ${command.proposalId.value} is already moderated and cannot be postponed")
                 )
               )
@@ -716,8 +737,13 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         } else if (proposal.status == ProposalStatus.Postponed) {
           Left(
             ValidationFailedError(
-              errors =
-                Seq(ValidationError("status", Some(s"Proposal ${command.proposalId.value} is already postponed")))
+              errors = Seq(
+                ValidationError(
+                  "status",
+                  "invalid_state",
+                  Some(s"Proposal ${command.proposalId.value} is already postponed")
+                )
+              )
             )
           )
         } else {

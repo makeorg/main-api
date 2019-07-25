@@ -89,7 +89,13 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         case (None, None) =>
           Future.failed(
             ValidationFailedError(
-              Seq(ValidationError("unknown", Some("operationId or themeId must be provided to question search")))
+              Seq(
+                ValidationError(
+                  "unknown",
+                  "mandatory",
+                  Some("operationId or themeId must be provided to question search")
+                )
+              )
             )
           )
         case (Some(_), Some(_)) =>
@@ -98,6 +104,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
               Seq(
                 ValidationError(
                   "unknown",
+                  "mandatory",
                   Some("You must provide only one of themeId or operationId to question search")
                 )
               )

@@ -315,7 +315,9 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("Email foo@bar.com already exist"))))
+        emailError should be(
+          Some(ValidationError("email", "already_registered", Some("Email foo@bar.com already exist")))
+        )
       }
     }
 
@@ -335,9 +337,9 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val countryError = errors.find(_.field == "country")
-        countryError should be(Some(ValidationError("country", Some("country is mandatory"))))
+        countryError should be(Some(ValidationError("country", "mandatory", Some("country is mandatory"))))
         val languageError = errors.find(_.field == "language")
-        languageError should be(Some(ValidationError("language", Some("language is mandatory"))))
+        languageError should be(Some(ValidationError("language", "mandatory", Some("language is mandatory"))))
       }
     }
 
@@ -359,7 +361,7 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
+        emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
       }
     }
 
@@ -383,7 +385,7 @@ class UserApiTest
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "postalCode")
         emailError should be(
-          Some(ValidationError("postalCode", Some("postal code cannot be longer than 10 characters")))
+          Some(ValidationError("postalCode", "too_long", Some("postal code cannot be longer than 10 characters")))
         )
       }
     }
@@ -410,6 +412,7 @@ class UserApiTest
           Some(
             ValidationError(
               "dateOfBirth",
+              "malformed",
               Some(
                 "Could not decode [\"foo-12-02\"] at [.dateOfBirth] as " +
                   "[foo-12-02 is not a valid date, it should match yyyy-MM-dd]."
@@ -442,6 +445,7 @@ class UserApiTest
           Some(
             ValidationError(
               "gender",
+              "malformed",
               Some(
                 "Could not decode [\"S\"] at [.gender] as " +
                   "[S is not a Gender]."
@@ -485,7 +489,7 @@ class UserApiTest
         val errors = entityAs[Seq[ValidationError]]
         val dateOfBirthError = errors.find(_.field == "dateOfBirth")
         dateOfBirthError should be(
-          Some(ValidationError("dateOfBirth", Some("Invalid date: age must be between 13 and 120")))
+          Some(ValidationError("dateOfBirth", "invalid_age", Some("Invalid date: age must be between 13 and 120")))
         )
       }
     }
@@ -762,7 +766,7 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
+        emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
       }
       And("any user Event ResetPasswordEvent is emitted")
 

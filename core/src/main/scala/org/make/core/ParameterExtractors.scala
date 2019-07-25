@@ -111,7 +111,7 @@ trait ParameterExtractors {
       OperationKind.kindMap.getOrElse(
         string,
         throw ValidationFailedError(
-          Seq(ValidationError("operationKind", Some(s"$string is not a valid operation kind")))
+          Seq(ValidationError("operationKind", "invalid_value", Some(s"$string is not a valid operation kind")))
         )
       )
     }
@@ -130,7 +130,9 @@ trait ParameterExtractors {
     Unmarshaller.strict[String, ProposalStatus] { string ⇒
       ProposalStatus.statusMap.getOrElse(
         string,
-        throw ValidationFailedError(Seq(ValidationError("status", Some(s"$string is not a valid proposal status"))))
+        throw ValidationFailedError(
+          Seq(ValidationError("status", "invalid_value", Some(s"$string is not a valid proposal status")))
+        )
       )
     }
 
@@ -138,7 +140,9 @@ trait ParameterExtractors {
     Unmarshaller.strict[String, VoteKey] { string ⇒
       VoteKey.voteKeys.getOrElse(
         string,
-        throw ValidationFailedError(Seq(ValidationError("vote", Some(s"$string is not a valid vote key"))))
+        throw ValidationFailedError(
+          Seq(ValidationError("vote", "invalid_value", Some(s"$string is not a valid vote key")))
+        )
       )
     }
 
@@ -147,7 +151,7 @@ trait ParameterExtractors {
       QualificationKey.qualificationKeys.getOrElse(
         string,
         throw ValidationFailedError(
-          Seq(ValidationError("qualification", Some(s"$string is not a valid qualification key")))
+          Seq(ValidationError("qualification", "invalid_value", Some(s"$string is not a valid qualification key")))
         )
       )
     }
@@ -157,7 +161,9 @@ trait ParameterExtractors {
       case value if value.toLowerCase == "asc"  => Asc
       case value if value.toLowerCase == "desc" => Desc
       case string =>
-        throw ValidationFailedError(Seq(ValidationError("order", Some(s"$string is not a valid sort order"))))
+        throw ValidationFailedError(
+          Seq(ValidationError("order", "invalid_value", Some(s"$string is not a valid sort order")))
+        )
     }
 
 }

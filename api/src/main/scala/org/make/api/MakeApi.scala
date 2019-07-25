@@ -390,7 +390,7 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
 
   def exceptionHandler(routeName: String, requestId: String): ExceptionHandler = ExceptionHandler {
     case e: EmailAlreadyRegisteredException =>
-      complete(StatusCodes.BadRequest -> Seq(ValidationError("email", Option(e.getMessage))))
+      complete(StatusCodes.BadRequest -> Seq(ValidationError("email", "already_registered", Option(e.getMessage))))
     case ValidationFailedError(messages) =>
       complete(
         HttpResponse(
@@ -401,7 +401,7 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     case ConcurrentModification(message) =>
       complete(StatusCodes.Conflict -> message)
     case e: ClientAccessUnauthorizedException =>
-      complete(StatusCodes.Forbidden -> ValidationError("authentication", Some(e.getMessage)))
+      complete(StatusCodes.Forbidden -> ValidationError("authentication", "forbidden", Some(e.getMessage)))
     case e =>
       logger.error(s"Error on request $routeName with id $requestId", e)
       complete(
@@ -419,12 +419,12 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
         complete(StatusCodes.BadRequest -> messages)
       case MalformedRequestContentRejection(message, JsonParsingException(failure, _)) =>
         val errors = failure.history.flatMap {
-          case DownField(f) => Seq(ValidationError(f, Option(message)))
+          case DownField(f) => Seq(ValidationError(f, "malformed", Option(message)))
           case _            => Nil
         }
         complete(StatusCodes.BadRequest -> errors)
       case MalformedRequestContentRejection(_, e) =>
-        complete(StatusCodes.BadRequest -> Seq(ValidationError("unknown", Option(e.getMessage))))
+        complete(StatusCodes.BadRequest -> Seq(ValidationError("unknown", "malformed", Option(e.getMessage))))
     }
     .result()
     .withFallback(RejectionHandler.default)

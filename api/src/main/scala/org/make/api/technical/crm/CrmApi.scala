@@ -107,7 +107,7 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
                 entity(as[Seq[MailJetEvent]]) { events: Seq[MailJetEvent] =>
                   // Send all events to event bus
                   events.foreach { event =>
-                    Validation.validate(
+                    Validation.validateOptional(
                       Some(
                         Validation.validateUserInput(
                           fieldValue = event.email,

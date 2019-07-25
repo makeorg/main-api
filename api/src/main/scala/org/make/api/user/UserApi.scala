@@ -967,7 +967,11 @@ trait DefaultUserApiComponent
                         complete(StatusCodes.OK)
                       }
                     case None =>
-                      complete(StatusCodes.BadRequest -> Seq(ValidationError("password", Some("Wrong password"))))
+                      complete(
+                        StatusCodes.BadRequest -> Seq(
+                          ValidationError("password", "invalid_password", Some("Wrong password"))
+                        )
+                      )
                   }
                 }
               }
@@ -994,7 +998,11 @@ trait DefaultUserApiComponent
                         }
                       }
                     case None =>
-                      complete(StatusCodes.BadRequest -> Seq(ValidationError("password", Some("Wrong password"))))
+                      complete(
+                        StatusCodes.BadRequest -> Seq(
+                          ValidationError("password", "invalid_password", Some("Wrong password"))
+                        )
+                      )
                   }
                 }
               }
@@ -1037,7 +1045,11 @@ trait DefaultUserApiComponent
               provideAsyncOrNotFound(userService.getUser(userId)) { _ =>
                 provideAsync(userService.getFollowedUsers(userAuth.user.userId)) { followedUsers =>
                   if (!followedUsers.contains(userId)) {
-                    complete(StatusCodes.BadRequest -> Seq(ValidationError("userId", Some("User already unfollowed"))))
+                    complete(
+                      StatusCodes.BadRequest -> Seq(
+                        ValidationError("userId", "invalid_state", Some("User already unfollowed"))
+                      )
+                    )
                   } else {
                     onSuccess(userService.unfollowUser(userId, userAuth.user.userId, requestContext)) { _ =>
                       complete(StatusCodes.OK)
@@ -1080,10 +1092,20 @@ case class RegisterUserRequest(
     validateEmail("email", email.toLowerCase),
     validateUserInput("email", email, None),
     mandatoryField("password", password),
-    validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters"),
+    validateField(
+      "password",
+      "invalid_password",
+      Option(password).exists(_.length >= 8),
+      "Password must be at least 8 characters"
+    ),
     validateOptionalUserInput("lastName", lastName, None),
     validateOptionalUserInput("profession", profession, None),
-    validateField("postalCode", postalCode.forall(_.length <= 10), "postal code cannot be longer than 10 characters"),
+    validateField(
+      "postalCode",
+      "too_long",
+      postalCode.forall(_.length <= 10),
+      "postal code cannot be longer than 10 characters"
+    ),
     validateOptionalUserInput("postalCode", postalCode, None),
     mandatoryField("language", language),
     mandatoryField("country", country),
@@ -1116,7 +1138,7 @@ case class UpdateUserRequest(
   private val maxPostalCodeLength = 10
   private val maxDescriptionLength = 450
 
-  validate(
+  validateOptional(
     firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
     Some(validateOptionalUserInput("firstName", firstName, None)),
     organisationName.map(
@@ -1138,6 +1160,7 @@ case class UpdateUserRequest(
       value =>
         validateField(
           "gender",
+          "invalid_value",
           value == "" || Gender.matchGender(value).isDefined,
           s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
       )
@@ -1146,6 +1169,7 @@ case class UpdateUserRequest(
       value =>
         validateField(
           "socio professional category",
+          "invalid_value",
           value == "" || SocioProfessionalCategory.matchSocioProfessionalCategory(value).isDefined,
           s"CSP should be on of this specified values: ${SocioProfessionalCategory.socioProfessionalCategories.keys.mkString(",")}"
       )
@@ -1206,7 +1230,12 @@ final case class ResetPassword(resetToken: String, password: String) {
   validate(mandatoryField("resetToken", resetToken))
   validate(
     mandatoryField("password", password),
-    validateField("password", Option(password).exists(_.length >= 8), "Password must be at least 8 characters")
+    validateField(
+      "password",
+      "invalid_password",
+      Option(password).exists(_.length >= 8),
+      "Password must be at least 8 characters"
+    )
   )
 }
 
@@ -1217,7 +1246,12 @@ object ResetPassword {
 final case class ChangePasswordRequest(actualPassword: Option[String], newPassword: String) {
   validate(
     mandatoryField("newPassword", newPassword),
-    validateField("newPassword", Option(newPassword).exists(_.length >= 8), "Password must be at least 8 characters")
+    validateField(
+      "newPassword",
+      "invalid_password",
+      Option(newPassword).exists(_.length >= 8),
+      "Password must be at least 8 characters"
+    )
   )
 }
 

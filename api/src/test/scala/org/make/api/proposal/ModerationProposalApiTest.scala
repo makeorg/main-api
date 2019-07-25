@@ -372,7 +372,9 @@ class ModerationProposalApiTest
   when(
     proposalService
       .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
-  ).thenReturn(Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", Some("mauderator"))))))
+  ).thenReturn(
+    Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", "already_locked", Some("mauderator")))))
+  )
   when(
     proposalService
       .lockProposal(matches(ProposalId("123456")), matches(tyrion.userId), any[RequestContext])
@@ -1038,7 +1040,7 @@ class ModerationProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "ideaId")
-        contentError should be(Some(ValidationError("ideaId", Some("Invalid idea id"))))
+        contentError should be(Some(ValidationError("ideaId", "mandatory", Some("Invalid idea id"))))
       }
     }
 
@@ -1059,7 +1061,9 @@ class ModerationProposalApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "proposalIds")
-        contentError should be(Some(ValidationError("proposalIds", Some("Some proposal ids are invalid: fake, fake2"))))
+        contentError should be(
+          Some(ValidationError("proposalIds", "invalid_value", Some("Some proposal ids are invalid: fake, fake2")))
+        )
       }
     }
 

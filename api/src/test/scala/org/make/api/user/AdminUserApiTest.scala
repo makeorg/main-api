@@ -374,7 +374,9 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("Email mod.erator@modo.com already exist"))))
+        emailError should be(
+          Some(ValidationError("email", "already_registered", Some("Email mod.erator@modo.com already exist")))
+        )
       }
     }
 
@@ -394,7 +396,7 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val countryError = errors.find(_.field == "country")
-        countryError should be(Some(ValidationError("country", Some("The field [.country] is missing."))))
+        countryError should be(Some(ValidationError("country", "malformed", Some("The field [.country] is missing."))))
       }
     }
 
@@ -416,7 +418,7 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
+        emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
       }
     }
 
@@ -526,7 +528,9 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("Email toto@modo.com already exists"))))
+        emailError should be(
+          Some(ValidationError("email", "already_registered", Some("Email toto@modo.com already exists")))
+        )
       }
     }
 
@@ -550,7 +554,7 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
+        emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
       }
     }
 
@@ -835,7 +839,9 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("Email toto@modo.com already exists"))))
+        emailError should be(
+          Some(ValidationError("email", "already_registered", Some("Email toto@modo.com already exists")))
+        )
       }
     }
 
@@ -859,7 +865,7 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
-        emailError should be(Some(ValidationError("email", Some("email is not a valid email"))))
+        emailError should be(Some(ValidationError("email", "invalid_email", Some("email is not a valid email"))))
       }
     }
 

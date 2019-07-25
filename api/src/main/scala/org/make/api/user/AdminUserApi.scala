@@ -360,6 +360,7 @@ trait DefaultAdminUserApiComponent
                           Validation.validate(
                             Validation.validateField(
                               field = "email",
+                              "already_registered",
                               condition = userToCheck.userId.value == user.userId.value,
                               message = s"Email $lowerCasedEmail already exists"
                             )
@@ -528,6 +529,7 @@ trait DefaultAdminUserApiComponent
                             Validation.validate(
                               Validation.validateField(
                                 field = "email",
+                                "already_registered",
                                 condition = userToCheck.userId.value == user.userId.value,
                                 message = s"Email $lowerCasedEmail already exists"
                               )
@@ -643,7 +645,7 @@ final case class UpdateModeratorRequest(
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
-  validate(
+  validateOptional(
     email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
     email.map(email       => validateUserInput("email", email, None)),
     firstName.map(value   => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
@@ -757,7 +759,7 @@ final case class AdminUpdateUserRequest(
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
-  validate(
+  validateOptional(
     email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
     email.map(email       => validateUserInput("email", email, None)),
     country.map(country   => maxLength("country", maxCountryLength, country.value)),

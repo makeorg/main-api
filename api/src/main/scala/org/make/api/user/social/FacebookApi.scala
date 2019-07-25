@@ -60,7 +60,7 @@ trait DefaultFacebookApiComponent extends FacebookApiComponent {
         .flatMap { entity =>
           parse(entity).flatMap(_.as[FacebookUserInfo]) match {
             case Right(userInfo) if userInfo.email.isEmpty =>
-              Future.failed(ValidationFailedError(Seq(ValidationError("email", Some("not valid")))))
+              Future.failed(ValidationFailedError(Seq(ValidationError("email", "mandatory", Some("not valid")))))
             case Right(userInfo) => Future.successful(userInfo)
             case Left(e)         => Future.failed(e)
           }
