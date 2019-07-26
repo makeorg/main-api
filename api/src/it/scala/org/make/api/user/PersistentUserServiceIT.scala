@@ -878,11 +878,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           hashedPassword = jennaDoo.hashedPassword.map(_.bcrypt)
         )
       val futureUserWithPassword: Future[Option[User]] = for {
-        user <- persistentUserService.persist(jennaDooWithHashedPassword)
-        userResponse <- persistentUserService.findByUserIdAndPassword(
-          user.userId,
-          jennaDoo.hashedPassword.getOrElse("")
-        )
+        user         <- persistentUserService.persist(jennaDooWithHashedPassword)
+        userResponse <- persistentUserService.findByUserIdAndPassword(user.userId, jennaDoo.hashedPassword)
       } yield userResponse
 
       whenReady(futureUserWithPassword, Timeout(3.seconds)) { user =>
@@ -890,6 +887,25 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         user.flatMap(_.firstName) should be(jennaDooWithHashedPassword.firstName)
         user.map(_.email) should be(Some(jennaDooWithHashedPassword.email))
         user.flatMap(_.hashedPassword) should be(jennaDooWithHashedPassword.hashedPassword)
+      }
+    }
+
+    scenario("user without password") {
+      val jennaDooWithoutPassword =
+        jennaDoo.copy(
+          userId = UserId("jenna-without-password"),
+          email = "jennaDoowithoutpassword@example.com",
+          hashedPassword = None
+        )
+      val futureUserWithPassword: Future[Option[User]] = for {
+        user         <- persistentUserService.persist(jennaDooWithoutPassword)
+        userResponse <- persistentUserService.findByUserIdAndPassword(user.userId, None)
+      } yield userResponse
+
+      whenReady(futureUserWithPassword, Timeout(3.seconds)) { user =>
+        user shouldNot be(None)
+        user.flatMap(_.firstName) should be(jennaDooWithoutPassword.firstName)
+        user.map(_.email) should be(Some(jennaDooWithoutPassword.email))
       }
     }
   }

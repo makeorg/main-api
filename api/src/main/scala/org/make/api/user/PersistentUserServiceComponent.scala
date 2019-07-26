@@ -296,7 +296,7 @@ trait PersistentUserService {
   def get(uuid: UserId): Future[Option[User]]
   def findAllByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def findByEmailAndPassword(email: String, hashedPassword: String): Future[Option[User]]
-  def findByUserIdAndPassword(userId: UserId, hashedPassword: String): Future[Option[User]]
+  def findByUserIdAndPassword(userId: UserId, hashedPassword: Option[String]): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def adminFindUsers(start: Int,
                      end: Option[Int],
@@ -415,7 +415,7 @@ trait DefaultPersistentUserServiceComponent
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findByUserIdAndPassword(userId: UserId, password: String): Future[Option[User]] = {
+    override def findByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
@@ -424,7 +424,7 @@ trait DefaultPersistentUserServiceComponent
             .where(sqls.eq(userAlias.uuid, userId.value))
         }.map(PersistentUser.apply()).single.apply
       }).map(_.filter { persistentUser =>
-        persistentUser.hashedPassword != null && password.isBcrypted(persistentUser.hashedPassword)
+        persistentUser.hashedPassword == null || password.exists(_.isBcrypted(persistentUser.hashedPassword))
       })
 
       futurePersistentUser.map(_.map(_.toUser))

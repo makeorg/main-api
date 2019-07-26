@@ -133,9 +133,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]] = {
-      password.map { pass =>
-        persistentUserService.findByUserIdAndPassword(userId, pass)
-      }.getOrElse(getUser(userId))
+      persistentUserService.findByUserIdAndPassword(userId, password)
     }
 
     override def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]] = {

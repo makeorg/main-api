@@ -163,12 +163,10 @@ case class Profile(
   @(ApiModelProperty @field)(dataType = "integer") karmaLevel: Option[Int],
   locale: Option[String],
   optInNewsletter: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O") socioProfessionalCategory: Option[
-    SocioProfessionalCategory
-  ] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5") registerQuestionId: Option[
-    QuestionId
-  ] = None,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O")
+  socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5")
+  registerQuestionId: Option[QuestionId] = None,
   @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean] = None
 ) extends MakeSerializable
 
