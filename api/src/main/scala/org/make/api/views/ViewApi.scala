@@ -24,8 +24,8 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder, ObjectEncoder}
-import io.swagger.annotations._
+import io.circe.{Decoder, Encoder}
+import io.swagger.annotations.{ApiModelProperty, _}
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation._
@@ -36,7 +36,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation._
+import org.make.core.operation.{OperationId, _}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.{CirceFormatters, HttpCodes, ParameterExtractors}
@@ -201,14 +201,24 @@ trait DefaultViewApiComponent
                                             )
                                           )
                                       }
-                                      val currentConsultations = current.map(
-                                        cur =>
+                                      val currentConsultations = current.map { cur =>
+                                        {
+                                          val maybeQuestion: Option[Question] =
+                                            questions.find(_.questionId == cur.questionId)
+                                          val maybeQuestionDetails: Option[OperationOfQuestion] =
+                                            maybeQuestion.flatMap { question =>
+                                              businessDetails.find(_.questionId == question.questionId)
+                                            }
+
                                           CurrentConsultationResponse(
                                             current = cur,
-                                            slug = questions.find(_.questionId == cur.questionId).map(_.slug),
+                                            slug = maybeQuestion.map(_.slug),
+                                            startDate = maybeQuestionDetails.flatMap(_.startDate),
+                                            endDate = maybeQuestionDetails.flatMap(_.endDate),
                                             proposalsNumber = proposalNumberByQuestion.getOrElse(cur.questionId, 0)
-                                        )
-                                      )
+                                          )
+                                        }
+                                      }
                                       complete(
                                         HomeViewResponse(
                                           popularProposals = popularProposals.results,
@@ -255,7 +265,7 @@ object HomeViewResponse {
 final case class BusinessConsultationThemeResponse(gradientStart: String, gradientEnd: String)
 
 object BusinessConsultationThemeResponse {
-  implicit val encoder: ObjectEncoder[BusinessConsultationThemeResponse] =
+  implicit val encoder: Encoder[BusinessConsultationThemeResponse] =
     deriveEncoder[BusinessConsultationThemeResponse]
   implicit val decoder: Decoder[BusinessConsultationThemeResponse] = deriveDecoder[BusinessConsultationThemeResponse]
 }
@@ -268,7 +278,7 @@ final case class BusinessConsultationResponse(theme: BusinessConsultationThemeRe
                                               question: String)
 
 object BusinessConsultationResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[BusinessConsultationResponse] = deriveEncoder[BusinessConsultationResponse]
+  implicit val encoder: Encoder[BusinessConsultationResponse] = deriveEncoder[BusinessConsultationResponse]
   implicit val decoder: Decoder[BusinessConsultationResponse] = deriveDecoder[BusinessConsultationResponse]
 }
 
@@ -286,7 +296,7 @@ final case class FeaturedConsultationResponse(questionId: Option[QuestionId],
                                               slot: Int)
 
 object FeaturedConsultationResponse {
-  implicit val encoder: ObjectEncoder[FeaturedConsultationResponse] = deriveEncoder[FeaturedConsultationResponse]
+  implicit val encoder: Encoder[FeaturedConsultationResponse] = deriveEncoder[FeaturedConsultationResponse]
   implicit val decoder: Decoder[FeaturedConsultationResponse] = deriveDecoder[FeaturedConsultationResponse]
 
   def apply(featured: FeaturedOperation, slug: Option[String]): FeaturedConsultationResponse =
@@ -314,13 +324,19 @@ final case class CurrentConsultationResponse(questionId: Option[QuestionId],
                                              linkLabel: String,
                                              internalLink: Option[String],
                                              externalLink: Option[String],
-                                             proposalsNumber: Long)
+                                             proposalsNumber: Long,
+                                             startDate: Option[ZonedDateTime],
+                                             endDate: Option[ZonedDateTime])
 
-object CurrentConsultationResponse {
-  implicit val encoder: ObjectEncoder[CurrentConsultationResponse] = deriveEncoder[CurrentConsultationResponse]
+object CurrentConsultationResponse extends CirceFormatters {
+  implicit val encoder: Encoder[CurrentConsultationResponse] = deriveEncoder[CurrentConsultationResponse]
   implicit val decoder: Decoder[CurrentConsultationResponse] = deriveDecoder[CurrentConsultationResponse]
 
-  def apply(current: CurrentOperation, slug: Option[String], proposalsNumber: Long): CurrentConsultationResponse =
+  def apply(current: CurrentOperation,
+            slug: Option[String],
+            startDate: Option[ZonedDateTime],
+            endDate: Option[ZonedDateTime],
+            proposalsNumber: Long): CurrentConsultationResponse =
     CurrentConsultationResponse(
       questionId = Some(current.questionId),
       questionSlug = slug,
@@ -331,5 +347,7 @@ object CurrentConsultationResponse {
       internalLink = current.internalLink,
       externalLink = current.externalLink,
       proposalsNumber = proposalsNumber,
+      startDate = startDate,
+      endDate = endDate,
     )
 }
