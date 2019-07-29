@@ -660,9 +660,7 @@ class UserServiceTest
 
         Mockito
           .verify(eventBusService, Mockito.times(1))
-          .publish(ArgumentMatchers.argThat[UserUpdatedOptInNewsletterEvent] { event =>
-            event.optInNewsletter == true
-          })
+          .publish(ArgumentMatchers.argThat[UserUpdatedOptInNewsletterEvent](_.optInNewsletter))
       }
     }
   }

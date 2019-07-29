@@ -39,9 +39,17 @@ sealed trait FileType {
 }
 
 object FileType {
+
+  // Use this file type for logos and avatars
   case object Avatar extends FileType {
-    override def name: String = "Avatars"
-    override def path: String = "avatar"
+    override def name: String = "Avatar"
+    override def path: String = "avatars"
+  }
+
+  // Use this file type for the images related to operations, on home page or operation page
+  case object Operation extends FileType {
+    override def name: String = "Operation"
+    override def path: String = "operations"
   }
 }
 

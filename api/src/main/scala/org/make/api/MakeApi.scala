@@ -82,9 +82,11 @@ import org.make.api.technical.healthcheck._
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage.{
+  DefaultStorageApiComponent,
   DefaultStorageConfigurationComponent,
   DefaultStorageServiceComponent,
-  DefaultSwiftClientComponent
+  DefaultSwiftClientComponent,
+  StorageApi
 }
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
@@ -202,6 +204,7 @@ trait MakeApi
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultSocialServiceComponent
     with DefaultStorageConfigurationComponent
+    with DefaultStorageApiComponent
     with DefaultStorageServiceComponent
     with DefaultSwiftClientComponent
     with DefaultTagApiComponent
@@ -312,6 +315,7 @@ trait MakeApi
       classOf[ModerationQuestionApi],
       classOf[OrganisationApi],
       classOf[QuestionApi],
+      classOf[StorageApi],
       classOf[WidgetApi],
       classOf[AdminUserApi],
       classOf[AdminIdeaMappingApi],
@@ -373,6 +377,7 @@ trait MakeApi
       questionApi.routes ~
       securityApi.routes ~
       sequenceApi.routes ~
+      storageApi.routes ~
       tagApi.routes ~
       trackingApi.routes ~
       userApi.routes ~
