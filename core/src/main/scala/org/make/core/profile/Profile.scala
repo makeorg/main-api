@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.Validation.validateUserInput
+import org.make.core.Validation.{validatePostalCode, validateUserInput}
 import org.make.core.question.QuestionId
 import org.make.core.{CirceFormatters, MakeSerializable, Validation}
 
@@ -183,7 +183,7 @@ object Profile extends CirceFormatters {
       profile.googleId.map(value    => validateUserInput("googleId", value, None)),
       profile.locale.map(value      => validateUserInput("locale", value, None)),
       profile.phoneNumber.map(value => validateUserInput("phoneNumber", value, None)),
-      profile.postalCode.map(value  => validateUserInput("postalCode", value, None)),
+      profile.postalCode.map(value  => validatePostalCode("postalCode", value, None)),
       profile.profession.map(value  => validateUserInput("profession", value, None)),
       profile.twitterId.map(value   => validateUserInput("twitterId", value, None))
     )

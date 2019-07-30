@@ -43,6 +43,8 @@ object Validation extends StrictLogging {
 
   val colorRegex: Regex = "^#[0-9a-fA-F]{6}$".r
 
+  val postalCodeRegex: Regex = "^\\d{5}$".r
+
   def validateOptional(maybeRequire: Option[Requirement]*): Unit = validate(maybeRequire.flatten: _*)
 
   def validate(require: Requirement*): Unit = {
@@ -225,6 +227,16 @@ object Validation extends StrictLogging {
       "invalid_color",
       condition,
       message.getOrElse("Invalid color. Must be formatted '#123456'")
+    )
+  }
+
+  def validatePostalCode(fieldName: String, userPostalCodeInput: => String, message: Option[String]): Requirement = {
+    val condition = postalCodeRegex.findFirstIn(userPostalCodeInput).isDefined
+    validateField(
+      fieldName,
+      "invalid_postal_code",
+      condition,
+      message.getOrElse("Invalid postal code. Must be formatted '01234'")
     )
   }
 

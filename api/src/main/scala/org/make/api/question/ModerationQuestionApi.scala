@@ -201,18 +201,13 @@ final case class AuthorRequest(@(ApiModelProperty @field)(dataType = "integer", 
                                profession: Option[String]) {
   validate(
     validateAge("age", age.map(DateHelper.computeBirthDate)),
-    validateField(
-      "postalCode",
-      "too_long",
-      postalCode.forall(_.length <= 10),
-      "postal code cannot be longer than 10 characters"
-    ),
     validateUserInput("firstName", firstName, None),
     validateField("firstName", "mandatory", firstName.nonEmpty, "firstName should not be empty"),
     validateOptionalUserInput("lastName", lastName, None),
     validateOptionalUserInput("postalCode", postalCode, None),
     validateOptionalUserInput("profession", profession, None)
   )
+  validateOptional(postalCode.map(value => validatePostalCode("postalCode", value, None)))
 }
 
 object AuthorRequest {
