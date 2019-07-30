@@ -365,7 +365,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for postal code too long") {
+    scenario("validation failed for postal code invalid") {
       val request =
         """
           |{
@@ -374,7 +374,7 @@ class UserApiTest
           | "lastName": "tom",
           | "password": "mypassss",
           | "dateOfBirth": "1997-12-02",
-          | "postalCode": "123456789azertyuiop",
+          | "postalCode": "A0123",
           | "country": "FR",
           | "language": "fr"
           |}
@@ -385,7 +385,9 @@ class UserApiTest
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "postalCode")
         emailError should be(
-          Some(ValidationError("postalCode", "too_long", Some("postal code cannot be longer than 10 characters")))
+          Some(
+            ValidationError("postalCode", "invalid_postal_code", Some("Invalid postal code. Must be formatted '01234'"))
+          )
         )
       }
     }

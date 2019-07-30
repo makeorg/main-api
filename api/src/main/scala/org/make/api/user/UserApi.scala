@@ -1100,17 +1100,12 @@ case class RegisterUserRequest(
     ),
     validateOptionalUserInput("lastName", lastName, None),
     validateOptionalUserInput("profession", profession, None),
-    validateField(
-      "postalCode",
-      "too_long",
-      postalCode.forall(_.length <= 10),
-      "postal code cannot be longer than 10 characters"
-    ),
     validateOptionalUserInput("postalCode", postalCode, None),
     mandatoryField("language", language),
     mandatoryField("country", country),
     validateAge("dateOfBirth", dateOfBirth)
   )
+  validateOptional(postalCode.map(value => validatePostalCode("postalCode", value, None)))
 }
 
 object RegisterUserRequest extends CirceFormatters {
@@ -1135,7 +1130,6 @@ case class UpdateUserRequest(
 ) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
-  private val maxPostalCodeLength = 10
   private val maxDescriptionLength = 450
 
   validateOptional(
@@ -1145,17 +1139,9 @@ case class UpdateUserRequest(
       value => requireNonEmpty("organisationName", value, Some("organisationName should not be an empty string"))
     ),
     Some(validateOptionalUserInput("organisationName", organisationName, None)),
-    postalCode.map(
-      value =>
-        maxLength(
-          "postalCode",
-          maxPostalCodeLength,
-          value,
-          Some(_ => "postal code cannot be longer than 10 characters")
-      )
-    ),
-    language.map(lang   => maxLength("language", maxLanguageLength, lang.value)),
-    country.map(country => maxLength("country", maxCountryLength, country.value)),
+    postalCode.map(value => validatePostalCode("postalCode", value, None)),
+    language.map(lang    => maxLength("language", maxLanguageLength, lang.value)),
+    country.map(country  => maxLength("country", maxCountryLength, country.value)),
     gender.map(
       value =>
         validateField(
