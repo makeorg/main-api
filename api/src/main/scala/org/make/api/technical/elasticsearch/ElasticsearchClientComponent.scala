@@ -55,7 +55,8 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
       Seq(
         elasticsearchConfiguration.ideaAliasName,
         elasticsearchConfiguration.proposalAliasName,
-        elasticsearchConfiguration.organisationAliasName
+        elasticsearchConfiguration.organisationAliasName,
+        elasticsearchConfiguration.operationOfQuestionAliasName
       )
 
     // create index
@@ -65,6 +66,8 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
       Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
     lazy val elasticsearchOrganisationMapping: String =
       Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
+    lazy val elasticsearchOperationOfQuestionMapping: String =
+      Source.fromResource("elasticsearch-mappings/operationOfQuestion.json")(Codec.UTF8).getLines().mkString("")
 
     override lazy val client: ElasticClient = ElasticClient(
       ElasticProperties(s"http://${elasticsearchConfiguration.connectionString}")
@@ -76,6 +79,8 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
       case alias if alias == elasticsearchConfiguration.ideaAliasName         => elasticsearchIdeaMapping
       case alias if alias == elasticsearchConfiguration.proposalAliasName     => elasticsearchProposalMapping
       case alias if alias == elasticsearchConfiguration.organisationAliasName => elasticsearchOrganisationMapping
+      case alias if alias == elasticsearchConfiguration.operationOfQuestionAliasName =>
+        elasticsearchOperationOfQuestionMapping
     }
 
     override def hashForAlias(aliasName: String): String = {

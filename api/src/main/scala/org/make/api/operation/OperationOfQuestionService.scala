@@ -24,6 +24,7 @@ import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestion
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation._
+import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
@@ -35,11 +36,12 @@ trait OperationOfQuestionService {
   def findByQuestionId(questionId: QuestionId): Future[Option[OperationOfQuestion]]
   def findByOperationId(operationId: OperationId): Future[Seq[OperationOfQuestion]]
   def findByQuestionSlug(slug: String): Future[Option[OperationOfQuestion]]
-  def search(start: Int = 0,
-             end: Option[Int] = None,
-             sort: Option[String] = None,
-             order: Option[String] = None,
-             request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()): Future[Seq[OperationOfQuestion]]
+  def find(start: Int = 0,
+           end: Option[Int] = None,
+           sort: Option[String] = None,
+           order: Option[String] = None,
+           request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()): Future[Seq[OperationOfQuestion]]
+  def search(searchQuery: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
   def update(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion]
   def count(request: SearchOperationsOfQuestions): Future[Int]
 
@@ -86,11 +88,12 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
   this: PersistentQuestionServiceComponent
     with PersistentSequenceConfigurationComponent
     with PersistentOperationOfQuestionServiceComponent
+    with OperationOfQuestionSearchEngineComponent
     with IdGeneratorComponent =>
 
   override lazy val operationOfQuestionService: OperationOfQuestionService = new OperationOfQuestionService {
 
-    override def search(
+    override def find(
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
@@ -123,6 +126,10 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
           findByQuestionId(question.questionId)
         }.getOrElse(Future.successful(None))
       }
+    }
+
+    override def search(searchQuery: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult] = {
+      elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(searchQuery)
     }
 
     override def update(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion] = {

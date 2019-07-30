@@ -1,0 +1,110 @@
+{
+  "settings": {
+    "number_of_shards": 5,
+    "analysis": {
+      "filter": {
+        "trigrams_filter": {
+          "type":     "ngram",
+          "min_gram": 3,
+          "max_gram": 3
+        }
+      },
+      "analyzer": {
+        "trigrams": {
+          "type":      "custom",
+          "tokenizer": "icu_tokenizer",
+          "filter":   [
+            "lowercase",
+            "trigrams_filter"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "operation-of-question": {
+      "dynamic": "strict",
+      "properties": {
+        "questionId": {
+          "type": "keyword",
+          "index": true
+        },
+        "question": {
+          "type": "text",
+          "index": true,
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            },
+            "general": {
+              "type": "text"
+            }
+          }
+        },
+        "startDate": {
+          "type": "date",
+          "format": "date_time",
+          "index": true
+        },
+        "endDate": {
+          "type": "date",
+          "format": "date_time",
+          "index": true
+        },
+        "theme": {
+          "type": "object",
+          "properties": {
+            "gradientStart": {
+              "type": "text",
+              "index": false
+            },
+            "gradientEnd": {
+              "type": "text",
+              "index": false
+            },
+            "color": {
+              "type": "text",
+              "index": false
+            },
+            "footerFontColor": {
+              "type": "text",
+              "index": false
+            }
+          }
+        },
+        "description": {
+          "type": "text",
+          "index": true
+        },
+        "imageUrl": {
+          "type": "text",
+          "index": false
+        },
+        "country": {
+          "type": "keyword",
+          "index": true
+        },
+        "language": {
+          "type": "keyword",
+          "index": true
+        },
+        "operationId": {
+          "type": "keyword",
+          "index": true
+        },
+        "operationTitle": {
+          "type": "text",
+          "index": true
+        },
+        "operationKind": {
+          "type": "keyword",
+          "index": true
+        },
+        "aboutUrl": {
+          "type": "text",
+          "index": false
+        }
+      }
+    }
+  }
+}

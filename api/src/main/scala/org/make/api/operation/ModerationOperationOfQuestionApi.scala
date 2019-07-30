@@ -268,7 +268,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                     }
                     provideAsync(
                       operationOfQuestionService
-                        .search(
+                        .find(
                           start.getOrElse(0),
                           end,
                           sort,

@@ -189,7 +189,7 @@ object ElasticSearchHealthCheckActorIT {
        |  idea-alias-name = "idea"
        |  organisation-alias-name = "organisation"
        |  proposal-alias-name = "proposal"
-       |  sequence-alias-name = "sequence"
+       |  operation-of-question-alias-name = "operation-of-question"
        |  buffer-size = 100
        |  bulk-size = 100
        |}
