@@ -300,7 +300,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   when(
     operationOfQuestionService
-      .search(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[SearchOperationsOfQuestions])
+      .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[SearchOperationsOfQuestions])
   ).thenReturn(
     Future.successful(
       Seq(

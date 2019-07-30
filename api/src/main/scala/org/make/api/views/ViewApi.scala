@@ -122,7 +122,7 @@ trait DefaultViewApiComponent
                               )
                             ) { questionsBusiness =>
                               provideAsync(
-                                operationOfQuestionService.search(
+                                operationOfQuestionService.find(
                                   request = SearchOperationsOfQuestions(
                                     operationIds = Option(publicOperations.map(_.operationId)).filter(_.nonEmpty),
                                     openAt = Some(ZonedDateTime.now())
@@ -165,7 +165,7 @@ trait DefaultViewApiComponent
                                   ) { controverseProposals =>
                                     provideAsync(
                                       operationOfQuestionService
-                                        .search(
+                                        .find(
                                           request = SearchOperationsOfQuestions(
                                             questionIds = Some(questionsBusiness.map(_.questionId))
                                           )

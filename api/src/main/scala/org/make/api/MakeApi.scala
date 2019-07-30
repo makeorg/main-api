@@ -159,6 +159,7 @@ trait MakeApi
     with DefaultMonitoringService
     with DefaultOauthTokenGeneratorComponent
     with DefaultOperationApiComponent
+    with DefaultOperationOfQuestionSearchEngineComponent
     with DefaultOperationOfQuestionServiceComponent
     with DefaultOperationServiceComponent
     with DefaultOrganisationApiComponent
