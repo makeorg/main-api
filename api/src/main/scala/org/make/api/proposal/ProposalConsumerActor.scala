@@ -23,7 +23,12 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
+import org.make.api.operation.{
+  OperationOfQuestionService,
+  OperationOfQuestionServiceComponent,
+  OperationService,
+  OperationServiceComponent
+}
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
@@ -43,6 +48,7 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
                             override val userService: UserService,
                             override val organisationService: OrganisationService,
                             override val operationOfQuestionService: OperationOfQuestionService,
+                            override val operationService: OperationService,
                             override val questionService: QuestionService,
                             override val tagService: TagService,
                             override val semanticService: SemanticService,
@@ -103,6 +109,7 @@ object ProposalConsumerActor {
       with ProposalIndexerServiceComponent
       with SequenceConfigurationComponent
       with OperationOfQuestionServiceComponent
+      with OperationServiceComponent
       with QuestionServiceComponent
 
   def props(proposalCoordinatorService: ProposalCoordinatorService,
@@ -114,6 +121,7 @@ object ProposalConsumerActor {
         dependencies.userService,
         dependencies.organisationService,
         dependencies.operationOfQuestionService,
+        dependencies.operationService,
         dependencies.questionService,
         dependencies.tagService,
         dependencies.semanticService,

@@ -131,7 +131,8 @@ class ElasticSearchHealthCheckActorIT
       question = None,
       sequencePool = SequencePool.Tested,
       initialProposal = false,
-      refusalReason = None
+      refusalReason = None,
+      operationKind = None
     )
 
   private def initializeElasticsearch(): Unit = {

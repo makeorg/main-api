@@ -30,7 +30,7 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.operation.OperationOfQuestionServiceComponent
+import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
@@ -44,7 +44,7 @@ import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationCompon
 import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.SlugHelper
-import org.make.core.operation.OperationOfQuestion
+import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
@@ -71,6 +71,7 @@ trait ProposalIndexationStream
     with UserServiceComponent
     with OrganisationServiceComponent
     with OperationOfQuestionServiceComponent
+    with OperationServiceComponent
     with QuestionServiceComponent
     with TagServiceComponent
     with ProposalSearchEngineComponent
@@ -165,6 +166,12 @@ trait ProposalIndexationStream
       case None => Future.successful[Option[OperationOfQuestion]](None)
     }
 
+    def getOperation: Option[OperationId] => Future[Option[Operation]] = {
+      case Some(operationId) =>
+        operationService.findOne(operationId)
+      case None => Future.successful[Option[Operation]](None)
+    }
+
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
@@ -179,6 +186,7 @@ trait ProposalIndexationStream
       question              <- OptionT(getQuestion(proposal.questionId))
       operationOfQuestion   <- OptionT(getOperationOfQuestion(proposal.questionId))
       sequenceConfiguration <- OptionT(getSequenceConfiguration(proposal.questionId))
+      operation             <- OptionT(getOperation(question.operationId))
     } yield {
       val isBeforeContextSourceFeature: Boolean =
         proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
@@ -264,7 +272,8 @@ trait ProposalIndexationStream
         ),
         sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status),
         initialProposal = proposal.initialProposal,
-        refusalReason = proposal.refusalReason
+        refusalReason = proposal.refusalReason,
+        operationKind = Option(operation.operationKind)
       )
     }
 

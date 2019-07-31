@@ -225,7 +225,8 @@ class ProposalServiceTest
       question = None,
       sequencePool = SequencePool.New,
       initialProposal = false,
-      refusalReason = None
+      refusalReason = None,
+      operationKind = None
     )
   }
 
