@@ -25,8 +25,8 @@ import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
-import org.make.core.operation.{OperationId, QuestionTheme}
-import org.make.core.question.QuestionId
+import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, SimpleOperation}
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
 import scala.annotation.meta.field
@@ -68,6 +68,26 @@ case class IndexedOperationOfQuestion(@(ApiModelProperty @field)(
 object IndexedOperationOfQuestion extends CirceFormatters {
   implicit val encoder: Encoder[IndexedOperationOfQuestion] = deriveEncoder[IndexedOperationOfQuestion]
   implicit val decoder: Decoder[IndexedOperationOfQuestion] = deriveDecoder[IndexedOperationOfQuestion]
+
+  def createFromOperationOfQuestion(operationOfQuestion: OperationOfQuestion,
+                                    operation: SimpleOperation,
+                                    question: Question): IndexedOperationOfQuestion = {
+    IndexedOperationOfQuestion(
+      questionId = operationOfQuestion.questionId,
+      question = question.question,
+      startDate = operationOfQuestion.startDate,
+      endDate = operationOfQuestion.endDate,
+      theme = operationOfQuestion.theme,
+      description = operationOfQuestion.description,
+      imageUrl = operationOfQuestion.imageUrl,
+      country = question.country,
+      language = question.language,
+      operationId = operationOfQuestion.operationId,
+      operationTitle = operationOfQuestion.operationTitle,
+      operationKind = operation.operationKind.shortName,
+      aboutUrl = operationOfQuestion.aboutUrl
+    )
+  }
 }
 
 final case class OperationOfQuestionSearchResult(total: Long, results: Seq[IndexedOperationOfQuestion])
