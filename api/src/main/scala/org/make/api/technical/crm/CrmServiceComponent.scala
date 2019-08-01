@@ -280,9 +280,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .runForeach {
           case (id, jobStatus) =>
             if (jobStatus.status == "Completed") {
-              logger.info(s"Job $id succeeded, with details $jobStatus")
+              logger.debug(s"Job $id succeeded, with details $jobStatus")
             } else {
-              logger.warn(s"Job $id had errors, details is $jobStatus")
+              logger.error(s"Job $id had errors, details is $jobStatus")
             }
         }
         .map(_ => ())
@@ -747,7 +747,7 @@ object ContactMail {
 sealed trait CrmList {
   def name: String
   def hardBounced: Boolean
-  def unsubscribed: Boolean
+  def unsubscribed: Option[Boolean]
 
   def actionOnHardBounce: ManageContactAction
   def actionOnOptIn: ManageContactAction
@@ -758,7 +758,7 @@ object CrmList {
   case object HardBounce extends CrmList {
     override val name: String = "hardBounce"
     override val hardBounced: Boolean = true
-    override val unsubscribed: Boolean = true
+    override val unsubscribed: Option[Boolean] = None
 
     override val actionOnHardBounce: ManageContactAction = AddNoForce
     override val actionOnOptIn: ManageContactAction = Remove
@@ -768,7 +768,7 @@ object CrmList {
   case object OptIn extends CrmList {
     override val name: String = "optIn"
     override val hardBounced: Boolean = false
-    override val unsubscribed: Boolean = false
+    override val unsubscribed: Option[Boolean] = Some(false)
 
     override val actionOnHardBounce: ManageContactAction = Remove
     override val actionOnOptIn: ManageContactAction = AddNoForce
@@ -778,7 +778,7 @@ object CrmList {
   case object OptOut extends CrmList {
     override val name: String = "optOut"
     override val hardBounced: Boolean = false
-    override val unsubscribed: Boolean = true
+    override val unsubscribed: Option[Boolean] = Some(true)
 
     override val actionOnHardBounce: ManageContactAction = Remove
     override val actionOnOptIn: ManageContactAction = Remove
