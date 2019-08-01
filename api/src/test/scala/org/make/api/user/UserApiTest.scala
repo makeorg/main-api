@@ -1331,7 +1331,8 @@ class UserApiTest
           | "country": "IT",
           | "language": "it",
           | "gender": "F",
-          | "socioProfessionalCategory": "EMPL"
+          | "socioProfessionalCategory": "EMPL",
+          | "postalCode": ""
           |}
         """.stripMargin
 
