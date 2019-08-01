@@ -19,8 +19,6 @@
 
 package org.make.api.views
 
-import java.time.ZonedDateTime
-
 import akka.http.scaladsl.server.{Directives, Route}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
@@ -29,15 +27,14 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation._
 import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent}
-import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation.{OperationId, OperationKind, OperationOfQuestion}
+import org.make.core.operation.OperationKind
 import org.make.core.proposal.{SearchQuery, _}
-import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.OrganisationSearchResult
 import org.make.core.{HttpCodes, ParameterExtractors}
@@ -83,167 +80,43 @@ trait DefaultViewApiComponent
     with ProposalServiceComponent
     with OperationOfQuestionServiceComponent
     with OperationServiceComponent
-    with ProposalSearchEngineComponent =>
+    with ProposalSearchEngineComponent
+    with HomeViewServiceComponent =>
 
   override val viewApi: ViewApi = new DefaultViewApi
 
   class DefaultViewApi extends ViewApi {
+
+    private val defaultCountry = Country("FR")
+    private val defaultLanguage = Language("fr")
 
     override def homeView: Route = {
       get {
         path("views" / "home") {
           makeOperation("GetHomeView") { requestContext =>
             optionalMakeOAuth2 { auth: Option[AuthInfo[UserRights]] =>
-              provideAsync(
-                operationService
-                  .findSimple(operationKinds = Some(Seq(OperationKind.GreatCause, OperationKind.PublicConsultation)))
-              ) { publicOperations =>
-                provideAsync(featuredOperationService.getAll) { featured =>
-                  provideAsync(
-                    operationService.findSimple(operationKinds = Some(Seq(OperationKind.BusinessConsultation)))
-                  ) { business =>
-                    provideAsync(currentOperationService.getAll) { current =>
-                      provideAsync(elasticsearchProposalAPI.countProposalsByQuestion(Some(current.map(_.questionId)))) {
-                        proposalNumberByQuestion =>
-                          val maybeQuestionIds: Option[Seq[QuestionId]] =
-                            Option(featured.flatMap(_.questionId) ++ current.map(_.questionId)).filter(_.nonEmpty)
-                          val maybeOperationIds: Option[Seq[OperationId]] =
-                            Option(business.map(_.operationId)).filter(_.nonEmpty)
-                          provideAsync(
-                            questionService.searchQuestion(
-                              SearchQuestionRequest(
-                                language = requestContext.language,
-                                country = requestContext.country,
-                                maybeQuestionIds = maybeQuestionIds,
-                              )
-                            )
-                          ) { questions =>
-                            provideAsync(
-                              questionService.searchQuestion(
-                                SearchQuestionRequest(
-                                  language = requestContext.language,
-                                  country = requestContext.country,
-                                  maybeOperationIds = maybeOperationIds
-                                )
-                              )
-                            ) { questionsBusiness =>
-                              provideAsync(
-                                operationOfQuestionService.find(
-                                  request = SearchOperationsOfQuestions(
-                                    operationIds = Option(publicOperations.map(_.operationId)).filter(_.nonEmpty),
-                                    openAt = Some(ZonedDateTime.now())
-                                  )
-                                )
-                              ) { publicQuestions =>
-                                provideAsync(
-                                  proposalService.searchForUser(
-                                    userId = auth.map(_.user.userId),
-                                    query = SearchQuery(
-                                      limit = Some(2),
-                                      sortAlgorithm = Some(PopularAlgorithm),
-                                      filters = Some(
-                                        SearchFilters(
-                                          language = requestContext.language.map(LanguageSearchFilter.apply),
-                                          country = requestContext.country.map(CountrySearchFilter.apply),
-                                          question = Some(QuestionSearchFilter(publicQuestions.map(_.questionId)))
-                                        )
-                                      )
-                                    ),
-                                    requestContext = requestContext
-                                  )
-                                ) { popularProposals =>
-                                  provideAsync(
-                                    proposalService.searchForUser(
-                                      userId = auth.map(_.user.userId),
-                                      query = SearchQuery(
-                                        limit = Some(2),
-                                        sortAlgorithm = Some(ControversyAlgorithm),
-                                        filters = Some(
-                                          SearchFilters(
-                                            language = requestContext.language.map(LanguageSearchFilter.apply),
-                                            country = requestContext.country.map(CountrySearchFilter.apply),
-                                            question = Some(QuestionSearchFilter(publicQuestions.map(_.questionId)))
-                                          )
-                                        )
-                                      ),
-                                      requestContext = requestContext
-                                    )
-                                  ) { controverseProposals =>
-                                    provideAsync(
-                                      operationOfQuestionService
-                                        .find(
-                                          request = SearchOperationsOfQuestions(
-                                            questionIds = Some(questionsBusiness.map(_.questionId))
-                                          )
-                                        )
-                                    ) { businessDetails =>
-                                      val featuredConsultations = featured
-                                        .sortBy(_.slot)
-                                        .map(
-                                          feat =>
-                                            FeaturedConsultationResponse(
-                                              feat,
-                                              feat.questionId
-                                                .flatMap(qId => questions.find(_.questionId == qId).map(_.slug))
-                                          )
-                                        )
-                                      val businessConsultations = business.flatMap { bus =>
-                                        def question(details: OperationOfQuestion): Option[Question] =
-                                          questionsBusiness.find(_.questionId == details.questionId)
-                                        businessDetails
-                                          .filter(_.operationId == bus.operationId)
-                                          .map(
-                                            details =>
-                                              BusinessConsultationResponse(
-                                                theme = BusinessConsultationThemeResponse(
-                                                  details.theme.gradientStart,
-                                                  details.theme.gradientEnd
-                                                ),
-                                                startDate = details.startDate,
-                                                endDate = details.endDate,
-                                                slug = question(details).map(_.slug),
-                                                aboutUrl = details.aboutUrl,
-                                                question = question(details).map(_.question).getOrElse("")
-                                            )
-                                          )
-                                      }
-                                      val currentConsultations = current.map { cur =>
-                                        {
-                                          val maybeQuestion: Option[Question] =
-                                            questions.find(_.questionId == cur.questionId)
-                                          val maybeQuestionDetails: Option[OperationOfQuestion] =
-                                            maybeQuestion.flatMap { question =>
-                                              businessDetails.find(_.questionId == question.questionId)
-                                            }
+              val country: Country = requestContext.country match {
+                case Some(requestCountry) => requestCountry
+                case _ =>
+                  logger.warn("No country present in request context: render home view with default country")
+                  defaultCountry
+              }
+              val language: Language = requestContext.language match {
+                case Some(requestLanguage) => requestLanguage
+                case _ =>
+                  logger.warn("No language found in request context: render home view with default language")
+                  defaultLanguage
+              }
 
-                                          CurrentConsultationResponse(
-                                            current = cur,
-                                            slug = maybeQuestion.map(_.slug),
-                                            startDate = maybeQuestionDetails.flatMap(_.startDate),
-                                            endDate = maybeQuestionDetails.flatMap(_.endDate),
-                                            proposalsNumber = proposalNumberByQuestion.getOrElse(cur.questionId, 0)
-                                          )
-                                        }
-                                      }
-                                      complete(
-                                        HomeViewResponse(
-                                          popularProposals = popularProposals.results,
-                                          controverseProposals = controverseProposals.results,
-                                          businessConsultations = businessConsultations,
-                                          featuredConsultations = featuredConsultations,
-                                          currentConsultations = currentConsultations
-                                        )
-                                      )
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          }
-                      }
-                    }
-                  }
-                }
+              provideAsync(
+                homeViewService.getHomeViewResponse(
+                  language = language,
+                  country = country,
+                  userId = auth.map(_.user.userId),
+                  requestContext = requestContext
+                )
+              ) { homeResponse =>
+                complete(homeResponse)
               }
             }
           }
@@ -300,7 +173,6 @@ trait DefaultViewApiComponent
           }
         }
       }
-
     }
   }
 

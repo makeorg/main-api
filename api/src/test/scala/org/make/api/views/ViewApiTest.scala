@@ -67,8 +67,10 @@ class ViewApiTest
     with ProposalServiceComponent
     with OperationOfQuestionServiceComponent
     with OperationServiceComponent
-    with ProposalSearchEngineComponent {
+    with ProposalSearchEngineComponent
+    with HomeViewServiceComponent {
 
+  override val homeViewService: HomeViewService = mock[HomeViewService]
   override val proposalService: ProposalService = mock[ProposalService]
   override val questionService: QuestionService = mock[QuestionService]
   override val featuredOperationService: FeaturedOperationService = mock[FeaturedOperationService]
