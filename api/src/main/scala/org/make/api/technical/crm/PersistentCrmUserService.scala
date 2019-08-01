@@ -35,7 +35,10 @@ trait PersistentCrmUserServiceComponent {
 trait PersistentCrmUserService {
 
   def persist(users: Seq[PersistentCrmUser]): Future[Seq[PersistentCrmUser]]
-  def list(unsubscribed: Boolean, hardBounced: Boolean, page: Int, numberPerPage: Int): Future[Seq[PersistentCrmUser]]
+  def list(unsubscribed: Option[Boolean],
+           hardBounced: Boolean,
+           page: Int,
+           numberPerPage: Int): Future[Seq[PersistentCrmUser]]
   def truncateCrmUsers(): Future[Unit]
 
 }
@@ -89,7 +92,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
       }).map(_ => users)
     }
 
-    override def list(optIn: Boolean,
+    override def list(maybeUnsubscribed: Option[Boolean],
                       hardBounce: Boolean,
                       page: Int,
                       numberPerPage: Int): Future[Seq[PersistentCrmUser]] = {
@@ -101,7 +104,10 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
             .where(
               sqls
                 .eq(PersistentCrmUser.alias.emailHardbounceStatus, hardBounce)
-                .and(sqls.eq(PersistentCrmUser.alias.unsubscribeStatus, optIn))
+                .and(
+                  maybeUnsubscribed
+                    .map(unsubscribed => sqls.eq(PersistentCrmUser.alias.unsubscribeStatus, unsubscribed))
+                )
             )
             .orderBy(PersistentCrmUser.alias.accountCreationDate)
             .asc
