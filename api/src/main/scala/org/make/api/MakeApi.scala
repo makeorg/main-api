@@ -98,7 +98,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
-import org.make.api.views.{DefaultViewApiComponent, ViewApi}
+import org.make.api.views.{DefaultHomeViewServiceComponent, DefaultViewApiComponent, ViewApi}
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{ValidationError, ValidationFailedError}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
@@ -134,6 +134,7 @@ trait MakeApi
     with DefaultFacebookApiComponent
     with DefaultFeaturedOperationServiceComponent
     with DefaultGoogleApiComponent
+    with DefaultHomeViewServiceComponent
     with DefaultViewApiComponent
     with DefaultHealthCheckApiComponent
     with DefaultHealthCheckServiceComponent
