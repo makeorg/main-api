@@ -231,7 +231,7 @@ object Validation extends StrictLogging {
   }
 
   def validatePostalCode(fieldName: String, userPostalCodeInput: => String, message: Option[String]): Requirement = {
-    val condition = postalCodeRegex.findFirstIn(userPostalCodeInput).isDefined
+    val condition = userPostalCodeInput.isEmpty || postalCodeRegex.findFirstIn(userPostalCodeInput).isDefined
     validateField(
       fieldName,
       "invalid_postal_code",
