@@ -242,6 +242,7 @@ class QuestionApiTest
     val questionResult: IndexedOperationOfQuestion = IndexedOperationOfQuestion(
       questionId = QuestionId("question-id"),
       question = "Question ?",
+      slug = "question-slug",
       startDate = None,
       endDate = None,
       theme = QuestionTheme(

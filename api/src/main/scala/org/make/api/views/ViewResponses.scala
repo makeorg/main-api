@@ -24,8 +24,8 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.proposal.{ProposalResponse, ProposalsResultSeededResponse}
-import org.make.api.question.QuestionDetailsResponse
 import org.make.core.CirceFormatters
+import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.operation.{CurrentOperation, FeaturedOperation}
 import org.make.core.question.QuestionId
 import org.make.core.user.indexed.OrganisationSearchResult
@@ -136,7 +136,7 @@ object CurrentConsultationResponse extends CirceFormatters {
 }
 
 final case class SearchViewResponse(proposals: ProposalsResultSeededResponse,
-                                    questions: Seq[QuestionDetailsResponse],
+                                    questions: OperationOfQuestionSearchResult,
                                     organisations: OrganisationSearchResult)
 
 object SearchViewResponse {

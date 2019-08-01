@@ -33,11 +33,11 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation.OperationKind
-import org.make.core.proposal.{SearchQuery, _}
+import org.make.core.operation._
+import org.make.core.proposal.SearchQuery
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.{operation, proposal, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 @Api(value = "Home view")
@@ -52,6 +52,16 @@ trait ViewApi extends Directives {
   def homeView: Route
 
   @ApiOperation(value = "get-search-view", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "proposalLimit", paramType = "query", dataType = "int", example = "10"),
+      new ApiImplicitParam(name = "questionLimit", paramType = "query", dataType = "int", example = "10"),
+      new ApiImplicitParam(name = "organisationLimit", paramType = "query", dataType = "int", example = "10"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string", example = "FR"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string", example = "fr")
+    )
+  )
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SearchViewResponse]))
   )
@@ -107,7 +117,6 @@ trait DefaultViewApiComponent
                   logger.warn("No language found in request context: render home view with default language")
                   defaultLanguage
               }
-
               provideAsync(
                 homeViewService.getHomeViewResponse(
                   language = language,
@@ -138,13 +147,13 @@ trait DefaultViewApiComponent
                   'country.as[Country].?,
                   'language.as[Language].?
                 )
-              ) { (content, proposalLimit, _ /*questionLimit*/, _ /*organisationLimit*/, country, language) =>
-                val query = SearchQuery(
+              ) { (content, proposalLimit, questionLimit, _ /*organisationLimit*/, country, language) =>
+                val proposalQuery = SearchQuery(
                   filters = Some(
-                    SearchFilters(
-                      content = Some(ContentSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
+                    proposal.SearchFilters(
+                      content = Some(proposal.ContentSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
                       operationKinds = Some(
-                        OperationKindsSearchFilter(
+                        proposal.OperationKindsSearchFilter(
                           Seq(
                             OperationKind.GreatCause,
                             OperationKind.PublicConsultation,
@@ -158,12 +167,34 @@ trait DefaultViewApiComponent
                   ),
                   limit = proposalLimit
                 )
-                provideAsync(proposalService.searchForUser(auth.map(_.user.userId), query, requestContext)) {
-                  proposals =>
+                val questionQuery = OperationOfQuestionSearchQuery(
+                  filters = Some(
+                    OperationOfQuestionSearchFilters(
+                      question = Some(QuestionContentSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
+                      operationKinds = Some(
+                        operation.OperationKindsSearchFilter(
+                          Seq(
+                            OperationKind.GreatCause,
+                            OperationKind.PublicConsultation,
+                            OperationKind.BusinessConsultation
+                          )
+                        )
+                      ),
+                      country = country.map(operation.CountrySearchFilter.apply),
+                      language = language.map(operation.LanguageSearchFilter.apply)
+                    )
+                  ),
+                  limit = questionLimit
+                )
+                val proposals = proposalService
+                  .searchForUser(auth.map(_.user.userId), proposalQuery, requestContext)
+                val questions = operationOfQuestionService.search(questionQuery)
+                provideAsync(proposals.zip(questions)) {
+                  case (proposals, questions) =>
                     complete(
                       SearchViewResponse(
                         proposals = proposals,
-                        questions = Seq.empty,
+                        questions = questions,
                         organisations = OrganisationSearchResult.empty
                       )
                     )

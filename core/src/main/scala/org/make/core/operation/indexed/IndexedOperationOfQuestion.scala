@@ -49,6 +49,7 @@ case class IndexedOperationOfQuestion(@(ApiModelProperty @field)(
                                         example = "42ccc3ce-f5b9-e7c0-b927-01a9cb159e55"
                                       ) questionId: QuestionId,
                                       question: String,
+                                      slug: String,
                                       @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
                                       startDate: Option[ZonedDateTime],
                                       @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
@@ -75,6 +76,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
     IndexedOperationOfQuestion(
       questionId = operationOfQuestion.questionId,
       question = question.question,
+      slug = question.slug,
       startDate = operationOfQuestion.startDate,
       endDate = operationOfQuestion.endDate,
       theme = operationOfQuestion.theme,

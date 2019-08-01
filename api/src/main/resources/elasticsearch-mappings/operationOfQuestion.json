@@ -41,6 +41,10 @@
             }
           }
         },
+        "slug": {
+          "type": "text",
+          "index": true
+        },
         "startDate": {
           "type": "date",
           "format": "date_time",
