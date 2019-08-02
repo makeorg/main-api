@@ -28,8 +28,10 @@ import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 import org.make.api.idea._
+import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.core.idea.Idea
+import org.make.core.operation.OperationOfQuestion
 import org.make.core.proposal.ProposalId
 import org.make.core.user.User
 
@@ -46,12 +48,17 @@ sealed trait EntitiesToIndex
 case object IndexIdeas extends EntitiesToIndex
 case object IndexOrganisations extends EntitiesToIndex
 case object IndexProposals extends EntitiesToIndex
+case object IndexOperationOfQuestions extends EntitiesToIndex
 
 trait IndexationService {
-  def reindexData(forceIdeas: Boolean, forceOrganisations: Boolean, forceProposals: Boolean): Future[Done]
+  def reindexData(forceIdeas: Boolean,
+                  forceOrganisations: Boolean,
+                  forceProposals: Boolean,
+                  forceOperationOfQuestions: Boolean): Future[Done]
   def indicesToReindex(forceIdeas: Boolean,
                        forceOrganisations: Boolean,
-                       forceProposals: Boolean): Future[Set[EntitiesToIndex]]
+                       forceProposals: Boolean,
+                       forceOperationOfQuestions: Boolean): Future[Set[EntitiesToIndex]]
 }
 
 //TODO: test this component
@@ -59,13 +66,15 @@ trait DefaultIndexationComponent
     extends IndexationComponent
     with IdeaIndexationStream
     with OrganisationIndexationStream
-    with ProposalIndexationStream {
+    with ProposalIndexationStream
+    with OperationOfQuestionIndexationStream {
 
   this: ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
     with StrictLogging
     with ActorSystemComponent
-    with ReadJournalComponent =>
+    with ReadJournalComponent
+    with PersistentOperationOfQuestionServiceComponent =>
 
   private lazy val client = elasticsearchClient.client
 
@@ -117,20 +126,40 @@ trait DefaultIndexationComponent
       }
     }
 
+    private def reindexOperationOfQuestionsIfNeeded(needsReindex: Boolean): Future[Done] = {
+      if (needsReindex) {
+        logger.info("Reindexing operation of questions")
+        val operationOfQuestionIndexName =
+          elasticsearchClient.createIndexName(elasticsearchConfiguration.operationOfQuestionAliasName)
+        for {
+          _      <- executeCreateIndex(elasticsearchConfiguration.operationOfQuestionAliasName, operationOfQuestionIndexName)
+          result <- executeIndexOperationOfQuestions(operationOfQuestionIndexName)
+          _      <- executeSetAlias(elasticsearchConfiguration.operationOfQuestionAliasName, operationOfQuestionIndexName)
+        } yield result
+      } else {
+        Future.successful(Done)
+      }
+    }
+
     override def reindexData(forceIdeas: Boolean,
                              forceOrganisations: Boolean,
-                             forceProposals: Boolean): Future[Done] = {
+                             forceProposals: Boolean,
+                             forceOperationOfQuestions: Boolean): Future[Done] = {
       logger.info(s"Elasticsearch Reindexation")
-      indicesToReindex(forceIdeas, forceOrganisations, forceProposals).map { indicesNotUpToDate =>
-        val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
-        val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
+      indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceOperationOfQuestions).map {
+        indicesNotUpToDate =>
+          val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
+          val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
+          val futureOperationOfQuestionsIndexation =
+            reindexOperationOfQuestionsIfNeeded(indicesNotUpToDate.contains(IndexOperationOfQuestions))
 
-        for {
-          _ <- futureIdeasIndexation
-          _ <- futureProposalsIndexation
-          // !mandatory: run organisation indexation after proposals and not in parallel
-          _ <- reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
-        } yield Done
+          for {
+            _ <- futureIdeasIndexation
+            _ <- futureProposalsIndexation
+            _ <- futureOperationOfQuestionsIndexation
+            // !mandatory: run organisation indexation after proposals and not in parallel
+            _ <- reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
+          } yield Done
       }.flatMap { _ =>
         Future.successful(Done)
       }
@@ -138,11 +167,15 @@ trait DefaultIndexationComponent
 
     override def indicesToReindex(forceIdeas: Boolean,
                                   forceOrganisations: Boolean,
-                                  forceProposals: Boolean): Future[Set[EntitiesToIndex]] = {
+                                  forceProposals: Boolean,
+                                  forceOperationOfQuestions: Boolean): Future[Set[EntitiesToIndex]] = {
       val hashes: Map[EntitiesToIndex, String] = Map(
         IndexIdeas -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.ideaAliasName),
         IndexOrganisations -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.organisationAliasName),
-        IndexProposals -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.proposalAliasName)
+        IndexProposals -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.proposalAliasName),
+        IndexOperationOfQuestions -> elasticsearchClient.hashForAlias(
+          elasticsearchConfiguration.operationOfQuestionAliasName
+        )
       )
       elasticsearchClient.getCurrentIndicesName.map { currentIndices =>
         val currentHashes: Seq[String] = currentIndices.map(elasticsearchClient.getHashFromIndex)
@@ -155,6 +188,9 @@ trait DefaultIndexationComponent
         }
         if (forceProposals) {
           result += IndexProposals
+        }
+        if (forceOperationOfQuestions) {
+          result += IndexOperationOfQuestions
         }
         result ++= hashes.flatMap {
           case (entitiesToIndex, hash) if !currentHashes.contains(hash) => Some(entitiesToIndex)
@@ -254,6 +290,28 @@ trait DefaultIndexationComponent
         case Success(_) => logger.info("Organisation indexation success in {} ms", System.currentTimeMillis() - start)
         case Failure(e) =>
           logger.error(s"Organisation indexation failed in ${System.currentTimeMillis() - start} ms", e)
+      }
+
+      result
+    }
+
+    private def executeIndexOperationOfQuestions(indexName: String)(implicit mat: Materializer): Future[Done] = {
+      val start = System.currentTimeMillis()
+
+      val result = persistentOperationOfQuestionService
+        .find()
+        .flatMap { operationOfQuestions =>
+          logger.info(s"Operation of questions to index: ${operationOfQuestions.size}")
+          Source[OperationOfQuestion](immutable.Seq(operationOfQuestions: _*))
+            .via(OperationOfQuestionStream.flowIndexOrganisations(indexName))
+            .runWith(Sink.ignore)
+        }
+
+      result.onComplete {
+        case Success(_) =>
+          logger.info("Operation of questions indexation success in {} ms", System.currentTimeMillis() - start)
+        case Failure(e) =>
+          logger.error(s"Operation of questions indexation failed in ${System.currentTimeMillis() - start} ms", e)
       }
 
       result

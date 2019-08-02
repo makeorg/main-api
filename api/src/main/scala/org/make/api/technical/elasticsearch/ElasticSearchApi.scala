@@ -88,7 +88,8 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
                     indexationService.reindexData(
                       Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
                       Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
-                      Seq(request.forceAll, request.forceProposals).flatten.contains(true)
+                      Seq(request.forceAll, request.forceProposals).flatten.contains(true),
+                      Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
                     )
                   ) { _ =>
                     complete(StatusCodes.NoContent)
@@ -108,6 +109,7 @@ final case class ReindexRequest(
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceIdeas: Option[Boolean],
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceOrganisations: Option[Boolean],
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceProposals: Option[Boolean],
+  @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceOperationOfQuestions: Option[Boolean],
   @(ApiModelProperty @field)(example = "true", dataType = "boolean") forceAll: Option[Boolean]
 )
 
