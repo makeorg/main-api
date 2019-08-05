@@ -22,17 +22,21 @@ package org.make.api.technical.crm
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.Credentials.Provided
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.crm.CrmList.{HardBounce, OptIn, OptOut}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.{HttpCodes, Validation}
+import org.make.core.{DateHelper, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.util.{Failure, Success}
 
 @Api(value = "CRM")
 @Path(value = "/")
@@ -68,7 +72,48 @@ trait CrmApi extends Directives {
   @Path(value = "/technical/crm/synchronize")
   def syncCrmData: Route
 
-  def routes: Route = webHook ~ syncCrmData
+  @ApiOperation(
+    value = "anonymize-users",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Ok", response = classOf[String])))
+  @Path(value = "/technical/crm/anonymize")
+  def anonymizeUsers: Route
+
+  @ApiOperation(
+    value = "send-list",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Ok", response = classOf[String])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "list",
+        paramType = "path",
+        dataType = "string",
+        example = "optIn",
+        allowableValues = "optIn,optOut,hardBounce"
+      )
+    )
+  )
+  @Path(value = "/technical/crm/{list}/synchronize")
+  def sendListToCrm: Route
+
+  def routes: Route = webHook ~ syncCrmData ~ anonymizeUsers ~ sendListToCrm
 }
 
 trait CrmApiComponent {
@@ -171,5 +216,53 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
       }
     }
 
+    override def anonymizeUsers: Route = post {
+      path("technical" / "crm" / "anonymize") {
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireAdminRole(auth.user) {
+            makeOperation("AnonymizeUsers") { _ =>
+              val startTime = System.currentTimeMillis()
+              crmService.anonymize().onComplete {
+                case Success(_) =>
+                  logger
+                    .info(s"anonymizing contacts succeeded in ${System.currentTimeMillis() - startTime}ms")
+                case Failure(e) =>
+                  logger
+                    .error(s"anonymizing contacts failed in ${System.currentTimeMillis() - startTime}ms", e)
+              }
+              complete(StatusCodes.Accepted)
+            }
+          }
+        }
+      }
+    }
+
+    override def sendListToCrm: Route = post {
+      path("technical" / "crm" / crmList / "synchronize") { list =>
+        makeOAuth2 { auth: AuthInfo[UserRights] =>
+          requireAdminRole(auth.user) {
+            makeOperation("SynchronizeList") { _ =>
+              val startTime = System.currentTimeMillis()
+              crmService.synchronizeList(DateHelper.now().toString, list).onComplete {
+                case Success(_) =>
+                  logger
+                    .info(s"Synchronizing list ${list.name} succeeded in ${System.currentTimeMillis() - startTime}ms")
+                case Failure(e) =>
+                  logger
+                    .error(s"Synchronizing list ${list.name} failed in ${System.currentTimeMillis() - startTime}ms", e)
+              }
+              complete(StatusCodes.Accepted)
+            }
+          }
+        }
+      }
+    }
+
+    val crmList: PathMatcher1[CrmList] = Segment.flatMap {
+      case OptIn.name      => Some(OptIn)
+      case OptOut.name     => Some(OptOut)
+      case HardBounce.name => Some(HardBounce)
+      case _               => None
+    }
   }
 }

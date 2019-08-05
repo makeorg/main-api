@@ -65,7 +65,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
 
       whenReady(
         persistentCrmUserService
-          .list(maybeUnsubscribed = Some(false), hardBounce = false, page = 1, numberPerPage = 1000),
+          .list(maybeUnsubscribed = Some(false), hardBounce = false, offset = 0, numberPerPage = 1000),
         Timeout(5.seconds)
       ) { users =>
         val user = users.find(_.userId == defaultUser.userId)
@@ -84,7 +84,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
 
       whenReady(
         persistentCrmUserService
-          .list(maybeUnsubscribed = Some(false), hardBounce = false, page = 1, numberPerPage = 1000),
+          .list(maybeUnsubscribed = Some(false), hardBounce = false, offset = 0, numberPerPage = 1000),
         Timeout(5.seconds)
       ) { users =>
         val user = users.find(_.userId == "truncate table")
@@ -97,7 +97,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
 
       whenReady(
         persistentCrmUserService
-          .list(maybeUnsubscribed = Some(false), hardBounce = false, page = 1, numberPerPage = 1000),
+          .list(maybeUnsubscribed = Some(false), hardBounce = false, offset = 0, numberPerPage = 1000),
         Timeout(5.seconds)
       ) { users =>
         val user = users.find(_.userId == "truncate table")
@@ -151,7 +151,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
 
       whenReady(
         persistentCrmUserService
-          .list(maybeUnsubscribed = Some(true), hardBounce = true, page = 1, numberPerPage = 1000),
+          .list(maybeUnsubscribed = Some(true), hardBounce = true, offset = 0, numberPerPage = 1000),
         Timeout(5.seconds)
       ) { results =>
         results.map(_.userId) should be(Seq("inserted-1", "inserted-3", "inserted-2"))
@@ -159,7 +159,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
 
       whenReady(
         persistentCrmUserService
-          .list(maybeUnsubscribed = Some(false), hardBounce = true, page = 1, numberPerPage = 1000),
+          .list(maybeUnsubscribed = Some(false), hardBounce = true, offset = 0, numberPerPage = 1000),
         Timeout(5.seconds)
       ) { results =>
         results.map(_.userId) should be(Seq("inserted-4", "inserted-5"))

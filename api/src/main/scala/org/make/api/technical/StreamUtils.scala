@@ -28,13 +28,13 @@ object StreamUtils {
   def asyncPageToPageSource[T](
     pageFunc: Int => Future[Seq[T]]
   )(implicit executionContext: ExecutionContext): Source[Seq[T], NotUsed] = {
-    Source.unfoldAsync(1) { page =>
-      val futureResults: Future[Seq[T]] = pageFunc(page)
+    Source.unfoldAsync(0) { offset =>
+      val futureResults: Future[Seq[T]] = pageFunc(offset)
       futureResults.map { results =>
         if (results.isEmpty) {
           None
         } else {
-          Some((page + 1, results))
+          Some((offset + results.size, results))
         }
       }
 
