@@ -60,7 +60,7 @@ class HomeViewServiceComponentTest
   override val featuredOperationService: FeaturedOperationService = mock[FeaturedOperationService]
 
   val userId: UserId = UserId(UUID.randomUUID().toString)
-  val now: ZonedDateTime = ZonedDateTime.now()
+  val now: ZonedDateTime = DateHelper.now()
   val defaultOperation: SimpleOperation = SimpleOperation(
     operationId = OperationId("default"),
     status = OperationStatus.Active,
@@ -125,8 +125,14 @@ class HomeViewServiceComponentTest
         )
       val operation5: SimpleOperation =
         defaultOperation.copy(
-          operationId = OperationId("ope4"),
-          slug = "ope4",
+          operationId = OperationId("ope5"),
+          slug = "ope5",
+          operationKind = OperationKind.PublicConsultation
+        )
+      val operation6: SimpleOperation =
+        defaultOperation.copy(
+          operationId = OperationId("ope6"),
+          slug = "ope6",
           operationKind = OperationKind.PublicConsultation
         )
       val question1: Question = defaultQuestion.copy(
@@ -159,6 +165,12 @@ class HomeViewServiceComponentTest
         question = "question 5 ?",
         operationId = Some(operation5.operationId)
       )
+      val question6: Question = defaultQuestion.copy(
+        questionId = QuestionId("question6"),
+        slug = "question6",
+        question = "question 6 ?",
+        operationId = Some(operation6.operationId)
+      )
       val operationOfQuestion1: IndexedOperationOfQuestion =
         defaultOperationOfQuestion.copy(questionId = question1.questionId, operationId = operation1.operationId)
       val operationOfQuestion2: IndexedOperationOfQuestion =
@@ -173,17 +185,25 @@ class HomeViewServiceComponentTest
           operationId = operation5.operationId,
           startDate = Some(now.plusDays(5))
         )
+      val operationOfQuestion6: IndexedOperationOfQuestion =
+        defaultOperationOfQuestion.copy(
+          questionId = question6.questionId,
+          operationId = operation6.operationId,
+          startDate = Some(now.minusDays(8)),
+          endDate = Some(now.minusDays(1))
+        )
 
-      val operations: Seq[SimpleOperation] = Seq(operation1, operation2, operation3, operation4, operation5)
-      val questions: Seq[Question] = Seq(question1, question2, question3, question4, question5)
+      val operations: Seq[SimpleOperation] = Seq(operation1, operation2, operation3, operation4, operation5, operation6)
+      val questions: Seq[Question] = Seq(question1, question2, question3, question4, question5, question6)
       val operationOfQuestions = OperationOfQuestionSearchResult(
-        total = 5L,
+        total = 6L,
         results = Seq(
           operationOfQuestion1,
           operationOfQuestion2,
           operationOfQuestion3,
           operationOfQuestion4,
-          operationOfQuestion5
+          operationOfQuestion5,
+          operationOfQuestion6
         )
       )
 
@@ -239,7 +259,8 @@ class HomeViewServiceComponentTest
               SearchQuestionRequest(
                 language = Some(Language("fr")),
                 country = Some(Country("FR")),
-                maybeOperationIds = Some(operations.map(_.operationId))
+                maybeQuestionIds = Some(questions.map(_.questionId)),
+                limit = Some(questions.length)
               )
             )
           )
@@ -250,13 +271,8 @@ class HomeViewServiceComponentTest
         .when(
           operationOfQuestionService
             .search(
-              searchQuery = OperationOfQuestionSearchQuery(
-                filters = Some(
-                  OperationOfQuestionSearchFilters(
-                    questionIds = Some(QuestionIdsSearchFilter(questions.map(_.questionId)))
-                  )
-                )
-              )
+              searchQuery =
+                OperationOfQuestionSearchQuery(limit = Some(10000), sort = Some("startDate"), order = Some("desc"))
             )
         )
         .thenReturn(Future.successful(operationOfQuestions))
@@ -397,6 +413,7 @@ class HomeViewServiceComponentTest
         homeViewResponse.currentConsultations.head.description shouldBe "description current 1"
         homeViewResponse.currentConsultations.head.questionId.get shouldBe question5.questionId
         homeViewResponse.currentConsultations.head.startDate shouldBe Some(now.plusDays(5))
+        homeViewResponse.currentConsultations.head.questionSlug.get shouldBe "question5"
         homeViewResponse.featuredConsultations.length shouldBe 1
         homeViewResponse.featuredConsultations.head.label shouldBe "featured 1 label"
         homeViewResponse.featuredConsultations.head.questionSlug shouldBe Some("question4")
