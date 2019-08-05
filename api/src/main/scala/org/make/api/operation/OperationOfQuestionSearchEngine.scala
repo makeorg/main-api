@@ -22,13 +22,13 @@ package org.make.api.operation
 import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
+import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
-import org.make.core.operation.{OperationOfQuestionSearchFilters, OperationOfQuestionSearchQuery}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
+import org.make.core.operation.{OperationOfQuestionSearchFilters, OperationOfQuestionSearchQuery}
 import org.make.core.question.QuestionId
 
 import scala.concurrent.ExecutionContext.Implicits.global

@@ -19,19 +19,17 @@
 
 package org.make.api.views
 
-import java.time.ZonedDateTime
-
 import org.make.api.operation._
 import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
-import org.make.core.RequestContext
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.operation._
+import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.proposal._
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
+import org.make.core.{DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -39,7 +37,18 @@ import scala.concurrent.Future
 case class QuestionWithDetail(question: Question,
                               operationOfQuestion: IndexedOperationOfQuestion,
                               kind: OperationKind,
-                              proposalCount: Long)
+                              proposalCount: Long) {
+  def isOpenedConsultation: Boolean = {
+    val now = DateHelper.now()
+    (operationOfQuestion.startDate, operationOfQuestion.endDate) match {
+      case (None, None)                     => true
+      case (Some(startDate), None)          => startDate.isBefore(now)
+      case (None, Some(endDate))            => endDate.isAfter(now)
+      case (Some(startDate), Some(endDate)) => startDate.isBefore(now) && endDate.isAfter(now)
+    }
+  }
+}
+
 case class HomeViewData(popularProposals: Seq[Proposal],
                         controverseProposals: Seq[Proposal],
                         currentQuestions: Seq[QuestionWithDetail],
@@ -79,17 +88,16 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
                                      requestContext: RequestContext): Future[HomeViewResponse] = {
 
       val futureAllQuestionWithDetails: Future[Seq[QuestionWithDetail]] = getAllQuestionWithDetails(language, country)
-      val futurePublicStartedConsultations: Future[Seq[QuestionWithDetail]] = futureAllQuestionWithDetails
+      val futurePublicOpenedConsultations: Future[Seq[QuestionWithDetail]] = futureAllQuestionWithDetails
         .map(_.filter { questionWithDetail =>
-          publicKinds.contains(questionWithDetail.kind) && questionWithDetail.operationOfQuestion.startDate
-            .forall(_.isBefore(ZonedDateTime.now()))
+          publicKinds.contains(questionWithDetail.kind) && questionWithDetail.isOpenedConsultation
         })
 
       for {
         allQuestionsWithDetails <- futureAllQuestionWithDetails
-        publicStartedQuestions  <- futurePublicStartedConsultations
+        publicOpenedQuestions   <- futurePublicOpenedConsultations
         popularProposals <- getProposals(
-          questionDetails = publicStartedQuestions,
+          questionDetails = publicOpenedQuestions,
           userId = userId,
           language = language,
           country = country,
@@ -97,7 +105,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           requestContext = requestContext
         )
         controversialProposals <- getProposals(
-          questionDetails = publicStartedQuestions,
+          questionDetails = publicOpenedQuestions,
           userId = userId,
           language = language,
           country = country,
@@ -163,42 +171,43 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
         .map(
           feat =>
             FeaturedConsultationResponse(feat, feat.questionId.flatMap { questionId =>
-              allQuestionsAndDetails.find(_.operationOfQuestion.questionId == questionId).map(_.question.slug)
+              allQuestionsAndDetails.find(_.question.questionId == questionId).map(_.question.slug)
             })
         )
     }
 
     private def getAllQuestionWithDetails(language: Language, country: Country): Future[Seq[QuestionWithDetail]] = {
+
+      val maxLimit: Int = 10000
       for {
+        operationOfQuestions <- operationOfQuestionService.search(
+          searchQuery =
+            OperationOfQuestionSearchQuery(limit = Some(maxLimit), sort = Some("startDate"), order = Some("desc"))
+        )
         operations <- operationService.findSimple()
         questions <- questionService.searchQuestion(
           SearchQuestionRequest(
             language = Some(language),
             country = Some(country),
-            maybeOperationIds = Some(operations.map(_.operationId))
-          )
-        )
-        operationOfQuestions <- operationOfQuestionService.search(
-          searchQuery = OperationOfQuestionSearchQuery(
-            filters = Some(
-              OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(questions.map(_.questionId))))
-            )
+            maybeQuestionIds = Some(operationOfQuestions.results.map(_.questionId)),
+            limit = Some(operationOfQuestions.results.length)
           )
         )
         proposalsCount <- elasticsearchProposalAPI.countProposalsByQuestion(Option(questions.map(_.questionId)))
-      } yield
-        questions.flatMap { question =>
-          operationOfQuestions.results.find(_.questionId == question.questionId).flatMap { operationOfQuestion =>
-            operations.find(_.operationId == operationOfQuestion.operationId).map { ope =>
-              QuestionWithDetail(
-                question,
-                operationOfQuestion,
-                ope.operationKind,
-                proposalsCount.getOrElse(question.questionId, 0)
-              )
-            }
-          }
-        }
+      } yield {
+        for {
+          question            <- questions
+          operationOfQuestion <- operationOfQuestions.results.find(_.questionId == question.questionId)
+          ope                 <- operations.find(_.operationId == operationOfQuestion.operationId)
+        } yield
+          QuestionWithDetail(
+            question,
+            operationOfQuestion,
+            ope.operationKind,
+            proposalsCount.getOrElse(question.questionId, 0)
+          )
+
+      }
     }
 
     private def getProposals(questionDetails: Seq[QuestionWithDetail],
