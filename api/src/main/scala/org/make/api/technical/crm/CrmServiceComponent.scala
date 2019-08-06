@@ -296,11 +296,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     final def deleteAnonymizedContacts(emails: Seq[String]): Future[Seq[String]] = {
       Source
         .fromIterator(() => emails.toIterator)
-        .mapAsync(3) {
-          case email @ `emailRegex` =>
+        .mapAsync(3) { email =>
+          if (email.matches(emailRegex.regex)) {
             crmClient.deleteContactByEmail(email).map(res => email -> res).withoutFailure
-          case email =>
+          } else {
             Future.successful(Right(email -> true))
+          }
         }
         .collect { case Right((email, isAnon)) if isAnon => email }
         .runWith(Sink.seq)
