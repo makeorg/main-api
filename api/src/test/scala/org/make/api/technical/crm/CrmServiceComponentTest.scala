@@ -50,9 +50,9 @@ import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
-import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -100,6 +100,38 @@ class CrmServiceComponentTest
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
   val zonedDateTimeNow: ZonedDateTime = DateHelper.now()
+
+  def persistentCrmUser(id: String): PersistentCrmUser = {
+    PersistentCrmUser(
+      userId = id,
+      email = s"$id@make.org",
+      fullName = "Lapin",
+      firstname = "Roger",
+      zipcode = None,
+      dateOfBirth = None,
+      emailValidationStatus = true,
+      emailHardbounceStatus = false,
+      unsubscribeStatus = false,
+      accountCreationDate = None,
+      accountCreationSource = None,
+      accountCreationOrigin = None,
+      accountCreationOperation = None,
+      accountCreationCountry = None,
+      countriesActivity = None,
+      lastCountryActivity = None,
+      lastLanguageActivity = None,
+      totalNumberProposals = None,
+      totalNumberVotes = None,
+      firstContributionDate = None,
+      lastContributionDate = None,
+      operationActivity = None,
+      sourceActivity = None,
+      activeCore = None,
+      daysOfActivity = None,
+      daysOfActivity30d = None,
+      userType = None
+    )
+  }
 
   when(mailJetConfiguration.url).thenReturn("http://localhost:1234")
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
@@ -618,6 +650,86 @@ class CrmServiceComponentTest
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
         removedEmails.size shouldBe 0
+      }
+    }
+  }
+
+  feature("synchronizing list") {
+    scenario("no user to synchronize") {
+      when(persistentCrmUserService.list(Some(false), false, 0, 1000))
+        .thenReturn(Future.successful(Seq.empty))
+
+      whenReady(crmService.synchronizeList(DateHelper.now().toString, CrmList.OptIn), Timeout(2.seconds)) { _ =>
+        // Synchro should somewhat end
+      }
+    }
+
+    scenario("multiple users") {
+      when(persistentCrmUserService.list(matches(Some(true)), matches(false), any[Int], any[Int]))
+        .thenReturn(
+          Future.successful(Seq(persistentCrmUser("1"), persistentCrmUser("2"))),
+          Future.successful(Seq(persistentCrmUser("3"), persistentCrmUser("4"))),
+          Future.successful(Seq(persistentCrmUser("5"), persistentCrmUser("6"))),
+          Future.successful(Seq(persistentCrmUser("7"), persistentCrmUser("8"))),
+          Future.successful(Seq(persistentCrmUser("9"), persistentCrmUser("10"))),
+          Future.successful(Seq.empty)
+        )
+
+      when(crmClient.manageContactList(any[ManageManyContacts])(any[ExecutionContext])).thenReturn(
+        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(1L)))),
+        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(2L)))),
+        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(3L)))),
+        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(4L)))),
+        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(5L))))
+      )
+
+      when(crmClient.manageContactListJobDetails(matches("1"))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
+        )
+
+      when(crmClient.manageContactListJobDetails(matches("2"))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
+        )
+
+      when(crmClient.manageContactListJobDetails(matches("3"))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
+        )
+
+      when(crmClient.manageContactListJobDetails(matches("4"))(any[ExecutionContext]))
+        .thenReturn(
+          Future.failed(new IllegalStateException("something went wrong")),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
+        )
+
+      when(crmClient.manageContactListJobDetails(matches("5"))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
+          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Error"))))
+        )
+
+      whenReady(crmService.synchronizeList(DateHelper.now().toString, CrmList.OptOut), Timeout(60.seconds)) { _ =>
+        Mockito.verify(crmClient, Mockito.times(25)).manageContactListJobDetails(any[String])(any[ExecutionContext])
       }
     }
   }

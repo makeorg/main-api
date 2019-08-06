@@ -24,10 +24,10 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
 
+import akka.NotUsed
 import akka.persistence.query.EventEnvelope
 import akka.stream._
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Sink, Source}
-import akka.{Done, NotUsed}
+import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import org.make.api.ActorSystemComponent
@@ -51,11 +51,14 @@ import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 trait CrmService {
   def sendEmail(message: SendEmail): Future[Unit]
+  def synchronizeList(formattedDate: String, list: CrmList): Future[Unit]
+  def createCrmUsers(): Future[Unit]
+  def anonymize(): Future[Unit]
   def synchronizeContactsWithCrm(): Future[Unit]
   def getUsersMailFromList(listId: Option[String] = None,
                            sort: Option[String] = None,
@@ -178,7 +181,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         Try(ZonedDateTime.parse(updatedAt)).toOption.forall(_.isBefore(maxUpdatedAt))
 
       StreamUtils
-        .asyncPageToPageSource(page => crmClient.getContactsProperties(offset = page * 1000).map(_.data))
+        .asyncPageToPageSource(crmClient.getContactsProperties(_).map(_.data))
         .map(_.filter { contacts =>
           deleteEmptyProperties && contacts.properties.isEmpty ||
           contacts.properties.find(_.name == "updated_at").exists(updatedAt => isBefore(updatedAt.value))
@@ -203,19 +206,25 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         }
     }
 
+    override def createCrmUsers(): Future[Unit] = {
+      for {
+        _        <- persistentCrmUserService.truncateCrmUsers()
+        resolver <- createQuestionResolver
+        _        <- computeAndPersistCrmUsers(resolver)
+      } yield ()
+    }
+
     override def synchronizeContactsWithCrm(): Future[Unit] = {
       val startTime: Long = System.currentTimeMillis()
       val synchronizationTime = DateHelper.now().toString
 
       val crmSynchronization =
         for {
-          _        <- persistentCrmUserService.truncateCrmUsers()
-          resolver <- createQuestionResolver
-          _        <- computeAndPersistCrmUsers(resolver)
-          _        <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptIn)
-          _        <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptOut)
-          _        <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.HardBounce)
-          _        <- anonymize
+          _ <- createCrmUsers()
+          _ <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptIn)
+          _ <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptOut)
+          _ <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.HardBounce)
+          _ <- anonymize()
         } yield {}
 
       crmSynchronization.onComplete {
@@ -251,7 +260,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .map(_ => logger.info(s"Crm users creation completed in ${System.currentTimeMillis() - start} ms"))
     }
 
-    private def synchronizeList(formattedDate: String, list: CrmList): Future[Unit] = {
+    override def synchronizeList(formattedDate: String, list: CrmList): Future[Unit] = {
 
       val actions = Seq(
         ContactList(mailJetConfiguration.hardBounceListId, list.actionOnHardBounce),
@@ -272,53 +281,15 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           ManageManyContacts(contacts = contacts, contactList = actions)
         }
         .mapAsync(1)(crmClient.manageContactList(_).withoutFailure)
-        .wireTap(logMailjetResponse(_, s"Add to ${list.name} list"))
         .collect {
           case Right(BasicCrmResponse(_, _, Seq(JobId(jobId)))) => jobId.toString
         }
-        .via(createJobVerificationGraph)
-        .runForeach {
-          case (id, jobStatus) =>
-            if (jobStatus.status == "Completed") {
-              logger.debug(s"Job $id succeeded, with details $jobStatus")
-            } else {
-              logger.error(s"Job $id had errors, details is $jobStatus")
-            }
+        .runFold[List[String]](Nil) { case (accumulator, value) => value :: accumulator }
+        .flatMap { jobIds =>
+          val promise = Promise[Unit]()
+          actorSystem.actorOf(CrmJobChecker.props(crmClient, jobIds, promise))
+          promise.future
         }
-        .map(_ => ())
-    }
-
-    private def createJobVerificationGraph: Flow[String, (String, JobDetailsResponse), NotUsed] = {
-      Flow.fromGraph(GraphDSL.create() { implicit builder =>
-        import GraphDSL.Implicits._
-
-        val merger = builder.add(Merge[String](2))
-
-        val partitionFunction: PartialFunction[(String, JobDetailsResponse), Int] = {
-          case (_, details) if details.status == "Completed" => 0
-          case (_, details) if details.status == "Error"     => 0
-          case _                                             => 1
-        }
-
-        val partitionner = builder.add(Partition[(String, JobDetailsResponse)](2, partitionFunction))
-
-        val callMailJet =
-          Flow[String]
-            .buffer(250, OverflowStrategy.backpressure)
-            .throttle(1, 1.second)
-            .mapAsync(3) { jobId =>
-              crmClient.manageContactListJobDetails(jobId).map { responses =>
-                responses.data.map(response => (jobId, response))
-              }
-            }
-            .mapConcat(response => immutable.Seq(response: _*))
-
-        merger ~> callMailJet ~> partitionner.in
-
-        partitionner.out(1) ~> Flow[(String, JobDetailsResponse)].map { case (id, _) => id } ~> merger.in(1)
-
-        FlowShape(merger.in(0), partitionner.out(0))
-      })
     }
 
     final def deleteAnonymizedContacts(emails: Seq[String]): Future[Seq[String]] = {
@@ -329,14 +300,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .runWith(Sink.seq)
     }
 
-    private def anonymize: Future[Done] = {
+    override def anonymize(): Future[Unit] = {
       for {
         foundEmails <- persistentUserToAnonymizeService.findAll()
         _           <- hardRemoveEmailsFromAllLists(foundEmails)
         emails      <- deleteAnonymizedContacts(foundEmails)
         // Remove only the deleted mailjet contacts from user_to_anonymize table
         _ <- persistentUserToAnonymizeService.removeAllByEmails(emails)
-      } yield Done
+      } yield ()
     }
 
     private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {

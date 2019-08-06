@@ -94,7 +94,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
 
     override def list(maybeUnsubscribed: Option[Boolean],
                       hardBounce: Boolean,
-                      page: Int,
+                      offset: Int,
                       numberPerPage: Int): Future[Seq[PersistentCrmUser]] = {
       implicit val cxt: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
@@ -112,7 +112,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
             .orderBy(PersistentCrmUser.alias.accountCreationDate)
             .asc
             .limit(numberPerPage)
-            .offset(page * numberPerPage - numberPerPage)
+            .offset(offset)
         }.map(PersistentCrmUser.apply()).list.apply()
       })
     }

@@ -330,7 +330,7 @@ trait PersistentUserService {
   def updateSocialUser(user: User): Future[Boolean]
   def findUsersForCrmSynchro(optIn: Option[Boolean],
                              hardBounce: Option[Boolean],
-                             page: Int,
+                             offset: Int,
                              limit: Int): Future[Seq[User]]
   def findUsersWithoutRegisterQuestion: Future[Seq[User]]
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
@@ -571,7 +571,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findUsersForCrmSynchro(optIn: Option[Boolean],
                                         hardBounce: Option[Boolean],
-                                        page: Int,
+                                        offset: Int,
                                         limit: Int): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUsers = Future(NamedDB('READ).retryableTx { implicit session =>
@@ -588,7 +588,7 @@ trait DefaultPersistentUserServiceComponent
             .orderBy(userAlias.createdAt)
             .asc
             .limit(limit)
-            .offset(page * limit - limit)
+            .offset(offset)
 
         }.map(PersistentUser.apply()).list.apply
       })

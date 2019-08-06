@@ -472,9 +472,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def findUsersForCrmSynchro(optIn: Option[Boolean],
                                         hardBounce: Option[Boolean],
-                                        page: Int,
+                                        offset: Int,
                                         limit: Int): Future[Seq[User]] = {
-      persistentUserService.findUsersForCrmSynchro(optIn, hardBounce, page, limit)
+      persistentUserService.findUsersForCrmSynchro(optIn, hardBounce, offset, limit)
     }
 
     override def getUsersWithoutRegisterQuestion: Future[Seq[User]] = {
