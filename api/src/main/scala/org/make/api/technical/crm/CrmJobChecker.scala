@@ -74,6 +74,7 @@ class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Un
         queue.enqueue(jobId)
       }
     case CrmCallFailed(jobId, e) =>
+      pendingCalls -= jobId
       logger.error(s"Error when checking status for job $jobId", e)
       queue.enqueue(jobId)
     case _ =>

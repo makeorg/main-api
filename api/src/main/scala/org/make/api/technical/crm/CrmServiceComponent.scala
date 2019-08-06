@@ -42,6 +42,7 @@ import org.make.api.technical.{ReadJournalComponent, StreamUtils}
 import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
 import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
+import org.make.core.Validation.emailRegex
 import org.make.core.operation.OperationId
 import org.make.core.question.Question
 import org.make.core.reference.Country
@@ -295,8 +296,13 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     final def deleteAnonymizedContacts(emails: Seq[String]): Future[Seq[String]] = {
       Source
         .fromIterator(() => emails.toIterator)
-        .mapAsync(3)(email => crmClient.deleteContactByEmail(email).map(res => email -> res))
-        .collect { case (email, isAnon) if isAnon => email }
+        .mapAsync(3) {
+          case email @ `emailRegex` =>
+            crmClient.deleteContactByEmail(email).map(res => email -> res).withoutFailure
+          case email =>
+            Future.successful(Right(email -> true))
+        }
+        .collect { case Right((email, isAnon)) if isAnon => email }
         .runWith(Sink.seq)
     }
 
