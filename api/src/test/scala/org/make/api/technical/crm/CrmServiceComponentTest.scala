@@ -600,56 +600,65 @@ class CrmServiceComponentTest
   }
 
   feature("anonymize") {
-    val emails: Seq[String] = Seq("toto", "tata", "titi")
+    val emails: Seq[String] = Seq("toto@tata.com", "tata@tata.com", "titi@tata.com")
 
     scenario("all users anonymized") {
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(true))
 
       val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
         removedEmails.size shouldBe 3
-        removedEmails.contains("toto") shouldBe true
-        removedEmails.contains("tata") shouldBe true
-        removedEmails.contains("titi") shouldBe true
+        removedEmails.contains("toto@tata.com") shouldBe true
+        removedEmails.contains("tata@tata.com") shouldBe true
+        removedEmails.contains("titi@tata.com") shouldBe true
       }
     }
 
     scenario("one users not found in mailjet") {
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
       val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
         removedEmails.size shouldBe 2
-        removedEmails.contains("toto") shouldBe true
-        removedEmails.contains("tata") shouldBe true
-        removedEmails.contains("titi") shouldBe false
+        removedEmails.contains("toto@tata.com") shouldBe true
+        removedEmails.contains("tata@tata.com") shouldBe true
+        removedEmails.contains("titi@tata.com") shouldBe false
       }
     }
 
     scenario("zero users anonymized") {
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(false))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(false))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
       val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
         removedEmails.size shouldBe 0
+      }
+    }
+
+    scenario("invalid email") {
+
+      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(Seq("invalid"))
+
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
+        removedEmails.size shouldBe 1
       }
     }
   }
