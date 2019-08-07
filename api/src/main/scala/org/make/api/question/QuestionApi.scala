@@ -19,8 +19,11 @@
 
 package org.make.api.question
 
+import java.time.ZonedDateTime
+
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
+import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -38,10 +41,16 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.Order
+import org.make.core.operation._
+import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.reference.{Country, Language}
+import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
+
+import scala.collection.immutable
 
 trait QuestionApiComponent {
   def questionApi: QuestionApi
@@ -72,7 +81,31 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/start-sequence")
   def startSequenceByQuestionId: Route
 
-  def routes: Route = questionDetails ~ startSequenceByQuestionId
+  @ApiOperation(value = "get-search-question", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionContent", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "description", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "startDate", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "endDate", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OperationOfQuestionSearchResult]))
+  )
+  @Path(value = "/search")
+  def searchQuestions: Route
+
+  def routes: Route = questionDetails ~ startSequenceByQuestionId ~ searchQuestions
 }
 
 trait DefaultQuestionApiComponent
@@ -150,6 +183,97 @@ trait DefaultQuestionApiComponent
       }
     }
 
+    override def searchQuestions: Route = get {
+      path("questions" / "search") {
+        makeOperation("GetQuestionDetails") { _ =>
+          parameters(
+            (
+              'questionIds.as[immutable.Seq[QuestionId]].?,
+              'questionContent.?,
+              'description.?,
+              'startDate.as[ZonedDateTime].?,
+              'endDate.as[ZonedDateTime].?,
+              'operationKinds.as[immutable.Seq[OperationKind]].?,
+              'language.as[Language].?,
+              'country.as[Country].?,
+              'limit.as[Int].?,
+              'skip.as[Int].?,
+              'sort.?,
+              'order.?
+            )
+          ) {
+            (questionIds: Option[Seq[QuestionId]],
+             questionContent: Option[String],
+             description: Option[String],
+             startDate: Option[ZonedDateTime],
+             endDate: Option[ZonedDateTime],
+             operationKinds: Option[Seq[OperationKind]],
+             language: Option[Language],
+             country: Option[Country],
+             limit: Option[Int],
+             skip: Option[Int],
+             sort: Option[String],
+             order: Option[String]) =>
+              Validation.validate(
+                Seq(
+                  sort.map { sortValue =>
+                    val choices =
+                      Seq(
+                        OperationOfQuestionElasticsearchFieldNames.question,
+                        OperationOfQuestionElasticsearchFieldNames.startDate,
+                        OperationOfQuestionElasticsearchFieldNames.endDate,
+                        OperationOfQuestionElasticsearchFieldNames.description,
+                        OperationOfQuestionElasticsearchFieldNames.country,
+                        OperationOfQuestionElasticsearchFieldNames.language,
+                        OperationOfQuestionElasticsearchFieldNames.operationKind
+                      )
+                    Validation.validChoices(
+                      fieldName = "sort",
+                      message = Some(
+                        s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                      ),
+                      Seq(sortValue),
+                      choices
+                    )
+                  },
+                  order.map { orderValue =>
+                    Validation.validChoices(
+                      fieldName = "order",
+                      message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                      Seq(orderValue),
+                      Order.orders.keys.toSeq
+                    )
+                  }
+                ).flatten: _*
+              )
+              val filters: Option[OperationOfQuestionSearchFilters] = Some(
+                OperationOfQuestionSearchFilters(
+                  questionIds = questionIds.map(QuestionIdsSearchFilter.apply),
+                  question = questionContent.map(QuestionContentSearchFilter(_, Some(Fuzziness.Auto))),
+                  description = description.map(DescriptionSearchFilter.apply),
+                  country = country.map(CountrySearchFilter.apply),
+                  language = language.map(LanguageSearchFilter.apply),
+                  startDate = startDate.map(StartDateSearchFilter.apply),
+                  endDate = endDate.map(EndDateSearchFilter.apply),
+                  operationKinds = operationKinds.map(OperationKindsSearchFilter.apply)
+                )
+              )
+              val searchQuery: OperationOfQuestionSearchQuery =
+                OperationOfQuestionSearchQuery(
+                  filters = filters,
+                  limit = limit,
+                  skip = skip,
+                  sort = sort,
+                  order = order
+                )
+              provideAsync(operationOfQuestionService.search(searchQuery)) { searchResult =>
+                complete(searchResult)
+              }
+          }
+        }
+
+      }
+    }
   }
 }
 

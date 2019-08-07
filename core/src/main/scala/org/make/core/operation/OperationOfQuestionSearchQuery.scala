@@ -44,7 +44,7 @@ case class OperationOfQuestionSearchFilters(questionIds: Option[QuestionIdsSearc
                                             language: Option[LanguageSearchFilter] = None,
                                             startDate: Option[StartDateSearchFilter] = None,
                                             endDate: Option[EndDateSearchFilter] = None,
-                                            operationKind: Option[OperationKindsSearchFilter] = None)
+                                            operationKinds: Option[OperationKindsSearchFilter] = None)
 
 object OperationOfQuestionSearchFilters extends ElasticDsl {
 
@@ -207,7 +207,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
 
   def buildOperationKindSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
     operationOfQuestionSearchQuery.filters.flatMap {
-      _.operationKind match {
+      _.operationKinds match {
         case Some(OperationKindsSearchFilter(Seq(operationKind))) =>
           Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.operationKind, operationKind.shortName))
         case Some(OperationKindsSearchFilter(operationKinds)) =>

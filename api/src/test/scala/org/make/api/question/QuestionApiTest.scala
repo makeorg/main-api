@@ -30,6 +30,7 @@ import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.proposal.ProposalId
@@ -232,6 +233,65 @@ class QuestionApiTest
         status should be(StatusCodes.OK)
         val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
         questionDetailsResponse.questionId should be(baseQuestion.questionId)
+      }
+    }
+  }
+
+  feature("search question") {
+
+    val questionResult: IndexedOperationOfQuestion = IndexedOperationOfQuestion(
+      questionId = QuestionId("question-id"),
+      question = "Question ?",
+      startDate = None,
+      endDate = None,
+      theme = QuestionTheme(
+        gradientStart = "#000000",
+        gradientEnd = "#ffffff",
+        color = "#424242",
+        footerFontColor = "#242424"
+      ),
+      description = "awesome description",
+      imageUrl = None,
+      country = Country("FR"),
+      language = Language("fr"),
+      operationId = OperationId("operation-id"),
+      operationTitle = "title",
+      operationKind = OperationKind.BusinessConsultation.shortName,
+      aboutUrl = None
+    )
+
+    when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery]))
+      .thenReturn(Future.successful(OperationOfQuestionSearchResult(1, Seq(questionResult))))
+
+    scenario("search all") {
+      Get("/questions/search") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val res: OperationOfQuestionSearchResult = entityAs[OperationOfQuestionSearchResult]
+        res.total shouldBe 1
+        res.results.head.questionId shouldBe QuestionId("question-id")
+      }
+    }
+
+    scenario("search all full valid params") {
+      Get(
+        "/questions/search?questionIds=1234,5678&questionContent=content&description=desc&startDate=2042-04-02T00:00:00.000Z&endDate=2042-04-20T00:00:00.000Z&operationKinds=BUSINESS_CONSULTATION,GREAT_CAUSE&language=fr&country=FR&limit=42&skip=1&sort=question&order=ASC"
+      ) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val res: OperationOfQuestionSearchResult = entityAs[OperationOfQuestionSearchResult]
+        res.total shouldBe 1
+        res.results.head.questionId shouldBe QuestionId("question-id")
+      }
+    }
+
+    scenario("validation error on sort") {
+      Get("/questions/search?sort=invalid") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("validation error on order") {
+      Get("/questions/search?order=invalid") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
   }
