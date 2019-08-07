@@ -65,7 +65,7 @@ trait CrmService {
                            sort: Option[String] = None,
                            order: Option[String] = None,
                            countOnly: Option[Boolean] = None,
-                           limit: Int = 1000,
+                           limit: Int,
                            offset: Int = 0): Future[GetUsersMail]
   def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime, deleteEmptyProperties: Boolean): Future[Int]
 }
@@ -158,7 +158,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
                                       sort: Option[String] = None,
                                       order: Option[String] = None,
                                       countOnly: Option[Boolean] = None,
-                                      limit: Int = 1000,
+                                      limit: Int,
                                       offset: Int = 0): Future[GetUsersMail] = {
       crmClient
         .getUsersInformationMailFromList(listId, sort, order, countOnly, limit, offset)
@@ -182,7 +182,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         Try(ZonedDateTime.parse(updatedAt)).toOption.forall(_.isBefore(maxUpdatedAt))
 
       StreamUtils
-        .asyncPageToPageSource(crmClient.getContactsProperties(_).map(_.data))
+        .asyncPageToPageSource(crmClient.getContactsProperties(_, batchSize).map(_.data))
         .map(_.filter { contacts =>
           deleteEmptyProperties && contacts.properties.isEmpty ||
           contacts.properties.find(_.name == "updated_at").exists(updatedAt => isBefore(updatedAt.value))
@@ -293,47 +293,63 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         }
     }
 
-    final def deleteAnonymizedContacts(emails: Seq[String]): Future[Seq[String]] = {
+    final def deleteAnonymizedContacts(emails: Seq[String]): Future[Unit] = {
       Source
         .fromIterator(() => emails.toIterator)
         .mapAsync(3) { email =>
           if (email.matches(emailRegex.regex)) {
             crmClient.deleteContactByEmail(email).map(res => email -> res).withoutFailure
           } else {
+            // If email is invalid, delete it from user to anonymize
             Future.successful(Right(email -> true))
           }
         }
         .collect { case Right((email, isAnon)) if isAnon => email }
-        .runWith(Sink.seq)
+        // Delete from user to anonymize in the flow in case the table is full
+        .groupedWithin(100, 2.seconds)
+        .mapAsync(1) { emails =>
+          if (emails.nonEmpty) {
+            persistentUserToAnonymizeService.removeAllByEmails(emails)
+          } else {
+            Future.successful(0)
+          }
+        }
+        .runWith(Sink.ignore)
+        .map(_ => ())
     }
 
     override def anonymize(): Future[Unit] = {
       for {
         foundEmails <- persistentUserToAnonymizeService.findAll()
         _           <- hardRemoveEmailsFromAllLists(foundEmails)
-        emails      <- deleteAnonymizedContacts(foundEmails)
-        // Remove only the deleted mailjet contacts from user_to_anonymize table
-        _ <- persistentUserToAnonymizeService.removeAllByEmails(emails)
+        _           <- deleteAnonymizedContacts(foundEmails)
       } yield ()
     }
 
     private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
-      crmClient
-        .manageContactList(
-          manageContactList = ManageManyContacts(
-            contacts = emails.map(email => Contact(email = email)),
-            contactList = Seq(
-              ContactList(mailJetConfiguration.hardBounceListId, Remove),
-              ContactList(mailJetConfiguration.unsubscribeListId, Remove),
-              ContactList(mailJetConfiguration.optInListId, Remove)
+      Source(emails.toVector)
+        .map(email => Contact(email = email))
+        .groupedWithin(batchSize, 10.seconds)
+        .throttle(200, 1.hour)
+        .mapAsync(1) { grouppedEmails =>
+          crmClient
+            .manageContactList(
+              manageContactList = ManageManyContacts(
+                contacts = grouppedEmails,
+                contactList = Seq(
+                  ContactList(mailJetConfiguration.hardBounceListId, Remove),
+                  ContactList(mailJetConfiguration.unsubscribeListId, Remove),
+                  ContactList(mailJetConfiguration.optInListId, Remove)
+                )
+              )
             )
-          )
-        )
-        .map(Right(_))
-        .recoverWith { case e => Future.successful(Left(e)) }
-        .map { response =>
-          logMailjetResponse(response, "all lists")
+            .map(Right(_))
+            .recoverWith { case e => Future.successful(Left(e)) }
+            .map { response =>
+              logMailjetResponse(response, "all lists")
+            }
         }
+        .runWith(Sink.last)
     }
 
     private def createQuestionResolver: Future[QuestionResolver] = {

@@ -35,7 +35,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.crm.BasicCrmResponse._
 import org.mdedetrich.akka.http.support.CirceHttpSupport
-
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -53,13 +53,13 @@ trait CrmClient {
     sort: Option[String] = None,
     order: Option[String] = None,
     countOnly: Option[Boolean] = None,
-    limit: Int = 1000,
+    limit: Int,
     offset: Int = 0
   )(implicit executionContext: ExecutionContext): Future[ContactsResponse]
   def manageContactListJobDetails(jobId: String)(
     implicit executionContext: ExecutionContext
   ): Future[ManageManyContactsJobDetailsResponse]
-  def getContactsProperties(offset: Int, limit: Int = 1000)(
+  def getContactsProperties(offset: Int, limit: Int)(
     implicit executionContext: ExecutionContext
   ): Future[GetMailjetContactProperties]
   def deleteContactByEmail(email: String)(implicit executionContext: ExecutionContext): Future[Boolean]
@@ -114,9 +114,16 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
           entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContactList.asJson))
         )
       doHttpCall(request).flatMap {
-        case HttpResponse(StatusCodes.Created, _, responseEntity, _) =>
+        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
           Unmarshal(responseEntity).to[ManageManyContactsResponse]
-        case error => Future.failed(CrmClientException(s"Error when synchronizing contacts: $error"))
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("manageContactList", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"manageContactList failed with status $code: $response"))
+          }
       }
     }
 
@@ -131,9 +138,16 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
         entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(message.asJson))
       )
       doHttpCall(request).flatMap {
-        case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
           Unmarshal(responseEntity).to[SendEmailResponse]
-        case error => Future.failed(CrmClientException(s"Error when sending email: $error"))
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("sendEmail", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"send email failed with status $code: $response"))
+          }
       }
     }
 
@@ -142,7 +156,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
       sort: Option[String] = None,
       order: Option[String] = None,
       countOnly: Option[Boolean] = None,
-      limit: Int = 1000,
+      limit: Int,
       offset: Int = 0
     )(implicit executionContext: ExecutionContext): Future[ContactsResponse] = {
       val sortQuery: Option[String] = (sort, order) match {
@@ -164,13 +178,20 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
         headers = immutable.Seq(authorization)
       )
       doHttpCall(request).flatMap {
-        case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
           Unmarshal(responseEntity).to[ContactsResponse]
-        case error => Future.failed(CrmClientException(s"Error when retrieving contacts: $error"))
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("getUsersInformationMailFromList", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"getUsersInformationMailFromList failed with status $code: $response"))
+          }
       }
     }
 
-    override def getContactsProperties(offset: Int, limit: Int = 1000)(
+    override def getContactsProperties(offset: Int, limit: Int)(
       implicit executionContext: ExecutionContext
     ): Future[GetMailjetContactProperties] = {
       val paramsQuery = s"Limit=$limit&Offset=$offset"
@@ -182,8 +203,14 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
           Unmarshal(entity).to[GetMailjetContactProperties]
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("getContactsProperties", response))
+          }
         case HttpResponse(code, _, entity, _) =>
-          Future.failed(CrmClientException(s"getContactsProperties failed with status $code: $entity"))
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"getContactsProperties failed with status $code: $response"))
+          }
       }
     }
 
@@ -196,9 +223,16 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
         headers = immutable.Seq(authorization)
       )
       doHttpCall(request).flatMap {
-        case HttpResponse(StatusCodes.OK, _, responseEntity, _) =>
+        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
           Unmarshal(responseEntity).to[ManageManyContactsJobDetailsResponse]
-        case error => Future.failed(CrmClientException(s"Error when retrieving job details: $error"))
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("manageContactListJobDetails", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"manageContactListJobDetails failed with status $code: $response"))
+          }
       }
     }
 
@@ -213,8 +247,14 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
           Unmarshal(entity).to[ContactsResponse]
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("getContactByMailOrContactId", response))
+          }
         case HttpResponse(code, _, entity, _) =>
-          Future.failed(CrmClientException(s"getUsersMailFromList failed with status $code: $entity"))
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"getUsersMailFromList failed with status $code: $response"))
+          }
       }
     }
 
@@ -224,7 +264,19 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
         uri = Uri(s"${mailJetConfiguration.url}/v4/contacts/$contactId"),
         headers = immutable.Seq(authorization)
       )
-      doHttpCall(request).map(_ => {})
+      doHttpCall(request).flatMap {
+        case HttpResponse(code, _, entity, _) if code.isSuccess() =>
+          entity.discardBytes()
+          Future.successful {}
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("deleteContactById", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"delete user failed with status $code: $response"))
+          }
+      }
     }
 
     override def deleteContactByEmail(email: String)(implicit executionContext: ExecutionContext): Future[Boolean] = {
@@ -257,6 +309,8 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
     }
   }
 }
+
+case class QuotaExceeded(method: String, message: String) extends Exception(message)
 
 case class SendEmailResponse(messages: Seq[SentEmail])
 

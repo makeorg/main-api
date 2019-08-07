@@ -19,11 +19,11 @@
 
 package org.make.api.technical.crm
 
-import akka.actor.{Actor, PoisonPill, Props}
+import akka.actor.{Actor, Props}
 import akka.pattern.pipe
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsJobDetailsResponse
-import org.make.api.technical.crm.CrmJobChecker.{CrmCallFailed, CrmCallSucceeded, Tick}
+import org.make.api.technical.crm.CrmJobChecker.{CrmCallFailed, CrmCallSucceeded, QuotaAvailable, Tick}
 
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
@@ -43,43 +43,68 @@ class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Un
   }
 
   override def receive: Receive = {
-    case Tick =>
-      if (queue.isEmpty) {
-        if (pendingCalls.isEmpty) {
-          self ! PoisonPill
-          promise.success {}
-        }
-      } else {
-        val current = queue.dequeue()
-        pendingCalls += current
-
-        crmClient
-          .manageContactListJobDetails(current)
-          .map(CrmCallSucceeded(current, _))
-          .recoverWith {
-            case e => Future.successful(CrmCallFailed(current, e))
-          }
-          .pipeTo(self)
-      }
-    case CrmCallSucceeded(jobId, response) =>
-      pendingCalls -= jobId
-      if (response.data.forall(response => response.status == "Completed")) {
-        logger.debug(s"Job $jobId completed successfully: $response")
-      } else if (response.data.forall(response => response.status == "Error")) {
-        logger.error(
-          s"Job $jobId has errors: $response, " +
-            s"file should be at https://api.mailjet.com/v3/DATA/Batchjob/$jobId/JSONError/application:json/LAST"
-        )
-      } else {
-        queue.enqueue(jobId)
-      }
-    case CrmCallFailed(jobId, e) =>
-      pendingCalls -= jobId
-      logger.error(s"Error when checking status for job $jobId", e)
-      queue.enqueue(jobId)
-    case _ =>
+    case Tick                              => handleTick()
+    case CrmCallSucceeded(jobId, response) => handleSuccessfulResponse(jobId, response)
+    case CrmCallFailed(jobId, e)           => handleErrorResponse(jobId, e)
+    case _                                 =>
   }
 
+  def blocked: Receive = {
+    case Tick => // Do nothing
+    case QuotaAvailable =>
+      logger.info("Job checker becomes available again")
+      context.become(receive)
+    case CrmCallSucceeded(jobId, response) => handleSuccessfulResponse(jobId, response)
+    case CrmCallFailed(jobId, e)           => handleErrorResponse(jobId, e)
+    case _                                 =>
+  }
+
+  private def handleTick(): Unit = {
+    if (queue.isEmpty) {
+      if (pendingCalls.isEmpty) {
+        promise.success {}
+        context.stop(self)
+      }
+    } else {
+      val current = queue.dequeue()
+      pendingCalls += current
+
+      crmClient
+        .manageContactListJobDetails(current)
+        .map(CrmCallSucceeded(current, _))
+        .recoverWith {
+          case e => Future.successful(CrmCallFailed(current, e))
+        }
+        .pipeTo(self)
+    }
+  }
+
+  private def handleErrorResponse(jobId: String, e: Throwable): Unit = {
+    pendingCalls -= jobId
+    queue.enqueue(jobId)
+
+    e match {
+      case QuotaExceeded(_, message) =>
+        context.become(blocked)
+        context.system.scheduler.scheduleOnce(1.hour, self, QuotaAvailable)
+        logger.warn(s"Job checker is becoming blocked for an hour, received message is $message")
+      case other => logger.error(s"Error when checking status for job $jobId", other)
+    }
+  }
+
+  private def handleSuccessfulResponse(jobId: String, response: ManageManyContactsJobDetailsResponse): Unit = {
+    pendingCalls -= jobId
+    if (response.data.forall(response => response.status == "Completed")) {
+      logger.debug(s"Job $jobId completed successfully: $response")
+    } else if (response.data.forall(response => response.status == "Error")) {
+      logger.error(
+        s"Job $jobId has errors: $response, " +
+          s"file should be at https://api.mailjet.com/v3/DATA/Batchjob/$jobId/JSONError/application:json/LAST"
+      )
+    } else {
+      queue.enqueue(jobId)
+    }
+  }
 }
 
 object CrmJobChecker {
@@ -89,6 +114,7 @@ object CrmJobChecker {
     Props(new CrmJobChecker(crmClient, jobs, promise))
 
   case object Tick
+  case object QuotaAvailable
   case class CrmCallSucceeded(jobId: String, response: ManageManyContactsJobDetailsResponse)
   case class CrmCallFailed(jobId: String, error: Throwable)
 }
