@@ -51,7 +51,7 @@ import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{never, verify, when}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -138,6 +138,9 @@ class CrmServiceComponentTest
   when(mailJetConfiguration.httpBufferSize).thenReturn(200)
   when(mailJetConfiguration.campaignApiKey).thenReturn("api-key")
   when(mailJetConfiguration.campaignSecretKey).thenReturn("secret-key")
+
+  when(persistentUserToAnonymizeService.removeAllByEmails(any[Seq[String]]))
+    .thenAnswer(invocation => Future.successful(invocation.getArgument[Seq[String]](0).size))
 
   val questionFr = Question(
     questionId = QuestionId("question-fr"),
@@ -610,13 +613,11 @@ class CrmServiceComponentTest
       when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(true))
 
-      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
 
-      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
-        removedEmails.size shouldBe 3
-        removedEmails.contains("toto@tata.com") shouldBe true
-        removedEmails.contains("tata@tata.com") shouldBe true
-        removedEmails.contains("titi@tata.com") shouldBe true
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
+        verify(persistentUserToAnonymizeService)
+          .removeAllByEmails(Seq("toto@tata.com", "tata@tata.com", "titi@tata.com"))
       }
     }
 
@@ -628,13 +629,11 @@ class CrmServiceComponentTest
       when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
-      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
 
-      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
-        removedEmails.size shouldBe 2
-        removedEmails.contains("toto@tata.com") shouldBe true
-        removedEmails.contains("tata@tata.com") shouldBe true
-        removedEmails.contains("titi@tata.com") shouldBe false
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
+        verify(persistentUserToAnonymizeService)
+          .removeAllByEmails(Seq("toto@tata.com", "tata@tata.com"))
       }
     }
 
@@ -646,27 +645,31 @@ class CrmServiceComponentTest
       when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
-      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(emails)
+      Mockito.clearInvocations(persistentUserToAnonymizeService)
 
-      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
-        removedEmails.size shouldBe 0
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
+
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
+        verify(persistentUserToAnonymizeService, never()).removeAllByEmails(any[Seq[String]])
       }
     }
 
     scenario("invalid email") {
 
-      val futureRemovedEmails: Future[Seq[String]] = crmService.deleteAnonymizedContacts(Seq("invalid"))
+      val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(Seq("invalid"))
 
-      whenReady(futureRemovedEmails, Timeout(3.seconds)) { removedEmails: Seq[String] =>
-        removedEmails.size shouldBe 1
+      whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
+        verify(persistentUserToAnonymizeService)
+          .removeAllByEmails(Seq("invalid"))
       }
     }
   }
 
   feature("synchronizing list") {
     scenario("no user to synchronize") {
-      when(persistentCrmUserService.list(Some(false), false, 0, 1000))
-        .thenReturn(Future.successful(Seq.empty))
+      when(
+        persistentCrmUserService.list(unsubscribed = Some(false), hardBounced = false, page = 0, numberPerPage = 1000)
+      ).thenReturn(Future.successful(Seq.empty))
 
       whenReady(crmService.synchronizeList(DateHelper.now().toString, CrmList.OptIn), Timeout(2.seconds)) { _ =>
         // Synchro should somewhat end
@@ -738,7 +741,9 @@ class CrmServiceComponentTest
         )
 
       whenReady(crmService.synchronizeList(DateHelper.now().toString, CrmList.OptOut), Timeout(60.seconds)) { _ =>
-        Mockito.verify(crmClient, Mockito.times(25)).manageContactListJobDetails(any[String])(any[ExecutionContext])
+        Mockito
+          .verify(crmClient, Mockito.times(25))
+          .manageContactListJobDetails(any[String])(any[ExecutionContext])
       }
     }
   }
