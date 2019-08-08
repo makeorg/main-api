@@ -34,7 +34,7 @@ import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedScores, S
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{operation, DateHelper, RequestContext}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -257,8 +257,6 @@ class HomeViewServiceComponentTest
           questionService.searchQuestion(
             ArgumentMatchers.eq(
               SearchQuestionRequest(
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
                 maybeQuestionIds = Some(questions.map(_.questionId)),
                 limit = Some(questions.length)
               )
@@ -271,16 +269,23 @@ class HomeViewServiceComponentTest
         .when(
           operationOfQuestionService
             .search(
-              searchQuery =
-                OperationOfQuestionSearchQuery(limit = Some(10000), sort = Some("startDate"), order = Some("desc"))
+              searchQuery = OperationOfQuestionSearchQuery(
+                limit = Some(10000),
+                sort = Some("startDate"),
+                order = Some("desc"),
+                filters = Some(
+                  OperationOfQuestionSearchFilters(
+                    language = Option(operation.LanguageSearchFilter(Language("fr"))),
+                    country = Some(operation.CountrySearchFilter(Country("FR")))
+                  )
+                )
+              )
             )
         )
         .thenReturn(Future.successful(operationOfQuestions))
 
       Mockito
-        .when(
-          elasticsearchProposalAPI.countProposalsByQuestion(ArgumentMatchers.eq(Option(questions.map(_.questionId))))
-        )
+        .when(elasticsearchProposalAPI.countProposalsByQuestion(ArgumentMatchers.eq(questions.map(_.questionId))))
         .thenReturn(
           Future.successful(
             Map(
