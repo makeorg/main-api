@@ -22,7 +22,7 @@ package org.make.api.proposal
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
-import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery}
+import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery, Query}
 import com.sksamuel.elastic4s.searches.{SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
@@ -44,12 +44,10 @@ trait ProposalSearchEngineComponent {
 //TODO: add multi-country
 trait ProposalSearchEngine {
   def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]]
-  def findProposalsByIds(proposalIds: Seq[ProposalId],
-                         size: Option[Int] = None,
-                         random: Boolean = true): Future[Seq[IndexedProposal]]
+  def findProposalsByIds(proposalIds: Seq[ProposalId], size: Int, random: Boolean = true): Future[Seq[IndexedProposal]]
   def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
   def countProposals(searchQuery: SearchQuery): Future[Long]
-  def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]]): Future[Map[QuestionId, Long]]
+  def countProposalsByQuestion(maybeQuestionIds: Seq[QuestionId]): Future[Map[QuestionId, Long]]
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
   def indexProposals(records: Seq[IndexedProposal],
@@ -79,10 +77,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     }
 
     override def findProposalsByIds(proposalIds: Seq[ProposalId],
-                                    size: Option[Int] = None,
+                                    size: Int,
                                     random: Boolean = true): Future[Seq[IndexedProposal]] = {
 
-      val defaultMax: Int = 1000
       val seed: Int = DateHelper.now().toEpochSecond.toInt
 
       val query: IdQuery = idsQuery(ids = proposalIds.map(_.value)).types("proposal")
@@ -91,7 +88,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val request: ElasticSearchRequest = searchWithType(proposalAlias)
         .query(if (random) randomQuery else query)
-        .size(size.getOrElse(defaultMax))
+        .size(size)
 
       client.executeAsFuture(request).map {
         _.to[IndexedProposal]
@@ -132,23 +129,22 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]]): Future[Map[QuestionId, Long]] = {
+    override def countProposalsByQuestion(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Long]] = {
       // parse json string to build search query
-      val searchQuery = SearchQuery(
-        filters = maybeQuestionIds.map(qIds => SearchFilters(question = Some(QuestionSearchFilter(qIds))))
+      val searchQuery: SearchQuery = SearchQuery(
+        filters = Some(SearchFilters(question = Some(QuestionSearchFilter(questionIds))))
       )
-      val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+      val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
+      val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
+      val questionAggrSize: Int = questionIds.length
 
-      val request = searchWithType(proposalAlias)
-        .bool(BoolQuery(must = searchFilters))
-
-      val finalRequest = maybeQuestionIds match {
-        case Some(_) =>
-          request
-            .aggregations(termsAgg("questions", ProposalElasticsearchFieldNames.questionId))
-            .limit(0)
-        case None => request.limit(0)
-      }
+      val finalRequest: ElasticSearchRequest = request
+        .aggregations(
+          termsAgg(name = "questions", field = ProposalElasticsearchFieldNames.questionId)
+            .size(size = questionAggrSize)
+            .minDocCount(min = 1)
+        )
+        .limit(0)
 
       client.executeAsFuture(finalRequest).map { response =>
         response.aggregations

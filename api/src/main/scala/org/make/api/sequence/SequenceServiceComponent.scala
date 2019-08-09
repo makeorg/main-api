@@ -139,7 +139,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                               requestContext: RequestContext): Future[Option[SequenceResult]] = {
 
       val futureIncludedProposals: Future[Seq[IndexedProposal]] = if (includedProposalIds.nonEmpty) {
-        elasticsearchProposalAPI.findProposalsByIds(includedProposalIds, random = false)
+        elasticsearchProposalAPI.findProposalsByIds(includedProposalIds, size = 1000, random = false)
       } else {
         Future.successful(Seq.empty)
       }

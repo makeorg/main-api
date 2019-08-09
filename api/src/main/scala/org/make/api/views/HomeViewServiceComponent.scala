@@ -29,7 +29,7 @@ import org.make.core.proposal._
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{operation, DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -181,19 +181,26 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
       val maxLimit: Int = 10000
       for {
         operationOfQuestions <- operationOfQuestionService.search(
-          searchQuery =
-            OperationOfQuestionSearchQuery(limit = Some(maxLimit), sort = Some("startDate"), order = Some("desc"))
+          searchQuery = OperationOfQuestionSearchQuery(
+            limit = Some(maxLimit),
+            sort = Some("startDate"),
+            order = Some("desc"),
+            filters = Some(
+              OperationOfQuestionSearchFilters(
+                language = Option(operation.LanguageSearchFilter(language)),
+                country = Some(operation.CountrySearchFilter(country))
+              )
+            )
+          )
         )
         operations <- operationService.findSimple()
         questions <- questionService.searchQuestion(
           SearchQuestionRequest(
-            language = Some(language),
-            country = Some(country),
             maybeQuestionIds = Some(operationOfQuestions.results.map(_.questionId)),
             limit = Some(operationOfQuestions.results.length)
           )
         )
-        proposalsCount <- elasticsearchProposalAPI.countProposalsByQuestion(Option(questions.map(_.questionId)))
+        proposalsCount <- elasticsearchProposalAPI.countProposalsByQuestion(questions.map(_.questionId))
       } yield {
         for {
           question            <- questions
