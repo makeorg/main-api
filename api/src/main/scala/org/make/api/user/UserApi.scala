@@ -553,8 +553,8 @@ trait DefaultUserApiComponent
                           `Set-Cookie`(
                             HttpCookie(
                               name = makeSettings.SessionCookie.expirationName,
-                              value =
-                                ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+                              value = DateHelper
+                                .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
                               secure = makeSettings.SessionCookie.isSecure,
                               httpOnly = false,
                               maxAge = Some(365.days.toSeconds),

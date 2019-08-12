@@ -19,8 +19,6 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
-
 import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.api.technical.elasticsearch.{
@@ -29,6 +27,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
+import org.make.core.DateHelper
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
@@ -58,8 +57,8 @@ class ProposalSearchEngineTest
     userId = UserId("99999999-9999-9999-9999-999999999999"),
     content = "Il faut faire une proposition",
     slug = "il-faut-faire-une-proposition",
-    createdAt = ZonedDateTime.now,
-    updatedAt = Some(ZonedDateTime.now),
+    createdAt = DateHelper.now(),
+    updatedAt = Some(DateHelper.now()),
     votes = Seq(
       IndexedVote(
         key = VoteKey.Agree,

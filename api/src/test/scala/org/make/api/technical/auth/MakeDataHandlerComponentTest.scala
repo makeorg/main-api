@@ -28,6 +28,7 @@ import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
+import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.session.VisitorId
 import org.make.core.user.{CustomRole, Role, User, UserId}
@@ -496,7 +497,7 @@ class MakeDataHandlerComponentTest
 
       When("I call method findAuthInfoByRefreshToken")
       when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(refreshToken)))
-        .thenReturn(Future.successful(Some(exampleToken.copy(createdAt = Some(ZonedDateTime.now.minusDays(1))))))
+        .thenReturn(Future.successful(Some(exampleToken.copy(createdAt = Some(DateHelper.now().minusDays(1))))))
 
       Then("I get an empty result")
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByRefreshToken(refreshToken)

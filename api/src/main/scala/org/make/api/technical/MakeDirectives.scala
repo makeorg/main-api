@@ -33,7 +33,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.monitoring.MonitoringMessageHelper
-import org.make.core.{reference, ApplicationName, CirceFormatters, RequestContext, SlugHelper}
+import org.make.core.{reference, ApplicationName, CirceFormatters, DateHelper, RequestContext, SlugHelper}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -87,7 +87,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   def visitorCreatedAt: Directive1[ZonedDateTime] =
     optionalCookie(visitorCreatedAtKey)
-      .map(_.flatMap(cookie => Try(ZonedDateTime.parse(cookie.value)).toOption).getOrElse(ZonedDateTime.now))
+      .map(_.flatMap(cookie => Try(ZonedDateTime.parse(cookie.value)).toOption).getOrElse(DateHelper.now()))
 
   def addMakeHeaders(requestId: String,
                      routeName: String,
@@ -118,7 +118,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         `Set-Cookie`(
           HttpCookie(
             name = sessionIdExpirationKey,
-            value = ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+            value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
             secure = makeSettings.SessionCookie.isSecure,
             httpOnly = false,
             maxAge = None,
@@ -140,7 +140,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         `Set-Cookie`(
           HttpCookie(
             name = visitorCreatedAtKey,
-            value = visitorCreatedAt.toString,
+            value = DateHelper.format(visitorCreatedAt),
             secure = makeSettings.VisitorCookie.isSecure,
             httpOnly = true,
             maxAge = Some(365.days.toSeconds),

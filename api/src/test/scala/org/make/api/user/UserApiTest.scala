@@ -20,7 +20,7 @@
 package org.make.api.user
 
 import java.net.InetAddress
-import java.time.{Instant, LocalDate, ZonedDateTime}
+import java.time.{Instant, LocalDate}
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
@@ -964,8 +964,8 @@ class UserApiTest
       userId = paul.userId,
       content = "Il faut que ma proposition d'opération soit en CSV.",
       slug = "il-faut-que-ma-proposition-d-operation-soit-en-csv",
-      createdAt = ZonedDateTime.now,
-      updatedAt = Some(ZonedDateTime.now),
+      createdAt = DateHelper.now(),
+      updatedAt = Some(DateHelper.now()),
       votesCount = 0,
       votesVerifiedCount = 0,
       toEnrich = false,
@@ -1125,8 +1125,8 @@ class UserApiTest
       userId = sylvain.userId,
       content = "Il faut une proposition de Sylvain",
       slug = "il-faut-une-proposition-de-sylvain",
-      createdAt = ZonedDateTime.now,
-      updatedAt = Some(ZonedDateTime.now),
+      createdAt = DateHelper.now(),
+      updatedAt = Some(DateHelper.now()),
       votes = Seq.empty,
       votesCount = 0,
       votesVerifiedCount = 0,

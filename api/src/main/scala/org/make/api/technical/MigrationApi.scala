@@ -27,25 +27,25 @@ import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations.{Authorization, _}
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
+import org.make.api.operation.OperationOfQuestionServiceComponent
 import org.make.api.proposal.{ProposalCoordinatorServiceComponent, UpdateProposalVotesVerifiedCommand}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.crm.CrmServiceComponent
+import org.make.api.user.UserServiceComponent
+import org.make.core.operation.OperationOfQuestion
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.{ProposalId, Vote}
 import org.make.core.tag.{Tag => _}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Validation}
-import io.circe.generic.semiauto.deriveDecoder
-import org.make.api.operation.OperationOfQuestionServiceComponent
-import org.make.api.user.UserServiceComponent
-import org.make.core.operation.OperationOfQuestion
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.annotation.meta.field
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -334,7 +334,7 @@ final case class DeleteContactsRequest(@(ApiModelProperty @field)(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",
       "invalid_date",
-      maxUpdatedAtBeforeDelete.isBefore(ZonedDateTime.now.minusDays(1)),
+      maxUpdatedAtBeforeDelete.isBefore(DateHelper.now().minusDays(1)),
       "DeleteFor cannot be set to a date more recent than yesterday."
     )
   )

@@ -19,13 +19,9 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
-
-import scala.util.Random
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.sequence.SequenceConfiguration
-import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{Doable, Impossible, LikeIt, NoWay, PlatitudeAgree, PlatitudeDisagree}
@@ -36,8 +32,10 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.UserId
+import org.make.core.{DateHelper, RequestContext}
 
 import scala.collection.immutable.Seq
+import scala.util.Random
 
 class ProposalScorerHelperTest extends MakeUnitTest {
 
@@ -62,8 +60,8 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     labels = Seq.empty,
     theme = Some(ThemeId("foo-theme")),
     status = ProposalStatus.Accepted,
-    createdAt = Some(ZonedDateTime.now),
-    updatedAt = Some(ZonedDateTime.now),
+    createdAt = Some(DateHelper.now()),
+    updatedAt = Some(DateHelper.now()),
     votes = Seq(
       Vote(
         key = VoteKey.Agree,

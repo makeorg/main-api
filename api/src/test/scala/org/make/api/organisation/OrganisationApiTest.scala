@@ -125,8 +125,8 @@ class OrganisationApiTest
         userId = UserId("make-org"),
         content = "blabla",
         slug = "blabla",
-        createdAt = ZonedDateTime.now(),
-        updatedAt = Some(ZonedDateTime.now()),
+        createdAt = DateHelper.now(),
+        updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
         context =
           Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
@@ -157,8 +157,8 @@ class OrganisationApiTest
         userId = UserId("make-org"),
         content = "blablabla",
         slug = "blablabla",
-        createdAt = ZonedDateTime.now(),
-        updatedAt = Some(ZonedDateTime.now()),
+        createdAt = DateHelper.now(),
+        updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
         context =
           Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
@@ -189,8 +189,8 @@ class OrganisationApiTest
         userId = UserId("make-org"),
         content = "blablabla",
         slug = "blablabla",
-        createdAt = ZonedDateTime.now(),
-        updatedAt = Some(ZonedDateTime.now()),
+        createdAt = DateHelper.now(),
+        updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
         context =
           Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
@@ -221,8 +221,8 @@ class OrganisationApiTest
         userId = UserId("make-org"),
         content = "blablabla",
         slug = "blablabla",
-        createdAt = ZonedDateTime.now(),
-        updatedAt = Some(ZonedDateTime.now()),
+        createdAt = DateHelper.now(),
+        updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
         context =
           Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),

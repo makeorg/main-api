@@ -29,7 +29,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestBase
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth._
-import org.make.core.RequestContext
+import org.make.core.{DateHelper, RequestContext}
 import org.mockito.Mockito.when
 
 import scala.concurrent.Future
@@ -89,7 +89,7 @@ class MakeDirectivesTest
   feature("session id management") {
 
     scenario("new session id if no cookie is sent") {
-      var firstExpiration = ZonedDateTime.now
+      var firstExpiration = DateHelper.now()
 
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))

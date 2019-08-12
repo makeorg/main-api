@@ -19,6 +19,8 @@
 
 package org.make.core
 
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
+import java.time.temporal.ChronoField.{HOUR_OF_DAY, MINUTE_OF_HOUR, NANO_OF_SECOND, SECOND_OF_MINUTE}
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 trait DateHelper {
@@ -32,6 +34,24 @@ object DateHelper extends DateHelper {
 
   def now(): ZonedDateTime = {
     ZonedDateTime.now(utc)
+  }
+
+  val dateFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
+    .append(DateTimeFormatter.ISO_LOCAL_DATE)
+    .appendLiteral("T")
+    .appendValue(HOUR_OF_DAY, 2)
+    .appendLiteral(':')
+    .appendValue(MINUTE_OF_HOUR, 2)
+    .optionalStart
+    .appendLiteral(':')
+    .appendValue(SECOND_OF_MINUTE, 2)
+    .optionalStart
+    .appendFraction(NANO_OF_SECOND, 3, 3, true)
+    .appendOffsetId()
+    .toFormatter()
+
+  def format(date: ZonedDateTime): String = {
+    dateFormatter.format(date)
   }
 
   def isLast30daysDate(date: ZonedDateTime): Boolean = {
