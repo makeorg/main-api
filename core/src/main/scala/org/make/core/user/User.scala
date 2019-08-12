@@ -26,7 +26,7 @@ import io.circe._
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.{MakeSerializable, StringValue, Timestamped}
+import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
 import spray.json.{JsString, JsValue, JsonFormat}
 
 sealed trait Role {
@@ -120,10 +120,10 @@ case class User(userId: UserId,
   }
 
   def verificationTokenIsExpired: Boolean =
-    verificationTokenExpiresAt.forall(_.isBefore(ZonedDateTime.now()))
+    verificationTokenExpiresAt.forall(_.isBefore(DateHelper.now()))
 
   def resetTokenIsExpired: Boolean =
-    resetTokenExpiresAt.forall(_.isBefore(ZonedDateTime.now()))
+    resetTokenExpiresAt.forall(_.isBefore(DateHelper.now()))
 
   def hasRole(role: Role): Boolean = {
     roles.contains(role)

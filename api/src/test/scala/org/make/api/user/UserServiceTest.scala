@@ -710,7 +710,7 @@ class UserServiceTest
 
       val futureBoolean = userService.updateLastMailingError(
         UserId("update-opt-in-user"),
-        Some(MailingErrorLog(error = "my_error", date = ZonedDateTime.now()))
+        Some(MailingErrorLog(error = "my_error", date = DateHelper.now()))
       )
 
       whenReady(futureBoolean, Timeout(3.seconds)) { result =>
@@ -730,7 +730,7 @@ class UserServiceTest
 
       val futureBoolean = userService.updateLastMailingError(
         "user@example.com",
-        Some(MailingErrorLog(error = "my_error", date = ZonedDateTime.now()))
+        Some(MailingErrorLog(error = "my_error", date = DateHelper.now()))
       )
 
       whenReady(futureBoolean, Timeout(3.seconds)) { result =>

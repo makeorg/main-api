@@ -19,11 +19,10 @@
 
 package org.make.api.user
 
-import java.time.ZonedDateTime
-
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
+import org.make.core.DateHelper
 import org.make.core.user.{CustomRole, Role}
 import org.mockito.{ArgumentMatchers, Mockito}
 import scalikejdbc.WrappedResultSet
@@ -97,7 +96,7 @@ class PersistentUserServiceComponentTest
   feature("user followed") {
     scenario("user followed") {
 
-      val now = ZonedDateTime.now()
+      val now = DateHelper.now()
 
       val userId = FollowedUsers.followedUsersAlias.resultName.userId.value
       val followedUserId = FollowedUsers.followedUsersAlias.resultName.followedUserId.value

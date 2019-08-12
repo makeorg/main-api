@@ -19,8 +19,6 @@
 
 package org.make.api.technical.auth
 
-import java.time.ZonedDateTime
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
@@ -34,8 +32,8 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.core.HttpCodes
 import org.make.core.auth.{ClientId, UserRights}
+import org.make.core.{DateHelper, HttpCodes}
 import scalaoauth2.provider._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -294,7 +292,7 @@ trait DefaultAuthenticationApiComponent
               `Set-Cookie`(
                 HttpCookie(
                   name = makeSettings.SessionCookie.expirationName,
-                  value = ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+                  value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
                   secure = makeSettings.SessionCookie.isSecure,
                   httpOnly = false,
                   maxAge = Some(365.days.toSeconds),
@@ -338,7 +336,8 @@ trait DefaultAuthenticationApiComponent
                     `Set-Cookie`(
                       HttpCookie(
                         name = sessionIdExpirationKey,
-                        value = ZonedDateTime.now.plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds).toString,
+                        value = DateHelper
+                          .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = false,
                         maxAge = None,
