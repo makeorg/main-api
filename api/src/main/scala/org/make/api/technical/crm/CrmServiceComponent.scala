@@ -50,7 +50,6 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 
-import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -187,7 +186,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           deleteEmptyProperties && contacts.properties.isEmpty ||
           contacts.properties.find(_.name == "updated_at").exists(updatedAt => isBefore(updatedAt.value))
         }.map(_.contactId.toString))
-        .mapConcat(contacts => immutable.Seq(contacts: _*))
+        .mapConcat(_.toVector)
         .throttle(1, 1.second)
         .mapAsync(1) { obsoleteContactId =>
           crmClient
@@ -242,7 +241,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       val start = System.currentTimeMillis()
       StreamUtils
         .asyncPageToPageSource(userService.findUsersForCrmSynchro(None, None, _, batchSize))
-        .mapConcat(users => immutable.Seq(users: _*))
+        .mapConcat(_.toVector)
         .mapAsync(retrievePropertiesParallelism) { user =>
           getPropertiesFromUser(user, questionResolver).map { properties =>
             (user.email, user.fullName.getOrElse(user.email), properties)
@@ -257,7 +256,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .mapAsync(persistCrmUsersParallelism) { crmUsers =>
           persistentCrmUserService.persist(crmUsers)
         }
-        .runForeach(_ => ())
+        .runWith(Sink.ignore)
         .map(_ => logger.info(s"Crm users creation completed in ${System.currentTimeMillis() - start} ms"))
     }
 
@@ -327,29 +326,33 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     }
 
     private def hardRemoveEmailsFromAllLists(emails: Seq[String]): Future[Unit] = {
-      Source(emails.toVector)
-        .map(email => Contact(email = email))
-        .groupedWithin(batchSize, 10.seconds)
-        .throttle(200, 1.hour)
-        .mapAsync(1) { grouppedEmails =>
-          crmClient
-            .manageContactList(
-              manageContactList = ManageManyContacts(
-                contacts = grouppedEmails,
-                contactList = Seq(
-                  ContactList(mailJetConfiguration.hardBounceListId, Remove),
-                  ContactList(mailJetConfiguration.unsubscribeListId, Remove),
-                  ContactList(mailJetConfiguration.optInListId, Remove)
+      if (emails.isEmpty) {
+        Future.successful {}
+      } else {
+        Source(emails.toVector)
+          .map(email => Contact(email = email))
+          .groupedWithin(batchSize, 10.seconds)
+          .throttle(200, 1.hour)
+          .mapAsync(1) { grouppedEmails =>
+            crmClient
+              .manageContactList(
+                manageContactList = ManageManyContacts(
+                  contacts = grouppedEmails,
+                  contactList = Seq(
+                    ContactList(mailJetConfiguration.hardBounceListId, Remove),
+                    ContactList(mailJetConfiguration.unsubscribeListId, Remove),
+                    ContactList(mailJetConfiguration.optInListId, Remove)
+                  )
                 )
               )
-            )
-            .map(Right(_))
-            .recoverWith { case e => Future.successful(Left(e)) }
-            .map { response =>
-              logMailjetResponse(response, "all lists")
-            }
-        }
-        .runWith(Sink.last)
+              .map(Right(_))
+              .recoverWith { case e => Future.successful(Left(e)) }
+              .map { response =>
+                logMailjetResponse(response, "all lists")
+              }
+          }
+          .runWith(Sink.last)
+      }
     }
 
     private def createQuestionResolver: Future[QuestionResolver] = {
