@@ -64,7 +64,6 @@ import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 
 class UserApiTest
     extends MakeApiTestBase
@@ -93,20 +92,11 @@ class UserApiTest
   override val operationService: OperationService = mock[OperationService]
   override val questionService: QuestionService = mock[QuestionService]
 
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
 
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.expirationName).thenReturn("cookie-session-expiration")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
   when(authenticationConfiguration.defaultClientId).thenReturn("default-client")
   when(idGenerator.nextId()).thenReturn("some-id")
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
 
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
@@ -540,7 +530,7 @@ class UserApiTest
       Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
-        header("Set-Cookie").get.value should include("cookie-session")
+        header("Set-Cookie").get.value should include("cookie-secure")
         verify(socialService).login(
           matches("google"),
           matches("ABCDEFGHIJK"),

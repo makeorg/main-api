@@ -282,24 +282,24 @@ trait DefaultAuthenticationApiComponent
             _ ++ Seq(
               `Set-Cookie`(
                 HttpCookie(
-                  name = makeSettings.SessionCookie.name,
+                  name = makeSettings.SecureCookie.name,
                   value = grantResult.accessToken,
-                  secure = makeSettings.SessionCookie.isSecure,
+                  secure = makeSettings.SecureCookie.isSecure,
                   httpOnly = true,
-                  maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+                  maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
                   path = Some("/"),
-                  domain = Some(makeSettings.SessionCookie.domain)
+                  domain = Some(makeSettings.SecureCookie.domain)
                 )
               ),
               `Set-Cookie`(
                 HttpCookie(
-                  name = makeSettings.SessionCookie.expirationName,
-                  value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
-                  secure = makeSettings.SessionCookie.isSecure,
+                  name = makeSettings.SecureCookie.expirationName,
+                  value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SecureCookie.lifetime.toSeconds)),
+                  secure = makeSettings.SecureCookie.isSecure,
                   httpOnly = false,
                   maxAge = Some(365.days.toSeconds),
                   path = Some("/"),
-                  domain = Some(makeSettings.SessionCookie.domain)
+                  domain = Some(makeSettings.SecureCookie.domain)
                 )
               )
             )
@@ -326,7 +326,7 @@ trait DefaultAuthenticationApiComponent
                   _ ++ Seq(
                     `Set-Cookie`(
                       HttpCookie(
-                        name = sessionIdKey,
+                        name = makeSettings.SessionCookie.name,
                         value = idGenerator.nextId(),
                         secure = makeSettings.SessionCookie.isSecure,
                         httpOnly = true,
@@ -337,7 +337,7 @@ trait DefaultAuthenticationApiComponent
                     ),
                     `Set-Cookie`(
                       HttpCookie(
-                        name = sessionIdExpirationKey,
+                        name = makeSettings.SessionCookie.expirationName,
                         value = DateHelper
                           .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
                         secure = makeSettings.SessionCookie.isSecure,
@@ -349,24 +349,24 @@ trait DefaultAuthenticationApiComponent
                     ),
                     `Set-Cookie`(
                       HttpCookie(
-                        name = makeSettings.SessionCookie.name,
+                        name = makeSettings.SecureCookie.name,
                         value = "",
-                        secure = makeSettings.SessionCookie.isSecure,
+                        secure = makeSettings.SecureCookie.isSecure,
                         httpOnly = true,
                         maxAge = Some(0),
                         path = Some("/"),
-                        domain = Some(makeSettings.SessionCookie.domain)
+                        domain = Some(makeSettings.SecureCookie.domain)
                       )
                     ),
                     `Set-Cookie`(
                       HttpCookie(
-                        name = makeSettings.SessionCookie.expirationName,
+                        name = makeSettings.SecureCookie.expirationName,
                         value = "",
-                        secure = makeSettings.SessionCookie.isSecure,
+                        secure = makeSettings.SecureCookie.isSecure,
                         httpOnly = false,
                         maxAge = Some(0),
                         path = Some("/"),
-                        domain = Some(makeSettings.SessionCookie.domain)
+                        domain = Some(makeSettings.SecureCookie.domain)
                       )
                     )
                   )
