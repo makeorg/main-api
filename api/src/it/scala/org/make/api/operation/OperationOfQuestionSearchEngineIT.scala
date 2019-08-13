@@ -95,6 +95,7 @@ class OperationOfQuestionSearchEngineIT
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-1"),
       question = "First question ?",
+      slug = "first-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
       theme = QuestionTheme(
@@ -115,6 +116,7 @@ class OperationOfQuestionSearchEngineIT
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-2"),
       question = "Second question ?",
+      slug = "second-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2020-06-02T01:01:01.123Z"))),
       theme = QuestionTheme(
@@ -135,6 +137,7 @@ class OperationOfQuestionSearchEngineIT
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-3"),
       question = "Third question ?",
+      slug = "third-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2018-11-22T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
       theme = QuestionTheme(
@@ -155,6 +158,7 @@ class OperationOfQuestionSearchEngineIT
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-4"),
       question = "Fourth question ?",
+      slug = "fourth-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2018-06-02T01:01:01.123Z"))),
       theme = QuestionTheme(
@@ -175,6 +179,7 @@ class OperationOfQuestionSearchEngineIT
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-5"),
       question = "Fifth question ?",
+      slug = "fifth-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       theme = QuestionTheme(

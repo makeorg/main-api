@@ -47,7 +47,14 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.RequestContext
-import org.make.core.operation.OperationKind
+import org.make.core.operation.{
+  OperationKind,
+  OperationOfQuestionSearchFilters,
+  OperationOfQuestionSearchQuery,
+  QuestionContentSearchFilter
+}
+import org.make.core.operation
+import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.proposal.{ContentSearchFilter, OperationKindsSearchFilter, SearchFilters, SearchQuery}
 import org.make.core.user.indexed.OrganisationSearchResult
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -119,15 +126,40 @@ class ViewApiTest
           )
         )
         .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 2, results = Seq.empty, seed = None)))
+      Mockito
+        .when(
+          operationOfQuestionService.search(
+            ArgumentMatchers.eq(
+              OperationOfQuestionSearchQuery(
+                filters = Some(
+                  OperationOfQuestionSearchFilters(
+                    question = Some(QuestionContentSearchFilter("toto", fuzzy = Some(Fuzziness.Auto))),
+                    operationKinds = Some(
+                      operation.OperationKindsSearchFilter(
+                        Seq(
+                          OperationKind.GreatCause,
+                          OperationKind.PublicConsultation,
+                          OperationKind.BusinessConsultation
+                        )
+                      )
+                    )
+                  )
+                ),
+                limit = None
+              )
+            )
+          )
+        )
+        .thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 2, results = Seq.empty)))
 
       Get("/views/search?content=toto").withHeaders(Accept(MediaTypes.`application/json`)) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
         val search: SearchViewResponse = entityAs[SearchViewResponse]
         search.proposals.total shouldBe 2
+        search.questions.total shouldBe 2
 //  Edit this following part when further implemented
         search.organisations shouldBe OrganisationSearchResult.empty
-        search.questions shouldBe Seq.empty
       }
     }
 
@@ -161,15 +193,40 @@ class ViewApiTest
           )
         )
         .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
+      Mockito
+        .when(
+          operationOfQuestionService.search(
+            ArgumentMatchers.eq(
+              OperationOfQuestionSearchQuery(
+                filters = Some(
+                  OperationOfQuestionSearchFilters(
+                    question = Some(QuestionContentSearchFilter("lownoresults", fuzzy = Some(Fuzziness.Auto))),
+                    operationKinds = Some(
+                      operation.OperationKindsSearchFilter(
+                        Seq(
+                          OperationKind.GreatCause,
+                          OperationKind.PublicConsultation,
+                          OperationKind.BusinessConsultation
+                        )
+                      )
+                    )
+                  )
+                ),
+                limit = None
+              )
+            )
+          )
+        )
+        .thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 0, results = Seq.empty)))
 
       Get("/views/search?content=LOWnoResults").withHeaders(Accept(MediaTypes.`application/json`)) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
         val search: SearchViewResponse = entityAs[SearchViewResponse]
         search.proposals.total shouldBe 0
+        search.questions.total shouldBe 0
 //  Edit this following part when further implemented
         search.organisations shouldBe OrganisationSearchResult.empty
-        search.questions shouldBe Seq.empty
       }
     }
   }

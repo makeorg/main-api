@@ -87,6 +87,7 @@ class HomeViewServiceComponentTest
     endDate = Some(now.plusDays(10)),
     operationTitle = "default opeOfQues",
     question = "",
+    slug = "",
     description = "Description opeOfQue",
     theme = QuestionTheme("#000000", "#000000", "#000000", "#000000"),
     imageUrl = None,
