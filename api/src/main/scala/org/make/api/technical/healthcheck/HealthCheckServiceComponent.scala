@@ -41,8 +41,12 @@ trait HealthCheckServiceComponent {
 
 trait DefaultHealthCheckServiceComponent extends HealthCheckServiceComponent {
   self: HealthCheckComponent =>
-  override def healthCheckService: HealthCheckService = new HealthCheckService {
+
+  override lazy val healthCheckService: HealthCheckService = new DefaultHealthCheckService
+
+  class DefaultHealthCheckService extends HealthCheckService {
     private implicit val timeout: Timeout = TimeSettings.defaultTimeout.duration * 2
+
     override def runAllHealthChecks(): Future[Seq[HealthCheckResponse]] = {
       (healthCheckSupervisor ? CheckExternalServices).mapTo[Seq[HealthCheckResponse]]
     }

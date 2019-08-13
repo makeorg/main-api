@@ -38,7 +38,6 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
 import scala.concurrent.Future
-import scala.util.Try
 
 @Api(value = "Moderation Tags")
 @Path(value = "/moderation/tags")
@@ -158,176 +157,62 @@ trait DefaultModerationTagApiComponent
     with MakeSettingsComponent
     with QuestionServiceComponent =>
 
-  val moderationTagId: PathMatcher1[TagId] = Segment.flatMap(id => Try(TagId(id)).toOption)
+  override lazy val moderationTagApi: ModerationTagApi = new DefaultModerationTagApi
 
-  override lazy val moderationTagApi: ModerationTagApi =
-    new ModerationTagApi {
-      override def moderationGetTag: Route = {
-        get {
-          path("moderation" / "tags" / moderationTagId) { tagId =>
-            makeOperation("ModerationGetTag") { _ =>
-              makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                requireModerationRole(userAuth.user) {
-                  provideAsyncOrNotFound(tagService.getTag(tagId)) { tag =>
-                    complete(TagResponse(tag))
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+  class DefaultModerationTagApi extends ModerationTagApi {
 
-      override def moderationCreateTag: Route = post {
-        path("moderation" / "tags") {
-          makeOperation("ModerationRegisterTag") { _ =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireAdminRole(userAuth.user) {
-                decodeRequest {
-                  entity(as[CreateTagRequest]) { request: CreateTagRequest =>
-                    provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
-                      val duplicateLabel = tagList.find { tag =>
-                        tag.questionId.isDefined && tag.questionId == request.questionId
-                      }
-                      Validation.validate(
-                        Validation.requireNotPresent(
-                          fieldName = "label",
-                          fieldValue = duplicateLabel,
-                          message = Some("Tag label already exist in this context. Duplicates are not allowed")
-                        ),
-                        Validation.validateUserInput("label", request.label, None)
-                      )
-                      provideAsyncOrNotFound {
-                        request.questionId.map { questionId =>
-                          questionService.getQuestion(questionId)
-                        }.getOrElse(Future.successful(None))
-                      } { question =>
-                        onSuccess(
-                          tagService.createTag(
-                            label = request.label,
-                            tagTypeId = request.tagTypeId,
-                            question = question,
-                            display = request.display.getOrElse(TagDisplay.Inherit),
-                            weight = request.weight.getOrElse(0f)
-                          )
-                        ) { tag =>
-                          complete(StatusCodes.Created -> TagResponse(tag))
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+    val moderationTagId: PathMatcher1[TagId] = Segment.map(id => TagId(id))
 
-      override def moderationlistTags: Route = {
-        get {
-          path("moderation" / "tags") {
-            makeOperation("ModerationSearchTag") { _ =>
-              parameters(
-                (
-                  '_start.as[Int].?,
-                  '_end.as[Int].?,
-                  '_sort.?,
-                  '_order.?,
-                  'label.?,
-                  'tagTypeId.as[TagTypeId].?,
-                  'questionId.as[QuestionId].?
-                )
-              ) {
-                (start: Option[Int],
-                 end: Option[Int],
-                 sort: Option[String],
-                 order: Option[String],
-                 maybeLabel: Option[String],
-                 maybeTagTypeId: Option[TagTypeId],
-                 maybeQuestionId: Option[QuestionId]) =>
-                  makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                    requireModerationRole(userAuth.user) {
-
-                      order.foreach { orderValue =>
-                        Validation.validate(
-                          Validation
-                            .validChoices(
-                              "_order",
-                              Some("Invalid order"),
-                              Seq(orderValue.toLowerCase),
-                              Seq("desc", "asc")
-                            )
-                        )
-                      }
-                      provideAsync(
-                        tagService
-                          .count(
-                            TagFilter(label = maybeLabel, tagTypeId = maybeTagTypeId, questionId = maybeQuestionId)
-                          )
-                      ) { count =>
-                        onSuccess(
-                          tagService.find(
-                            start = start.getOrElse(0),
-                            end = end,
-                            sort = sort,
-                            order = order,
-                            tagFilter =
-                              TagFilter(label = maybeLabel, tagTypeId = maybeTagTypeId, questionId = maybeQuestionId)
-                          )
-                        ) { filteredTags =>
-                          complete(
-                            (
-                              StatusCodes.OK,
-                              List(TotalCountHeader(count.toString)),
-                              filteredTags.map(TagResponse.apply)
-                            )
-                          )
-                        }
-                      }
-                    }
-                  }
-              }
-            }
-          }
-        }
-      }
-
-      override def moderationUpdateTag: Route = put {
+    override def moderationGetTag: Route = {
+      get {
         path("moderation" / "tags" / moderationTagId) { tagId =>
-          makeOperation("ModerationUpdateTag") { requestContext =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                decodeRequest {
-                  entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
-                    provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
-                      val duplicateLabel = tagList.find { tag =>
-                        tag.tagId != tagId && tag.questionId.isDefined && tag.questionId == request.questionId
-                      }
-                      Validation.validate(
-                        Validation.requireNotPresent(
-                          fieldName = "label",
-                          fieldValue = duplicateLabel,
-                          message = Some("Tag label already exist in this context. Duplicates are not allowed")
+          makeOperation("ModerationGetTag") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireModerationRole(userAuth.user) {
+                provideAsyncOrNotFound(tagService.getTag(tagId)) { tag =>
+                  complete(TagResponse(tag))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def moderationCreateTag: Route = post {
+      path("moderation" / "tags") {
+        makeOperation("ModerationRegisterTag") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[CreateTagRequest]) { request: CreateTagRequest =>
+                  provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
+                    val duplicateLabel = tagList.find { tag =>
+                      tag.questionId.isDefined && tag.questionId == request.questionId
+                    }
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "label",
+                        fieldValue = duplicateLabel,
+                        message = Some("Tag label already exist in this context. Duplicates are not allowed")
+                      ),
+                      Validation.validateUserInput("label", request.label, None)
+                    )
+                    provideAsyncOrNotFound {
+                      request.questionId.map { questionId =>
+                        questionService.getQuestion(questionId)
+                      }.getOrElse(Future.successful(None))
+                    } { question =>
+                      onSuccess(
+                        tagService.createTag(
+                          label = request.label,
+                          tagTypeId = request.tagTypeId,
+                          question = question,
+                          display = request.display.getOrElse(TagDisplay.Inherit),
+                          weight = request.weight.getOrElse(0f)
                         )
-                      )
-                      provideAsyncOrNotFound(
-                        request.questionId
-                          .map(questionId => questionService.getQuestion(questionId))
-                          .getOrElse(Future.successful(None))
-                      ) { question =>
-                        provideAsyncOrNotFound(
-                          tagService.updateTag(
-                            tagId = tagId,
-                            label = request.label,
-                            display = request.display,
-                            tagTypeId = request.tagTypeId,
-                            weight = request.weight,
-                            question = question,
-                            requestContext = requestContext
-                          )
-                        ) { tag =>
-                          complete(TagResponse(tag))
-                        }
+                      ) { tag =>
+                        complete(StatusCodes.Created -> TagResponse(tag))
                       }
                     }
                   }
@@ -338,6 +223,116 @@ trait DefaultModerationTagApiComponent
         }
       }
     }
+
+    override def moderationlistTags: Route = {
+      get {
+        path("moderation" / "tags") {
+          makeOperation("ModerationSearchTag") { _ =>
+            parameters(
+              (
+                '_start.as[Int].?,
+                '_end.as[Int].?,
+                '_sort.?,
+                '_order.?,
+                'label.?,
+                'tagTypeId.as[TagTypeId].?,
+                'questionId.as[QuestionId].?
+              )
+            ) {
+              (start: Option[Int],
+               end: Option[Int],
+               sort: Option[String],
+               order: Option[String],
+               maybeLabel: Option[String],
+               maybeTagTypeId: Option[TagTypeId],
+               maybeQuestionId: Option[QuestionId]) =>
+                makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+                  requireModerationRole(userAuth.user) {
+
+                    order.foreach { orderValue =>
+                      Validation.validate(
+                        Validation
+                          .validChoices(
+                            "_order",
+                            Some("Invalid order"),
+                            Seq(orderValue.toLowerCase),
+                            Seq("desc", "asc")
+                          )
+                      )
+                    }
+                    provideAsync(
+                      tagService
+                        .count(TagFilter(label = maybeLabel, tagTypeId = maybeTagTypeId, questionId = maybeQuestionId))
+                    ) { count =>
+                      onSuccess(
+                        tagService.find(
+                          start = start.getOrElse(0),
+                          end = end,
+                          sort = sort,
+                          order = order,
+                          tagFilter =
+                            TagFilter(label = maybeLabel, tagTypeId = maybeTagTypeId, questionId = maybeQuestionId)
+                        )
+                      ) { filteredTags =>
+                        complete(
+                          (StatusCodes.OK, List(TotalCountHeader(count.toString)), filteredTags.map(TagResponse.apply))
+                        )
+                      }
+                    }
+                  }
+                }
+            }
+          }
+        }
+      }
+    }
+
+    override def moderationUpdateTag: Route = put {
+      path("moderation" / "tags" / moderationTagId) { tagId =>
+        makeOperation("ModerationUpdateTag") { requestContext =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[UpdateTagRequest]) { request: UpdateTagRequest =>
+                  provideAsync(tagService.findByLabel(request.label, like = false)) { tagList =>
+                    val duplicateLabel = tagList.find { tag =>
+                      tag.tagId != tagId && tag.questionId.isDefined && tag.questionId == request.questionId
+                    }
+                    Validation.validate(
+                      Validation.requireNotPresent(
+                        fieldName = "label",
+                        fieldValue = duplicateLabel,
+                        message = Some("Tag label already exist in this context. Duplicates are not allowed")
+                      )
+                    )
+                    provideAsyncOrNotFound(
+                      request.questionId
+                        .map(questionId => questionService.getQuestion(questionId))
+                        .getOrElse(Future.successful(None))
+                    ) { question =>
+                      provideAsyncOrNotFound(
+                        tagService.updateTag(
+                          tagId = tagId,
+                          label = request.label,
+                          display = request.display,
+                          tagTypeId = request.tagTypeId,
+                          weight = request.weight,
+                          question = question,
+                          requestContext = requestContext
+                        )
+                      ) { tag =>
+                        complete(TagResponse(tag))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 case class CreateTagRequest(

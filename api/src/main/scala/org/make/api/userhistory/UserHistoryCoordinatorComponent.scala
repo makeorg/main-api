@@ -48,7 +48,10 @@ trait UserHistoryCoordinatorServiceComponent {
 trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinatorServiceComponent {
   self: UserHistoryCoordinatorComponent =>
 
-  override def userHistoryCoordinatorService: UserHistoryCoordinatorService = new UserHistoryCoordinatorService {
+  override lazy val userHistoryCoordinatorService: UserHistoryCoordinatorService =
+    new DefaultUserHistoryCoordinatorService
+
+  class DefaultUserHistoryCoordinatorService extends UserHistoryCoordinatorService {
 
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 

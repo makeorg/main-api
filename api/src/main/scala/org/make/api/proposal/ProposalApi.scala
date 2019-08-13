@@ -45,7 +45,6 @@ import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
-import scala.util.Try
 
 @Api(value = "Proposal")
 @Path(value = "/proposals")
@@ -210,7 +209,7 @@ trait DefaultProposalApiComponent
 
   class DefaultProposalApi extends ProposalApi {
     val proposalId: PathMatcher1[ProposalId] =
-      Segment.flatMap(id => Try(ProposalId(id)).toOption)
+      Segment.map(id => ProposalId(id))
 
     def getProposal: Route = {
       get {

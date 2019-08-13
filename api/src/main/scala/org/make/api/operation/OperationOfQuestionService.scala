@@ -91,7 +91,9 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     with OperationOfQuestionSearchEngineComponent
     with IdGeneratorComponent =>
 
-  override lazy val operationOfQuestionService: OperationOfQuestionService = new OperationOfQuestionService {
+  override lazy val operationOfQuestionService: OperationOfQuestionService = new DefaultOperationOfQuestionService
+
+  class DefaultOperationOfQuestionService extends OperationOfQuestionService {
 
     override def find(
       start: Int = 0,

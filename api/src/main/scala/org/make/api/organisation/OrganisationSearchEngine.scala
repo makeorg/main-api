@@ -54,8 +54,9 @@ object OrganisationSearchEngine {
 trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineComponent with CirceFormatters {
   self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
-  override lazy val elasticsearchOrganisationAPI: OrganisationSearchEngine = new OrganisationSearchEngine
-  with StrictLogging {
+  override lazy val elasticsearchOrganisationAPI: OrganisationSearchEngine = new DefaultOrganisationSearchEngine
+
+  class DefaultOrganisationSearchEngine extends OrganisationSearchEngine with StrictLogging {
 
     private lazy val client = elasticsearchClient.client
 

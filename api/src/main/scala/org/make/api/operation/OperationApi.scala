@@ -82,7 +82,9 @@ trait DefaultOperationApiComponent
     with OperationServiceComponent
     with TagServiceComponent =>
 
-  override lazy val operationApi: OperationApi = new OperationApi {
+  override lazy val operationApi: OperationApi = new DefaultOperationApi
+
+  class DefaultOperationApi extends OperationApi {
 
     val operationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
 

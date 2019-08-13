@@ -57,7 +57,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     with PersistentAuthCodeServiceComponent
     with MakeSettingsComponent =>
 
-  val oauth2DataHandler = new DefaultMakeDataHandler
+  override lazy val oauth2DataHandler = new DefaultMakeDataHandler
 
   class DefaultMakeDataHandler extends MakeDataHandler {
 

@@ -101,7 +101,9 @@ trait DefaultModerationSequenceApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with SequenceConfigurationComponent =>
 
-  override lazy val moderationSequenceApi: ModerationSequenceApi = new ModerationSequenceApi {
+  override lazy val moderationSequenceApi: ModerationSequenceApi = new DefaultModerationSequenceApi
+
+  class DefaultModerationSequenceApi extends ModerationSequenceApi {
 
     val moderationSequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
     private val questionId: PathMatcher1[QuestionId] = Segment.map(id   => QuestionId(id))

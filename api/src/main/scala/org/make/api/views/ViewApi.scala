@@ -83,7 +83,7 @@ trait DefaultViewApiComponent
     with ProposalSearchEngineComponent
     with HomeViewServiceComponent =>
 
-  override val viewApi: ViewApi = new DefaultViewApi
+  override lazy val viewApi: ViewApi = new DefaultViewApi
 
   class DefaultViewApi extends ViewApi {
 

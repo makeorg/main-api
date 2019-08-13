@@ -52,8 +52,9 @@ trait PersistentQuestionService {
 trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  lazy val persistentQuestionService: PersistentQuestionService = new PersistentQuestionService with ShortenedNames
-  with StrictLogging {
+  lazy val persistentQuestionService: PersistentQuestionService = new DefaultPersistentQuestionService
+
+  class DefaultPersistentQuestionService extends PersistentQuestionService with ShortenedNames with StrictLogging {
 
     private val column = PersistentQuestion.column
     private val questionAlias = PersistentQuestion.questionAlias

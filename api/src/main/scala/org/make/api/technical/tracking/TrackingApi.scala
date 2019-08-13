@@ -81,7 +81,9 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
     with SessionHistoryCoordinatorServiceComponent
     with MonitoringServiceComponent =>
 
-  override lazy val trackingApi: TrackingApi = new TrackingApi {
+  override lazy val trackingApi: TrackingApi = new DefaultTrackingApi
+
+  class DefaultTrackingApi extends TrackingApi {
     def frontTracking: Route =
       post {
         path("tracking" / "front") {

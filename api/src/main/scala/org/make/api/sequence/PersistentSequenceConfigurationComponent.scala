@@ -49,122 +49,127 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
   this: MakeDBExecutionContextComponent =>
 
   override lazy val persistentSequenceConfigurationService: PersistentSequenceConfigurationService =
-    new PersistentSequenceConfigurationService with ShortenedNames with StrictLogging {
+    new DefaultPersistentSequenceConfigurationService
 
-      private val alias = PersistentSequenceConfiguration.alias
-      private val column = PersistentSequenceConfiguration.column
+  class DefaultPersistentSequenceConfigurationService
+      extends PersistentSequenceConfigurationService
+      with ShortenedNames
+      with StrictLogging {
 
-      override def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] = {
-        implicit val context: EC = readExecutionContext
-        val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
-          withSQL {
-            select
-              .from(PersistentSequenceConfiguration.as(alias))
-              .where(sqls.eq(alias.sequenceId, sequenceId.value))
-          }.map(PersistentSequenceConfiguration.apply()).single.apply
-        })
+    private val alias = PersistentSequenceConfiguration.alias
+    private val column = PersistentSequenceConfiguration.column
 
-        futurePersistentTag.map(_.map(_.toSequenceConfiguration))
-      }
+    override def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentTag = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentSequenceConfiguration.as(alias))
+            .where(sqls.eq(alias.sequenceId, sequenceId.value))
+        }.map(PersistentSequenceConfiguration.apply()).single.apply
+      })
 
-      override def findAll(): Future[Seq[SequenceConfiguration]] = {
-        implicit val context: EC = readExecutionContext
+      futurePersistentTag.map(_.map(_.toSequenceConfiguration))
+    }
 
-        val futurePersistentSequenceConfig = Future(NamedDB('READ).retryableTx { implicit session =>
-          withSQL {
-            select
-              .from(PersistentSequenceConfiguration.as(alias))
-          }.map(PersistentSequenceConfiguration.apply()).list.apply
-        })
+    override def findAll(): Future[Seq[SequenceConfiguration]] = {
+      implicit val context: EC = readExecutionContext
 
-        futurePersistentSequenceConfig.map(_.map(_.toSequenceConfiguration))
-      }
+      val futurePersistentSequenceConfig = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentSequenceConfiguration.as(alias))
+        }.map(PersistentSequenceConfiguration.apply()).list.apply
+      })
 
-      def insertConfig(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
-        implicit val context: EC = writeExecutionContext
-        Future(NamedDB('WRITE).retryableTx { implicit session =>
-          withSQL {
-            insert
-              .into(PersistentSequenceConfiguration)
-              .namedValues(
-                column.sequenceId -> sequenceConfig.sequenceId.value,
-                column.questionId -> sequenceConfig.questionId.value,
-                column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
-                column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
-                column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
-                column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
-                column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
-                column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
-                column.intraIdeaEnabled -> sequenceConfig.intraIdeaEnabled,
-                column.intraIdeaMinCount -> sequenceConfig.intraIdeaMinCount,
-                column.intraIdeaProposalsRatio -> sequenceConfig.intraIdeaProposalsRatio,
-                column.interIdeaCompetitionEnabled -> sequenceConfig.interIdeaCompetitionEnabled,
-                column.interIdeaCompetitionTargetCount -> sequenceConfig.interIdeaCompetitionTargetCount,
-                column.interIdeaCompetitionControversialRatio -> sequenceConfig.interIdeaCompetitionControversialRatio,
-                column.interIdeaCompetitionControversialCount -> sequenceConfig.interIdeaCompetitionControversialCount,
-                column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
-                column.sequenceSize -> sequenceConfig.sequenceSize,
-                column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
-                column.createdAt -> DateHelper.now,
-                column.updatedAt -> DateHelper.now
-              )
-          }.execute().apply()
-        })
-      }
+      futurePersistentSequenceConfig.map(_.map(_.toSequenceConfiguration))
+    }
 
-      def updateConfig(sequenceConfig: SequenceConfiguration): Future[Int] = {
-        implicit val context: EC = writeExecutionContext
-        Future(NamedDB('WRITE).retryableTx { implicit session =>
-          withSQL {
-            update(PersistentSequenceConfiguration)
-              .set(
-                column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
-                column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
-                column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
-                column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
-                column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
-                column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
-                column.intraIdeaEnabled -> sequenceConfig.intraIdeaEnabled,
-                column.intraIdeaMinCount -> sequenceConfig.intraIdeaMinCount,
-                column.intraIdeaProposalsRatio -> sequenceConfig.intraIdeaProposalsRatio,
-                column.interIdeaCompetitionEnabled -> sequenceConfig.interIdeaCompetitionEnabled,
-                column.interIdeaCompetitionTargetCount -> sequenceConfig.interIdeaCompetitionTargetCount,
-                column.interIdeaCompetitionControversialRatio -> sequenceConfig.interIdeaCompetitionControversialRatio,
-                column.interIdeaCompetitionControversialCount -> sequenceConfig.interIdeaCompetitionControversialCount,
-                column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
-                column.sequenceSize -> sequenceConfig.sequenceSize,
-                column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
-                column.updatedAt -> DateHelper.now
-              )
-              .where(
-                sqls
-                  .eq(column.sequenceId, sequenceConfig.sequenceId.value)
-                  .or(sqls.eq(column.questionId, sequenceConfig.questionId.value))
-              )
-          }.update().apply()
-        })
-      }
+    def insertConfig(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          insert
+            .into(PersistentSequenceConfiguration)
+            .namedValues(
+              column.sequenceId -> sequenceConfig.sequenceId.value,
+              column.questionId -> sequenceConfig.questionId.value,
+              column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
+              column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
+              column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
+              column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
+              column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
+              column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
+              column.intraIdeaEnabled -> sequenceConfig.intraIdeaEnabled,
+              column.intraIdeaMinCount -> sequenceConfig.intraIdeaMinCount,
+              column.intraIdeaProposalsRatio -> sequenceConfig.intraIdeaProposalsRatio,
+              column.interIdeaCompetitionEnabled -> sequenceConfig.interIdeaCompetitionEnabled,
+              column.interIdeaCompetitionTargetCount -> sequenceConfig.interIdeaCompetitionTargetCount,
+              column.interIdeaCompetitionControversialRatio -> sequenceConfig.interIdeaCompetitionControversialRatio,
+              column.interIdeaCompetitionControversialCount -> sequenceConfig.interIdeaCompetitionControversialCount,
+              column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
+              column.sequenceSize -> sequenceConfig.sequenceSize,
+              column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
+              column.createdAt -> DateHelper.now,
+              column.updatedAt -> DateHelper.now
+            )
+        }.execute().apply()
+      })
+    }
 
-      override def persist(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
-        implicit val context: EC = readExecutionContext
-        findOne(sequenceConfig.sequenceId).flatMap {
-          case Some(_) => updateConfig(sequenceConfig)
-          case None    => insertConfig(sequenceConfig)
-        }.map {
-          case result: Boolean => result
-          case result: Int     => result == 1
-        }
-      }
-      override def delete(questionId: QuestionId): Future[Unit] = {
-        implicit val context: EC = readExecutionContext
-        Future(NamedDB('WRITE).retryableTx { implicit session =>
-          withSQL {
-            deleteFrom(PersistentSequenceConfiguration)
-              .where(sqls.eq(PersistentSequenceConfiguration.column.questionId, questionId.value))
-          }.execute().apply()
-        }).map(_ => ())
+    def updateConfig(sequenceConfig: SequenceConfiguration): Future[Int] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentSequenceConfiguration)
+            .set(
+              column.newProposalsRatio -> sequenceConfig.newProposalsRatio,
+              column.newProposalsVoteThreshold -> sequenceConfig.newProposalsVoteThreshold,
+              column.testedProposalsEngagementThreshold -> sequenceConfig.testedProposalsEngagementThreshold,
+              column.testedProposalsScoreThreshold -> sequenceConfig.testedProposalsScoreThreshold,
+              column.testedProposalsControversyThreshold -> sequenceConfig.testedProposalsControversyThreshold,
+              column.testedProposalsMaxVotesThreshold -> sequenceConfig.testedProposalsMaxVotesThreshold,
+              column.intraIdeaEnabled -> sequenceConfig.intraIdeaEnabled,
+              column.intraIdeaMinCount -> sequenceConfig.intraIdeaMinCount,
+              column.intraIdeaProposalsRatio -> sequenceConfig.intraIdeaProposalsRatio,
+              column.interIdeaCompetitionEnabled -> sequenceConfig.interIdeaCompetitionEnabled,
+              column.interIdeaCompetitionTargetCount -> sequenceConfig.interIdeaCompetitionTargetCount,
+              column.interIdeaCompetitionControversialRatio -> sequenceConfig.interIdeaCompetitionControversialRatio,
+              column.interIdeaCompetitionControversialCount -> sequenceConfig.interIdeaCompetitionControversialCount,
+              column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
+              column.sequenceSize -> sequenceConfig.sequenceSize,
+              column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
+              column.updatedAt -> DateHelper.now
+            )
+            .where(
+              sqls
+                .eq(column.sequenceId, sequenceConfig.sequenceId.value)
+                .or(sqls.eq(column.questionId, sequenceConfig.questionId.value))
+            )
+        }.update().apply()
+      })
+    }
+
+    override def persist(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
+      implicit val context: EC = readExecutionContext
+      findOne(sequenceConfig.sequenceId).flatMap {
+        case Some(_) => updateConfig(sequenceConfig)
+        case None    => insertConfig(sequenceConfig)
+      }.map {
+        case result: Boolean => result
+        case result: Int     => result == 1
       }
     }
+    override def delete(questionId: QuestionId): Future[Unit] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          deleteFrom(PersistentSequenceConfiguration)
+            .where(sqls.eq(PersistentSequenceConfiguration.column.questionId, questionId.value))
+        }.execute().apply()
+      }).map(_ => ())
+    }
+  }
 }
 
 object DefaultPersistentSequenceConfigurationServiceComponent {

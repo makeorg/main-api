@@ -21,6 +21,7 @@ package org.make.api.user.social
 
 import java.nio.charset.Charset
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.ActorMaterializer
@@ -45,8 +46,10 @@ trait FacebookApi {
 trait DefaultFacebookApiComponent extends FacebookApiComponent {
   self: ActorSystemComponent =>
 
-  override lazy val facebookApi: FacebookApi = new FacebookApi with StrictLogging {
-    private implicit val system = actorSystem
+  override lazy val facebookApi: FacebookApi = new DefaultFacebookApi
+
+  class DefaultFacebookApi extends FacebookApi with StrictLogging {
+    private implicit val system: ActorSystem = actorSystem
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
     private val http: HttpExt = Http()
 

@@ -54,7 +54,9 @@ trait ClientService {
 trait DefaultClientServiceComponent extends ClientServiceComponent {
   this: PersistentClientServiceComponent with IdGeneratorComponent =>
 
-  val clientService: ClientService = new ClientService {
+  override lazy val clientService: ClientService = new DefaultClientService
+
+  class DefaultClientService extends ClientService {
 
     override def getClient(clientId: ClientId): Future[Option[Client]] = {
       persistentClientService.get(clientId)

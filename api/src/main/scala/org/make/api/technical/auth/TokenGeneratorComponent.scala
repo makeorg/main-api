@@ -39,7 +39,10 @@ trait TokenGenerator {
 }
 
 trait DefaultTokenGeneratorComponent extends TokenGeneratorComponent {
-  override val tokenGenerator: TokenGenerator = new TokenGenerator {
+
+  override lazy val tokenGenerator: TokenGenerator = new DefaultTokenGenerator
+
+  class DefaultTokenGenerator extends TokenGenerator {
 
     override def tokenToHash(token: String): String =
       SecurityHelper.defaultHash(token).toUpperCase()

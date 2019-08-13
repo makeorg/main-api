@@ -47,7 +47,7 @@ trait CrmTemplatesService extends ShortenedNames {
 trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
   this: PersistentCrmTemplatesServiceComponent with IdGeneratorComponent =>
 
-  val crmTemplatesService: CrmTemplatesService = new DefaultCrmTemplatesService
+  override lazy val crmTemplatesService: CrmTemplatesService = new DefaultCrmTemplatesService
 
   class DefaultCrmTemplatesService extends CrmTemplatesService {
 

@@ -48,7 +48,7 @@ trait PartnerService extends ShortenedNames {
 trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
   this: PersistentPartnerServiceComponent with IdGeneratorComponent =>
 
-  val partnerService: DefaultPartnerService = new DefaultPartnerService
+  override lazy val partnerService: DefaultPartnerService = new DefaultPartnerService
 
   class DefaultPartnerService extends PartnerService {
 

@@ -82,7 +82,10 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
     with PersistentTagServiceComponent
     with PersistentTagTypeServiceComponent
     with IdGeneratorComponent =>
-  override val ideaMappingService: IdeaMappingService = new IdeaMappingService {
+
+  override val ideaMappingService: DefaultIdeaMappingService = new DefaultIdeaMappingService
+
+  class DefaultIdeaMappingService extends IdeaMappingService {
 
     override def create(questionId: QuestionId,
                         stakeTagId: Option[TagId],

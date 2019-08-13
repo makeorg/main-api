@@ -55,7 +55,9 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
     with SequenceServiceComponent
     with SelectionAlgorithmComponent =>
 
-  override lazy val widgetService: WidgetService = new WidgetService {
+  override lazy val widgetService: WidgetService = new DefaultWidgetService
+
+  class DefaultWidgetService extends WidgetService {
 
     override def startNewWidgetSequence(maybeUserId: Option[UserId],
                                         sequenceId: SequenceId,

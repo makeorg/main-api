@@ -431,7 +431,7 @@ trait UserApi extends Directives {
       unfollowUser
 
   val userId: PathMatcher1[UserId] =
-    Segment.flatMap(id => Try(UserId(id)).toOption)
+    Segment.map(id => UserId(id))
 }
 
 trait UserApiComponent {
@@ -459,7 +459,9 @@ trait DefaultUserApiComponent
     with ReadJournalComponent
     with ActorSystemComponent =>
 
-  override lazy val userApi: UserApi = new UserApi {
+  override lazy val userApi: UserApi = new DefaultUserApi
+
+  class DefaultUserApi extends UserApi {
 
     override def getUser: Route = {
       get {

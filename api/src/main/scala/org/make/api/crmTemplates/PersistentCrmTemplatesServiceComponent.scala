@@ -47,8 +47,13 @@ trait PersistentCrmTemplatesService {
 trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplatesServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentCrmTemplatesService: PersistentCrmTemplatesService = new PersistentCrmTemplatesService
-  with ShortenedNames with StrictLogging {
+  override lazy val persistentCrmTemplatesService: PersistentCrmTemplatesService =
+    new DefaultPersistentCrmTemplatesService
+
+  class DefaultPersistentCrmTemplatesService
+      extends PersistentCrmTemplatesService
+      with ShortenedNames
+      with StrictLogging {
 
     private val crmTemplatesAlias = PersistentCrmTemplates.crmTemplatesAlias
 

@@ -131,7 +131,9 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
     with MakeSettingsComponent
     with MakeAuthentication =>
 
-  override val crmApi: CrmApi = new CrmApi {
+  override lazy val crmApi: CrmApi = new DefaultCrmApi
+
+  class DefaultCrmApi extends CrmApi {
 
     private def authenticate(credentials: Credentials): Option[String] = {
       val login = mailJetConfiguration.basicAuthLogin

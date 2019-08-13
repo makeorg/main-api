@@ -243,7 +243,9 @@ trait DefaultModerationQuestionComponent
     with MakeSettingsComponent
     with ProposalServiceComponent =>
 
-  override lazy val moderationQuestionApi: ModerationQuestionApi = new ModerationQuestionApi {
+  override lazy val moderationQuestionApi: ModerationQuestionApi = new DefaultModerationQuestionApi
+
+  class DefaultModerationQuestionApi extends ModerationQuestionApi {
 
     lazy val questionId: PathMatcher1[QuestionId] = Segment.map(QuestionId.apply)
 

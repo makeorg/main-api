@@ -52,7 +52,9 @@ trait DefaultHealthCheckApiComponent extends HealthCheckApiComponent with MakeAu
     with SessionHistoryCoordinatorServiceComponent
     with HealthCheckServiceComponent =>
 
-  override lazy val healthCheckApi: HealthCheckApi = new HealthCheckApi {
+  override lazy val healthCheckApi: HealthCheckApi = new DefaultHealthCheckApi
+
+  class DefaultHealthCheckApi extends HealthCheckApi {
     def healthCheck: Route = get {
       path("healthcheck") {
         makeOperation("HealthCheck") { _ =>

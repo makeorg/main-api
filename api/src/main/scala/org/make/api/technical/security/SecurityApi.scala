@@ -93,7 +93,10 @@ trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenti
     with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent =>
 
-  override lazy val securityApi: SecurityApi = new SecurityApi {
+  override lazy val securityApi: SecurityApi = new DefaultSecurityApi
+
+  class DefaultSecurityApi extends SecurityApi {
+
     override def adminCreateSecureHash: Route =
       post {
         path("admin" / "security" / "secure-hash") {

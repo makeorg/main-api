@@ -35,7 +35,6 @@ import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
-import scala.util.Try
 
 @Api(value = "Moderation Tag Types")
 @Path(value = "/moderation/tag-types")
@@ -160,7 +159,13 @@ trait DefaultModerationTagTypeApiComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent =>
 
-  override lazy val moderationTagTypeApi: ModerationTagTypeApi = new ModerationTagTypeApi {
+  override lazy val moderationTagTypeApi: ModerationTagTypeApi = new DefaultModerationTagTypeApi
+
+  class DefaultModerationTagTypeApi extends ModerationTagTypeApi {
+
+    val moderationTagTypeId: PathMatcher1[TagTypeId] =
+      Segment.map(id => TagTypeId(id))
+
     override def moderationGetTagType: Route = get {
       path("moderation" / "tag-types" / moderationTagTypeId) { tagTypeId =>
         makeOperation("ModerationGetTagType") { _ =>
@@ -242,8 +247,6 @@ trait DefaultModerationTagTypeApiComponent
 
   }
 
-  val moderationTagTypeId: PathMatcher1[TagTypeId] =
-    Segment.flatMap(id => Try(TagTypeId(id)).toOption)
 }
 
 case class CreateTagTypeRequest(

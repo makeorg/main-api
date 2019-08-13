@@ -117,13 +117,13 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     }
   }
 
-  private lazy val batchSize: Int = mailJetConfiguration.userListBatchSize
-  private val retrievePropertiesParallelism = 10
-  private val persistCrmUsersParallelism = 5
-
   override lazy val crmService: DefaultCrmService = new DefaultCrmService
 
   class DefaultCrmService extends CrmService {
+
+    private lazy val batchSize: Int = mailJetConfiguration.userListBatchSize
+    private val retrievePropertiesParallelism = 10
+    private val persistCrmUsersParallelism = 5
 
     private val poolSize: Int = 10
     implicit private val executionContext: ExecutionContextExecutor =

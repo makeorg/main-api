@@ -43,13 +43,15 @@ trait IdeaService extends ShortenedNames {
   def update(ideaId: IdeaId, name: String, status: IdeaStatus): Future[Int]
 }
 
-trait DefaultIdeaServiceComponent extends IdeaServiceComponent with ShortenedNames {
+trait DefaultIdeaServiceComponent extends IdeaServiceComponent {
   this: PersistentIdeaServiceComponent
     with EventBusServiceComponent
     with IdeaSearchEngineComponent
     with IdGeneratorComponent =>
 
-  override val ideaService: IdeaService = new IdeaService {
+  override val ideaService: IdeaService = new DefaultIdeaService
+
+  class DefaultIdeaService extends IdeaService with ShortenedNames {
 
     override def fetchAll(ideaSearchQuery: IdeaSearchQuery): Future[IdeaSearchResult] = {
       elasticsearchIdeaAPI.searchIdeas(ideaSearchQuery)

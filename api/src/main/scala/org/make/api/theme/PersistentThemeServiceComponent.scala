@@ -47,8 +47,9 @@ trait PersistentThemeService {
 trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceComponent {
   this: MakeDBExecutionContextComponent with DefaultPersistentTagServiceComponent =>
 
-  override lazy val persistentThemeService: PersistentThemeService = new PersistentThemeService with ShortenedNames
-  with StrictLogging {
+  override lazy val persistentThemeService: PersistentThemeService = new DefaultPersistentThemeService
+
+  class DefaultPersistentThemeService extends PersistentThemeService with ShortenedNames with StrictLogging {
 
     private val themeAlias = PersistentTheme.themeAlias
     private val themeTranslationAlias = PersistentThemeTranslation.themeTranslationAlias

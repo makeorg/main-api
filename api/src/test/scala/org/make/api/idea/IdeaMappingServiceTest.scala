@@ -89,7 +89,7 @@ class IdeaMappingServiceTest
         ideaMappingService
           .changeIdea(
             adminId = UserId("admin-id"),
-            IdeaMappingId = IdeaMappingId("unknown"),
+            ideaMappingId = IdeaMappingId("unknown"),
             newIdea = IdeaId("some-id"),
             migrateProposals = false
           ),
@@ -109,7 +109,7 @@ class IdeaMappingServiceTest
         ideaMappingService
           .changeIdea(
             adminId = UserId("admin-id"),
-            IdeaMappingId = IdeaMappingId("changeIdea"),
+            ideaMappingId = IdeaMappingId("changeIdea"),
             newIdea = IdeaId("new-id"),
             migrateProposals = false
           ),
@@ -250,7 +250,7 @@ class IdeaMappingServiceTest
         ideaMappingService
           .changeIdea(
             adminId = UserId("admin-id"),
-            IdeaMappingId = IdeaMappingId("changeIdea"),
+            ideaMappingId = IdeaMappingId("changeIdea"),
             newIdea = IdeaId("new-id"),
             migrateProposals = true
           ),

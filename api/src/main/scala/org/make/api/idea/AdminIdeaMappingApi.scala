@@ -236,7 +236,9 @@ trait DefaultAdminIdeaMappingApiComponent
     with MakeSettingsComponent
     with IdeaMappingServiceComponent =>
 
-  override val adminIdeaMappingApi: AdminIdeaMappingApi = new AdminIdeaMappingApi {
+  override val adminIdeaMappingApi: DefaultAdminIdeaMappingApi = new DefaultAdminIdeaMappingApi
+
+  class DefaultAdminIdeaMappingApi extends AdminIdeaMappingApi {
 
     val ideaMappingId: PathMatcher1[IdeaMappingId] = Segment.map(IdeaMappingId.apply)
 

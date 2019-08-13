@@ -45,7 +45,9 @@ trait GoogleApi {
 trait DefaultGoogleApiComponent extends GoogleApiComponent {
   self: ActorSystemComponent =>
 
-  override lazy val googleApi: GoogleApi = new GoogleApi with StrictLogging {
+  override lazy val googleApi: GoogleApi = new DefaultGoogleApi
+
+  class DefaultGoogleApi extends GoogleApi with StrictLogging {
     private implicit val system: ActorSystem = actorSystem
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
     private val http: HttpExt = Http()

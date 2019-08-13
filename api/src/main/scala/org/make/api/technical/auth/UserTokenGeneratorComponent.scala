@@ -35,7 +35,9 @@ trait UserTokenGeneratorComponent {
 trait DefaultUserTokenGeneratorComponent extends UserTokenGeneratorComponent {
   this: TokenGeneratorComponent with PersistentUserServiceComponent =>
 
-  override lazy val userTokenGenerator: UserTokenGenerator = new UserTokenGenerator {
+  override lazy val userTokenGenerator: UserTokenGenerator = new DefaultUserTokenGenerator
+
+  class DefaultUserTokenGenerator extends UserTokenGenerator {
     override def generateVerificationToken(): Future[(String, String)] = {
       tokenGenerator.generateToken(persistentUserService.verificationTokenExists)
     }

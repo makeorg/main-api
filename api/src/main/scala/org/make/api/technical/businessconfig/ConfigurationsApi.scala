@@ -56,7 +56,9 @@ trait DefaultConfigurationsApiComponent
     with SessionHistoryCoordinatorServiceComponent {
   self: MakeDataHandlerComponent with IdGeneratorComponent with ThemeServiceComponent with MakeSettingsComponent =>
 
-  override lazy val configurationsApi: ConfigurationsApi = new ConfigurationsApi {
+  override lazy val configurationsApi: ConfigurationsApi = new DefaultConfigurationsApi
+
+  class DefaultConfigurationsApi extends ConfigurationsApi {
     def businessConfigurationFront: Route =
       get {
         path("configurations" / "front") {

@@ -49,7 +49,9 @@ trait ElasticsearchClientComponent {
 trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent with StrictLogging {
   self: ElasticsearchConfigurationComponent with ActorSystemComponent =>
 
-  override lazy val elasticsearchClient: ElasticsearchClient = new ElasticsearchClient {
+  override lazy val elasticsearchClient: ElasticsearchClient = new DefaultElasticsearchClient
+
+  class DefaultElasticsearchClient extends ElasticsearchClient {
 
     private lazy val allAliases =
       Seq(

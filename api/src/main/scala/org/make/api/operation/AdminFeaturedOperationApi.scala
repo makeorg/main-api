@@ -132,7 +132,7 @@ trait DefaultAdminFeaturedOperationApiComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
-  override val adminFeaturedOperationApi: AdminFeaturedOperationApi = new DefaultAdminFeaturedOperationApi
+  override lazy val adminFeaturedOperationApi: AdminFeaturedOperationApi = new DefaultAdminFeaturedOperationApi
 
   class DefaultAdminFeaturedOperationApi extends AdminFeaturedOperationApi {
 

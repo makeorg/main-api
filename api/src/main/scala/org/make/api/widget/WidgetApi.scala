@@ -82,7 +82,9 @@ trait DefaultWidgetApiComponent
     with WidgetServiceComponent
     with SessionHistoryCoordinatorServiceComponent =>
 
-  override lazy val widgetApi: WidgetApi = new WidgetApi {
+  override lazy val widgetApi: WidgetApi = new DefaultWidgetApi
+
+  class DefaultWidgetApi extends WidgetApi {
 
     private val questionSlug: PathMatcher1[String] = Segment
 

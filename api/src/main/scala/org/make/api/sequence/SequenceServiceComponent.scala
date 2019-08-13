@@ -69,7 +69,9 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with SecurityConfigurationComponent
     with StrictLogging =>
 
-  override lazy val sequenceService: SequenceService = new SequenceService {
+  override lazy val sequenceService: SequenceService = new DefaultSequenceService
+
+  class DefaultSequenceService extends SequenceService {
 
     override def startNewSequence(maybeUserId: Option[UserId],
                                   sequenceId: SequenceId,

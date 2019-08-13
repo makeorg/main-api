@@ -36,7 +36,9 @@ final case class HistogramName(applicationName: String, metricName: String) {
 }
 
 trait DefaultMonitoringService extends MonitoringServiceComponent {
-  override lazy val monitoringService: MonitoringService = new MonitoringService {
+  override lazy val monitoringService: MonitoringService = new DefaultMonitoringService
+
+  class DefaultMonitoringService extends MonitoringService {
 
     val maxLoadingTime: Long = 1.minute.toMillis
     val range = DynamicRange(1L, maxLoadingTime, 2)

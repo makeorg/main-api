@@ -166,7 +166,9 @@ trait DefaultAuthenticationApiComponent
 
   def tokenEndpoint: TokenEndpoint
 
-  override lazy val authenticationApi: AuthenticationApi = new AuthenticationApi {
+  override lazy val authenticationApi: AuthenticationApi = new DefaultAuthenticationApi
+
+  class DefaultAuthenticationApi extends AuthenticationApi {
 
     override def createAuthorizationCode: Route = {
       post {

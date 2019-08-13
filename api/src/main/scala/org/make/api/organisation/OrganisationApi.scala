@@ -125,7 +125,9 @@ trait DefaultOrganisationApiComponent
     with MakeDataHandlerComponent
     with MakeSettingsComponent =>
 
-  override lazy val organisationApi: OrganisationApi = new OrganisationApi {
+  override lazy val organisationApi: OrganisationApi = new DefaultOrganisationApi
+
+  class DefaultOrganisationApi extends OrganisationApi {
     val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
 
     override def getOrganisation: Route =

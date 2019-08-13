@@ -63,11 +63,11 @@ object ProposalSearchEngine {
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent {
   self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
-  private lazy val client = elasticsearchClient.client
-
   override lazy val elasticsearchProposalAPI: DefaultProposalSearchEngine = new DefaultProposalSearchEngine
 
   class DefaultProposalSearchEngine extends ProposalSearchEngine with StrictLogging {
+
+    private lazy val client = elasticsearchClient.client
 
     private val proposalAlias: IndexAndType =
       elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
