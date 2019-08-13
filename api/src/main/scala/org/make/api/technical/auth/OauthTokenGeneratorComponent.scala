@@ -33,7 +33,9 @@ trait OauthTokenGeneratorComponent {
 trait DefaultOauthTokenGeneratorComponent extends OauthTokenGeneratorComponent {
   this: TokenGeneratorComponent with PersistentTokenServiceComponent =>
 
-  override lazy val oauthTokenGenerator: OauthTokenGenerator = new OauthTokenGenerator {
+  override lazy val oauthTokenGenerator: OauthTokenGenerator = new DefaultOauthTokenGenerator
+
+  class DefaultOauthTokenGenerator extends OauthTokenGenerator {
     override def generateRefreshToken(): Future[(String, String)] = {
       tokenGenerator.generateToken(persistentTokenService.refreshTokenExists)
     }

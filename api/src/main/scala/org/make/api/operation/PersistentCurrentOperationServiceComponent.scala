@@ -44,7 +44,7 @@ trait PersistentCurrentOperationService {
 trait DefaultPersistentCurrentOperationServiceComponent extends PersistentCurrentOperationServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override def persistentCurrentOperationService: DefaultPersistentCurrentOperationService =
+  override lazy val persistentCurrentOperationService: DefaultPersistentCurrentOperationService =
     new DefaultPersistentCurrentOperationService
 
   class DefaultPersistentCurrentOperationService extends PersistentCurrentOperationService with ShortenedNames {

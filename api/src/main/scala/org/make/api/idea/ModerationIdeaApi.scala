@@ -44,7 +44,6 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
 import scala.concurrent.Future
-import scala.util.Try
 
 @Api(value = "Moderation Idea")
 @Path(value = "/moderation/ideas")
@@ -165,89 +164,131 @@ trait DefaultModerationIdeaApiComponent
     with MakeSettingsComponent
     with QuestionServiceComponent =>
 
-  val ideaId: PathMatcher1[IdeaId] = Segment.flatMap(id => Try(IdeaId(id)).toOption)
+  override lazy val moderationIdeaApi: ModerationIdeaApi = new DefaultModerationIdeaApi
 
-  override lazy val moderationIdeaApi: ModerationIdeaApi =
-    new ModerationIdeaApi {
+  class DefaultModerationIdeaApi extends ModerationIdeaApi {
 
-      override def listIdeas: Route = {
-        get {
-          path("moderation" / "ideas") {
-            parameters(('name.?, 'questionId.as[QuestionId].?, '_end.as[Int].?, '_start.as[Int].?, '_sort.?, '_order.?)) {
-              (name, questionId, limit, skip, sort, order) =>
-                makeOperation("GetAllIdeas") { requestContext =>
-                  makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                    requireModerationRole(userAuth.user) {
-                      Validation.validate(
-                        Seq(
-                          sort.map { sortValue =>
-                            val choices =
-                              Seq(
-                                "ideaId",
-                                "name",
-                                "status",
-                                "createdAt",
-                                "updatedAt",
-                                "operationId",
-                                "questionId",
-                                "themeId",
-                                "question",
-                                "language",
-                                "country"
-                              )
-                            Validation.validChoices(
-                              fieldName = "_sort",
-                              message = Some(
-                                s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                              ),
-                              Seq(sortValue),
-                              choices
+    val ideaId: PathMatcher1[IdeaId] = Segment.map(id => IdeaId(id))
+
+    override def listIdeas: Route = {
+      get {
+        path("moderation" / "ideas") {
+          parameters(('name.?, 'questionId.as[QuestionId].?, '_end.as[Int].?, '_start.as[Int].?, '_sort.?, '_order.?)) {
+            (name, questionId, limit, skip, sort, order) =>
+              makeOperation("GetAllIdeas") { requestContext =>
+                makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+                  requireModerationRole(userAuth.user) {
+                    Validation.validate(
+                      Seq(
+                        sort.map { sortValue =>
+                          val choices =
+                            Seq(
+                              "ideaId",
+                              "name",
+                              "status",
+                              "createdAt",
+                              "updatedAt",
+                              "operationId",
+                              "questionId",
+                              "themeId",
+                              "question",
+                              "language",
+                              "country"
                             )
-                          },
-                          order.map { orderValue =>
-                            Validation.validChoices(
-                              fieldName = "order",
-                              message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
-                              Seq(orderValue),
-                              Order.orders.keys.toSeq
-                            )
-                          }
-                        ).flatten: _*
-                      )
-                      val filters: IdeaFiltersRequest =
-                        IdeaFiltersRequest(
-                          name = name,
-                          questionId = questionId,
-                          limit = limit,
-                          skip = skip,
-                          sort = sort,
-                          order = order
-                        )
-                      provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
-                        complete(
-                          (
-                            StatusCodes.OK,
-                            List(TotalCountHeader(ideas.total.toString)),
-                            ideas.results.map(IdeaResponse.apply)
+                          Validation.validChoices(
+                            fieldName = "_sort",
+                            message = Some(
+                              s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                            ),
+                            Seq(sortValue),
+                            choices
                           )
+                        },
+                        order.map { orderValue =>
+                          Validation.validChoices(
+                            fieldName = "order",
+                            message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                            Seq(orderValue),
+                            Order.orders.keys.toSeq
+                          )
+                        }
+                      ).flatten: _*
+                    )
+                    val filters: IdeaFiltersRequest =
+                      IdeaFiltersRequest(
+                        name = name,
+                        questionId = questionId,
+                        limit = limit,
+                        skip = skip,
+                        sort = sort,
+                        order = order
+                      )
+                    provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
+                      complete(
+                        (
+                          StatusCodes.OK,
+                          List(TotalCountHeader(ideas.total.toString)),
+                          ideas.results.map(IdeaResponse.apply)
                         )
-                      }
+                      )
                     }
                   }
                 }
+              }
+          }
+        }
+      }
+    }
+
+    override def getIdea: Route = {
+      get {
+        path("moderation" / "ideas" / ideaId) { ideaId =>
+          makeOperation("GetIdea") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireModerationRole(userAuth.user) {
+                provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
+                  complete(IdeaResponse(idea))
+                }
+              }
             }
           }
         }
       }
+    }
 
-      override def getIdea: Route = {
-        get {
-          path("moderation" / "ideas" / ideaId) { ideaId =>
-            makeOperation("GetIdea") { _ =>
-              makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                requireModerationRole(userAuth.user) {
-                  provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
-                    complete(IdeaResponse(idea))
+    override def createIdea: Route = post {
+      path("moderation" / "ideas") {
+        makeOperation("CreateIdea") { _ =>
+          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+            requireAdminRole(userAuth.user) {
+              decodeRequest {
+                entity(as[CreateIdeaRequest]) { request: CreateIdeaRequest =>
+                  Validation.validate(
+                    Validation.requirePresent(
+                      fieldName = "question",
+                      fieldValue = request.questionId,
+                      message = Some("question should not be empty")
+                    )
+                  )
+
+                  provideAsyncOrNotFound(
+                    request.questionId
+                      .map(questionId => questionService.getQuestion(questionId))
+                      .getOrElse(Future.successful(None))
+                  ) { question: Question =>
+                    provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { idea =>
+                      Validation.validate(
+                        Validation.requireNotPresent(
+                          fieldName = "name",
+                          fieldValue = idea,
+                          message = Some("idea already exist. Duplicates are not allowed")
+                        )
+                      )
+
+                      onSuccess(ideaService.insert(name = request.name, question = question)) { idea =>
+                        complete(StatusCodes.Created -> IdeaResponse(idea))
+                      }
+                    }
                   }
                 }
               }
@@ -255,76 +296,34 @@ trait DefaultModerationIdeaApiComponent
           }
         }
       }
+    }
 
-      override def createIdea: Route = post {
-        path("moderation" / "ideas") {
-          makeOperation("CreateIdea") { _ =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireAdminRole(userAuth.user) {
-                decodeRequest {
-                  entity(as[CreateIdeaRequest]) { request: CreateIdeaRequest =>
-                    Validation.validate(
-                      Validation.requirePresent(
-                        fieldName = "question",
-                        fieldValue = request.questionId,
-                        message = Some("question should not be empty")
-                      )
-                    )
-
+    override def updateIdea: Route = put {
+      path("moderation" / "ideas" / ideaId) { ideaId =>
+        makeOperation("UpdateIdea") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[UpdateIdeaRequest]) { request: UpdateIdeaRequest =>
+                  provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
                     provideAsyncOrNotFound(
-                      request.questionId
+                      idea.questionId
                         .map(questionId => questionService.getQuestion(questionId))
                         .getOrElse(Future.successful(None))
-                    ) { question: Question =>
-                      provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { idea =>
-                        Validation.validate(
-                          Validation.requireNotPresent(
-                            fieldName = "name",
-                            fieldValue = idea,
-                            message = Some("idea already exist. Duplicates are not allowed")
-                          )
-                        )
-
-                        onSuccess(ideaService.insert(name = request.name, question = question)) { idea =>
-                          complete(StatusCodes.Created -> IdeaResponse(idea))
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      override def updateIdea: Route = put {
-        path("moderation" / "ideas" / ideaId) { ideaId =>
-          makeOperation("UpdateIdea") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                decodeRequest {
-                  entity(as[UpdateIdeaRequest]) { request: UpdateIdeaRequest =>
-                    provideAsyncOrNotFound(ideaService.fetchOne(ideaId)) { idea =>
-                      provideAsyncOrNotFound(
-                        idea.questionId
-                          .map(questionId => questionService.getQuestion(questionId))
-                          .getOrElse(Future.successful(None))
-                      ) { question =>
-                        provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { duplicateIdea =>
-                          if (!duplicateIdea.map(_.ideaId).contains(ideaId)) {
-                            Validation.validate(
-                              Validation.requireNotPresent(
-                                fieldName = "name",
-                                fieldValue = duplicateIdea,
-                                message = Some("idea already exist. Duplicates are not allowed")
-                              )
+                    ) { question =>
+                      provideAsync(ideaService.fetchOneByName(question.questionId, request.name)) { duplicateIdea =>
+                        if (!duplicateIdea.map(_.ideaId).contains(ideaId)) {
+                          Validation.validate(
+                            Validation.requireNotPresent(
+                              fieldName = "name",
+                              fieldValue = duplicateIdea,
+                              message = Some("idea already exist. Duplicates are not allowed")
                             )
-                          }
-                          onSuccess(ideaService.update(ideaId = ideaId, name = request.name, status = request.status)) {
-                            _ =>
-                              complete(IdeaIdResponse(ideaId))
-                          }
+                          )
+                        }
+                        onSuccess(ideaService.update(ideaId = ideaId, name = request.name, status = request.status)) {
+                          _ =>
+                            complete(IdeaIdResponse(ideaId))
                         }
                       }
                     }
@@ -336,6 +335,7 @@ trait DefaultModerationIdeaApiComponent
         }
       }
     }
+  }
 }
 
 final case class CreateIdeaRequest(name: String,

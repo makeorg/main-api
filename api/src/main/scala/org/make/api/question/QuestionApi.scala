@@ -125,7 +125,9 @@ trait DefaultQuestionApiComponent
     with OperationOfQuestionServiceComponent
     with PartnerServiceComponent =>
 
-  override lazy val questionApi: QuestionApi = new QuestionApi {
+  override lazy val questionApi: QuestionApi = new DefaultQuestionApi
+
+  class DefaultQuestionApi extends QuestionApi {
 
     private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
     private val questionSlugOrQuestionId: PathMatcher1[String] = Segment

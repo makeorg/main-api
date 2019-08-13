@@ -68,8 +68,9 @@ trait PersistentOperationService {
 trait DefaultPersistentOperationServiceComponent extends PersistentOperationServiceComponent {
   this: MakeDBExecutionContextComponent with DefaultPersistentTagServiceComponent =>
 
-  override lazy val persistentOperationService: PersistentOperationService = new PersistentOperationService
-  with ShortenedNames with StrictLogging {
+  override lazy val persistentOperationService: PersistentOperationService = new DefaultPersistentOperationService
+
+  class DefaultPersistentOperationService extends PersistentOperationService with ShortenedNames with StrictLogging {
 
     private val operationAlias = PersistentOperation.operationAlias
     private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias

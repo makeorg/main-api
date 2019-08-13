@@ -34,8 +34,6 @@ import org.make.core.user.{CustomRole, Role, UserId}
 import org.make.core.{HttpCodes, Validation}
 import scalaoauth2.provider._
 
-import scala.util.Try
-
 @Api(value = "Client OAuth")
 @Path(value = "/admin/clients")
 trait AdminClientApi extends Directives {
@@ -146,9 +144,11 @@ trait DefaultAdminClientApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with ClientServiceComponent =>
 
-  val clientId: PathMatcher1[ClientId] = Segment.flatMap(id => Try(ClientId(id)).toOption)
+  override lazy val adminClientApi: AdminClientApi = new DefaultAdminClientApi
 
-  override lazy val adminClientApi: AdminClientApi = new AdminClientApi {
+  class DefaultAdminClientApi extends AdminClientApi {
+
+    val clientId: PathMatcher1[ClientId] = Segment.map(id => ClientId(id))
 
     override def createClient: Route =
       post {

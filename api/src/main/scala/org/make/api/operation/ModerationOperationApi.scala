@@ -139,7 +139,9 @@ trait DefaultModerationOperationApiComponent
     with TagServiceComponent
     with UserServiceComponent =>
 
-  override lazy val moderationOperationApi: ModerationOperationApi = new ModerationOperationApi {
+  override lazy val moderationOperationApi: ModerationOperationApi = new DefaultModerationOperationApi
+
+  class DefaultModerationOperationApi extends ModerationOperationApi {
 
     private def allowedSameSlugValidation(slug: String, operationId: String, operationIdOfSlug: String) = {
       Validation

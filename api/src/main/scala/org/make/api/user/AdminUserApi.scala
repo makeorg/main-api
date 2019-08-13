@@ -301,7 +301,9 @@ trait DefaultAdminUserApiComponent
     with MakeSettingsComponent
     with PersistentUserServiceComponent =>
 
-  override lazy val adminUserApi: AdminUserApi = new AdminUserApi {
+  override lazy val adminUserApi: AdminUserApi = new DefaultAdminUserApi
+
+  class DefaultAdminUserApi extends AdminUserApi {
 
     val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
     val userId: PathMatcher1[UserId] = Segment.map(UserId.apply)

@@ -100,8 +100,10 @@ trait StorageServiceComponent {
 trait DefaultStorageServiceComponent extends StorageServiceComponent {
   self: SwiftClientComponent with StorageConfigurationComponent =>
 
-  lazy val storageService: StorageService =
-    (fileType: FileType, name: String, contentType: String, content: Content) => {
+  override lazy val storageService: StorageService = new DefaultStorageService
+
+  class DefaultStorageService extends StorageService {
+    override def uploadFile(fileType: FileType, name: String, contentType: String, content: Content): Future[String] = {
       val path = s"${fileType.path}/$name"
       swiftClient
         .sendFile(Bucket(0, 0, storageConfiguration.bucketName), path, contentType, content.toByteArray())
@@ -109,6 +111,8 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
           s"${storageConfiguration.baseUrl}/$path"
         }
     }
+  }
+
 }
 
 case class StorageConfiguration(bucketName: String, baseUrl: String)

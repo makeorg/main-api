@@ -72,7 +72,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     with PersistentTagServiceComponent
     with PersistentQuestionServiceComponent =>
 
-  lazy val operationService: OperationService = new DefaultOperationService
+  override lazy val operationService: OperationService = new DefaultOperationService
 
   class DefaultOperationService extends OperationService {
 

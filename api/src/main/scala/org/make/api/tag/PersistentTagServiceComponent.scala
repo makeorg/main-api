@@ -70,8 +70,9 @@ object PersistentTagFilter {
 trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentTagService: PersistentTagService = new PersistentTagService with ShortenedNames
-  with StrictLogging {
+  override lazy val persistentTagService: PersistentTagService = new DefaultPersistentTagService
+
+  class DefaultPersistentTagService extends PersistentTagService with ShortenedNames with StrictLogging {
 
     private val tagAlias = PersistentTag.tagAlias
     private val tagTypeAlias = PersistentTagType.tagTypeAlias

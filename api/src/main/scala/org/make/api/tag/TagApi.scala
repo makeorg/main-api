@@ -31,8 +31,6 @@ import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.{tag, HttpCodes, ParameterExtractors}
 
-import scala.util.Try
-
 @Api(value = "Tags")
 @Path(value = "/tags")
 trait TagApi extends Directives {
@@ -58,7 +56,7 @@ trait TagApi extends Directives {
   final def routes: Route = getTag ~ listTags
 
   val tagId: PathMatcher1[TagId] =
-    Segment.flatMap(id => Try(TagId(id)).toOption)
+    Segment.map(id => TagId(id))
 }
 
 trait TagApiComponent {
@@ -72,7 +70,11 @@ trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDire
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent
     with QuestionServiceComponent =>
-  override lazy val tagApi: TagApi = new TagApi {
+
+  override lazy val tagApi: TagApi = new DefaultTagApi
+
+  class DefaultTagApi extends TagApi {
+
     override def getTag: Route = get {
       path("tags" / tagId) { tagId =>
         makeOperation("GetTag") { _ =>

@@ -119,7 +119,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with EventBusServiceComponent
     with TokenGeneratorComponent =>
 
-  val userService: UserService = new UserService {
+  override lazy val userService: UserService = new DefaultUserService
+
+  class DefaultUserService extends UserService {
 
     val validationTokenExpiresIn: Long = 30.days.toSeconds
     val resetTokenExpiresIn: Long = 1.days.toSeconds

@@ -88,7 +88,9 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     with ProposalServiceComponent
     with OrganisationSearchEngineComponent =>
 
-  val organisationService: OrganisationService = new OrganisationService {
+  override lazy val organisationService: OrganisationService = new DefaultOrganisationService
+
+  class DefaultOrganisationService extends OrganisationService {
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
       persistentUserService.get(userId).map(_.filter(_.isOrganisation))
     }

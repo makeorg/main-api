@@ -76,46 +76,52 @@ trait DefaultSemanticComponent extends SemanticComponent with CirceHttpSupport w
     with EventBusServiceComponent
     with TagServiceComponent =>
 
-  private val httpThreads = 12
-  implicit private val executionContext: ExecutionContext =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
+  override lazy val semanticService: SemanticService = new DefaultSemanticService
 
-  lazy val semanticUrl = new URL(semanticConfiguration.url)
+  class DefaultSemanticService extends SemanticService {
 
-  lazy val semanticHttpFlow
-    : Flow[(HttpRequest, Promise[HttpResponse]), (Try[HttpResponse], Promise[HttpResponse]), Http.HostConnectionPool] =
-    Http(actorSystem)
-      .cachedHostConnectionPool[Promise[HttpResponse]](
-        host = semanticUrl.getHost,
-        port = semanticUrl.getPort,
-        settings = ConnectionPoolSettings(actorSystem).withMaxConnections(httpThreads)
-      )
+    private val httpThreads = 12
+    implicit private val executionContext: ExecutionContext =
+      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
 
-  private lazy val semanticBufferSize = semanticConfiguration.httpBufferSize
+    lazy val semanticUrl = new URL(semanticConfiguration.url)
 
-  lazy val semanticQueue: SourceQueueWithComplete[(HttpRequest, Promise[HttpResponse])] = Source
-    .queue[(HttpRequest, Promise[HttpResponse])](bufferSize = semanticBufferSize, OverflowStrategy.backpressure)
-    .via(semanticHttpFlow)
-    .withAttributes(ActorAttributes.dispatcher(api.semanticDispatcher))
-    .toMat(Sink.foreach {
-      case (Success(resp), p) => p.success(resp)
-      case (Failure(e), p)    => p.failure(e)
-    })(Keep.left)
-    .run()(ActorMaterializer()(actorSystem))
+    lazy val semanticHttpFlow: Flow[(HttpRequest, Promise[HttpResponse]),
+                                    (Try[HttpResponse], Promise[HttpResponse]),
+                                    Http.HostConnectionPool] =
+      Http(actorSystem)
+        .cachedHostConnectionPool[Promise[HttpResponse]](
+          host = semanticUrl.getHost,
+          port = semanticUrl.getPort,
+          settings = ConnectionPoolSettings(actorSystem).withMaxConnections(httpThreads)
+        )
 
-  private def doHttpCall(request: HttpRequest): Future[HttpResponse] = {
-    val promise = Promise[HttpResponse]()
-    semanticQueue.offer((request, promise)).flatMap {
-      case QueueOfferResult.Enqueued    => promise.future
-      case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
-      case QueueOfferResult.Failure(ex) => Future.failed(ex)
-      case QueueOfferResult.QueueClosed =>
-        Future
-          .failed(new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later."))
+    private lazy val semanticBufferSize = semanticConfiguration.httpBufferSize
+
+    lazy val semanticQueue: SourceQueueWithComplete[(HttpRequest, Promise[HttpResponse])] = Source
+      .queue[(HttpRequest, Promise[HttpResponse])](bufferSize = semanticBufferSize, OverflowStrategy.backpressure)
+      .via(semanticHttpFlow)
+      .withAttributes(ActorAttributes.dispatcher(api.semanticDispatcher))
+      .toMat(Sink.foreach {
+        case (Success(resp), p) => p.success(resp)
+        case (Failure(e), p)    => p.failure(e)
+      })(Keep.left)
+      .run()(ActorMaterializer()(actorSystem))
+
+    private def doHttpCall(request: HttpRequest): Future[HttpResponse] = {
+      val promise = Promise[HttpResponse]()
+      semanticQueue.offer((request, promise)).flatMap {
+        case QueueOfferResult.Enqueued    => promise.future
+        case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
+        case QueueOfferResult.Failure(ex) => Future.failed(ex)
+        case QueueOfferResult.QueueClosed =>
+          Future
+            .failed(
+              new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later.")
+            )
+      }
     }
-  }
 
-  override lazy val semanticService: SemanticService = new SemanticService {
     private implicit val system: ActorSystem = actorSystem
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -201,42 +207,43 @@ trait DefaultSemanticComponent extends SemanticComponent with CirceHttpSupport w
           Future.successful(GetPredictedTagsResponse(Seq.empty, "none"))
       }
     }
-  }
 
-  def logSimilarIdeas(indexedProposal: IndexedProposal,
-                      similarProposals: Seq[ScoredProposal],
-                      algoLabel: String): Unit = {
-    eventBusService.publish(
-      PredictDuplicateEvent(
-        proposalId = indexedProposal.id,
-        predictedDuplicates = similarProposals.map(_.proposal.id),
-        predictedScores = similarProposals.map(_.score.score),
-        algoLabel = algoLabel
-      )
-    )
-  }
-
-  def buildSimilarIdeas(similarIdeas: Seq[ScoredProposal]): Future[Seq[SimilarIdea]] = {
-    val similarIdeaIds: Seq[IdeaId] = similarIdeas.flatMap(p => p.proposal.ideaId)
-
-    // TODO: avoid calling .get on options
-    ideaService
-      .fetchAllByIdeaIds(similarIdeaIds)
-      .map { ideas =>
-        val ideasById: Map[IdeaId, Idea] = ideas.map(idea => (idea.ideaId, idea)).toMap[IdeaId, Idea]
-
-        similarIdeas.map(
-          p =>
-            SimilarIdea(
-              ideaId = p.proposal.ideaId.get,
-              ideaName = ideasById(p.proposal.ideaId.get).name,
-              proposalId = p.proposal.id,
-              proposalContent = p.proposal.content,
-              score = p.score.score
-          )
+    def logSimilarIdeas(indexedProposal: IndexedProposal,
+                        similarProposals: Seq[ScoredProposal],
+                        algoLabel: String): Unit = {
+      eventBusService.publish(
+        PredictDuplicateEvent(
+          proposalId = indexedProposal.id,
+          predictedDuplicates = similarProposals.map(_.proposal.id),
+          predictedScores = similarProposals.map(_.score.score),
+          algoLabel = algoLabel
         )
-      }
+      )
+    }
+
+    def buildSimilarIdeas(similarIdeas: Seq[ScoredProposal]): Future[Seq[SimilarIdea]] = {
+      val similarIdeaIds: Seq[IdeaId] = similarIdeas.flatMap(p => p.proposal.ideaId)
+
+      // TODO: avoid calling .get on options
+      ideaService
+        .fetchAllByIdeaIds(similarIdeaIds)
+        .map { ideas =>
+          val ideasById: Map[IdeaId, Idea] = ideas.map(idea => (idea.ideaId, idea)).toMap[IdeaId, Idea]
+
+          similarIdeas.map(
+            p =>
+              SimilarIdea(
+                ideaId = p.proposal.ideaId.get,
+                ideaName = ideasById(p.proposal.ideaId.get).name,
+                proposalId = p.proposal.id,
+                proposalContent = p.proposal.content,
+                score = p.score.score
+            )
+          )
+        }
+    }
   }
+
 }
 
 final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: ProposalId,

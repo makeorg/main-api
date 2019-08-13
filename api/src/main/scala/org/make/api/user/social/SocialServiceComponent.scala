@@ -22,17 +22,17 @@ package org.make.api.user.social
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{ClientServiceComponent, MakeDataHandlerComponent}
+import org.make.api.user.UserServiceComponent
 import org.make.api.user.social.models.UserInfo
-import org.make.api.user.{social, UserServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
+import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scalaoauth2.provider.AuthInfo
 
 trait SocialServiceComponent extends GoogleApiComponent with FacebookApiComponent {
   def socialService: SocialService
@@ -55,18 +55,13 @@ case class UserIdAndToken(userId: UserId, token: TokenResponse)
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
   self: UserServiceComponent with MakeDataHandlerComponent with ClientServiceComponent with StrictLogging =>
 
-  override lazy val socialService: social.SocialService = new SocialService {
+  override lazy val socialService: SocialService = new DefaultSocialService
+
+  class DefaultSocialService extends SocialService {
 
     private val GOOGLE_PROVIDER = "google"
     private val FACEBOOK_PROVIDER = "facebook"
 
-    /**
-      *
-      * @param provider string
-      * @param token  string
-      *
-      * @return Future[UserInfo]
-      */
     def login(provider: String,
               token: String,
               country: Country,

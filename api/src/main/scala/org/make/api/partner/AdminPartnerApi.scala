@@ -118,7 +118,9 @@ trait DefaultAdminPartnerApiComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
-  override val moderationPartnerApi: AdminPartnerApi = new AdminPartnerApi {
+  override lazy val moderationPartnerApi: AdminPartnerApi = new DefaultAdminPartnerApi
+
+  class DefaultAdminPartnerApi extends AdminPartnerApi {
 
     private val partnerId: PathMatcher1[PartnerId] = Segment.map(id => PartnerId(id))
 

@@ -41,7 +41,7 @@ trait FeaturedOperationService {
 trait DefaultFeaturedOperationServiceComponent extends FeaturedOperationServiceComponent {
   this: PersistentFeaturedOperationServiceComponent with IdGeneratorComponent =>
 
-  lazy val featuredOperationService: FeaturedOperationService = new DefaultFeaturedOperationService
+  override lazy val featuredOperationService: FeaturedOperationService = new DefaultFeaturedOperationService
 
   class DefaultFeaturedOperationService extends FeaturedOperationService {
 

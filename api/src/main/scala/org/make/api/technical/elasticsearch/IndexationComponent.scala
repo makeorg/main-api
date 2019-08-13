@@ -76,9 +76,11 @@ trait DefaultIndexationComponent
     with ReadJournalComponent
     with PersistentOperationOfQuestionServiceComponent =>
 
-  private lazy val client = elasticsearchClient.client
+  override lazy val indexationService: IndexationService = new DefaultIndexationService
 
-  override lazy val indexationService: IndexationService = new IndexationService {
+  class DefaultIndexationService extends IndexationService {
+
+    private lazy val client = elasticsearchClient.client
 
     implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
 

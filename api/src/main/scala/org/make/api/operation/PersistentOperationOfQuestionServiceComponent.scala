@@ -61,225 +61,230 @@ trait PersistentOperationOfQuestionServiceComponent {
 trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOperationOfQuestionServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
-    new PersistentOperationOfQuestionService with ShortenedNames with StrictLogging {
+  override lazy val persistentOperationOfQuestionService: DefaultPersistentOperationOfQuestionService =
+    new DefaultPersistentOperationOfQuestionService
 
-      private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
-      private val operationAlias = PersistentOperation.operationAlias
+  class DefaultPersistentOperationOfQuestionService
+      extends PersistentOperationOfQuestionService
+      with ShortenedNames
+      with StrictLogging {
 
-      override def search(start: Int,
-                          end: Option[Int],
-                          sort: Option[String],
-                          order: Option[String],
-                          questionIds: Option[Seq[QuestionId]],
-                          operationIds: Option[Seq[OperationId]],
-                          operationKind: Option[Seq[OperationKind]],
-                          openAt: Option[ZonedDateTime]): Future[scala.Seq[OperationOfQuestion]] = {
-        implicit val context: EC = readExecutionContext
-        Future(NamedDB('READ).retryableTx { implicit session =>
-          withSQL[PersistentOperationOfQuestion] {
-            val query: scalikejdbc.PagingSQLBuilder[PersistentOperationOfQuestion] = select
-              .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
-              .innerJoin(PersistentOperation.as(operationAlias))
-              .on(operationOfQuestionAlias.operationId, operationAlias.uuid)
-              .where(
-                sqls.toAndConditionOpt(
-                  operationIds.map(
-                    operations => sqls.in(PersistentOperationOfQuestion.column.operationId, operations.map(_.value))
-                  ),
-                  questionIds.map(
-                    questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
-                  ),
-                  operationKind
-                    .map(operationKind => sqls.in(operationAlias.operationKind, operationKind.map(_.shortName))),
-                  openAt.map(
-                    openAt =>
-                      sqls
-                        .isNull(PersistentOperationOfQuestion.column.startDate)
-                        .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
-                        .and(
-                          sqls
-                            .isNull(PersistentOperationOfQuestion.column.endDate)
-                            .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                      )
-                  )
+    private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
+    private val operationAlias = PersistentOperation.operationAlias
+
+    override def search(start: Int,
+                        end: Option[Int],
+                        sort: Option[String],
+                        order: Option[String],
+                        questionIds: Option[Seq[QuestionId]],
+                        operationIds: Option[Seq[OperationId]],
+                        operationKind: Option[Seq[OperationKind]],
+                        openAt: Option[ZonedDateTime]): Future[scala.Seq[OperationOfQuestion]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL[PersistentOperationOfQuestion] {
+          val query: scalikejdbc.PagingSQLBuilder[PersistentOperationOfQuestion] = select
+            .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+            .innerJoin(PersistentOperation.as(operationAlias))
+            .on(operationOfQuestionAlias.operationId, operationAlias.uuid)
+            .where(
+              sqls.toAndConditionOpt(
+                operationIds.map(
+                  operations => sqls.in(PersistentOperationOfQuestion.column.operationId, operations.map(_.value))
+                ),
+                questionIds.map(
+                  questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
+                ),
+                operationKind
+                  .map(operationKind => sqls.in(operationAlias.operationKind, operationKind.map(_.shortName))),
+                openAt.map(
+                  openAt =>
+                    sqls
+                      .isNull(PersistentOperationOfQuestion.column.startDate)
+                      .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
+                      .and(
+                        sqls
+                          .isNull(PersistentOperationOfQuestion.column.endDate)
+                          .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
+                    )
                 )
               )
+            )
 
-            val queryOrdered = (sort, order.map(_.toUpperCase)) match {
-              case (Some(field), Some("DESC")) if PersistentOperationOfQuestion.columnNames.contains(field) =>
-                query.orderBy(operationOfQuestionAlias.field(field)).desc.offset(start)
-              case (Some(field), _) if PersistentOperationOfQuestion.columnNames.contains(field) =>
-                query.orderBy(operationOfQuestionAlias.field(field)).asc.offset(start)
-              case (Some(field), _) =>
-                logger.warn(s"Unsupported filter '$field'")
-                query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
-              case (_, _) => query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
-            }
-            end match {
-              case Some(limit) => queryOrdered.limit(limit)
-              case None        => queryOrdered
-            }
-          }.map(PersistentOperationOfQuestion(operationOfQuestionAlias.resultName)).list().apply()
-        }).map(_.map(_.toOperationOfQuestion))
-      }
-
-      override def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
-        implicit val context: EC = writeExecutionContext
-        Future(NamedDB('WRITE).retryableTx { implicit session =>
-          withSQL {
-            val now = DateHelper.now()
-            insert
-              .into(PersistentOperationOfQuestion)
-              .namedValues(
-                PersistentOperationOfQuestion.column.questionId -> operationOfQuestion.questionId.value,
-                PersistentOperationOfQuestion.column.operationId -> operationOfQuestion.operationId.value,
-                PersistentOperationOfQuestion.column.startDate -> operationOfQuestion.startDate,
-                PersistentOperationOfQuestion.column.endDate -> operationOfQuestion.endDate,
-                PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
-                PersistentOperationOfQuestion.column.landingSequenceId -> operationOfQuestion.landingSequenceId.value,
-                PersistentOperationOfQuestion.column.createdAt -> now,
-                PersistentOperationOfQuestion.column.updatedAt -> now,
-                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose,
-                PersistentOperationOfQuestion.column.introCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.introCard.enabled,
-                PersistentOperationOfQuestion.column.introCardTitle -> operationOfQuestion.sequenceCardsConfiguration.introCard.title,
-                PersistentOperationOfQuestion.column.introCardDescription -> operationOfQuestion.sequenceCardsConfiguration.introCard.description,
-                PersistentOperationOfQuestion.column.pushProposalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.pushProposalCard.enabled,
-                PersistentOperationOfQuestion.column.signupCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.enabled,
-                PersistentOperationOfQuestion.column.signupCardTitle -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.title,
-                PersistentOperationOfQuestion.column.signupCardNextCta -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.nextCtaText,
-                PersistentOperationOfQuestion.column.finalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.enabled,
-                PersistentOperationOfQuestion.column.finalCardSharingEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled,
-                PersistentOperationOfQuestion.column.finalCardTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.title,
-                PersistentOperationOfQuestion.column.finalCardShareDescription -> operationOfQuestion.sequenceCardsConfiguration.finalCard.shareDescription,
-                PersistentOperationOfQuestion.column.finalCardLearnMoreTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTitle,
-                PersistentOperationOfQuestion.column.finalCardLearnMoreButton -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTextButton,
-                PersistentOperationOfQuestion.column.finalCardLinkUrl -> operationOfQuestion.sequenceCardsConfiguration.finalCard.linkUrl,
-                PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
-                PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
-                PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
-                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture,
-                PersistentOperationOfQuestion.column.gradientStart -> operationOfQuestion.theme.gradientStart,
-                PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
-                PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
-                PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
-                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
-                PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
-              )
-          }.execute().apply()
-        }).map(_ => operationOfQuestion)
-      }
-
-      override def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
-        implicit val context: EC = writeExecutionContext
-        Future(NamedDB('WRITE).retryableTx { implicit session =>
-          withSQL {
-            val now = DateHelper.now()
-            update(PersistentOperationOfQuestion)
-              .set(
-                PersistentOperationOfQuestion.column.startDate -> operationOfQuestion.startDate,
-                PersistentOperationOfQuestion.column.endDate -> operationOfQuestion.endDate,
-                PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
-                PersistentOperationOfQuestion.column.updatedAt -> now,
-                PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose,
-                PersistentOperationOfQuestion.column.introCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.introCard.enabled,
-                PersistentOperationOfQuestion.column.introCardTitle -> operationOfQuestion.sequenceCardsConfiguration.introCard.title,
-                PersistentOperationOfQuestion.column.introCardDescription -> operationOfQuestion.sequenceCardsConfiguration.introCard.description,
-                PersistentOperationOfQuestion.column.pushProposalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.pushProposalCard.enabled,
-                PersistentOperationOfQuestion.column.signupCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.enabled,
-                PersistentOperationOfQuestion.column.signupCardTitle -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.title,
-                PersistentOperationOfQuestion.column.signupCardNextCta -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.nextCtaText,
-                PersistentOperationOfQuestion.column.finalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.enabled,
-                PersistentOperationOfQuestion.column.finalCardSharingEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled,
-                PersistentOperationOfQuestion.column.finalCardTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.title,
-                PersistentOperationOfQuestion.column.finalCardShareDescription -> operationOfQuestion.sequenceCardsConfiguration.finalCard.shareDescription,
-                PersistentOperationOfQuestion.column.finalCardLearnMoreTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTitle,
-                PersistentOperationOfQuestion.column.finalCardLearnMoreButton -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTextButton,
-                PersistentOperationOfQuestion.column.finalCardLinkUrl -> operationOfQuestion.sequenceCardsConfiguration.finalCard.linkUrl,
-                PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
-                PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
-                PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
-                PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture,
-                PersistentOperationOfQuestion.column.gradientStart -> operationOfQuestion.theme.gradientStart,
-                PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
-                PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
-                PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
-                PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
-                PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
-              )
-              .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
-          }.execute().apply()
-        }).map(_ => operationOfQuestion)
-      }
-
-      override def getById(id: QuestionId): Future[Option[OperationOfQuestion]] = {
-        implicit val context: EC = readExecutionContext
-        Future(NamedDB('READ).retryableTx { implicit session =>
-          withSQL[PersistentOperationOfQuestion] {
-            select
-              .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
-              .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, id.value))
-          }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)(_)).single.apply()
-        }).map(_.map(_.toOperationOfQuestion))
-      }
-
-      override def find(operationId: Option[OperationId]): Future[Seq[OperationOfQuestion]] = {
-        implicit val context: EC = readExecutionContext
-        Future(NamedDB('READ).retryableTx { implicit session =>
-          withSQL[PersistentOperationOfQuestion] {
-            select
-              .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
-              .where(
-                sqls.toAndConditionOpt(
-                  operationId
-                    .map(operation => sqls.eq(PersistentOperationOfQuestion.column.operationId, operation.value))
-                )
-              )
-          }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)).list().apply()
-        }).map(_.map(_.toOperationOfQuestion))
-      }
-
-      override def delete(questionId: QuestionId): Future[Unit] = {
-        implicit val context: EC = readExecutionContext
-        Future(NamedDB('WRITE).retryableTx { implicit session =>
-          withSQL {
-            deleteFrom(PersistentOperationOfQuestion)
-              .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, questionId.value))
-          }.execute().apply()
-        }).map(_ => ())
-      }
-
-      override def count(questionIds: Option[Seq[QuestionId]],
-                         operationIds: Option[Seq[OperationId]],
-                         openAt: Option[ZonedDateTime]): Future[Int] = {
-        implicit val context: EC = readExecutionContext
-        Future(NamedDB('READ).retryableTx { implicit session =>
-          withSQL[PersistentOperationOfQuestion] {
-            select(sqls.count)
-              .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
-              .where(
-                sqls.toAndConditionOpt(
-                  operationIds
-                    .map(opIds => sqls.in(PersistentOperationOfQuestion.column.operationId, opIds.map(_.value))),
-                  questionIds
-                    .map(qIds => sqls.in(PersistentOperationOfQuestion.column.questionId, qIds.map(_.value))),
-                  openAt.map(
-                    openAt =>
-                      sqls
-                        .isNull(PersistentOperationOfQuestion.column.startDate)
-                        .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
-                        .and(
-                          sqls
-                            .isNull(PersistentOperationOfQuestion.column.endDate)
-                            .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                      )
-                  )
-                )
-              )
-          }.map(_.int(1)).single.apply().getOrElse(0)
-        })
-      }
+          val queryOrdered = (sort, order.map(_.toUpperCase)) match {
+            case (Some(field), Some("DESC")) if PersistentOperationOfQuestion.columnNames.contains(field) =>
+              query.orderBy(operationOfQuestionAlias.field(field)).desc.offset(start)
+            case (Some(field), _) if PersistentOperationOfQuestion.columnNames.contains(field) =>
+              query.orderBy(operationOfQuestionAlias.field(field)).asc.offset(start)
+            case (Some(field), _) =>
+              logger.warn(s"Unsupported filter '$field'")
+              query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
+            case (_, _) => query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
+          }
+          end match {
+            case Some(limit) => queryOrdered.limit(limit)
+            case None        => queryOrdered
+          }
+        }.map(PersistentOperationOfQuestion(operationOfQuestionAlias.resultName)).list().apply()
+      }).map(_.map(_.toOperationOfQuestion))
     }
+
+    override def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          val now = DateHelper.now()
+          insert
+            .into(PersistentOperationOfQuestion)
+            .namedValues(
+              PersistentOperationOfQuestion.column.questionId -> operationOfQuestion.questionId.value,
+              PersistentOperationOfQuestion.column.operationId -> operationOfQuestion.operationId.value,
+              PersistentOperationOfQuestion.column.startDate -> operationOfQuestion.startDate,
+              PersistentOperationOfQuestion.column.endDate -> operationOfQuestion.endDate,
+              PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
+              PersistentOperationOfQuestion.column.landingSequenceId -> operationOfQuestion.landingSequenceId.value,
+              PersistentOperationOfQuestion.column.createdAt -> now,
+              PersistentOperationOfQuestion.column.updatedAt -> now,
+              PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose,
+              PersistentOperationOfQuestion.column.introCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.introCard.enabled,
+              PersistentOperationOfQuestion.column.introCardTitle -> operationOfQuestion.sequenceCardsConfiguration.introCard.title,
+              PersistentOperationOfQuestion.column.introCardDescription -> operationOfQuestion.sequenceCardsConfiguration.introCard.description,
+              PersistentOperationOfQuestion.column.pushProposalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.pushProposalCard.enabled,
+              PersistentOperationOfQuestion.column.signupCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.enabled,
+              PersistentOperationOfQuestion.column.signupCardTitle -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.title,
+              PersistentOperationOfQuestion.column.signupCardNextCta -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.nextCtaText,
+              PersistentOperationOfQuestion.column.finalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.enabled,
+              PersistentOperationOfQuestion.column.finalCardSharingEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled,
+              PersistentOperationOfQuestion.column.finalCardTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.title,
+              PersistentOperationOfQuestion.column.finalCardShareDescription -> operationOfQuestion.sequenceCardsConfiguration.finalCard.shareDescription,
+              PersistentOperationOfQuestion.column.finalCardLearnMoreTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTitle,
+              PersistentOperationOfQuestion.column.finalCardLearnMoreButton -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTextButton,
+              PersistentOperationOfQuestion.column.finalCardLinkUrl -> operationOfQuestion.sequenceCardsConfiguration.finalCard.linkUrl,
+              PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
+              PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
+              PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
+              PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture,
+              PersistentOperationOfQuestion.column.gradientStart -> operationOfQuestion.theme.gradientStart,
+              PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
+              PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
+              PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
+              PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
+              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
+            )
+        }.execute().apply()
+      }).map(_ => operationOfQuestion)
+    }
+
+    override def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
+      implicit val context: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          val now = DateHelper.now()
+          update(PersistentOperationOfQuestion)
+            .set(
+              PersistentOperationOfQuestion.column.startDate -> operationOfQuestion.startDate,
+              PersistentOperationOfQuestion.column.endDate -> operationOfQuestion.endDate,
+              PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
+              PersistentOperationOfQuestion.column.updatedAt -> now,
+              PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose,
+              PersistentOperationOfQuestion.column.introCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.introCard.enabled,
+              PersistentOperationOfQuestion.column.introCardTitle -> operationOfQuestion.sequenceCardsConfiguration.introCard.title,
+              PersistentOperationOfQuestion.column.introCardDescription -> operationOfQuestion.sequenceCardsConfiguration.introCard.description,
+              PersistentOperationOfQuestion.column.pushProposalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.pushProposalCard.enabled,
+              PersistentOperationOfQuestion.column.signupCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.enabled,
+              PersistentOperationOfQuestion.column.signupCardTitle -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.title,
+              PersistentOperationOfQuestion.column.signupCardNextCta -> operationOfQuestion.sequenceCardsConfiguration.signUpCard.nextCtaText,
+              PersistentOperationOfQuestion.column.finalCardEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.enabled,
+              PersistentOperationOfQuestion.column.finalCardSharingEnabled -> operationOfQuestion.sequenceCardsConfiguration.finalCard.sharingEnabled,
+              PersistentOperationOfQuestion.column.finalCardTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.title,
+              PersistentOperationOfQuestion.column.finalCardShareDescription -> operationOfQuestion.sequenceCardsConfiguration.finalCard.shareDescription,
+              PersistentOperationOfQuestion.column.finalCardLearnMoreTitle -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTitle,
+              PersistentOperationOfQuestion.column.finalCardLearnMoreButton -> operationOfQuestion.sequenceCardsConfiguration.finalCard.learnMoreTextButton,
+              PersistentOperationOfQuestion.column.finalCardLinkUrl -> operationOfQuestion.sequenceCardsConfiguration.finalCard.linkUrl,
+              PersistentOperationOfQuestion.column.aboutUrl -> operationOfQuestion.aboutUrl,
+              PersistentOperationOfQuestion.column.metaTitle -> operationOfQuestion.metas.title,
+              PersistentOperationOfQuestion.column.metaDescription -> operationOfQuestion.metas.description,
+              PersistentOperationOfQuestion.column.metaPicture -> operationOfQuestion.metas.picture,
+              PersistentOperationOfQuestion.column.gradientStart -> operationOfQuestion.theme.gradientStart,
+              PersistentOperationOfQuestion.column.gradientEnd -> operationOfQuestion.theme.gradientEnd,
+              PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
+              PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
+              PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
+              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
+            )
+            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
+        }.execute().apply()
+      }).map(_ => operationOfQuestion)
+    }
+
+    override def getById(id: QuestionId): Future[Option[OperationOfQuestion]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL[PersistentOperationOfQuestion] {
+          select
+            .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, id.value))
+        }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)(_)).single.apply()
+      }).map(_.map(_.toOperationOfQuestion))
+    }
+
+    override def find(operationId: Option[OperationId]): Future[Seq[OperationOfQuestion]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL[PersistentOperationOfQuestion] {
+          select
+            .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+            .where(
+              sqls.toAndConditionOpt(
+                operationId
+                  .map(operation => sqls.eq(PersistentOperationOfQuestion.column.operationId, operation.value))
+              )
+            )
+        }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)).list().apply()
+      }).map(_.map(_.toOperationOfQuestion))
+    }
+
+    override def delete(questionId: QuestionId): Future[Unit] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          deleteFrom(PersistentOperationOfQuestion)
+            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, questionId.value))
+        }.execute().apply()
+      }).map(_ => ())
+    }
+
+    override def count(questionIds: Option[Seq[QuestionId]],
+                       operationIds: Option[Seq[OperationId]],
+                       openAt: Option[ZonedDateTime]): Future[Int] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL[PersistentOperationOfQuestion] {
+          select(sqls.count)
+            .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
+            .where(
+              sqls.toAndConditionOpt(
+                operationIds
+                  .map(opIds => sqls.in(PersistentOperationOfQuestion.column.operationId, opIds.map(_.value))),
+                questionIds
+                  .map(qIds => sqls.in(PersistentOperationOfQuestion.column.questionId, qIds.map(_.value))),
+                openAt.map(
+                  openAt =>
+                    sqls
+                      .isNull(PersistentOperationOfQuestion.column.startDate)
+                      .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
+                      .and(
+                        sqls
+                          .isNull(PersistentOperationOfQuestion.column.endDate)
+                          .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
+                    )
+                )
+              )
+            )
+        }.map(_.int(1)).single.apply().getOrElse(0)
+      })
+    }
+  }
 
 }
 

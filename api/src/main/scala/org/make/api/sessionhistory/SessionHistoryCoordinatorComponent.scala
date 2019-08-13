@@ -59,62 +59,64 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
   self: SessionHistoryCoordinatorComponent =>
 
   override lazy val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
-    new SessionHistoryCoordinatorService {
+    new DefaultSessionHistoryCoordinatorService
 
-      implicit val timeout: Timeout = TimeSettings.defaultTimeout
+  class DefaultSessionHistoryCoordinatorService extends SessionHistoryCoordinatorService {
 
-      override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
-        (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).mapTo[SessionHistory]
-      }
+    implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-      override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
-        (sessionHistoryCoordinator ? command).map(_ => ())
-      }
+    override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
+      (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).mapTo[SessionHistory]
+    }
 
-      override def logHistory(command: SessionHistoryEvent[_]): Unit = {
-        (sessionHistoryCoordinator ? command).map(_ => ())
-      }
+    override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
+      (sessionHistoryCoordinator ? command).map(_ => ())
+    }
 
-      override def retrieveVoteAndQualifications(
-        request: RequestSessionVoteValues
-      ): Future[Map[ProposalId, VoteAndQualifications]] = {
-        (sessionHistoryCoordinator ? request).mapTo[Map[ProposalId, VoteAndQualifications]]
-      }
+    override def logHistory(command: SessionHistoryEvent[_]): Unit = {
+      (sessionHistoryCoordinator ? command).map(_ => ())
+    }
 
-      override def convertSession(sessionId: SessionId, userId: UserId): Future[Unit] = {
-        (sessionHistoryCoordinator ? UserConnected(sessionId, userId)).map(_ => {})
-      }
+    override def retrieveVoteAndQualifications(
+      request: RequestSessionVoteValues
+    ): Future[Map[ProposalId, VoteAndQualifications]] = {
+      (sessionHistoryCoordinator ? request).mapTo[Map[ProposalId, VoteAndQualifications]]
+    }
 
-      override def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]] = {
-        (sessionHistoryCoordinator ? request).mapTo[Seq[ProposalId]]
-      }
-      override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
-        (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
-          case LockAcquired => Future.successful {}
-          case LockAlreadyAcquired =>
-            Future.failed(ConcurrentModification("A vote is already pending for this proposal"))
-        }
-      }
-      override def lockSessionForQualification(sessionId: SessionId,
-                                               proposalId: ProposalId,
-                                               key: QualificationKey): Future[Unit] = {
-        (sessionHistoryCoordinator ? LockProposalForQualification(sessionId, proposalId, key)).flatMap {
-          case LockAcquired => Future.successful {}
-          case LockAlreadyAcquired =>
-            Future.failed(ConcurrentModification("A qualification is already pending for this proposal"))
-        }
-      }
-      override def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
-        sessionHistoryCoordinator ! ReleaseProposalForVote(sessionId, proposalId)
-        Future.successful {}
-      }
+    override def convertSession(sessionId: SessionId, userId: UserId): Future[Unit] = {
+      (sessionHistoryCoordinator ? UserConnected(sessionId, userId)).map(_ => {})
+    }
 
-      override def unlockSessionForQualification(sessionId: SessionId,
-                                                 proposalId: ProposalId,
-                                                 key: QualificationKey): Future[Unit] = {
-        sessionHistoryCoordinator ! ReleaseProposalForQualification(sessionId, proposalId, key)
-        Future.successful {}
+    override def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]] = {
+      (sessionHistoryCoordinator ? request).mapTo[Seq[ProposalId]]
+    }
+    override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
+      (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
+        case LockAcquired => Future.successful {}
+        case LockAlreadyAcquired =>
+          Future.failed(ConcurrentModification("A vote is already pending for this proposal"))
       }
     }
+    override def lockSessionForQualification(sessionId: SessionId,
+                                             proposalId: ProposalId,
+                                             key: QualificationKey): Future[Unit] = {
+      (sessionHistoryCoordinator ? LockProposalForQualification(sessionId, proposalId, key)).flatMap {
+        case LockAcquired => Future.successful {}
+        case LockAlreadyAcquired =>
+          Future.failed(ConcurrentModification("A qualification is already pending for this proposal"))
+      }
+    }
+    override def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
+      sessionHistoryCoordinator ! ReleaseProposalForVote(sessionId, proposalId)
+      Future.successful {}
+    }
+
+    override def unlockSessionForQualification(sessionId: SessionId,
+                                               proposalId: ProposalId,
+                                               key: QualificationKey): Future[Unit] = {
+      sessionHistoryCoordinator ! ReleaseProposalForQualification(sessionId, proposalId, key)
+      Future.successful {}
+    }
+  }
 
 }

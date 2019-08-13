@@ -76,7 +76,9 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent =>
 
-  override lazy val elasticSearchApi: ElasticSearchApi = new ElasticSearchApi {
+  override lazy val elasticSearchApi: ElasticSearchApi = new DefaultElasticSearchApi
+
+  class DefaultElasticSearchApi extends ElasticSearchApi {
     def reindex: Route = post {
       path("technical" / "elasticsearch" / "reindex") {
         makeOAuth2 { auth: AuthInfo[UserRights] =>

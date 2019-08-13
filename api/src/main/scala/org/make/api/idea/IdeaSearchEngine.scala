@@ -53,7 +53,9 @@ object IdeaSearchEngine {
 trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with CirceFormatters {
   self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
-  override lazy val elasticsearchIdeaAPI: IdeaSearchEngine = new IdeaSearchEngine with StrictLogging {
+  override lazy val elasticsearchIdeaAPI: IdeaSearchEngine = new DefaultIdeaSearchEngine
+
+  class DefaultIdeaSearchEngine extends IdeaSearchEngine with StrictLogging {
 
     private lazy val client = elasticsearchClient.client
 

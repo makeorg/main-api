@@ -116,8 +116,9 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
     }
   }
 
-  override lazy val persistentTokenService: PersistentTokenService = new PersistentTokenService with ShortenedNames
-  with StrictLogging {
+  override lazy val persistentTokenService: PersistentTokenService = new DefaultPersistentTokenService
+
+  class DefaultPersistentTokenService extends PersistentTokenService with ShortenedNames with StrictLogging {
 
     private val tokenAlias = PersistentToken.tokenAlias
     private val column = PersistentToken.column

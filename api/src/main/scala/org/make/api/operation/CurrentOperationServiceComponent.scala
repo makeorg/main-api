@@ -41,7 +41,7 @@ trait CurrentOperationService {
 trait DefaultCurrentOperationServiceComponent extends CurrentOperationServiceComponent {
   this: PersistentCurrentOperationServiceComponent with IdGeneratorComponent =>
 
-  lazy val currentOperationService: CurrentOperationService = new DefaultCurrentOperationService
+  override lazy val currentOperationService: CurrentOperationService = new DefaultCurrentOperationService
 
   class DefaultCurrentOperationService extends CurrentOperationService {
 

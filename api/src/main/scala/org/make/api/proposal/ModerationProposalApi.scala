@@ -55,7 +55,6 @@ import scalaoauth2.provider.AuthInfo
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
 
 @Api(value = "ModerationProposal")
 @Path(value = "/moderation/proposals")
@@ -438,7 +437,7 @@ trait DefaultModerationProposalApiComponent
 
   class DefaultModerationProposalApi extends ModerationProposalApi {
 
-    val moderationProposalId: PathMatcher1[ProposalId] = Segment.flatMap(id => Try(ProposalId(id)).toOption)
+    val moderationProposalId: PathMatcher1[ProposalId] = Segment.map(id => ProposalId(id))
 
     def getModerationProposal: Route = {
       get {

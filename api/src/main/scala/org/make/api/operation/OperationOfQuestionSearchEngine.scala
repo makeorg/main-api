@@ -56,7 +56,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
     with CirceFormatters {
   self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
-  lazy val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
+  override lazy val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
     new DefaultOperationOfQuestionSearchEngine
 
   class DefaultOperationOfQuestionSearchEngine extends OperationOfQuestionSearchEngine {

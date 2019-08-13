@@ -82,7 +82,9 @@ trait DefaultTagServiceComponent
     with PersistentTagTypeServiceComponent {
   this: PersistentTagServiceComponent with EventBusServiceComponent with IdGeneratorComponent =>
 
-  val tagService: TagService = new TagService {
+  override lazy val tagService: TagService = new DefaultTagService
+
+  class DefaultTagService extends TagService {
 
     override def getTag(tagId: TagId): Future[Option[Tag]] = {
       persistentTagService.get(tagId)

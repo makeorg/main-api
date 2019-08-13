@@ -62,7 +62,9 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent with MakeAuthenti
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent =>
 
-  override lazy val sequenceApi: SequenceApi = new SequenceApi {
+  override lazy val sequenceApi: SequenceApi = new DefaultSequenceApi
+
+  class DefaultSequenceApi extends SequenceApi {
 
     val sequenceId: PathMatcher1[SequenceId] = Segment.map(id => SequenceId(id))
 

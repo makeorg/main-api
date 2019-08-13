@@ -134,7 +134,7 @@ trait DefaultAdminCurrentOperationApiComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
-  override val adminCurrentOperationApi: AdminCurrentOperationApi = new DefaultAdminCurrentOperationApi
+  override lazy val adminCurrentOperationApi: AdminCurrentOperationApi = new DefaultAdminCurrentOperationApi
 
   class DefaultAdminCurrentOperationApi extends AdminCurrentOperationApi {
 

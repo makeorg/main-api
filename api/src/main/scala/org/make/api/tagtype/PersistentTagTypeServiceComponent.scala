@@ -49,8 +49,9 @@ trait PersistentTagTypeService {
 trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentTagTypeService: PersistentTagTypeService = new PersistentTagTypeService
-  with ShortenedNames with StrictLogging {
+  override lazy val persistentTagTypeService: PersistentTagTypeService = new DefaultPersistentTagTypeService
+
+  class DefaultPersistentTagTypeService extends PersistentTagTypeService with ShortenedNames with StrictLogging {
 
     private val tagTypeAlias = PersistentTagType.tagTypeAlias
     private val column = PersistentTagType.column

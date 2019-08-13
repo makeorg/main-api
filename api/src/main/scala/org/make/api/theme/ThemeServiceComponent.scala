@@ -44,7 +44,9 @@ trait DefaultThemeServiceComponent extends ThemeServiceComponent with ShortenedN
     with TagServiceComponent
     with QuestionServiceComponent =>
 
-  val themeService: ThemeService = new ThemeService {
+  override lazy val themeService: ThemeService = new DefaultThemeService
+
+  class DefaultThemeService extends ThemeService {
 
     override def findAll(): Future[Seq[Theme]] = {
       persistentThemeService.findAll().flatMap { themes =>

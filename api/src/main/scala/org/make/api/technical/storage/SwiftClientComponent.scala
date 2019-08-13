@@ -28,5 +28,5 @@ trait SwiftClientComponent {
 trait DefaultSwiftClientComponent extends SwiftClientComponent {
   self: ActorSystemComponent =>
 
-  lazy val swiftClient: SwiftClient = SwiftClient.create(actorSystem)
+  override lazy val swiftClient: SwiftClient = SwiftClient.create(actorSystem)
 }

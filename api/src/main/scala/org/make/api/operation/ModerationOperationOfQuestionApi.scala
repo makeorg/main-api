@@ -218,61 +218,69 @@ trait DefaultModerationOperationOfQuestionApiComponent
   val moderationQuestionId: PathMatcher1[QuestionId] = Segment.map(id   => QuestionId(id))
   val moderationOperationId: PathMatcher1[OperationId] = Segment.map(id => OperationId(id))
 
-  override lazy val moderationOperationOfQuestionApi: ModerationOperationOfQuestionApi =
-    new ModerationOperationOfQuestionApi {
+  override lazy val moderationOperationOfQuestionApi: DefaultModerationOperationOfQuestionApi =
+    new DefaultModerationOperationOfQuestionApi
 
-      override def listOperationOfQuestions: Route = get {
-        path("moderation" / "operations-of-questions") {
-          makeOperation("ListOperationsOfQuestions") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
-                parameters(
-                  (
-                    '_start.as[Int].?,
-                    '_end.as[Int].?,
-                    '_sort.?,
-                    '_order.?,
-                    'questionId.as[immutable.Seq[QuestionId]].?,
-                    'operationId.as[OperationId].?,
-                    'operationKind.as[immutable.Seq[OperationKind]].?,
-                    'openAt.as[ZonedDateTime].?
-                  )
-                ) {
-                  (start: Option[Int],
-                   end: Option[Int],
-                   sort: Option[String],
-                   order: Option[String],
-                   questionIds,
-                   operationId,
-                   operationKind,
-                   openAt) =>
-                    order.foreach { orderValue =>
-                      Validation.validate(
-                        Validation
-                          .validChoices(
-                            "_order",
-                            Some("Invalid order"),
-                            Seq(orderValue.toLowerCase),
-                            Seq("desc", "asc")
-                          )
+  class DefaultModerationOperationOfQuestionApi extends ModerationOperationOfQuestionApi {
+
+    override def listOperationOfQuestions: Route = get {
+      path("moderation" / "operations-of-questions") {
+        makeOperation("ListOperationsOfQuestions") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              parameters(
+                (
+                  '_start.as[Int].?,
+                  '_end.as[Int].?,
+                  '_sort.?,
+                  '_order.?,
+                  'questionId.as[immutable.Seq[QuestionId]].?,
+                  'operationId.as[OperationId].?,
+                  'operationKind.as[immutable.Seq[OperationKind]].?,
+                  'openAt.as[ZonedDateTime].?
+                )
+              ) {
+                (start: Option[Int],
+                 end: Option[Int],
+                 sort: Option[String],
+                 order: Option[String],
+                 questionIds,
+                 operationId,
+                 operationKind,
+                 openAt) =>
+                  order.foreach { orderValue =>
+                    Validation.validate(
+                      Validation
+                        .validChoices("_order", Some("Invalid order"), Seq(orderValue.toLowerCase), Seq("desc", "asc"))
+                    )
+                  }
+                  val resolvedQuestions: Option[Seq[QuestionId]] = {
+                    if (auth.user.roles.contains(RoleAdmin)) {
+                      questionIds
+                    } else {
+                      questionIds.map { questions =>
+                        questions.filter(id => auth.user.availableQuestions.contains(id))
+                      }.orElse(Some(auth.user.availableQuestions))
+                    }
+                  }
+                  provideAsync(
+                    operationOfQuestionService
+                      .find(
+                        start.getOrElse(0),
+                        end,
+                        sort,
+                        order,
+                        SearchOperationsOfQuestions(
+                          resolvedQuestions,
+                          operationId.map(opId => Seq(opId)),
+                          operationKind,
+                          openAt
+                        )
                       )
-                    }
-                    val resolvedQuestions: Option[Seq[QuestionId]] = {
-                      if (auth.user.roles.contains(RoleAdmin)) {
-                        questionIds
-                      } else {
-                        questionIds.map { questions =>
-                          questions.filter(id => auth.user.availableQuestions.contains(id))
-                        }.orElse(Some(auth.user.availableQuestions))
-                      }
-                    }
+                  ) { result: Seq[OperationOfQuestion] =>
                     provideAsync(
                       operationOfQuestionService
-                        .find(
-                          start.getOrElse(0),
-                          end,
-                          sort,
-                          order,
+                        .count(
                           SearchOperationsOfQuestions(
                             resolvedQuestions,
                             operationId.map(opId => Seq(opId)),
@@ -280,152 +288,90 @@ trait DefaultModerationOperationOfQuestionApiComponent
                             openAt
                           )
                         )
-                    ) { result: Seq[OperationOfQuestion] =>
-                      provideAsync(
-                        operationOfQuestionService
-                          .count(
-                            SearchOperationsOfQuestions(
-                              resolvedQuestions,
-                              operationId.map(opId => Seq(opId)),
-                              operationKind,
-                              openAt
+                    ) { count =>
+                      provideAsync(questionService.getQuestions(result.map(_.questionId))) { questions: Seq[Question] =>
+                        val questionsAsMap = questions.map(q => q.questionId -> q).toMap
+                        complete(
+                          (
+                            StatusCodes.OK,
+                            List(TotalCountHeader(count.toString)),
+                            result
+                              .map(
+                                operationOfQuestion =>
+                                  OperationOfQuestionResponse(
+                                    operationOfQuestion,
+                                    questionsAsMap(operationOfQuestion.questionId)
+                                )
+                              )
+                          )
+                        )
+                      }
+                    }
+                  }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def getOperationOfQuestion: Route = get {
+      path("moderation" / "operations-of-questions" / moderationQuestionId) { questionId =>
+        makeOperation("GetOperationsOfQuestions") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireModerationRole(auth.user) {
+              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
+                provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) { operationOfQuestion =>
+                  complete(OperationOfQuestionResponse(operationOfQuestion, question))
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def modifyOperationOfQuestion: Route = put {
+      path("moderation" / "operations-of-questions" / moderationQuestionId) { questionId =>
+        makeOperation("ModifyOperationsOfQuestions") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[ModifyOperationOfQuestionRequest]) { request =>
+                  provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
+                    provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
+                      operationOfQuestion =>
+                        val updatedQuestion = question.copy(question = request.question)
+                        val updatedSequenceCardsConfiguration =
+                          request.sequenceCardsConfiguration.copy(
+                            pushProposalCard = PushProposalCard(
+                              enabled = request.canPropose &&
+                                request.sequenceCardsConfiguration.pushProposalCard.enabled
+                            ),
+                            finalCard = request.sequenceCardsConfiguration.finalCard.copy(
+                              sharingEnabled = request.sequenceCardsConfiguration.finalCard.enabled &&
+                                request.sequenceCardsConfiguration.finalCard.sharingEnabled
                             )
                           )
-                      ) { count =>
-                        provideAsync(questionService.getQuestions(result.map(_.questionId))) {
-                          questions: Seq[Question] =>
-                            val questionsAsMap = questions.map(q => q.questionId -> q).toMap
-                            complete(
-                              (
-                                StatusCodes.OK,
-                                List(TotalCountHeader(count.toString)),
-                                result
-                                  .map(
-                                    operationOfQuestion =>
-                                      OperationOfQuestionResponse(
-                                        operationOfQuestion,
-                                        questionsAsMap(operationOfQuestion.questionId)
-                                    )
-                                  )
-                              )
-                            )
-                        }
-                      }
-                    }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      override def getOperationOfQuestion: Route = get {
-        path("moderation" / "operations-of-questions" / moderationQuestionId) { questionId =>
-          makeOperation("GetOperationsOfQuestions") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireModerationRole(auth.user) {
-                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
-                  provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
-                    operationOfQuestion =>
-                      complete(OperationOfQuestionResponse(operationOfQuestion, question))
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      override def modifyOperationOfQuestion: Route = put {
-        path("moderation" / "operations-of-questions" / moderationQuestionId) { questionId =>
-          makeOperation("ModifyOperationsOfQuestions") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                decodeRequest {
-                  entity(as[ModifyOperationOfQuestionRequest]) { request =>
-                    provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
-                      provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
-                        operationOfQuestion =>
-                          val updatedQuestion = question.copy(question = request.question)
-                          val updatedSequenceCardsConfiguration =
-                            request.sequenceCardsConfiguration.copy(
-                              pushProposalCard = PushProposalCard(
-                                enabled = request.canPropose &&
-                                  request.sequenceCardsConfiguration.pushProposalCard.enabled
+                        onSuccess(
+                          operationOfQuestionService.update(
+                            operationOfQuestion
+                              .copy(
+                                startDate = request.startDate,
+                                endDate = request.endDate,
+                                canPropose = request.canPropose,
+                                sequenceCardsConfiguration = updatedSequenceCardsConfiguration,
+                                aboutUrl = request.aboutUrl,
+                                metas = request.metas,
+                                theme = request.theme,
+                                description = request.description,
+                                imageUrl = request.imageUrl
                               ),
-                              finalCard = request.sequenceCardsConfiguration.finalCard.copy(
-                                sharingEnabled = request.sequenceCardsConfiguration.finalCard.enabled &&
-                                  request.sequenceCardsConfiguration.finalCard.sharingEnabled
-                              )
-                            )
-                          onSuccess(
-                            operationOfQuestionService.update(
-                              operationOfQuestion
-                                .copy(
-                                  startDate = request.startDate,
-                                  endDate = request.endDate,
-                                  canPropose = request.canPropose,
-                                  sequenceCardsConfiguration = updatedSequenceCardsConfiguration,
-                                  aboutUrl = request.aboutUrl,
-                                  metas = request.metas,
-                                  theme = request.theme,
-                                  description = request.description,
-                                  imageUrl = request.imageUrl
-                                ),
-                              updatedQuestion
-                            )
-                          ) { result =>
-                            complete(StatusCodes.OK -> OperationOfQuestionResponse(result, updatedQuestion))
-                          }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      override def deleteOperationOfQuestionAndQuestion: Route = delete {
-        path("moderation" / "operations-of-questions" / moderationQuestionId) { questionId =>
-          makeOperation("DeleteOperationsOfQuestions") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                provideAsync(operationOfQuestionService.delete(questionId)) { _ =>
-                  complete(StatusCodes.NoContent)
-                }
-              }
-            }
-          }
-        }
-      }
-
-      override def createOperationOfQuestionAndQuestion: Route = post {
-        path("moderation" / "operations-of-questions") {
-          makeOperation("CreateOperationsOfQuestions") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                decodeRequest {
-                  entity(as[CreateOperationOfQuestionRequest]) { body =>
-                    provideAsync(
-                      operationOfQuestionService.create(
-                        CreateOperationOfQuestion(
-                          operationId = body.operationId,
-                          startDate = body.startDate,
-                          endDate = body.endDate,
-                          operationTitle = body.operationTitle,
-                          slug = body.questionSlug,
-                          country = body.country,
-                          language = body.language,
-                          question = body.question,
-                          imageUrl = body.imageUrl
-                        )
-                      )
-                    ) { operationOfQuestion =>
-                      provideAsyncOrNotFound(questionService.getQuestion(operationOfQuestion.questionId)) { question =>
-                        complete(StatusCodes.Created -> OperationOfQuestionResponse(operationOfQuestion, question))
-                      }
+                            updatedQuestion
+                          )
+                        ) { result =>
+                          complete(StatusCodes.OK -> OperationOfQuestionResponse(result, updatedQuestion))
+                        }
                     }
                   }
                 }
@@ -435,6 +381,55 @@ trait DefaultModerationOperationOfQuestionApiComponent
         }
       }
     }
+
+    override def deleteOperationOfQuestionAndQuestion: Route = delete {
+      path("moderation" / "operations-of-questions" / moderationQuestionId) { questionId =>
+        makeOperation("DeleteOperationsOfQuestions") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              provideAsync(operationOfQuestionService.delete(questionId)) { _ =>
+                complete(StatusCodes.NoContent)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def createOperationOfQuestionAndQuestion: Route = post {
+      path("moderation" / "operations-of-questions") {
+        makeOperation("CreateOperationsOfQuestions") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[CreateOperationOfQuestionRequest]) { body =>
+                  provideAsync(
+                    operationOfQuestionService.create(
+                      CreateOperationOfQuestion(
+                        operationId = body.operationId,
+                        startDate = body.startDate,
+                        endDate = body.endDate,
+                        operationTitle = body.operationTitle,
+                        slug = body.questionSlug,
+                        country = body.country,
+                        language = body.language,
+                        question = body.question,
+                        imageUrl = body.imageUrl
+                      )
+                    )
+                  ) { operationOfQuestion =>
+                    provideAsyncOrNotFound(questionService.getQuestion(operationOfQuestion.questionId)) { question =>
+                      complete(StatusCodes.Created -> OperationOfQuestionResponse(operationOfQuestion, question))
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 @ApiModel

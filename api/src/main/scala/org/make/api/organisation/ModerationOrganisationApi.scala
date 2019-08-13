@@ -124,7 +124,9 @@ trait DefaultModerationOrganisationApiComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
-  override val moderationOrganisationApi: ModerationOrganisationApi = new ModerationOrganisationApi {
+  override lazy val moderationOrganisationApi: ModerationOrganisationApi = new DefaultModerationOrganisationApi
+
+  class DefaultModerationOrganisationApi extends ModerationOrganisationApi {
 
     private val organisationId: PathMatcher1[UserId] = Segment.map(id => UserId(id))
 
