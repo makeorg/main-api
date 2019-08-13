@@ -35,7 +35,6 @@ import org.make.core.operation.OperationOfQuestion
 import org.make.core.proposal.ProposalId
 import org.make.core.user.User
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -263,7 +262,7 @@ trait DefaultIndexationComponent
         .findAll(IdeaFiltersRequest.empty)
         .flatMap { ideas =>
           logger.info(s"Ideas to index: ${ideas.size}")
-          Source[Idea](immutable.Seq(ideas: _*))
+          Source[Idea](ideas.toVector)
             .via(IdeaStream.flowIndexIdeas(indexName))
             .runWith(Sink.ignore)
         }
@@ -283,7 +282,7 @@ trait DefaultIndexationComponent
         .findAllOrganisations()
         .flatMap { organisations =>
           logger.info(s"Organisations to index: ${organisations.size}")
-          Source[User](immutable.Seq(organisations: _*))
+          Source[User](organisations.toVector)
             .via(OrganisationStream.flowIndexOrganisations(indexName))
             .runWith(Sink.ignore)
         }
@@ -304,7 +303,7 @@ trait DefaultIndexationComponent
         .find()
         .flatMap { operationOfQuestions =>
           logger.info(s"Operation of questions to index: ${operationOfQuestions.size}")
-          Source[OperationOfQuestion](immutable.Seq(operationOfQuestions: _*))
+          Source[OperationOfQuestion](operationOfQuestions.toVector)
             .via(OperationOfQuestionStream.flowIndexOrganisations(indexName))
             .runWith(Sink.ignore)
         }

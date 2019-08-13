@@ -25,6 +25,7 @@ import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -190,7 +191,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                     }
                     proposalCoordinatorService.updateVotesVerified(updateCommand(proposal.votes))
                   }
-                  .runForeach(_ => Done)
+                  .runWith(Sink.ignore)
                 provideAsync(futureToComplete) { _ =>
                   complete(StatusCodes.NoContent)
                 }

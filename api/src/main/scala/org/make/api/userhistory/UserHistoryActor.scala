@@ -95,7 +95,7 @@ class UserHistoryActor
 
     if (events.nonEmpty) {
       val counter = new AtomicInteger()
-      persistAll(collection.immutable.Seq(events: _*)) { e: UserHistoryEvent[_] =>
+      persistAll(events.toVector) { e: UserHistoryEvent[_] =>
         log.debug("Persisted event {} for user {}", e.toString, persistenceId)
         newEventAdded(e)
         if (counter.incrementAndGet() == events.size) {
