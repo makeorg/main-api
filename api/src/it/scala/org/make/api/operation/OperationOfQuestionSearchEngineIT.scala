@@ -37,14 +37,7 @@ import org.make.api.technical.elasticsearch.{
 import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.CirceFormatters
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
-import org.make.core.operation.{
-  OperationId,
-  OperationKind,
-  OperationOfQuestionSearchFilters,
-  OperationOfQuestionSearchQuery,
-  QuestionContentSearchFilter,
-  QuestionTheme
-}
+import org.make.core.operation._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.mockito.Mockito
@@ -196,6 +189,27 @@ class OperationOfQuestionSearchEngineIT
       operationTitle = "operationTitle",
       operationKind = OperationKind.PrivateConsultation.shortName,
       aboutUrl = None
+    ),
+    IndexedOperationOfQuestion(
+      questionId = QuestionId("question-french-accent"),
+      question = "Question sur les aînés avec accents ?",
+      slug = "aines-question",
+      startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      endDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      theme = QuestionTheme(
+        gradientStart = "#424242",
+        gradientEnd = "#424242",
+        color = "#424242",
+        footerFontColor = "#424242"
+      ),
+      description = "some random description",
+      imageUrl = None,
+      country = Country("FR"),
+      language = Language("fr"),
+      operationId = OperationId("operation-id"),
+      operationTitle = "operationTitle",
+      operationKind = OperationKind.PublicConsultation.shortName,
+      aboutUrl = None
     )
   )
 
@@ -269,6 +283,35 @@ class OperationOfQuestionSearchEngineIT
       )
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be > 0L
+      }
+    }
+
+    scenario("search without accent on accented content should return the accented question") {
+      val query = OperationOfQuestionSearchQuery(
+        filters = Some(
+          OperationOfQuestionSearchFilters(
+            question = Some(QuestionContentSearchFilter(text = "aines")),
+            language = Some(LanguageSearchFilter(Language("fr")))
+          )
+        )
+      )
+      whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
+        result.total should be > 0L
+        result.results.exists(_.slug == "aines-question") shouldBe true
+      }
+    }
+
+    scenario("search in italian should not return french results") {
+      val query = OperationOfQuestionSearchQuery(
+        filters = Some(
+          OperationOfQuestionSearchFilters(
+            question = Some(QuestionContentSearchFilter(text = "aines")),
+            language = Some(LanguageSearchFilter(Language("it")))
+          )
+        )
+      )
+      whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
+        result.total == 0 shouldBe true
       }
     }
   }

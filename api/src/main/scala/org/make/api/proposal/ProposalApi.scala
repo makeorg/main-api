@@ -30,7 +30,6 @@ import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.{RequestSessionVoteValues, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserServiceComponent
@@ -41,7 +40,7 @@ import org.make.core.proposal._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
-import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable

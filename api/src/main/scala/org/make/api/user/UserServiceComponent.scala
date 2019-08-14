@@ -27,7 +27,6 @@ import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.question.AuthorRequest
 import org.make.api.technical.auth.{TokenGeneratorComponent, UserTokenGeneratorComponent}
-import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -41,7 +40,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{BusinessConfig, DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

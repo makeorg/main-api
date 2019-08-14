@@ -416,7 +416,7 @@ object SearchFilters extends ElasticDsl {
           ProposalElasticsearchFieldNames.contentRo -> 2D * languageOmission("ro"),
           ProposalElasticsearchFieldNames.contentRoStemmed -> 1.5D * languageOmission("ro"),
           ProposalElasticsearchFieldNames.contentEs -> 2D * languageOmission("es"),
-          ProposalElasticsearchFieldNames.contentDeStemmed -> 1.5D * languageOmission("es"),
+          ProposalElasticsearchFieldNames.contentEsStemmed -> 1.5D * languageOmission("es"),
           ProposalElasticsearchFieldNames.contentSv -> 2D * languageOmission("sv"),
           ProposalElasticsearchFieldNames.contentSvStemmed -> 1.5D * languageOmission("sv"),
           ProposalElasticsearchFieldNames.contentPl -> 2D * languageOmission("pl"),
