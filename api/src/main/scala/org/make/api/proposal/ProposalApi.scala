@@ -333,7 +333,7 @@ trait DefaultProposalApiComponent
                       fieldName = "operationKinds",
                       message =
                         Some(s"Invalid operation kind. Expected one of: ${OperationKind.kindMap.keys.mkString("|")}"),
-                      Seq(opKinds),
+                      opKinds,
                       OperationKind.kindMap.keys.toSeq
                     )
                   }).flatten: _*)

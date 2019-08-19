@@ -22,7 +22,7 @@ package org.make.core.operation
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
@@ -75,13 +75,13 @@ final case class IntroCard(@(ApiModelProperty @field)(dataType = "boolean", exam
                            title: Option[String],
                            description: Option[String])
 object IntroCard extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[IntroCard] = deriveEncoder[IntroCard]
+  implicit val encoder: Encoder[IntroCard] = deriveEncoder[IntroCard]
   implicit val decoder: Decoder[IntroCard] = deriveDecoder[IntroCard]
 }
 
 final case class PushProposalCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean)
 object PushProposalCard extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[PushProposalCard] = deriveEncoder[PushProposalCard]
+  implicit val encoder: Encoder[PushProposalCard] = deriveEncoder[PushProposalCard]
   implicit val decoder: Decoder[PushProposalCard] = deriveDecoder[PushProposalCard]
 }
 
@@ -89,7 +89,7 @@ final case class SignUpCard(@(ApiModelProperty @field)(dataType = "boolean", exa
                             title: Option[String],
                             nextCtaText: Option[String])
 object SignUpCard extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[SignUpCard] = deriveEncoder[SignUpCard]
+  implicit val encoder: Encoder[SignUpCard] = deriveEncoder[SignUpCard]
   implicit val decoder: Decoder[SignUpCard] = deriveDecoder[SignUpCard]
 }
 
@@ -101,7 +101,7 @@ final case class FinalCard(@(ApiModelProperty @field)(dataType = "boolean", exam
                            learnMoreTextButton: Option[String],
                            linkUrl: Option[String])
 object FinalCard extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[FinalCard] = deriveEncoder[FinalCard]
+  implicit val encoder: Encoder[FinalCard] = deriveEncoder[FinalCard]
   implicit val decoder: Decoder[FinalCard] = deriveDecoder[FinalCard]
 }
 
@@ -111,7 +111,7 @@ final case class SequenceCardsConfiguration(introCard: IntroCard,
                                             finalCard: FinalCard)
 
 object SequenceCardsConfiguration extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[SequenceCardsConfiguration] = deriveEncoder[SequenceCardsConfiguration]
+  implicit val encoder: Encoder[SequenceCardsConfiguration] = deriveEncoder[SequenceCardsConfiguration]
   implicit val decoder: Decoder[SequenceCardsConfiguration] = deriveDecoder[SequenceCardsConfiguration]
 
   val default: SequenceCardsConfiguration = SequenceCardsConfiguration(
@@ -133,14 +133,17 @@ object SequenceCardsConfiguration extends CirceFormatters {
 final case class Metas(title: Option[String], description: Option[String], picture: Option[String])
 
 object Metas extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[Metas] = deriveEncoder[Metas]
+  implicit val encoder: Encoder[Metas] = deriveEncoder[Metas]
   implicit val decoder: Decoder[Metas] = deriveDecoder[Metas]
 }
 
 final case class QuestionTheme(gradientStart: String, gradientEnd: String, color: String, footerFontColor: String)
 
 object QuestionTheme {
-  implicit val encoder: ObjectEncoder[QuestionTheme] = deriveEncoder[QuestionTheme]
+  implicit val format: RootJsonFormat[QuestionTheme] =
+    DefaultJsonProtocol.jsonFormat4(QuestionTheme.apply)
+
+  implicit val encoder: Encoder[QuestionTheme] = deriveEncoder[QuestionTheme]
   implicit val decoder: Decoder[QuestionTheme] = deriveDecoder[QuestionTheme]
 
   val default: QuestionTheme = {
@@ -186,7 +189,7 @@ final case class OperationCountryConfiguration(
 )
 
 object OperationCountryConfiguration extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
+  implicit val encoder: Encoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
   implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
 }
 
@@ -200,7 +203,7 @@ object OperationTranslation {
   implicit val operationTranslationFormatter: RootJsonFormat[OperationTranslation] =
     DefaultJsonProtocol.jsonFormat2(OperationTranslation.apply)
 
-  implicit val encoder: ObjectEncoder[OperationTranslation] = deriveEncoder[OperationTranslation]
+  implicit val encoder: Encoder[OperationTranslation] = deriveEncoder[OperationTranslation]
   implicit val decoder: Decoder[OperationTranslation] = deriveDecoder[OperationTranslation]
 }
 
@@ -271,7 +274,7 @@ case class SimpleOperation(operationId: OperationId,
                            updatedAt: Option[ZonedDateTime])
 
 object SimpleOperation extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[SimpleOperation] = deriveEncoder[SimpleOperation]
+  implicit val encoder: Encoder[SimpleOperation] = deriveEncoder[SimpleOperation]
   implicit val decoder: Decoder[SimpleOperation] = deriveDecoder[SimpleOperation]
 }
 
@@ -328,7 +331,7 @@ case class FeaturedOperation(featuredOperationId: FeaturedOperationId,
                              slot: Int)
 
 object FeaturedOperation {
-  implicit lazy val featuredOperationEncoder: ObjectEncoder[FeaturedOperation] = deriveEncoder[FeaturedOperation]
+  implicit lazy val featuredOperationEncoder: Encoder[FeaturedOperation] = deriveEncoder[FeaturedOperation]
   implicit lazy val featuredOperationDecoder: Decoder[FeaturedOperation] = deriveDecoder[FeaturedOperation]
 }
 
@@ -363,7 +366,7 @@ case class CurrentOperation(currentOperationId: CurrentOperationId,
                             externalLink: Option[String])
 
 object CurrentOperation {
-  implicit lazy val currentOperationEncoder: ObjectEncoder[CurrentOperation] = deriveEncoder[CurrentOperation]
+  implicit lazy val currentOperationEncoder: Encoder[CurrentOperation] = deriveEncoder[CurrentOperation]
   implicit lazy val currentOperationDecoder: Decoder[CurrentOperation] = deriveDecoder[CurrentOperation]
 }
 

@@ -21,7 +21,7 @@ package org.make.core.tag
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -82,7 +82,7 @@ object TagTypeDisplay extends StrictLogging {
 final case class TagType(tagTypeId: TagTypeId, label: String, display: TagTypeDisplay, weight: Int = 0)
 
 object TagType {
-  implicit val encoder: ObjectEncoder[TagType] = deriveEncoder[TagType]
+  implicit val encoder: Encoder[TagType] = deriveEncoder[TagType]
   implicit val decoder: Decoder[TagType] = deriveDecoder[TagType]
 
   val LEGACY: TagType = TagType(

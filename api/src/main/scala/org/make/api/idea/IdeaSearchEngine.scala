@@ -20,7 +20,6 @@
 package org.make.api.idea
 
 import akka.Done
-import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
@@ -33,6 +32,7 @@ import org.make.core.idea.{IdeaId, _}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import com.sksamuel.elastic4s.sprayjson._
 
 trait IdeaSearchEngineComponent {
   def elasticsearchIdeaAPI: IdeaSearchEngine

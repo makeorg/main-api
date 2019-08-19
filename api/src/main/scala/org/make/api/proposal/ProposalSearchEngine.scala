@@ -19,7 +19,7 @@
 
 package org.make.api.proposal
 
-import com.sksamuel.elastic4s.circe._
+import com.sksamuel.elastic4s.sprayjson._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
 import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery, Query}

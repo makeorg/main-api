@@ -23,11 +23,13 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
+import spray.json.DefaultJsonProtocol._
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.{BusinessConfig, CirceFormatters}
+import org.make.core.{BusinessConfig, CirceFormatters, SprayJsonFormatters}
 import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, SimpleOperation}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.annotation.meta.field
 
@@ -77,9 +79,12 @@ case class IndexedOperationOfQuestion(@(ApiModelProperty @field)(
                                       operationKind: String,
                                       aboutUrl: Option[String])
 
-object IndexedOperationOfQuestion extends CirceFormatters {
+object IndexedOperationOfQuestion extends CirceFormatters with SprayJsonFormatters {
   implicit val encoder: Encoder[IndexedOperationOfQuestion] = deriveEncoder[IndexedOperationOfQuestion]
   implicit val decoder: Decoder[IndexedOperationOfQuestion] = deriveDecoder[IndexedOperationOfQuestion]
+
+  implicit val format: RootJsonFormat[IndexedOperationOfQuestion] =
+    DefaultJsonProtocol.jsonFormat14(IndexedOperationOfQuestion.apply)
 
   def createFromOperationOfQuestion(operationOfQuestion: OperationOfQuestion,
                                     operation: SimpleOperation,
@@ -108,6 +113,9 @@ final case class OperationOfQuestionSearchResult(total: Long, results: Seq[Index
 object OperationOfQuestionSearchResult {
   implicit val encoder: Encoder[OperationOfQuestionSearchResult] = deriveEncoder[OperationOfQuestionSearchResult]
   implicit val decoder: Decoder[OperationOfQuestionSearchResult] = deriveDecoder[OperationOfQuestionSearchResult]
+
+  implicit val format: RootJsonFormat[OperationOfQuestionSearchResult] =
+    DefaultJsonProtocol.jsonFormat2(OperationOfQuestionSearchResult.apply)
 
   def empty: OperationOfQuestionSearchResult = OperationOfQuestionSearchResult(0, Seq.empty)
 }

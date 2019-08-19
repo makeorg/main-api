@@ -477,7 +477,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.language, language))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.language, language.value))
         case _ => None
       }
     }
@@ -487,7 +487,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.country, country))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.country, country.value))
         case _ => None
       }
     }

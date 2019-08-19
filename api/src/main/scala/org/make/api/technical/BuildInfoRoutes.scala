@@ -21,7 +21,7 @@ package org.make.api.technical
 
 import akka.http.scaladsl.server.Route
 import buildinfo.BuildInfo
-import io.circe.ObjectEncoder
+import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
@@ -53,5 +53,5 @@ case class BuildInformation(name: String = BuildInfo.name,
                             buildTime: String = BuildInfo.buildTime)
 
 object BuildInformation {
-  implicit val encoder: ObjectEncoder[BuildInformation] = deriveEncoder[BuildInformation]
+  implicit val encoder: Encoder[BuildInformation] = deriveEncoder[BuildInformation]
 }

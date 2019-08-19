@@ -21,14 +21,14 @@ package org.make.core.idea.indexed
 
 import java.time.ZonedDateTime
 
-import io.circe.generic.semiauto._
-import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.CirceFormatters
+import org.make.core.SprayJsonFormatters
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
 
 import scala.annotation.meta.field
 
@@ -90,9 +90,8 @@ case class IndexedIdea(
   @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z") updatedAt: Option[ZonedDateTime]
 )
 
-object IndexedIdea extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[IndexedIdea] = deriveEncoder[IndexedIdea]
-  implicit val decoder: Decoder[IndexedIdea] = deriveDecoder[IndexedIdea]
+object IndexedIdea extends SprayJsonFormatters {
+  implicit val format: RootJsonFormat[IndexedIdea] = jsonFormat11(IndexedIdea.apply)
 
   def createFromIdea(idea: Idea): IndexedIdea = {
     IndexedIdea(
@@ -117,8 +116,8 @@ object IndexedIdea extends CirceFormatters {
 final case class IdeaSearchResult(total: Long, results: Seq[IndexedIdea])
 
 object IdeaSearchResult {
-  implicit val encoder: ObjectEncoder[IdeaSearchResult] = deriveEncoder[IdeaSearchResult]
-  implicit val decoder: Decoder[IdeaSearchResult] = deriveDecoder[IdeaSearchResult]
+  implicit val format: RootJsonFormat[IdeaSearchResult] =
+    DefaultJsonProtocol.jsonFormat2(IdeaSearchResult.apply)
 
   def empty: IdeaSearchResult = IdeaSearchResult(0, Seq.empty)
 }

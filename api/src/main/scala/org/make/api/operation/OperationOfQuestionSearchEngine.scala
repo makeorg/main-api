@@ -20,7 +20,7 @@
 package org.make.api.operation
 
 import akka.Done
-import com.sksamuel.elastic4s.circe._
+import com.sksamuel.elastic4s.sprayjson._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
