@@ -64,15 +64,11 @@ abstract class ProducerActor[Wrapper, Event]
     new KafkaProducer(props, new StringSerializer(), valueSerializer)
   }
 
-  protected def sendRecord(kafkaTopic: String, eventId: String, record: Wrapper): Unit = {
+  protected def sendRecord(kafkaTopic: String, record: Wrapper): Unit = {
     producer.send(
-      new ProducerRecord[String, Wrapper](kafkaTopic, None.orNull, System.currentTimeMillis(), eventId, record),
+      new ProducerRecord[String, Wrapper](kafkaTopic, None.orNull, System.currentTimeMillis(), None.orNull, record),
       sendCallBack
     )
-  }
-
-  protected def sendRecord(kafkaTopic: String, record: Wrapper): Unit = {
-    sendRecord(kafkaTopic, None.orNull, record)
   }
 
   override def postStop(): Unit = {
