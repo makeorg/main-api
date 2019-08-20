@@ -41,6 +41,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{
+  EndpointType,
   EventBusServiceComponent,
   IdGeneratorComponent,
   MakeAuthenticationDirectives,
@@ -515,7 +516,7 @@ trait DefaultUserApiComponent
 
     override def socialLogin: Route = post {
       path("user" / "login" / "social") {
-        makeOperation("SocialLogin") { requestContext =>
+        makeOperation("SocialLogin", EndpointType.CoreOnly) { requestContext =>
           decodeRequest {
             entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
               extractClientIP { clientIp =>
@@ -648,7 +649,7 @@ trait DefaultUserApiComponent
 
     override def register: Route = post {
       path("user") {
-        makeOperation("RegisterUser") { requestContext =>
+        makeOperation("RegisterUser", EndpointType.Public) { requestContext =>
           decodeRequest {
             entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
               val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
@@ -700,7 +701,7 @@ trait DefaultUserApiComponent
     override def validateAccountRoute: Route = {
       post {
         path("user" / userId / "validate" / Segment) { (userId: UserId, verificationToken: String) =>
-          makeOperation("UserValidation") { requestContext =>
+          makeOperation("UserValidation", EndpointType.Public) { requestContext =>
             provideAsyncOrNotFound(
               persistentUserService
                 .findUserByUserIdAndVerificationToken(userId, verificationToken)
@@ -736,7 +737,7 @@ trait DefaultUserApiComponent
     override def resetPasswordRequestRoute: Route = {
       post {
         path("user" / "reset-password" / "request-reset") {
-          makeOperation("ResetPasswordRequest") { requestContext =>
+          makeOperation("ResetPasswordRequest", EndpointType.Public) { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               decodeRequest(entity(as[ResetPasswordRequest]) { request =>
                 provideAsyncOrNotFound(persistentUserService.findByEmail(request.email.toLowerCase)) { user =>
@@ -766,7 +767,7 @@ trait DefaultUserApiComponent
     override def resetPasswordCheckRoute: Route = {
       post {
         path("user" / "reset-password" / "check-validity" / userId / Segment) { (userId: UserId, resetToken: String) =>
-          makeOperation("ResetPasswordCheck") { _ =>
+          makeOperation("ResetPasswordCheck", EndpointType.Public) { _ =>
             provideAsyncOrNotFound(persistentUserService.findUserByUserIdAndResetToken(userId, resetToken)) { user =>
               if (user.resetTokenExpiresAt.exists(_.isAfter(DateHelper.now()))) {
                 complete(StatusCodes.NoContent)
@@ -782,7 +783,7 @@ trait DefaultUserApiComponent
     override def resetPasswordRoute: Route = {
       post {
         path("user" / "reset-password" / "change-password" / userId) { userId =>
-          makeOperation("ResetPassword") { _ =>
+          makeOperation("ResetPassword", EndpointType.Public) { _ =>
             decodeRequest {
               entity(as[ResetPassword]) { request: ResetPassword =>
                 provideAsyncOrNotFound(persistentUserService.findUserByUserIdAndResetToken(userId, request.resetToken)) {

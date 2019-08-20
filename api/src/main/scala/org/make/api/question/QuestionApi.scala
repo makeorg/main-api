@@ -40,7 +40,7 @@ import org.make.api.partner.PartnerServiceComponent
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Order
 import org.make.core.operation._
@@ -136,9 +136,10 @@ trait DefaultQuestionApiComponent
     private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
     private val questionSlugOrQuestionId: PathMatcher1[String] = Segment
 
+    // TODO: remove the public access once authent is handled in server side
     override def questionDetails: Route = get {
       path("questions" / questionSlugOrQuestionId / "details") { questionSlugOrQuestionId =>
-        makeOperation("GetQuestionDetails") { _ =>
+        makeOperation("GetQuestionDetails", EndpointType.Public) { _ =>
           provideAsyncOrNotFound {
             questionService.getQuestionByQuestionIdValueOrSlug(questionSlugOrQuestionId)
           } { question =>

@@ -195,7 +195,7 @@ trait DefaultAuthenticationApiComponent
     override def createAuthorizationCode: Route = {
       post {
         path("oauth" / "code") {
-          makeOperation("CreateAuthCode") { _ =>
+          makeOperation("CreateAuthCode", EndpointType.Public) { _ =>
             makeOAuth2 { user =>
               decodeRequest {
                 entity(as[CreateAuthorizationCodeRequest]) { request =>
@@ -215,7 +215,7 @@ trait DefaultAuthenticationApiComponent
 
     override def accessTokenRoute: Route = pathPrefix("oauth") {
       path("access_token") {
-        makeOperation("OauthAccessToken") { _ =>
+        makeOperation("OauthAccessToken", EndpointType.Public) { _ =>
           post {
             formFieldMap { fields =>
               onComplete(
@@ -239,7 +239,7 @@ trait DefaultAuthenticationApiComponent
 
     override def makeAccessTokenRoute: Route = pathPrefix("oauth") {
       path("make_access_token") {
-        makeOperation("OauthMakeAccessToken") { requestContext =>
+        makeOperation("OauthMakeAccessToken", EndpointType.Public) { requestContext =>
           post {
             formFieldMap { fields =>
               val allFields = fields ++ Map(

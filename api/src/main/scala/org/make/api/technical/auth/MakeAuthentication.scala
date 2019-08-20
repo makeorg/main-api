@@ -38,8 +38,11 @@ trait MakeAuthentication extends ShortenedNames with MakeDirectives {
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent =>
 
-  private def defaultMakeOAuth2: AuthenticationDirective[AuthInfo[UserRights]] =
-    authenticateOAuth2Async[AuthInfo[UserRights]]("make.org API", oauth2Authenticator)
+  val realm = "make.org API"
+
+  private def defaultMakeOAuth2: AuthenticationDirective[AuthInfo[UserRights]] = {
+    authenticateOAuth2Async[AuthInfo[UserRights]](realm, oauth2Authenticator)
+  }
 
   def makeOAuth2: Directive1[AuthInfo[UserRights]] = {
     defaultMakeOAuth2

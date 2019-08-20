@@ -41,18 +41,28 @@ class PersistentActiveFeatureServiceIT
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    persistentQuestionService.persist(
-      Question(
-        questionId = QuestionId("question-1"),
-        slug = "question-1",
-        country = Country("FR"),
-        language = Language("fr"),
-        question = "question ?",
-        operationId = None,
-        themeId = None
-      )
-    )
-    persistentFeatureService.persist(Feature(featureId = FeatureId("feature"), name = "Feature", slug = "feature"))
+    whenReady(
+      persistentQuestionService.persist(
+        Question(
+          questionId = QuestionId("question-1"),
+          slug = "question-1",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "question ?",
+          operationId = None,
+          themeId = None
+        )
+      ),
+      Timeout(10.seconds)
+    ) { _ =>
+      ()
+    }
+    whenReady(
+      persistentFeatureService.persist(Feature(featureId = FeatureId("feature"), name = "Feature", slug = "feature")),
+      Timeout(10.seconds)
+    ) { _ =>
+      ()
+    }
   }
 
   def newActiveFeature(featureId: FeatureId, maybeQuestionId: Option[QuestionId]): ActiveFeature =
