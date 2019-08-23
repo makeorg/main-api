@@ -42,24 +42,20 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
 import org.mdedetrich.akka.http.support.CirceHttpSupport
+import scalaoauth2.provider.AccessToken
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters {
+trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters with MakeDataHandlerComponent {
   this: IdGeneratorComponent
     with MakeSettingsComponent
     with MakeAuthentication
     with SessionHistoryCoordinatorServiceComponent =>
 
-  val sessionIdKey: String = "make-session-id"
-  val visitorIdKey: String = "make-visitor-id"
-  val sessionIdExpirationKey: String = "make-session-id-expiration"
-  val visitorCreatedAtKey: String = "make-visitor-created-at"
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
-  lazy val sessionCookieName: String = makeSettings.SessionCookie.name
 
   def requestId: Directive1[String] = BasicDirectives.provide(idGenerator.nextId())
 
@@ -71,7 +67,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     */
   def sessionId: Directive1[String] =
     for {
-      maybeCookieSessionId <- optionalCookie(sessionIdKey)
+      maybeCookieSessionId <- optionalCookie(makeSettings.SessionCookie.name)
       maybeSessionId       <- optionalHeaderValueByName(SessionIdHeader.name)
     } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId).getOrElse(idGenerator.nextId())
 
@@ -81,12 +77,12 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     */
   def visitorId: Directive1[String] =
     for {
-      maybeCookieVisitorId <- optionalCookie(visitorIdKey)
+      maybeCookieVisitorId <- optionalCookie(makeSettings.VisitorCookie.name)
       maybeVisitorId       <- optionalHeaderValueByName(VisitorIdHeader.name)
     } yield maybeCookieVisitorId.map(_.value).orElse(maybeVisitorId).getOrElse(idGenerator.nextVisitorId().value)
 
   def visitorCreatedAt: Directive1[ZonedDateTime] =
-    optionalCookie(visitorCreatedAtKey)
+    optionalCookie(makeSettings.VisitorCookie.createdAtName)
       .map(_.flatMap(cookie => Try(ZonedDateTime.parse(cookie.value)).toOption).getOrElse(DateHelper.now()))
 
   def addMakeHeaders(requestId: String,
@@ -96,7 +92,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
                      visitorCreatedAt: ZonedDateTime,
                      startTime: Long,
                      externalId: String,
-                     origin: Option[String]): Directive0 = {
+                     origin: Option[String],
+                     tokenRefreshed: Option[AccessToken]): Directive0 = {
     respondWithDefaultHeaders {
       immutable.Seq(
         RequestTimeHeader(startTime),
@@ -106,7 +103,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         SessionIdHeader(sessionId),
         `Set-Cookie`(
           HttpCookie(
-            name = sessionIdKey,
+            name = makeSettings.SessionCookie.name,
             value = sessionId,
             secure = makeSettings.SessionCookie.isSecure,
             httpOnly = true,
@@ -117,7 +114,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         ),
         `Set-Cookie`(
           HttpCookie(
-            name = sessionIdExpirationKey,
+            name = makeSettings.SessionCookie.expirationName,
             value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
             secure = makeSettings.SessionCookie.isSecure,
             httpOnly = false,
@@ -128,7 +125,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         ),
         `Set-Cookie`(
           HttpCookie(
-            name = visitorIdKey,
+            name = makeSettings.VisitorCookie.name,
             value = visitorId,
             secure = makeSettings.VisitorCookie.isSecure,
             httpOnly = true,
@@ -139,7 +136,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         ),
         `Set-Cookie`(
           HttpCookie(
-            name = visitorCreatedAtKey,
+            name = makeSettings.VisitorCookie.createdAtName,
             value = DateHelper.format(visitorCreatedAt),
             secure = makeSettings.VisitorCookie.isSecure,
             httpOnly = true,
@@ -148,7 +145,38 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             domain = Some(makeSettings.VisitorCookie.domain)
           )
         )
-      ) ++ defaultCorsHeaders(origin)
+      ) ++ defaultCorsHeaders(origin) ++ immutable
+        .Seq(
+          tokenRefreshed.map(
+            token =>
+              `Set-Cookie`(
+                HttpCookie(
+                  name = makeSettings.SecureCookie.name,
+                  value = token.token,
+                  secure = makeSettings.SecureCookie.isSecure,
+                  httpOnly = true,
+                  maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
+                  path = Some("/"),
+                  domain = Some(makeSettings.SecureCookie.domain)
+                )
+            )
+          ),
+          tokenRefreshed.map(
+            _ =>
+              `Set-Cookie`(
+                HttpCookie(
+                  name = makeSettings.SecureCookie.expirationName,
+                  value = ZonedDateTime.now.plusSeconds(makeSettings.Oauth.refreshTokenLifetime).toString,
+                  secure = makeSettings.SecureCookie.isSecure,
+                  httpOnly = false,
+                  maxAge = Some(365.days.toSeconds),
+                  path = Some("/"),
+                  domain = Some(makeSettings.SecureCookie.domain)
+                )
+            )
+          )
+        )
+        .collect { case Some(setCookie) => setCookie }
     }
   }
 
@@ -174,16 +202,17 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
     val slugifiedName: String = SlugHelper(name)
 
     for {
-      _                <- encodeResponse
-      _                <- operationName(slugifiedName)
-      requestId        <- requestId
-      startTime        <- startTime
-      sessionId        <- sessionId
-      visitorId        <- visitorId
-      visitorCreatedAt <- visitorCreatedAt
-      externalId       <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
-      origin           <- optionalHeaderValueByName(Origin.name)
-      _                <- makeAuthCookieHandlers()
+      _                   <- encodeResponse
+      _                   <- operationName(slugifiedName)
+      requestId           <- requestId
+      startTime           <- startTime
+      sessionId           <- sessionId
+      visitorId           <- visitorId
+      visitorCreatedAt    <- visitorCreatedAt
+      externalId          <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      origin              <- optionalHeaderValueByName(Origin.name)
+      _                   <- makeAuthCookieHandlers()
+      maybeTokenRefreshed <- makeTriggerAuthRefreshFromCookie()
       _ <- addMakeHeaders(
         requestId,
         slugifiedName,
@@ -192,7 +221,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         visitorCreatedAt,
         startTime,
         externalId,
-        origin
+        origin,
+        maybeTokenRefreshed
       )
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
@@ -309,13 +339,30 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   def makeAuthCookieHandlers(): Directive0 =
     mapInnerRoute { route =>
-      optionalCookie(sessionCookieName) {
+      optionalCookie(makeSettings.SecureCookie.name) {
         case Some(secureCookie) =>
           mapRequest((request: HttpRequest) => request.addCredentials(OAuth2BearerToken(secureCookie.value))) {
             route
           }
         case None => route
       }
+    }
+
+  def makeTriggerAuthRefreshFromCookie(): Directive1[Option[AccessToken]] =
+    optionalCookie(makeSettings.SecureCookie.name).flatMap {
+      case Some(secureCookie) =>
+        provideAsync[Option[AccessToken]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie.value)).flatMap {
+          maybeTokenRefreshed: Option[AccessToken] =>
+            // Race Condition ? Adding the token to the cache on refresh might help.
+            deleteCookie(makeSettings.SecureCookie.name)
+            mapRequest { request: HttpRequest =>
+              maybeTokenRefreshed.map { tokenRefreshed =>
+                request.addHeader(Cookie(HttpCookiePair(makeSettings.SecureCookie.name, tokenRefreshed.token)))
+              }.getOrElse(request)
+            }.map(_ => maybeTokenRefreshed)
+        }
+      case None =>
+        provide[Option[AccessToken]](None)
     }
 
   def corsHeaders(): Directive0 =

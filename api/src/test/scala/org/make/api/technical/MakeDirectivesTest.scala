@@ -20,6 +20,7 @@
 package org.make.api.technical
 
 import java.time.ZonedDateTime
+import java.util.Date
 
 import akka.http.javadsl.model.headers.Origin
 import akka.http.scaladsl.model.headers._
@@ -29,8 +30,12 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestBase
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth._
+import org.make.core.auth.UserRights
+import org.make.core.user.{Role, UserId}
 import org.make.core.{DateHelper, RequestContext}
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -40,7 +45,8 @@ class MakeDirectivesTest
     with OauthTokenGeneratorComponent
     with ShortenedNames
     with MakeAuthentication
-    with SessionHistoryCoordinatorServiceComponent {
+    with SessionHistoryCoordinatorServiceComponent
+    with MakeDataHandlerComponent {
 
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
 
@@ -94,9 +100,10 @@ class MakeDirectivesTest
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
-        val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "make-session-id")
+        println(cookiesHeaders.map(_.name).mkString(" - "))
+        val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-session")
         val maybeSessionExpirationCookie: Option[HttpCookie] =
-          cookiesHeaders.find(_.name == "make-session-id-expiration")
+          cookiesHeaders.find(_.name == "cookie-session-expiration")
 
         status should be(StatusCodes.OK)
 
@@ -117,7 +124,7 @@ class MakeDirectivesTest
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
         val maybeSessionExpirationCookie: Option[HttpCookie] =
-          cookiesHeaders.find(_.name == "make-session-id-expiration")
+          cookiesHeaders.find(_.name == "cookie-session-expiration")
         status should be(StatusCodes.OK)
 
         ZonedDateTime.parse(maybeSessionExpirationCookie.get.value).isAfter(firstExpiration) shouldBe true
@@ -125,11 +132,11 @@ class MakeDirectivesTest
     }
 
     scenario("cookie exists if session id is sent") {
-      Get("/test").withHeaders(Cookie("make-session-id" -> "123")) ~> route ~> check {
+      Get("/test").withHeaders(Cookie("cookie-session" -> "123")) ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
         status should be(StatusCodes.OK)
-        cookiesHeaders.exists(_.name == "make-session-id") shouldBe true
+        cookiesHeaders.exists(_.name == "cookie-session") shouldBe true
       }
     }
 
@@ -141,7 +148,7 @@ class MakeDirectivesTest
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
-        val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "make-visitor-id")
+        val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-visitor")
 
         status should be(StatusCodes.OK)
 
@@ -152,11 +159,11 @@ class MakeDirectivesTest
     }
 
     scenario("no cookie if session id is sent") {
-      Get("/test").withHeaders(Cookie("make-session-id" -> "123")) ~> route ~> check {
+      Get("/test").withHeaders(Cookie("cookie-session" -> "123")) ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
         status should be(StatusCodes.OK)
-        !cookiesHeaders.exists(_.name == "make-visitor-id") shouldBe false
+        !cookiesHeaders.exists(_.name == "cookie-visitor") shouldBe false
       }
     }
 
@@ -327,6 +334,79 @@ class MakeDirectivesTest
       Get("/testMakeTrace") ~> routeMakeTrace ~> check {
         status should be(StatusCodes.OK)
         header[RouteNameHeader].map(_.value) shouldBe Some("test-make-trace")
+      }
+    }
+  }
+
+  feature("auto refresh token if connected") {
+    scenario("not connected") {
+      Get("/test") ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        val maybeSecureCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-secure")
+        val maybeSecureExpirationCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-secure-expiration")
+
+        status should be(StatusCodes.OK)
+
+        maybeSecureCookie.isEmpty shouldBe true
+        maybeSecureExpirationCookie.isEmpty shouldBe true
+      }
+    }
+
+    scenario("connected token refreshed") {
+      val firstExpiration = DateHelper.now()
+
+      val newToken = AccessToken(
+        token = "new-token",
+        refreshToken = Some("new-refresh-token"),
+        scope = None,
+        lifeSeconds = Some(42L),
+        createdAt = new Date(),
+        params = Map.empty
+      )
+      val authInfo = AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen), Seq.empty), None, None, None)
+      when(oauth2DataHandler.refreshIfTokenIsExpired(ArgumentMatchers.eq("valid-token")))
+        .thenReturn(Future.successful(Some(newToken)))
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq("valid-token")))
+        .thenReturn(Future.successful(Some(newToken.copy(token = "new-token"))))
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq("new-token")))
+        .thenReturn(Future.successful(Some(newToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(newToken)))
+        .thenReturn(Future.successful(Some(authInfo)))
+
+      Get("/test").withHeaders(Cookie(HttpCookiePair(secureCookieConfiguration.name, "valid-token"))) ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        val maybeSecureCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-secure")
+        val maybeSecureExpirationCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-secure-expiration")
+
+        status should be(StatusCodes.OK)
+
+        maybeSecureCookie.isEmpty shouldBe false
+        maybeSecureCookie.map(_.value) shouldBe Some(newToken.token)
+        maybeSecureExpirationCookie.isEmpty shouldBe false
+        maybeSecureExpirationCookie.map(expDate => ZonedDateTime.parse(expDate.value).isAfter(firstExpiration)) shouldBe Some(
+          true
+        )
+      }
+    }
+
+    scenario("connected token not refreshed") {
+      when(oauth2DataHandler.refreshIfTokenIsExpired(ArgumentMatchers.eq("valid-token")))
+        .thenReturn(Future.successful(None))
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq("valid-token")))
+        .thenReturn(Future.successful(None))
+
+      Get("/test").withHeaders(Cookie(HttpCookiePair(secureCookieConfiguration.name, "valid-token"))) ~> route ~> check {
+        val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
+        val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
+        val maybeSecureCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-secure")
+        val maybeSecureExpirationCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-secure-expiration")
+
+        status should be(StatusCodes.OK)
+
+        maybeSecureCookie.isEmpty shouldBe true
+        maybeSecureExpirationCookie.isEmpty shouldBe true
       }
     }
   }

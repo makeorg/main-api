@@ -64,21 +64,23 @@ class MakeDataHandlerComponentTest
   val secret = Some("secret")
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  private val secureCookieConfiguration = mock[makeSettings.SecureCookie.type]
   private val visitorCookieConfiguration = mock[makeSettings.VisitorCookie.type]
-  when(sessionCookieConfiguration.name).thenReturn("cookie-session")
-  when(sessionCookieConfiguration.isSecure).thenReturn(false)
-  when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
-  when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
+  when(secureCookieConfiguration.name).thenReturn("cookie-secure")
+  when(secureCookieConfiguration.expirationName).thenReturn("cookie-secure-expiration")
+  when(secureCookieConfiguration.isSecure).thenReturn(false)
+  when(secureCookieConfiguration.domain).thenReturn(".foo.com")
+  when(secureCookieConfiguration.lifetime).thenReturn(Duration("4 hours"))
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
   private val tokenLifeTime = 1800
-  when(oauthConfiguration.refreshTokenLifetime).thenReturn(tokenLifeTime)
+  when(oauthConfiguration.refreshTokenLifetime).thenReturn(tokenLifeTime * 8)
   when(oauthConfiguration.accessTokenLifetime).thenReturn(tokenLifeTime)
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
-  when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
+  when(makeSettings.SecureCookie).thenReturn(secureCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
   when(visitorCookieConfiguration.name).thenReturn("cookie-visitor")
+  when(visitorCookieConfiguration.createdAtName).thenReturn("cookie-visitor-created-at")
   when(visitorCookieConfiguration.isSecure).thenReturn(false)
   when(visitorCookieConfiguration.domain).thenReturn(".foo.com")
   when(makeSettings.VisitorCookie).thenReturn(visitorCookieConfiguration)
@@ -589,5 +591,76 @@ class MakeDataHandlerComponentTest
         maybeAccessToken.isDefined shouldBe false
       }
     }
+  }
+
+  feature("Refresh if token is expired") {
+    info("In order to keep a user authenticated")
+    info("As a developer")
+    info("I want to refresh an access token if it's not expired and the refresh token is not expired")
+
+    scenario("access token not found") {
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq("not-found")))
+        .thenReturn(Future.successful(None))
+      val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired("not-found")
+      whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>
+        maybeRefreshedToken.isDefined shouldBe false
+      }
+    }
+
+    scenario("access token not expired") {
+      val accessToken = "TOKENNOTEXPIRED"
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+        .thenReturn(Future.successful(Some(exampleToken.copy(accessToken = accessToken))))
+
+      val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)
+      whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>
+        maybeRefreshedToken.isDefined shouldBe false
+      }
+    }
+
+    scenario("access token expired and refresh token expired") {
+      val accessToken = "TOKENREFRESHNOTEXPIRED"
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+        .thenReturn(
+          Future.successful(
+            Some(exampleToken.copy(accessToken = accessToken, createdAt = Some(DateHelper.now().minusDays(1L))))
+          )
+        )
+
+      val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)
+      whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>
+        maybeRefreshedToken.isDefined shouldBe false
+      }
+    }
+
+    scenario("access token expired and valid refresh token") {
+      val accessToken = "TOKENREFRESHNOTEXPIRED"
+      val newAccessToken = "new-access-token"
+
+      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+        .thenReturn(
+          Future.successful(
+            Some(exampleToken.copy(accessToken = accessToken, createdAt = Some(DateHelper.now().minusHours(1L))))
+          )
+        )
+      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(exampleToken.refreshToken.get)))
+        .thenReturn(Future.successful(Some(exampleToken)))
+      when(persistentTokenService.deleteByAccessToken(ArgumentMatchers.same(exampleToken.accessToken)))
+        .thenReturn(Future.successful(1))
+
+      when(oauthTokenGenerator.generateAccessToken())
+        .thenReturn(Future.successful((newAccessToken, "new_access_token_hashed")))
+      when(oauthTokenGenerator.generateRefreshToken())
+        .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
+      when(persistentTokenService.persist(ArgumentMatchers.any[Token]))
+        .thenReturn(Future.successful(exampleToken))
+
+      val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)
+      whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>
+        maybeRefreshedToken.isDefined shouldBe true
+        maybeRefreshedToken.get.token shouldBe newAccessToken
+      }
+    }
+
   }
 }

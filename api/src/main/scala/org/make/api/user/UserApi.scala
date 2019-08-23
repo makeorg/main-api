@@ -536,32 +536,32 @@ trait DefaultUserApiComponent
                               header.name() == `Set-Cookie`.name && header
                                 .asInstanceOf[`Set-Cookie`]
                                 .cookie
-                                .name == makeSettings.SessionCookie.name
+                                .name == makeSettings.SecureCookie.name
                           )) {
                         responseHeaders
                       } else {
                         responseHeaders ++ Seq(
                           `Set-Cookie`(
                             HttpCookie(
-                              name = makeSettings.SessionCookie.name,
+                              name = makeSettings.SecureCookie.name,
                               value = social.token.access_token,
-                              secure = makeSettings.SessionCookie.isSecure,
+                              secure = makeSettings.SecureCookie.isSecure,
                               httpOnly = true,
-                              maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+                              maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
                               path = Some("/"),
-                              domain = Some(makeSettings.SessionCookie.domain)
+                              domain = Some(makeSettings.SecureCookie.domain)
                             )
                           ),
                           `Set-Cookie`(
                             HttpCookie(
-                              name = makeSettings.SessionCookie.expirationName,
+                              name = makeSettings.SecureCookie.expirationName,
                               value = DateHelper
-                                .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
-                              secure = makeSettings.SessionCookie.isSecure,
+                                .format(DateHelper.now().plusSeconds(makeSettings.SecureCookie.lifetime.toSeconds)),
+                              secure = makeSettings.SecureCookie.isSecure,
                               httpOnly = false,
                               maxAge = Some(365.days.toSeconds),
                               path = Some("/"),
-                              domain = Some(makeSettings.SessionCookie.domain)
+                              domain = Some(makeSettings.SecureCookie.domain)
                             )
                           )
                         )

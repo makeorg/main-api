@@ -71,7 +71,16 @@ trait MakeApiTestBase
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
   override val actorSystem: ActorSystem = ActorSystem()
 
-  private val sessionCookieConfiguration = mock[makeSettings.SessionCookie.type]
+  protected val secureCookieConfiguration: makeSettings.SecureCookie.type = mock[makeSettings.SecureCookie.type]
+  when(makeSettings.SecureCookie).thenReturn(secureCookieConfiguration)
+  when(secureCookieConfiguration.name).thenReturn("cookie-secure")
+  when(secureCookieConfiguration.expirationName).thenReturn("cookie-secure-expiration")
+  when(secureCookieConfiguration.isSecure).thenReturn(false)
+  when(secureCookieConfiguration.lifetime).thenReturn(Duration("4 hours"))
+  when(secureCookieConfiguration.domain).thenReturn(".foo.com")
+  when(idGenerator.nextId()).thenReturn("some-id")
+
+  protected val sessionCookieConfiguration: makeSettings.SessionCookie.type = mock[makeSettings.SessionCookie.type]
   when(makeSettings.SessionCookie).thenReturn(sessionCookieConfiguration)
   when(sessionCookieConfiguration.name).thenReturn("cookie-session")
   when(sessionCookieConfiguration.expirationName).thenReturn("cookie-session-expiration")
@@ -80,8 +89,9 @@ trait MakeApiTestBase
   when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
   when(idGenerator.nextId()).thenReturn("some-id")
 
-  private val visitorCookieConfiguration = mock[makeSettings.VisitorCookie.type]
+  protected val visitorCookieConfiguration: makeSettings.VisitorCookie.type = mock[makeSettings.VisitorCookie.type]
   when(visitorCookieConfiguration.name).thenReturn("cookie-visitor")
+  when(visitorCookieConfiguration.createdAtName).thenReturn("cookie-visitor-created-at")
   when(visitorCookieConfiguration.isSecure).thenReturn(false)
   when(visitorCookieConfiguration.domain).thenReturn(".foo.com")
   when(makeSettings.VisitorCookie).thenReturn(visitorCookieConfiguration)
@@ -95,4 +105,6 @@ trait MakeApiTestBase
 
   private val successful: Future[Unit] = Future.successful {}
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
+
+  when(oauth2DataHandler.refreshIfTokenIsExpired(any[String])).thenReturn(Future.successful(None))
 }

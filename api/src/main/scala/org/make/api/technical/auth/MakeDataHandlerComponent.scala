@@ -46,6 +46,7 @@ trait MakeDataHandler extends DataHandler[UserRights] {
                               scope: Option[String],
                               redirectUri: Option[String]): Future[AuthCode]
   def removeTokenByUserId(userId: UserId): Future[Int]
+  def refreshIfTokenIsExpired(token: String): Future[Option[AccessToken]]
 }
 
 trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
@@ -310,6 +311,25 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
           client = clientId
         )
       )
+    }
+
+    override def refreshIfTokenIsExpired(tokenValue: String): Future[Option[AccessToken]] = {
+      Option(accessTokenCache.getIfPresent(tokenValue))
+        .map(token => Future.successful(Some(token)))
+        .getOrElse {
+          persistentTokenService.findByAccessToken(tokenValue).map(_.map(toAccessToken))
+        }
+        .flatMap {
+          case Some(token)
+              if token.isExpired && token.refreshToken.isDefined && !token
+                .copy(lifeSeconds = Some(validityDurationRefreshTokenSeconds.toLong))
+                .isExpired =>
+            findAuthInfoByAccessToken(token).flatMap {
+              case Some(authInfo) => refreshAccessToken(authInfo, token.refreshToken.get).map(Some(_))
+              case _              => Future.successful(None)
+            }
+          case _ => Future.successful(None)
+        }
     }
   }
 }
