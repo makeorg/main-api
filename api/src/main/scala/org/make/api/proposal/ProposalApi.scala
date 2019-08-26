@@ -35,7 +35,8 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.{Order, SortRequest}
-import org.make.core.operation.OperationId
+import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, PublicConsultation}
+import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language}
@@ -84,7 +85,8 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "isRandom", paramType = "query", dataType = "boolean"),
-      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string")
     )
   )
   def search: Route
@@ -267,7 +269,8 @@ trait DefaultProposalApiComponent
                   'limit.as[Int].?,
                   'skip.as[Int].?,
                   'isRandom.as[Boolean].?,
-                  'sortAlgorithm.?
+                  'sortAlgorithm.?,
+                  'operationKinds.as[immutable.Seq[OperationKind]].?
                 )
               ) {
                 (proposalIds: Option[Seq[ProposalId]],
@@ -289,7 +292,8 @@ trait DefaultProposalApiComponent
                  limit: Option[Int],
                  skip: Option[Int],
                  isRandom: Option[Boolean],
-                 sortAlgorithm: Option[String]) =>
+                 sortAlgorithm: Option[String],
+                 operationKinds: Option[Seq[OperationKind]]) =>
                   Validation.validate(Seq(country.map { countryValue =>
                     Validation.validChoices(
                       fieldName = "country",
@@ -324,6 +328,14 @@ trait DefaultProposalApiComponent
                       Seq(sortAlgo),
                       AlgorithmSelector.sortAlgorithmsName
                     )
+                  }, operationKinds.map { opKinds =>
+                    Validation.validChoices(
+                      fieldName = "operationKinds",
+                      message =
+                        Some(s"Invalid operation kind. Expected one of: ${OperationKind.kindMap.keys.mkString("|")}"),
+                      Seq(opKinds),
+                      OperationKind.kindMap.keys.toSeq
+                    )
                   }).flatten: _*)
 
                   val contextFilterRequest: Option[ContextFilterRequest] =
@@ -351,7 +363,9 @@ trait DefaultProposalApiComponent
                     limit = limit,
                     skip = skip,
                     isRandom = isRandom,
-                    sortAlgorithm = sortAlgorithm
+                    sortAlgorithm = sortAlgorithm,
+                    operationKinds =
+                      operationKinds.orElse(Some(Seq(GreatCause, PublicConsultation, BusinessConsultation)))
                   )
                   provideAsync(
                     operationService
