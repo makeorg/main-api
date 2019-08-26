@@ -56,6 +56,7 @@ trait OrganisationService extends ShortenedNames {
   def search(organisationName: Option[String],
              slug: Option[String],
              organisationIds: Option[Seq[UserId]]): Future[OrganisationSearchResult]
+  def searchWithQuery(query: OrganisationSearchQuery): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisation: User, mayebEmail: Option[String], requestContext: RequestContext): Future[UserId]
   def getVotedProposals(organisationId: UserId,
@@ -129,6 +130,10 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             )
         )
       )
+    }
+
+    override def searchWithQuery(query: OrganisationSearchQuery): Future[OrganisationSearchResult] = {
+      elasticsearchOrganisationAPI.searchOrganisations(query)
     }
 
     private def registerOrganisation(organisationRegisterData: OrganisationRegisterData,

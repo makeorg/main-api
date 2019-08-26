@@ -26,6 +26,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation._
+import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
@@ -36,9 +37,11 @@ import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
 import org.make.core.proposal.SearchQuery
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{operation, proposal, HttpCodes, ParameterExtractors}
+import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery}
+import org.make.core.{operation, proposal, user, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Api(value = "Home view")
 @Path(value = "/views")
@@ -91,7 +94,8 @@ trait DefaultViewApiComponent
     with OperationOfQuestionServiceComponent
     with OperationServiceComponent
     with ProposalSearchEngineComponent
-    with HomeViewServiceComponent =>
+    with HomeViewServiceComponent
+    with OrganisationServiceComponent =>
 
   override lazy val viewApi: ViewApi = new DefaultViewApi
 
@@ -147,7 +151,7 @@ trait DefaultViewApiComponent
                   'country.as[Country].?,
                   'language.as[Language].?
                 )
-              ) { (content, proposalLimit, questionLimit, _ /*organisationLimit*/, country, language) =>
+              ) { (content, proposalLimit, questionLimit, organisationLimit, country, language) =>
                 val proposalQuery = SearchQuery(
                   filters = Some(
                     proposal.SearchFilters(
@@ -165,7 +169,8 @@ trait DefaultViewApiComponent
                       language = language.map(LanguageSearchFilter.apply)
                     )
                   ),
-                  limit = proposalLimit
+                  limit = proposalLimit,
+                  language = requestContext.language
                 )
                 val questionQuery = OperationOfQuestionSearchQuery(
                   filters = Some(
@@ -186,17 +191,27 @@ trait DefaultViewApiComponent
                   ),
                   limit = questionLimit
                 )
-                val proposals = proposalService
-                  .searchForUser(auth.map(_.user.userId), proposalQuery, requestContext)
-                val questions = operationOfQuestionService.search(questionQuery)
-                provideAsync(proposals.zip(questions)) {
-                  case (proposals, questions) =>
+                val organisationQuery = OrganisationSearchQuery(
+                  filters = Some(
+                    OrganisationSearchFilters(
+                      organisationName =
+                        Some(OrganisationNameSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
+                      country = country.map(user.CountrySearchFilter.apply),
+                      language = language.map(user.LanguageSearchFilter.apply)
+                    )
+                  ),
+                  limit = organisationLimit
+                )
+                val futureResults = for {
+                  proposals <- proposalService
+                    .searchForUser(auth.map(_.user.userId), proposalQuery, requestContext)
+                  questions     <- operationOfQuestionService.search(questionQuery)
+                  organisations <- organisationService.searchWithQuery(organisationQuery)
+                } yield (proposals, questions, organisations)
+                provideAsync(futureResults) {
+                  case (proposals, questions, organisations) =>
                     complete(
-                      SearchViewResponse(
-                        proposals = proposals,
-                        questions = questions,
-                        organisations = OrganisationSearchResult.empty
-                      )
+                      SearchViewResponse(proposals = proposals, questions = questions, organisations = organisations)
                     )
                 }
               }
