@@ -24,7 +24,7 @@ import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{CirceFormatters, SlugHelper}
+import org.make.core.{BusinessConfig, CirceFormatters, SlugHelper}
 
 import scala.annotation.meta.field
 
@@ -41,6 +41,17 @@ object OrganisationElasticsearchFieldNames {
   val votesCount = "votesCount"
   val language = "language"
   val country = "country"
+
+  def organisationNameLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
+    BusinessConfig.supportedCountries
+      .find(_.supportedLanguages.contains(language))
+      .map { _ =>
+        if (stemmed)
+          s"organisationName.$language-stemmed"
+        else
+          s"organisationName.$language"
+      }
+  }
 }
 
 case class IndexedOrganisation(

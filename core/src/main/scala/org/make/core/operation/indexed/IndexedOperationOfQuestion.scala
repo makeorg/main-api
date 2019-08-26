@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.CirceFormatters
+import org.make.core.{BusinessConfig, CirceFormatters}
 import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, SimpleOperation}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -42,6 +42,17 @@ object OperationOfQuestionElasticsearchFieldNames {
   val country = "country"
   val language = "language"
   val operationKind = "operationKind"
+
+  def questionLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
+    BusinessConfig.supportedCountries
+      .find(_.supportedLanguages.contains(language))
+      .map { _ =>
+        if (stemmed)
+          s"question.$language-stemmed"
+        else
+          s"question.$language"
+      }
+  }
 }
 
 case class IndexedOperationOfQuestion(@(ApiModelProperty @field)(

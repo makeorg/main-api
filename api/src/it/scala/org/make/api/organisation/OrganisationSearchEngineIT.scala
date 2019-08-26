@@ -36,7 +36,7 @@ import org.make.api.technical.elasticsearch.{
 import org.make.core.CirceFormatters
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.IndexedOrganisation
-import org.make.core.user.{OrganisationSearchQuery, UserId}
+import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery, UserId}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -116,6 +116,18 @@ class OrganisationSearchEngineIT
       votesCount = Some(50000),
       language = Language("fr"),
       country = Country("FR")
+    ),
+    IndexedOrganisation(
+      organisationId = UserId("orga-accent"),
+      organisationName = Some("corp aînés français"),
+      slug = Some("corp-french"),
+      avatarUrl = Some("http://image-corp-french.net"),
+      description = Some("long text for corp french"),
+      publicProfile = true,
+      proposalsCount = Some(1000),
+      votesCount = Some(50000),
+      language = Language("fr"),
+      country = Country("FR")
     )
   )
 
@@ -182,10 +194,22 @@ class OrganisationSearchEngineIT
         OrganisationSearchQuery(limit = Some(3), skip = Some(0), order = Some("asc"), sort = Some("organisationName"))
       whenReady(elasticsearchOrganisationAPI.searchOrganisations(organisationSearchQuery), Timeout(5.seconds)) {
         result =>
-          result.total shouldBe 3
+          result.total shouldBe 4
           result.results.head.organisationName shouldBe Some("corp A")
           result.results(1).organisationName shouldBe Some("corp B")
           result.results(2).organisationName shouldBe Some("corp C")
+      }
+    }
+
+    scenario("search by name with accent") {
+      val organisationSearchQuery: OrganisationSearchQuery =
+        OrganisationSearchQuery(
+          filters = Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("aines"))))
+        )
+      whenReady(elasticsearchOrganisationAPI.searchOrganisations(organisationSearchQuery), Timeout(5.seconds)) {
+        result =>
+          result.total should be > 0L
+          result.results.exists(_.slug.contains("corp-french")) shouldBe true
       }
     }
   }

@@ -27,7 +27,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, MakeDirectives, ShortenedNames}
 import org.make.api.theme.ThemeServiceComponent
-import org.make.core.HttpCodes
+import org.make.core.{FrontConfiguration, HttpCodes}
 
 @Api(value = "Configurations")
 @Path(value = "/configurations")

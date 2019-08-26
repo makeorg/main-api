@@ -35,7 +35,6 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.semantic.SimilarIdea
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
@@ -49,7 +48,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.{DateHelper, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable

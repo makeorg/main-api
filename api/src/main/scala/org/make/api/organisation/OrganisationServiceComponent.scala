@@ -23,7 +23,6 @@ import com.github.t3hnar.bcrypt._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal._
-import org.make.api.technical.businessconfig.BusinessConfig
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.{PersistentUserServiceComponent, UserServiceComponent}
@@ -40,7 +39,7 @@ import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{user, DateHelper, RequestContext}
+import org.make.core.{user, BusinessConfig, DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

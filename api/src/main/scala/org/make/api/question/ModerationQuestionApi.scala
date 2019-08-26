@@ -31,7 +31,6 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ExhaustiveSearchRequest, ProposalServiceComponent, RefuseProposalRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.businessconfig.{BusinessConfig, FrontConfiguration}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
@@ -41,7 +40,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.{DateHelper, HttpCodes, ParameterExtractors}
+import org.make.core.{BusinessConfig, DateHelper, FrontConfiguration, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field

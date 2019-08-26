@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
-import org.make.core.SlugHelper
+import org.make.core.{FrontConfiguration, SlugHelper}
 import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagDisplay, TagTypeId}

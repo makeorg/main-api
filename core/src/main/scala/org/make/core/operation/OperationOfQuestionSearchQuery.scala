@@ -132,17 +132,24 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
       filters                                       <- operationOfQuestionSearchQuery.filters
       QuestionContentSearchFilter(text, maybeFuzzy) <- filters.question
     } yield {
+      val language = filters.language.map(_.language).getOrElse(Language("fr"))
+      val fieldsBoosts: Map[String, Double] =
+        Map(
+          Some(OperationOfQuestionElasticsearchFieldNames.question) -> 3D,
+          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language) -> 2D,
+          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language, stemmed = true) -> 1.5D
+        ).collect {
+          case (Some(key), value) => key -> value
+        }
       maybeFuzzy match {
         case Some(fuzzy) =>
           ElasticApi
             .should(
-              matchQuery(OperationOfQuestionElasticsearchFieldNames.question, text)
-                .boost(2F),
-              matchQuery(OperationOfQuestionElasticsearchFieldNames.question, text)
-                .fuzziness(fuzzy.toString)
-                .boost(1F)
+              multiMatchQuery(text).fields(fieldsBoosts).boost(2F),
+              multiMatchQuery(text).fields(fieldsBoosts).fuzziness(fuzzy).boost(1F)
             )
-        case None => ElasticApi.matchQuery(OperationOfQuestionElasticsearchFieldNames.question, text)
+        case None =>
+          multiMatchQuery(text).fields(fieldsBoosts)
       }
     }
 

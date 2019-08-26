@@ -131,17 +131,24 @@ object OrganisationSearchFilters extends ElasticDsl {
       filters                                        <- organisationSearchQuery.filters
       OrganisationNameSearchFilter(text, maybeFuzzy) <- filters.organisationName
     } yield {
+      val language = filters.language.map(_.language).getOrElse(Language("fr"))
+      val fieldsBoosts: Map[String, Double] =
+        Map(
+          Some(OrganisationElasticsearchFieldNames.organisationName) -> 3D,
+          OrganisationElasticsearchFieldNames.organisationNameLanguageSubfield(language) -> 2D,
+          OrganisationElasticsearchFieldNames.organisationNameLanguageSubfield(language, stemmed = true) -> 1.5D
+        ).collect {
+          case (Some(key), value) => key -> value
+        }
       maybeFuzzy match {
         case Some(fuzzy) =>
           ElasticApi
             .should(
-              matchQuery(OrganisationElasticsearchFieldNames.organisationName, text)
-                .boost(2F),
-              matchQuery(OrganisationElasticsearchFieldNames.organisationName, text)
-                .fuzziness(fuzzy.toString)
-                .boost(1F)
+              multiMatchQuery(text).fields(fieldsBoosts).boost(2F),
+              multiMatchQuery(text).fields(fieldsBoosts).fuzziness(fuzzy).boost(1F)
             )
-        case None => ElasticApi.matchQuery(OrganisationElasticsearchFieldNames.organisationName, text)
+        case None =>
+          multiMatchQuery(text).fields(fieldsBoosts)
       }
     }
 
