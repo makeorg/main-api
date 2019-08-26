@@ -29,7 +29,7 @@ import org.make.api.technical.MakeRandom
 import org.make.core.Validation._
 import org.make.core.common.indexed.SortRequest
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
-import org.make.core.operation.OperationId
+import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
@@ -161,7 +161,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                limit: Option[Int] = None,
                                skip: Option[Int] = None,
                                @Deprecated isRandom: Option[Boolean] = Some(false),
-                               sortAlgorithm: Option[String] = None) {
+                               sortAlgorithm: Option[String] = None,
+                               operationKinds: Option[Seq[OperationKind]] = None) {
 
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val fuzziness = Fuzziness.Auto
@@ -180,7 +181,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         slug = slug.map(value => SlugSearchFilter(value)),
         context = context.map(_.toContext),
         language = language.map(LanguageSearchFilter.apply),
-        country = country.map(CountrySearchFilter.apply)
+        country = country.map(CountrySearchFilter.apply),
+        operationKinds = operationKinds.map(OperationKindsSearchFilter.apply)
       )
 
     val randomSeed: Int = seed.getOrElse(MakeRandom.random.nextInt())
