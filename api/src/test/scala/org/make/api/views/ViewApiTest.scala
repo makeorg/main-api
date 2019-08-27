@@ -35,6 +35,7 @@ import org.make.api.operation.{
   OperationService,
   OperationServiceComponent
 }
+import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.{
   ProposalSearchEngine,
   ProposalSearchEngineComponent,
@@ -56,6 +57,7 @@ import org.make.core.operation.{
 import org.make.core.operation
 import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.proposal.{ContentSearchFilter, OperationKindsSearchFilter, SearchFilters, SearchQuery}
+import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery}
 import org.make.core.user.indexed.OrganisationSearchResult
 import org.mockito.{ArgumentMatchers, Mockito}
 
@@ -75,7 +77,8 @@ class ViewApiTest
     with OperationOfQuestionServiceComponent
     with OperationServiceComponent
     with ProposalSearchEngineComponent
-    with HomeViewServiceComponent {
+    with HomeViewServiceComponent
+    with OrganisationServiceComponent {
 
   override val homeViewService: HomeViewService = mock[HomeViewService]
   override val proposalService: ProposalService = mock[ProposalService]
@@ -85,6 +88,7 @@ class ViewApiTest
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
   override val operationService: OperationService = mock[OperationService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
+  override val organisationService: OrganisationService = mock[OrganisationService]
 
   val routes: Route = sealRoute(viewApi.routes)
 
@@ -151,6 +155,22 @@ class ViewApiTest
           )
         )
         .thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 2, results = Seq.empty)))
+      Mockito
+        .when(
+          organisationService.searchWithQuery(
+            ArgumentMatchers.eq(
+              OrganisationSearchQuery(
+                filters = Some(
+                  OrganisationSearchFilters(
+                    organisationName = Some(OrganisationNameSearchFilter(text = "toto", fuzzy = Some(Fuzziness.Auto)))
+                  )
+                ),
+                limit = None
+              )
+            )
+          )
+        )
+        .thenReturn(Future.successful(OrganisationSearchResult(total = 1, results = Seq.empty)))
 
       Get("/views/search?content=toto").withHeaders(Accept(MediaTypes.`application/json`)) ~> routes ~> check {
 
@@ -158,8 +178,7 @@ class ViewApiTest
         val search: SearchViewResponse = entityAs[SearchViewResponse]
         search.proposals.total shouldBe 2
         search.questions.total shouldBe 2
-//  Edit this following part when further implemented
-        search.organisations shouldBe OrganisationSearchResult.empty
+        search.organisations.total shouldBe 1
       }
     }
 
@@ -218,6 +237,23 @@ class ViewApiTest
           )
         )
         .thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 0, results = Seq.empty)))
+      Mockito
+        .when(
+          organisationService.searchWithQuery(
+            ArgumentMatchers.eq(
+              OrganisationSearchQuery(
+                filters = Some(
+                  OrganisationSearchFilters(
+                    organisationName =
+                      Some(OrganisationNameSearchFilter(text = "lownoresults", fuzzy = Some(Fuzziness.Auto)))
+                  )
+                ),
+                limit = None
+              )
+            )
+          )
+        )
+        .thenReturn(Future.successful(OrganisationSearchResult(total = 0, results = Seq.empty)))
 
       Get("/views/search?content=LOWnoResults").withHeaders(Accept(MediaTypes.`application/json`)) ~> routes ~> check {
 
