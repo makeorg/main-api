@@ -254,7 +254,7 @@ final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: Pro
                                   content: String)
 
 object SemanticProposal {
-  implicit val encoder: ObjectEncoder[SemanticProposal] = deriveEncoder[SemanticProposal]
+  implicit val encoder: Encoder[SemanticProposal] = deriveEncoder[SemanticProposal]
   implicit val decoder: Decoder[SemanticProposal] = deriveDecoder[SemanticProposal]
 
   def apply(indexedProposal: IndexedProposal): SemanticProposal = {
@@ -310,7 +310,7 @@ final case class SimilarIdea(
 )
 
 object SimilarIdea {
-  implicit val encoder: ObjectEncoder[SimilarIdea] = deriveEncoder[SimilarIdea]
+  implicit val encoder: Encoder[SimilarIdea] = deriveEncoder[SimilarIdea]
   implicit val decoder: Decoder[SimilarIdea] = deriveDecoder[SimilarIdea]
 }
 

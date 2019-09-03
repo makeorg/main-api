@@ -20,11 +20,13 @@
 package org.make.core.user.indexed
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{BusinessConfig, CirceFormatters, SlugHelper}
+import org.make.core.{BusinessConfig, CirceFormatters, SlugHelper, SprayJsonFormatters}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.DefaultJsonProtocol._
 
 import scala.annotation.meta.field
 
@@ -72,9 +74,12 @@ case class IndexedOrganisation(
   country: Country
 )
 
-object IndexedOrganisation extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[IndexedOrganisation] = deriveEncoder[IndexedOrganisation]
+object IndexedOrganisation extends CirceFormatters with SprayJsonFormatters {
+  implicit val encoder: Encoder[IndexedOrganisation] = deriveEncoder[IndexedOrganisation]
   implicit val decoder: Decoder[IndexedOrganisation] = deriveDecoder[IndexedOrganisation]
+
+  implicit val format: RootJsonFormat[IndexedOrganisation] =
+    DefaultJsonProtocol.jsonFormat10(IndexedOrganisation.apply)
 
   def createFromOrganisation(organisation: User,
                              proposalsCount: Option[Int] = None,
@@ -97,8 +102,11 @@ object IndexedOrganisation extends CirceFormatters {
 final case class OrganisationSearchResult(total: Long, results: Seq[IndexedOrganisation])
 
 object OrganisationSearchResult {
-  implicit val encoder: ObjectEncoder[OrganisationSearchResult] = deriveEncoder[OrganisationSearchResult]
+  implicit val encoder: Encoder[OrganisationSearchResult] = deriveEncoder[OrganisationSearchResult]
   implicit val decoder: Decoder[OrganisationSearchResult] = deriveDecoder[OrganisationSearchResult]
+
+  implicit val format: RootJsonFormat[OrganisationSearchResult] =
+    DefaultJsonProtocol.jsonFormat2(OrganisationSearchResult.apply)
 
   def empty: OrganisationSearchResult = OrganisationSearchResult(0, Seq.empty)
 }

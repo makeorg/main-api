@@ -29,7 +29,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
@@ -1271,7 +1271,7 @@ case class MailingErrorLogResponse(error: String,
                                      example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]"
                                    ) date: ZonedDateTime)
 object MailingErrorLogResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
+  implicit val encoder: Encoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
   implicit val decoder: Decoder[MailingErrorLogResponse] = deriveDecoder[MailingErrorLogResponse]
 
   def apply(mailingErrorLog: MailingErrorLog): MailingErrorLogResponse =
@@ -1302,7 +1302,7 @@ case class UserResponse(
 )
 
 object UserResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[UserResponse] = deriveEncoder[UserResponse]
+  implicit val encoder: Encoder[UserResponse] = deriveEncoder[UserResponse]
   implicit val decoder: Decoder[UserResponse] = deriveDecoder[UserResponse]
 
   def apply(user: User): UserResponse = UserResponse(user, Seq.empty)

@@ -27,7 +27,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import io.circe.syntax._
+import spray.json._
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
@@ -247,7 +247,7 @@ class OperationOfQuestionSearchEngineIT
         HttpRequest(
           uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${operationOfQuestion.questionId.value}",
           method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, operationOfQuestion.asJson.toString)
+          entity = HttpEntity(ContentTypes.`application/json`, operationOfQuestion.toJson.toString)
         ),
         operationOfQuestion.questionId
       )
