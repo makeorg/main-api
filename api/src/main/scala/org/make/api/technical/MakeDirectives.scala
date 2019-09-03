@@ -166,7 +166,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
               `Set-Cookie`(
                 HttpCookie(
                   name = makeSettings.SecureCookie.expirationName,
-                  value = ZonedDateTime.now.plusSeconds(makeSettings.Oauth.refreshTokenLifetime).toString,
+                  value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.Oauth.refreshTokenLifetime)),
                   secure = makeSettings.SecureCookie.isSecure,
                   httpOnly = false,
                   maxAge = Some(365.days.toSeconds),
@@ -211,8 +211,8 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
       visitorCreatedAt    <- visitorCreatedAt
       externalId          <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
       origin              <- optionalHeaderValueByName(Origin.name)
-      _                   <- makeAuthCookieHandlers()
       maybeTokenRefreshed <- makeTriggerAuthRefreshFromCookie()
+      _                   <- makeAuthCookieHandlers(maybeTokenRefreshed)
       _ <- addMakeHeaders(
         requestId,
         slugifiedName,
@@ -337,11 +337,15 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
 
   }
 
-  def makeAuthCookieHandlers(): Directive0 =
+  def makeAuthCookieHandlers(maybeRefreshedToken: Option[AccessToken]): Directive0 =
     mapInnerRoute { route =>
       optionalCookie(makeSettings.SecureCookie.name) {
         case Some(secureCookie) =>
-          mapRequest((request: HttpRequest) => request.addCredentials(OAuth2BearerToken(secureCookie.value))) {
+          val credentials: OAuth2BearerToken = maybeRefreshedToken match {
+            case Some(refreshedToken) => OAuth2BearerToken(refreshedToken.token)
+            case None                 => OAuth2BearerToken(secureCookie.value)
+          }
+          mapRequest((request: HttpRequest) => request.addCredentials(credentials)) {
             route
           }
         case None => route
@@ -351,16 +355,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
   def makeTriggerAuthRefreshFromCookie(): Directive1[Option[AccessToken]] =
     optionalCookie(makeSettings.SecureCookie.name).flatMap {
       case Some(secureCookie) =>
-        provideAsync[Option[AccessToken]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie.value)).flatMap {
-          maybeTokenRefreshed: Option[AccessToken] =>
-            // Race Condition ? Adding the token to the cache on refresh might help.
-            deleteCookie(makeSettings.SecureCookie.name)
-            mapRequest { request: HttpRequest =>
-              maybeTokenRefreshed.map { tokenRefreshed =>
-                request.addHeader(Cookie(HttpCookiePair(makeSettings.SecureCookie.name, tokenRefreshed.token)))
-              }.getOrElse(request)
-            }.map(_ => maybeTokenRefreshed)
-        }
+        provideAsync[Option[AccessToken]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie.value))
       case None =>
         provide[Option[AccessToken]](None)
     }

@@ -68,13 +68,13 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     private val accessTokenCache: Cache[String, AccessToken] =
       CacheBuilder
         .newBuilder()
-        .expireAfterWrite(20, TimeUnit.MINUTES)
+        .expireAfterWrite(5, TimeUnit.MINUTES)
         .build[String, AccessToken]()
 
     private val authInfoByAccessTokenCache: Cache[String, AuthInfo[UserRights]] =
       CacheBuilder
         .newBuilder()
-        .expireAfterWrite(20, TimeUnit.MINUTES)
+        .expireAfterWrite(5, TimeUnit.MINUTES)
         .build[String, AuthInfo[UserRights]]()
 
     private def toAccessToken(token: Token): AccessToken = {
@@ -282,14 +282,17 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {
-      Option(accessTokenCache.getIfPresent(token)).map(token => Future.successful(Some(token))).getOrElse {
-        val future = persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken).filter(!_.isExpired))
-        future.onComplete {
-          case Success(Some(userToken)) => accessTokenCache.put(token, userToken)
-          case _                        =>
+      Option(accessTokenCache.getIfPresent(token))
+        .filter(!_.isExpired)
+        .map(token => Future.successful(Some(token)))
+        .getOrElse {
+          val future = persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken).filter(!_.isExpired))
+          future.onComplete {
+            case Success(Some(userToken)) => accessTokenCache.put(token, userToken)
+            case _                        =>
+          }
+          future
         }
-        future
-      }
     }
 
     override def removeTokenByUserId(userId: UserId): Future[Int] = {
