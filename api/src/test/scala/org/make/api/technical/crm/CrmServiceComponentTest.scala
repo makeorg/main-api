@@ -19,13 +19,16 @@
 
 package org.make.api.technical.crm
 
+import java.io.{BufferedReader, InputStreamReader}
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
 import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
+import akka.stream.scaladsl.Source
 import com.typesafe.config.ConfigFactory
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
@@ -40,9 +43,9 @@ import org.make.api.user.{
   UserServiceComponent
 }
 import org.make.api.userhistory._
-import org.make.api.{ActorSystemComponent, MakeUnitTest}
+import org.make.api.{ActorSystemComponent, MakeUnitTest, StaminaTestUtils}
 import org.make.core.history.HistoryActions.Trusted
-import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
+import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus, SimpleOperation}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
@@ -97,6 +100,8 @@ class CrmServiceComponentTest
   override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
 
+  when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
+
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
   val zonedDateTimeNow: ZonedDateTime = DateHelper.now()
@@ -131,6 +136,45 @@ class CrmServiceComponentTest
       daysOfActivity30d = None,
       userType = None
     )
+  }
+
+  val user = User(
+    userId = UserId("50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74"),
+    email = "alex.terrieur@gmail.com",
+    firstName = Some("Alex"),
+    lastName = Some("Terrieur"),
+    lastIp = None,
+    hashedPassword = None,
+    enabled = true,
+    emailVerified = true,
+    lastConnection = DateHelper.now(),
+    verificationToken = None,
+    verificationTokenExpiresAt = None,
+    resetToken = None,
+    resetTokenExpiresAt = None,
+    roles = Seq.empty,
+    country = Country("FR"),
+    language = Language("fr"),
+    profile = Some(Profile.default.copy(optInNewsletter = true)),
+    createdAt = None,
+    updatedAt = None,
+    lastMailingError = None,
+    organisationName = None,
+    availableQuestions = Seq.empty
+  )
+
+  def readEvents(resource: String): Source[EventEnvelope, NotUsed] = {
+    val file = getClass.getClassLoader.getResourceAsStream(resource)
+    val reader = new BufferedReader(new InputStreamReader(file))
+    val events = reader
+      .lines()
+      .map[Object] { line =>
+        val splitted = line.split(":", 3)
+        StaminaTestUtils.deserializeEventFromJson[Object](splitted(0), splitted(2), splitted(1).toInt)
+      }
+      .toArray
+
+    Source(events.map(EventEnvelope(Offset.noOffset, user.userId.value, 0L, _)).toVector)
   }
 
   when(mailJetConfiguration.url).thenReturn("http://localhost:1234")
@@ -591,7 +635,11 @@ class CrmServiceComponentTest
             .plusDays(2)
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC))
         )
-        maybeProperties.operationActivity shouldBe Some("chance-aux-jeunes,vff-fr,culture")
+        maybeProperties.operationActivity.toSeq.flatMap(_.split(",").toSeq).sorted shouldBe Seq(
+          "chance-aux-jeunes",
+          "culture",
+          "vff-fr"
+        )
         maybeProperties.activeCore shouldBe Some(true)
         maybeProperties.daysOfActivity shouldBe Some(3)
         maybeProperties.daysOfActivity30 shouldBe Some(1)
@@ -724,7 +772,7 @@ class CrmServiceComponentTest
 
       when(crmClient.manageContactListJobDetails(matches("4"))(any[ExecutionContext]))
         .thenReturn(
-          Future.failed(new IllegalStateException("something went wrong")),
+          Future.failed(new IllegalStateException("Don't worry, this exception is fake")),
           Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
           Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
           Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
@@ -745,6 +793,210 @@ class CrmServiceComponentTest
           .verify(crmClient, Mockito.times(25))
           .manageContactListJobDetails(any[String])(any[ExecutionContext])
       }
+    }
+  }
+
+  feature("read events") {
+    scenario("user 50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74") {
+      val source = readEvents("events/user-50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74")
+
+      val operationId = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
+
+      val question = Question(
+        QuestionId("7d2ba29b-d503-44b8-98a0-5b9ae8b8bc69"),
+        "my-question",
+        Country("FR"),
+        Language("fr"),
+        "Comment sauver le monde ?",
+        Some(operationId),
+        None
+      )
+      val resolver = new QuestionResolver(Seq(question), Map())
+
+      when(userJournal.currentEventsByPersistenceId(matches(user.userId.value), any[Long], any[Long]))
+        .thenReturn(source)
+
+      whenReady(crmService.getPropertiesFromUser(user, resolver), Timeout(5.seconds)) { result =>
+        result.operationActivity should contain(question.slug)
+        val persistentUser = PersistentCrmUser.fromContactProperty(user.email, user.fullName.get, result)
+        persistentUser.operationActivity should contain(question.slug)
+        persistentUser.totalNumberProposals should contain(2)
+      }
+    }
+  }
+
+  feature("createCrmUsers") {
+    scenario("single user") {
+
+      val source = readEvents("events/user-50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74")
+
+      val operationId = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
+
+      val question = Question(
+        QuestionId("7d2ba29b-d503-44b8-98a0-5b9ae8b8bc69"),
+        "my-question",
+        Country("FR"),
+        Language("fr"),
+        "Comment sauver le monde ?",
+        Some(operationId),
+        None
+      )
+
+      when(operationService.findSimple()).thenReturn(
+        Future.successful(
+          Seq(
+            SimpleOperation(
+              operationId,
+              OperationStatus.Pending,
+              question.slug,
+              Seq("core"),
+              Language("fr"),
+              OperationKind.PrivateConsultation,
+              None,
+              None
+            )
+          )
+        )
+      )
+
+      when(questionService.searchQuestion(SearchQuestionRequest())).thenReturn(Future.successful(Seq(question)))
+
+      when(userJournal.currentEventsByPersistenceId(matches(user.userId.value), any[Long], any[Long]))
+        .thenReturn(source)
+
+      when(persistentCrmUserService.truncateCrmUsers()).thenReturn(Future.successful {})
+
+      when(userService.findUsersForCrmSynchro(None, None, 0, mailJetConfiguration.userListBatchSize))
+        .thenReturn(Future.successful(Seq(user)))
+
+      when(userService.findUsersForCrmSynchro(None, None, 1, mailJetConfiguration.userListBatchSize))
+        .thenReturn(Future.successful(Seq()))
+
+      when(persistentCrmUserService.persist(any[Seq[PersistentCrmUser]])).thenAnswer { invocation =>
+        val users = invocation.getArgument[Seq[PersistentCrmUser]](0)
+        if (users.forall(_.operationActivity.contains(question.slug))) {
+          Future.successful(users)
+        } else {
+          fail()
+        }
+      }
+
+      whenReady(crmService.createCrmUsers(), Timeout(2.seconds)) { _ =>
+        verify(persistentCrmUserService).persist(any[Seq[PersistentCrmUser]])
+      }
+
+    }
+  }
+
+  feature("question resolver") {
+    scenario("empty resolver") {
+      val resolver = new QuestionResolver(Seq.empty, Map.empty)
+      resolver.extractQuestionWithOperationFromRequestContext(RequestContext.empty) should be(None)
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(questionId = Some(QuestionId("my-question")))
+      ) should be(None)
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(
+          operationId = Some(OperationId("my-operation")),
+          country = Some(Country("Fr")),
+          language = Some(Language("fr"))
+        )
+      ) should be(None)
+    }
+
+    scenario("get by id") {
+      val questionId = QuestionId("my-question")
+      val question =
+        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("toto")), None)
+      val resolver = new QuestionResolver(Seq(question), Map.empty)
+
+      val result = resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(questionId = Some(questionId))
+      )
+
+      result should contain(question)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(questionId = Some(QuestionId("unknown")))
+      ) should be(None)
+    }
+
+    scenario("get by operation") {
+      val questionId = QuestionId("my-question")
+      val question =
+        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")), None)
+      val resolver = new QuestionResolver(Seq(question), Map.empty)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(operationId = Some(OperationId("my-operation")), country = None, language = None)
+      ) should contain(question)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(
+          operationId = Some(OperationId("my-operation")),
+          country = Some(Country("FR")),
+          language = Some(Language("fr"))
+        )
+      ) should contain(question)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(
+          operationId = Some(OperationId("my-operation")),
+          country = Some(Country("GB")),
+          language = Some(Language("fr"))
+        )
+      ) should be(None)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(
+          operationId = Some(OperationId("my-operation")),
+          country = Some(Country("FR")),
+          language = Some(Language("en"))
+        )
+      ) should be(None)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(operationId = Some(OperationId("unknown")))
+      ) should be(None)
+    }
+    scenario("get by operation slug") {
+      val questionId = QuestionId("my-question")
+      val question =
+        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")), None)
+      val resolver = new QuestionResolver(Seq(question), Map("my-operation-slug" -> OperationId("my-operation")))
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(operationId = Some(OperationId("my-operation-slug")), country = None, language = None)
+      ) should contain(question)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(
+          operationId = Some(OperationId("my-operation-slug")),
+          country = Some(Country("FR")),
+          language = Some(Language("fr"))
+        )
+      ) should contain(question)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(
+          operationId = Some(OperationId("my-operation-slug")),
+          country = Some(Country("GB")),
+          language = Some(Language("fr"))
+        )
+      ) should be(None)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(
+          operationId = Some(OperationId("my-operation-slug")),
+          country = Some(Country("FR")),
+          language = Some(Language("en"))
+        )
+      ) should be(None)
+
+      resolver.extractQuestionWithOperationFromRequestContext(
+        RequestContext.empty.copy(operationId = Some(OperationId("unknown")))
+      ) should be(None)
+
     }
   }
 }
