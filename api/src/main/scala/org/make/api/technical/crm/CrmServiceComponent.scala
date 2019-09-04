@@ -45,7 +45,7 @@ import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
 import org.make.core.operation.OperationId
 import org.make.core.question.Question
-import org.make.core.reference.Country
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
@@ -90,29 +90,27 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
   class QuestionResolver(questions: Seq[Question], operations: Map[String, OperationId]) {
 
+    private val questionsWithOperation: Seq[Question] = questions.filter(_.operationId.isDefined)
+
     def findQuestionWithOperation(predicate: Question => Boolean): Option[Question] =
-      questions.filter(_.operationId.isDefined).find(predicate)
+      questionsWithOperation.find(predicate)
 
     def extractQuestionWithOperationFromRequestContext(requestContext: RequestContext): Option[Question] = {
       requestContext.questionId
-        .flatMap(questionId => questions.find(_.questionId == questionId))
+        .flatMap(questionId => questionsWithOperation.find(_.questionId == questionId))
         .orElse {
           requestContext.operationId.flatMap { operationId =>
-            questions.find(
+            questionsWithOperation.find(
               question =>
                 // In old operations, the header contained the slug and not the id
                 // also the old operations didn't all have a country or language
                 (question.operationId.contains(operationId) ||
                   question.operationId == operations.get(operationId.value)) &&
                   requestContext.country.orElse(Some(Country("FR"))).contains(question.country) &&
-                  requestContext.language.orElse(Some("fr")).contains(question.language)
+                  requestContext.language.orElse(Some(Language("fr"))).contains(question.language)
             )
           }
         }
-        .orElse {
-          questions.find(_.themeId == requestContext.currentTheme)
-        }
-        .filter(_.operationId.isDefined)
     }
   }
 
@@ -498,7 +496,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug),
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
@@ -536,7 +534,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug),
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
@@ -566,14 +564,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
               }
           )
 
-      futureQuestion.map { question =>
+      futureQuestion.map { maybeQuestion =>
         accumulator.copy(
           totalNumbervotes = accumulator.totalNumbervotes.map(_ - 1).orElse(Some(-1)),
           lastContributionDate = Some(event.action.date),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          questionActivity = accumulator.questionActivity ++ question.map(_.slug),
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
@@ -610,7 +608,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           accountCreationSlug = accumulator.accountCreationSlug.orElse(maybeQuestion.map(_.slug)),
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug),
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
           lastContributionDate = Some(event.action.date),
@@ -635,9 +633,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
         lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
         lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
-        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-        questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug),
-        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
+        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value).toSeq,
+        questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
+        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toSeq,
         firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
         lastContributionDate = Some(event.action.date),
         activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
@@ -665,7 +663,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationSlug = accumulator.accountCreationSlug.orElse(maybeQuestion.map(_.slug)),
         accountCreationCountry = event.requestContext.country.map(_.value),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-        questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug),
+        questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
         sourceActivity = accumulator.sourceActivity ++ event.requestContext.source
       )
     }
