@@ -232,9 +232,7 @@ trait DefaultIndexationComponent
     }
 
     private def executeCreateIndex(aliasName: String, indexName: String): Future[CreateIndexResponse] = {
-      client.executeAsFuture(
-        createIndex(indexName).includeTypeName(false).source(elasticsearchClient.mappingForAlias(aliasName))
-      )
+      client.executeAsFuture(createIndex(indexName).source(elasticsearchClient.mappingForAlias(aliasName)))
     }
 
     private def executeIndexProposal(proposalIndexName: String)(implicit mat: Materializer): Future[Done] = {

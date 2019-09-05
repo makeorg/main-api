@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -345,7 +345,7 @@ case class OrganisationResponse(id: UserId,
                                 language: Language)
 
 object OrganisationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[OrganisationResponse] = deriveEncoder[OrganisationResponse]
+  implicit val encoder: ObjectEncoder[OrganisationResponse] = deriveEncoder[OrganisationResponse]
   implicit val decoder: Decoder[OrganisationResponse] = deriveDecoder[OrganisationResponse]
 
   def apply(user: User): OrganisationResponse = OrganisationResponse(
@@ -363,5 +363,5 @@ final case class OrganisationIdResponse(
 )
 
 object OrganisationIdResponse {
-  implicit val encoder: Encoder[OrganisationIdResponse] = deriveEncoder[OrganisationIdResponse]
+  implicit val encoder: ObjectEncoder[OrganisationIdResponse] = deriveEncoder[OrganisationIdResponse]
 }

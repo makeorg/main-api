@@ -20,7 +20,7 @@
 package org.make.api.tag
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -47,7 +47,7 @@ case class TagResponse(
 )
 
 object TagResponse {
-  implicit val encoder: Encoder[TagResponse] = deriveEncoder[TagResponse]
+  implicit val encoder: ObjectEncoder[TagResponse] = deriveEncoder[TagResponse]
   implicit val decoder: Decoder[TagResponse] = deriveDecoder[TagResponse]
 
   def apply(tag: Tag): TagResponse =

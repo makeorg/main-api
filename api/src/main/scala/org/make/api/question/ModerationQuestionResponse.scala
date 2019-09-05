@@ -21,7 +21,7 @@ package org.make.api.question
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation._
 import org.make.core.partner.{Partner, PartnerKind}
@@ -68,7 +68,7 @@ final case class IntroCardResponse(@(ApiModelProperty @field)(dataType = "boolea
                                    title: Option[String],
                                    description: Option[String])
 object IntroCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[IntroCardResponse] = deriveEncoder[IntroCardResponse]
+  implicit val encoder: ObjectEncoder[IntroCardResponse] = deriveEncoder[IntroCardResponse]
   implicit val decoder: Decoder[IntroCardResponse] = deriveDecoder[IntroCardResponse]
 }
 
@@ -76,7 +76,7 @@ final case class PushProposalCardResponse(
   @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean
 )
 object PushProposalCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[PushProposalCardResponse] = deriveEncoder[PushProposalCardResponse]
+  implicit val encoder: ObjectEncoder[PushProposalCardResponse] = deriveEncoder[PushProposalCardResponse]
   implicit val decoder: Decoder[PushProposalCardResponse] = deriveDecoder[PushProposalCardResponse]
 }
 
@@ -84,7 +84,7 @@ final case class SignUpCardResponse(@(ApiModelProperty @field)(dataType = "boole
                                     title: Option[String],
                                     nextCtaText: Option[String])
 object SignUpCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SignUpCardResponse] = deriveEncoder[SignUpCardResponse]
+  implicit val encoder: ObjectEncoder[SignUpCardResponse] = deriveEncoder[SignUpCardResponse]
   implicit val decoder: Decoder[SignUpCardResponse] = deriveDecoder[SignUpCardResponse]
 }
 
@@ -98,7 +98,7 @@ final case class FinalCardResponse(
   linkUrl: Option[String]
 )
 object FinalCardResponse extends CirceFormatters {
-  implicit val encoder: Encoder[FinalCardResponse] = deriveEncoder[FinalCardResponse]
+  implicit val encoder: ObjectEncoder[FinalCardResponse] = deriveEncoder[FinalCardResponse]
   implicit val decoder: Decoder[FinalCardResponse] = deriveDecoder[FinalCardResponse]
 }
 
@@ -108,7 +108,7 @@ final case class SequenceCardsConfigurationResponse(introCard: IntroCardResponse
                                                     finalCard: FinalCardResponse)
 
 object SequenceCardsConfigurationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SequenceCardsConfigurationResponse] =
+  implicit val encoder: ObjectEncoder[SequenceCardsConfigurationResponse] =
     deriveEncoder[SequenceCardsConfigurationResponse]
   implicit val decoder: Decoder[SequenceCardsConfigurationResponse] = deriveDecoder[SequenceCardsConfigurationResponse]
 

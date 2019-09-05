@@ -22,7 +22,7 @@ package org.make.core
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -138,7 +138,7 @@ final case class RequestContext(
 )
 
 object RequestContext extends CirceFormatters with SprayJsonFormatters {
-  implicit val encoder: Encoder[RequestContext] = deriveEncoder[RequestContext]
+  implicit val encoder: ObjectEncoder[RequestContext] = deriveEncoder[RequestContext]
   implicit val decoder: Decoder[RequestContext] = deriveDecoder[RequestContext]
 
   val empty: RequestContext =

@@ -20,7 +20,7 @@
 package org.make.core
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.reference.{Country, Language, Theme}
 
@@ -39,7 +39,7 @@ case class CountryConfiguration(
   @(ApiModelProperty @field)(dataType = "boolean") coreIsAvailable: Boolean
 )
 object CountryConfiguration {
-  implicit val encoder: Encoder[CountryConfiguration] = deriveEncoder[CountryConfiguration]
+  implicit val encoder: ObjectEncoder[CountryConfiguration] = deriveEncoder[CountryConfiguration]
   implicit val decoder: Decoder[CountryConfiguration] = deriveDecoder[CountryConfiguration]
 }
 
@@ -243,7 +243,7 @@ object BusinessConfig {
 }
 
 object FrontConfiguration {
-  implicit val encoder: Encoder[FrontConfiguration] = deriveEncoder[FrontConfiguration]
+  implicit val encoder: ObjectEncoder[FrontConfiguration] = deriveEncoder[FrontConfiguration]
   implicit val decoder: Decoder[FrontConfiguration] = deriveDecoder[FrontConfiguration]
 
   val defaultProposalMinLength: Int = 12

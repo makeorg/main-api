@@ -19,13 +19,13 @@
 
 package org.make.api.idea
 
-import spray.json._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
+import io.circe.syntax._
 import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{
@@ -161,7 +161,7 @@ class IdeaSearchEngineIT
         HttpRequest(
           uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${idea.ideaId.value}",
           method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, idea.toJson.toString)
+          entity = HttpEntity(ContentTypes.`application/json`, idea.asJson.toString)
         ),
         idea.ideaId
       )

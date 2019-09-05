@@ -24,7 +24,7 @@ import java.time.LocalDate
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import org.jsoup.Jsoup
 import org.jsoup.safety.{Cleaner, Whitelist}
 
@@ -255,6 +255,6 @@ case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception
 case class ValidationError(field: String, key: String, message: Option[String])
 
 object ValidationError {
-  implicit val encoder: Encoder[ValidationError] = deriveEncoder[ValidationError]
+  implicit val encoder: ObjectEncoder[ValidationError] = deriveEncoder[ValidationError]
   implicit val decoder: Decoder[ValidationError] = deriveDecoder[ValidationError]
 }

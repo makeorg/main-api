@@ -22,7 +22,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.user.UserResponse
 import org.make.core.history.HistoryActions.VoteAndQualifications
@@ -75,7 +75,7 @@ final case class ModerationProposalResponse(
 )
 
 object ModerationProposalResponse extends CirceFormatters {
-  implicit val encoder: Encoder[ModerationProposalResponse] = deriveEncoder[ModerationProposalResponse]
+  implicit val encoder: ObjectEncoder[ModerationProposalResponse] = deriveEncoder[ModerationProposalResponse]
   implicit val decoder: Decoder[ModerationProposalResponse] = deriveDecoder[ModerationProposalResponse]
 }
 
@@ -87,7 +87,7 @@ final case class ProposalActionResponse(@(ApiModelProperty @field)(example = "20
                                         arguments: Map[String, String])
 
 object ProposalActionResponse extends CirceFormatters {
-  implicit val encoder: Encoder[ProposalActionResponse] = deriveEncoder[ProposalActionResponse]
+  implicit val encoder: ObjectEncoder[ProposalActionResponse] = deriveEncoder[ProposalActionResponse]
   implicit val decoder: Decoder[ProposalActionResponse] = deriveDecoder[ProposalActionResponse]
 }
 
@@ -98,7 +98,7 @@ final case class ProposalIdResponse(
 )
 
 object ProposalIdResponse {
-  implicit val encoder: Encoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
+  implicit val encoder: ObjectEncoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
 }
 
 final case class IndexedProposalQuestionResponse(
@@ -161,7 +161,7 @@ final case class ProposalResponse(
 )
 
 object ProposalResponse extends CirceFormatters {
-  implicit val encoder: Encoder[ProposalResponse] = deriveEncoder[ProposalResponse]
+  implicit val encoder: ObjectEncoder[ProposalResponse] = deriveEncoder[ProposalResponse]
   implicit val decoder: Decoder[ProposalResponse] = deriveDecoder[ProposalResponse]
 
   def apply(indexedProposal: IndexedProposal,
@@ -215,7 +215,7 @@ object ProposalResponse extends CirceFormatters {
 final case class ProposalsResultResponse(total: Long, results: Seq[ProposalResponse])
 
 object ProposalsResultResponse {
-  implicit val encoder: Encoder[ProposalsResultResponse] = deriveEncoder[ProposalsResultResponse]
+  implicit val encoder: ObjectEncoder[ProposalsResultResponse] = deriveEncoder[ProposalsResultResponse]
   implicit val decoder: Decoder[ProposalsResultResponse] = deriveDecoder[ProposalsResultResponse]
 }
 
@@ -226,7 +226,7 @@ final case class ProposalsResultSeededResponse(
 )
 
 object ProposalsResultSeededResponse {
-  implicit val encoder: Encoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]
+  implicit val encoder: ObjectEncoder[ProposalsResultSeededResponse] = deriveEncoder[ProposalsResultSeededResponse]
   implicit val decoder: Decoder[ProposalsResultSeededResponse] = deriveDecoder[ProposalsResultSeededResponse]
 }
 
@@ -239,7 +239,7 @@ final case class ProposalResultWithUserVote(
   voteDetails: Option[VoteResponse]
 )
 object ProposalResultWithUserVote extends CirceFormatters {
-  implicit val encoder: Encoder[ProposalResultWithUserVote] = deriveEncoder[ProposalResultWithUserVote]
+  implicit val encoder: ObjectEncoder[ProposalResultWithUserVote] = deriveEncoder[ProposalResultWithUserVote]
   implicit val decoder: Decoder[ProposalResultWithUserVote] = deriveDecoder[ProposalResultWithUserVote]
 }
 
@@ -250,7 +250,7 @@ final case class ProposalsResultWithUserVoteSeededResponse(total: Long,
                                                            seed: Option[Int])
 
 object ProposalsResultWithUserVoteSeededResponse {
-  implicit val encoder: Encoder[ProposalsResultWithUserVoteSeededResponse] =
+  implicit val encoder: ObjectEncoder[ProposalsResultWithUserVoteSeededResponse] =
     deriveEncoder[ProposalsResultWithUserVoteSeededResponse]
   implicit val decoder: Decoder[ProposalsResultWithUserVoteSeededResponse] =
     deriveDecoder[ProposalsResultWithUserVoteSeededResponse]
@@ -265,7 +265,7 @@ final case class VoteResponse(@(ApiModelProperty @field)(dataType = "string", ex
 
 object VoteResponse {
 
-  implicit val encoder: Encoder[VoteResponse] = deriveEncoder[VoteResponse]
+  implicit val encoder: ObjectEncoder[VoteResponse] = deriveEncoder[VoteResponse]
   implicit val decoder: Decoder[VoteResponse] = deriveDecoder[VoteResponse]
 
   def parseVote(vote: Vote, hasVoted: Boolean, voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
@@ -309,7 +309,7 @@ final case class QualificationResponse(@(ApiModelProperty @field)(dataType = "st
                                        hasQualified: Boolean)
 
 object QualificationResponse {
-  implicit val encoder: Encoder[QualificationResponse] = deriveEncoder[QualificationResponse]
+  implicit val encoder: ObjectEncoder[QualificationResponse] = deriveEncoder[QualificationResponse]
   implicit val decoder: Decoder[QualificationResponse] = deriveDecoder[QualificationResponse]
 
   def parseQualification(qualification: Qualification, hasQualified: Boolean): QualificationResponse =
@@ -335,7 +335,7 @@ final case class DuplicateResponse(ideaId: IdeaId,
                                    score: Double)
 
 object DuplicateResponse {
-  implicit val encoder: Encoder[DuplicateResponse] = deriveEncoder[DuplicateResponse]
+  implicit val encoder: ObjectEncoder[DuplicateResponse] = deriveEncoder[DuplicateResponse]
   implicit val decoder: Decoder[DuplicateResponse] = deriveDecoder[DuplicateResponse]
 }
 
@@ -349,7 +349,7 @@ final case class TagForProposalResponse(@(ApiModelProperty @field)(dataType = "s
                                         predicted: Boolean)
 
 object TagForProposalResponse {
-  implicit val encoder: Encoder[TagForProposalResponse] = deriveEncoder[TagForProposalResponse]
+  implicit val encoder: ObjectEncoder[TagForProposalResponse] = deriveEncoder[TagForProposalResponse]
   implicit val decoder: Decoder[TagForProposalResponse] = deriveDecoder[TagForProposalResponse]
 
   def apply(tag: Tag, checked: Boolean, predicted: Boolean): TagForProposalResponse =
@@ -367,7 +367,7 @@ object TagForProposalResponse {
 final case class TagsForProposalResponse(tags: Seq[TagForProposalResponse], modelName: String)
 
 object TagsForProposalResponse {
-  implicit val encoder: Encoder[TagsForProposalResponse] = deriveEncoder[TagsForProposalResponse]
+  implicit val encoder: ObjectEncoder[TagsForProposalResponse] = deriveEncoder[TagsForProposalResponse]
   implicit val decoder: Decoder[TagsForProposalResponse] = deriveDecoder[TagsForProposalResponse]
 
   val empty = TagsForProposalResponse(tags = Seq.empty, modelName = "")

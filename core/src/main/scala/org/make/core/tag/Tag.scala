@@ -21,7 +21,7 @@ package org.make.core.tag
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -114,6 +114,6 @@ final case class Tag(
 ) extends MakeSerializable
 
 object Tag {
-  implicit val encoder: Encoder[Tag] = deriveEncoder[Tag]
+  implicit val encoder: ObjectEncoder[Tag] = deriveEncoder[Tag]
   implicit val decoder: Decoder[Tag] = deriveDecoder[Tag]
 }

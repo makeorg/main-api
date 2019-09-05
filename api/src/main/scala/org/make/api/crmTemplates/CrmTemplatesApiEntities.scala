@@ -18,7 +18,7 @@
  */
 
 package org.make.api.crmTemplates
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.Validation
@@ -83,7 +83,7 @@ final case class CrmTemplatesIdResponse(
 )
 
 object CrmTemplatesIdResponse {
-  implicit val encoder: Encoder[CrmTemplatesIdResponse] = deriveEncoder[CrmTemplatesIdResponse]
+  implicit val encoder: ObjectEncoder[CrmTemplatesIdResponse] = deriveEncoder[CrmTemplatesIdResponse]
   implicit val decoder: Decoder[CrmTemplatesIdResponse] = deriveDecoder[CrmTemplatesIdResponse]
 }
 
@@ -104,7 +104,7 @@ final case class CrmTemplatesResponse(
 )
 
 object CrmTemplatesResponse {
-  implicit val encoder: Encoder[CrmTemplatesResponse] = deriveEncoder[CrmTemplatesResponse]
+  implicit val encoder: ObjectEncoder[CrmTemplatesResponse] = deriveEncoder[CrmTemplatesResponse]
   implicit val decoder: Decoder[CrmTemplatesResponse] = deriveDecoder[CrmTemplatesResponse]
 
   def apply(crmTemplates: CrmTemplates): CrmTemplatesResponse =
