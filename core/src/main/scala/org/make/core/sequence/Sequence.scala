@@ -22,7 +22,7 @@ package org.make.core.sequence
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -35,7 +35,7 @@ import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonF
 final case class SequenceTranslation(slug: String, title: String, language: Language) extends MakeSerializable
 
 object SequenceTranslation {
-  implicit val encoder: Encoder[SequenceTranslation] = deriveEncoder[SequenceTranslation]
+  implicit val encoder: ObjectEncoder[SequenceTranslation] = deriveEncoder[SequenceTranslation]
   implicit val decoder: Decoder[SequenceTranslation] = deriveDecoder[SequenceTranslation]
 
   implicit val sequenceTranslationFormatter: RootJsonFormat[SequenceTranslation] =

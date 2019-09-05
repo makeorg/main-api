@@ -20,7 +20,7 @@
 package org.make.api.tagtype
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.tag.{TagType, TagTypeDisplay, TagTypeId}
 
@@ -35,7 +35,7 @@ final case class TagTypeResponse(
 )
 
 object TagTypeResponse {
-  implicit val encoder: Encoder[TagTypeResponse] = deriveEncoder[TagTypeResponse]
+  implicit val encoder: ObjectEncoder[TagTypeResponse] = deriveEncoder[TagTypeResponse]
   implicit val decoder: Decoder[TagTypeResponse] = deriveDecoder[TagTypeResponse]
 
   def apply(tagType: TagType): TagTypeResponse =

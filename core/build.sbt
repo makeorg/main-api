@@ -25,7 +25,6 @@ libraryDependencies ++= Seq(
   Dependencies.akkaHttpSwagger, // TODO: import only swagger not akka-http
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
-  Dependencies.elastic4sSpray,
   Dependencies.avro4s,
   Dependencies.circeGeneric,
   Dependencies.stamina,

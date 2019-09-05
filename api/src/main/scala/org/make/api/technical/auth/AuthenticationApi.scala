@@ -25,7 +25,7 @@ import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -145,7 +145,7 @@ object AuthenticationApi {
   case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
 
   object TokenResponse {
-    implicit val encoder: Encoder[TokenResponse] = deriveEncoder[TokenResponse]
+    implicit val encoder: ObjectEncoder[TokenResponse] = deriveEncoder[TokenResponse]
   }
 
 }

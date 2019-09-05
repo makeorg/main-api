@@ -26,7 +26,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, ObjectEncoder}
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.core.{CirceFormatters, ValidationError}
 
@@ -108,6 +108,6 @@ class RejectionsTest
 final case class TestRequest(field1: String, field2: Int, field3: LocalDate) {}
 
 object TestRequest extends CirceFormatters {
-  implicit val encoder: Encoder[TestRequest] = deriveEncoder[TestRequest]
+  implicit val encoder: ObjectEncoder[TestRequest] = deriveEncoder[TestRequest]
   implicit val decoder: Decoder[TestRequest] = deriveDecoder[TestRequest]
 }

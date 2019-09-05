@@ -21,7 +21,7 @@ package org.make.api.sequence
 
 import java.time.ZonedDateTime
 
-import io.circe.Encoder
+import io.circe.ObjectEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.ProposalResponse
@@ -50,7 +50,7 @@ final case class SequenceResponse(sequenceId: SequenceId,
                                   events: Seq[SequenceActionResponse])
 
 object SequenceResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SequenceResponse] = deriveEncoder[SequenceResponse]
+  implicit val encoder: ObjectEncoder[SequenceResponse] = deriveEncoder[SequenceResponse]
 }
 
 final case class SequenceActionResponse(date: ZonedDateTime,
@@ -59,7 +59,7 @@ final case class SequenceActionResponse(date: ZonedDateTime,
                                         arguments: Map[String, String])
 
 object SequenceActionResponse extends CirceFormatters {
-  implicit val encoder: Encoder[SequenceActionResponse] = deriveEncoder[SequenceActionResponse]
+  implicit val encoder: ObjectEncoder[SequenceActionResponse] = deriveEncoder[SequenceActionResponse]
 }
 
 final case class SequenceResult(
@@ -71,5 +71,5 @@ final case class SequenceResult(
 )
 
 object SequenceResult {
-  implicit val encoder: Encoder[SequenceResult] = deriveEncoder[SequenceResult]
+  implicit val encoder: ObjectEncoder[SequenceResult] = deriveEncoder[SequenceResult]
 }

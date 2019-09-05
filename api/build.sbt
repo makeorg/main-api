@@ -62,7 +62,7 @@ libraryDependencies ++= Seq(
   Dependencies.nettyAll,
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
-  Dependencies.elastic4sSpray,
+  Dependencies.elastic4sCirce,
   Dependencies.akkaHttpTest,
   Dependencies.akkaPersistenceInMemory,
   Dependencies.akkaTest,
