@@ -141,7 +141,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val finalRequest: ElasticSearchRequest = request
         .aggregations(
           termsAgg(name = "questions", field = ProposalElasticsearchFieldNames.questionId)
-            .size(size = questionAggrSize)
+            .size(size = questionAggrSize + 1)
             .minDocCount(min = 1)
         )
         .limit(0)
