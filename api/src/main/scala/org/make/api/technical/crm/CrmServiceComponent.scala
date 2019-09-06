@@ -33,7 +33,7 @@ import io.circe.Decoder
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
-import org.make.api.proposal.ProposalCoordinatorServiceComponent
+import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearchEngineComponent}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.RichFutures._
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
@@ -44,6 +44,7 @@ import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
 import org.make.core.operation.OperationId
+import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
@@ -83,6 +84,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with PersistentUserToAnonymizeServiceComponent
     with ReadJournalComponent
     with ProposalCoordinatorServiceComponent
+    with ProposalSearchEngineComponent
     with PersistentUserToAnonymizeServiceComponent
     with PersistentCrmUserServiceComponent
     with CrmClientComponent
@@ -459,7 +461,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         case event: LogRegisterCitizenEvent =>
           Future.successful(accumulateLogRegisterCitizenEvent(accumulator, event, questionResolver))
         case event: LogUserProposalEvent =>
-          Future.successful(accumulateLogUserProposalEvent(accumulator, event, questionResolver))
+          accumulateLogUserProposalEvent(accumulator, event, questionResolver)
         case event: LogUserVoteEvent =>
           accumulateLogUserVoteEvent(accumulator, event, questionResolver)
         case event: LogUserUnvoteEvent =>
@@ -625,27 +627,51 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     private def accumulateLogUserProposalEvent(accumulator: UserProperties,
                                                event: LogUserProposalEvent,
-                                               questionResolver: QuestionResolver): UserProperties = {
-      val maybeQuestion = questionResolver
-        .extractQuestionWithOperationFromRequestContext(event.requestContext)
-
-      accumulator.copy(
-        totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
-        lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-        lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
-        countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value).toSeq,
-        questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
-        sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toSeq,
-        firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
-        lastContributionDate = Some(event.action.date),
-        activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
-        daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
-        daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
-          accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
-        } else {
-          accumulator.daysOfActivity30d
+                                               questionResolver: QuestionResolver): Future[UserProperties] = {
+      val futureMaybeQuestion: Future[Option[Question]] =
+        questionResolver
+          .extractQuestionWithOperationFromRequestContext(event.requestContext) match {
+          case Some(question) => Future.successful(Some(question))
+          case None           =>
+            // If we can't resolve the question, retrieve the user proposals,
+            // and search for the one proposed at the event date
+            elasticsearchProposalAPI
+              .searchProposals(
+                SearchQuery(
+                  filters = Some(SearchFilters(user = Some(UserSearchFilter(event.userId)))),
+                  limit = Some(Integer.MAX_VALUE)
+                )
+              )
+              .map { proposalResult =>
+                proposalResult.results
+                  .find(_.createdAt == event.action.date)
+                  .flatMap(_.question.map(_.questionId))
+                  .flatMap { questionId =>
+                    questionResolver
+                      .findQuestionWithOperation(question => questionId == question.questionId)
+                  }
+              }
         }
-      )
+
+      futureMaybeQuestion.map { maybeQuestion =>
+        accumulator.copy(
+          totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
+          lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
+          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
+          countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value).toSeq,
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
+          sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toSeq,
+          firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
+          lastContributionDate = Some(event.action.date),
+          activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
+          daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
+          daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
+            accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
+          } else {
+            accumulator.daysOfActivity30d
+          }
+        )
+      }
     }
 
     private def accumulateLogRegisterCitizenEvent(accumulator: UserProperties,

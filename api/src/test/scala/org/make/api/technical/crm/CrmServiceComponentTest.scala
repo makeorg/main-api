@@ -32,7 +32,12 @@ import akka.stream.scaladsl.Source
 import com.typesafe.config.ConfigFactory
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
-import org.make.api.proposal.{ProposalCoordinatorService, ProposalCoordinatorServiceComponent}
+import org.make.api.proposal.{
+  ProposalCoordinatorService,
+  ProposalCoordinatorServiceComponent,
+  ProposalSearchEngine,
+  ProposalSearchEngineComponent
+}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -45,9 +50,11 @@ import org.make.api.user.{
 import org.make.api.userhistory._
 import org.make.api.{ActorSystemComponent, MakeUnitTest, StaminaTestUtils}
 import org.make.core.history.HistoryActions.Trusted
-import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus, SimpleOperation}
+import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
+import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
@@ -77,6 +84,7 @@ class CrmServiceComponentTest
     with PersistentUserToAnonymizeServiceComponent
     with CrmClientComponent
     with PersistentCrmUserServiceComponent
+    with ProposalSearchEngineComponent
     with PrivateMethodTester {
 
   trait MakeReadJournalForMocks
@@ -99,6 +107,7 @@ class CrmServiceComponentTest
   override val crmClient: CrmClient = mock[CrmClient]
   override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
+  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
 
@@ -607,6 +616,15 @@ class CrmServiceComponentTest
         )
       )
 
+      when(
+        elasticsearchProposalAPI.searchProposals(
+          SearchQuery(
+            filters = Some(SearchFilters(user = Some(UserSearchFilter(fooUser.userId)))),
+            limit = Some(Integer.MAX_VALUE)
+          )
+        )
+      ).thenReturn(Future.successful(ProposalsSearchResult(0L, Seq.empty)))
+
       val futureProperties = crmService.getPropertiesFromUser(
         fooUser,
         new QuestionResolver(questions, operations.map(operation => operation.slug -> operation.operationId).toMap)
@@ -821,6 +839,131 @@ class CrmServiceComponentTest
         val persistentUser = PersistentCrmUser.fromContactProperty(user.email, user.fullName.get, result)
         persistentUser.operationActivity should contain(question.slug)
         persistentUser.totalNumberProposals should contain(2)
+      }
+    }
+    scenario("user 8c0dcb2a-d4f8-4514-b1f1-8077ba314594") {
+      val source = readEvents("events/user-8c0dcb2a-d4f8-4514-b1f1-8077ba314594")
+
+      val questionId1 = QuestionId("question-1")
+      val questionId2 = QuestionId("question-2")
+
+      val proposal1Date = ZonedDateTime.parse("2019-03-18T23:00:31.243Z")
+      val proposal2Date = ZonedDateTime.parse("2019-03-18T23:21:03.501Z")
+
+      val proposals = Seq(
+        IndexedProposal(
+          id = ProposalId("proposal-1"),
+          userId = UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"),
+          content = "proposal 1",
+          slug = "proposal-1",
+          status = Accepted,
+          createdAt = proposal1Date,
+          updatedAt = None,
+          votes = Seq.empty,
+          votesCount = 42,
+          votesVerifiedCount = 42,
+          toEnrich = true,
+          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+          context = None,
+          trending = None,
+          labels = Seq.empty,
+          author = Author(None, None, None, None, None, None),
+          organisations = Seq.empty,
+          country = Country("FR"),
+          language = Language("fr"),
+          themeId = None,
+          question = Some(IndexedProposalQuestion(questionId1, "question-1", "", "", None, None)),
+          tags = Seq.empty,
+          ideaId = None,
+          operationId = Some(OperationId("")),
+          sequencePool = SequencePool.New,
+          initialProposal = false,
+          refusalReason = None,
+          operationKind = None
+        ),
+        IndexedProposal(
+          id = ProposalId("proposal-2"),
+          userId = UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"),
+          content = "proposal 2",
+          slug = "proposal-2",
+          status = Accepted,
+          createdAt = proposal2Date,
+          updatedAt = None,
+          votes = Seq.empty,
+          votesCount = 42,
+          votesVerifiedCount = 42,
+          toEnrich = true,
+          scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+          context = None,
+          trending = None,
+          labels = Seq.empty,
+          author = Author(None, None, None, None, None, None),
+          organisations = Seq.empty,
+          country = Country("FR"),
+          language = Language("fr"),
+          themeId = None,
+          question = Some(IndexedProposalQuestion(questionId2, "question-2", "", "", None, None)),
+          tags = Seq.empty,
+          ideaId = None,
+          operationId = Some(OperationId("")),
+          sequencePool = SequencePool.New,
+          initialProposal = false,
+          refusalReason = None,
+          operationKind = None
+        )
+      )
+
+      when(
+        elasticsearchProposalAPI
+          .searchProposals(
+            SearchQuery(
+              filters =
+                Some(SearchFilters(user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))))),
+              limit = Some(Integer.MAX_VALUE)
+            )
+          )
+      ).thenReturn(Future.successful(ProposalsSearchResult(2, proposals)))
+
+      val operationId1 = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
+
+      val questions =
+        Seq(
+          Question(
+            questionId1,
+            "question-1",
+            Country("FR"),
+            Language("fr"),
+            "Comment sauver le monde ?",
+            Some(operationId1),
+            None
+          ),
+          Question(
+            questionId2,
+            "question-2",
+            Country("FR"),
+            Language("fr"),
+            "Comment resauver le monde ?",
+            Some(OperationId("who cares?")),
+            None
+          )
+        )
+
+      val resolver = new QuestionResolver(questions, Map())
+
+      when(userJournal.currentEventsByPersistenceId(matches(user.userId.value), any[Long], any[Long]))
+        .thenReturn(source)
+
+      whenReady(crmService.getPropertiesFromUser(user, resolver), Timeout(5.seconds)) { result =>
+        result.operationActivity.toSeq.flatMap(_.split(",").sorted) should be(Seq("question-1", "question-2"))
+        result.totalProposals should contain(2)
+        verify(elasticsearchProposalAPI)
+          .searchProposals(
+            SearchQuery(
+              filters =
+                Some(SearchFilters(user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))))),
+              limit = Some(Integer.MAX_VALUE)
+            )
+          )
       }
     }
   }
