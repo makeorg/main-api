@@ -49,7 +49,7 @@ object FileType {
   // Use this file type for the images related to operations, on home page or operation page
   case object Operation extends FileType {
     override def name: String = "Operation"
-    override def path: String = "operations"
+    override def path: String = "content/operations"
   }
 }
 

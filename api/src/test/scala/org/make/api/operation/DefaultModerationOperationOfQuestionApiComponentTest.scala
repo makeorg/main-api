@@ -169,8 +169,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     )
   }
 
-  when(operationOfQuestionService.update(any[OperationOfQuestion], any[Question])).thenAnswer { invocation =>
-    Future.successful(invocation.getArgument[OperationOfQuestion](0))
+  when(operationOfQuestionService.updateWithQuestion(any[OperationOfQuestion], any[Question])).thenAnswer {
+    invocation =>
+      Future.successful(invocation.getArgument[OperationOfQuestion](0))
   }
 
   when(questionService.getQuestion(any[QuestionId])).thenAnswer { invocation =>
