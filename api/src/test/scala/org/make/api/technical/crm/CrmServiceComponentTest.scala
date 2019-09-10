@@ -617,13 +617,18 @@ class CrmServiceComponentTest
       )
 
       when(
-        elasticsearchProposalAPI.searchProposals(
-          SearchQuery(
-            filters = Some(SearchFilters(user = Some(UserSearchFilter(fooUser.userId)))),
-            limit = Some(Integer.MAX_VALUE)
+        elasticsearchProposalAPI
+          .countProposals(
+            SearchQuery(
+              filters = Some(
+                SearchFilters(
+                  user = Some(UserSearchFilter(fooUser.userId)),
+                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+                )
+              )
+            )
           )
-        )
-      ).thenReturn(Future.successful(ProposalsSearchResult(0L, Seq.empty)))
+      ).thenReturn(Future.successful(0L))
 
       val futureProperties = crmService.getPropertiesFromUser(
         fooUser,
@@ -917,12 +922,30 @@ class CrmServiceComponentTest
         elasticsearchProposalAPI
           .searchProposals(
             SearchQuery(
-              filters =
-                Some(SearchFilters(user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))))),
-              limit = Some(Integer.MAX_VALUE)
+              filters = Some(
+                SearchFilters(
+                  user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))),
+                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+                )
+              ),
+              limit = Some(2)
             )
           )
       ).thenReturn(Future.successful(ProposalsSearchResult(2, proposals)))
+
+      when(
+        elasticsearchProposalAPI
+          .countProposals(
+            SearchQuery(
+              filters = Some(
+                SearchFilters(
+                  user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))),
+                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+                )
+              )
+            )
+          )
+      ).thenReturn(Future.successful(2L))
 
       val operationId1 = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
 
@@ -959,9 +982,13 @@ class CrmServiceComponentTest
         verify(elasticsearchProposalAPI)
           .searchProposals(
             SearchQuery(
-              filters =
-                Some(SearchFilters(user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))))),
-              limit = Some(Integer.MAX_VALUE)
+              filters = Some(
+                SearchFilters(
+                  user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))),
+                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+                )
+              ),
+              limit = Some(2)
             )
           )
       }

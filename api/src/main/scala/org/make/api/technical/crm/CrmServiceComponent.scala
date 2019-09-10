@@ -44,7 +44,8 @@ import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{SearchFilters, SearchQuery, UserSearchFilter}
+import org.make.core.proposal.indexed.ProposalsSearchResult
+import org.make.core.proposal.{ProposalStatus, SearchFilters, SearchQuery, StatusSearchFilter, UserSearchFilter}
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
@@ -625,6 +626,24 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
+    private def searchUserProposals(userId: UserId): Future[ProposalsSearchResult] = {
+      val filters = SearchFilters(
+        user = Some(UserSearchFilter(userId)),
+        status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+      )
+      elasticsearchProposalAPI
+        .countProposals(SearchQuery(filters = Some(filters)))
+        .flatMap { count =>
+          if (count == 0) {
+            Future.successful(ProposalsSearchResult(0L, Seq.empty))
+          } else {
+            elasticsearchProposalAPI
+              .searchProposals(SearchQuery(filters = Some(filters), limit = Some(count.intValue())))
+          }
+
+        }
+    }
+
     private def accumulateLogUserProposalEvent(accumulator: UserProperties,
                                                event: LogUserProposalEvent,
                                                questionResolver: QuestionResolver): Future[UserProperties] = {
@@ -635,22 +654,15 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           case None           =>
             // If we can't resolve the question, retrieve the user proposals,
             // and search for the one proposed at the event date
-            elasticsearchProposalAPI
-              .searchProposals(
-                SearchQuery(
-                  filters = Some(SearchFilters(user = Some(UserSearchFilter(event.userId)))),
-                  limit = Some(Integer.MAX_VALUE)
-                )
-              )
-              .map { proposalResult =>
-                proposalResult.results
-                  .find(_.createdAt == event.action.date)
-                  .flatMap(_.question.map(_.questionId))
-                  .flatMap { questionId =>
-                    questionResolver
-                      .findQuestionWithOperation(question => questionId == question.questionId)
-                  }
-              }
+            searchUserProposals(event.userId).map { proposalResult =>
+              proposalResult.results
+                .find(_.createdAt == event.action.date)
+                .flatMap(_.question.map(_.questionId))
+                .flatMap { questionId =>
+                  questionResolver
+                    .findQuestionWithOperation(question => questionId == question.questionId)
+                }
+            }
         }
 
       futureMaybeQuestion.map { maybeQuestion =>
