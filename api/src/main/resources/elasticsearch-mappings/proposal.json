@@ -708,6 +708,10 @@
               "type": "date",
               "format": "date_time",
               "index": false
+            },
+            "isOpen": {
+              "type": "boolean",
+              "index": true
             }
           }
         },

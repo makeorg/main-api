@@ -101,6 +101,7 @@ object ProposalElasticsearchFieldNames {
   val organisationName: String = "organisations.organisationName"
   val organisations: String = "organisations"
   val questionId: String = "question.questionId"
+  val questionIsOpen: String = "question.isOpen"
   val refusalReason: String = "refusalReason"
   val scores: String = "scores"
   val scoreUpperBound: String = "scores.scoreUpperBound"
@@ -173,7 +174,8 @@ final case class IndexedProposalQuestion(
   title: String,
   question: String,
   startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime]
+  endDate: Option[ZonedDateTime],
+  isOpen: Boolean
 )
 
 object IndexedProposalQuestion extends CirceFormatters {

@@ -682,7 +682,8 @@ class ModerationProposalApiTest
         title = "title",
         question = "question ?",
         startDate = None,
-        endDate = None
+        endDate = None,
+        isOpen = true
       )
     )
   )

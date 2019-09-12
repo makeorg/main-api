@@ -111,7 +111,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           title = "test question",
           question = "test question ?",
           startDate = None,
-          endDate = None
+          endDate = None,
+          isOpen = true
         )
       ),
       tags = Seq.empty,
@@ -162,7 +163,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           title = "test question",
           question = "test question ?",
           startDate = None,
-          endDate = None
+          endDate = None,
+          isOpen = true
         )
       ),
       tags = Seq.empty,

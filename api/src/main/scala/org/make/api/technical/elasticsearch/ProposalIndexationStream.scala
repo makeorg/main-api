@@ -43,7 +43,7 @@ import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
-import org.make.core.SlugHelper
+import org.make.core.{DateHelper, SlugHelper}
 import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -190,6 +190,15 @@ trait ProposalIndexationStream
     } yield {
       val isBeforeContextSourceFeature: Boolean =
         proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
+      val questionIsOpen: Boolean = {
+        val now = DateHelper.now()
+        (operationOfQuestion.startDate, operationOfQuestion.endDate) match {
+          case (Some(start), Some(end)) => start.isBefore(now) && end.isAfter(now)
+          case (None, Some(end))        => end.isAfter(now)
+          case (Some(start), None)      => start.isBefore(now)
+          case _                        => true
+        }
+      }
       IndexedProposal(
         id = proposal.proposalId,
         userId = proposal.author,
@@ -267,7 +276,8 @@ trait ProposalIndexationStream
               title = operationOfQuestion.operationTitle,
               question = question.question,
               startDate = operationOfQuestion.startDate,
-              endDate = operationOfQuestion.endDate
+              endDate = operationOfQuestion.endDate,
+              isOpen = questionIsOpen
           )
         ),
         sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status),
