@@ -19,6 +19,8 @@
 
 package org.make.api.technical
 
+import java.io.File
+import java.nio.file.Files
 import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model._
@@ -26,14 +28,16 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import kamon.Kamon
-import org.make.api.Predef._
 import kamon.akka.http.KamonTraceDirectives.operationName
 import org.make.api.MakeApi
+import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.monitoring.MonitoringMessageHelper
-import org.make.core.{reference, ApplicationName, CirceFormatters, DateHelper, RequestContext, SlugHelper}
+import org.make.api.technical.storage.Content
+import org.make.api.technical.storage.Content.FileContent
+import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -41,6 +45,16 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
+import org.make.core.{
+  reference,
+  ApplicationName,
+  CirceFormatters,
+  DateHelper,
+  FileHelper,
+  RequestContext,
+  SlugHelper,
+  Validation
+}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
 import scalaoauth2.provider.AccessToken
 
@@ -374,6 +388,32 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
         }
       }
     }
+
+  def uploadImageAsync(imageFieldName: String,
+                       uploadFile: (String, String, Content) => Future[String],
+                       sizeLimit: Option[Long]): Directive[(String, File)] = {
+    val sizeDirective = sizeLimit match {
+      case Some(size) => withSizeLimit(size)
+      case _          => withoutSizeLimit
+    }
+    sizeDirective.tflatMap { _ =>
+      storeUploadedFile(
+        imageFieldName,
+        fileInfo => Files.createTempFile("makeapi", FileHelper.getExtension(fileInfo)).toFile
+      ).tflatMap {
+        case (info, file) =>
+          file.deleteOnExit()
+          val contentType = info.contentType
+          Validation.validate(
+            validateField(imageFieldName, "invalid_format", contentType.mediaType.isImage, "File must be an image")
+          )
+          val extension = FileHelper.getExtension(info)
+          provideAsync(uploadFile(extension, contentType.value, FileContent(file))).map { path =>
+            (path, file)
+          }
+      }
+    }
+  }
 }
 
 final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {

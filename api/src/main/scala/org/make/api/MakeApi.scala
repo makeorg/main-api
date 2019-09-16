@@ -98,7 +98,13 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
-import org.make.api.views.{DefaultHomeViewServiceComponent, DefaultViewApiComponent, ViewApi}
+import org.make.api.views.{
+  AdminViewApi,
+  DefaultAdminViewApiComponent,
+  DefaultHomeViewServiceComponent,
+  DefaultViewApiComponent,
+  ViewApi
+}
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{ValidationError, ValidationFailedError}
 import org.mdedetrich.akka.http.support.CirceHttpSupport
@@ -119,6 +125,7 @@ trait MakeApi
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminPartnerApiComponent
     with DefaultAdminUserApiComponent
+    with DefaultAdminViewApiComponent
     with DefaultAuthenticationApiComponent
     with DefaultClientServiceComponent
     with DefaultConfigurationsApiComponent
@@ -326,6 +333,7 @@ trait MakeApi
       classOf[AdminFeaturedOperationApi],
       classOf[AdminCurrentOperationApi],
       classOf[ViewApi],
+      classOf[AdminViewApi],
       classOf[AdminClientApi],
     )
 
@@ -356,12 +364,12 @@ trait MakeApi
       adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
       adminUserApi.routes ~
+      adminViewApi.routes ~
       authenticationApi.routes ~
       configurationsApi.routes ~
       crmApi.routes ~
       elasticSearchApi.routes ~
       healthCheckApi.routes ~
-      viewApi.routes ~
       migrationApi.routes ~
       moderationIdeaApi.routes ~
       moderationOperationApi.routes ~
@@ -383,6 +391,7 @@ trait MakeApi
       tagApi.routes ~
       trackingApi.routes ~
       userApi.routes ~
+      viewApi.routes ~
       widgetApi.routes)
 }
 
