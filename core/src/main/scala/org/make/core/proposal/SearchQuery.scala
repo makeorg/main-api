@@ -80,7 +80,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          minScore: Option[MinScoreSearchFilter] = None,
                          createdAt: Option[CreatedAtSearchFilter] = None,
                          sequencePool: Option[SequencePoolSearchFilter] = None,
-                         operationKinds: Option[OperationKindsSearchFilter] = None)
+                         operationKinds: Option[OperationKindsSearchFilter] = None,
+                         questionIsOpen: Option[QuestionIsOpenSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -105,7 +106,8 @@ object SearchFilters extends ElasticDsl {
             minScore: Option[MinScoreSearchFilter] = None,
             createdAt: Option[CreatedAtSearchFilter] = None,
             sequencePool: Option[SequencePoolSearchFilter] = None,
-            operationKinds: Option[OperationKindsSearchFilter] = None): Option[SearchFilters] = {
+            operationKinds: Option[OperationKindsSearchFilter] = None,
+            questionIsOpen: Option[QuestionIsOpenSearchFilter] = None): Option[SearchFilters] = {
 
     (
       proposals,
@@ -128,9 +130,11 @@ object SearchFilters extends ElasticDsl {
       minScore,
       createdAt,
       sequencePool,
-      operationKinds
+      operationKinds,
+      questionIsOpen
     ) match {
       case (
+          None,
           None,
           None,
           None,
@@ -177,7 +181,8 @@ object SearchFilters extends ElasticDsl {
             minScore,
             createdAt,
             sequencePool,
-            operationKinds
+            operationKinds,
+            questionIsOpen
           )
         )
     }
@@ -214,7 +219,8 @@ object SearchFilters extends ElasticDsl {
       buildMinScoreSearchFilter(searchQuery),
       buildCreatedAtSearchFilter(searchQuery),
       buildSequencePoolSearchFilter(searchQuery),
-      buildOperationKindSearchFilter(searchQuery)
+      buildOperationKindSearchFilter(searchQuery),
+      buildQuestionIsOpenSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -567,6 +573,16 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
+  def buildQuestionIsOpenSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    searchQuery.filters.flatMap {
+      _.questionIsOpen match {
+        case Some(QuestionIsOpenSearchFilter(isOpen)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionIsOpen, isOpen))
+        case _ => None
+      }
+    }
+  }
+
 }
 
 case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -615,3 +631,4 @@ case class ToEnrichSearchFilter(toEnrich: Boolean)
 case class MinScoreSearchFilter(minScore: Float)
 case class SequencePoolSearchFilter(sequencePool: String)
 case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
+case class QuestionIsOpenSearchFilter(isOpen: Boolean)

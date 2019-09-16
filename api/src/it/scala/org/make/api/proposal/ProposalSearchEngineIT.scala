@@ -40,6 +40,7 @@ import org.make.api.technical.elasticsearch.{
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper}
@@ -658,7 +659,17 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      question = None,
+      question = Some(
+        IndexedProposalQuestion(
+          questionId = QuestionId("question-id"),
+          "slug",
+          "title",
+          "question",
+          None,
+          None,
+          isOpen = false
+        )
+      ),
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
@@ -723,7 +734,17 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      question = None,
+      question = Some(
+        IndexedProposalQuestion(
+          questionId = QuestionId("question-id"),
+          "slug",
+          "title",
+          "question",
+          None,
+          None,
+          isOpen = true
+        )
+      ),
       sequencePool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
@@ -1403,13 +1424,29 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by m") {
+  feature("search proposals by minScore") {
     scenario("should return a list of proposals") {
       Given("minimum vote number")
       val query =
         SearchQuery(filters = Some(SearchFilters(minScore = Some(MinScoreSearchFilter(42)))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(1L)
+      }
+    }
+  }
+
+  feature("search proposals by opened question") {
+    scenario("should return one proposals") {
+      val queryTrue =
+        SearchQuery(filters = Some(SearchFilters(questionIsOpen = Some(QuestionIsOpenSearchFilter(true)))))
+      val queryFalse =
+        SearchQuery(filters = Some(SearchFilters(questionIsOpen = Some(QuestionIsOpenSearchFilter(false)))))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(queryTrue), Timeout(3.seconds)) { result =>
+        result.total should be(1L)
+      }
+      whenReady(elasticsearchProposalAPI.searchProposals(queryFalse), Timeout(3.seconds)) { result =>
         result.total should be(1L)
       }
     }
