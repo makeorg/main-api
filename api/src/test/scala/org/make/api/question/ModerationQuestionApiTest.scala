@@ -21,34 +21,43 @@ package org.make.api.question
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.testkit.RouteTestTimeout
+import akka.util.ByteString
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.{
-  ModerationProposalResponse,
-  ProposalService,
-  ProposalServiceComponent,
-  RefuseProposalRequest
+import org.make.api.operation.{
+  OperationOfQuestionService,
+  OperationOfQuestionServiceComponent,
+  OperationService,
+  OperationServiceComponent
 }
+import org.make.api.proposal._
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.storage.Content.FileContent
+import org.make.api.technical.storage.{FileType, StorageService, StorageServiceComponent, UploadResponse}
 import org.make.api.user.UserResponse
 import org.make.core.{DateHelper, RequestContext}
 import org.make.core.auth.UserRights
+import org.make.core.operation._
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.{ProposalId, _}
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 class ModerationQuestionApiTest
@@ -60,13 +69,20 @@ class ModerationQuestionApiTest
     with MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with MakeAuthentication {
+    with MakeAuthentication
+    with StorageServiceComponent
+    with OperationOfQuestionServiceComponent
+    with OperationServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
 
   val routes: Route = sealRoute(moderationQuestionApi.routes)
 
   override lazy val proposalService: ProposalService = mock[ProposalService]
+  override lazy val storageService: StorageService = mock[StorageService]
+  override lazy val operationService: OperationService = mock[OperationService]
+  override lazy val operationOfQuestionService: OperationOfQuestionService =
+    mock[OperationOfQuestionService]
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"
@@ -116,7 +132,54 @@ class ModerationQuestionApiTest
       )
     )
 
-  val baseQuestion = Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "Slug ?", None, None)
+  val baseSimpleOperation = SimpleOperation(
+    operationId = OperationId("operation-id"),
+    status = OperationStatus.Active,
+    slug = "slug-operation",
+    allowedSources = Seq.empty,
+    defaultLanguage = Language("fr"),
+    operationKind = OperationKind.PublicConsultation,
+    createdAt = None,
+    updatedAt = None
+  )
+  val baseQuestion =
+    Question(
+      QuestionId("question-id"),
+      "slug",
+      Country("FR"),
+      Language("fr"),
+      "Slug ?",
+      Some(OperationId("operation-id")),
+      None
+    )
+  val baseOperationOfQuestion = OperationOfQuestion(
+    QuestionId("question-id"),
+    OperationId("operation-id"),
+    None,
+    None,
+    "title",
+    SequenceId("sequence-id"),
+    canPropose = true,
+    sequenceCardsConfiguration = SequenceCardsConfiguration(
+      introCard = IntroCard(enabled = true, title = None, description = None),
+      pushProposalCard = PushProposalCard(enabled = true),
+      signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+      finalCard = FinalCard(
+        enabled = true,
+        sharingEnabled = false,
+        title = None,
+        shareDescription = None,
+        learnMoreTitle = None,
+        learnMoreTextButton = None,
+        linkUrl = None
+      )
+    ),
+    aboutUrl = None,
+    metas = Metas(title = None, description = None, picture = None),
+    theme = QuestionTheme.default,
+    description = OperationOfQuestion.defaultDescription,
+    imageUrl = Some("image-url")
+  )
 
   feature("list questions") {
 
@@ -454,6 +517,115 @@ class ModerationQuestionApiTest
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest2)) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
+      }
+    }
+  }
+
+  feature("upload image") {
+    implicit val timeout: RouteTestTimeout = RouteTestTimeout(300.seconds)
+    def uri(id: String = "question-id") = s"/moderation/questions/$id/images"
+
+    when(questionService.getQuestion(QuestionId("question-id-no-operation")))
+      .thenReturn(Future.successful(Some(baseQuestion.copy(operationId = None))))
+    when(operationOfQuestionService.findByQuestionId(QuestionId("fake-question")))
+      .thenReturn(Future.successful(None))
+    when(operationOfQuestionService.findByQuestionId(QuestionId("question-id")))
+      .thenReturn(Future.successful(Some(baseOperationOfQuestion)))
+    when(operationService.findOneSimple(OperationId("operation-id")))
+      .thenReturn(Future.successful(Some(baseSimpleOperation)))
+
+    scenario("unauthorized not connected") {
+      Post(uri()) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("forbidden citizen") {
+      Post(uri())
+        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("forbidden moderator") {
+      Post(uri())
+        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("question not found") {
+      Post(uri("fake-question"))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("incorrect file type") {
+      val request: Multipart = Multipart.FormData(
+        fields = Map(
+          "data" -> HttpEntity
+            .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
+        )
+      )
+
+      Post(uri(), request)
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("storage unavailable") {
+      when(
+        storageService.uploadFile(
+          ArgumentMatchers.eq(FileType.Operation),
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[FileContent]
+        )
+      ).thenReturn(Future.failed(new Exception("swift client error")))
+      val request: Multipart =
+        Multipart.FormData(
+          Multipart.FormData.BodyPart
+            .Strict(
+              "data",
+              HttpEntity.Strict(ContentType(MediaTypes.`image/jpeg`), ByteString("image")),
+              Map("filename" -> "image.jpeg")
+            )
+        )
+
+      Post(uri(), request)
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.InternalServerError)
+      }
+    }
+
+    scenario("large file successfully uploaded and returned by admin") {
+      when(
+        storageService.uploadFile(
+          ArgumentMatchers.eq(FileType.Operation),
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[FileContent]
+        )
+      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+      when(operationOfQuestionService.update(ArgumentMatchers.any[OperationOfQuestion]))
+        .thenReturn(Future.successful(baseOperationOfQuestion))
+
+      def entityOfSize(size: Int): Multipart = Multipart.FormData(
+        Multipart.FormData.BodyPart
+          .Strict(
+            "data",
+            HttpEntity.Strict(ContentType(MediaTypes.`image/jpeg`), ByteString("0" * size)),
+            Map("filename" -> "image.jpeg")
+          )
+      )
+      Post(uri(), entityOfSize(256000 + 1))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+
+        val path: UploadResponse = entityAs[UploadResponse]
+        path.path shouldBe "path/to/uploaded/image.jpeg"
       }
     }
   }

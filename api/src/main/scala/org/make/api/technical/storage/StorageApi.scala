@@ -23,8 +23,8 @@ import java.nio.file.Files
 
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Encoder
-import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -122,31 +122,33 @@ trait DefaultStorageApiComponent
           makeOperation("uploadOperationFile") { _ =>
             makeOAuth2 { user =>
               requireAdminRole(user.user) {
-                provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
-                  storeUploadedFile("data", fileInfo => Files.createTempFile("makeapi", fileInfo.fileName).toFile) {
-                    case (info, file) =>
-                      file.deleteOnExit()
-                      val contentType = info.contentType
-                      if (!contentType.mediaType.isImage) {
-                        throw ValidationFailedError(
-                          Seq(ValidationError("data", "invalid_format", Some("File must be an image")))
-                        )
-                      } else {
-                        val fileName = file.getName
-                        val extension = fileName.substring(fileName.lastIndexOf("."))
-                        onSuccess(
-                          storageService
-                            .uploadFile(
-                              FileType.Operation,
-                              s"${operation.slug}/${idGenerator.nextId()}$extension",
-                              contentType.value,
-                              FileContent(file)
-                            )
-                        ) { path =>
-                          file.delete()
-                          complete(UploadResponse(path))
+                withoutSizeLimit {
+                  provideAsyncOrNotFound(operationService.findOne(operationId)) { operation =>
+                    storeUploadedFile("data", fileInfo => Files.createTempFile("makeapi", fileInfo.fileName).toFile) {
+                      case (info, file) =>
+                        file.deleteOnExit()
+                        val contentType = info.contentType
+                        if (!contentType.mediaType.isImage) {
+                          throw ValidationFailedError(
+                            Seq(ValidationError("data", "invalid_format", Some("File must be an image")))
+                          )
+                        } else {
+                          val fileName = file.getName
+                          val extension = fileName.substring(fileName.lastIndexOf("."))
+                          onSuccess(
+                            storageService
+                              .uploadFile(
+                                FileType.Operation,
+                                s"${operation.slug}/${idGenerator.nextId()}$extension",
+                                contentType.value,
+                                FileContent(file)
+                              )
+                          ) { path =>
+                            file.delete()
+                            complete(UploadResponse(path))
+                          }
                         }
-                      }
+                    }
                   }
                 }
               }
@@ -165,40 +167,42 @@ trait DefaultStorageApiComponent
                 user.user.userId == userId || user.user.roles.contains(RoleAdmin),
                 "You can only change the avatar for yourself"
               ) {
-                storeUploadedFile("data", fileInfo => Files.createTempFile("makeapi", fileInfo.fileName).toFile) {
-                  case (info, file) =>
-                    file.deleteOnExit()
-                    val contentType = info.contentType
-                    if (!contentType.mediaType.isImage) {
-                      throw ValidationFailedError(
-                        Seq(ValidationError("data", "invalid_format", Some("File must be an image")))
-                      )
-                    } else {
-                      val fileName = file.getName
-                      val extension = fileName.substring(fileName.lastIndexOf("."))
-                      onSuccess(
-                        storageService
-                          .uploadFile(
-                            FileType.Avatar,
-                            s"${userId.value}/${idGenerator.nextId()}$extension",
-                            contentType.value,
-                            FileContent(file)
-                          )
-                      ) { path =>
-                        file.delete()
-                        provideAsyncOrNotFound(userService.getUser(userId)) { user =>
-                          val modifiedProfile = user.profile match {
-                            case Some(profile) => profile.copy(avatarUrl = Some(path))
-                            case None          => Profile.default.copy(avatarUrl = Some(path))
-                          }
+                withSizeLimit(1048576) {
+                  storeUploadedFile("data", fileInfo => Files.createTempFile("makeapi", fileInfo.fileName).toFile) {
+                    case (info, file) =>
+                      file.deleteOnExit()
+                      val contentType = info.contentType
+                      if (!contentType.mediaType.isImage) {
+                        throw ValidationFailedError(
+                          Seq(ValidationError("data", "invalid_format", Some("File must be an image")))
+                        )
+                      } else {
+                        val fileName = file.getName
+                        val extension = fileName.substring(fileName.lastIndexOf("."))
+                        onSuccess(
+                          storageService
+                            .uploadFile(
+                              FileType.Avatar,
+                              s"${userId.value}/${idGenerator.nextId()}$extension",
+                              contentType.value,
+                              FileContent(file)
+                            )
+                        ) { path =>
+                          file.delete()
+                          provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                            val modifiedProfile = user.profile match {
+                              case Some(profile) => profile.copy(avatarUrl = Some(path))
+                              case None          => Profile.default.copy(avatarUrl = Some(path))
+                            }
 
-                          onSuccess(userService.update(user.copy(profile = Some(modifiedProfile)), requestContext)) {
-                            _ =>
-                              complete(UploadResponse(path))
+                            onSuccess(userService.update(user.copy(profile = Some(modifiedProfile)), requestContext)) {
+                              _ =>
+                                complete(UploadResponse(path))
+                            }
                           }
                         }
                       }
-                    }
+                  }
                 }
               }
             }
@@ -213,4 +217,5 @@ case class UploadResponse(path: String)
 
 object UploadResponse {
   implicit val encoder: Encoder[UploadResponse] = deriveEncoder[UploadResponse]
+  implicit val decoder: Decoder[UploadResponse] = deriveDecoder[UploadResponse]
 }

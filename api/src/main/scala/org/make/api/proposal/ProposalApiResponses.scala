@@ -98,7 +98,8 @@ final case class ProposalIdResponse(
 )
 
 object ProposalIdResponse {
-  implicit val encoder: ObjectEncoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
+  implicit val encoder: Encoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
+  implicit val decoder: Decoder[ProposalIdResponse] = deriveDecoder[ProposalIdResponse]
 }
 
 final case class IndexedProposalQuestionResponse(

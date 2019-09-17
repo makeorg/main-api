@@ -19,28 +19,37 @@
 
 package org.make.api.question
 
+import java.nio.file.Files
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.proposal.{ExhaustiveSearchRequest, ProposalServiceComponent, RefuseProposalRequest}
+import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
+import org.make.api.proposal.{
+  ExhaustiveSearchRequest,
+  ProposalIdResponse,
+  ProposalServiceComponent,
+  RefuseProposalRequest
+}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.storage.Content.FileContent
+import org.make.api.technical.storage.{FileType, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
-import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.{BusinessConfig, DateHelper, FrontConfiguration, HttpCodes, ParameterExtractors}
+import org.make.core._
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -174,22 +183,35 @@ trait ModerationQuestionApi extends Directives {
   @Path(value = "/")
   def createQuestion: Route
 
-  def routes: Route = listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal ~ refuseInitialProposals
+  @ApiOperation(
+    value = "upload-operation-image",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "multipart/form-data",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "data", paramType = "formData", dataType = "file")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UploadResponse])))
+  @Path(value = "/{questionId}/images")
+  def uploadQuestionImage: Route
+
+  def routes: Route =
+    listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal ~ refuseInitialProposals ~ uploadQuestionImage
 
 }
 
 trait ModerationQuestionComponent {
   def moderationQuestionApi: ModerationQuestionApi
-}
-
-final case class ProposalIdResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
-  proposalId: ProposalId
-)
-
-object ProposalIdResponse {
-  implicit val encoder: Encoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
-  implicit val decoder: Decoder[ProposalIdResponse] = deriveDecoder[ProposalIdResponse]
 }
 
 final case class AuthorRequest(@(ApiModelProperty @field)(dataType = "integer", example = "23")
@@ -240,7 +262,10 @@ trait DefaultModerationQuestionComponent
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
-    with ProposalServiceComponent =>
+    with ProposalServiceComponent
+    with StorageServiceComponent
+    with OperationOfQuestionServiceComponent
+    with OperationServiceComponent =>
 
   override lazy val moderationQuestionApi: ModerationQuestionApi = new DefaultModerationQuestionApi
 
@@ -405,7 +430,62 @@ trait DefaultModerationQuestionComponent
         }
       }
 
+    override def uploadQuestionImage: Route = {
+      post {
+        path("moderation" / "questions" / questionId / "images") { questionId =>
+          makeOperation("uploadQuestionImage") { _ =>
+            makeOAuth2 { user =>
+              requireAdminRole(user.user) {
+                withoutSizeLimit {
+                  provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
+                    operationOfQuestion =>
+                      provideAsyncOrNotFound(operationService.findOneSimple(operationOfQuestion.operationId)) {
+                        operation =>
+                          storeUploadedFile(
+                            "data",
+                            fileInfo => Files.createTempFile("makeapi", fileInfo.fileName).toFile
+                          ) {
+                            case (info, file) =>
+                              file.deleteOnExit()
+                              val contentType = info.contentType
+                              Validation.validate(
+                                validateField(
+                                  "data",
+                                  "invalid_format",
+                                  contentType.mediaType.isImage,
+                                  "File must be an image"
+                                )
+                              )
+                              val fileName = file.getName
+                              val extension = fileName.substring(fileName.lastIndexOf("."))
+                              onSuccess(
+                                storageService
+                                  .uploadFile(
+                                    FileType.Operation,
+                                    s"${operation.slug}/${idGenerator.nextId()}$extension",
+                                    contentType.value,
+                                    FileContent(file)
+                                  )
+                              ) { path =>
+                                provideAsync(
+                                  operationOfQuestionService.update(operationOfQuestion.copy(imageUrl = Some(path)))
+                                ) { _ =>
+                                  file.delete()
+                                  complete(UploadResponse(path))
+                                }
+                              }
+                          }
+                      }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
+
 }
 
 final case class CreateQuestionRequest(@(ApiModelProperty @field)(dataType = "string", example = "FR")

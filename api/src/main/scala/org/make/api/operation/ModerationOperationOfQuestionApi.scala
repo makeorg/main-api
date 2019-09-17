@@ -354,7 +354,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                             )
                           )
                         onSuccess(
-                          operationOfQuestionService.update(
+                          operationOfQuestionService.updateWithQuestion(
                             operationOfQuestion
                               .copy(
                                 startDate = request.startDate,

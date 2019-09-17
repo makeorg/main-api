@@ -269,7 +269,7 @@ trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatte
             }
             .toMap
         ),
-        userAgent = maybeUserAgent.map(_.toString),
+        userAgent = maybeUserAgent,
         questionId = maybeQuestionId.map(QuestionId.apply),
         applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get),
         referrer = maybeReferrer

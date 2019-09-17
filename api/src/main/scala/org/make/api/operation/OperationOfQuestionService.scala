@@ -42,7 +42,8 @@ trait OperationOfQuestionService {
            order: Option[String] = None,
            request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()): Future[Seq[OperationOfQuestion]]
   def search(searchQuery: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
-  def update(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion]
+  def updateWithQuestion(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion]
+  def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def count(request: SearchOperationsOfQuestions): Future[Int]
 
   /**
@@ -134,11 +135,16 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(searchQuery)
     }
 
-    override def update(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion] = {
+    override def updateWithQuestion(operationOfQuestion: OperationOfQuestion,
+                                    question: Question): Future[OperationOfQuestion] = {
       for {
         _       <- persistentQuestionService.modify(question)
         updated <- persistentOperationOfQuestionService.modify(operationOfQuestion)
       } yield updated
+    }
+
+    override def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
+      persistentOperationOfQuestionService.modify(operationOfQuestion)
     }
 
     /**
