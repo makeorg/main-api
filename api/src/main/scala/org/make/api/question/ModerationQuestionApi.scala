@@ -19,8 +19,6 @@
 
 package org.make.api.question
 
-import java.nio.file.Files
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
@@ -39,17 +37,16 @@ import org.make.api.proposal.{
 }
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.storage.Content.FileContent
-import org.make.api.technical.storage.{FileType, StorageServiceComponent, UploadResponse}
+import org.make.api.technical.storage.{Content, FileType, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
 import org.make.core.Validation._
+import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
-import org.make.core._
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -436,46 +433,24 @@ trait DefaultModerationQuestionComponent
           makeOperation("uploadQuestionImage") { _ =>
             makeOAuth2 { user =>
               requireAdminRole(user.user) {
-                withoutSizeLimit {
-                  provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
-                    operationOfQuestion =>
-                      provideAsyncOrNotFound(operationService.findOneSimple(operationOfQuestion.operationId)) {
-                        operation =>
-                          storeUploadedFile(
-                            "data",
-                            fileInfo => Files.createTempFile("makeapi", fileInfo.fileName).toFile
-                          ) {
-                            case (info, file) =>
-                              file.deleteOnExit()
-                              val contentType = info.contentType
-                              Validation.validate(
-                                validateField(
-                                  "data",
-                                  "invalid_format",
-                                  contentType.mediaType.isImage,
-                                  "File must be an image"
-                                )
-                              )
-                              val fileName = file.getName
-                              val extension = fileName.substring(fileName.lastIndexOf("."))
-                              onSuccess(
-                                storageService
-                                  .uploadFile(
-                                    FileType.Operation,
-                                    s"${operation.slug}/${idGenerator.nextId()}$extension",
-                                    contentType.value,
-                                    FileContent(file)
-                                  )
-                              ) { path =>
-                                provideAsync(
-                                  operationOfQuestionService.update(operationOfQuestion.copy(imageUrl = Some(path)))
-                                ) { _ =>
-                                  file.delete()
-                                  complete(UploadResponse(path))
-                                }
-                              }
-                          }
+                provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) { operationOfQuestion =>
+                  provideAsyncOrNotFound(operationService.findOneSimple(operationOfQuestion.operationId)) { operation =>
+                    def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] = {
+                      storageService
+                        .uploadFile(
+                          FileType.Operation,
+                          s"${operation.slug}/${idGenerator.nextId()}$extension",
+                          contentType,
+                          fileContent
+                        )
+                    }
+                    uploadImageAsync("data", uploadFile, sizeLimit = None) { (path, file) =>
+                      provideAsync(operationOfQuestionService.update(operationOfQuestion.copy(imageUrl = Some(path)))) {
+                        _ =>
+                          file.delete()
+                          complete(UploadResponse(path))
                       }
+                    }
                   }
                 }
               }
@@ -485,7 +460,6 @@ trait DefaultModerationQuestionComponent
       }
     }
   }
-
 }
 
 final case class CreateQuestionRequest(@(ApiModelProperty @field)(dataType = "string", example = "FR")

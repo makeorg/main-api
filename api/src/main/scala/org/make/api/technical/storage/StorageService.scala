@@ -51,6 +51,11 @@ object FileType {
     override def name: String = "Operation"
     override def path: String = "content/operations"
   }
+
+  case object Home extends FileType {
+    override def name: String = "Home"
+    override def path: String = "content/home"
+  }
 }
 
 trait Content {
