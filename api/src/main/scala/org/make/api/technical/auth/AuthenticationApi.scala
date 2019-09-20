@@ -301,6 +301,17 @@ trait DefaultAuthenticationApiComponent
                   path = Some("/"),
                   domain = Some(makeSettings.SecureCookie.domain)
                 )
+              ),
+              `Set-Cookie`(
+                HttpCookie(
+                  name = makeSettings.UserIdCookie.name,
+                  value = grantResult.authInfo.user.userId.value,
+                  secure = makeSettings.UserIdCookie.isSecure,
+                  httpOnly = true,
+                  maxAge = Some(365.days.toSeconds),
+                  path = Some("/"),
+                  domain = Some(makeSettings.UserIdCookie.domain)
+                )
               )
             )
           ) {
