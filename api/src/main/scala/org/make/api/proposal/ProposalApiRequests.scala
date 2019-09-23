@@ -21,7 +21,6 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, ObjectEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
@@ -165,7 +164,6 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                operationKinds: Option[Seq[OperationKind]] = None) {
 
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
-    val fuzziness = Fuzziness.Auto
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
@@ -174,10 +172,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         labels = labelsIds.map(LabelsSearchFilter.apply),
         operation = operationId.map(opId => OperationSearchFilter(Seq(opId))),
         question = questionIds.map(QuestionSearchFilter.apply),
-        trending = trending.map(value => TrendingSearchFilter(value)),
-        content = content.map(text => {
-          ContentSearchFilter(text, Some(fuzziness))
-        }),
+        trending = trending.map(TrendingSearchFilter.apply),
+        content = content.map(ContentSearchFilter.apply),
         slug = slug.map(value => SlugSearchFilter(value)),
         context = context.map(_.toContext),
         language = language.map(LanguageSearchFilter.apply),
@@ -232,7 +228,6 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          skip: Option[Int] = None,
                                          createdBefore: Option[ZonedDateTime] = None) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
-    val fuzziness = Fuzziness.Auto
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
@@ -242,8 +237,8 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         operation = operationId.map(opId => OperationSearchFilter(Seq(opId))),
         question = questionIds.map(QuestionSearchFilter.apply),
         idea = ideaId.map(IdeaSearchFilter.apply),
-        trending = trending.map(value => TrendingSearchFilter(value)),
-        content = content.map(text    => ContentSearchFilter(text, Some(fuzziness))),
+        trending = trending.map(TrendingSearchFilter.apply),
+        content = content.map(ContentSearchFilter.apply),
         context = context.map(_.toContext),
         status = status.map(StatusSearchFilter.apply),
         minVotesCount = minVotesCount.map(MinVotesCountSearchFilter.apply),
