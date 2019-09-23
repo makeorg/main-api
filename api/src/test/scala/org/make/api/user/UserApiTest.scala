@@ -55,7 +55,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{ConnectionMode, ReconnectInfo, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
@@ -1648,4 +1648,39 @@ class UserApiTest
       }
     }
   }
+
+  feature("get reconnect info") {
+
+    scenario("userId not found") {
+      Mockito.when(userService.reconnectInfo(any[UserId])).thenReturn(Future.successful(None))
+
+      Post("/user/userId/reconnect") ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    scenario("reconnect info ok") {
+      Mockito
+        .when(userService.reconnectInfo(any[UserId]))
+        .thenReturn(
+          Future.successful(
+            Some(
+              ReconnectInfo(
+                reconnectToken = "reconnect-token",
+                firstName = Some("firstname"),
+                avatarUrl = None,
+                hiddenMail = "a*******z@mail.com",
+                connectionMode = Seq(ConnectionMode.Mail)
+              )
+            )
+          )
+        )
+
+      Post("/user/userId/reconnect") ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+
+  }
+
 }

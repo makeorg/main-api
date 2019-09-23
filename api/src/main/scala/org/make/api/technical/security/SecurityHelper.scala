@@ -73,4 +73,10 @@ object SecurityHelper extends StrictLogging {
     val rawString: String = s"${proposalId.value}${sessionId.value}${location.getOrElse("")}"
     generateHash(value = rawString, salt = salt)
   }
+
+  def anonymizeEmail(email: String): String = {
+    val emailDomainName = email.takeRight(email.length - email.lastIndexOf("@"))
+    val emailLocalPart = email.substring(0, email.lastIndexOf("@"))
+    s"${emailLocalPart.head}${"*" * (emailLocalPart.length - 2)}${emailLocalPart.last}$emailDomainName"
+  }
 }

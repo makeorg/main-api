@@ -80,4 +80,12 @@ class SecurityHelperTest extends MakeUnitTest {
       SecurityHelper.validateSecureHash("invalid-hash", value, salt) shouldBe false
     }
   }
+
+  feature("email anonymization") {
+    scenario("email anonymization") {
+
+      val emailToAnonymize = "email-to-anonymize@example.com"
+      SecurityHelper.anonymizeEmail(emailToAnonymize) should be("e****************e@example.com")
+    }
+  }
 }

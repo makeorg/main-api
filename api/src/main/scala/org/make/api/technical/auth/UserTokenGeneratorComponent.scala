@@ -26,6 +26,7 @@ import scala.concurrent.Future
 trait UserTokenGenerator {
   def generateVerificationToken(): Future[(String, String)]
   def generateResetToken(): Future[(String, String)]
+  def generateReconnectToken(): Future[(String, String)]
 }
 
 trait UserTokenGeneratorComponent {
@@ -43,6 +44,10 @@ trait DefaultUserTokenGeneratorComponent extends UserTokenGeneratorComponent {
     }
     override def generateResetToken(): Future[(String, String)] = {
       tokenGenerator.generateToken(persistentUserService.resetTokenExists)
+    }
+
+    override def generateReconnectToken(): Future[(String, String)] = {
+      tokenGenerator.generateToken(_ => Future.successful(false))
     }
   }
 }

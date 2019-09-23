@@ -1010,6 +1010,21 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
+  feature("update reconnect token") {
+    scenario("update reconnect token") {
+      val user = johnDoe.copy(userId = UserId("reconnect-token"), email = "reconnect-token@make.org")
+
+      val userReconnectTokenUpdate: Future[Boolean] = for {
+        _      <- persistentUserService.persist(user)
+        result <- persistentUserService.updateReconnectToken(user.userId, "reconnectToken", DateHelper.now())
+      } yield result
+
+      whenReady(userReconnectTokenUpdate, Timeout(3.seconds)) { result =>
+        result should be(true)
+      }
+    }
+  }
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     futureJohnMailing2 =

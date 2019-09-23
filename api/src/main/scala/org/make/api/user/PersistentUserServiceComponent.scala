@@ -88,7 +88,9 @@ object PersistentUserServiceComponent {
                             socioProfessionalCategory: String,
                             registerQuestionId: Option[String],
                             optInPartner: Option[Boolean],
-                            availableQuestions: Array[String]) {
+                            availableQuestions: Array[String],
+                            reconnectToken: Option[String],
+                            reconnectTokenCreatedAt: Option[ZonedDateTime]) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -205,7 +207,9 @@ object PersistentUserServiceComponent {
       "last_mailing_error_message",
       "organisation_name",
       "public_profile",
-      "available_questions"
+      "available_questions",
+      "reconnect_token",
+      "reconnect_token_created_at"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -262,7 +266,9 @@ object PersistentUserServiceComponent {
         availableQuestions = resultSet
           .arrayOpt(userResultName.availableQuestions)
           .map(_.getArray.asInstanceOf[Array[String]])
-          .getOrElse(Array())
+          .getOrElse(Array()),
+        reconnectToken = resultSet.stringOpt(userResultName.reconnectToken),
+        reconnectTokenCreatedAt = resultSet.zonedDateTimeOpt(userResultName.reconnectTokenCreatedAt)
       )
     }
   }
@@ -340,6 +346,9 @@ trait PersistentUserService {
   def countOrganisations(): Future[Int]
   def adminCountUsers(email: Option[String], firstName: Option[String], maybeRole: Option[Role]): Future[Int]
   def findAllByEmail(emails: Seq[String]): Future[Seq[User]]
+  def updateReconnectToken(userId: UserId,
+                           reconnectToken: String,
+                           reconnectTokenCreatedAt: ZonedDateTime): Future[Boolean]
 }
 
 trait DefaultPersistentUserServiceComponent
@@ -1053,6 +1062,22 @@ trait DefaultPersistentUserServiceComponent
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
+    }
+
+    override def updateReconnectToken(userId: UserId,
+                                      reconnectToken: String,
+                                      reconnectTokenCreatedAt: ZonedDateTime): Future[Boolean] = {
+      implicit val ctx: EC = writeExecutionContext
+      Future(NamedDB('WRITE).retryableTx { implicit session =>
+        withSQL {
+          update(PersistentUser)
+            .set(column.reconnectToken -> reconnectToken, column.reconnectTokenCreatedAt -> reconnectTokenCreatedAt)
+            .where(sqls.eq(column.uuid, userId.value))
+        }.executeUpdate().apply() match {
+          case 1 => true
+          case _ => false
+        }
+      })
     }
   }
 }
