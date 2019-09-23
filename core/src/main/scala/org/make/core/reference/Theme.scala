@@ -20,7 +20,7 @@
 package org.make.core.reference
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.question.QuestionId
 import org.make.core.tag.Tag
@@ -32,7 +32,7 @@ import scala.annotation.meta.field
 final case class GradientColor(from: String, to: String) extends MakeSerializable
 
 object GradientColor {
-  implicit val encoder: ObjectEncoder[GradientColor] = deriveEncoder[GradientColor]
+  implicit val encoder: Encoder[GradientColor] = deriveEncoder[GradientColor]
   implicit val decoder: Decoder[GradientColor] = deriveDecoder[GradientColor]
 }
 
@@ -42,7 +42,7 @@ final case class ThemeTranslation(slug: String,
     extends MakeSerializable
 
 object ThemeTranslation {
-  implicit val encoder: ObjectEncoder[ThemeTranslation] = deriveEncoder[ThemeTranslation]
+  implicit val encoder: Encoder[ThemeTranslation] = deriveEncoder[ThemeTranslation]
   implicit val decoder: Decoder[ThemeTranslation] = deriveDecoder[ThemeTranslation]
 }
 
@@ -62,7 +62,7 @@ final case class Theme(
 ) extends MakeSerializable
 
 object Theme {
-  implicit val encoder: ObjectEncoder[Theme] = deriveEncoder[Theme]
+  implicit val encoder: Encoder[Theme] = deriveEncoder[Theme]
   implicit val decoder: Decoder[Theme] = deriveDecoder[Theme]
 }
 

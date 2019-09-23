@@ -25,6 +25,8 @@ import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.DecodingFailures
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.crmTemplates.{
@@ -107,8 +109,6 @@ import org.make.api.views.{
 }
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{ValidationError, ValidationFailedError}
-import org.mdedetrich.akka.http.support.CirceHttpSupport
-import org.mdedetrich.akka.stream.support.CirceStreamSupport.JsonParsingException
 import scalaoauth2.provider.{OAuthGrantType, _}
 
 import scala.concurrent.Await
@@ -395,7 +395,7 @@ trait MakeApi
       widgetApi.routes)
 }
 
-object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
+object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirceSupport {
 
   def defaultError(id: String): String =
     s"""
@@ -435,10 +435,19 @@ object MakeApi extends StrictLogging with Directives with CirceHttpSupport {
     .handle {
       case MalformedRequestContentRejection(_, ValidationFailedError(messages)) =>
         complete(StatusCodes.BadRequest -> messages)
-      case MalformedRequestContentRejection(message, JsonParsingException(failure, _)) =>
-        val errors = failure.history.flatMap {
-          case DownField(f) => Seq(ValidationError(f, "malformed", Option(message)))
-          case _            => Nil
+      case MalformedRequestContentRejection(_, DecodingFailures(failures)) =>
+        val errors: Seq[ValidationError] = failures.toList.flatMap { failure =>
+          failure.history.flatMap {
+            case DownField(field) =>
+              val errorMessage: String = if (failure.message == "Attempt to decode value on failed cursor") {
+                s"The field [.$field] is missing."
+              } else {
+                failure.message
+              }
+              Seq(ValidationError(field, "malformed", Option(errorMessage)))
+
+            case _ => Nil
+          }
         }
         complete(StatusCodes.BadRequest -> errors)
       case MalformedRequestContentRejection(_, e) =>

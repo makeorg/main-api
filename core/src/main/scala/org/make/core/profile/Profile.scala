@@ -23,7 +23,7 @@ import java.time.LocalDate
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.Validation.{validatePostalCode, validateUserInput}
 import org.make.core.question.QuestionId
@@ -171,7 +171,7 @@ case class Profile(
 ) extends MakeSerializable
 
 object Profile extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[Profile] = deriveEncoder[Profile]
+  implicit val encoder: Encoder[Profile] = deriveEncoder[Profile]
   implicit val decoder: Decoder[Profile] = deriveDecoder[Profile]
 
   def validateProfile(profile: Profile): Unit = {

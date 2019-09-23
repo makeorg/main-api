@@ -22,7 +22,7 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto._
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
@@ -92,7 +92,7 @@ object ProposalId {
 final case class OrganisationInfo(organisationId: UserId, organisationName: Option[String])
 
 object OrganisationInfo {
-  implicit val encoder: ObjectEncoder[OrganisationInfo] = deriveEncoder[OrganisationInfo]
+  implicit val encoder: Encoder[OrganisationInfo] = deriveEncoder[OrganisationInfo]
   implicit val decoder: Decoder[OrganisationInfo] = deriveDecoder[OrganisationInfo]
 
   implicit lazy val organisationInfoFormatter: RootJsonFormat[OrganisationInfo] =
@@ -190,7 +190,7 @@ final case class Qualification(@(ApiModelProperty @field)(dataType = "string", e
     extends BaseQualification
 
 object Qualification {
-  implicit val encoder: ObjectEncoder[Qualification] = deriveEncoder[Qualification]
+  implicit val encoder: Encoder[Qualification] = deriveEncoder[Qualification]
   implicit val decoder: Decoder[Qualification] = deriveDecoder[Qualification]
 
   implicit val qualificationFormatter: RootJsonFormat[Qualification] =
@@ -213,7 +213,7 @@ final case class Vote(@(ApiModelProperty @field)(dataType = "string", example = 
     extends BaseVote
 
 object Vote {
-  implicit val encoder: ObjectEncoder[Vote] = deriveEncoder[Vote]
+  implicit val encoder: Encoder[Vote] = deriveEncoder[Vote]
   implicit val decoder: Decoder[Vote] = deriveDecoder[Vote]
 
   implicit val voteFormatter: RootJsonFormat[Vote] =

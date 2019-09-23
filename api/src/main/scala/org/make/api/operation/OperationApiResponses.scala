@@ -22,7 +22,7 @@ package org.make.api.operation
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.CirceFormatters
 import org.make.core.operation._
@@ -52,7 +52,7 @@ final case class OperationResponse(
 )
 
 object OperationResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[OperationResponse] = deriveEncoder[OperationResponse]
+  implicit val encoder: Encoder[OperationResponse] = deriveEncoder[OperationResponse]
   implicit val decoder: Decoder[OperationResponse] = deriveDecoder[OperationResponse]
 
   def apply(operation: Operation, tags: Map[QuestionId, Seq[TagId]]): OperationResponse = {
@@ -100,7 +100,7 @@ final case class ModerationOperationResponse(
 )
 
 object ModerationOperationResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[ModerationOperationResponse] = deriveEncoder[ModerationOperationResponse]
+  implicit val encoder: Encoder[ModerationOperationResponse] = deriveEncoder[ModerationOperationResponse]
   implicit val decoder: Decoder[ModerationOperationResponse] = deriveDecoder[ModerationOperationResponse]
 
   def apply(operation: SimpleOperation): ModerationOperationResponse = {

@@ -22,7 +22,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.MakeRandom
 import org.make.core.Validation._
@@ -109,14 +109,14 @@ final case class ValidateProposalRequest(
 
 object ValidateProposalRequest {
   implicit val decoder: Decoder[ValidateProposalRequest] = deriveDecoder[ValidateProposalRequest]
-  implicit val encoder: ObjectEncoder[ValidateProposalRequest] = deriveEncoder[ValidateProposalRequest]
+  implicit val encoder: Encoder[ValidateProposalRequest] = deriveEncoder[ValidateProposalRequest]
 }
 
 final case class UpdateProposalVotesVerifiedRequest(votesVerified: Seq[Vote])
 
 object UpdateProposalVotesVerifiedRequest {
   implicit val decoder: Decoder[UpdateProposalVotesVerifiedRequest] = deriveDecoder[UpdateProposalVotesVerifiedRequest]
-  implicit val encoder: ObjectEncoder[UpdateProposalVotesVerifiedRequest] =
+  implicit val encoder: Encoder[UpdateProposalVotesVerifiedRequest] =
     deriveEncoder[UpdateProposalVotesVerifiedRequest]
 }
 
@@ -127,7 +127,7 @@ final case class RefuseProposalRequest(sendNotificationEmail: Boolean, refusalRe
 
 object RefuseProposalRequest {
   implicit val decoder: Decoder[RefuseProposalRequest] = deriveDecoder[RefuseProposalRequest]
-  implicit val encoder: ObjectEncoder[RefuseProposalRequest] = deriveEncoder[RefuseProposalRequest]
+  implicit val encoder: Encoder[RefuseProposalRequest] = deriveEncoder[RefuseProposalRequest]
 }
 
 final case class ContextFilterRequest(operation: Option[OperationId] = None,

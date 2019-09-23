@@ -34,8 +34,9 @@ import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.crm.BasicCrmResponse._
-import org.mdedetrich.akka.http.support.CirceHttpSupport
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -70,7 +71,7 @@ trait CrmClientComponent {
   def crmClient: CrmClient
 }
 
-trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport with StrictLogging {
+trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatingCirceSupport with StrictLogging {
   self: MailJetConfigurationComponent with ActorSystemComponent =>
 
   override lazy val crmClient: CrmClient = new DefaultCrmClient
@@ -111,7 +112,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
           method = HttpMethods.POST,
           uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts"),
           headers = immutable.Seq(authorization),
-          entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(manageContactList.asJson))
+          entity = HttpEntity(ContentTypes.`application/json`, printer.print(manageContactList.asJson))
         )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
@@ -135,7 +136,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with CirceHttpSupport
         uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
         headers = immutable
           .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
-        entity = HttpEntity(ContentTypes.`application/json`, printer.pretty(message.asJson))
+        entity = HttpEntity(ContentTypes.`application/json`, printer.print(message.asJson))
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>

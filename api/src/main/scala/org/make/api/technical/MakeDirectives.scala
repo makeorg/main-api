@@ -45,25 +45,22 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core.{
-  reference,
-  ApplicationName,
-  CirceFormatters,
-  DateHelper,
-  FileHelper,
-  RequestContext,
-  SlugHelper,
-  Validation
-}
-import org.mdedetrich.akka.http.support.CirceHttpSupport
+
+import org.make.core.reference
+import org.make.core.{ApplicationName, CirceFormatters, DateHelper, FileHelper, RequestContext, SlugHelper, Validation}
 import scalaoauth2.provider.AccessToken
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 
-trait MakeDirectives extends Directives with CirceHttpSupport with CirceFormatters with MakeDataHandlerComponent {
+trait MakeDirectives
+    extends Directives
+    with ErrorAccumulatingCirceSupport
+    with CirceFormatters
+    with MakeDataHandlerComponent {
   this: IdGeneratorComponent
     with MakeSettingsComponent
     with MakeAuthentication

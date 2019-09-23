@@ -23,7 +23,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -697,7 +697,7 @@ case class ModeratorResponse(
 }
 
 object ModeratorResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[ModeratorResponse] = deriveEncoder[ModeratorResponse]
+  implicit val encoder: Encoder[ModeratorResponse] = deriveEncoder[ModeratorResponse]
   implicit val decoder: Decoder[ModeratorResponse] = deriveDecoder[ModeratorResponse]
 
   def apply(user: User): ModeratorResponse = ModeratorResponse(
@@ -729,7 +729,7 @@ case class AdminUserResponse(
 }
 
 object AdminUserResponse extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[AdminUserResponse] = deriveEncoder[AdminUserResponse]
+  implicit val encoder: Encoder[AdminUserResponse] = deriveEncoder[AdminUserResponse]
   implicit val decoder: Decoder[AdminUserResponse] = deriveDecoder[AdminUserResponse]
 
   def apply(user: User): AdminUserResponse = AdminUserResponse(

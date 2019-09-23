@@ -22,7 +22,7 @@ package org.make.core.idea.indexed
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
@@ -91,7 +91,7 @@ case class IndexedIdea(
 )
 
 object IndexedIdea extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[IndexedIdea] = deriveEncoder[IndexedIdea]
+  implicit val encoder: Encoder[IndexedIdea] = deriveEncoder[IndexedIdea]
   implicit val decoder: Decoder[IndexedIdea] = deriveDecoder[IndexedIdea]
 
   def createFromIdea(idea: Idea): IndexedIdea = {
@@ -117,7 +117,7 @@ object IndexedIdea extends CirceFormatters {
 final case class IdeaSearchResult(total: Long, results: Seq[IndexedIdea])
 
 object IdeaSearchResult {
-  implicit val encoder: ObjectEncoder[IdeaSearchResult] = deriveEncoder[IdeaSearchResult]
+  implicit val encoder: Encoder[IdeaSearchResult] = deriveEncoder[IdeaSearchResult]
   implicit val decoder: Decoder[IdeaSearchResult] = deriveDecoder[IdeaSearchResult]
 
   def empty: IdeaSearchResult = IdeaSearchResult(0, Seq.empty)
