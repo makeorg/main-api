@@ -19,8 +19,10 @@
 
 package org.make.core.proposal
 
-import com.sksamuel.elastic4s.ElasticApi
+import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.searches.queries.funcscorer.WeightScore
+import com.sksamuel.elastic4s.searches.queries.matches.MatchQuery
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
@@ -43,7 +45,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
   val trendingValue = "Trending"
   val trendingFilter = TrendingSearchFilter(trendingValue)
   val textValue = "text to search"
-  val contentFilter = ContentSearchFilter(text = textValue, fuzzy = None)
+  val contentFilter = ContentSearchFilter(text = textValue)
   val statusFilter = StatusSearchFilter(status = Seq(ProposalStatus.Pending))
   val slugFilter = SlugSearchFilter(slug = "my-awesome-slug")
   val languageFilter = LanguageSearchFilter(language = Language("en"))
@@ -155,17 +157,39 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
           ProposalElasticsearchFieldNames.content -> 3D,
           ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5D
         )
-      contentSearchFilterResult shouldBe Some(ElasticApi.multiMatchQuery(textValue).fields(fieldsBoosts))
+      contentSearchFilterResult shouldBe Some(
+        ElasticApi
+          .functionScoreQuery(
+            ElasticApi.multiMatchQuery(textValue).fields(fieldsBoosts).fuzziness("Auto:4,7").operator(Operator.AND)
+          )
+          .functions(
+            WeightScore(
+              weight = 2D,
+              filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
+            )
+          )
+      )
     }
 
     scenario("build ContentSearchFilter from Search filter without any language") {
       Given("a searchFilter")
       When("call buildContentSearchFilter with SearchQuery")
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery.copy(language = None))
-      Then("result is a multiMatchQuery")
+      Then("result is a functionScore with a multimatch query")
       val fieldsBoosts =
         Map(ProposalElasticsearchFieldNames.contentGeneral -> 1D, ProposalElasticsearchFieldNames.content -> 3D)
-      contentSearchFilterResult shouldBe Some(ElasticApi.multiMatchQuery(textValue).fields(fieldsBoosts))
+      contentSearchFilterResult shouldBe Some(
+        ElasticApi
+          .functionScoreQuery(
+            multiMatchQuery(textValue).fields(fieldsBoosts).fuzziness("Auto:4,7").operator(Operator.AND)
+          )
+          .functions(
+            WeightScore(
+              weight = 2D,
+              filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
+            )
+          )
+      )
     }
 
     scenario("build StatusSearchFilter from Search filter") {

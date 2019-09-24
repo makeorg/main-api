@@ -22,11 +22,12 @@ package org.make.core.proposal
 import java.time.format.DateTimeFormatter
 import java.time.{ZoneOffset, ZonedDateTime}
 
-import com.sksamuel.elastic4s.ElasticApi
+import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.searches.queries.funcscorer.WeightScore
+import com.sksamuel.elastic4s.searches.queries.matches.MatchQuery
 import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
@@ -384,9 +385,9 @@ object SearchFilters extends ElasticDsl {
     def languageOmission(boostedLanguage: String): Double =
       if (searchQuery.language.contains(Language(boostedLanguage))) 1 else 0
 
-    val query: Option[Query] = for {
-      filters                               <- searchQuery.filters
-      ContentSearchFilter(text, maybeFuzzy) <- filters.content
+    for {
+      filters                   <- searchQuery.filters
+      ContentSearchFilter(text) <- filters.content
     } yield {
       val fieldsBoosts =
         Map(
@@ -434,21 +435,14 @@ object SearchFilters extends ElasticDsl {
           ProposalElasticsearchFieldNames.contentSl -> 2D * languageOmission("sl"),
           ProposalElasticsearchFieldNames.contentGeneral -> 1D
         ).filter { case (_, boost) => boost != 0 }
-      maybeFuzzy match {
-        case Some(fuzzy) =>
-          ElasticApi
-            .should(
-              multiMatchQuery(text).fields(fieldsBoosts).boost(2F),
-              multiMatchQuery(text).fields(fieldsBoosts).fuzziness(fuzzy).boost(1F)
-            )
-        case None =>
-          multiMatchQuery(text).fields(fieldsBoosts)
-      }
-    }
+      functionScoreQuery(multiMatchQuery(text).fields(fieldsBoosts).fuzziness("Auto:4,7").operator(Operator.AND))
+        .functions(
+          WeightScore(
+            weight = 2D,
+            filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
+          )
+        )
 
-    query match {
-      case None => None
-      case _    => query
     }
   }
 
@@ -609,7 +603,7 @@ case class TrendingSearchFilter(trending: String) {
 
 case class CreatedAtSearchFilter(before: Option[ZonedDateTime], after: Option[ZonedDateTime])
 
-case class ContentSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
+case class ContentSearchFilter(text: String)
 
 case class StatusSearchFilter(status: Seq[ProposalStatus])
 

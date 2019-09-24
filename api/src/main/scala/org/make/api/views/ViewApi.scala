@@ -155,7 +155,7 @@ trait DefaultViewApiComponent
                 val proposalQuery = SearchQuery(
                   filters = Some(
                     proposal.SearchFilters(
-                      content = Some(proposal.ContentSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
+                      content = Some(proposal.ContentSearchFilter(content.toLowerCase)),
                       operationKinds = Some(
                         proposal.OperationKindsSearchFilter(
                           Seq(

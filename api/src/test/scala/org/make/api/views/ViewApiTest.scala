@@ -109,7 +109,7 @@ class ViewApiTest
               SearchQuery(
                 filters = Some(
                   SearchFilters(
-                    content = Some(ContentSearchFilter("toto", fuzzy = Some(Fuzziness.Auto))),
+                    content = Some(ContentSearchFilter("toto")),
                     operationKinds = Some(
                       OperationKindsSearchFilter(
                         Seq(
@@ -191,7 +191,7 @@ class ViewApiTest
               SearchQuery(
                 filters = Some(
                   SearchFilters(
-                    content = Some(ContentSearchFilter("lownoresults", fuzzy = Some(Fuzziness.Auto))),
+                    content = Some(ContentSearchFilter("lownoresults")),
                     operationKinds = Some(
                       OperationKindsSearchFilter(
                         Seq(
