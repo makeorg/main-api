@@ -22,7 +22,7 @@ package org.make.core.operation
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
-import com.sksamuel.elastic4s.ElasticApi
+import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
@@ -141,16 +141,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
         ).collect {
           case (Some(key), value) => key -> value
         }
-      maybeFuzzy match {
-        case Some(fuzzy) =>
-          ElasticApi
-            .should(
-              multiMatchQuery(text).fields(fieldsBoosts).boost(2F),
-              multiMatchQuery(text).fields(fieldsBoosts).fuzziness(fuzzy).boost(1F)
-            )
-        case None =>
-          multiMatchQuery(text).fields(fieldsBoosts)
-      }
+      multiMatchQuery(text).fields(fieldsBoosts).fuzziness("Auto:4,7").operator(Operator.AND)
     }
 
     query
