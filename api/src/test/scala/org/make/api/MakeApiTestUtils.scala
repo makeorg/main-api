@@ -97,6 +97,12 @@ trait MakeApiTestBase
   when(makeSettings.VisitorCookie).thenReturn(visitorCookieConfiguration)
   when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
 
+  protected val userIdCookieConfiguration: makeSettings.UserIdCookie.type = mock[makeSettings.UserIdCookie.type]
+  when(userIdCookieConfiguration.name).thenReturn("user-id-cookie")
+  when(userIdCookieConfiguration.isSecure).thenReturn(false)
+  when(userIdCookieConfiguration.domain).thenReturn(".foo.com")
+  when(makeSettings.UserIdCookie).thenReturn(userIdCookieConfiguration)
+
   when(idGenerator.nextTagId()).thenReturn(TagId("some-id"))
   when(idGenerator.nextTagTypeId()).thenReturn(TagTypeId("some-id"))
 
