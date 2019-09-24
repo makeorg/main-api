@@ -426,6 +426,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           eventBusService.publish(
             UserUpdatedOptInNewsletterEvent(
               connectedUserId = Some(userId),
+              eventDate = DateHelper.now(),
               userId = userId,
               requestContext = RequestContext.empty,
               optInNewsletter = optInNewsletter
@@ -449,6 +450,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               UserUpdatedOptInNewsletterEvent(
                 connectedUserId = Some(userId),
                 userId = userId,
+                eventDate = DateHelper.now(),
                 requestContext = RequestContext.empty,
                 optInNewsletter = optInNewsletter
               )
@@ -569,6 +571,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             userId = user.userId,
             requestContext = requestContext,
             country = user.country,
+            eventDate = DateHelper.now(),
             language = user.language,
             adminId = adminId
           )
@@ -585,6 +588,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         eventBusService.publish(
           UserFollowEvent(
             connectedUserId = Some(userId),
+            eventDate = DateHelper.now(),
             userId = userId,
             requestContext = requestContext,
             followedUserId = followedUserId
@@ -602,6 +606,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           UserUnfollowEvent(
             connectedUserId = Some(userId),
             userId = userId,
+            eventDate = DateHelper.now(),
             requestContext = requestContext,
             unfollowedUserId = followedUserId
           )

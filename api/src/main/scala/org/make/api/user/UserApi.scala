@@ -923,6 +923,7 @@ trait DefaultUserApiComponent
                             connectedUserId = Some(userAuth.user.userId),
                             userId = user.userId,
                             requestContext = requestContext,
+                            eventDate = DateHelper.now(),
                             country = user.country,
                             language = user.language,
                             optInNewsletter = user.profile.exists(_.optInNewsletter)
