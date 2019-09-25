@@ -22,16 +22,16 @@ package org.make.api.technical
 import akka.actor.{Actor, Props}
 import akka.pattern.{BackoffOpts, BackoffSupervisor}
 import kamon.Kamon
-import kamon.metric.GaugeMetric
+import kamon.metric.Gauge
 import org.make.api.technical.MemoryMonitoringActor.Monitor
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 
 class MemoryMonitoringActor extends Actor {
-  val memoryMax: GaugeMetric = Kamon.gauge("jvm.memory.max")
-  val memoryFree: GaugeMetric = Kamon.gauge("jvm.memory.free")
-  val memoryTotal: GaugeMetric = Kamon.gauge("jvm.memory.total")
+  val memoryMax: Gauge = Kamon.gauge("jvm-memory-max").withoutTags()
+  val memoryFree: Gauge = Kamon.gauge("jvm-memory-free").withoutTags()
+  val memoryTotal: Gauge = Kamon.gauge("jvm-memory-total").withoutTags()
 
   override def preStart(): Unit = {
     context.system.scheduler.schedule(1.second, 1.second, self, Monitor)
@@ -39,9 +39,9 @@ class MemoryMonitoringActor extends Actor {
 
   override def receive: Receive = {
     case Monitor =>
-      memoryFree.set(Runtime.getRuntime.freeMemory())
-      memoryMax.set(Runtime.getRuntime.maxMemory())
-      memoryTotal.set(Runtime.getRuntime.totalMemory())
+      memoryFree.update(Runtime.getRuntime.freeMemory())
+      memoryMax.update(Runtime.getRuntime.maxMemory())
+      memoryTotal.update(Runtime.getRuntime.totalMemory())
     case _ =>
   }
 }

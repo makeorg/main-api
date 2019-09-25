@@ -322,7 +322,9 @@ trait DefaultAuthenticationApiComponent
 
     override def form: Route = get {
       path("oauth" / "authenticate") {
-        getFromResource("authentication/index.html")
+        makeOperation("AuthenticationForm") { _ =>
+          getFromResource("authentication/index.html")
+        }
       }
     }
 

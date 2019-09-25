@@ -27,7 +27,7 @@ import akka.pattern.{ask, AskTimeoutException, BackoffOpts, BackoffSupervisor}
 import akka.util.Timeout
 import com.typesafe.config.Config
 import kamon.Kamon
-import kamon.metric.GaugeMetric
+import kamon.metric.Gauge
 import org.make.api.technical.ClusterShardingMonitor.{Monitor, ShardingGauges}
 
 import scala.collection.JavaConverters._
@@ -72,12 +72,12 @@ class ClusterShardingMonitor extends Actor with ActorLogging {
           statsFuture.onComplete {
             case Success(stats) =>
               val allProposals = stats.regions.values.map(_.stats.values.sum).sum
-              regionGauges.totalActorsCount.set(allProposals)
+              regionGauges.totalActorsCount.update(allProposals)
 
               val maybeRegion = stats.regions.get(Cluster(context.system).selfAddress)
               maybeRegion.foreach { shardStats =>
-                regionGauges.nodeActorsCount.set(shardStats.stats.values.sum)
-                regionGauges.nodeShardsCount.set(shardStats.stats.size)
+                regionGauges.nodeActorsCount.update(shardStats.stats.values.sum)
+                regionGauges.nodeShardsCount.update(shardStats.stats.size)
               }
             case Failure(e: AskTimeoutException) if e.getMessage.contains("terminated") =>
               log.warning("Unable to retrieve stats due to terminated actor: {}", e.getMessage)
@@ -111,8 +111,8 @@ object ClusterShardingMonitor {
   }
 
   class ShardingGauges(name: String) {
-    val totalActorsCount: GaugeMetric = Kamon.gauge(s"$name-actors")
-    val nodeActorsCount: GaugeMetric = Kamon.gauge(s"node-$name-actors")
-    val nodeShardsCount: GaugeMetric = Kamon.gauge(s"node-$name-shards")
+    val totalActorsCount: Gauge = Kamon.gauge("sharding-total-actors").withTag("region", name)
+    val nodeActorsCount: Gauge = Kamon.gauge("sharding-node-actors").withTag("region", name)
+    val nodeShardsCount: Gauge = Kamon.gauge("sharding-node-shards").withTag("region", name)
   }
 }

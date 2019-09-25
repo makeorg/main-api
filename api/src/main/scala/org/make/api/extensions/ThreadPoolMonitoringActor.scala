@@ -22,7 +22,7 @@ package org.make.api.extensions
 import akka.actor.{Actor, Props}
 import akka.pattern.{BackoffOpts, BackoffSupervisor}
 import kamon.Kamon
-import kamon.metric.GaugeMetric
+import kamon.metric.Gauge
 import org.make.api.extensions.ThreadPoolMonitoringActor.{ExecutorWithGauges, Monitor, MonitorThreadPool}
 import org.make.api.technical.MonitorableExecutionContext
 
@@ -41,18 +41,18 @@ class ThreadPoolMonitoringActor extends Actor {
       monitoredPools.foreach {
         case (_, executorAndGauges) =>
           val executor = executorAndGauges.executor
-          executorAndGauges.activeTasks.set(executor.activeTasks)
-          executorAndGauges.currentTasks.set(executor.currentTasks)
-          executorAndGauges.maxTasks.set(executor.maxTasks)
-          executorAndGauges.waitingTasks.set(executor.waitingTasks)
+          executorAndGauges.activeTasks.update(executor.activeTasks)
+          executorAndGauges.currentTasks.update(executor.currentTasks)
+          executorAndGauges.maxTasks.update(executor.maxTasks)
+          executorAndGauges.waitingTasks.update(executor.waitingTasks)
       }
     case MonitorThreadPool(newExecutor, name) =>
       monitoredPools += name -> ExecutorWithGauges(
         newExecutor,
-        Kamon.gauge(s"executors.$name.active"),
-        Kamon.gauge(s"executors.$name.core-size"),
-        Kamon.gauge(s"executors.$name.max"),
-        Kamon.gauge(s"executors.$name.waiting")
+        Kamon.gauge("executors-active-threads").withTag("name", name),
+        Kamon.gauge("executors-core-size").withTag("name", name),
+        Kamon.gauge("executors-max-threads").withTag("name", name),
+        Kamon.gauge("executors-waiting").withTag("name", name)
       )
   }
 }
@@ -73,8 +73,8 @@ object ThreadPoolMonitoringActor {
   case class MonitorThreadPool(pool: MonitorableExecutionContext, name: String)
 
   case class ExecutorWithGauges(executor: MonitorableExecutionContext,
-                                activeTasks: GaugeMetric,
-                                currentTasks: GaugeMetric,
-                                maxTasks: GaugeMetric,
-                                waitingTasks: GaugeMetric)
+                                activeTasks: Gauge,
+                                currentTasks: Gauge,
+                                maxTasks: Gauge,
+                                waitingTasks: Gauge)
 }

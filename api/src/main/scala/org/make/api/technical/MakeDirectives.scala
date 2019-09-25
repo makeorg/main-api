@@ -28,7 +28,6 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import kamon.Kamon
-import kamon.akka.http.KamonTraceDirectives.operationName
 import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
@@ -45,7 +44,6 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
-
 import org.make.core.reference
 import org.make.core.{ApplicationName, CirceFormatters, DateHelper, FileHelper, RequestContext, SlugHelper, Validation}
 import scalaoauth2.provider.AccessToken
@@ -55,12 +53,15 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+import kamon.instrumentation.akka.http.TracingDirectives
+import kamon.tag.TagSet
 
 trait MakeDirectives
     extends Directives
     with ErrorAccumulatingCirceSupport
     with CirceFormatters
-    with MakeDataHandlerComponent {
+    with MakeDataHandlerComponent
+    with TracingDirectives {
   this: IdGeneratorComponent
     with MakeSettingsComponent
     with MakeAuthentication
@@ -194,13 +195,18 @@ trait MakeDirectives
   private def logRequest(operationName: String, context: RequestContext, origin: Option[String]): Unit = {
     Kamon
       .counter("api-requests")
-      .refine(
-        "source" -> MonitoringMessageHelper.format(context.source.getOrElse("unknown")),
-        "operation" -> operationName,
-        "origin" -> MonitoringMessageHelper.format(origin.getOrElse("unknown")),
-        "application" -> MonitoringMessageHelper.format(context.applicationName.map(_.shortName).getOrElse("unknown")),
-        "location" -> MonitoringMessageHelper.format(context.location.getOrElse("unknown")),
-        "question" -> MonitoringMessageHelper.format(context.questionId.map(_.value).getOrElse("unknown"))
+      .withTags(
+        TagSet.from(
+          Map(
+            "source" -> MonitoringMessageHelper.format(context.source.getOrElse("unknown")),
+            "operation" -> operationName,
+            "origin" -> MonitoringMessageHelper.format(origin.getOrElse("unknown")),
+            "application" -> MonitoringMessageHelper
+              .format(context.applicationName.map(_.shortName).getOrElse("unknown")),
+            "location" -> MonitoringMessageHelper.format(context.location.getOrElse("unknown")),
+            "question" -> MonitoringMessageHelper.format(context.questionId.map(_.value).getOrElse("unknown"))
+          )
+        )
       )
       .increment()
   }

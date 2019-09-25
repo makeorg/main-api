@@ -20,7 +20,9 @@
 package org.make.api.technical.monitoring
 import kamon.Kamon
 import kamon.metric.{DynamicRange, Histogram, MeasurementUnit}
+import kamon.tag.TagSet
 import org.make.api.technical.tracking.FrontPerformanceTimings
+
 import scala.concurrent.duration.DurationInt
 
 trait MonitoringService {
@@ -49,10 +51,14 @@ trait DefaultMonitoringService extends MonitoringServiceComponent {
       if (!histograms.contains(histogramName)) {
         val value =
           Kamon
-            .histogram(name = "load_time", unit = MeasurementUnit.time.milliseconds, dynamicRange = Some(range))
-            .refine(
-              "application" -> MonitoringMessageHelper.format(histogramName.applicationName),
-              "metric" -> histogramName.metricName
+            .histogram(name = "load_time", unit = MeasurementUnit.time.milliseconds, dynamicRange = range)
+            .withTags(
+              TagSet.from(
+                Map(
+                  "application" -> MonitoringMessageHelper.format(histogramName.applicationName),
+                  "metric" -> histogramName.metricName
+                )
+              )
             )
 
         histograms += histogramName -> value

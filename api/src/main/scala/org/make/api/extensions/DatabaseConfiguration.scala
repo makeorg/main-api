@@ -26,7 +26,7 @@ import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, Ext
 import com.github.t3hnar.bcrypt._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import kamon.executors
+import kamon.instrumentation.executor.ExecutorInstrumentation
 import org.apache.commons.dbcp2.BasicDataSource
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.MigrationVersion
@@ -62,7 +62,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
   val readThreadPool: MonitorableExecutionContext =
     new MonitorableExecutionContext(readExecutor)
 
-  executors.Executors.register("db-read-executor", readExecutor)
+  ExecutorInstrumentation.instrument(readExecutor, "db-read-executor")
 
   private val writeDatasource = new BasicDataSource()
   writeDatasource.setDriverClassName("org.postgresql.Driver")
@@ -79,7 +79,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
   val writeThreadPool: MonitorableExecutionContext =
     new MonitorableExecutionContext(writeExecutor)
 
-  executors.Executors.register("db-write-executor", writeExecutor)
+  ExecutorInstrumentation.instrument(writeExecutor, "db-write-executor")
 
   ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
   ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))
