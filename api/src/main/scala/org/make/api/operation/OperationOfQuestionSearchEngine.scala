@@ -24,10 +24,15 @@ import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
-import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
+import org.make.core.operation.indexed.{
+  IndexedOperationOfQuestion,
+  OperationOfQuestionElasticsearchFieldNames,
+  OperationOfQuestionSearchResult
+}
 import org.make.core.operation.{OperationOfQuestionSearchFilters, OperationOfQuestionSearchQuery}
 import org.make.core.question.QuestionId
 
@@ -78,7 +83,25 @@ trait DefaultOperationOfQuestionSearchEngineComponent
       val searchFilters = OperationOfQuestionSearchFilters.getOperationOfQuestionSearchFilters(query)
       val request: SearchRequest = searchWithType(operationOfQuestionAlias)
         .bool(BoolQuery(must = searchFilters))
-        .sortBy(OperationOfQuestionSearchFilters.getSort(query))
+        .sortBy(
+          Seq(
+            OperationOfQuestionSearchFilters.getSort(query),
+            Some(
+              FieldSort(
+                field = OperationOfQuestionElasticsearchFieldNames.endDate,
+                order = SortOrder.DESC,
+                missing = Some("_first")
+              )
+            ),
+            Some(
+              FieldSort(
+                field = OperationOfQuestionElasticsearchFieldNames.startDate,
+                order = SortOrder.DESC,
+                missing = Some("_first")
+              )
+            )
+          ).flatten
+        )
         .size(OperationOfQuestionSearchFilters.getLimitSearch(query))
         .from(OperationOfQuestionSearchFilters.getSkipSearch(query))
 
