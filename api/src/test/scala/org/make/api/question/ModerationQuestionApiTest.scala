@@ -54,7 +54,7 @@ import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.duration._

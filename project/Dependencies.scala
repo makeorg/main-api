@@ -38,7 +38,7 @@ object Dependencies {
   val kanelaVersion: String = "1.0.1"
   val swaggerUiVersion: String = "3.20.9"
 
-  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.0"
+  val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.11.0"
   val loggerBridge: ModuleID = "org.apache.logging.log4j"   % "log4j-slf4j-impl" % "2.11.0"
   val commonsLoggingBridge: ModuleID = "org.slf4j"          % "jcl-over-slf4j"   % "1.7.25"
@@ -57,15 +57,16 @@ object Dependencies {
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
   val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"       % "1.29.1"
-  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.14.0")
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"       %% "akka-persistence-query" % akkaVersion
   val akkaPersistenceQuesry: ModuleID = "com.typesafe.akka" %% "akka-persistence"       % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.92")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.99")
       .exclude("io.netty", "netty-handler")
-  val akkaSlf4j: ModuleID = "com.typesafe.akka"          %% "akka-slf4j"              % akkaVersion
-  val jaxRsApi: ModuleID = "javax.ws.rs"                 % "javax.ws.rs-api"          % "2.0.1"
+  val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
+  val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"
+  // Version 0.6.0 will support 2.13
   val kryoSerializer: ModuleID = "com.github.romix.akka" %% "akka-kryo-serialization" % "0.5.2"
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
@@ -78,21 +79,24 @@ object Dependencies {
   val kamonScalaFutures: ModuleID = "io.kamon" %% "kamon-scala-future" % kamonScalaFuturesVersion
   val kamonAkkaHttp: ModuleID =
     ("io.kamon" %% "kamon-akka-http" % kamonAkkaHttpVersion).exclude("ch.qos.logback", "logback-classic")
-  val kamonAkkaRemote: ModuleID =
-    ("io.kamon" %% "kamon-akka-remote" % kamonAkkaRemoteVersion).exclude("ch.qos.logback", "logback-classic")
+  // TODO: wait for release of next RC or official version
+  val kamonAkkaRemote: ModuleID = ("io.kamon" %% "kamon-akka-remote" % kamonAkkaRemoteVersion)
+    .exclude("ch.qos.logback", "logback-classic")
   val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonSystemMetricsVersion
   val kamonPrometheus: ModuleID = "io.kamon"    %% "kamon-prometheus"     % kamonPrometheusVersion
 
   val kanela: ModuleID = "io.kamon" % "kanela-agent" % kanelaVersion
 
+  // TODO: fork it! https://github.com/hseeberger/constructr
   val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.19.0"
+  // TODO: fork it! https://github.com/typesafehub/constructr-zookeeper
   val constructrZookeeper: ModuleID =
     ("com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.1").exclude("log4j", "log4j")
 
-  val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.4.0"
-  val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "3.1"
+  val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.5.0"
+  val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "4.1"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.2.3"
+  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.3.5"
   val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.2.2"
   val flywaydb: ModuleID = "org.flywaydb"     % "flyway-core"  % "5.2.0"
 
@@ -104,7 +108,8 @@ object Dependencies {
 
   // Kafka + AVRO
   val kafkaClients: ModuleID = "org.apache.kafka" % "kafka-clients" % kafkaVersion
-  val avro4s: ModuleID = "com.sksamuel.avro4s"    %% "avro4s-core"  % "1.8.3"
+  // TODO: upgrade to a 2.13 compatible once the current version supports default values
+  val avro4s: ModuleID = "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.3"
   val avroSerializer: ModuleID =
     ("io.confluent" % "kafka-avro-serializer" % "3.2.2")
       .exclude("org.slf4j", "slf4j-log4j12")
@@ -112,35 +117,33 @@ object Dependencies {
 
   val configuration: ModuleID = "com.typesafe" % "config" % "1.3.3"
 
+  // TODO: find a working version
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
   val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
+  // TODO: Fork it!
   val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.4"
-  val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.4"
+  val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.5"
 
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"       %% "akka-testkit"             % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka" %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.5"         % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.8"         % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"   %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
   val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.24.5"        % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"        %% "docker-testkit-scalatest" % "0.9.8"         % "it"
-  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.8" % "it")
+  val dockerScalatest: ModuleID = "com.whisk"        %% "docker-testkit-scalatest" % "0.9.9"         % "it"
+  val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
-  val wireMock: ModuleID = "com.github.tomakehurst" % "wiremock" % "2.14.0" % "test"
 
   // Needed to use the client....
-  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"    % "it"
-  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"    % "it"
-  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1" % "it,test"
-  val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % "0.1.4"   % "test"
-
-  // Fixtures
-  val gatlingHighcharts: ModuleID = "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.3.0" % "test"
-  val gatling: ModuleID = "io.gatling"                      % "gatling-test-framework"    % "2.3.0" % "test"
+  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"     % "it"
+  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"     % "it"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % "it,test"
+  // TODO: fork it!
+  val staminaTestKit: ModuleID = "com.scalapenos" %% "stamina-testkit" % "0.1.4" % "test"
 
   // apache math
   val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
