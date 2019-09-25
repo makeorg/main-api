@@ -44,7 +44,7 @@ dockerCmd := Seq(
   "-Dfile.encoding=UTF-8",
   "-Dlog4j.configurationFile=conf/log4j2.yaml",
   "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager",
-  "-J-javaagent:/opt/docker/lib/org.aspectj.aspectjweaver-" + Dependencies.aspectJVersion + ".jar",
+  "-J-javaagent:/opt/docker/lib/io.kamon.kanela-agent-" + Dependencies.kanelaVersion + ".jar",
   "-J-Xms8G",
   "-J-Xmx8G",
   "-J-XX:+UseG1GC",

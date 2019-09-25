@@ -31,8 +31,6 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
-import kamon.prometheus.PrometheusReporter
-import kamon.system.SystemMetrics
 import org.make.api.MakeGuardian.Ping
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
@@ -59,13 +57,9 @@ object MakeMain extends App with StrictLogging with MakeApi {
     case Some(name) if !name.isEmpty => s"$name-application.conf"
     case None                        => "default-application.conf"
   }
-  System.setProperty("config.resource", resourceName)
-
-  Kamon.addReporter(new PrometheusReporter())
-  SystemMetrics.startCollecting()
 
   private val configuration: Config = {
-    val defaultConfiguration = ConfigFactory.load()
+    val defaultConfiguration = ConfigFactory.load(resourceName)
     val configurationPath = defaultConfiguration.getString("make-api.secrets-configuration-path")
     val extraConfigPath = Paths.get(configurationPath)
     val configWithSecrets = if (Files.exists(extraConfigPath) && !Files.isDirectory(extraConfigPath)) {
@@ -90,6 +84,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
   while (Cluster(actorSystem).state.leader.isEmpty) {
     Thread.sleep(100)
   }
+
+  Kamon.init(configuration)
 
   val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
 

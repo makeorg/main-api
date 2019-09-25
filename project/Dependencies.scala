@@ -26,16 +26,16 @@ object Dependencies {
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.5.1"
-  private val kamonVersion = "1.1.5"
-  private val kamonAkkaVersion = "1.1.3"
-  private val kamonAkkaHttpVersion = "1.1.1"
-  private val kamonExecutorsVersion = "1.0.2"
-  private val kamonScalaFuturesVersion = "1.0.0"
-  private val kamonAkkaRemoteVersion = "1.1.0"
-  private val kamonSystemMetricsVersion = "1.0.1"
-  private val kamonPrometheusVersion = "1.1.1"
+  private val kamonVersion = "2.0.0"
+  private val kamonAkkaVersion = "2.0.0"
+  private val kamonAkkaHttpVersion = "2.0.1"
+  private val kamonExecutorsVersion = "2.0.0"
+  private val kamonScalaFuturesVersion = "2.0.1"
+  private val kamonAkkaRemoteVersion = "2.0.0-RC2"
+  private val kamonSystemMetricsVersion = "2.0.0"
+  private val kamonPrometheusVersion = "2.0.0"
   private val circeVersion = "0.12.1"
-  val aspectJVersion: String = "1.8.13"
+  val kanelaVersion: String = "1.0.1"
   val swaggerUiVersion: String = "3.20.9"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.0"
@@ -74,17 +74,16 @@ object Dependencies {
   val kamonExecutors: ModuleID =
     ("io.kamon" %% "kamon-executors" % kamonExecutorsVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonAkka: ModuleID =
-    ("io.kamon" %% "kamon-akka-2.5" % kamonAkkaVersion).exclude("ch.qos.logback", "logback-classic")
+    ("io.kamon" %% "kamon-akka" % kamonAkkaVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonScalaFutures: ModuleID = "io.kamon" %% "kamon-scala-future" % kamonScalaFuturesVersion
   val kamonAkkaHttp: ModuleID =
-    ("io.kamon" %% "kamon-akka-http-2.5" % kamonAkkaHttpVersion).exclude("ch.qos.logback", "logback-classic")
+    ("io.kamon" %% "kamon-akka-http" % kamonAkkaHttpVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonAkkaRemote: ModuleID =
-    ("io.kamon" %% "kamon-akka-remote-2.5" % kamonAkkaRemoteVersion).exclude("ch.qos.logback", "logback-classic")
+    ("io.kamon" %% "kamon-akka-remote" % kamonAkkaRemoteVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonSystemMetricsVersion
   val kamonPrometheus: ModuleID = "io.kamon"    %% "kamon-prometheus"     % kamonPrometheusVersion
 
-  val aspectJWeaver: ModuleID = "org.aspectj" % "aspectjweaver" % aspectJVersion
-  val aspectJRt: ModuleID = "org.aspectj"     % "aspectjrt"     % aspectJVersion
+  val kanela: ModuleID = "io.kamon" % "kanela-agent" % kanelaVersion
 
   val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.19.0"
   val constructrZookeeper: ModuleID =

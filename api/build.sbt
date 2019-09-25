@@ -34,8 +34,6 @@ libraryDependencies ++= Seq(
   Dependencies.kamonScalaFutures,
   Dependencies.kamonPrometheus,
   Dependencies.kamonSystemMetrics,
-  Dependencies.aspectJWeaver,
-  Dependencies.aspectJRt,
   Dependencies.akkaSlf4j,
   Dependencies.akkaStream,
   Dependencies.akkaPersistence,
@@ -112,7 +110,6 @@ fork in run := true
 fork in Test := true
 fork in IntegrationTest := true
 
-javaOptions in run ++= (aspectjWeaverOptions in Aspectj).value
 javaOptions in run ++= Seq(
   "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
 )
@@ -120,4 +117,3 @@ javaOptions in run ++= Seq(
 addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 
 enablePlugins(BuildInfoPlugin)
-enablePlugins(SbtAspectj)

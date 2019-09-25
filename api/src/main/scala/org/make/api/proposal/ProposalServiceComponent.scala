@@ -26,6 +26,7 @@ import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
+import kamon.tag.TagSet
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.{IdeaMappingServiceComponent, IdeaServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
@@ -651,9 +652,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           logger.warn(s"Bad proposal key found while voting on proposal $proposalId, requestContext is $requestContext")
           Kamon
             .counter("vote_trolls")
-            .refine(
-              "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
-              "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
+            .withTags(
+              TagSet.from(
+                Map(
+                  "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
+                  "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
+                )
+              )
             )
             .increment()
           Troll
@@ -662,9 +667,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         logger.warn(s"No proposal key found while voting on proposal $proposalId, requestContext is $requestContext")
         Kamon
           .counter("vote_trolls")
-          .refine(
-            "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
-            "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
+          .withTags(
+            TagSet.from(
+              Map(
+                "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
+                "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
+              )
+            )
           )
           .increment()
         Troll
