@@ -31,6 +31,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.StrictLogging
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.syntax._
@@ -46,7 +47,6 @@ import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus}
 import org.make.core.question.QuestionId
 import org.make.core.reference.Language
 import org.make.core.tag.{TagId, TagTypeId}
-import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.annotation.meta.field
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -69,7 +69,7 @@ object IndexProposalsWrapper {
   implicit val decoder: Decoder[IndexProposalsWrapper] = deriveDecoder[IndexProposalsWrapper]
 }
 
-trait DefaultSemanticComponent extends SemanticComponent with CirceHttpSupport with StrictLogging {
+trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingCirceSupport with StrictLogging {
   this: ActorSystemComponent
     with SemanticConfigurationComponent
     with IdeaServiceComponent
@@ -254,7 +254,7 @@ final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: Pro
                                   content: String)
 
 object SemanticProposal {
-  implicit val encoder: ObjectEncoder[SemanticProposal] = deriveEncoder[SemanticProposal]
+  implicit val encoder: Encoder[SemanticProposal] = deriveEncoder[SemanticProposal]
   implicit val decoder: Decoder[SemanticProposal] = deriveDecoder[SemanticProposal]
 
   def apply(indexedProposal: IndexedProposal): SemanticProposal = {
@@ -310,7 +310,7 @@ final case class SimilarIdea(
 )
 
 object SimilarIdea {
-  implicit val encoder: ObjectEncoder[SimilarIdea] = deriveEncoder[SimilarIdea]
+  implicit val encoder: Encoder[SimilarIdea] = deriveEncoder[SimilarIdea]
   implicit val decoder: Decoder[SimilarIdea] = deriveDecoder[SimilarIdea]
 }
 

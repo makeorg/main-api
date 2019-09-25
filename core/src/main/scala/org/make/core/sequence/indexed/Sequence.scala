@@ -22,7 +22,7 @@ package org.make.core.sequence.indexed
 import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import org.make.core.CirceFormatters
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
@@ -59,14 +59,14 @@ case class SequencesResult(total: Future[Int], results: Future[Seq[IndexedSequen
 case class IndexedSequenceTheme(themeId: ThemeId, translation: Seq[ThemeTranslation])
 
 object IndexedSequenceTheme {
-  implicit val encoder: ObjectEncoder[IndexedSequenceTheme] = deriveEncoder[IndexedSequenceTheme]
+  implicit val encoder: Encoder[IndexedSequenceTheme] = deriveEncoder[IndexedSequenceTheme]
   implicit val decoder: Decoder[IndexedSequenceTheme] = deriveDecoder[IndexedSequenceTheme]
 }
 
 case class IndexedSequenceProposalId(proposalId: ProposalId)
 
 object IndexedSequenceProposalId {
-  implicit val encoder: ObjectEncoder[IndexedSequenceProposalId] = deriveEncoder[IndexedSequenceProposalId]
+  implicit val encoder: Encoder[IndexedSequenceProposalId] = deriveEncoder[IndexedSequenceProposalId]
   implicit val decoder: Decoder[IndexedSequenceProposalId] = deriveDecoder[IndexedSequenceProposalId]
 }
 
@@ -84,7 +84,7 @@ case class IndexedSequence(id: SequenceId,
                            searchable: Boolean)
 
 object IndexedSequence extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[IndexedSequence] = deriveEncoder[IndexedSequence]
+  implicit val encoder: Encoder[IndexedSequence] = deriveEncoder[IndexedSequence]
   implicit val decoder: Decoder[IndexedSequence] = deriveDecoder[IndexedSequence]
 }
 
@@ -94,14 +94,14 @@ final case class Context(operation: Option[OperationId],
                          question: Option[String])
 
 object Context {
-  implicit val encoder: ObjectEncoder[Context] = deriveEncoder[Context]
+  implicit val encoder: Encoder[Context] = deriveEncoder[Context]
   implicit val decoder: Decoder[Context] = deriveDecoder[Context]
 }
 
 final case class SequencesSearchResult(total: Long, results: Seq[IndexedSequence])
 
 object SequencesSearchResult {
-  implicit val encoder: ObjectEncoder[SequencesSearchResult] = deriveEncoder[SequencesSearchResult]
+  implicit val encoder: Encoder[SequencesSearchResult] = deriveEncoder[SequencesSearchResult]
 }
 
 final case class IndexedStartSequence(id: SequenceId,
@@ -112,5 +112,5 @@ final case class IndexedStartSequence(id: SequenceId,
                                       proposals: Seq[IndexedProposal])
 
 object IndexedStartSequence {
-  implicit val encoder: ObjectEncoder[IndexedStartSequence] = deriveEncoder[IndexedStartSequence]
+  implicit val encoder: Encoder[IndexedStartSequence] = deriveEncoder[IndexedStartSequence]
 }

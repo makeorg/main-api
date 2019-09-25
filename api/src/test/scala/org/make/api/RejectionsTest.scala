@@ -24,9 +24,9 @@ import java.time.LocalDate
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.mdedetrich.akka.http.support.CirceHttpSupport
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.core.{CirceFormatters, ValidationError}
 
@@ -34,7 +34,7 @@ class RejectionsTest
     extends MakeApiTestBase
     with ScalatestRouteTest
     with Directives
-    with CirceHttpSupport
+    with ErrorAccumulatingCirceSupport
     with CirceFormatters
     with MakeAuthentication {
 
@@ -66,7 +66,7 @@ class RejectionsTest
       Post("/test", HttpEntity(ContentTypes.`application/json`, missingFields)) ~> route ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
+        errors.size should be(3)
         errors.head.field should be("field1")
       }
     }
@@ -108,6 +108,6 @@ class RejectionsTest
 final case class TestRequest(field1: String, field2: Int, field3: LocalDate) {}
 
 object TestRequest extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[TestRequest] = deriveEncoder[TestRequest]
+  implicit val encoder: Encoder[TestRequest] = deriveEncoder[TestRequest]
   implicit val decoder: Decoder[TestRequest] = deriveDecoder[TestRequest]
 }

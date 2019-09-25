@@ -20,7 +20,7 @@
 package org.make.core.user.indexed
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
@@ -73,7 +73,7 @@ case class IndexedOrganisation(
 )
 
 object IndexedOrganisation extends CirceFormatters {
-  implicit val encoder: ObjectEncoder[IndexedOrganisation] = deriveEncoder[IndexedOrganisation]
+  implicit val encoder: Encoder[IndexedOrganisation] = deriveEncoder[IndexedOrganisation]
   implicit val decoder: Decoder[IndexedOrganisation] = deriveDecoder[IndexedOrganisation]
 
   def createFromOrganisation(organisation: User,
@@ -97,7 +97,7 @@ object IndexedOrganisation extends CirceFormatters {
 final case class OrganisationSearchResult(total: Long, results: Seq[IndexedOrganisation])
 
 object OrganisationSearchResult {
-  implicit val encoder: ObjectEncoder[OrganisationSearchResult] = deriveEncoder[OrganisationSearchResult]
+  implicit val encoder: Encoder[OrganisationSearchResult] = deriveEncoder[OrganisationSearchResult]
   implicit val decoder: Decoder[OrganisationSearchResult] = deriveDecoder[OrganisationSearchResult]
 
   def empty: OrganisationSearchResult = OrganisationSearchResult(0, Seq.empty)

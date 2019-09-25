@@ -21,8 +21,8 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.23"
-  private val akkaHttpVersion = "10.1.9"
+  private val akkaVersion = "2.5.25"
+  private val akkaHttpVersion = "10.1.10"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.5.1"
@@ -34,7 +34,7 @@ object Dependencies {
   private val kamonAkkaRemoteVersion = "1.1.0"
   private val kamonSystemMetricsVersion = "1.0.1"
   private val kamonPrometheusVersion = "1.1.1"
-  private val circeVersion = "0.9.3"
+  private val circeVersion = "0.12.1"
   val aspectJVersion: String = "1.8.13"
   val swaggerUiVersion: String = "3.20.9"
 
@@ -56,7 +56,7 @@ object Dependencies {
   val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "org.mdedetrich"          %% "akka-http-circe"       % "0.1.0"
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"       % "1.29.1"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "0.14.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"       %% "akka-persistence-query" % akkaVersion
@@ -99,7 +99,7 @@ object Dependencies {
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.2"
 
-  val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.2"
+  val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.6"
 
   val jsoup: ModuleID = "org.jsoup" % "jsoup" % "1.11.3"
 

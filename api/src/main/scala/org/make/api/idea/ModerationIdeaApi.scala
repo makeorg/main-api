@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -392,7 +392,7 @@ final case class IdeaIdResponse(
 )
 
 object IdeaIdResponse {
-  implicit val encoder: ObjectEncoder[IdeaIdResponse] = deriveEncoder[IdeaIdResponse]
+  implicit val encoder: Encoder[IdeaIdResponse] = deriveEncoder[IdeaIdResponse]
   implicit val decoder: Decoder[IdeaIdResponse] = deriveDecoder[IdeaIdResponse]
 }
 
@@ -411,7 +411,7 @@ final case class IdeaResponse(
 )
 
 object IdeaResponse {
-  implicit val encoder: ObjectEncoder[IdeaResponse] = deriveEncoder[IdeaResponse]
+  implicit val encoder: Encoder[IdeaResponse] = deriveEncoder[IdeaResponse]
   implicit val decoder: Decoder[IdeaResponse] = deriveDecoder[IdeaResponse]
 
   def apply(idea: Idea): IdeaResponse = {

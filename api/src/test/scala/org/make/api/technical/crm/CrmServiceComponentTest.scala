@@ -30,6 +30,7 @@ import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
 import akka.stream.scaladsl.Source
 import com.typesafe.config.ConfigFactory
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal.{
@@ -59,7 +60,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mdedetrich.akka.http.support.CirceHttpSupport
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.{never, verify, when}
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -75,7 +75,7 @@ class CrmServiceComponentTest
     with OperationServiceComponent
     with QuestionServiceComponent
     with MailJetConfigurationComponent
-    with CirceHttpSupport
+    with ErrorAccumulatingCirceSupport
     with ActorSystemComponent
     with UserHistoryCoordinatorServiceComponent
     with UserServiceComponent

@@ -29,6 +29,7 @@ import akka.persistence.query.EventEnvelope
 import akka.stream._
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.Decoder
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
@@ -50,7 +51,6 @@ import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mdedetrich.akka.http.support.CirceHttpSupport
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
@@ -89,7 +89,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with PersistentUserToAnonymizeServiceComponent
     with PersistentCrmUserServiceComponent
     with CrmClientComponent
-    with CirceHttpSupport =>
+    with ErrorAccumulatingCirceSupport =>
 
   class QuestionResolver(questions: Seq[Question], operations: Map[String, OperationId]) {
 

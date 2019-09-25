@@ -405,10 +405,7 @@ class UserApiTest
             ValidationError(
               "dateOfBirth",
               "malformed",
-              Some(
-                "Could not decode [\"foo-12-02\"] at [.dateOfBirth] as " +
-                  "[foo-12-02 is not a valid date, it should match yyyy-MM-dd]."
-              )
+              Some("foo-12-02 is not a valid date, it should match yyyy-MM-dd")
             )
           )
         )
@@ -433,18 +430,7 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val genderError = errors.find(_.field == "gender")
-        genderError should be(
-          Some(
-            ValidationError(
-              "gender",
-              "malformed",
-              Some(
-                "Could not decode [\"S\"] at [.gender] as " +
-                  "[S is not a Gender]."
-              )
-            )
-          )
-        )
+        genderError should be(Some(ValidationError("gender", "malformed", Some("S is not a Gender"))))
       }
     }
 
