@@ -20,7 +20,6 @@
 package org.make.api.organisation
 
 import com.github.t3hnar.bcrypt._
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
@@ -55,7 +54,9 @@ trait OrganisationService extends ShortenedNames {
   def count(): Future[Int]
   def search(organisationName: Option[String],
              slug: Option[String],
-             organisationIds: Option[Seq[UserId]]): Future[OrganisationSearchResult]
+             organisationIds: Option[Seq[UserId]],
+             country: Option[Country],
+             language: Option[Language]): Future[OrganisationSearchResult]
   def searchWithQuery(query: OrganisationSearchQuery): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
   def update(organisation: User, mayebEmail: Option[String], requestContext: RequestContext): Future[UserId]
@@ -118,15 +119,18 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       */
     override def search(organisationName: Option[String],
                         slug: Option[String],
-                        organisationIds: Option[Seq[UserId]]): Future[OrganisationSearchResult] = {
+                        organisationIds: Option[Seq[UserId]],
+                        country: Option[Country],
+                        language: Option[Language]): Future[OrganisationSearchResult] = {
       elasticsearchOrganisationAPI.searchOrganisations(
         OrganisationSearchQuery(
           filters = OrganisationSearchFilters
             .parse(
-              organisationName =
-                organisationName.map(orgaName => OrganisationNameSearchFilter(orgaName, Some(Fuzziness.Auto))),
+              organisationName = organisationName.map(orgaName => OrganisationNameSearchFilter(orgaName)),
               slug = slug.map(user.SlugSearchFilter.apply),
-              organisationIds = organisationIds.map(OrganisationIdsSearchFilter.apply)
+              organisationIds = organisationIds.map(OrganisationIdsSearchFilter.apply),
+              country = country.map(CountrySearchFilter.apply),
+              language = language.map(LanguageSearchFilter.apply)
             )
         )
       )

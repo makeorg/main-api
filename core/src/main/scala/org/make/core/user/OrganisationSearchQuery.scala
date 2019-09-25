@@ -19,11 +19,10 @@
 
 package org.make.core.user
 
-import com.sksamuel.elastic4s.ElasticApi
+import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
 
@@ -128,8 +127,8 @@ object OrganisationSearchFilters extends ElasticDsl {
 
   def buildOrganisationNameSearchFilter(organisationSearchQuery: OrganisationSearchQuery): Option[Query] = {
     val query: Option[Query] = for {
-      filters                                        <- organisationSearchQuery.filters
-      OrganisationNameSearchFilter(text, maybeFuzzy) <- filters.organisationName
+      filters                            <- organisationSearchQuery.filters
+      OrganisationNameSearchFilter(text) <- filters.organisationName
     } yield {
       val language = filters.language.map(_.language).getOrElse(Language("fr"))
       val fieldsBoosts: Map[String, Double] =
@@ -140,16 +139,7 @@ object OrganisationSearchFilters extends ElasticDsl {
         ).collect {
           case (Some(key), value) => key -> value
         }
-      maybeFuzzy match {
-        case Some(fuzzy) =>
-          ElasticApi
-            .should(
-              multiMatchQuery(text).fields(fieldsBoosts).boost(2F),
-              multiMatchQuery(text).fields(fieldsBoosts).fuzziness(fuzzy).boost(1F)
-            )
-        case None =>
-          multiMatchQuery(text).fields(fieldsBoosts)
-      }
+      functionScoreQuery(multiMatchQuery(text).fields(fieldsBoosts).fuzziness("Auto:4,7").operator(Operator.AND))
     }
 
     query match {
@@ -200,7 +190,7 @@ object OrganisationSearchFilters extends ElasticDsl {
 }
 
 case class OrganisationIdsSearchFilter(organisationIds: Seq[UserId])
-case class OrganisationNameSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
+case class OrganisationNameSearchFilter(text: String)
 case class SlugSearchFilter(slug: String)
 case class DescriptionSearchFilter(description: String)
 case class CountrySearchFilter(country: Country)

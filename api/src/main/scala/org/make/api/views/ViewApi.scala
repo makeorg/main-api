@@ -194,8 +194,7 @@ trait DefaultViewApiComponent
                 val organisationQuery = OrganisationSearchQuery(
                   filters = Some(
                     OrganisationSearchFilters(
-                      organisationName =
-                        Some(OrganisationNameSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
+                      organisationName = Some(OrganisationNameSearchFilter(content.toLowerCase)),
                       country = country.map(user.CountrySearchFilter.apply),
                       language = language.map(user.LanguageSearchFilter.apply)
                     )

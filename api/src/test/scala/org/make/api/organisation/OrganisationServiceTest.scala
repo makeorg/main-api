@@ -21,7 +21,6 @@ package org.make.api.organisation
 
 import java.time.ZonedDateTime
 
-import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.{
   ProposalResponse,
@@ -352,11 +351,8 @@ class OrganisationServiceTest
         elasticsearchOrganisationAPI.searchOrganisations(
           ArgumentMatchers.eq(
             OrganisationSearchQuery(
-              filters = Some(
-                OrganisationSearchFilters(
-                  organisationName = Some(OrganisationNameSearchFilter("John Doe Corp.", Some(Fuzziness.Auto)))
-                )
-              )
+              filters =
+                Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("John Doe Corp."))))
             )
           )
         )
@@ -391,9 +387,32 @@ class OrganisationServiceTest
           )
         )
       )
+    Mockito
+      .when(
+        elasticsearchOrganisationAPI.searchOrganisations(
+          ArgumentMatchers.eq(
+            OrganisationSearchQuery(
+              filters = Some(
+                OrganisationSearchFilters(
+                  country = Some(CountrySearchFilter(Country("FR"))),
+                  language = Some(LanguageSearchFilter(Language("fr")))
+                )
+              )
+            )
+          )
+        )
+      )
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(
+            total = 1L,
+            results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
+          )
+        )
+      )
 
     scenario("search all") {
-      val futureAllOrganisation = organisationService.search(None, None, None)
+      val futureAllOrganisation = organisationService.search(None, None, None, None, None)
 
       whenReady(futureAllOrganisation, Timeout(2.seconds)) { organisationsList =>
         organisationsList.total shouldBe 2
@@ -401,7 +420,7 @@ class OrganisationServiceTest
     }
 
     scenario("search by organisationName") {
-      val futureJohnDoeCorp = organisationService.search(Some("John Doe Corp."), None, None)
+      val futureJohnDoeCorp = organisationService.search(Some("John Doe Corp."), None, None, None, None)
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
         organisationsList.total shouldBe 1
@@ -410,7 +429,16 @@ class OrganisationServiceTest
     }
 
     scenario("search by organisationIds") {
-      val futureJohnDoeCorp = organisationService.search(None, None, Some(Seq(UserId("AAA-BBB-CCC"))))
+      val futureJohnDoeCorp = organisationService.search(None, None, Some(Seq(UserId("AAA-BBB-CCC"))), None, None)
+
+      whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
+        organisationsList.total shouldBe 1
+        organisationsList.results.head.organisationId shouldBe UserId("AAA-BBB-CCC")
+      }
+    }
+
+    scenario("search by country-language") {
+      val futureJohnDoeCorp = organisationService.search(None, None, None, Some(Country("FR")), Some(Language("fr")))
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
         organisationsList.total shouldBe 1

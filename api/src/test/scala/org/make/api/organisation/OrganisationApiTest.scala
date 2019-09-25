@@ -302,7 +302,13 @@ class OrganisationApiTest
     Mockito
       .when(
         organisationService
-          .search(ArgumentMatchers.eq(Some("Make.org")), ArgumentMatchers.eq(None), ArgumentMatchers.eq(None))
+          .search(
+            ArgumentMatchers.eq(Some("Make.org")),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None)
+          )
       )
       .thenReturn(
         Future.successful(
@@ -312,7 +318,13 @@ class OrganisationApiTest
     Mockito
       .when(
         organisationService
-          .search(ArgumentMatchers.eq(None), ArgumentMatchers.eq(Some("make-org")), ArgumentMatchers.eq(None))
+          .search(
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some("make-org")),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None)
+          )
       )
       .thenReturn(
         Future.successful(
@@ -325,7 +337,25 @@ class OrganisationApiTest
           .search(
             ArgumentMatchers.eq(None),
             ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(Some(Seq(UserId("make-org"), UserId("toto"))))
+            ArgumentMatchers.eq(Some(Seq(UserId("make-org"), UserId("toto")))),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None)
+          )
+      )
+      .thenReturn(
+        Future.successful(
+          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
+        )
+      )
+    Mockito
+      .when(
+        organisationService
+          .search(
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some(Country("FR"))),
+            ArgumentMatchers.eq(Some(Language("fr")))
           )
       )
       .thenReturn(
@@ -352,6 +382,14 @@ class OrganisationApiTest
     }
     scenario("search by organisationIds") {
       Get("/organisations?organisationIds=make-org,toto") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        organisationResults.total should be(1)
+        organisationResults.results.head.organisationId should be(UserId("make-org"))
+      }
+    }
+    scenario("search by organisation country") {
+      Get("/organisations?country=FR&language=fr") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
         organisationResults.total should be(1)

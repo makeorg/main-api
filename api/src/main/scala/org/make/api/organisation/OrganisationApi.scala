@@ -40,6 +40,7 @@ import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
 import org.make.core.proposal.{SearchQuery, _}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import org.make.core.user.indexed.OrganisationSearchResult
 import org.make.core.{HttpCodes, ParameterExtractors}
@@ -64,7 +65,9 @@ trait OrganisationApi extends Directives {
     value = Array(
       new ApiImplicitParam(name = "organisationIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "organisationName", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(
@@ -146,11 +149,23 @@ trait DefaultOrganisationApiComponent
         path("organisations") {
           makeOperation("GetOrganisations") { _ =>
             parameters(
-              ('organisationIds.as[immutable.Seq[UserId]].?, 'organisationName.as[String].?, 'slug.as[String].?)
-            ) { (organisationIds: Option[Seq[UserId]], organisationName: Option[String], slug: Option[String]) =>
-              provideAsync(organisationService.search(organisationName, slug, organisationIds)) { results =>
-                complete(results)
-              }
+              (
+                'organisationIds.as[immutable.Seq[UserId]].?,
+                'organisationName.as[String].?,
+                'slug.as[String].?,
+                'country.as[Country].?,
+                'language.as[Language].?
+              )
+            ) {
+              (organisationIds: Option[Seq[UserId]],
+               organisationName: Option[String],
+               slug: Option[String],
+               country: Option[Country],
+               language: Option[Language]) =>
+                provideAsync(organisationService.search(organisationName, slug, organisationIds, country, language)) {
+                  results =>
+                    complete(results)
+                }
             }
           }
         }

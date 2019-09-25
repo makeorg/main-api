@@ -160,11 +160,8 @@ class ViewApiTest
           organisationService.searchWithQuery(
             ArgumentMatchers.eq(
               OrganisationSearchQuery(
-                filters = Some(
-                  OrganisationSearchFilters(
-                    organisationName = Some(OrganisationNameSearchFilter(text = "toto", fuzzy = Some(Fuzziness.Auto)))
-                  )
-                ),
+                filters =
+                  Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter(text = "toto")))),
                 limit = None
               )
             )
@@ -244,8 +241,7 @@ class ViewApiTest
               OrganisationSearchQuery(
                 filters = Some(
                   OrganisationSearchFilters(
-                    organisationName =
-                      Some(OrganisationNameSearchFilter(text = "lownoresults", fuzzy = Some(Fuzziness.Auto)))
+                    organisationName = Some(OrganisationNameSearchFilter(text = "lownoresults"))
                   )
                 ),
                 limit = None
