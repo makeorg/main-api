@@ -34,6 +34,7 @@ libraryDependencies ++= Seq(
   Dependencies.kamonScalaFutures,
   Dependencies.kamonPrometheus,
   Dependencies.kamonSystemMetrics,
+  Dependencies.kanela,
   Dependencies.akkaSlf4j,
   Dependencies.akkaStream,
   Dependencies.akkaPersistence,
