@@ -365,7 +365,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 metas = request.metas,
                                 theme = request.theme,
                                 description = request.description,
-                                imageUrl = request.imageUrl
+                                imageUrl = request.imageUrl,
+                                displayResults = request.displayResults
                               ),
                             updatedQuestion
                           )
@@ -444,7 +445,8 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   metas: Metas,
                                                   theme: QuestionTheme,
                                                   description: String,
-                                                  imageUrl: Option[String]) {
+                                                  imageUrl: Option[String],
+                                                  displayResults: Boolean) {
   validate(
     validateUserInput("question", question, None),
     validateUserInput("description", description, None),
@@ -526,7 +528,8 @@ final case class OperationOfQuestionResponse(
   metas: Metas,
   theme: QuestionTheme,
   description: String,
-  imageUrl: Option[String]
+  imageUrl: Option[String],
+  displayResults: Boolean
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -551,7 +554,8 @@ object OperationOfQuestionResponse extends CirceFormatters {
       metas = operationOfQuestion.metas,
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
-      imageUrl = operationOfQuestion.imageUrl
+      imageUrl = operationOfQuestion.imageUrl,
+      displayResults = operationOfQuestion.displayResults
     )
   }
 }

@@ -178,7 +178,8 @@ class ModerationQuestionApiTest
     metas = Metas(title = None, description = None, picture = None),
     theme = QuestionTheme.default,
     description = OperationOfQuestion.defaultDescription,
-    imageUrl = Some("image-url")
+    imageUrl = Some("image-url"),
+    displayResults = false
   )
 
   feature("list questions") {

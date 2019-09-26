@@ -128,7 +128,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         metas = Metas(title = None, description = None, picture = None),
         theme = QuestionTheme.default,
         description = OperationOfQuestion.defaultDescription,
-        imageUrl = None
+        imageUrl = None,
+        displayResults = false
       )
     )
   }
@@ -163,7 +164,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None
+          imageUrl = None,
+          displayResults = false
         )
       )
     )
@@ -224,7 +226,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None
+          imageUrl = None,
+          displayResults = false
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -252,7 +255,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None
+          imageUrl = None,
+          displayResults = false
         )
       )
     )
@@ -331,7 +335,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None
+          imageUrl = None,
+          displayResults = false
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -359,7 +364,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None
+          imageUrl = None,
+          displayResults = false
         )
       )
     )
@@ -553,7 +559,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
             description = OperationOfQuestion.defaultDescription,
-            imageUrl = Some("https://example.com/image")
+            imageUrl = Some("https://example.com/image"),
+            displayResults = false
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -585,7 +592,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "color": "#000000",
             |   "footerFontColor": "#000000"
             | },
-            | description = "description"
+            | description = "description",
+            | displayResults = false
           }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
@@ -617,7 +625,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "footerFontColor": "#000000"
             | },
             | description = "description",
-            | imageUrl = "wrongurlformat"
+            | imageUrl = "wrongurlformat",
+            | displayResults = false
           }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)

@@ -95,7 +95,8 @@ trait OperationHelper {
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
             description = OperationOfQuestion.defaultDescription,
-            imageUrl = configuration.imageUrl
+            imageUrl = configuration.imageUrl,
+            displayResults = false
           )
         )
       }

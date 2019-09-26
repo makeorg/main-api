@@ -201,7 +201,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         metas = Metas(None, None, None),
         theme = QuestionTheme.default,
         description = OperationOfQuestion.defaultDescription,
-        imageUrl = parameters.imageUrl
+        imageUrl = parameters.imageUrl,
+        displayResults = false
       )
 
       val sequenceConfiguration =
