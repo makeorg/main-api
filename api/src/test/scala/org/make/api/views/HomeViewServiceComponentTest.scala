@@ -286,7 +286,12 @@ class HomeViewServiceComponentTest
         .thenReturn(Future.successful(operationOfQuestions))
 
       Mockito
-        .when(elasticsearchProposalAPI.countProposalsByQuestion(ArgumentMatchers.eq(questions.map(_.questionId))))
+        .when(
+          elasticsearchProposalAPI.countProposalsByQuestion(
+            ArgumentMatchers.eq(questions.map(_.questionId)),
+            ArgumentMatchers.eq(Some(ProposalStatus.statusMap.values.toSeq))
+          )
+        )
         .thenReturn(
           Future.successful(
             Map(
