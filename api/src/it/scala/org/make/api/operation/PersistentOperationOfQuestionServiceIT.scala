@@ -77,7 +77,8 @@ class PersistentOperationOfQuestionServiceIT
     metas = Metas(title = None, description = None, picture = None),
     theme = QuestionTheme.default,
     description = OperationOfQuestion.defaultDescription,
-    imageUrl = Some("https://example.com/image")
+    imageUrl = Some("https://example.com/image"),
+    displayResults = false
   )
 
   def createOperationOfQuestion(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {

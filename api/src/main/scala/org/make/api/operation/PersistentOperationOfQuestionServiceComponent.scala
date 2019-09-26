@@ -169,7 +169,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
               PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
-              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
+              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl,
+              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults
             )
         }.execute().apply()
       }).map(_ => operationOfQuestion)
@@ -210,7 +211,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
               PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
-              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl
+              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl,
+              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults
             )
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
         }.execute().apply()
@@ -320,7 +322,8 @@ final case class PersistentOperationOfQuestion(questionId: String,
                                                color: String,
                                                footerFontColor: String,
                                                description: String,
-                                               imageUrl: Option[String]) {
+                                               imageUrl: Option[String],
+                                               displayResults: Boolean) {
   def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     questionId = QuestionId(this.questionId),
     operationId = OperationId(this.operationId),
@@ -360,7 +363,8 @@ final case class PersistentOperationOfQuestion(questionId: String,
       footerFontColor = this.footerFontColor
     ),
     description = this.description,
-    imageUrl = this.imageUrl
+    imageUrl = this.imageUrl,
+    displayResults = this.displayResults
   )
 }
 
@@ -403,7 +407,8 @@ object PersistentOperationOfQuestion
                                            color: String,
                                            footerFontColor: String,
                                            description: String,
-                                           imageUrl: Option[String]) {
+                                           imageUrl: Option[String],
+                                           displayResults: Boolean) {
     def toQuestionAndDetails: QuestionWithDetails = {
       QuestionWithDetails(
         question = Question(
@@ -448,7 +453,8 @@ object PersistentOperationOfQuestion
             footerFontColor = this.footerFontColor
           ),
           description = this.description,
-          imageUrl = this.imageUrl
+          imageUrl = this.imageUrl,
+          displayResults = this.displayResults
         )
       )
 
@@ -505,7 +511,8 @@ object PersistentOperationOfQuestion
         color = resultSet.string(operationOfQuestionAlias.color),
         footerFontColor = resultSet.string(operationOfQuestionAlias.footerFontColor),
         description = resultSet.string(operationOfQuestionAlias.description),
-        imageUrl = resultSet.stringOpt(operationOfQuestionAlias.imageUrl)
+        imageUrl = resultSet.stringOpt(operationOfQuestionAlias.imageUrl),
+        displayResults = resultSet.boolean(operationOfQuestionAlias.displayResults)
       )
   }
 
@@ -543,7 +550,8 @@ object PersistentOperationOfQuestion
       "color",
       "footer_font_color",
       "description",
-      "image_url"
+      "image_url",
+      "display_results"
     )
 
   override val tableName: String = "operation_of_question"
@@ -586,7 +594,8 @@ object PersistentOperationOfQuestion
       color = resultSet.string(resultName.color),
       footerFontColor = resultSet.string(resultName.footerFontColor),
       description = resultSet.string(resultName.description),
-      imageUrl = resultSet.stringOpt(resultName.imageUrl)
+      imageUrl = resultSet.stringOpt(resultName.imageUrl),
+      displayResults = resultSet.boolean(resultName.displayResults)
     )
   }
 }

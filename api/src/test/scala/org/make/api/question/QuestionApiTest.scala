@@ -119,7 +119,8 @@ class QuestionApiTest
     metas = Metas(title = None, description = None, picture = None),
     theme = QuestionTheme.default,
     description = OperationOfQuestion.defaultDescription,
-    imageUrl = None
+    imageUrl = None,
+    displayResults = false
   )
 
   feature("start sequence by question id") {
@@ -149,7 +150,8 @@ class QuestionApiTest
       metas = Metas(title = None, description = None, picture = None),
       theme = QuestionTheme.default,
       description = OperationOfQuestion.defaultDescription,
-      imageUrl = None
+      imageUrl = None,
+      displayResults = false
     )
     scenario("valid question") {
       when(persistentOperationOfQuestionService.getById(any[QuestionId]))
