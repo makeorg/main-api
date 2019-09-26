@@ -47,7 +47,8 @@ trait ProposalSearchEngine {
   def findProposalsByIds(proposalIds: Seq[ProposalId], size: Int, random: Boolean = true): Future[Seq[IndexedProposal]]
   def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
   def countProposals(searchQuery: SearchQuery): Future[Long]
-  def countProposalsByQuestion(maybeQuestionIds: Seq[QuestionId]): Future[Map[QuestionId, Long]]
+  def countProposalsByQuestion(maybeQuestionIds: Seq[QuestionId],
+                               status: Option[Seq[ProposalStatus]]): Future[Map[QuestionId, Long]]
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
   def indexProposals(records: Seq[IndexedProposal],
@@ -129,10 +130,16 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def countProposalsByQuestion(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Long]] = {
+    override def countProposalsByQuestion(questionIds: Seq[QuestionId],
+                                          status: Option[Seq[ProposalStatus]]): Future[Map[QuestionId, Long]] = {
       // parse json string to build search query
       val searchQuery: SearchQuery = SearchQuery(
-        filters = Some(SearchFilters(question = Some(QuestionSearchFilter(questionIds))))
+        filters = Some(
+          SearchFilters(
+            question = Some(QuestionSearchFilter(questionIds)),
+            status = status.map(StatusSearchFilter.apply)
+          )
+        )
       )
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
       val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
