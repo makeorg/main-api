@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe._
+import io.circe.generic.semiauto._
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
@@ -33,7 +34,7 @@ sealed trait Role {
   def shortName: String
 }
 
-object Role extends StrictLogging {
+object Role {
   implicit lazy val roleEncoder: Encoder[Role] = (role: Role) => Json.fromString(role.shortName)
   implicit lazy val roleDecoder: Decoder[Role] = Decoder.decodeString.map(Role.matchRole)
 
@@ -148,4 +149,49 @@ object UserId {
     }
   }
 
+}
+
+sealed trait ConnectionMode {
+  val shortName: String
+}
+
+object ConnectionMode {
+
+  val connectionModes: Map[String, ConnectionMode] = {
+    Map(Mail.shortName -> Mail, Facebook.shortName -> Facebook, Google.shortName -> Google)
+  }
+
+  implicit lazy val encoder: Encoder[ConnectionMode] = (connectionMode: ConnectionMode) =>
+    Json.fromString(connectionMode.shortName)
+
+  implicit lazy val decoder: Decoder[ConnectionMode] =
+    Decoder.decodeString.emap { value: String =>
+      connectionModes.get(value) match {
+        case Some(connectionMode) => Right(connectionMode)
+        case None                 => Left(s"$value is not a connection mode")
+      }
+    }
+
+  case object Mail extends ConnectionMode {
+    override val shortName: String = "MAIL"
+  }
+
+  case object Facebook extends ConnectionMode {
+    override val shortName: String = "FACEBOOK"
+  }
+
+  case object Google extends ConnectionMode {
+    override val shortName: String = "GOOGLE"
+  }
+}
+
+case class ReconnectInfo(reconnectToken: String,
+                         firstName: Option[String],
+                         avatarUrl: Option[String],
+                         hiddenMail: String,
+                         connectionMode: Seq[ConnectionMode])
+
+object ReconnectInfo {
+  implicit lazy val encoder: Encoder[ReconnectInfo] = deriveEncoder[ReconnectInfo]
+  implicit lazy val decoder: Decoder[ReconnectInfo] = deriveDecoder[ReconnectInfo]
 }

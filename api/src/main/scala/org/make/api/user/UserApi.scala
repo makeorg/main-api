@@ -58,7 +58,7 @@ import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.{MailingErrorLog, Role, User, UserId}
+import org.make.core.user.{MailingErrorLog, ReconnectInfo, Role, User, UserId}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -411,6 +411,21 @@ trait UserApi extends Directives {
   @Path(value = "/{userId}/unfollow")
   def unfollowUser: Route
 
+  @ApiOperation(value = "reconnect-info", httpMethod = "POST")
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ReconnectInfo])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
+  @Path(value = "/{userId}/reconnect")
+  def reconnectInfo: Route
+
   def routes: Route =
     getMe ~
       getUser ~
@@ -428,7 +443,8 @@ trait UserApi extends Directives {
       changePassword ~
       deleteUser ~
       followUser ~
-      unfollowUser
+      unfollowUser ~
+      reconnectInfo
 
   val userId: PathMatcher1[UserId] =
     Segment.map(id => UserId(id))
@@ -1075,6 +1091,18 @@ trait DefaultUserApiComponent
           }
         }
       }
+
+    override def reconnectInfo: Route = {
+      post {
+        path("user" / userId / "reconnect") { userId =>
+          makeOperation("ReconnectInfo") { _ =>
+            provideAsyncOrNotFound(userService.reconnectInfo(userId)) { reconnectInfo =>
+              complete(StatusCodes.OK -> reconnectInfo)
+            }
+          }
+        }
+      }
+    }
   }
 }
 

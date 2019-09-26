@@ -38,7 +38,7 @@ import org.make.core.proposal.SearchQuery
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{MailingErrorLog, Role, User, UserId}
+import org.make.core.user.{ConnectionMode, MailingErrorLog, Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => isEqual, _}
 import org.mockito.Mockito.{times, verify}
@@ -926,6 +926,30 @@ class UserServiceTest
 
       whenReady(result, Timeout(5.seconds)) { resultUser =>
         resultUser.email should be("yopmail+some-other-hash@make.org")
+      }
+    }
+  }
+
+  feature("get reconnect info") {
+    scenario("reconnect info") {
+
+      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(fooUser)))
+      Mockito.when(userTokenGenerator.generateReconnectToken()).thenReturn(Future.successful(("token", "hashedToken")))
+      Mockito
+        .when(persistentUserService.updateReconnectToken(any[UserId], any[String], any[ZonedDateTime]))
+        .thenReturn(Future.successful(true))
+
+      val result = userService.reconnectInfo(UserId("userId"))
+      whenReady(result, Timeout(5.seconds)) { resultReconnect =>
+        resultReconnect.foreach { reconnect =>
+          reconnect.reconnectToken should be("hashedToken")
+          reconnect.firstName should be(fooUser.firstName)
+          reconnect.avatarUrl should be(fooUser.profile.flatMap(_.avatarUrl))
+          reconnect.hiddenMail should be("f*o@example.com")
+          reconnect.connectionMode should contain(ConnectionMode.Mail)
+          reconnect.connectionMode should contain(ConnectionMode.Facebook)
+          reconnect.connectionMode should contain(ConnectionMode.Google)
+        }
       }
     }
   }

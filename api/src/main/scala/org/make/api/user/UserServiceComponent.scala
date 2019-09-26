@@ -28,6 +28,7 @@ import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.question.AuthorRequest
 import org.make.api.technical.auth.{TokenGeneratorComponent, UserTokenGeneratorComponent}
 import org.make.api.technical.crm.CrmServiceComponent
+import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social.models.UserInfo
@@ -88,6 +89,7 @@ trait UserService extends ShortenedNames {
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
   def adminCountUsers(email: Option[String], firstName: Option[String], role: Option[Role]): Future[Int]
+  def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]]
 }
 
 case class UserRegisterData(email: String,
@@ -194,6 +196,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     private def generateResetToken(): Future[String] = {
       userTokenGenerator.generateResetToken().map {
+        case (_, token) => token
+      }
+    }
+
+    private def generateReconnectToken(): Future[String] = {
+      userTokenGenerator.generateReconnectToken().map {
         case (_, token) => token
       }
     }
@@ -648,6 +656,38 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def adminCountUsers(email: Option[String], firstName: Option[String], role: Option[Role]): Future[Int] = {
       persistentUserService.adminCountUsers(email, firstName, role)
+    }
+
+    private def getConnectionModes(user: User): Seq[ConnectionMode] = {
+      Map(
+        ConnectionMode.Facebook -> user.profile.flatMap(_.facebookId),
+        ConnectionMode.Google -> user.profile.flatMap(_.googleId),
+        ConnectionMode.Mail -> user.hashedPassword
+      ).collect {
+        case (mode, Some(_)) => mode
+      }.toSeq
+    }
+
+    override def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]] = {
+      val futureReconnectInfo = for {
+        user           <- persistentUserService.get(userId)
+        reconnectToken <- generateReconnectToken()
+        _              <- persistentUserService.updateReconnectToken(userId, reconnectToken, DateHelper.now())
+      } yield (user, reconnectToken)
+
+      futureReconnectInfo.map {
+        case (maybeUser, reconnectToken) =>
+          maybeUser.map { user =>
+            val hiddenEmail = SecurityHelper.anonymizeEmail(user.email)
+            ReconnectInfo(
+              reconnectToken,
+              user.firstName,
+              user.profile.flatMap(_.avatarUrl),
+              hiddenEmail,
+              getConnectionModes(user)
+            )
+          }
+      }
     }
   }
 }
