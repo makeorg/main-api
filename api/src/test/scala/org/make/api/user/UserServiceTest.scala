@@ -528,6 +528,8 @@ class UserServiceTest
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
+      Mockito.when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
+
       val futureUser = userService.createOrUpdateUserFromSocial(info, returnedUser.lastIp, None, RequestContext.empty)
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
@@ -536,9 +538,6 @@ class UserServiceTest
         user.firstName should be(info.firstName)
         user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
-
-        verify(persistentUserService, times(0)).updateSocialUser(ArgumentMatchers.any[User])
-
       }
     }
 
@@ -570,7 +569,7 @@ class UserServiceTest
         firstName = None,
         lastName = None,
         lastIp = None,
-        hashedPassword = None,
+        hashedPassword = Some("hashedPassword"),
         enabled = true,
         emailVerified = true,
         lastConnection = DateHelper.now(),
@@ -586,6 +585,7 @@ class UserServiceTest
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
+      Mockito.when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
 
       val info = UserInfo(
         email = Some("facebook@make.org"),
@@ -599,7 +599,62 @@ class UserServiceTest
         picture = Some("facebook.com/picture")
       )
 
-      userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty)
+      whenReady(userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty), Timeout(3.seconds)) {
+        result =>
+          result.emailVerified shouldBe true
+          result.hashedPassword shouldBe Some("hashedPassword")
+      }
+
+      verify(eventBusService, Mockito.never())
+        .publish(ArgumentMatchers.any[AnyRef])
+
+    }
+
+    scenario("email not verified already registred") {
+      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
+      Mockito.reset(eventBusService)
+
+      val user = User(
+        userId = UserId("AAA-BBB-CCC-DDD-EEE"),
+        email = "existing-user@gmail.com",
+        firstName = None,
+        lastName = None,
+        lastIp = None,
+        hashedPassword = Some("hashedPassword"),
+        enabled = true,
+        emailVerified = false,
+        lastConnection = DateHelper.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = Seq(),
+        country = Country("FR"),
+        language = Language("fr"),
+        profile = None,
+        availableQuestions = Seq.empty
+      )
+
+      Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
+      Mockito.when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
+
+      val info = UserInfo(
+        email = Some("facebook@make.org"),
+        firstName = Some("facebook"),
+        lastName = Some("user"),
+        country = "FR",
+        language = "fr",
+        gender = None,
+        googleId = None,
+        facebookId = Some("444444"),
+        picture = Some("facebook.com/picture")
+      )
+
+      whenReady(userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty), Timeout(3.seconds)) {
+        result =>
+          result.emailVerified shouldBe true
+          result.hashedPassword shouldBe None
+      }
 
       verify(eventBusService, Mockito.never())
         .publish(ArgumentMatchers.any[AnyRef])

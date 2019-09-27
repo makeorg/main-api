@@ -320,6 +320,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     private def updateUserFromSocial(user: User, userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
       val country = BusinessConfig.validateCountry(Country(userInfo.country))
       val language = BusinessConfig.validateLanguage(Country(userInfo.country), Language(userInfo.language))
+      val hashedPassword = if (!user.emailVerified) None else user.hashedPassword
 
       val updatedProfile: Option[Profile] = user.profile.map {
         _.copy(
@@ -353,15 +354,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           lastIp = clientIp,
           country = country,
           language = language,
-          profile = updatedProfile
+          profile = updatedProfile,
+          hashedPassword = hashedPassword,
+          emailVerified = true,
+          lastConnection = DateHelper.now()
         )
 
-      if (user == updatedUser) {
-        Future.successful(user)
-      } else {
-        persistentUserService.updateSocialUser(updatedUser).map { userUpdated =>
-          if (userUpdated) updatedUser else user
-        }
+      persistentUserService.updateSocialUser(updatedUser).map { userUpdated =>
+        if (userUpdated) updatedUser else user
       }
     }
 
