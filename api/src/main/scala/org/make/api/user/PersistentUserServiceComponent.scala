@@ -316,6 +316,9 @@ trait PersistentUserService {
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
   def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]]
+  def findByReconnectTokenAndPassword(reconnectToken: String,
+                                      password: String,
+                                      validityReconnectToken: Int): Future[Option[User]]
   def emailExists(email: String): Future[Boolean]
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
@@ -447,6 +450,24 @@ trait DefaultPersistentUserServiceComponent
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
         }.map(PersistentUser.apply()).single.apply
+      })
+
+      futurePersistentUser.map(_.map(_.toUser))
+    }
+
+    override def findByReconnectTokenAndPassword(reconnectToken: String,
+                                                 password: String,
+                                                 validityReconnectToken: Int): Future[Option[User]] = {
+      implicit val cxt: EC = readExecutionContext
+      val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.reconnectToken, reconnectToken))
+        }.map(PersistentUser.apply()).single.apply
+      }).map(_.filter { persistentUser =>
+        persistentUser.hashedPassword != null && password.isBcrypted(persistentUser.hashedPassword) &&
+        persistentUser.reconnectTokenCreatedAt.exists(_.plusMinutes(validityReconnectToken).isAfter(DateHelper.now()))
       })
 
       futurePersistentUser.map(_.map(_.toUser))

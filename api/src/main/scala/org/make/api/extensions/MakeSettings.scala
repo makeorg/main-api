@@ -63,6 +63,7 @@ class MakeSettings(config: Config) extends Extension {
   object Oauth {
     val accessTokenLifetime: Int = config.getInt("oauth.access-token-lifetime")
     val refreshTokenLifetime: Int = config.getInt("oauth.refresh-token-lifetime")
+    val reconnectTokenLifetime: Int = config.getInt("oauth.reconnect-token-lifetime")
   }
 
   object Http {

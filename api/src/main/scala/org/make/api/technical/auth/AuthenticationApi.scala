@@ -86,6 +86,28 @@ trait AuthenticationApi extends Directives {
   def getAccessTokenRoute: Route
 
   @ApiOperation(
+    value = "reconnect",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "application/x-www-form-urlencoded"
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "reconnect_token", paramType = "form", dataType = "string"),
+      new ApiImplicitParam(name = "password", paramType = "form", dataType = "string"),
+      new ApiImplicitParam(
+        name = "grant_type",
+        paramType = "form",
+        dataType = "string",
+        defaultValue = "reconnect_token"
+      )
+    )
+  )
+  @Path(value = "/oauth/reconnect")
+  def reconnect: Route
+
+  @ApiOperation(
     value = "logout",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -130,7 +152,7 @@ trait AuthenticationApi extends Directives {
   def form: Route
 
   def routes: Route =
-    getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute ~ form ~ createAuthorizationCode
+    getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute ~ form ~ createAuthorizationCode ~ reconnect
 }
 
 object AuthenticationApi {
@@ -317,6 +339,35 @@ trait DefaultAuthenticationApiComponent
           ) {
             complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
           }
+      }
+    }
+
+    override def reconnect: Route = pathPrefix("oauth") {
+      path("reconnect") {
+        makeOperation("OauthReconnect") { requestContext =>
+          post {
+            formFieldMap { fields =>
+              val future: Future[Either[OAuthError, GrantHandlerResult[UserRights]]] = tokenEndpoint
+                .handleRequest(
+                  new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
+                  oauth2DataHandler
+                )
+                .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
+                  case Left(e) => Future.successful(Left(e))
+                  case Right(result) =>
+                    sessionHistoryCoordinatorService
+                      .convertSession(requestContext.sessionId, result.authInfo.user.userId)
+                      .map(_ => Right(result))
+                }
+
+              onComplete(future) {
+                case Success(Right(result)) => handleGrantResult(fields, result)
+                case Success(Left(_))       => complete(Unauthorized)
+                case Failure(ex)            => failWith(ex)
+              }
+            }
+          }
+        }
       }
     }
 

@@ -281,12 +281,17 @@ trait MakeApi
       override val clientCredentialRequired = false
     }
 
+    private val reconnect: Reconnect = new Reconnect {
+      override val clientCredentialRequired = false
+    }
+
     override val handlers: Map[String, GrantHandler] =
       Map[String, GrantHandler](
         OAuthGrantType.AUTHORIZATION_CODE -> new AuthorizationCode,
         OAuthGrantType.CLIENT_CREDENTIALS -> new ClientCredentials,
         OAuthGrantType.PASSWORD -> password,
-        OAuthGrantType.REFRESH_TOKEN -> new RefreshToken
+        OAuthGrantType.REFRESH_TOKEN -> new RefreshToken,
+        Reconnect.RECONNECT_TOKEN -> reconnect
       )
   }
 

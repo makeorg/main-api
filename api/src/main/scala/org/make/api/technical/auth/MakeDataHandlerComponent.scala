@@ -64,6 +64,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     lazy val validityDurationAccessTokenSeconds: Int = makeSettings.Oauth.accessTokenLifetime
     lazy val validityDurationRefreshTokenSeconds: Int = makeSettings.Oauth.refreshTokenLifetime
+    lazy val validityDurationReconnectTokenSeconds: Int = makeSettings.Oauth.reconnectTokenLifetime
 
     private val accessTokenCache: Cache[String, AccessToken] =
       CacheBuilder
@@ -113,6 +114,13 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
             case None =>
               persistentClientService.get(ClientId(makeSettings.Authentication.defaultClientId))
           }
+        case _: ReconnectRequest =>
+          maybeCredential match {
+            case Some(ClientCredential(clientId, clientSecret)) =>
+              persistentClientService.findByClientIdAndSecret(clientId, clientSecret)
+            case None =>
+              persistentClientService.get(ClientId(makeSettings.Authentication.defaultClientId))
+          }
         // For other flows going here, the client is retrieved normally
         // this means ClientCredentials and Implicit flows. Implicit will probably need more work
         case _ =>
@@ -127,6 +135,18 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
           case passwordRequest: PasswordRequest =>
             persistentUserService
               .findByEmailAndPassword(passwordRequest.username.toLowerCase(), passwordRequest.password)
+              .flatMap {
+                case Some(user) if !userIsRelatedToClient(client)(user) =>
+                  Future.failed(ClientAccessUnauthorizedException(user, client))
+                case other => Future.successful(other)
+              }
+          case reconnectRequest: ReconnectRequest =>
+            persistentUserService
+              .findByReconnectTokenAndPassword(
+                reconnectRequest.reconnectToken,
+                reconnectRequest.password,
+                validityDurationReconnectTokenSeconds
+              )
               .flatMap {
                 case Some(user) if !userIsRelatedToClient(client)(user) =>
                   Future.failed(ClientAccessUnauthorizedException(user, client))
