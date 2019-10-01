@@ -36,6 +36,7 @@ import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.crm.BasicCrmResponse._
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+import org.make.api.technical.security.SecurityHelper
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -325,7 +326,11 @@ case class SentEmail(status: String,
                      customId: String,
                      to: Seq[MessageDetails],
                      cc: Seq[MessageDetails],
-                     bcc: Seq[MessageDetails])
+                     bcc: Seq[MessageDetails]) {
+  override def toString =
+    s"SentEmail: (status = $status, errors = ${errors.map(_.mkString("[", ",", "]"))}, customId = $customId, to = ${to
+      .mkString("[", ",", "]")}, cc = ${cc.mkString("[", ",", "]")}, bcc = ${bcc.mkString("[", ",", "]")})"
+}
 
 object SentEmail {
   implicit val decoder: Decoder[SentEmail] =
@@ -336,7 +341,10 @@ case class SendMessageError(errorIdentifier: String,
                             errorCode: String,
                             statusCode: Int,
                             errorMessage: String,
-                            errorRelatedTo: String)
+                            errorRelatedTo: String) {
+  override def toString =
+    s"SendMessageError: (errorIdentifier = $errorIdentifier, errorCode = $errorCode, statusCode = $statusCode, errorMessage = $errorMessage, errorRelatedTo = $errorRelatedTo)"
+}
 
 object SendMessageError {
   implicit val decoder: Decoder[SendMessageError] =
@@ -345,7 +353,10 @@ object SendMessageError {
     )
 }
 
-case class MessageDetails(email: String, messageUuid: String, messageId: Long, messageHref: String)
+case class MessageDetails(email: String, messageUuid: String, messageId: Long, messageHref: String) {
+  override def toString =
+    s"MessageDetails: (email = ${SecurityHelper.anonymizeEmail(email)}, messageUuid = $messageUuid, messageId = $messageId, messageHref = $messageHref)"
+}
 
 object MessageDetails {
   implicit val decoder: Decoder[MessageDetails] =
