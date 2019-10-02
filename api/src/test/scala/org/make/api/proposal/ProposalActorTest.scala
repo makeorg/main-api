@@ -41,7 +41,7 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.scalatest.GivenWhenThen
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {

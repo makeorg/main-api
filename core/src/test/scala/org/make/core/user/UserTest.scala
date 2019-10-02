@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical}
 import org.scalatest._
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers {
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")

@@ -43,7 +43,7 @@ import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future

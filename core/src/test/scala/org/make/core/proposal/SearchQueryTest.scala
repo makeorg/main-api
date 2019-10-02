@@ -31,7 +31,7 @@ import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 
 class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers with ElasticDsl {
