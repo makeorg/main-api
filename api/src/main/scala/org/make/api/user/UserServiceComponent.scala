@@ -356,8 +356,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           language = language,
           profile = updatedProfile,
           hashedPassword = hashedPassword,
-          emailVerified = true,
-          lastConnection = DateHelper.now()
+          emailVerified = true
         )
 
       persistentUserService.updateSocialUser(updatedUser).map { userUpdated =>

@@ -987,7 +987,9 @@ trait DefaultPersistentUserServiceComponent
               column.genderName -> user.profile.flatMap(_.genderName),
               column.country -> user.country.value,
               column.language -> user.language.value,
-              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName))
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+              column.emailVerified -> user.emailVerified,
+              column.hashedPassword -> user.hashedPassword
             )
             .where(sqls.eq(column.uuid, user.userId.value))
         }.executeUpdate().apply() match {
