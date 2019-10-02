@@ -85,6 +85,31 @@ class PersistentFeatureServiceIT
           found.forall(persisted.contains) should be(true)
       }
     }
+
+    scenario("Get features by featureIds") {
+      val futurePersistedFeatureList: Future[Unit] = for {
+        _ <- persistentFeatureService.persist(
+          Feature(featureId = FeatureId("feature-1"), slug = "feature-1", name = "feature name")
+        )
+        _ <- persistentFeatureService.persist(
+          Feature(featureId = FeatureId("feature-2"), slug = "feature-2", name = "feature name")
+        )
+        _ <- persistentFeatureService.persist(
+          Feature(featureId = FeatureId("feature-3"), slug = "feature-3", name = "feature name")
+        )
+      } yield {}
+
+      val futureFeaturesLists: Future[Seq[Feature]] = for {
+        _        <- futurePersistedFeatureList
+        features <- persistentFeatureService.findByFeatureIds(Seq(FeatureId("feature-1"), FeatureId("feature-2")))
+      } yield features
+
+      whenReady(futureFeaturesLists, Timeout(3.seconds)) { result =>
+        result.size should be(2)
+        result.map(_.featureId) should contain(FeatureId("feature-1"))
+        result.map(_.featureId) should contain(FeatureId("feature-2"))
+      }
+    }
   }
 
   feature("One feature can be updated") {

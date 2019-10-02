@@ -30,6 +30,7 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.operation.{
   OperationOfQuestionServiceComponent,
   OperationServiceComponent,
@@ -124,7 +125,9 @@ trait DefaultQuestionApiComponent
     with MakeSettingsComponent
     with OperationServiceComponent
     with OperationOfQuestionServiceComponent
-    with PartnerServiceComponent =>
+    with PartnerServiceComponent
+    with FeatureServiceComponent
+    with ActiveFeatureServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -153,7 +156,18 @@ trait DefaultQuestionApiComponent
                     )
                   ) { partners =>
                     provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
-                      complete(QuestionDetailsResponse(question, operation, operationOfQuestion, partners, questions))
+                      provideAsync(findActiveFeatureSlugsByQuestionId(question.questionId)) { activeFeatureSlugs =>
+                        complete(
+                          QuestionDetailsResponse(
+                            question,
+                            operation,
+                            operationOfQuestion,
+                            partners,
+                            questions,
+                            activeFeatureSlugs
+                          )
+                        )
+                      }
                     }
                   }
                 }
@@ -184,6 +198,12 @@ trait DefaultQuestionApiComponent
             )
           }.sortBy(_.questionSlug)
         }
+      }
+    }
+
+    private def findActiveFeatureSlugsByQuestionId(questionId: QuestionId): Future[Seq[String]] = {
+      activeFeatureService.find(maybeQuestionId = Some(questionId)).flatMap { activeFeatures =>
+        featureService.findByFeatureIds(activeFeatures.map(_.featureId)).map(_.map(_.slug))
       }
     }
 

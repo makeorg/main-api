@@ -25,11 +25,18 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.feature.{
+  ActiveFeatureService,
+  ActiveFeatureServiceComponent,
+  FeatureService,
+  FeatureServiceComponent
+}
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature, FeatureId}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
@@ -59,7 +66,9 @@ class QuestionApiTest
     with OperationOfQuestionServiceComponent
     with PartnerServiceComponent
     with MakeSettingsComponent
-    with MakeAuthentication {
+    with MakeAuthentication
+    with FeatureServiceComponent
+    with ActiveFeatureServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -68,6 +77,8 @@ class QuestionApiTest
   override val operationService: OperationService = mock[OperationService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
   override val partnerService: PartnerService = mock[PartnerService]
+  override val featureService: FeatureService = mock[FeatureService]
+  override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -191,6 +202,12 @@ class QuestionApiTest
       weight = 20F
     )
     val partner2: Partner = partner.copy(partnerId = PartnerId("partner2"), name = "partner2")
+    val activeFeature1 = ActiveFeature(
+      activeFeatureId = ActiveFeatureId("af1"),
+      featureId = FeatureId("f1"),
+      maybeQuestionId = Some(baseQuestion.questionId)
+    )
+    val feature1 = Feature(featureId = FeatureId("f1"), name = "feature 1", slug = "f1")
 
     when(questionService.getQuestionByQuestionIdValueOrSlug(baseQuestion.slug))
       .thenReturn(Future.successful(Some(baseQuestion)))
@@ -209,6 +226,10 @@ class QuestionApiTest
         order = None
       )
     ).thenReturn(Future.successful(Seq(partner, partner2)))
+    when(activeFeatureService.find(maybeQuestionId = Some(baseQuestion.questionId)))
+      .thenReturn(Future.successful(Seq(activeFeature1)))
+    when(featureService.findByFeatureIds(featureIds = Seq(FeatureId("f1"))))
+      .thenReturn(Future.successful(Seq(feature1)))
 
     when(operationOfQuestionService.findByOperationId(baseOperationOfQuestion.operationId))
       .thenReturn(Future.successful(Seq(baseOperationOfQuestion)))
@@ -232,6 +253,7 @@ class QuestionApiTest
         questionDetailsResponse.endDate should be(baseOperationOfQuestion.endDate)
         questionDetailsResponse.operation.questions.size should be(1)
         questionDetailsResponse.operation.questions.map(_.questionId) should contain(baseQuestion.questionId)
+        questionDetailsResponse.activeFeatures should be(Seq("f1"))
       }
     }
     scenario("get by slug") {
