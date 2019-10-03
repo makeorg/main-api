@@ -65,7 +65,7 @@ class OperationOfQuestionSearchEngineIT
   override val elasticsearchExposedPort: Int = 30005
 
   private val eSIndexName: String = "operation-of-question-it-test"
-  private val eSDocType: String = "operation-of-question"
+  private val eSDocType: String = "_doc"
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
@@ -221,7 +221,7 @@ class OperationOfQuestionSearchEngineIT
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
-          uri = s"$elasticsearchEndpoint/$eSIndexName",
+          uri = s"$elasticsearchEndpoint/$eSIndexName?include_type_name=false",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
         )

@@ -47,7 +47,7 @@ trait IdeaSearchEngine {
 }
 
 object IdeaSearchEngine {
-  val ideaIndexName = "idea"
+  val ideaIndexName = "_doc"
 }
 
 trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with CirceFormatters {

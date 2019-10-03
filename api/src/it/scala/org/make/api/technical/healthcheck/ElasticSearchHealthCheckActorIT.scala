@@ -139,7 +139,7 @@ class ElasticSearchHealthCheckActorIT
     Await.result(elasticsearchClient.initialize(), 30.seconds)
 
     val proposalAlias: IndexAndType =
-      elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
+      elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalTypeName
 
     val insertFutures =
       elasticsearchClient.client.executeAsFuture(ElasticApi.indexInto(proposalAlias).doc(proposal.asJson.toString))

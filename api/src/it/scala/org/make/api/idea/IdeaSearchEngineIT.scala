@@ -67,7 +67,7 @@ class IdeaSearchEngineIT
   }
 
   private val eSIndexName: String = "ideaittest"
-  private val eSDocType: String = "idea"
+  private val eSDocType: String = "_doc"
 
   override val elasticsearchExposedPort: Int = 30001
 
@@ -134,7 +134,7 @@ class IdeaSearchEngineIT
       Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] = Http().singleRequest(
       HttpRequest(
-        uri = s"$elasticsearchEndpoint/$eSIndexName",
+        uri = s"$elasticsearchEndpoint/$eSIndexName?include_type_name=false",
         method = HttpMethods.PUT,
         entity = HttpEntity(ContentTypes.`application/json`, ideaMapping)
       )

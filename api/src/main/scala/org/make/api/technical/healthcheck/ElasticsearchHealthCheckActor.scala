@@ -46,7 +46,7 @@ class ElasticsearchHealthCheckActor(healthCheckExecutionContext: ExecutionContex
   lazy val client: ElasticClient = elasticsearchClient.client
 
   private val proposalAlias
-    : IndexAndType = elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
+    : IndexAndType = elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalTypeName
 
   override val techno: String = "elasticsearch"
 
