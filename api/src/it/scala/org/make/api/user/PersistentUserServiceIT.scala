@@ -812,7 +812,12 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           socialUser.copy(userId = UserId("new new social"), email = "2" + socialUser.email)
         )
         update <- persistentUserService.updateSocialUser(
-          user.copy(email = "to_be@ignored.fake", firstName = Some("new firstName"))
+          user.copy(
+            email = "to_be@ignored.fake",
+            firstName = Some("new firstName"),
+            emailVerified = false,
+            hashedPassword = Some("passpass")
+          )
         )
       } yield update
       whenReady(futureUpdate, Timeout(3.seconds)) { update =>
@@ -822,6 +827,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           val updatedUser = maybeUpdatedUser.get
           updatedUser.email should be("2" + socialUser.email)
           updatedUser.firstName should be(Some("new firstName"))
+          updatedUser.hashedPassword should be(Some("passpass"))
+          updatedUser.emailVerified should be(false)
         }
       }
     }
