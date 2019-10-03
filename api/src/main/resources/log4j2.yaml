@@ -29,6 +29,12 @@ Configuration:
         AppenderRef:
           - ref: AkkaConsole
           - ref: console
+      - name: org.make.constructr
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
       - name: org.apache.http
         level: error
         additivity: false
