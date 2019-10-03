@@ -21,6 +21,7 @@ package org.make.api.technical.crm
 
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
+import org.make.api.technical.security.SecurityHelper
 import org.make.core.Sharded
 import org.make.core.user.UserId
 import spray.json.{JsString, JsValue, JsonFormat}
@@ -48,7 +49,10 @@ case class SendEmail(id: String = "unknown",
                      emailId: Option[String] = None,
                      customCampaign: Option[String] = None,
                      monitoringCategory: Option[String] = None)
-    extends Sharded
+    extends Sharded {
+  override def toString =
+    s"SendEmail: (id = $id, from = $from, subject = $subject, textPart = $textPart, htmlPart = $htmlPart, useTemplateLanguage = $useTemplateLanguage, templateId = $templateId, variables = $variables, recipients = $recipients, headers = $headers, emailId = $emailId, customCampaign = $customCampaign, monitoringCategory = $monitoringCategory)"
+}
 
 object SendEmail {
 
@@ -164,7 +168,10 @@ object EmailDetail {
     Decoder.forProduct4("Email", "MessageUUID", "MessageID", "MessageHref")(EmailDetail.apply)
 }
 
-case class Recipient(email: String, name: Option[String] = None, variables: Option[Map[String, String]] = None)
+case class Recipient(email: String, name: Option[String] = None, variables: Option[Map[String, String]] = None) {
+  override def toString =
+    s"Recipient: (email = ${SecurityHelper.anonymizeEmail(email)}, name = ${name.flatMap(_.headOption)}, variables = $variables)"
+}
 
 object Recipient {
   implicit val encoder: Encoder[Recipient] =
