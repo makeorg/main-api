@@ -20,22 +20,23 @@
 package org.make.api.technical.crm
 
 import java.net.URL
+import java.nio.file.Path
 
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.StrictLogging
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.syntax._
 import io.circe.{Decoder, Printer}
 import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.crm.BasicCrmResponse._
-import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.make.api.technical.security.SecurityHelper
 
 import scala.collection.immutable
@@ -47,6 +48,14 @@ trait CrmClient {
   def manageContactList(manageContactList: ManageManyContacts)(
     implicit executionContext: ExecutionContext
   ): Future[ManageManyContactsResponse]
+
+  def manageContactListWithCsv(csvImport: CsvImport)(
+    implicit executionContext: ExecutionContext
+  ): Future[ManageContactsWithCsvResponse]
+
+  def sendCsv(listId: String, csv: Path)(implicit executionContext: ExecutionContext): Future[SendCsvResponse]
+
+  def monitorCsvImport(jobId: Long)(implicit executionContext: ExecutionContext): Future[ManageContactsWithCsvResponse]
 
   def sendEmail(message: SendMessages)(implicit executionContext: ExecutionContext): Future[SendEmailResponse]
 
@@ -125,6 +134,78 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
             Future.failed(CrmClientException(s"manageContactList failed with status $code: $response"))
+          }
+      }
+    }
+
+    override def sendCsv(listId: String,
+                         csv: Path)(implicit executionContext: ExecutionContext): Future[SendCsvResponse] = {
+      val request: HttpRequest = HttpRequest(
+        method = HttpMethods.POST,
+        uri = Uri(s"${mailJetConfiguration.url}/v3/DATA/contactslist/$listId/CSVData/application:octet-stream"),
+        headers = immutable
+          .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
+        entity = HttpEntity(contentType = ContentTypes.`application/octet-stream`, data = FileIO.fromPath(csv))
+      )
+      doHttpCall(request).flatMap {
+        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
+          Unmarshal(responseEntity).to[SendCsvResponse]
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("sendCsv", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"send csv failed with status $code: $response"))
+          }
+      }
+    }
+
+    override def manageContactListWithCsv(
+      csvImport: CsvImport
+    )(implicit executionContext: ExecutionContext): Future[ManageContactsWithCsvResponse] = {
+      val request: HttpRequest =
+        HttpRequest(
+          method = HttpMethods.POST,
+          uri = Uri(s"${mailJetConfiguration.url}/v3/REST/csvimport"),
+          headers = immutable
+            .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
+          entity = HttpEntity(ContentTypes.`application/json`, printer.print(csvImport.asJson))
+        )
+      doHttpCall(request).flatMap {
+        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
+          Unmarshal(responseEntity).to[ManageContactsWithCsvResponse]
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("manageContactListWithCsv", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"csv import failed with status $code: $response"))
+          }
+      }
+    }
+
+    override def monitorCsvImport(
+      jobId: Long
+    )(implicit executionContext: ExecutionContext): Future[ManageContactsWithCsvResponse] = {
+      val request: HttpRequest =
+        HttpRequest(
+          method = HttpMethods.GET,
+          uri = Uri(s"${mailJetConfiguration.url}/v3/REST/csvimport/$jobId"),
+          headers = immutable
+            .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey)))
+        )
+      doHttpCall(request).flatMap {
+        case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
+          Unmarshal(responseEntity).to[ManageContactsWithCsvResponse]
+        case HttpResponse(StatusCodes.TooManyRequests, _, responseEntity, _) =>
+          Unmarshal(responseEntity).to[String].flatMap { response =>
+            Future.failed(QuotaExceeded("monitorCsvImport", response))
+          }
+        case HttpResponse(code, _, entity, _) =>
+          Unmarshal(entity).to[String].flatMap { response =>
+            Future.failed(CrmClientException(s"monitor csv import failed with status $code: $response"))
           }
       }
     }
@@ -321,6 +402,13 @@ object SendEmailResponse {
     Decoder.forProduct1("Messages")(SendEmailResponse.apply)
 }
 
+case class SendCsvResponse(csvId: Long)
+
+object SendCsvResponse {
+  implicit val decoder: Decoder[SendCsvResponse] =
+    Decoder.forProduct1("ID")(SendCsvResponse.apply)
+}
+
 case class SentEmail(status: String,
                      errors: Option[Seq[SendMessageError]],
                      customId: String,
@@ -373,6 +461,7 @@ object BasicCrmResponse {
   type ManageManyContactsResponse = BasicCrmResponse[JobId]
   type ManageManyContactsJobDetailsResponse = BasicCrmResponse[JobDetailsResponse]
   type GetMailjetContactProperties = BasicCrmResponse[MailjetContactProperties]
+  type ManageContactsWithCsvResponse = BasicCrmResponse[CsvImportResponse]
 
   implicit val contactsResponseDecoder: Decoder[ContactsResponse] = createDecoder[ContactDataResponse]
   implicit val manageManyContactsResponseDecoder: Decoder[ManageManyContactsResponse] = createDecoder[JobId]
@@ -380,7 +469,16 @@ object BasicCrmResponse {
     createDecoder[JobDetailsResponse]
   implicit val getMailjetContactPropertiesResponseDecoder: Decoder[GetMailjetContactProperties] =
     createDecoder[MailjetContactProperties]
+  implicit val manageContactsWithCsvResponseDecoder: Decoder[ManageContactsWithCsvResponse] =
+    createDecoder[CsvImportResponse]
 
+}
+
+case class CsvImportResponse(jobId: Long, dataId: Long, errorCount: Int, status: String)
+
+object CsvImportResponse {
+  implicit val decoder: Decoder[CsvImportResponse] =
+    Decoder.forProduct4("ID", "DataID", "Errcount", "Status")(CsvImportResponse.apply)
 }
 
 case class ContactDataResponse(isExcludedFromCampaigns: Boolean,

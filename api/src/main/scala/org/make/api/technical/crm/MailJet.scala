@@ -257,7 +257,29 @@ object ManageContactAction {
   }
 }
 
-case class Contact(email: String, name: Option[String] = None, properties: Option[ContactProperties] = None)
+case class ImportOptions(dateTimeFormat: String) {
+  override def toString: String = {
+    s"""{"DateTimeFormat": "$dateTimeFormat","TimezoneOffset": 0,"FieldNames": ${ContactProperties.getCsvHeader}}"""
+  }
+}
+
+case class CsvImport(listId: String, csvId: String, method: ManageContactAction, importOptions: String)
+
+object CsvImport {
+  implicit val encoder: Encoder[CsvImport] =
+    Encoder.forProduct4("ContactsListID", "DataID", "Method", "ImportOptions") { csvImport: CsvImport =>
+      (csvImport.listId, csvImport.csvId, csvImport.method, csvImport.importOptions)
+    }
+}
+
+case class Contact(email: String, name: Option[String] = None, properties: Option[ContactProperties] = None) {
+  def toStringCsv: String = {
+    properties match {
+      case None       => ""
+      case Some(prop) => s"""\"$email\",${prop.toStringCsv}"""
+    }
+  }
+}
 object Contact {
   implicit val encoder: Encoder[Contact] = Encoder.forProduct3("Email", "Name", "Properties") { contact: Contact =>
     (contact.email, contact.name, contact.properties)
@@ -369,6 +391,15 @@ case class ContactProperties(userId: Option[UserId],
       ContactProperty("Updated_at", updatedAt)
     )
   }
+
+  def toStringCsv: String = {
+    toContactPropertySeq.map { properties =>
+      properties.value match {
+        case None             => ""
+        case Some(properties) => s"""\"${properties.toString.replace("\"", "\\\"")}\""""
+      }
+    }.mkString(",")
+  }
 }
 
 object ContactProperties {
@@ -403,4 +434,36 @@ object ContactProperties {
         ("Updated_at", contactProperties.updatedAt.asJson)
       )
     }
+
+  val getCsvHeader: String = {
+    Seq(
+      "email",
+      "UserId",
+      "Firstname",
+      "Zipcode",
+      "Date_Of_Birth",
+      "Email_Validation_Status",
+      "Email_Hardbounce_Status",
+      "Unsubscribe_Status",
+      "Account_Creation_Date",
+      "Account_creation_source",
+      "Account_creation_origin",
+      "Account_Creation_Operation",
+      "Account_Creation_Country",
+      "Countries_activity",
+      "Last_country_activity",
+      "Last_language_activity",
+      "Total_Number_Proposals",
+      "Total_number_votes",
+      "First_Contribution_Date",
+      "Last_Contribution_Date",
+      "Operation_activity",
+      "Source_activity",
+      "Active_core",
+      "Days_of_Activity",
+      "Days_of_Activity_30d",
+      "User_type",
+      "Updated_at"
+    ).map(name => s"""\"$name\"""").mkString("[", ",", "]")
+  }
 }

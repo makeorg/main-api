@@ -68,6 +68,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io
 
 class CrmServiceComponentTest
     extends MakeUnitTest
@@ -315,6 +316,36 @@ class CrmServiceComponentTest
     anonymousParticipation = false
   )
 
+  val fooCrmUser = PersistentCrmUser(
+    userId = "user-id",
+    email = "foo@example.com",
+    fullName = "Foo",
+    firstname = "Foo",
+    zipcode = None,
+    dateOfBirth = None,
+    emailValidationStatus = true,
+    emailHardbounceStatus = false,
+    unsubscribeStatus = false,
+    accountCreationDate = None,
+    accountCreationSource = None,
+    accountCreationOrigin = None,
+    accountCreationOperation = None,
+    accountCreationCountry = None,
+    countriesActivity = None,
+    lastCountryActivity = Some("FR"),
+    lastLanguageActivity = Some("fr"),
+    totalNumberProposals = Some(42),
+    totalNumberVotes = Some(1337),
+    firstContributionDate = None,
+    lastContributionDate = None,
+    operationActivity = None,
+    sourceActivity = None,
+    activeCore = None,
+    daysOfActivity = None,
+    daysOfActivity30d = None,
+    userType = None
+  )
+
   val registerCitizenEventEnvelope = EventEnvelope(
     offset = Offset.noOffset,
     persistenceId = "foo-persistance-id",
@@ -496,11 +527,11 @@ class CrmServiceComponentTest
         maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
         maybeProperties.firstName shouldBe Some("Foo")
         maybeProperties.postalCode shouldBe Some("93")
-        maybeProperties.dateOfBirth shouldBe Some("2000-01-01T00:00:00Z")
+        maybeProperties.dateOfBirth shouldBe Some("2000-01-01 00:00:00")
         maybeProperties.emailValidationStatus shouldBe Some(true)
         maybeProperties.emailHardBounceValue shouldBe Some(false)
         maybeProperties.unsubscribeStatus shouldBe Some(false)
-        maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
+        maybeProperties.accountCreationDate shouldBe Some("2017-06-01 12:30:40")
         maybeProperties.accountCreationSource shouldBe Some("core")
         maybeProperties.accountCreationOrigin shouldBe None
         maybeProperties.accountCreationSlug shouldBe None
@@ -517,7 +548,10 @@ class CrmServiceComponentTest
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
-        val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
+        val updatedAt: ZonedDateTime = ZonedDateTime.parse(
+          maybeProperties.updatedAt.getOrElse(""),
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+        )
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
       }
     }
@@ -527,7 +561,7 @@ class CrmServiceComponentTest
       When("I get user properties")
 
       val dateFormatter: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
       val futureProperties = crmService.getPropertiesFromUser(
         userWithoutRegisteredEventAfterDateFix,
         new QuestionResolver(Seq.empty, Map.empty)
@@ -537,7 +571,7 @@ class CrmServiceComponentTest
         maybeProperties.userId shouldBe Some(UserId("user-without-registered-event"))
         maybeProperties.firstName shouldBe Some("Foo")
         maybeProperties.postalCode shouldBe Some("93")
-        maybeProperties.dateOfBirth shouldBe Some("2000-01-01T00:00:00Z")
+        maybeProperties.dateOfBirth shouldBe Some("2000-01-01 00:00:00")
         maybeProperties.emailValidationStatus shouldBe Some(true)
         maybeProperties.emailHardBounceValue shouldBe Some(false)
         maybeProperties.unsubscribeStatus shouldBe Some(false)
@@ -558,7 +592,10 @@ class CrmServiceComponentTest
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
-        val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
+        val updatedAt: ZonedDateTime = ZonedDateTime.parse(
+          maybeProperties.updatedAt.getOrElse(""),
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+        )
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
       }
     }
@@ -640,11 +677,11 @@ class CrmServiceComponentTest
         maybeProperties.userId shouldBe Some(UserId("1"))
         maybeProperties.firstName shouldBe Some("Foo")
         maybeProperties.postalCode shouldBe Some("93")
-        maybeProperties.dateOfBirth shouldBe Some("2000-01-01T00:00:00Z")
+        maybeProperties.dateOfBirth shouldBe Some("2000-01-01 00:00:00")
         maybeProperties.emailValidationStatus shouldBe Some(true)
         maybeProperties.emailHardBounceValue shouldBe Some(false)
         maybeProperties.unsubscribeStatus shouldBe Some(false)
-        maybeProperties.accountCreationDate shouldBe Some("2017-06-01T12:30:40Z")
+        maybeProperties.accountCreationDate shouldBe Some("2017-06-01 12:30:40")
         maybeProperties.accountCreationSource shouldBe Some("core")
         maybeProperties.accountCreationOrigin shouldBe None
         maybeProperties.accountCreationSlug shouldBe Some("chance-aux-jeunes")
@@ -654,11 +691,11 @@ class CrmServiceComponentTest
         maybeProperties.lastLanguageActivity shouldBe Some("fr")
         maybeProperties.totalProposals shouldBe Some(1)
         maybeProperties.totalVotes shouldBe Some(5)
-        maybeProperties.firstContributionDate shouldBe Some("2017-06-01T12:30:40Z")
+        maybeProperties.firstContributionDate shouldBe Some("2017-06-01 12:30:40")
         maybeProperties.lastContributionDate shouldBe Some(
           zonedDateTimeInThePastAt31daysBefore
             .plusDays(2)
-            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC))
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC))
         )
         maybeProperties.operationActivity.toSeq.flatMap(_.split(",").toSeq).sorted shouldBe Seq(
           "chance-aux-jeunes",
@@ -669,7 +706,10 @@ class CrmServiceComponentTest
         maybeProperties.daysOfActivity shouldBe Some(3)
         maybeProperties.daysOfActivity30 shouldBe Some(1)
         maybeProperties.userType shouldBe Some("B2C")
-        val updatedAt: ZonedDateTime = ZonedDateTime.parse(maybeProperties.updatedAt.getOrElse(""))
+        val updatedAt: ZonedDateTime = ZonedDateTime.parse(
+          maybeProperties.updatedAt.getOrElse(""),
+          DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+        )
         updatedAt.isBefore(DateHelper.now()) && updatedAt.isAfter(DateHelper.now().minusSeconds(10)) shouldBe true
       }
     }
@@ -734,89 +774,6 @@ class CrmServiceComponentTest
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
         verify(persistentUserToAnonymizeService)
           .removeAllByEmails(Seq("invalid"))
-      }
-    }
-  }
-
-  feature("synchronizing list") {
-    scenario("no user to synchronize") {
-      when(
-        persistentCrmUserService.list(unsubscribed = Some(false), hardBounced = false, page = 0, numberPerPage = 1000)
-      ).thenReturn(Future.successful(Seq.empty))
-
-      whenReady(crmService.synchronizeList(DateHelper.now().toString, CrmList.OptIn), Timeout(2.seconds)) { _ =>
-        // Synchro should somewhat end
-      }
-    }
-
-    scenario("multiple users") {
-      when(persistentCrmUserService.list(matches(Some(true)), matches(false), any[Int], any[Int]))
-        .thenReturn(
-          Future.successful(Seq(persistentCrmUser("1"), persistentCrmUser("2"))),
-          Future.successful(Seq(persistentCrmUser("3"), persistentCrmUser("4"))),
-          Future.successful(Seq(persistentCrmUser("5"), persistentCrmUser("6"))),
-          Future.successful(Seq(persistentCrmUser("7"), persistentCrmUser("8"))),
-          Future.successful(Seq(persistentCrmUser("9"), persistentCrmUser("10"))),
-          Future.successful(Seq.empty)
-        )
-
-      when(crmClient.manageContactList(any[ManageManyContacts])(any[ExecutionContext])).thenReturn(
-        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(1L)))),
-        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(2L)))),
-        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(3L)))),
-        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(4L)))),
-        Future.successful(BasicCrmResponse(1, 1, Seq(JobId(5L))))
-      )
-
-      when(crmClient.manageContactListJobDetails(matches("1"))(any[ExecutionContext]))
-        .thenReturn(
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
-        )
-
-      when(crmClient.manageContactListJobDetails(matches("2"))(any[ExecutionContext]))
-        .thenReturn(
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
-        )
-
-      when(crmClient.manageContactListJobDetails(matches("3"))(any[ExecutionContext]))
-        .thenReturn(
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
-        )
-
-      when(crmClient.manageContactListJobDetails(matches("4"))(any[ExecutionContext]))
-        .thenReturn(
-          Future.failed(new IllegalStateException("Don't worry, this exception is fake")),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Completed"))))
-        )
-
-      when(crmClient.manageContactListJobDetails(matches("5"))(any[ExecutionContext]))
-        .thenReturn(
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Pending")))),
-          Future.successful(BasicCrmResponse(1, 1, Seq(JobDetailsResponse(Seq.empty, 0, "", "", "", "", "Error"))))
-        )
-
-      whenReady(crmService.synchronizeList(DateHelper.now().toString, CrmList.OptOut), Timeout(60.seconds)) { _ =>
-        Mockito
-          .verify(crmClient, Mockito.times(25))
-          .manageContactListJobDetails(any[String])(any[ExecutionContext])
       }
     }
   }
@@ -1195,6 +1152,87 @@ class CrmServiceComponentTest
         RequestContext.empty.copy(operationId = Some(OperationId("unknown")))
       ) should be(None)
 
+    }
+  }
+
+  feature("create csv") {
+    scenario("create csv from contact") {
+      val contact = Contact(
+        email = "test@exemple.com",
+        name = Some("test"),
+        properties = Some(
+          ContactProperties(
+            userId = Some(UserId("user")),
+            firstName = Some("test"),
+            postalCode = None,
+            dateOfBirth = Some("1992-01-01 00:00:00"),
+            emailValidationStatus = Some(true),
+            emailHardBounceValue = Some(false),
+            unsubscribeStatus = Some(false),
+            accountCreationDate = Some("2019-10-07 10:45:10"),
+            accountCreationSource = None,
+            accountCreationOrigin = None,
+            accountCreationSlug = None,
+            accountCreationCountry = Some("FR"),
+            countriesActivity = Some("FR"),
+            lastCountryActivity = Some("FR"),
+            lastLanguageActivity = Some("fr"),
+            totalProposals = Some(42),
+            totalVotes = Some(1337),
+            firstContributionDate = Some("2019-04-15 15:24:17"),
+            lastContributionDate = Some("2019-10-07 10:47:42"),
+            operationActivity = None,
+            sourceActivity = None,
+            activeCore = None,
+            daysOfActivity = None,
+            daysOfActivity30 = None,
+            userType = None,
+            updatedAt = Some("2019-10-06 02:00:00")
+          )
+        )
+      )
+
+      contact.toStringCsv should be(
+        """"test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00""""
+      )
+    }
+  }
+
+  feature("create csv stream") {
+    scenario("create csv") {
+      when(
+        persistentCrmUserService
+          .list(
+            unsubscribed = CrmList.OptIn.unsubscribed,
+            hardBounced = CrmList.OptIn.hardBounced,
+            0,
+            mailJetConfiguration.userListBatchSize
+          )
+      ).thenReturn(Future.successful(Seq(fooCrmUser)))
+
+      when(
+        persistentCrmUserService
+          .list(
+            unsubscribed = CrmList.OptIn.unsubscribed,
+            hardBounced = CrmList.OptIn.hardBounced,
+            1,
+            mailJetConfiguration.userListBatchSize
+          )
+      ).thenReturn(Future.successful(Seq.empty))
+
+      val dateFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+
+      val formattedDate = DateHelper.now().format(dateFormatter)
+
+      whenReady(crmService.createCsv(formattedDate, CrmList.OptIn), Timeout(30.seconds)) { file =>
+        val bufferedFile = io.Source.fromFile(file.toFile)
+        val firstLine = bufferedFile.getLines.toSeq.head
+        firstLine should be(
+          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
+        )
+        bufferedFile.close()
+      }
     }
   }
 }

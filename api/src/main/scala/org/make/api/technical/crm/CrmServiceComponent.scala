@@ -19,6 +19,8 @@
 
 package org.make.api.technical.crm
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
@@ -27,7 +29,8 @@ import java.util.concurrent.{Executors, ThreadFactory}
 import akka.NotUsed
 import akka.persistence.query.EventEnvelope
 import akka.stream._
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{FileIO, Sink, Source}
+import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.Decoder
@@ -45,8 +48,8 @@ import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
 import org.make.core.operation.OperationId
+import org.make.core.proposal._
 import org.make.core.proposal.indexed.ProposalsSearchResult
-import org.make.core.proposal.{ProposalStatus, SearchFilters, SearchQuery, StatusSearchFilter, UserSearchFilter}
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
@@ -135,9 +138,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     implicit private val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 
-    private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'00:00:00'Z'")
+    private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 00:00:00")
     private val dateFormatter: DateTimeFormatter =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
+      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
     private val dayDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("ddMMyyyy").withZone(ZoneOffset.UTC)
 
     override def sendEmail(message: SendEmail): Future[Unit] = {
@@ -217,7 +220,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     override def synchronizeContactsWithCrm(): Future[Unit] = {
       val startTime: Long = System.currentTimeMillis()
-      val synchronizationTime = DateHelper.now().toString
+      val synchronizationTime = DateHelper.now().format(dateFormatter)
 
       val crmSynchronization =
         for {
@@ -236,6 +239,89 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
 
       crmSynchronization
+    }
+
+    def createCsv(formattedDate: String, list: CrmList): Future[Path] = {
+      val file = Files.createTempFile("contacts", ".csv")
+      file.toFile.deleteOnExit()
+      StreamUtils
+        .asyncPageToPageSource(persistentCrmUserService.list(list.unsubscribed, list.hardBounced, _, batchSize))
+        .mapConcat(_.toVector)
+        .map { crmUser =>
+          Contact(
+            email = crmUser.email,
+            name = Some(crmUser.fullName),
+            properties = Some(crmUser.toContactProperties(Some(formattedDate)))
+          ).toStringCsv
+        }
+        .map(ByteString.apply(_, StandardCharsets.UTF_8))
+        .runWith(FileIO.toPath(file))
+        .map(_ => file)
+    }
+
+    private def sendCsvToHardBounceList(csv: Path, list: CrmList): Future[Long] = {
+      for {
+        csvId <- crmClient.sendCsv(mailJetConfiguration.hardBounceListId, csv)
+        response <- crmClient.manageContactListWithCsv(
+          CsvImport(
+            mailJetConfiguration.hardBounceListId,
+            csvId.csvId.toString,
+            list.actionOnHardBounce,
+            ImportOptions("yyyy-mm-dd hh:nn:ss").toString
+          )
+        )
+      } yield {
+        response.data.head.jobId
+      }
+    }
+
+    private def sendCsvToOptInList(csv: Path, list: CrmList): Future[Long] = {
+      for {
+        csvId <- crmClient.sendCsv(mailJetConfiguration.optInListId, csv)
+        response <- crmClient.manageContactListWithCsv(
+          CsvImport(
+            mailJetConfiguration.optInListId,
+            csvId.csvId.toString,
+            list.actionOnOptIn,
+            ImportOptions("yyyy-mm-dd hh:nn:ss").toString
+          )
+        )
+      } yield {
+        response.data.head.jobId
+      }
+    }
+
+    private def sendCsvToUnsubscribeList(csv: Path, list: CrmList): Future[Long] = {
+      for {
+        csvId <- crmClient.sendCsv(mailJetConfiguration.unsubscribeListId, csv)
+        response <- crmClient.manageContactListWithCsv(
+          CsvImport(
+            mailJetConfiguration.unsubscribeListId,
+            csvId.csvId.toString,
+            list.actionOnOptOut,
+            ImportOptions("yyyy-mm-dd hh:nn:ss").toString
+          )
+        )
+      } yield {
+        response.data.head.jobId
+      }
+    }
+
+    override def synchronizeList(formattedDate: String, list: CrmList): Future[Unit] = {
+      createCsv(formattedDate, list).flatMap {
+        case csv if Files.size(csv) > 0 =>
+          for {
+            responseHardBouunce <- sendCsvToHardBounceList(csv, list)
+            responseOptIn       <- sendCsvToOptInList(csv, list)
+            responseUnsubscribe <- sendCsvToUnsubscribeList(csv, list)
+          } yield {
+            val jobIds = Seq(responseHardBouunce, responseOptIn, responseUnsubscribe)
+            val promise = Promise[Unit]()
+            actorSystem.actorOf(CrmSynchroCsvMonitor.props(crmClient, jobIds, promise))
+            promise.future
+          }
+        case _ => Future.successful {}
+      }
     }
 
     private def computeAndPersistCrmUsers(questionResolver: QuestionResolver): Future[Unit] = {
@@ -259,38 +345,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         }
         .runWith(Sink.ignore)
         .map(_ => logger.info(s"Crm users creation completed in ${System.currentTimeMillis() - start} ms"))
-    }
-
-    override def synchronizeList(formattedDate: String, list: CrmList): Future[Unit] = {
-
-      val actions = Seq(
-        ContactList(mailJetConfiguration.hardBounceListId, list.actionOnHardBounce),
-        ContactList(mailJetConfiguration.unsubscribeListId, list.actionOnOptOut),
-        ContactList(mailJetConfiguration.optInListId, list.actionOnOptIn)
-      )
-
-      StreamUtils
-        .asyncPageToPageSource(persistentCrmUserService.list(list.unsubscribed, list.hardBounced, _, batchSize))
-        .map { crmUsers =>
-          val contacts = crmUsers.map { crmUser =>
-            Contact(
-              email = crmUser.email,
-              name = Some(crmUser.fullName),
-              properties = Some(crmUser.toContactProperties(Some(formattedDate)))
-            )
-          }
-          ManageManyContacts(contacts = contacts, contactList = actions)
-        }
-        .mapAsync(1)(crmClient.manageContactList(_).withoutFailure)
-        .collect {
-          case Right(BasicCrmResponse(_, _, Seq(JobId(jobId)))) => jobId.toString
-        }
-        .runFold[List[String]](Nil) { case (accumulator, value) => value :: accumulator }
-        .flatMap { jobIds =>
-          val promise = Promise[Unit]()
-          actorSystem.actorOf(CrmJobChecker.props(crmClient, jobIds, promise))
-          promise.future
-        }
     }
 
     final def deleteAnonymizedContacts(emails: Seq[String]): Future[Unit] = {
