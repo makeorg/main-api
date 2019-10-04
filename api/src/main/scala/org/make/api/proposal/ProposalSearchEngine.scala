@@ -58,7 +58,7 @@ trait ProposalSearchEngine {
 }
 
 object ProposalSearchEngine {
-  val proposalIndexName: String = "proposal"
+  val proposalTypeName: String = "_doc"
 }
 
 trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent {
@@ -71,7 +71,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     private lazy val client = elasticsearchClient.client
 
     private val proposalAlias: IndexAndType =
-      elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalIndexName
+      elasticsearchConfiguration.proposalAliasName / ProposalSearchEngine.proposalTypeName
 
     override def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
       client.executeAsFuture(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])
@@ -83,9 +83,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val seed: Int = DateHelper.now().toEpochSecond.toInt
 
-      val query: IdQuery = idsQuery(ids = proposalIds.map(_.value)).types("proposal")
+      val query: IdQuery = idsQuery(ids = proposalIds.map(_.value))
       val randomQuery: FunctionScoreQuery =
-        functionScoreQuery(idsQuery(ids = proposalIds.map(_.value)).types("proposal")).functions(Seq(randomScore(seed)))
+        functionScoreQuery(idsQuery(ids = proposalIds.map(_.value))).functions(Seq(randomScore(seed)))
 
       val request: ElasticSearchRequest = searchWithType(proposalAlias)
         .query(if (random) randomQuery else query)

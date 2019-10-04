@@ -25,7 +25,7 @@ object Dependencies {
   private val akkaHttpVersion = "10.1.10"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
-  private val elastic4sVersion = "6.5.1"
+  private val elastic4sVersion = "6.7.3"
   private val kamonVersion = "2.0.0"
   private val kamonAkkaVersion = "2.0.0"
   private val kamonAkkaHttpVersion = "2.0.1"
@@ -117,7 +117,6 @@ object Dependencies {
 
   val configuration: ModuleID = "com.typesafe" % "config" % "1.3.3"
 
-  // TODO: find a working version
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
   val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion

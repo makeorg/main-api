@@ -35,7 +35,7 @@ trait DockerElasticsearchService extends DockerKit {
   def elasticsearchExposedPort: Int
 
   val defaultElasticsearchProposalIndex = "proposals"
-  val defaultElasticsearchProposalDocType = "proposal"
+  val defaultElasticsearchProposalDocType = "_doc"
 
   private def elasticSearchContainer =
     DockerContainer("makeorg/make-elasticsearch:6.8.2", name = Some(getClass.getSimpleName))

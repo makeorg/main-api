@@ -48,7 +48,7 @@ trait OrganisationSearchEngine {
 }
 
 object OrganisationSearchEngine {
-  val organisationIndexName = "organisation"
+  val organisationIndexName = "_doc"
 }
 
 trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineComponent with CirceFormatters {
