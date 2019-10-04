@@ -21,7 +21,7 @@ package org.make.api.technical
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.cluster.Cluster
-import de.heikoseeberger.constructr.coordination.Coordination
+import org.make.constructr.coordination.Coordination
 import org.make.api.technical.MakeDowningActor.AutoDown
 
 import scala.concurrent.duration.DurationInt

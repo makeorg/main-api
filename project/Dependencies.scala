@@ -66,7 +66,7 @@ object Dependencies {
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
   val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"
-  // Version 0.6.0 will support 2.13
+  // TODO: Version 0.6.0 will support 2.13
   val kryoSerializer: ModuleID = "com.github.romix.akka" %% "akka-kryo-serialization" % "0.5.2"
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
@@ -87,11 +87,9 @@ object Dependencies {
 
   val kanela: ModuleID = "io.kamon" % "kanela-agent" % kanelaVersion
 
-  // TODO: fork it! https://github.com/hseeberger/constructr
-  val constructr: ModuleID = "de.heikoseeberger" %% "constructr" % "0.19.0"
-  // TODO: fork it! https://github.com/typesafehub/constructr-zookeeper
+  val constructr: ModuleID = "org.make.constructr" %% "constructr" % "0.20.0"
   val constructrZookeeper: ModuleID =
-    ("com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.4.1").exclude("log4j", "log4j")
+    ("org.make.constructr" %% "constructr-coordination-zookeeper" % "0.5.0").exclude("log4j", "log4j")
 
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.5.0"
   val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "4.1"
