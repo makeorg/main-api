@@ -180,10 +180,10 @@ object Validation extends StrictLogging {
     validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
-  def validChoices(fieldName: String,
-                   message: Option[String] = None,
-                   userChoices: Seq[_],
-                   validChoices: Seq[_]): Requirement = {
+  def validChoices[T](fieldName: String,
+                      message: Option[String] = None,
+                      userChoices: Seq[T],
+                      validChoices: Seq[T]): Requirement = {
     val condition: () => Boolean = () => {
       userChoices.forall(validChoices.contains)
     }

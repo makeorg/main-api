@@ -332,8 +332,8 @@ trait DefaultProposalApiComponent
                     Validation.validChoices(
                       fieldName = "operationKinds",
                       message =
-                        Some(s"Invalid operation kind. Expected one of: ${OperationKind.kindMap.keys.mkString("|")}"),
-                      Seq(opKinds),
+                        Some(s"Invalid operation kind. Expected one of: ${OperationKind.kindMap.keys.mkString(", ")}"),
+                      opKinds,
                       OperationKind.kindMap.keys.toSeq
                     )
                   }).flatten: _*)
@@ -364,8 +364,13 @@ trait DefaultProposalApiComponent
                     skip = skip,
                     isRandom = isRandom,
                     sortAlgorithm = sortAlgorithm,
-                    operationKinds =
-                      operationKinds.orElse(Some(Seq(GreatCause, PublicConsultation, BusinessConsultation)))
+                    operationKinds = operationKinds.orElse {
+                      if (questionIds.exists(_.nonEmpty)) {
+                        None
+                      } else {
+                        Some(Seq(GreatCause, PublicConsultation, BusinessConsultation))
+                      }
+                    }
                   )
                   provideAsync(
                     operationService
