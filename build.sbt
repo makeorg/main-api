@@ -25,7 +25,7 @@ import sbt.Keys.scalacOptions
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.10",
   licenses += "AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl.html"),
   coursierUseSbtCredentials := true,
   credentials ++= {
