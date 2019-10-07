@@ -292,7 +292,7 @@ trait ProposalIndexationStream
 
   private def executeIndexProposals(proposals: Seq[IndexedProposal], indexName: String): Future[Done] = {
     elasticsearchProposalAPI
-      .indexProposals(proposals, Some(IndexAndType(indexName, ProposalSearchEngine.proposalTypeName)))
+      .indexProposals(proposals, Some(IndexAndType(indexName, ProposalSearchEngine.proposalIndexName)))
       .flatMap { proposals =>
         semanticService.indexProposals(proposals).map(_ => Done)
       }

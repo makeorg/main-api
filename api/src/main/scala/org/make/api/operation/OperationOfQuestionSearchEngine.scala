@@ -53,7 +53,7 @@ trait OperationOfQuestionSearchEngine {
 }
 
 object OperationOfQuestionSearchEngine {
-  val operationOfQuestionIndexName = "_doc"
+  val operationOfQuestionIndexName = "operation-of-question"
 }
 
 trait DefaultOperationOfQuestionSearchEngineComponent

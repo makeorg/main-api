@@ -88,7 +88,7 @@ class ProposalSearchEngineIT
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
-          uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex?include_type_name=false",
+          uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
         )
@@ -109,10 +109,10 @@ class ProposalSearchEngineIT
       )
 
     val insertFutures = AkkaSource[IndexedProposal](proposals).map { proposal =>
-      val indexName = defaultElasticsearchProposalIndex
+      val indexAndDocTypeEndpoint = s"$defaultElasticsearchProposalIndex/$defaultElasticsearchProposalDocType"
       (
         HttpRequest(
-          uri = s"$elasticsearchEndpoint/$indexName/_doc/${proposal.id.value}",
+          uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${proposal.id.value}",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposal.asJson.toString)
         ),
@@ -1284,18 +1284,18 @@ class ProposalSearchEngineIT
 
   feature("search proposals by language and/or country") {
     Given("searching by language 'fr' or country 'IT'")
+    val queryLanguage =
+      SearchQuery(filters = Some(SearchFilters(language = Some(LanguageSearchFilter(language = Language("fr"))))))
+    val queryCountry =
+      SearchQuery(filters = Some(SearchFilters(country = Some(CountrySearchFilter(country = Country("IT"))))))
 
     scenario("should return a list of french proposals") {
-      val queryLanguage =
-        SearchQuery(filters = Some(SearchFilters(language = Some(LanguageSearchFilter(language = Language("fr"))))))
       whenReady(elasticsearchProposalAPI.searchProposals(queryLanguage), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.count(_.language == Language("fr")))
       }
     }
 
     scenario("should return a list of proposals from Italy") {
-      val queryCountry =
-        SearchQuery(filters = Some(SearchFilters(country = Some(CountrySearchFilter(country = Country("IT"))))))
       whenReady(elasticsearchProposalAPI.searchProposals(queryCountry), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.count(_.country == Country("IT")))
       }

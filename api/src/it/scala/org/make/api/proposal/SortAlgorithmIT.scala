@@ -84,7 +84,7 @@ class SortAlgorithmIT
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(
         HttpRequest(
-          uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex?include_type_name=false",
+          uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex",
           method = HttpMethods.PUT,
           entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
         )

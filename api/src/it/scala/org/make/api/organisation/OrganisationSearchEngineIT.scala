@@ -64,7 +64,7 @@ class OrganisationSearchEngineIT
   }
 
   private val eSIndexName: String = "organisation-it-test"
-  private val eSDocType: String = "_doc"
+  private val eSDocType: String = "organisation"
 
   override val elasticsearchExposedPort: Int = 30003
 
@@ -72,7 +72,7 @@ class OrganisationSearchEngineIT
     mock[ElasticsearchConfiguration]
   Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
   Mockito.when(elasticsearchConfiguration.organisationAliasName).thenReturn(eSIndexName)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSDocType)
+  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -139,7 +139,7 @@ class OrganisationSearchEngineIT
       Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
     val responseFuture: Future[HttpResponse] = Http().singleRequest(
       HttpRequest(
-        uri = s"$elasticsearchEndpoint/$eSIndexName?include_type_name=false",
+        uri = s"$elasticsearchEndpoint/$eSIndexName",
         method = HttpMethods.PUT,
         entity = HttpEntity(ContentTypes.`application/json`, organisationMapping)
       )

@@ -85,151 +85,153 @@
     }
   },
   "mappings": {
-    "dynamic": "strict",
-    "properties": {
-      "ideaId": {
-        "type": "keyword",
-        "index": true
-      },
-      "name": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          },
-          "fr": {
-            "type": "text",
-            "analyzer": "french_std"
-          },
-          "en": {
-            "type": "text",
-            "analyzer": "english_std"
-          },
-          "it": {
-            "type": "text",
-            "analyzer": "italian_std"
-          },
-          "de": {
-            "type": "text",
-            "analyzer": "german_std"
-          },
-          "bg": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "cs": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "da": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "nl": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "fi": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "el": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "hu": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "lv": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "lt": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "pt": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "ro": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "es": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "sv": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "pl": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "hr": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "et": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "mt": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "sk": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "sl": {
-            "type": "text",
-            "analyzer": "std"
-          },
-          "general": {
-            "type": "text"
+    "idea": {
+      "dynamic": "strict",
+      "properties": {
+        "ideaId": {
+          "type": "keyword",
+          "index": true
+        },
+        "name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "fr": {
+              "type": "text",
+              "analyzer": "french_std"
+            },
+            "en": {
+              "type": "text",
+              "analyzer": "english_std"
+            },
+            "it": {
+              "type": "text",
+              "analyzer": "italian_std"
+            },
+            "de": {
+              "type": "text",
+              "analyzer": "german_std"
+            },
+            "bg": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "cs": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "da": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "nl": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "fi": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "el": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "hu": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "lv": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "lt": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "pt": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "ro": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "es": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "sv": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "pl": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "hr": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "et": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "mt": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "sk": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "sl": {
+              "type": "text",
+              "analyzer": "std"
+            },
+            "general": {
+              "type": "text"
+            }
           }
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "date_time"
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "date_time"
+        },
+        "operationId": {
+          "type": "keyword",
+          "index": true
+        },
+        "questionId": {
+          "type": "keyword",
+          "index": true
+        },
+        "themeId": {
+          "type": "keyword",
+          "index": true
+        },
+        "question": {
+          "type": "keyword",
+          "index": true
+        },
+        "language": {
+          "type": "keyword",
+          "index": true
+        },
+        "country": {
+          "type": "keyword",
+          "index": true
+        },
+        "status": {
+          "type": "keyword",
+          "index": true
         }
-      },
-      "createdAt": {
-        "type": "date",
-        "format": "date_time"
-      },
-      "updatedAt": {
-        "type": "date",
-        "format": "date_time"
-      },
-      "operationId": {
-        "type": "keyword",
-        "index": true
-      },
-      "questionId": {
-        "type": "keyword",
-        "index": true
-      },
-      "themeId": {
-        "type": "keyword",
-        "index": true
-      },
-      "question": {
-        "type": "keyword",
-        "index": true
-      },
-      "language": {
-        "type": "keyword",
-        "index": true
-      },
-      "country": {
-        "type": "keyword",
-        "index": true
-      },
-      "status": {
-        "type": "keyword",
-        "index": true
       }
     }
   }

@@ -669,477 +669,479 @@
     }
   },
   "mappings": {
-    "dynamic": "strict",
-    "properties": {
-      "id": {
-        "type": "keyword",
-        "index": true
-      },
-      "userId": {
-        "type": "keyword",
-        "index": true
-      },
-      "question": {
-        "type": "object",
-        "properties": {
-          "questionId": {
-            "type": "keyword",
-            "index": true
-          },
-          "slug": {
-            "type": "keyword",
-            "index": true
-          },
-          "title": {
-            "type": "text",
-            "index": false
-          },
-          "question": {
-            "type": "text",
-            "index": false
-          },
-          "startDate": {
-            "type": "date",
-            "format": "date_time",
-            "index": false
-          },
-          "endDate": {
-            "type": "date",
-            "format": "date_time",
-            "index": false
-          },
-          "isOpen": {
-            "type": "boolean",
-            "index": true
+    "proposal": {
+      "dynamic": "strict",
+      "properties": {
+        "id": {
+          "type": "keyword",
+          "index": true
+        },
+        "userId": {
+          "type": "keyword",
+          "index": true
+        },
+        "question": {
+          "type": "object",
+          "properties": {
+            "questionId": {
+              "type": "keyword",
+              "index": true
+            },
+            "slug": {
+              "type": "keyword",
+              "index": true
+            },
+            "title": {
+              "type": "text",
+              "index": false
+            },
+            "question": {
+              "type": "text",
+              "index": false
+            },
+            "startDate": {
+              "type": "date",
+              "format": "date_time",
+              "index": false
+            },
+            "endDate": {
+              "type": "date",
+              "format": "date_time",
+              "index": false
+            },
+            "isOpen": {
+              "type": "boolean",
+              "index": true
+            }
           }
-        }
-      },
-      "content": {
-        "type": "text",
-        "index": true,
-        "fields": {
-          "fr": {
-            "type": "text",
-            "analyzer": "french_std"
-          },
-          "stemmed-fr": {
-            "type": "text",
-            "analyzer": "french_full"
-          },
-          "en": {
-            "type": "text",
-            "analyzer": "english_std"
-          },
-          "stemmed-en": {
-            "type": "text",
-            "analyzer": "english_full"
-          },
-          "it": {
-            "type": "text",
-            "analyzer": "italian_std"
-          },
-          "stemmed-it": {
-            "type": "text",
-            "analyzer": "italian_full"
-          },
-          "de": {
-            "type": "text",
-            "analyzer": "german_std"
-          },
-          "stemmed-de": {
-            "type": "text",
-            "analyzer": "german_full"
-          },
-          "bg": {
-            "type": "text",
-            "analyzer": "bulgarian_std"
-          },
-          "stemmed-bg": {
-            "type": "text",
-            "analyzer": "bulgarian_full"
-          },
-          "cs": {
-            "type": "text",
-            "analyzer": "czech_std"
-          },
-          "stemmed-cs": {
-            "type": "text",
-            "analyzer": "czech_full"
-          },
-          "da": {
-            "type": "text",
-            "analyzer": "danish_std"
-          },
-          "stemmed-da": {
-            "type": "text",
-            "analyzer": "danish_full"
-          },
-          "nl": {
-            "type": "text",
-            "analyzer": "dutch_std"
-          },
-          "stemmed-nl": {
-            "type": "text",
-            "analyzer": "dutch_full"
-          },
-          "fi": {
-            "type": "text",
-            "analyzer": "finnish_std"
-          },
-          "stemmed-fi": {
-            "type": "text",
-            "analyzer": "finnish_full"
-          },
-          "el": {
-            "type": "text",
-            "analyzer": "greek_std"
-          },
-          "stemmed-el": {
-            "type": "text",
-            "analyzer": "greek_full"
-          },
-          "hu": {
-            "type": "text",
-            "analyzer": "hungarian_std"
-          },
-          "stemmed-hu": {
-            "type": "text",
-            "analyzer": "hungarian_full"
-          },
-          "lv": {
-            "type": "text",
-            "analyzer": "latvian_std"
-          },
-          "stemmed-lv": {
-            "type": "text",
-            "analyzer": "latvian_full"
-          },
-          "lt": {
-            "type": "text",
-            "analyzer": "lithuanian_std"
-          },
-          "stemmed-lt": {
-            "type": "text",
-            "analyzer": "lithuanian_full"
-          },
-          "pt": {
-            "type": "text",
-            "analyzer": "portuguese_std"
-          },
-          "stemmed-pt": {
-            "type": "text",
-            "analyzer": "portuguese_full"
-          },
-          "ro": {
-            "type": "text",
-            "analyzer": "romanian_std"
-          },
-          "stemmed-ro": {
-            "type": "text",
-            "analyzer": "romanian_full"
-          },
-          "es": {
-            "type": "text",
-            "analyzer": "spanish_std"
-          },
-          "stemmed-es": {
-            "type": "text",
-            "analyzer": "spanish_full"
-          },
-          "sv": {
-            "type": "text",
-            "analyzer": "swedish_std"
-          },
-          "stemmed-sv": {
-            "type": "text",
-            "analyzer": "swedish_full"
-          },
-          "pl": {
-            "type": "text",
-            "analyzer": "polish_std"
-          },
-          "stemmed-pl": {
-            "type": "text",
-            "analyzer": "polish"
-          },
-          "hr": {
-            "type": "text",
-            "analyzer": "croatian_std"
-          },
-          "et": {
-            "type": "text",
-            "analyzer": "estonian_std"
-          },
-          "mt": {
-            "type": "text",
-            "analyzer": "maltese_std"
-          },
-          "sk": {
-            "type": "text",
-            "analyzer": "slovak_std"
-          },
-          "sl": {
-            "type": "text",
-            "analyzer": "slovenian_std"
-          },
-          "general": {
-            "type": "text"
+        },
+        "content": {
+          "type": "text",
+          "index": true,
+          "fields": {
+            "fr": {
+              "type": "text",
+              "analyzer": "french_std"
+            },
+            "stemmed-fr": {
+              "type": "text",
+              "analyzer": "french_full"
+            },
+            "en": {
+              "type": "text",
+              "analyzer": "english_std"
+            },
+            "stemmed-en": {
+              "type": "text",
+              "analyzer": "english_full"
+            },
+            "it": {
+              "type": "text",
+              "analyzer": "italian_std"
+            },
+            "stemmed-it": {
+              "type": "text",
+              "analyzer": "italian_full"
+            },
+            "de": {
+              "type": "text",
+              "analyzer": "german_std"
+            },
+            "stemmed-de": {
+              "type": "text",
+              "analyzer": "german_full"
+            },
+            "bg": {
+              "type": "text",
+              "analyzer": "bulgarian_std"
+            },
+            "stemmed-bg": {
+              "type": "text",
+              "analyzer": "bulgarian_full"
+            },
+            "cs": {
+              "type": "text",
+              "analyzer": "czech_std"
+            },
+            "stemmed-cs": {
+              "type": "text",
+              "analyzer": "czech_full"
+            },
+            "da": {
+              "type": "text",
+              "analyzer": "danish_std"
+            },
+            "stemmed-da": {
+              "type": "text",
+              "analyzer": "danish_full"
+            },
+            "nl": {
+              "type": "text",
+              "analyzer": "dutch_std"
+            },
+            "stemmed-nl": {
+              "type": "text",
+              "analyzer": "dutch_full"
+            },
+            "fi": {
+              "type": "text",
+              "analyzer": "finnish_std"
+            },
+            "stemmed-fi": {
+              "type": "text",
+              "analyzer": "finnish_full"
+            },
+            "el": {
+              "type": "text",
+              "analyzer": "greek_std"
+            },
+            "stemmed-el": {
+              "type": "text",
+              "analyzer": "greek_full"
+            },
+            "hu": {
+              "type": "text",
+              "analyzer": "hungarian_std"
+            },
+            "stemmed-hu": {
+              "type": "text",
+              "analyzer": "hungarian_full"
+            },
+            "lv": {
+              "type": "text",
+              "analyzer": "latvian_std"
+            },
+            "stemmed-lv": {
+              "type": "text",
+              "analyzer": "latvian_full"
+            },
+            "lt": {
+              "type": "text",
+              "analyzer": "lithuanian_std"
+            },
+            "stemmed-lt": {
+              "type": "text",
+              "analyzer": "lithuanian_full"
+            },
+            "pt": {
+              "type": "text",
+              "analyzer": "portuguese_std"
+            },
+            "stemmed-pt": {
+              "type": "text",
+              "analyzer": "portuguese_full"
+            },
+            "ro": {
+              "type": "text",
+              "analyzer": "romanian_std"
+            },
+            "stemmed-ro": {
+              "type": "text",
+              "analyzer": "romanian_full"
+            },
+            "es": {
+              "type": "text",
+              "analyzer": "spanish_std"
+            },
+            "stemmed-es": {
+              "type": "text",
+              "analyzer": "spanish_full"
+            },
+            "sv": {
+              "type": "text",
+              "analyzer": "swedish_std"
+            },
+            "stemmed-sv": {
+              "type": "text",
+              "analyzer": "swedish_full"
+            },
+            "pl": {
+              "type": "text",
+              "analyzer": "polish_std"
+            },
+            "stemmed-pl": {
+              "type": "text",
+              "analyzer": "polish"
+            },
+            "hr": {
+              "type": "text",
+              "analyzer": "croatian_std"
+            },
+            "et": {
+              "type": "text",
+              "analyzer": "estonian_std"
+            },
+            "mt": {
+              "type": "text",
+              "analyzer": "maltese_std"
+            },
+            "sk": {
+              "type": "text",
+              "analyzer": "slovak_std"
+            },
+            "sl": {
+              "type": "text",
+              "analyzer": "slovenian_std"
+            },
+            "general": {
+              "type": "text"
+            }
           }
-        }
-      },
-      "refusalReason": {
-        "type": "keyword",
-        "index": false
-      },
-      "status": {
-        "type": "keyword",
-        "index": true
-      },
-      "createdAt": {
-        "type": "date",
-        "format": "date_time",
-        "index": true
-      },
-      "updatedAt": {
-        "type": "date",
-        "format": "date_time",
-        "index": true
-      },
-      "votes": {
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "keyword",
-            "index": true
-          },
-          "count": {
-            "type": "integer",
-            "index": true
-          },
-          "countVerified": {
-            "type": "integer",
-            "index": true
-          },
-          "selected": {
-            "type": "boolean",
-            "index": true
-          },
-          "qualifications": {
-            "type": "object",
-            "properties": {
-              "key": {
-                "type": "keyword",
-                "index": true
-              },
-              "count": {
-                "type": "integer",
-                "index": true
-              },
-              "countVerified": {
-                "type": "integer",
-                "index": true
+        },
+        "refusalReason": {
+          "type": "keyword",
+          "index": false
+        },
+        "status": {
+          "type": "keyword",
+          "index": true
+        },
+        "createdAt": {
+          "type": "date",
+          "format": "date_time",
+          "index": true
+        },
+        "updatedAt": {
+          "type": "date",
+          "format": "date_time",
+          "index": true
+        },
+        "votes": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "keyword",
+              "index": true
+            },
+            "count": {
+              "type": "integer",
+              "index": true
+            },
+            "countVerified": {
+              "type": "integer",
+              "index": true
+            },
+            "selected": {
+              "type": "boolean",
+              "index": true
+            },
+            "qualifications": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "keyword",
+                  "index": true
+                },
+                "count": {
+                  "type": "integer",
+                  "index": true
+                },
+                "countVerified": {
+                  "type": "integer",
+                  "index": true
+                }
               }
             }
           }
-        }
-      },
-      "votesCount": {
-        "type": "integer",
-        "index": true
-      },
-      "votesVerifiedCount": {
-        "type": "integer",
-        "index": true
-      },
-      "toEnrich": {
-        "type": "boolean",
-        "index": true
-      },
-      "scores": {
-        "type": "object",
-        "properties": {
-          "boost": {
-            "type": "double",
-            "index": true
-          },
-          "engagement": {
-            "type": "double",
-            "index": true
-          },
-          "agreement": {
-            "type": "double",
-            "index": true
-          },
-          "adhesion": {
-            "type": "double",
-            "index": true
-          },
-          "realistic": {
-            "type": "double",
-            "index": true
-          },
-          "platitude": {
-            "type": "double",
-            "index": true
-          },
-          "topScore": {
-            "type": "double",
-            "index": true
-          },
-          "controversy": {
-            "type": "double",
-            "index": true
-          },
-          "rejection": {
-            "type": "double",
-            "index": true
-          },
-          "scoreUpperBound": {
-            "type": "double",
-            "index": true
+        },
+        "votesCount": {
+          "type": "integer",
+          "index": true
+        },
+        "votesVerifiedCount": {
+          "type": "integer",
+          "index": true
+        },
+        "toEnrich": {
+          "type": "boolean",
+          "index": true
+        },
+        "scores": {
+          "type": "object",
+          "properties": {
+            "boost": {
+              "type": "double",
+              "index": true
+            },
+            "engagement": {
+              "type": "double",
+              "index": true
+            },
+            "agreement": {
+              "type": "double",
+              "index": true
+            },
+            "adhesion": {
+              "type": "double",
+              "index": true
+            },
+            "realistic": {
+              "type": "double",
+              "index": true
+            },
+            "platitude": {
+              "type": "double",
+              "index": true
+            },
+            "topScore": {
+              "type": "double",
+              "index": true
+            },
+            "controversy": {
+              "type": "double",
+              "index": true
+            },
+            "rejection": {
+              "type": "double",
+              "index": true
+            },
+            "scoreUpperBound": {
+              "type": "double",
+              "index": true
+            }
           }
-        }
-      },
-      "slug": {
-        "type": "keyword",
-        "index": true
-      },
-      "context": {
-        "type": "object",
-        "properties": {
-          "operation": {
-            "type": "keyword",
-            "index": true
-          },
-          "source": {
-            "type": "keyword",
-            "index": true
-          },
-          "location": {
-            "type": "keyword",
-            "index": true
-          },
-          "question": {
-            "type": "keyword",
-            "index": true
-          },
-          "getParameters": {
-            "type": "object",
-            "properties": {
-              "key": {
-                "type": "keyword",
-                "index": true
-              },
-              "value": {
-                "type": "keyword",
-                "index": true
+        },
+        "slug": {
+          "type": "keyword",
+          "index": true
+        },
+        "context": {
+          "type": "object",
+          "properties": {
+            "operation": {
+              "type": "keyword",
+              "index": true
+            },
+            "source": {
+              "type": "keyword",
+              "index": true
+            },
+            "location": {
+              "type": "keyword",
+              "index": true
+            },
+            "question": {
+              "type": "keyword",
+              "index": true
+            },
+            "getParameters": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "keyword",
+                  "index": true
+                },
+                "value": {
+                  "type": "keyword",
+                  "index": true
+                }
               }
             }
           }
-        }
-      },
-      "trending": {
-        "type": "keyword",
-        "index": true
-      },
-      "labels": {
-        "type": "keyword",
-        "index": true
-      },
-      "author": {
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "text",
-            "index": true
-          },
-          "organisationName": {
-            "type": "text",
-            "index": true
-          },
-          "organisationSlug": {
-            "type": "keyword",
-            "index": true
-          },
-          "postalCode": {
-            "type": "keyword",
-            "index": false
-          },
-          "age": {
-            "type": "integer",
-            "index": false
-          },
-          "avatarUrl": {
-            "type": "text",
-            "index": false
+        },
+        "trending": {
+          "type": "keyword",
+          "index": true
+        },
+        "labels": {
+          "type": "keyword",
+          "index": true
+        },
+        "author": {
+          "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "text",
+              "index": true
+            },
+            "organisationName": {
+              "type": "text",
+              "index": true
+            },
+            "organisationSlug": {
+              "type": "keyword",
+              "index": true
+            },
+            "postalCode": {
+              "type": "keyword",
+              "index": false
+            },
+            "age": {
+              "type": "integer",
+              "index": false
+            },
+            "avatarUrl": {
+              "type": "text",
+              "index": false
+            }
           }
-        }
-      },
-      "organisations": {
-        "type": "object",
-        "properties": {
-          "organisationId": {
-            "type": "keyword",
-            "index": true
-          },
-          "organisationName": {
-            "type": "text",
-            "index": true
-          },
-          "organisationSlug": {
-            "type": "keyword",
-            "index": true
+        },
+        "organisations": {
+          "type": "object",
+          "properties": {
+            "organisationId": {
+              "type": "keyword",
+              "index": true
+            },
+            "organisationName": {
+              "type": "text",
+              "index": true
+            },
+            "organisationSlug": {
+              "type": "keyword",
+              "index": true
+            }
           }
-        }
-      },
-      "tags": {
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": "keyword",
-            "index": true
-          },
-          "tagId": {
-            "type": "keyword",
-            "index": true
-          },
-          "display": {
-            "type": "boolean",
-            "index": false
+        },
+        "tags": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "keyword",
+              "index": true
+            },
+            "tagId": {
+              "type": "keyword",
+              "index": true
+            },
+            "display": {
+              "type": "boolean",
+              "index": false
+            }
           }
+        },
+        "themeId": {
+          "type": "keyword",
+          "index": true
+        },
+        "country": {
+          "type": "keyword",
+          "index": true
+        },
+        "language": {
+          "type": "keyword",
+          "index": true
+        },
+        "ideaId": {
+          "type": "keyword",
+          "index": true
+        },
+        "operationId": {
+          "type": "keyword",
+          "index": true
+        },
+        "sequencePool": {
+          "type": "keyword",
+          "index": true
+        },
+        "initialProposal": {
+          "type": "boolean",
+          "index": true
+        },
+        "operationKind": {
+          "type": "keyword",
+          "index": true
         }
-      },
-      "themeId": {
-        "type": "keyword",
-        "index": true
-      },
-      "country": {
-        "type": "keyword",
-        "index": true
-      },
-      "language": {
-        "type": "keyword",
-        "index": true
-      },
-      "ideaId": {
-        "type": "keyword",
-        "index": true
-      },
-      "operationId": {
-        "type": "keyword",
-        "index": true
-      },
-      "sequencePool": {
-        "type": "keyword",
-        "index": true
-      },
-      "initialProposal": {
-        "type": "boolean",
-        "index": true
-      },
-      "operationKind": {
-        "type": "keyword",
-        "index": true
       }
     }
   }

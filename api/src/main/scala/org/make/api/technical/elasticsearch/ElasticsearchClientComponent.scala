@@ -117,7 +117,7 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
     private def createInitialIndexAndAlias(aliasName: String): Future[Unit] = {
       val newIndexName = createIndexName(aliasName)
       client
-        .executeAsFuture(createIndex(newIndexName).includeTypeName(false).source(mappingForAlias(aliasName)))
+        .executeAsFuture(createIndex(newIndexName).source(mappingForAlias(aliasName)))
         .flatMap { _ =>
           logger.info(s"Elasticsearch index $newIndexName created")
           client
