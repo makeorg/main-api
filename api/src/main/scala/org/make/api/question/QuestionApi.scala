@@ -45,12 +45,13 @@ import org.make.core.common.indexed.Order
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
 import org.make.core.proposal.ProposalId
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
+import scala.concurrent.Future
 
 trait QuestionApiComponent {
   def questionApi: QuestionApi
@@ -151,11 +152,37 @@ trait DefaultQuestionApiComponent
                       order = None
                     )
                   ) { partners =>
-                    complete(QuestionDetailsResponse(question, operation, operationOfQuestion, partners))
+                    provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
+                      complete(QuestionDetailsResponse(question, operation, operationOfQuestion, partners, questions))
+                    }
                   }
                 }
             }
           }
+        }
+      }
+    }
+
+    private def findQuestionsOfOperation(operationId: OperationId): Future[Seq[QuestionOfOperationResponse]] = {
+      operationOfQuestionService.findByOperationId(operationId).flatMap { operationOfQuestions =>
+        questionService.getQuestions(operationOfQuestions.map(_.questionId)).map { questions =>
+          val questionMap: Map[QuestionId, Question] = questions.map { question =>
+            question.questionId -> question
+          }.toMap
+          operationOfQuestions.map { operationOfQuestion =>
+            val question = questionMap(operationOfQuestion.questionId)
+            QuestionOfOperationResponse(
+              questionId = question.questionId,
+              questionSlug = question.slug,
+              question = question.question,
+              operationTitle = operationOfQuestion.operationTitle,
+              country = question.country,
+              language = question.language,
+              startDate = operationOfQuestion.startDate,
+              endDate = operationOfQuestion.endDate,
+              theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme)
+            )
+          }.sortBy(_.questionSlug)
         }
       }
     }
