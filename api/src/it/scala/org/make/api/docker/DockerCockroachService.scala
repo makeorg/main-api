@@ -30,7 +30,7 @@ trait DockerCockroachService extends DockerKit {
   protected def cockroachExposedPort: Int
 
   private def cockroachContainer: DockerContainer =
-    DockerContainer(image = "cockroachdb/cockroach:v2.1.6", name = Some(getClass.getSimpleName))
+    DockerContainer(image = "cockroachdb/cockroach:v19.1.1", name = Some(getClass.getSimpleName))
       .withPorts(defaultCockroachPort -> Some(cockroachExposedPort))
       .withReadyChecker(DockerReadyChecker.LogLineContains("CockroachDB node starting at"))
       .withCommand("start", "--insecure")

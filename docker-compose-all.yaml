@@ -138,7 +138,7 @@ services:
         SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
     restart: on-failure:3
   cockroach:
-    image: cockroachdb/cockroach:v2.1.6
+    image: cockroachdb/cockroach:v19.1.1
     hostname: cockroach
     command: start --insecure
     ports:

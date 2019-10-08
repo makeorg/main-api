@@ -37,9 +37,13 @@ import org.make.api.crmTemplates.{
 }
 import org.make.api.extensions._
 import org.make.api.feature.{
+  AdminActiveFeatureApi,
   AdminFeatureApi,
+  DefaultActiveFeatureServiceComponent,
+  DefaultAdminActiveFeatureApiComponent,
   DefaultAdminFeatureApiComponent,
   DefaultFeatureServiceComponent,
+  DefaultPersistentActiveFeatureServiceComponent,
   DefaultPersistentFeatureServiceComponent
 }
 import org.make.api.idea._
@@ -105,6 +109,8 @@ trait MakeApi
     extends ActorSystemComponent
     with AvroSerializers
     with BuildInfoRoutes
+    with DefaultActiveFeatureServiceComponent
+    with DefaultAdminActiveFeatureApiComponent
     with DefaultAdminClientApiComponent
     with DefaultAdminCrmTemplatesApiComponent
     with DefaultAdminCurrentOperationApiComponent
@@ -163,6 +169,7 @@ trait MakeApi
     with DefaultOrganisationSearchEngineComponent
     with DefaultOrganisationServiceComponent
     with DefaultPartnerServiceComponent
+    with DefaultPersistentActiveFeatureServiceComponent
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmTemplatesServiceComponent
@@ -330,7 +337,8 @@ trait MakeApi
       classOf[ViewApi],
       classOf[AdminViewApi],
       classOf[AdminClientApi],
-      classOf[AdminFeatureApi]
+      classOf[AdminFeatureApi],
+      classOf[AdminActiveFeatureApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -354,6 +362,7 @@ trait MakeApi
       optionsAuthorized ~
       buildRoutes ~
 
+      adminActiveFeatureApi.routes ~
       adminClientApi.routes ~
       adminCrmTemplateApi.routes ~
       adminCurrentOperationApi.routes ~

@@ -22,20 +22,23 @@ package org.make.core.feature
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.core.StringValue
+import org.make.core.question.QuestionId
 
-final case class Feature(featureId: FeatureId, name: String, slug: String)
+final case class ActiveFeature(activeFeatureId: ActiveFeatureId,
+                               featureId: FeatureId,
+                               maybeQuestionId: Option[QuestionId])
 
-object Feature {
-  implicit val encoder: Encoder[Feature] = deriveEncoder[Feature]
-  implicit val decoder: Decoder[Feature] = deriveDecoder[Feature]
+object ActiveFeature {
+  implicit val encoder: Encoder[ActiveFeature] = deriveEncoder[ActiveFeature]
+  implicit val decoder: Decoder[ActiveFeature] = deriveDecoder[ActiveFeature]
 }
 
-final case class FeatureId(value: String) extends StringValue
+final case class ActiveFeatureId(value: String) extends StringValue
 
-object FeatureId {
-  implicit lazy val featureIdEncoder: Encoder[FeatureId] =
-    (a: FeatureId) => Json.fromString(a.value)
-  implicit lazy val featureIdDecoder: Decoder[FeatureId] =
-    Decoder.decodeString.map(FeatureId(_))
+object ActiveFeatureId {
+  implicit lazy val activeFeatureIdEncoder: Encoder[ActiveFeatureId] =
+    (a: ActiveFeatureId) => Json.fromString(a.value)
+  implicit lazy val activeFeatureIdDecoder: Decoder[ActiveFeatureId] =
+    Decoder.decodeString.map(ActiveFeatureId(_))
 
 }
