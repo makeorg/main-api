@@ -36,6 +36,12 @@ import org.make.api.crmTemplates.{
   DefaultPersistentCrmTemplatesServiceComponent
 }
 import org.make.api.extensions._
+import org.make.api.feature.{
+  AdminFeatureApi,
+  DefaultAdminFeatureApiComponent,
+  DefaultFeatureServiceComponent,
+  DefaultPersistentFeatureServiceComponent
+}
 import org.make.api.idea._
 import org.make.api.operation._
 import org.make.api.organisation._
@@ -65,14 +71,7 @@ import org.make.api.tagtype.{
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.{ConfigurationsApi, DefaultConfigurationsApiComponent}
-import org.make.api.technical.crm.{
-  CrmApi,
-  DefaultCrmApiComponent,
-  DefaultCrmClientComponent,
-  DefaultCrmServiceComponent,
-  DefaultPersistentCrmUserServiceComponent,
-  DefaultSendMailPublisherServiceComponent
-}
+import org.make.api.technical.crm._
 import org.make.api.technical.elasticsearch.{
   DefaultElasticSearchApiComponent,
   DefaultElasticsearchClientComponent,
@@ -83,13 +82,7 @@ import org.make.api.technical.elasticsearch.{
 import org.make.api.technical.healthcheck._
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
-import org.make.api.technical.storage.{
-  DefaultStorageApiComponent,
-  DefaultStorageConfigurationComponent,
-  DefaultStorageServiceComponent,
-  DefaultSwiftClientComponent,
-  StorageApi
-}
+import org.make.api.technical.storage._
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -100,13 +93,7 @@ import org.make.api.userhistory.{
   UserHistoryCoordinator,
   UserHistoryCoordinatorComponent
 }
-import org.make.api.views.{
-  AdminViewApi,
-  DefaultAdminViewApiComponent,
-  DefaultHomeViewServiceComponent,
-  DefaultViewApiComponent,
-  ViewApi
-}
+import org.make.api.views._
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{ValidationError, ValidationFailedError}
 import scalaoauth2.provider.{OAuthGrantType, _}
@@ -121,6 +108,7 @@ trait MakeApi
     with DefaultAdminClientApiComponent
     with DefaultAdminCrmTemplatesApiComponent
     with DefaultAdminCurrentOperationApiComponent
+    with DefaultAdminFeatureApiComponent
     with DefaultAdminFeaturedOperationApiComponent
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminPartnerApiComponent
@@ -139,6 +127,7 @@ trait MakeApi
     with DefaultElasticsearchConfigurationComponent
     with DefaultEventBusServiceComponent
     with DefaultFacebookApiComponent
+    with DefaultFeatureServiceComponent
     with DefaultFeaturedOperationServiceComponent
     with DefaultGoogleApiComponent
     with DefaultHomeViewServiceComponent
@@ -179,6 +168,7 @@ trait MakeApi
     with DefaultPersistentCrmTemplatesServiceComponent
     with DefaultPersistentCrmUserServiceComponent
     with DefaultPersistentCurrentOperationServiceComponent
+    with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentFeaturedOperationServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
@@ -340,6 +330,7 @@ trait MakeApi
       classOf[ViewApi],
       classOf[AdminViewApi],
       classOf[AdminClientApi],
+      classOf[AdminFeatureApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -366,6 +357,7 @@ trait MakeApi
       adminClientApi.routes ~
       adminCrmTemplateApi.routes ~
       adminCurrentOperationApi.routes ~
+      adminFeatureApi.routes ~
       adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
       adminUserApi.routes ~
