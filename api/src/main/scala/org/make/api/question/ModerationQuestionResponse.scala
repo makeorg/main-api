@@ -197,16 +197,18 @@ case class QuestionDetailsResponse(
   sequenceConfig: SequenceCardsConfigurationResponse,
   aboutUrl: Option[String],
   partners: Seq[QuestionPartnerResponse],
-  theme: QuestionTheme,
+  theme: QuestionThemeResponse,
   imageUrl: Option[String],
-  displayResults: Boolean
+  displayResults: Boolean,
+  operation: QuestionsOfOperationResponse
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
   def apply(question: Question,
             operation: Operation,
             operationOfQuestion: OperationOfQuestion,
-            partners: Seq[Partner]): QuestionDetailsResponse = QuestionDetailsResponse(
+            partners: Seq[Partner],
+            questionsOfOperation: Seq[QuestionOfOperationResponse]): QuestionDetailsResponse = QuestionDetailsResponse(
     questionId = question.questionId,
     operationId = operation.operationId,
     wording = WordingResponse(
@@ -228,11 +230,53 @@ object QuestionDetailsResponse extends CirceFormatters {
     sequenceConfig = SequenceCardsConfigurationResponse.apply(operationOfQuestion.sequenceCardsConfiguration),
     aboutUrl = operationOfQuestion.aboutUrl,
     partners = partners.map(QuestionPartnerResponse.apply),
-    theme = operationOfQuestion.theme,
+    theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme),
     imageUrl = operationOfQuestion.imageUrl,
-    displayResults = operationOfQuestion.displayResults
+    displayResults = operationOfQuestion.displayResults,
+    operation = QuestionsOfOperationResponse(questionsOfOperation)
   )
 
   implicit val encoder: Encoder[QuestionDetailsResponse] = deriveEncoder[QuestionDetailsResponse]
   implicit val decoder: Decoder[QuestionDetailsResponse] = deriveDecoder[QuestionDetailsResponse]
+}
+
+final case class QuestionOfOperationResponse(questionId: QuestionId,
+                                             questionSlug: String,
+                                             question: String,
+                                             operationTitle: String,
+                                             country: Country,
+                                             language: Language,
+                                             startDate: Option[ZonedDateTime],
+                                             endDate: Option[ZonedDateTime],
+                                             theme: QuestionThemeResponse)
+
+object QuestionOfOperationResponse {
+  implicit val encoder: Encoder[QuestionOfOperationResponse] = deriveEncoder[QuestionOfOperationResponse]
+  implicit val decoder: Decoder[QuestionOfOperationResponse] = deriveDecoder[QuestionOfOperationResponse]
+}
+
+final case class QuestionThemeResponse(gradientStart: String,
+                                       gradientEnd: String,
+                                       color: String,
+                                       footerFontColor: String)
+
+object QuestionThemeResponse {
+  def fromQuestionTheme(theme: QuestionTheme): QuestionThemeResponse = {
+    QuestionThemeResponse(
+      gradientStart = theme.gradientStart,
+      gradientEnd = theme.gradientEnd,
+      color = theme.color,
+      footerFontColor = theme.footerFontColor
+    )
+  }
+
+  implicit val encoder: Encoder[QuestionThemeResponse] = deriveEncoder[QuestionThemeResponse]
+  implicit val decoder: Decoder[QuestionThemeResponse] = deriveDecoder[QuestionThemeResponse]
+}
+
+final case class QuestionsOfOperationResponse(questions: Seq[QuestionOfOperationResponse])
+
+object QuestionsOfOperationResponse {
+  implicit val encoder: Encoder[QuestionsOfOperationResponse] = deriveEncoder[QuestionsOfOperationResponse]
+  implicit val decoder: Decoder[QuestionsOfOperationResponse] = deriveDecoder[QuestionsOfOperationResponse]
 }

@@ -210,6 +210,11 @@ class QuestionApiTest
       )
     ).thenReturn(Future.successful(Seq(partner, partner2)))
 
+    when(operationOfQuestionService.findByOperationId(baseOperationOfQuestion.operationId))
+      .thenReturn(Future.successful(Seq(baseOperationOfQuestion)))
+
+    when(questionService.getQuestions(Seq(baseQuestion.questionId))).thenReturn(Future.successful(Seq(baseQuestion)))
+
     scenario("get by id") {
       Given("a registered question")
       When("I get question details by id")
@@ -225,13 +230,15 @@ class QuestionApiTest
         questionDetailsResponse.wording.title should be(baseOperationOfQuestion.operationTitle)
         questionDetailsResponse.startDate should be(baseOperationOfQuestion.startDate)
         questionDetailsResponse.endDate should be(baseOperationOfQuestion.endDate)
+        questionDetailsResponse.operation.questions.size should be(1)
+        questionDetailsResponse.operation.questions.map(_.questionId) should contain(baseQuestion.questionId)
       }
     }
     scenario("get by slug") {
       Given("a registered question")
       When("I get question details by slug")
       Then("I get a question with details")
-      Get("/questions/questionid/details") ~> routes ~> check {
+      Get("/questions/question-slug/details") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
         questionDetailsResponse.questionId should be(baseQuestion.questionId)
