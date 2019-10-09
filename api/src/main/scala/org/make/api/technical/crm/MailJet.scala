@@ -51,7 +51,8 @@ case class SendEmail(id: String = "unknown",
                      monitoringCategory: Option[String] = None)
     extends Sharded {
   override def toString =
-    s"SendEmail: (id = $id, from = $from, subject = $subject, textPart = $textPart, htmlPart = $htmlPart, useTemplateLanguage = $useTemplateLanguage, templateId = $templateId, variables = $variables, recipients = $recipients, headers = $headers, emailId = $emailId, customCampaign = $customCampaign, monitoringCategory = $monitoringCategory)"
+    s"SendEmail: (id = $id, from = $from, subject = $subject, textPart = $textPart, htmlPart = $htmlPart, useTemplateLanguage = $useTemplateLanguage, templateId = $templateId, variables = $variables, recipients = ${recipients
+      .map(_.toAnonymizedString)}, headers = $headers, emailId = $emailId, customCampaign = $customCampaign, monitoringCategory = $monitoringCategory)"
 }
 
 object SendEmail {
@@ -70,7 +71,7 @@ object SendEmail {
              monitoringCategory: Option[String] = None): SendEmail = {
 
     SendEmail(
-      recipients.headOption.map(_.email).getOrElse("unknown"),
+      recipients.headOption.map(head => SecurityHelper.anonymizeEmail(head.email)).getOrElse("unknown"),
       from,
       subject,
       textPart,
@@ -169,8 +170,11 @@ object EmailDetail {
 }
 
 case class Recipient(email: String, name: Option[String] = None, variables: Option[Map[String, String]] = None) {
-  override def toString =
+  def toAnonymizedString =
     s"Recipient: (email = ${SecurityHelper.anonymizeEmail(email)}, name = ${name.flatMap(_.headOption)}, variables = $variables)"
+
+  override def toString =
+    s"Recipient: (email = $email, name = ${name.flatMap(_.headOption)}, variables = $variables)"
 }
 
 object Recipient {
