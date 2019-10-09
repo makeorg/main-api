@@ -29,7 +29,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.api.technical.monitoring.MonitoringServiceComponent
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
+import org.make.api.technical.{EndpointType, EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
 import org.make.core.{HttpCodes, RequestContext}
 
 import scala.annotation.meta.field
@@ -87,7 +87,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
     def frontTracking: Route =
       post {
         path("tracking" / "front") {
-          makeOperation("TrackingFront") { requestContext: RequestContext =>
+          makeOperation("TrackingFront", EndpointType.Public) { requestContext: RequestContext =>
             decodeRequest {
               entity(as[FrontTrackingRequest]) { request: FrontTrackingRequest =>
                 eventBusService.publish(
@@ -103,7 +103,7 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
     def trackFrontPerformances: Route =
       post {
         path("tracking" / "performance") {
-          makeOperation("PerformanceTracking") { _ =>
+          makeOperation("PerformanceTracking", EndpointType.Public) { _ =>
             decodeRequest {
               entity(as[FrontPerformanceRequest]) { request =>
                 monitoringService.monitorPerformance(request.applicationName, request.timings)

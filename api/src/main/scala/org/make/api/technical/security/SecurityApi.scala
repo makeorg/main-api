@@ -29,7 +29,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
 import scalaoauth2.provider.AuthInfo
@@ -121,7 +121,7 @@ trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenti
     override def validateSecureHash: Route =
       post {
         path("security" / "secure-hash") {
-          makeOperation("ValidateSecureHash") { _ =>
+          makeOperation("ValidateSecureHash", EndpointType.Public) { _ =>
             decodeRequest {
               entity(as[ValidateSecureHashRequest]) { request: ValidateSecureHashRequest =>
                 if (SecurityHelper

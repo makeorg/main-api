@@ -25,9 +25,13 @@ import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsMissing
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import kamon.Kamon
+import kamon.instrumentation.akka.http.TracingDirectives
+import kamon.tag.TagSet
 import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
@@ -44,17 +48,22 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core.reference
-import org.make.core.{ApplicationName, CirceFormatters, DateHelper, FileHelper, RequestContext, SlugHelper, Validation}
+import org.make.core.{
+  reference,
+  ApplicationName,
+  CirceFormatters,
+  DateHelper,
+  FileHelper,
+  RequestContext,
+  SlugHelper,
+  Validation
+}
 import scalaoauth2.provider.AccessToken
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import kamon.instrumentation.akka.http.TracingDirectives
-import kamon.tag.TagSet
 
 trait MakeDirectives
     extends Directives
@@ -68,6 +77,7 @@ trait MakeDirectives
     with SessionHistoryCoordinatorServiceComponent =>
 
   lazy val authorizedUris: Seq[String] = makeSettings.authorizedCorsUri
+  lazy val mandatoryConnection: Boolean = makeSettings.mandatoryConnection
 
   def requestId: Directive1[String] = BasicDirectives.provide(idGenerator.nextId())
 
@@ -96,6 +106,18 @@ trait MakeDirectives
   def visitorCreatedAt: Directive1[ZonedDateTime] =
     optionalCookie(makeSettings.VisitorCookie.createdAtName)
       .map(_.flatMap(cookie => Try(ZonedDateTime.parse(cookie.value)).toOption).getOrElse(DateHelper.now()))
+
+  def checkEndpointAccess(isConnected: Boolean, endpointType: EndpointType): Directive0 = {
+    if (mandatoryConnection) {
+      if (endpointType != EndpointType.Public && !isConnected) {
+        reject(AuthenticationFailedRejection(cause = CredentialsMissing, challenge = HttpChallenges.oAuth2(realm)))
+      } else {
+        authorize(endpointType != EndpointType.CoreOnly).tflatMap(_ => pass)
+      }
+    } else {
+      pass
+    }
+  }
 
   def addMakeHeaders(requestId: String,
                      routeName: String,
@@ -215,7 +237,7 @@ trait MakeDirectives
     maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId))
   }
 
-  def makeOperation(name: String): Directive1[RequestContext] = {
+  def makeOperation(name: String, endpointType: EndpointType = EndpointType.Regular): Directive1[RequestContext] = {
     val slugifiedName: String = SlugHelper(name)
 
     for {
@@ -256,6 +278,7 @@ trait MakeDirectives
       maybeGetParameters   <- optionalHeaderValueByName(GetParametersHeader.name)
       maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
       maybeUser            <- optionalMakeOAuth2
+      _                    <- checkEndpointAccess(maybeUser.isDefined, endpointType)
       maybeQuestionId      <- optionalHeaderValueByName(QuestionIdHeader.name)
       maybeApplicationName <- optionalHeaderValueByName(ApplicationNameHeader.name)
       maybeReferrer        <- optionalHeaderValueByName(ReferrerHeader.name)
@@ -417,6 +440,17 @@ trait MakeDirectives
       }
     }
   }
+}
+
+sealed trait EndpointType
+
+object EndpointType {
+  // represents an endpoint that can be called connected or unconnected
+  case object Public extends EndpointType
+  // Represents an endpoints that requires connection if mandatory-connection is activated in the configuration
+  case object Regular extends EndpointType
+  // Represents an endpoint forbidden if connection is mandatory
+  case object CoreOnly extends EndpointType
 }
 
 final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {
