@@ -77,7 +77,7 @@ trait AdminActiveFeatureApi extends Directives {
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
-        dataType = "org.make.api.activeFeature.CreateActiveFeatureRequest"
+        dataType = "org.make.api.feature.CreateActiveFeatureRequest"
       )
     )
   )
