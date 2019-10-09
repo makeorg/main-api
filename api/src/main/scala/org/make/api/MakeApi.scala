@@ -133,8 +133,8 @@ trait MakeApi
     with DefaultElasticsearchConfigurationComponent
     with DefaultEventBusServiceComponent
     with DefaultFacebookApiComponent
-    with DefaultFeatureServiceComponent
     with DefaultFeaturedOperationServiceComponent
+    with DefaultFeatureServiceComponent
     with DefaultGoogleApiComponent
     with DefaultHomeViewServiceComponent
     with DefaultViewApiComponent
@@ -175,8 +175,8 @@ trait MakeApi
     with DefaultPersistentCrmTemplatesServiceComponent
     with DefaultPersistentCrmUserServiceComponent
     with DefaultPersistentCurrentOperationServiceComponent
-    with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentFeaturedOperationServiceComponent
+    with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
     with DefaultPersistentOperationOfQuestionServiceComponent

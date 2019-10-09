@@ -40,6 +40,7 @@ trait PersistentFeatureService {
   def update(feature: Feature): Future[Option[Feature]]
   def remove(featureId: FeatureId): Future[Unit]
   def findAll(): Future[Seq[Feature]]
+  def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]]
   def find(start: Int,
            end: Option[Int],
            sort: Option[String],
@@ -130,6 +131,21 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
           withSQL {
             select
               .from(PersistentFeature.as(featureAlias))
+              .orderBy(featureAlias.slug)
+          }.map(PersistentFeature.apply()).list.apply
+      })
+
+      futurePersistentFeatures.map(_.map(_.toFeature))
+    }
+
+    override def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB('READ).retryableTx {
+        implicit session =>
+          withSQL {
+            select
+              .from(PersistentFeature.as(featureAlias))
+              .where(sqls.in(featureAlias.id, featureIds.map(_.value)))
               .orderBy(featureAlias.slug)
           }.map(PersistentFeature.apply()).list.apply
       })

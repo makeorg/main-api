@@ -35,6 +35,7 @@ trait FeatureService extends ShortenedNames {
   def findBySlug(partialSlug: String): Future[Seq[Feature]]
   def updateFeature(featureId: FeatureId, slug: String, name: String): Future[Option[Feature]]
   def deleteFeature(featureId: FeatureId): Future[Unit]
+  def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]]
   def find(start: Int = 0,
            end: Option[Int] = None,
            sort: Option[String] = None,
@@ -76,6 +77,10 @@ trait DefaultFeatureServiceComponent extends FeatureServiceComponent with Shorte
 
     override def deleteFeature(featureId: FeatureId): Future[Unit] = {
       persistentFeatureService.remove(featureId)
+    }
+
+    override def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]] = {
+      persistentFeatureService.findByFeatureIds(featureIds)
     }
 
     override def find(start: Int = 0,
