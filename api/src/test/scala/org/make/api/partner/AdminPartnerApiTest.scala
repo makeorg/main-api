@@ -64,7 +64,12 @@ class AdminPartnerApiTest
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(userId = UserId("user-citizen"), roles = Seq(RoleCitizen), availableQuestions = Seq.empty),
+            UserRights(
+              userId = UserId("user-citizen"),
+              roles = Seq(RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
             None,
             Some("user"),
             None
@@ -78,7 +83,12 @@ class AdminPartnerApiTest
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(UserId("user-admin"), roles = Seq(RoleAdmin), availableQuestions = Seq.empty),
+            UserRights(
+              UserId("user-admin"),
+              roles = Seq(RoleAdmin),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
             None,
             None,
             None
@@ -93,7 +103,12 @@ class AdminPartnerApiTest
         .successful(
           Some(
             AuthInfo(
-              UserRights(UserId("user-moderator"), roles = Seq(RoleModerator), availableQuestions = Seq.empty),
+              UserRights(
+                UserId("user-moderator"),
+                roles = Seq(RoleModerator),
+                availableQuestions = Seq.empty,
+                emailVerified = true
+              ),
               None,
               None,
               None

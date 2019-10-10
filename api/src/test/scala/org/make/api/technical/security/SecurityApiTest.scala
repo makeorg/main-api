@@ -70,19 +70,59 @@ class SecurityApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(citizenUserId, Seq(Role.RoleCitizen), Seq.empty), None, Some("user"), None))
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = citizenUserId,
+              roles = Seq(Role.RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
+            None,
+            Some("user"),
+            None
+          )
+        )
       )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(moderatorAccessToken)))
     .thenReturn(
       Future
-        .successful(Some(AuthInfo(UserRights(moderatorUserId, Seq(Role.RoleModerator), Seq.empty), None, None, None)))
+        .successful(
+          Some(
+            AuthInfo(
+              UserRights(
+                userId = moderatorUserId,
+                roles = Seq(Role.RoleModerator),
+                availableQuestions = Seq.empty,
+                emailVerified = true
+              ),
+              None,
+              None,
+              None
+            )
+          )
+        )
     )
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(adminAccessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(adminUserId, Seq(Role.RoleAdmin), Seq.empty), None, None, None)))
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = adminUserId,
+              roles = Seq(Role.RoleAdmin),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
+            None,
+            None,
+            None
+          )
+        )
+      )
     )
 
   val routes: Route = sealRoute(securityApi.routes)

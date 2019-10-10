@@ -76,19 +76,57 @@ class AdminUserApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
       Future
-        .successful(Some(AuthInfo(UserRights(citizenId, Seq(Role.RoleCitizen), Seq.empty), None, Some("user"), None)))
+        .successful(
+          Some(
+            AuthInfo(
+              UserRights(
+                userId = citizenId,
+                roles = Seq(Role.RoleCitizen),
+                availableQuestions = Seq.empty,
+                emailVerified = true
+              ),
+              None,
+              Some("user"),
+              None
+            )
+          )
+        )
     )
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(
       Future
         .successful(
-          Some(AuthInfo(UserRights(userId = moderatorId, roles = Seq(Role.RoleModerator), Seq.empty), None, None, None))
+          Some(
+            AuthInfo(
+              UserRights(
+                userId = moderatorId,
+                roles = Seq(Role.RoleModerator),
+                availableQuestions = Seq.empty,
+                emailVerified = true
+              ),
+              None,
+              None,
+              None
+            )
+          )
         )
     )
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(userId = adminId, roles = Seq(Role.RoleAdmin), Seq.empty), None, None, None))
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = adminId,
+              roles = Seq(Role.RoleAdmin),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
+            None,
+            None,
+            None
+          )
+        )
       )
     )
 

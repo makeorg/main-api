@@ -131,7 +131,8 @@ object PersistentUserServiceComponent {
       UserRights(
         userId = UserId(uuid),
         roles = roles.split(ROLE_SEPARATOR).map(Role.matchRole),
-        availableQuestions = availableQuestions.toSeq.map(QuestionId.apply)
+        availableQuestions = availableQuestions.toSeq.map(QuestionId.apply),
+        emailVerified = emailVerified
       )
     }
 

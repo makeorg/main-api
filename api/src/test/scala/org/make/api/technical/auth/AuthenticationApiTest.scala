@@ -55,7 +55,12 @@ class AuthenticationApiTest
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
       val fakeAuthInfo: AuthInfo[UserRights] =
-        AuthInfo(UserRights(UserId("ABCD"), Seq.empty, Seq.empty), None, None, None)
+        AuthInfo(
+          UserRights(userId = UserId("ABCD"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = true),
+          None,
+          None,
+          None
+        )
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
         .thenReturn(Future.successful(Some(accessToken)))
       when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
@@ -99,7 +104,12 @@ class AuthenticationApiTest
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
       val fakeAuthInfo: AuthInfo[UserRights] =
-        AuthInfo(UserRights(UserId("ABCD"), Seq.empty, Seq.empty), None, None, None)
+        AuthInfo(
+          UserRights(userId = UserId("ABCD"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = true),
+          None,
+          None,
+          None
+        )
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
         .thenReturn(Future.successful(Some(accessToken)))
       when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))

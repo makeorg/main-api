@@ -61,7 +61,17 @@ class TagApiTest
     .thenReturn(
       Future.successful(
         Some(
-          AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen), Seq.empty), None, Some("citizen"), None)
+          AuthInfo(
+            UserRights(
+              userId = UserId("my-citizen-user-id"),
+              roles = Seq(RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
+            None,
+            Some("citizen"),
+            None
+          )
         )
       )
     )

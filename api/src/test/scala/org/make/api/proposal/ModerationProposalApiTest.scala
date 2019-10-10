@@ -265,7 +265,7 @@ class ModerationProposalApiTest
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(john.userId, john.roles, availableQuestions = john.availableQuestions),
+            UserRights(john.userId, john.roles, availableQuestions = john.availableQuestions, emailVerified = true),
             None,
             Some("user"),
             None
@@ -281,7 +281,8 @@ class ModerationProposalApiTest
             UserRights(
               userId = daenerys.userId,
               roles = daenerys.roles,
-              availableQuestions = daenerys.availableQuestions
+              availableQuestions = daenerys.availableQuestions,
+              emailVerified = true
             ),
             None,
             None,
@@ -293,7 +294,19 @@ class ModerationProposalApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles, tyrion.availableQuestions), None, None, None))
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = tyrion.userId,
+              roles = tyrion.roles,
+              availableQuestions = tyrion.availableQuestions,
+              emailVerified = true
+            ),
+            None,
+            None,
+            None
+          )
+        )
       )
     )
 
@@ -303,9 +316,10 @@ class ModerationProposalApiTest
         Some(
           AuthInfo(
             UserRights(
-              UserId("no-right-moderator"),
-              Seq(RoleModerator),
-              Seq(QuestionId("some-question-without-answer"))
+              userId = UserId("no-right-moderator"),
+              roles = Seq(RoleModerator),
+              availableQuestions = Seq(QuestionId("some-question-without-answer")),
+              emailVerified = true
             ),
             None,
             None,
@@ -317,7 +331,21 @@ class ModerationProposalApiTest
 
   when(oauth2DataHandler.findAuthInfoByAccessToken(matches(userAccessToken)))
     .thenReturn(
-      Future.successful(Some(AuthInfo(UserRights(arya.userId, arya.roles, arya.availableQuestions), None, None, None)))
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = arya.userId,
+              roles = arya.roles,
+              availableQuestions = arya.availableQuestions,
+              emailVerified = true
+            ),
+            None,
+            None,
+            None
+          )
+        )
+      )
     )
 
   when(

@@ -68,7 +68,19 @@ class OrganisationApiTest
     .when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(UserId("user-citizen"), Seq(RoleCitizen), Seq.empty), None, Some("user"), None))
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = UserId("user-citizen"),
+              roles = Seq(RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
+            None,
+            Some("user"),
+            None
+          )
+        )
       )
     )
 

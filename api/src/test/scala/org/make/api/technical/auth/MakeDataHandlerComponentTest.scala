@@ -129,7 +129,12 @@ class MakeDataHandlerComponentTest
     refreshToken = Some("refresh_token"),
     scope = None,
     expiresIn = tokenLifeTime,
-    user = UserRights(UserId("user-id"), Seq(Role.RoleCitizen), Seq.empty),
+    user = UserRights(
+      userId = UserId("user-id"),
+      roles = Seq(Role.RoleCitizen),
+      availableQuestions = Seq.empty,
+      emailVerified = true
+    ),
     client = exampleClient
   )
 
@@ -280,7 +285,17 @@ class MakeDataHandlerComponentTest
 
     scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
-      val authInfo = AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen), Seq.empty), None, None, None)
+      val authInfo = AuthInfo(
+        UserRights(
+          userId = UserId("user-id"),
+          roles = Seq(Role.RoleCitizen),
+          availableQuestions = Seq.empty,
+          emailVerified = true
+        ),
+        None,
+        None,
+        None
+      )
 
       And("a generated access token 'access_token' with a hashed value 'access_token_hashed'")
       when(oauthTokenGenerator.generateAccessToken())
@@ -321,7 +336,17 @@ class MakeDataHandlerComponentTest
     scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
       val authInfo =
-        AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen), Seq.empty), Some(clientId), None, None)
+        AuthInfo(
+          UserRights(
+            userId = UserId("user-id"),
+            roles = Seq(Role.RoleCitizen),
+            availableQuestions = Seq.empty,
+            emailVerified = true
+          ),
+          Some(clientId),
+          None,
+          None
+        )
       And("""a stored AccessToken with values:
           | token: "AF8"
           | refreshToken: "KKJ"
@@ -369,7 +394,17 @@ class MakeDataHandlerComponentTest
     info("As a developer")
     info("I want to refresh an access token")
 
-    val authInfo = AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen), Seq.empty), Some(clientId), None, None)
+    val authInfo = AuthInfo(
+      UserRights(
+        userId = UserId("user-id"),
+        roles = Seq(Role.RoleCitizen),
+        availableQuestions = Seq.empty,
+        emailVerified = true
+      ),
+      Some(clientId),
+      None,
+      None
+    )
     val refreshToken: String = "MYREFRESHTOKEN"
     val createdAt = new SimpleDateFormat("yyyy-MM-dd").parse("2017-01-01")
     val accessTokenExample = AccessToken(

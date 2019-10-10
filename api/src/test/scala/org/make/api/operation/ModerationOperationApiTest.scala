@@ -275,7 +275,19 @@ class ModerationOperationApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(john.userId, john.roles, john.availableQuestions), None, Some("user"), None))
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = john.userId,
+              roles = john.roles,
+              availableQuestions = john.availableQuestions,
+              emailVerified = true
+            ),
+            None,
+            Some("user"),
+            None
+          )
+        )
       )
     )
 
@@ -284,7 +296,12 @@ class ModerationOperationApiTest
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(userId = daenerys.userId, roles = daenerys.roles, daenerys.availableQuestions),
+            UserRights(
+              userId = daenerys.userId,
+              roles = daenerys.roles,
+              availableQuestions = daenerys.availableQuestions,
+              emailVerified = true
+            ),
             None,
             None,
             None
@@ -296,7 +313,19 @@ class ModerationOperationApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(moderatorAccessToken)))
     .thenReturn(
       Future.successful(
-        Some(AuthInfo(UserRights(tyrion.userId, tyrion.roles, tyrion.availableQuestions), None, None, None))
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = tyrion.userId,
+              roles = tyrion.roles,
+              availableQuestions = tyrion.availableQuestions,
+              emailVerified = true
+            ),
+            None,
+            None,
+            None
+          )
+        )
       )
     )
 

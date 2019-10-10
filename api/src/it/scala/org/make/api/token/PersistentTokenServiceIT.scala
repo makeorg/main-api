@@ -81,7 +81,12 @@ class PersistentTokenServiceIT
     refreshToken = Some("REFRESH_TOKEN"),
     scope = Some("scope"),
     expiresIn = 42,
-    user = UserRights(exampleUser.userId, exampleUser.roles, exampleUser.availableQuestions),
+    user = UserRights(
+      userId = exampleUser.userId,
+      roles = exampleUser.roles,
+      availableQuestions = exampleUser.availableQuestions,
+      emailVerified = true
+    ),
     client = exampleClient
   )
 
