@@ -26,12 +26,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
 import org.make.api.semantic._
-import org.make.api.sessionhistory.{
-  ConcurrentModification,
-  RequestSessionVoteValues,
-  SessionHistoryCoordinatorService,
-  SessionHistoryCoordinatorServiceComponent
-}
+import org.make.api.sessionhistory._
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -46,7 +41,7 @@ import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualificatio
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.QualificationKey.LikeIt
-import org.make.core.proposal.VoteKey.Agree
+import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
@@ -59,6 +54,7 @@ import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.{never, times, verify}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.make.core.proposal.Vote
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -157,7 +153,8 @@ class ProposalServiceTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   Mockito
@@ -186,7 +183,8 @@ class ProposalServiceTest
       profile = None,
       createdAt = None,
       updatedAt = None,
-      availableQuestions = Seq.empty
+      availableQuestions = Seq.empty,
+      anonymousParticipation = false
     )
   }
 
@@ -199,7 +197,11 @@ class ProposalServiceTest
       status = ProposalStatus.Pending,
       createdAt = DateHelper.now(),
       updatedAt = None,
-      votes = Seq.empty,
+      votes = Seq(
+        IndexedVote(Agree, 42, 42, Seq.empty),
+        IndexedVote(Disagree, 42, 42, Seq.empty),
+        IndexedVote(Neutral, 42, 42, Seq.empty)
+      ),
       votesCount = 0,
       votesVerifiedCount = 0,
       toEnrich = false,
@@ -207,13 +209,14 @@ class ProposalServiceTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some(id.value),
         organisationName = None,
         organisationSlug = None,
-        postalCode = None,
-        age = None,
-        avatarUrl = None
+        postalCode = Some("12345"),
+        age = Some(25),
+        avatarUrl = Some("http://some-url"),
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       country = Country("FR"),
@@ -718,10 +721,41 @@ class ProposalServiceTest
       val gil: User = user(UserId("gil-user-id"))
       Mockito
         .when(
-          userHistoryCoordinatorService
-            .retrieveVotedProposals(ArgumentMatchers.eq(RequestUserVotedProposals(userId = gil.userId)))
+          sessionHistoryCoordinatorService
+            .retrieveVotedProposals(
+              ArgumentMatchers.eq(RequestSessionVotedProposals(sessionId = SessionId("my-session")))
+            )
         )
         .thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
+      Mockito
+        .when(
+          userHistoryCoordinatorService
+            .retrieveVotedProposals(ArgumentMatchers.eq(RequestUserVotedProposals(gil.userId)))
+        )
+        .thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
+      Mockito
+        .when(
+          sessionHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestSessionVoteValues])
+        )
+        .thenReturn(
+          Future.successful(
+            Map(
+              gilProposal2.id -> VoteAndQualifications(
+                Agree,
+                Map(LikeIt -> Trusted),
+                ZonedDateTime.parse("2018-03-01T16:09:30.441Z"),
+                Trusted
+              ),
+              gilProposal1.id -> VoteAndQualifications(
+                Agree,
+                Map(LikeIt -> Trusted),
+                ZonedDateTime.parse("2018-03-02T16:09:30.441Z"),
+                Trusted
+              )
+            )
+          )
+        )
+
       Mockito
         .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestVoteValues]))
         .thenReturn(
@@ -752,7 +786,7 @@ class ProposalServiceTest
           userId = gil.userId,
           filterVotes = None,
           filterQualifications = None,
-          requestContext = RequestContext.empty
+          requestContext = RequestContext.empty.copy(sessionId = SessionId("my-session"))
         ),
         Timeout(3.seconds)
       ) { proposalsResultResponse =>
@@ -2039,4 +2073,57 @@ class ProposalServiceTest
     }
   }
 
+  feature("search for user") {
+    scenario("test all") {
+      val unvoted: IndexedProposal = {
+        val tmp = indexedProposal(ProposalId("unvoted"))
+        tmp.copy(author = tmp.author.copy(anonymousParticipation = true))
+      }
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(any[SearchQuery]))
+        .thenReturn(
+          Future
+            .successful(ProposalsSearchResult(total = 2, results = Seq(indexedProposal(ProposalId("voted")), unvoted)))
+        )
+
+      Mockito
+        .when(
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("unvoted")))
+            )
+        )
+        .thenReturn(
+          Future
+            .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+        )
+
+      val search = proposalService.searchForUser(
+        None,
+        SearchQuery(),
+        RequestContext.empty.copy(sessionId = SessionId("my-session"))
+      )
+
+      whenReady(search, Timeout(5.seconds)) { result =>
+        result.results.size should be(2)
+        result.results.head.votes.filter(_.voteKey == Agree).map(_.hasVoted) should contain(true)
+        result.results.tail.flatMap(_.votes).filter(_.voteKey == Agree).map(_.hasVoted) should contain(false)
+
+        val nonemptyAuthor = result.results.head.author
+        nonemptyAuthor.firstName should be(defined)
+        nonemptyAuthor.postalCode should be(defined)
+        nonemptyAuthor.age should be(defined)
+        nonemptyAuthor.avatarUrl should be(defined)
+
+        val emptyAuthor = result.results.last.author
+        emptyAuthor.organisationSlug should be(empty)
+        emptyAuthor.organisationName should be(empty)
+        emptyAuthor.firstName should be(empty)
+        emptyAuthor.postalCode should be(empty)
+        emptyAuthor.age should be(empty)
+        emptyAuthor.avatarUrl should be(empty)
+
+      }
+    }
+  }
 }

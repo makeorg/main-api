@@ -117,7 +117,8 @@ class SocialServiceComponentTest
         createdAt = None,
         updatedAt = None,
         lastMailingError = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       val accessToken = AccessToken(
@@ -227,7 +228,8 @@ class SocialServiceComponentTest
         profile = None,
         createdAt = None,
         updatedAt = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       val accessToken = AccessToken(
@@ -337,7 +339,8 @@ class SocialServiceComponentTest
         profile = None,
         createdAt = None,
         updatedAt = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       val accessToken = AccessToken(
@@ -447,7 +450,8 @@ class SocialServiceComponentTest
         profile = None,
         createdAt = None,
         updatedAt = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       val accessToken = AccessToken(
@@ -547,7 +551,8 @@ class SocialServiceComponentTest
         profile = None,
         createdAt = None,
         updatedAt = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       val accessToken = AccessToken(
@@ -652,7 +657,8 @@ class SocialServiceComponentTest
         profile = None,
         createdAt = None,
         updatedAt = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       val accessToken = AccessToken(

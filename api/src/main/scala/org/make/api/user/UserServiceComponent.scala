@@ -23,6 +23,7 @@ import java.time.LocalDate
 
 import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.question.AuthorRequest
@@ -118,7 +119,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with ProposalServiceComponent
     with CrmServiceComponent
     with EventBusServiceComponent
-    with TokenGeneratorComponent =>
+    with TokenGeneratorComponent
+    with MakeSettingsComponent =>
 
   override lazy val userService: UserService = new DefaultUserService
 
@@ -178,7 +180,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         country = country,
         language = language,
         profile = profile,
-        availableQuestions = userRegisterData.availableQuestions
+        availableQuestions = userRegisterData.availableQuestions,
+        anonymousParticipation = makeSettings.defaultUserAnonymousParticipation
       )
 
       persistentUserService.persist(user)
@@ -308,7 +311,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         country = country,
         language = language,
         profile = profile,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = makeSettings.defaultUserAnonymousParticipation
       )
 
       persistentUserService.persist(user).map { user =>

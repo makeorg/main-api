@@ -71,7 +71,8 @@ class ModerationOrganisationApiTest
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val validAccessToken = "my-valid-access-token"

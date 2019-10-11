@@ -137,10 +137,10 @@ case class IndexedProposal(
   votesVerifiedCount: Int,
   toEnrich: Boolean,
   scores: IndexedScores,
-  context: Option[Context],
+  context: Option[IndexedContext],
   trending: Option[String],
   labels: Seq[String],
-  author: Author,
+  author: IndexedAuthor,
   organisations: Seq[IndexedOrganisationInfo],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
@@ -184,7 +184,7 @@ object IndexedProposalQuestion extends CirceFormatters {
 }
 
 @ApiModel
-final case class Context(
+final case class IndexedContext(
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operation: Option[OperationId],
   source: Option[String],
@@ -193,9 +193,9 @@ final case class Context(
   getParameters: Seq[IndexedGetParameters]
 )
 
-object Context {
-  implicit val encoder: Encoder[Context] = deriveEncoder[Context]
-  implicit val decoder: Decoder[Context] = deriveDecoder[Context]
+object IndexedContext {
+  implicit val encoder: Encoder[IndexedContext] = deriveEncoder[IndexedContext]
+  implicit val decoder: Decoder[IndexedContext] = deriveDecoder[IndexedContext]
 }
 
 final case class IndexedGetParameters(key: String, value: String)
@@ -205,17 +205,18 @@ object IndexedGetParameters {
   implicit val decoder: Decoder[IndexedGetParameters] = deriveDecoder[IndexedGetParameters]
 }
 
-final case class Author(firstName: Option[String],
-                        organisationName: Option[String],
-                        organisationSlug: Option[String],
-                        postalCode: Option[String],
-                        @(ApiModelProperty @field)(example = "21", dataType = "int")
-                        age: Option[Int],
-                        avatarUrl: Option[String])
+final case class IndexedAuthor(firstName: Option[String],
+                               organisationName: Option[String],
+                               organisationSlug: Option[String],
+                               postalCode: Option[String],
+                               @(ApiModelProperty @field)(example = "21", dataType = "int")
+                               age: Option[Int],
+                               avatarUrl: Option[String],
+                               anonymousParticipation: Boolean)
 
-object Author {
-  implicit val encoder: Encoder[Author] = deriveEncoder[Author]
-  implicit val decoder: Decoder[Author] = deriveDecoder[Author]
+object IndexedAuthor {
+  implicit val encoder: Encoder[IndexedAuthor] = deriveEncoder[IndexedAuthor]
+  implicit val decoder: Decoder[IndexedAuthor] = deriveDecoder[IndexedAuthor]
 }
 
 @ApiModel

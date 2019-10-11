@@ -110,17 +110,19 @@ class ElasticSearchHealthCheckActorIT
       votesVerifiedCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("92876"),
         age = Some(25),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),

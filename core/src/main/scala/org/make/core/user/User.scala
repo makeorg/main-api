@@ -106,7 +106,8 @@ case class User(userId: UserId,
                 lastMailingError: Option[MailingErrorLog] = None,
                 organisationName: Option[String] = None,
                 publicProfile: Boolean = false,
-                availableQuestions: Seq[QuestionId])
+                availableQuestions: Seq[QuestionId],
+                anonymousParticipation: Boolean)
     extends MakeSerializable
     with Timestamped {
 

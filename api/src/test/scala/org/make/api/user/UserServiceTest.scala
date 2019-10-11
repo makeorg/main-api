@@ -23,6 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
 import org.make.api.MakeUnitTest
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.question.AuthorRequest
 import org.make.api.technical.auth._
@@ -59,7 +60,8 @@ class UserServiceTest
     with ProposalServiceComponent
     with CrmServiceComponent
     with TokenGeneratorComponent
-    with EventBusServiceComponent {
+    with EventBusServiceComponent
+    with MakeSettingsComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -71,6 +73,9 @@ class UserServiceTest
     mock[PersistentUserToAnonymizeService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
+
+  Mockito.when(makeSettings.defaultUserAnonymousParticipation).thenReturn(false)
 
   override protected def afterEach(): Unit = {
     super.afterEach()
@@ -113,7 +118,8 @@ class UserServiceTest
     language = Language("fr"),
     profile = Some(fooProfile),
     createdAt = Some(zonedDateTimeInThePast),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val johnDoeProfile: Profile = Profile(
@@ -151,7 +157,8 @@ class UserServiceTest
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(johnDoeProfile),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   feature("register user") {
@@ -195,7 +202,8 @@ class UserServiceTest
         country = Country("FR"),
         language = Language("fr"),
         profile = Some(returnedProfile),
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       Mockito
@@ -208,6 +216,8 @@ class UserServiceTest
       Mockito
         .when(userTokenGenerator.generateVerificationToken())
         .thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
+
+      Mockito.clearInvocations(persistentUserService)
 
       val futureUser = userService.register(
         UserRegisterData(
@@ -236,6 +246,8 @@ class UserServiceTest
         user.profile.get.socioProfessionalCategory should be(Some(SocioProfessionalCategory.Employee))
         user.profile.get.optInPartner should be(Some(true))
         user.profile.get.registerQuestionId should be(Some(QuestionId("thequestionid")))
+
+        verify(persistentUserService).persist(ArgumentMatchers.argThat[User](!_.anonymousParticipation))
       }
     }
 
@@ -253,13 +265,6 @@ class UserServiceTest
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("facebook.com/picture")
-      )
-
-      val futureUser = userService.createOrUpdateUserFromSocial(
-        info,
-        Some("127.0.0.1"),
-        Some(QuestionId("question")),
-        RequestContext.empty
       )
 
       val returnedProfile = Profile(
@@ -298,7 +303,8 @@ class UserServiceTest
         country = Country("FR"),
         language = Language("fr"),
         profile = Some(returnedProfile),
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       Mockito
@@ -307,6 +313,15 @@ class UserServiceTest
             .persist(any[User])
         )
         .thenReturn(Future.successful(returnedUser))
+
+      Mockito.clearInvocations(persistentUserService)
+
+      val futureUser = userService.createOrUpdateUserFromSocial(
+        info,
+        Some("127.0.0.1"),
+        Some(QuestionId("question")),
+        RequestContext.empty
+      )
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
         user shouldBe a[User]
@@ -322,6 +337,7 @@ class UserServiceTest
             case _                          => false
           })
 
+        verify(persistentUserService).persist(ArgumentMatchers.argThat[User](!_.anonymousParticipation))
       }
     }
 
@@ -374,7 +390,8 @@ class UserServiceTest
         country = Country("FR"),
         language = Language("fr"),
         profile = Some(returnedProfileWithGender),
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       Mockito
@@ -454,7 +471,8 @@ class UserServiceTest
         country = Country("FR"),
         language = Language("fr"),
         profile = Some(returnedProfile),
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -524,7 +542,8 @@ class UserServiceTest
         country = Country("FR"),
         language = Language("fr"),
         profile = Some(returnedProfile),
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -581,7 +600,8 @@ class UserServiceTest
         country = Country("FR"),
         language = Language("fr"),
         profile = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
@@ -632,7 +652,8 @@ class UserServiceTest
         country = Country("FR"),
         language = Language("fr"),
         profile = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
@@ -936,7 +957,8 @@ class UserServiceTest
         profile = None,
         createdAt = None,
         updatedAt = None,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
       Mockito
         .when(persistentUserService.findByEmail("yopmail+some-hash@make.org"))

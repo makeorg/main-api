@@ -373,23 +373,14 @@ trait DefaultProposalApiComponent
                     }
                   )
                   provideAsync(
-                    operationService
-                      .find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
-                  ) { operations =>
-                    provideAsync(
-                      proposalService
-                        .searchForUser(
-                          userId = userAuth.map(_.user.userId),
-                          query = searchRequest.toSearchQuery(requestContext),
-                          requestContext = requestContext
-                        )
-                    ) { proposals =>
-                      proposals.copy(results = proposals.results.filterNot { proposal =>
-                        proposal.operationId
-                          .exists(operationId => !operations.map(_.operationId).contains(operationId))
-                      })
-                      complete(proposals)
-                    }
+                    proposalService
+                      .searchForUser(
+                        userId = userAuth.map(_.user.userId),
+                        query = searchRequest.toSearchQuery(requestContext),
+                        requestContext = requestContext
+                      )
+                  ) { proposals =>
+                    complete(proposals)
                   }
               }
             }
