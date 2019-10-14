@@ -251,7 +251,7 @@ trait DefaultAdminActiveFeatureApiComponent
             requireAdminRole(auth.user) {
               provideAsyncOrNotFound(activeFeatureService.getActiveFeature(activeFeatureId)) { _ =>
                 provideAsync(activeFeatureService.deleteActiveFeature(activeFeatureId)) { _ =>
-                  complete(StatusCodes.OK)
+                  complete(StatusCodes.NoContent)
                 }
               }
             }
