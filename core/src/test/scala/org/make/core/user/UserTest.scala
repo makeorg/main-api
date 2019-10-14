@@ -46,7 +46,8 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   feature("parse a Role from a String") {

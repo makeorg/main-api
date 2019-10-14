@@ -284,28 +284,17 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                         query: SearchQuery,
                         requestContext: RequestContext): Future[ProposalsSearchResult] = {
       query.filters.foreach(_.content.foreach { content =>
-        maybeUserId match {
-          case Some(userId) =>
-            userHistoryCoordinatorService.logHistory(
-              LogUserSearchProposalsEvent(
-                userId,
-                requestContext,
-                UserAction(DateHelper.now(), LogUserSearchProposalsEvent.action, UserSearchParameters(content.text))
-              )
+        sessionHistoryCoordinatorService.logHistory(
+          LogSessionSearchProposalsEvent(
+            requestContext.sessionId,
+            requestContext,
+            SessionAction(
+              DateHelper.now(),
+              LogSessionSearchProposalsEvent.action,
+              SessionSearchParameters(content.text)
             )
-          case None =>
-            sessionHistoryCoordinatorService.logHistory(
-              LogSessionSearchProposalsEvent(
-                requestContext.sessionId,
-                requestContext,
-                SessionAction(
-                  DateHelper.now(),
-                  LogSessionSearchProposalsEvent.action,
-                  SessionSearchParameters(content.text)
-                )
-              )
-            )
-        }
+          )
+        )
       })
       elasticsearchProposalAPI.searchProposals(query)
     }
@@ -337,18 +326,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
       search(maybeUserId, query, requestContext).flatMap { searchResult =>
-        maybeUserId match {
-          case Some(userId) =>
-            userHistoryCoordinatorService
-              .retrieveVoteAndQualifications(RequestVoteValues(userId, searchResult.results.map(_.id)))
-              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
-          case None =>
-            sessionHistoryCoordinatorService
-              .retrieveVoteAndQualifications(
-                RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
-              )
-              .map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
-        }
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
+          )
+          .map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
       }.map { proposalResultResponse =>
         ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)
       }

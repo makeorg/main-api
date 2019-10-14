@@ -148,7 +148,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     language = Language("fr"),
     profile = None,
     lastMailingError = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   private def proposal(proposalId: ProposalId, content: String, slug: String, question: Question) = Proposal(

@@ -113,7 +113,8 @@ class AdminUserApiTest
     createdAt = None,
     updatedAt = None,
     lastMailingError = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   private val newCitizen = User(
@@ -137,7 +138,8 @@ class AdminUserApiTest
     createdAt = None,
     updatedAt = None,
     lastMailingError = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   feature("get moderator") {

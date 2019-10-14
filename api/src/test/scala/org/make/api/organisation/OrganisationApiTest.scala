@@ -34,7 +34,6 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
 import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
-import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
@@ -100,7 +99,8 @@ class OrganisationApiTest
     updatedAt = None,
     lastMailingError = None,
     organisationName = Some("Make.org"),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   Mockito
@@ -128,17 +128,24 @@ class OrganisationApiTest
         createdAt = DateHelper.now(),
         updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
-        context =
-          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+        context = Some(
+          ProposalContextResponse(
+            source = None,
+            operation = None,
+            location = None,
+            question = None,
+            getParameters = Seq.empty
+          )
+        ),
         trending = None,
         labels = Seq.empty,
-        author = Author(
+        author = AuthorResponse(
           firstName = None,
           organisationName = None,
           organisationSlug = None,
           postalCode = None,
           age = None,
-          avatarUrl = None
+          avatarUrl = None,
         ),
         organisations = Seq.empty,
         themeId = None,
@@ -160,17 +167,24 @@ class OrganisationApiTest
         createdAt = DateHelper.now(),
         updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
-        context =
-          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+        context = Some(
+          ProposalContextResponse(
+            source = None,
+            operation = None,
+            location = None,
+            question = None,
+            getParameters = Seq.empty
+          )
+        ),
         trending = None,
         labels = Seq.empty,
-        author = Author(
+        author = AuthorResponse(
           firstName = None,
           organisationName = None,
           organisationSlug = None,
           postalCode = None,
           age = None,
-          avatarUrl = None
+          avatarUrl = None,
         ),
         organisations = Seq.empty,
         themeId = None,
@@ -192,11 +206,18 @@ class OrganisationApiTest
         createdAt = DateHelper.now(),
         updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
-        context =
-          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+        context = Some(
+          ProposalContextResponse(
+            source = None,
+            operation = None,
+            location = None,
+            question = None,
+            getParameters = Seq.empty
+          )
+        ),
         trending = None,
         labels = Seq.empty,
-        author = Author(
+        author = AuthorResponse(
           firstName = None,
           organisationName = None,
           organisationSlug = None,
@@ -224,17 +245,24 @@ class OrganisationApiTest
         createdAt = DateHelper.now(),
         updatedAt = Some(DateHelper.now()),
         votes = Seq.empty,
-        context =
-          Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+        context = Some(
+          ProposalContextResponse(
+            source = None,
+            operation = None,
+            location = None,
+            question = None,
+            getParameters = Seq.empty
+          )
+        ),
         trending = None,
         labels = Seq.empty,
-        author = Author(
+        author = AuthorResponse(
           firstName = None,
           organisationName = None,
           organisationSlug = None,
           postalCode = None,
           age = None,
-          avatarUrl = None
+          avatarUrl = None,
         ),
         organisations = Seq.empty,
         themeId = Some(ThemeId("bar-theme")),

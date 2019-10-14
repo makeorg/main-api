@@ -125,6 +125,90 @@ object IndexedProposalQuestionWordingResponse extends CirceFormatters {
     deriveDecoder[IndexedProposalQuestionWordingResponse]
 }
 
+final case class AuthorResponse(firstName: Option[String],
+                                organisationName: Option[String],
+                                organisationSlug: Option[String],
+                                postalCode: Option[String],
+                                @(ApiModelProperty @field)(example = "21", dataType = "int")
+                                age: Option[Int],
+                                avatarUrl: Option[String])
+
+object AuthorResponse {
+  implicit val encoder: Encoder[AuthorResponse] = deriveEncoder[AuthorResponse]
+  implicit val decoder: Decoder[AuthorResponse] = deriveDecoder[AuthorResponse]
+
+  def fromIndexedAuthor(author: IndexedAuthor): AuthorResponse = {
+    if (author.anonymousParticipation) {
+      AuthorResponse(
+        firstName = None,
+        organisationName = None,
+        organisationSlug = None,
+        postalCode = None,
+        age = None,
+        avatarUrl = None
+      )
+    } else {
+      AuthorResponse(
+        firstName = author.firstName,
+        organisationName = author.organisationName,
+        organisationSlug = author.organisationSlug,
+        postalCode = author.postalCode,
+        age = author.age,
+        avatarUrl = author.avatarUrl
+      )
+    }
+  }
+}
+
+final case class ProposalContextResponse(operation: Option[OperationId],
+                                         source: Option[String],
+                                         location: Option[String],
+                                         question: Option[String],
+                                         getParameters: Seq[GetParameterResponse])
+
+object ProposalContextResponse {
+  implicit val encoder: Encoder[ProposalContextResponse] = deriveEncoder[ProposalContextResponse]
+  implicit val decoder: Decoder[ProposalContextResponse] = deriveDecoder[ProposalContextResponse]
+
+  def fromIndexedContext(context: IndexedContext): ProposalContextResponse = {
+    ProposalContextResponse(
+      context.operation,
+      context.source,
+      context.location,
+      context.question,
+      context.getParameters.map(GetParameterResponse.fromIndexedGetParameters)
+    )
+  }
+}
+
+final case class GetParameterResponse(key: String, value: String)
+
+object GetParameterResponse {
+  implicit val encoder: Encoder[GetParameterResponse] = deriveEncoder[GetParameterResponse]
+  implicit val decoder: Decoder[GetParameterResponse] = deriveDecoder[GetParameterResponse]
+
+  def fromIndexedGetParameters(parameter: IndexedGetParameters): GetParameterResponse = {
+    GetParameterResponse(key = parameter.key, value = parameter.value)
+  }
+}
+
+final case class OrganisationInfoResponse(organisationId: UserId,
+                                          organisationName: Option[String],
+                                          organisationSlug: Option[String])
+
+object OrganisationInfoResponse {
+  implicit val encoder: Encoder[OrganisationInfoResponse] = deriveEncoder[OrganisationInfoResponse]
+  implicit val decoder: Decoder[OrganisationInfoResponse] = deriveDecoder[OrganisationInfoResponse]
+
+  def fromIndexedOrganisationInfo(indexedOrganisationInfo: IndexedOrganisationInfo): OrganisationInfoResponse = {
+    OrganisationInfoResponse(
+      indexedOrganisationInfo.organisationId,
+      indexedOrganisationInfo.organisationName,
+      indexedOrganisationInfo.organisationSlug
+    )
+  }
+}
+
 @ApiModel
 final case class ProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
@@ -140,11 +224,11 @@ final case class ProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
   updatedAt: Option[ZonedDateTime],
   votes: Seq[VoteResponse],
-  context: Option[Context],
+  context: Option[ProposalContextResponse],
   trending: Option[String],
   labels: Seq[String],
-  author: Author,
-  organisations: Seq[IndexedOrganisationInfo],
+  author: AuthorResponse,
+  organisations: Seq[OrganisationInfoResponse],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -184,11 +268,11 @@ object ProposalResponse extends CirceFormatters {
             case _                                                     => false
           }, voteAndQualifications)
       },
-      context = indexedProposal.context,
+      context = indexedProposal.context.map(ProposalContextResponse.fromIndexedContext),
       trending = indexedProposal.trending,
       labels = indexedProposal.labels,
-      author = indexedProposal.author,
-      organisations = indexedProposal.organisations,
+      author = AuthorResponse.fromIndexedAuthor(indexedProposal.author),
+      organisations = indexedProposal.organisations.map(OrganisationInfoResponse.fromIndexedOrganisationInfo),
       country = indexedProposal.country,
       language = indexedProposal.language,
       themeId = indexedProposal.themeId,

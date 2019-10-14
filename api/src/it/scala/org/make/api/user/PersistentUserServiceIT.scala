@@ -77,7 +77,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(profile),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = true
   )
 
   val jennaDoo = User(
@@ -98,7 +99,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val janeDee = User(
@@ -119,7 +121,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val passwordUser = User(
@@ -140,7 +143,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val socialUser = User(
@@ -161,7 +165,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val userOrganisationDGSE = User(
@@ -184,7 +189,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     language = Language("fr"),
     profile = None,
     organisationName = Some("Direction Générale de la Sécurité Extérieure"),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val userOrganisationCSIS = User(
@@ -207,7 +213,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     language = Language("fr"),
     profile = None,
     organisationName = Some("Canadian Security Intelligence Service"),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val userOrganisationFSB = User(
@@ -230,7 +237,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     language = Language("ru"),
     profile = None,
     organisationName = Some("Federal Security Service"),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val johnMailing: User = johnDoe.copy(
@@ -267,7 +275,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     language = Language("en"),
     profile = None,
     organisationName = Some("Central Intelligence Agency - CIA"),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val userOrganisationFBI = User(
@@ -290,7 +299,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     language = Language("en"),
     profile = None,
     organisationName = Some("Federal Bureau of Investigation - FBI"),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val userOrganisationMI5 = User(
@@ -313,7 +323,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     language = Language("en"),
     profile = None,
     organisationName = Some("Military Intelligence, Section 5 - MI5"),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val updateUser = User(
@@ -335,7 +346,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     language = Language("fr"),
     profile = Some(profile),
     createdAt = Some(DateHelper.now()),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
@@ -412,6 +424,9 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
         And("the user opt in partner must be true")
         user.profile.get.optInPartner.get shouldBe true
+
+        And("the user anonymous participation must be true")
+        user.anonymousParticipation should be(true)
 
       }
     }
@@ -843,6 +858,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
             updateUser.copy(
               firstName = Some("FooFoo"),
               lastName = Some("BarBar"),
+              anonymousParticipation = true,
               profile = Some(
                 updateUser.profile.get.copy(
                   gender = Some(Gender.Female),
@@ -856,6 +872,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           userUpdated shouldBe a[User]
           userUpdated.firstName shouldBe Some("FooFoo")
           userUpdated.lastName shouldBe Some("BarBar")
+          userUpdated.anonymousParticipation shouldBe true
           userUpdated.profile.get.gender shouldBe Some(Gender.Female)
           userUpdated.profile.get.socioProfessionalCategory shouldBe Some(SocioProfessionalCategory.Employee)
         }

@@ -124,7 +124,8 @@ class UserApiTest
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val expiresInSecond = 1000
@@ -597,7 +598,8 @@ class UserApiTest
       country = Country("FR"),
       language = Language("fr"),
       profile = None,
-      availableQuestions = Seq.empty
+      availableQuestions = Seq.empty,
+      anonymousParticipation = false
     )
     Mockito
       .when(persistentUserService.findByEmail("john.doe@example.com"))
@@ -635,7 +637,8 @@ class UserApiTest
       country = Country("FR"),
       language = Language("fr"),
       profile = None,
-      availableQuestions = Seq.empty
+      availableQuestions = Seq.empty,
+      anonymousParticipation = false
     )
 
     val notExpiredResetTokenUserId: UserId = UserId("not-expired-reset-token-user-id")
@@ -658,7 +661,8 @@ class UserApiTest
       country = Country("FR"),
       language = Language("fr"),
       profile = None,
-      availableQuestions = Seq.empty
+      availableQuestions = Seq.empty,
+      anonymousParticipation = false
     )
 
     Mockito
@@ -890,7 +894,8 @@ class UserApiTest
               profile = None,
               createdAt = None,
               updatedAt = None,
-              availableQuestions = Seq.empty
+              availableQuestions = Seq.empty,
+              anonymousParticipation = false
             )
           )
         )
@@ -950,13 +955,14 @@ class UserApiTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Paul"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("11111"),
         age = Some(26),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1111,13 +1117,14 @@ class UserApiTest
       context = None,
       trending = None,
       labels = Seq.empty,
-      author = Author(
+      author = IndexedAuthor(
         firstName = sylvain.firstName,
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("11111"),
         age = Some(22),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,

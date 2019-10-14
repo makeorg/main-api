@@ -42,7 +42,7 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
-import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedScores, SequencePool}
+import org.make.core.proposal.indexed.{IndexedAuthor, IndexedProposal, IndexedScores, SequencePool}
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleActor
@@ -114,7 +114,8 @@ class OrganisationServiceTest
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None, None)),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val returnedOrganisation2 = User(
@@ -137,7 +138,8 @@ class OrganisationServiceTest
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   feature("Get organisation") {
@@ -467,13 +469,14 @@ class OrganisationServiceTest
           context = None,
           trending = None,
           labels = Seq.empty,
-          author = Author(
+          author = IndexedAuthor(
             firstName = Some(id.value),
             organisationName = None,
             organisationSlug = None,
             postalCode = None,
             age = None,
-            avatarUrl = None
+            avatarUrl = None,
+            anonymousParticipation = false
           ),
           organisations = Seq.empty,
           country = Country("FR"),

@@ -1073,6 +1073,10 @@
             "avatarUrl": {
               "type": "text",
               "index": false
+            },
+            "anonymousParticipation": {
+              "type": "boolean",
+              "index": false
             }
           }
         },

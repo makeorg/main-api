@@ -85,7 +85,8 @@ class ModerationOperationApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
   val daenerys = User(
     userId = UserId("the-mother-of-dragons"),
@@ -107,7 +108,8 @@ class ModerationOperationApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
   val tyrion = User(
     userId = UserId("the-dwarf"),
@@ -129,7 +131,8 @@ class ModerationOperationApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val firstOperation: SimpleOperation = SimpleOperation(

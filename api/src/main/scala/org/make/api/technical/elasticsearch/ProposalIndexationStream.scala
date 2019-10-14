@@ -48,14 +48,14 @@ import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
-  Author,
+  IndexedAuthor,
   IndexedGetParameters,
   IndexedOrganisationInfo,
   IndexedProposal,
   IndexedProposalQuestion,
   IndexedScores,
   IndexedVote,
-  Context => ProposalContext
+  IndexedContext => ProposalContext
 }
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -243,7 +243,7 @@ trait ProposalIndexationStream
         ),
         trending = None,
         labels = proposal.labels.map(_.value),
-        author = Author(
+        author = IndexedAuthor(
           firstName = user.firstName,
           organisationName = user.organisationName,
           organisationSlug = user.organisationName.map(name => SlugHelper(name)),
@@ -251,7 +251,8 @@ trait ProposalIndexationStream
           age = user.profile
             .flatMap(_.dateOfBirth)
             .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
-          avatarUrl = user.profile.flatMap(_.avatarUrl)
+          avatarUrl = user.profile.flatMap(_.avatarUrl),
+          anonymousParticipation = user.anonymousParticipation
         ),
         organisations = organisationInfos
           .map(

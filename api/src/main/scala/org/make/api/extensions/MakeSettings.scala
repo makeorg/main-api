@@ -31,6 +31,7 @@ class MakeSettings(config: Config) extends Extension {
   val passivateTimeout: Duration = Duration(config.getString("passivate-timeout"))
   val maxUserHistoryEvents: Int = config.getInt("max-user-history-events")
   val mandatoryConnection: Boolean = config.getBoolean("mandatory-connection")
+  val defaultUserAnonymousParticipation: Boolean = config.getBoolean("default-user-anonymous-participation")
 
   object SessionCookie {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))

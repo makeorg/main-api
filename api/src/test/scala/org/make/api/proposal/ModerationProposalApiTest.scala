@@ -49,7 +49,7 @@ import org.make.core.proposal.QualificationKey.{
   PlatitudeDisagree
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
-import org.make.core.proposal.indexed._
+import org.make.core.proposal.indexed.{IndexedProposal, IndexedProposalQuestion, ProposalsSearchResult}
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
@@ -132,7 +132,8 @@ class ModerationProposalApiTest
     createdAt = None,
     updatedAt = None,
     lastMailingError = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val daenerys = User(
@@ -155,7 +156,8 @@ class ModerationProposalApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   val tyrion = User(
@@ -184,7 +186,8 @@ class ModerationProposalApiTest
       QuestionId("some-question"),
       QuestionId("question-mieux-vivre-ensemble"),
       QuestionId("question-vff")
-    )
+    ),
+    anonymousParticipation = false
   )
 
   val arya = User(
@@ -207,7 +210,8 @@ class ModerationProposalApiTest
     profile = None,
     createdAt = None,
     updatedAt = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
@@ -538,7 +542,14 @@ class ModerationProposalApiTest
     context = None,
     trending = None,
     labels = Seq.empty,
-    author = Author(None, None, None, None, None, None),
+    author = AuthorResponse(
+      firstName = None,
+      organisationName = None,
+      organisationSlug = None,
+      postalCode = None,
+      age = None,
+      avatarUrl = None
+    ),
     organisations = Seq.empty,
     country = Country("TN"),
     language = Language("ar"),

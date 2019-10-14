@@ -86,7 +86,8 @@ class PersistentOperationServiceIT
     country = Country("FR"),
     language = Language("fr"),
     profile = Some(profile),
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
 
   def newTag(label: String): Tag = Tag(

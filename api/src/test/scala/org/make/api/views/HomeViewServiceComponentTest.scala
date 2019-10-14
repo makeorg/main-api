@@ -30,7 +30,7 @@ import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{Author, IndexedProposal, IndexedScores, SequencePool}
+import org.make.core.proposal.indexed.{IndexedAuthor, IndexedProposal, IndexedScores, SequencePool}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
@@ -227,13 +227,14 @@ class HomeViewServiceComponentTest
           context = None,
           trending = None,
           labels = Seq.empty,
-          author = Author(
+          author = IndexedAuthor(
             firstName = Some(id.value),
             organisationName = None,
             organisationSlug = None,
             postalCode = None,
             age = None,
-            avatarUrl = None
+            avatarUrl = None,
+            anonymousParticipation = false
           ),
           organisations = Seq.empty,
           country = Country("FR"),

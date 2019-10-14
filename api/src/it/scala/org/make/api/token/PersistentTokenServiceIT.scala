@@ -63,7 +63,8 @@ class PersistentTokenServiceIT
     country = Country("FR"),
     language = Language("fr"),
     profile = None,
-    availableQuestions = Seq.empty
+    availableQuestions = Seq.empty,
+    anonymousParticipation = false
   )
   val exampleClient = Client(
     clientId = ClientId("apiclient"),

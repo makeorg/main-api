@@ -333,7 +333,15 @@ class ModerationQuestionApiTest
                 context = None,
                 trending = None,
                 labels = Seq.empty,
-                author = Author(None, None, None, None, None, None),
+                author = IndexedAuthor(
+                  firstName = None,
+                  organisationName = None,
+                  organisationSlug = None,
+                  postalCode = None,
+                  age = None,
+                  avatarUrl = None,
+                  anonymousParticipation = false
+                ),
                 organisations = Seq.empty,
                 country = Country("FR"),
                 language = Language("fr"),

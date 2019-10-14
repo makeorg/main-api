@@ -173,15 +173,17 @@ class ProposalSearchEngineIT
     votesVerifiedCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
-    context =
-      Some(Context(operation = None, location = None, question = None, source = None, getParameters = Seq.empty)),
-    author = Author(
+    context = Some(
+      IndexedContext(operation = None, location = None, question = None, source = None, getParameters = Seq.empty)
+    ),
+    author = IndexedAuthor(
       firstName = None,
       organisationName = None,
       organisationSlug = None,
       postalCode = None,
       age = None,
-      avatarUrl = None
+      avatarUrl = None,
+      anonymousParticipation = false
     ),
     organisations = Seq.empty,
     themeId = None,
@@ -243,17 +245,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 287,
       toEnrich = true,
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 84),
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("92876"),
         age = Some(25),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
@@ -309,17 +313,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 310,
       toEnrich = true,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Valerie"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
@@ -377,17 +383,19 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Valerie"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -443,17 +451,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 353,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Jennifer"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("40734"),
         age = Some(23),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -509,17 +519,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 368,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -580,13 +592,14 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -645,13 +658,14 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -720,13 +734,14 @@ class ProposalSearchEngineIT
       context = None,
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
         age = Some(31),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -797,17 +812,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 178,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Ronald"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -865,17 +882,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 131,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Jennifer"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("81966"),
         age = Some(21),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -933,17 +952,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 356,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Ronald"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("40734"),
         age = Some(23),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1001,17 +1022,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 347,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Jennifer"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("81966"),
         age = Some(21),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1067,17 +1090,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("40734"),
         age = Some(23),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1133,17 +1158,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 204,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Valerie"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("92876"),
         age = Some(25),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1200,17 +1227,19 @@ class ProposalSearchEngineIT
       votesVerifiedCount = 254,
       toEnrich = false,
       scores = IndexedScores.empty,
-      context =
-        Some(Context(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)),
+      context = Some(
+        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      ),
       trending = None,
       labels = Seq(),
-      author = Author(
+      author = IndexedAuthor(
         firstName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
         age = Some(26),
-        avatarUrl = None
+        avatarUrl = None,
+        anonymousParticipation = false
       ),
       organisations = Seq.empty,
       themeId = None,

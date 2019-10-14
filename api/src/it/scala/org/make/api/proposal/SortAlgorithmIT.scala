@@ -149,13 +149,14 @@ class SortAlgorithmIT
     toEnrich = false,
     scores = IndexedScores.empty,
     context = None,
-    author = Author(
+    author = IndexedAuthor(
       firstName = None,
       organisationName = None,
       organisationSlug = None,
       postalCode = None,
       age = None,
-      avatarUrl = None
+      avatarUrl = None,
+      anonymousParticipation = false
     ),
     organisations = Seq.empty,
     themeId = None,

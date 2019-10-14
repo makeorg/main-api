@@ -90,7 +90,8 @@ object PersistentUserServiceComponent {
                             optInPartner: Option[Boolean],
                             availableQuestions: Array[String],
                             reconnectToken: Option[String],
-                            reconnectTokenCreatedAt: Option[ZonedDateTime]) {
+                            reconnectTokenCreatedAt: Option[ZonedDateTime],
+                            anonymousParticipation: Boolean) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -121,7 +122,8 @@ object PersistentUserServiceComponent {
         },
         organisationName = organisationName,
         publicProfile = publicProfile,
-        availableQuestions = availableQuestions.toSeq.map(QuestionId.apply)
+        availableQuestions = availableQuestions.toSeq.map(QuestionId.apply),
+        anonymousParticipation = anonymousParticipation
       )
     }
 
@@ -209,7 +211,8 @@ object PersistentUserServiceComponent {
       "public_profile",
       "available_questions",
       "reconnect_token",
-      "reconnect_token_created_at"
+      "reconnect_token_created_at",
+      "anonymous_participation"
     )
 
     override val columnNames: Seq[String] = userColumnNames ++ profileColumnNames
@@ -268,7 +271,8 @@ object PersistentUserServiceComponent {
           .map(_.getArray.asInstanceOf[Array[String]])
           .getOrElse(Array()),
         reconnectToken = resultSet.stringOpt(userResultName.reconnectToken),
-        reconnectTokenCreatedAt = resultSet.zonedDateTimeOpt(userResultName.reconnectTokenCreatedAt)
+        reconnectTokenCreatedAt = resultSet.zonedDateTimeOpt(userResultName.reconnectTokenCreatedAt),
+        anonymousParticipation = resultSet.boolean(userResultName.anonymousParticipation)
       )
     }
   }
@@ -721,7 +725,8 @@ trait DefaultPersistentUserServiceComponent
               column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
               column.optInPartner -> user.profile.flatMap(_.optInPartner),
               column.availableQuestions -> session.connection
-                .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray)
+                .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray),
+              column.anonymousParticipation -> user.anonymousParticipation,
             )
         }.execute().apply()
       }).map(_ => user)
@@ -801,7 +806,8 @@ trait DefaultPersistentUserServiceComponent
               column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
               column.optInPartner -> user.profile.flatMap(_.optInPartner),
               column.availableQuestions -> session.connection
-                .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray)
+                .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray),
+              column.anonymousParticipation -> user.anonymousParticipation
             )
             .where(
               sqls

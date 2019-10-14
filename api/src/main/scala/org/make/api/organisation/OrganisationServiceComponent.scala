@@ -183,7 +183,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
           )
         ),
         publicProfile = true,
-        availableQuestions = Seq.empty
+        availableQuestions = Seq.empty,
+        anonymousParticipation = false
       )
       persistentUserService.persist(user)
     }
