@@ -228,7 +228,7 @@ class AdminActiveFeatureApiTest
     scenario("allow authenticated admin on existing activeFeature") {
       Delete("/admin/active-features/hello-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
+        status should be(StatusCodes.NoContent)
       }
     }
 
