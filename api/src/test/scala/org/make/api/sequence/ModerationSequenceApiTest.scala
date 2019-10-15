@@ -68,7 +68,12 @@ class ModerationSequenceApiTest
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(userId = UserId("my-user-id"), roles = Seq(RoleCitizen), availableQuestions = Seq.empty),
+            UserRights(
+              userId = UserId("my-user-id"),
+              roles = Seq(RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
             None,
             Some("user"),
             None
@@ -85,7 +90,8 @@ class ModerationSequenceApiTest
             UserRights(
               userId = UserId("the-mother-of-dragons"),
               roles = Seq(RoleAdmin),
-              availableQuestions = Seq.empty
+              availableQuestions = Seq.empty,
+              emailVerified = true
             ),
             None,
             None,
@@ -100,7 +106,12 @@ class ModerationSequenceApiTest
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(userId = UserId("the-dwarf"), roles = Seq(RoleModerator), availableQuestions = Seq.empty),
+            UserRights(
+              userId = UserId("the-dwarf"),
+              roles = Seq(RoleModerator),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
             None,
             None,
             None

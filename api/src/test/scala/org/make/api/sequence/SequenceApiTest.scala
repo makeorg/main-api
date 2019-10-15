@@ -59,7 +59,12 @@ class SequenceApiTest extends MakeApiTestBase with DefaultSequenceApiComponent w
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(userId = UserId("my-user-id"), roles = Seq(RoleCitizen), availableQuestions = Seq.empty),
+            UserRights(
+              userId = UserId("my-user-id"),
+              roles = Seq(RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
             None,
             Some("user"),
             None

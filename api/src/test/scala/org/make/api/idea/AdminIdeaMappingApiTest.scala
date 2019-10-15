@@ -72,7 +72,17 @@ class AdminIdeaMappingApiTest
     .thenReturn(
       Future.successful(
         Some(
-          AuthInfo(UserRights(UserId("my-citizen-user-id"), Seq(RoleCitizen), Seq.empty), None, Some("citizen"), None)
+          AuthInfo(
+            UserRights(
+              userId = UserId("my-citizen-user-id"),
+              roles = Seq(RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
+            None,
+            Some("citizen"),
+            None
+          )
         )
       )
     )
@@ -82,7 +92,12 @@ class AdminIdeaMappingApiTest
       Future.successful(
         Some(
           AuthInfo(
-            UserRights(UserId("my-moderator-user-id"), Seq(RoleModerator), Seq.empty),
+            UserRights(
+              userId = UserId("my-moderator-user-id"),
+              roles = Seq(RoleModerator),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
             None,
             Some("moderator"),
             None
@@ -95,7 +110,19 @@ class AdminIdeaMappingApiTest
     .thenReturn(
       Future
         .successful(
-          Some(AuthInfo(UserRights(UserId("my-admin-user-id"), Seq(RoleAdmin), Seq.empty), None, Some("admin"), None))
+          Some(
+            AuthInfo(
+              UserRights(
+                userId = UserId("my-admin-user-id"),
+                roles = Seq(RoleAdmin),
+                availableQuestions = Seq.empty,
+                emailVerified = true
+              ),
+              None,
+              Some("admin"),
+              None
+            )
+          )
         )
     )
 

@@ -364,7 +364,17 @@ class MakeDirectivesTest
         createdAt = new Date(),
         params = Map.empty
       )
-      val authInfo = AuthInfo(UserRights(UserId("user-id"), Seq(Role.RoleCitizen), Seq.empty), None, None, None)
+      val authInfo = AuthInfo(
+        UserRights(
+          userId = UserId("user-id"),
+          roles = Seq(Role.RoleCitizen),
+          availableQuestions = Seq.empty,
+          emailVerified = true
+        ),
+        None,
+        None,
+        None
+      )
       when(oauth2DataHandler.refreshIfTokenIsExpired(ArgumentMatchers.eq("valid-token")))
         .thenReturn(Future.successful(Some(newToken)))
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq("valid-token")))
@@ -411,4 +421,113 @@ class MakeDirectivesTest
     }
   }
 
+  feature("mandatory connection access") {
+    scenario("core only endpoint") {
+      val routeUnlogged = sealRoute(checkMandatoryConnectionEndpointAccess(None, EndpointType.CoreOnly) {
+        complete(StatusCodes.OK)
+      })
+      val routeLoggedUnverified = sealRoute(
+        checkMandatoryConnectionEndpointAccess(
+          Some(
+            UserRights(userId = UserId("a"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = false)
+          ),
+          EndpointType.CoreOnly
+        ) {
+          complete(StatusCodes.OK)
+        }
+      )
+      val routeLoggedVerified = sealRoute(
+        checkMandatoryConnectionEndpointAccess(
+          Some(
+            UserRights(userId = UserId("a"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = true)
+          ),
+          EndpointType.CoreOnly
+        ) {
+          complete(StatusCodes.OK)
+        }
+      )
+
+      Get("/") ~> routeUnlogged ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+      Get("/") ~> routeLoggedUnverified ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+      Get("/") ~> routeLoggedVerified ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("public endpoint") {
+      val routeUnlogged = sealRoute(checkMandatoryConnectionEndpointAccess(None, EndpointType.Public) {
+        complete(StatusCodes.OK)
+      })
+      val routeLoggedUnverified = sealRoute(
+        checkMandatoryConnectionEndpointAccess(
+          Some(
+            UserRights(userId = UserId("a"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = false)
+          ),
+          EndpointType.Public
+        ) {
+          complete(StatusCodes.OK)
+        }
+      )
+      val routeLoggedVerified = sealRoute(
+        checkMandatoryConnectionEndpointAccess(
+          Some(
+            UserRights(userId = UserId("a"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = true)
+          ),
+          EndpointType.Public
+        ) {
+          complete(StatusCodes.OK)
+        }
+      )
+
+      Get("/") ~> routeUnlogged ~> check {
+        status should be(StatusCodes.OK)
+      }
+      Get("/") ~> routeLoggedUnverified ~> check {
+        status should be(StatusCodes.OK)
+      }
+      Get("/") ~> routeLoggedVerified ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("regular endpoint") {
+      val routeUnlogged = sealRoute(checkMandatoryConnectionEndpointAccess(None, EndpointType.Regular) {
+        complete(StatusCodes.OK)
+      })
+      val routeLoggedUnverified = sealRoute(
+        checkMandatoryConnectionEndpointAccess(
+          Some(
+            UserRights(userId = UserId("a"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = false)
+          ),
+          EndpointType.Regular
+        ) {
+          complete(StatusCodes.OK)
+        }
+      )
+      val routeLoggedVerified = sealRoute(
+        checkMandatoryConnectionEndpointAccess(
+          Some(
+            UserRights(userId = UserId("a"), roles = Seq.empty, availableQuestions = Seq.empty, emailVerified = true)
+          ),
+          EndpointType.Regular
+        ) {
+          complete(StatusCodes.OK)
+        }
+      )
+
+      Get("/") ~> routeUnlogged ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+      Get("/") ~> routeLoggedUnverified ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+      Get("/") ~> routeLoggedVerified ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
 }

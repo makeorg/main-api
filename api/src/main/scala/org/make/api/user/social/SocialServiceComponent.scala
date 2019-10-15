@@ -117,7 +117,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
         client   <- futureClient(user.userId)
         accessToken <- oauth2DataHandler.createAccessToken(
           authInfo = AuthInfo(
-            user = UserRights(user.userId, user.roles, user.availableQuestions),
+            user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
             clientId = client.map(_.value),
             scope = None,
             redirectUri = None

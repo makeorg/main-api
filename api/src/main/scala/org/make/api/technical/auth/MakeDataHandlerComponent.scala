@@ -174,7 +174,9 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
       findClient.flatMap {
         case Some(client) =>
-          findUser(client).map(_.map(user => UserRights(user.userId, user.roles, user.availableQuestions)))
+          findUser(client).map(
+            _.map(user => UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified))
+          )
         case _ => Future.successful(None)
       }
     }
@@ -243,7 +245,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
                     Future.successful(
                       Some(
                         AuthInfo(
-                          user = UserRights(user.userId, user.roles, user.availableQuestions),
+                          user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
                           clientId = Some(authCode.client.value),
                           scope = authCode.scope,
                           redirectUri = authCode.redirectUri

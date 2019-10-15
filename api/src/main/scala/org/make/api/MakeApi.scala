@@ -458,6 +458,11 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
         complete(StatusCodes.BadRequest -> errors)
       case MalformedRequestContentRejection(_, e) =>
         complete(StatusCodes.BadRequest -> Seq(ValidationError("unknown", "malformed", Option(e.getMessage))))
+      case EmailNotVerifiedRejection =>
+        complete(
+          StatusCodes.Forbidden ->
+            Seq(ValidationError("unknown", "email_not_verified", Some("Your email must be verified first")))
+        )
     }
     .result()
     .withFallback(RejectionHandler.default)

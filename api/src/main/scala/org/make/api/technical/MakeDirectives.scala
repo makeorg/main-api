@@ -48,16 +48,8 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core.{
-  reference,
-  ApplicationName,
-  CirceFormatters,
-  DateHelper,
-  FileHelper,
-  RequestContext,
-  SlugHelper,
-  Validation
-}
+import org.make.core._
+import org.make.core.RequestContext
 import scalaoauth2.provider.AccessToken
 
 import scala.collection.immutable
@@ -107,15 +99,26 @@ trait MakeDirectives
     optionalCookie(makeSettings.VisitorCookie.createdAtName)
       .map(_.flatMap(cookie => Try(ZonedDateTime.parse(cookie.value)).toOption).getOrElse(DateHelper.now()))
 
-  def checkEndpointAccess(isConnected: Boolean, endpointType: EndpointType): Directive0 = {
+  def checkEndpointAccess(userRights: Option[UserRights], endpointType: EndpointType): Directive0 = {
     if (mandatoryConnection) {
-      if (endpointType != EndpointType.Public && !isConnected) {
-        reject(AuthenticationFailedRejection(cause = CredentialsMissing, challenge = HttpChallenges.oAuth2(realm)))
-      } else {
-        authorize(endpointType != EndpointType.CoreOnly).tflatMap(_ => pass)
-      }
+      checkMandatoryConnectionEndpointAccess(userRights, endpointType)
     } else {
       pass
+    }
+  }
+
+  def checkMandatoryConnectionEndpointAccess(userRights: Option[UserRights], endpointType: EndpointType): Directive0 = {
+    endpointType match {
+      case EndpointType.Public   => pass
+      case EndpointType.CoreOnly => reject(AuthorizationFailedRejection)
+      case EndpointType.Regular =>
+        userRights match {
+          case Some(UserRights(_, _, _, true)) => pass
+          // Reject request if email is not verified
+          case Some(UserRights(_, _, _, false)) => reject(EmailNotVerifiedRejection)
+          case None =>
+            reject(AuthenticationFailedRejection(cause = CredentialsMissing, challenge = HttpChallenges.oAuth2(realm)))
+        }
     }
   }
 
@@ -278,7 +281,7 @@ trait MakeDirectives
       maybeGetParameters   <- optionalHeaderValueByName(GetParametersHeader.name)
       maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
       maybeUser            <- optionalMakeOAuth2
-      _                    <- checkEndpointAccess(maybeUser.isDefined, endpointType)
+      _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
       maybeQuestionId      <- optionalHeaderValueByName(QuestionIdHeader.name)
       maybeApplicationName <- optionalHeaderValueByName(ApplicationNameHeader.name)
       maybeReferrer        <- optionalHeaderValueByName(ReferrerHeader.name)
@@ -534,6 +537,8 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
     authorize(user.roles.contains(RoleAdmin))
   }
 }
+
+case object EmailNotVerifiedRejection extends Rejection
 
 final case class ThemeIdHeader(override val value: String) extends ModeledCustomHeader[ThemeIdHeader] {
   override def companion: ModeledCustomHeaderCompanion[ThemeIdHeader] = ThemeIdHeader

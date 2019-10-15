@@ -35,4 +35,4 @@ case class Token(accessToken: String,
                  override val updatedAt: Option[ZonedDateTime] = None)
     extends Timestamped
 
-case class UserRights(userId: UserId, roles: Seq[Role], availableQuestions: Seq[QuestionId])
+case class UserRights(userId: UserId, roles: Seq[Role], availableQuestions: Seq[QuestionId], emailVerified: Boolean)

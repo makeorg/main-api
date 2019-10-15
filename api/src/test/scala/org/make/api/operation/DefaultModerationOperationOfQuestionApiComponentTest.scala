@@ -93,7 +93,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           clientId = None,
           scope = None,
           redirectUri = None,
-          user = UserRights(userId = UserId(accessToken.token), roles = roles, availableQuestions = Seq.empty)
+          user = UserRights(
+            userId = UserId(accessToken.token),
+            roles = roles,
+            availableQuestions = Seq.empty,
+            emailVerified = true
+          )
         )
       }
     }
