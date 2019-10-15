@@ -224,11 +224,14 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
   feature("update a feature") {
     val helloFeature = Feature(FeatureId("hello-feature"), "hello feature", "hello-feature")
     val newHelloFeature = Feature(FeatureId("hello-feature"), "new name", "new-slug")
+    val sameSlugFeature = Feature(FeatureId("same-slug"), "same slug", "same-slug")
 
-    when(featureService.getFeature(ArgumentMatchers.eq(helloFeature.featureId)))
-      .thenReturn(Future.successful(Some(helloFeature)))
     when(featureService.findBySlug(ArgumentMatchers.eq(newHelloFeature.slug)))
       .thenReturn(Future.successful(Seq.empty))
+    when(featureService.findBySlug(ArgumentMatchers.eq(helloFeature.slug)))
+      .thenReturn(Future.successful(Seq(helloFeature)))
+    when(featureService.findBySlug(ArgumentMatchers.eq(sameSlugFeature.slug)))
+      .thenReturn(Future.successful(Seq(sameSlugFeature)))
     when(
       featureService.updateFeature(
         ArgumentMatchers.eq(FeatureId("fake-feature")),
@@ -243,6 +246,13 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
         ArgumentMatchers.eq("new name")
       )
     ).thenReturn(Future.successful(Some(newHelloFeature)))
+    when(
+      featureService.updateFeature(
+        ArgumentMatchers.eq(sameSlugFeature.featureId),
+        ArgumentMatchers.eq("same-slug"),
+        ArgumentMatchers.eq("new name")
+      )
+    ).thenReturn(Future.successful(Some(sameSlugFeature)))
 
     scenario("unauthorize unauthenticated") {
       Put("/admin/features/hello-feature").withEntity(
@@ -285,6 +295,22 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("slug already exists") {
+      Put("/admin/features/same-slug")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "hello-feature", "name": "new name"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("changing only the name") {
+      Put("/admin/features/same-slug")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "same-slug", "name": "new name"}"""))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
       }
     }
   }

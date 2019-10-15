@@ -268,7 +268,7 @@ trait DefaultAdminFeatureApiComponent
                     Validation.validate(
                       Validation.requireEmpty(
                         fieldName = "slug",
-                        fieldValue = featureList,
+                        fieldValue = featureList.filterNot(feature => feature.featureId == featureId),
                         message = Some("Feature slug already exists in this context. Duplicates are not allowed")
                       )
                     )
