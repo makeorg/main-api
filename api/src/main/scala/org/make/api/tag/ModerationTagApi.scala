@@ -29,7 +29,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
 import org.make.core.tag.{TagDisplay, TagId, TagTypeId}
@@ -275,7 +275,7 @@ trait DefaultModerationTagApiComponent
                         )
                       ) { filteredTags =>
                         complete(
-                          (StatusCodes.OK, List(TotalCountHeader(count.toString)), filteredTags.map(TagResponse.apply))
+                          (StatusCodes.OK, List(`X-Total-Count`(count.toString)), filteredTags.map(TagResponse.apply))
                         )
                       }
                     }

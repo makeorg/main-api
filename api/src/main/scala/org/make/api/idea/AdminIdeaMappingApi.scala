@@ -33,7 +33,7 @@ import org.make.api.idea.AdminIdeaMappingApi.{
 }
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.idea.IdeaId
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
@@ -275,7 +275,7 @@ trait DefaultAdminIdeaMappingApiComponent
                       complete(
                         (
                           StatusCodes.OK,
-                          List(TotalCountHeader(count.toString)),
+                          List(`X-Total-Count`(count.toString)),
                           mappings.map(IdeaMappingResponse.fromIdeaMapping)
                         )
                       )

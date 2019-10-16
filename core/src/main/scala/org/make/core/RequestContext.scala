@@ -134,7 +134,8 @@ final case class RequestContext(
   @(ApiModelProperty @field)(dataType = "string", example = "main-front")
   applicationName: Option[ApplicationName] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "main-front")
-  referrer: Option[String] = None
+  referrer: Option[String] = None,
+  customData: Map[String, String] = Map.empty
 )
 
 object RequestContext extends CirceFormatters with SprayJsonFormatters {
@@ -167,6 +168,6 @@ object RequestContext extends CirceFormatters with SprayJsonFormatters {
     )
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =
-    DefaultJsonProtocol.jsonFormat21(RequestContext.apply)
+    DefaultJsonProtocol.jsonFormat22(RequestContext.apply)
 
 }

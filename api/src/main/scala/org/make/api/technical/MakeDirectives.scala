@@ -20,6 +20,7 @@
 package org.make.api.technical
 
 import java.io.File
+import java.net.URLDecoder
 import java.nio.file.Files
 import java.time.ZonedDateTime
 
@@ -41,6 +42,7 @@ import org.make.api.technical.monitoring.MonitoringMessageHelper
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
 import org.make.core.Validation.validateField
+import org.make.core.{RequestContext, _}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -48,8 +50,6 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
-import org.make.core._
-import org.make.core.RequestContext
 import scalaoauth2.provider.AccessToken
 
 import scala.collection.immutable
@@ -82,7 +82,7 @@ trait MakeDirectives
   def sessionId: Directive1[String] =
     for {
       maybeCookieSessionId <- optionalCookie(makeSettings.SessionCookie.name)
-      maybeSessionId       <- optionalHeaderValueByName(SessionIdHeader.name)
+      maybeSessionId       <- optionalHeaderValueByName(`X-Session-Id`.name)
     } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId).getOrElse(idGenerator.nextId())
 
   /**
@@ -92,7 +92,7 @@ trait MakeDirectives
   def visitorId: Directive1[String] =
     for {
       maybeCookieVisitorId <- optionalCookie(makeSettings.VisitorCookie.name)
-      maybeVisitorId       <- optionalHeaderValueByName(VisitorIdHeader.name)
+      maybeVisitorId       <- optionalHeaderValueByName(`X-Visitor-Id`.name)
     } yield maybeCookieVisitorId.map(_.value).orElse(maybeVisitorId).getOrElse(idGenerator.nextVisitorId().value)
 
   def visitorCreatedAt: Directive1[ZonedDateTime] =
@@ -133,11 +133,11 @@ trait MakeDirectives
                      tokenRefreshed: Option[AccessToken]): Directive0 = {
     respondWithDefaultHeaders {
       immutable.Seq(
-        RequestTimeHeader(startTime),
-        RequestIdHeader(requestId),
-        RouteNameHeader(routeName),
-        ExternalIdHeader(externalId),
-        SessionIdHeader(sessionId),
+        `X-Route-Time`(startTime),
+        `X-Request-Id`(requestId),
+        `X-Route-Name`(routeName),
+        `X-Make-External-Id`(externalId),
+        `X-Session-Id`(sessionId),
         `Set-Cookie`(
           HttpCookie(
             name = makeSettings.SessionCookie.name,
@@ -251,7 +251,7 @@ trait MakeDirectives
       sessionId           <- sessionId
       visitorId           <- visitorId
       visitorCreatedAt    <- visitorCreatedAt
-      externalId          <- optionalHeaderValueByName(ExternalIdHeader.name).map(_.getOrElse(requestId))
+      externalId          <- optionalHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
       origin              <- optionalHeaderValueByName(Origin.name)
       maybeTokenRefreshed <- makeTriggerAuthRefreshFromCookie()
       _                   <- makeAuthCookieHandlers(maybeTokenRefreshed)
@@ -268,23 +268,24 @@ trait MakeDirectives
       )
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
-      maybeTheme           <- optionalHeaderValueByName(ThemeIdHeader.name)
-      maybeOperation       <- optionalHeaderValueByName(OperationHeader.name)
-      maybeSource          <- optionalHeaderValueByName(SourceHeader.name)
-      maybeLocation        <- optionalHeaderValueByName(LocationHeader.name)
-      maybeQuestion        <- optionalHeaderValueByName(QuestionHeader.name)
-      maybeCountry         <- optionalHeaderValueByName(CountryHeader.name)
-      maybeDetectedCountry <- optionalHeaderValueByName(DetectedCountryHeader.name)
-      maybeLanguage        <- optionalHeaderValueByName(LanguageHeader.name)
-      maybeHostName        <- optionalHeaderValueByName(HostNameHeader.name)
       maybeIpAddress       <- extractClientIP
-      maybeGetParameters   <- optionalHeaderValueByName(GetParametersHeader.name)
-      maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
       maybeUser            <- optionalMakeOAuth2
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
-      maybeQuestionId      <- optionalHeaderValueByName(QuestionIdHeader.name)
-      maybeApplicationName <- optionalHeaderValueByName(ApplicationNameHeader.name)
-      maybeReferrer        <- optionalHeaderValueByName(ReferrerHeader.name)
+      maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
+      maybeTheme           <- optionalHeaderValueByName(`X-Make-Theme-Id`.name)
+      maybeOperation       <- optionalHeaderValueByName(`X-Make-Operation`.name)
+      maybeSource          <- optionalHeaderValueByName(`X-Make-Source`.name)
+      maybeLocation        <- optionalHeaderValueByName(`X-Make-Location`.name)
+      maybeQuestion        <- optionalHeaderValueByName(`X-Make-Question`.name)
+      maybeCountry         <- optionalHeaderValueByName(`X-Make-Country`.name)
+      maybeDetectedCountry <- optionalHeaderValueByName(`X-Detected-Country`.name)
+      maybeLanguage        <- optionalHeaderValueByName(`X-Make-Language`.name)
+      maybeHostName        <- optionalHeaderValueByName(`X-Hostname`.name)
+      maybeGetParameters   <- optionalHeaderValueByName(`X-Get-Parameters`.name)
+      maybeQuestionId      <- optionalHeaderValueByName(`X-Make-Question-Id`.name)
+      maybeApplicationName <- optionalHeaderValueByName(`X-Make-App-Name`.name)
+      maybeReferrer        <- optionalHeaderValueByName(`X-Make-Referrer`.name)
+      maybeCustomData      <- optionalHeaderValueByName(`X-Make-Custom-Data`.name)
     } yield {
       val requestContext = RequestContext(
         currentTheme = maybeTheme.map(ThemeId.apply),
@@ -315,7 +316,21 @@ trait MakeDirectives
         userAgent = maybeUserAgent,
         questionId = maybeQuestionId.map(QuestionId.apply),
         applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get),
-        referrer = maybeReferrer
+        referrer = maybeReferrer,
+        customData = maybeCustomData
+          .map(
+            customData =>
+              URLDecoder
+                .decode(customData, "UTF-8")
+                .split(",")
+                .map(_.split("=", 2))
+                .map {
+                  case Array(key, value) => key.trim -> value.trim
+                  case Array(key)        => key.trim -> ""
+                }
+                .toMap
+          )
+          .getOrElse(Map.empty)
       )
       logRequest(name, requestContext, origin)
       connectIfNecessary(SessionId(sessionId), maybeUser.map(_.user.userId))
@@ -366,12 +381,12 @@ trait MakeDirectives
       `Access-Control-Allow-Credentials`(true),
       `Access-Control-Expose-Headers`(
         immutable.Seq(
-          RequestIdHeader.name,
-          RouteNameHeader.name,
-          RequestTimeHeader.name,
-          ExternalIdHeader.name,
-          SessionIdHeader.name,
-          TotalCountHeader.name
+          `X-Request-Id`.name,
+          `X-Route-Name`.name,
+          `X-Route-Time`.name,
+          `X-Make-External-Id`.name,
+          `X-Session-Id`.name,
+          `X-Total-Count`.name
         )
       )
     ) ++ mayBeOriginValue.map { httpOrigin =>
@@ -456,64 +471,52 @@ object EndpointType {
   case object CoreOnly extends EndpointType
 }
 
-final case class RequestIdHeader(override val value: String) extends ModeledCustomHeader[RequestIdHeader] {
-  override def companion: ModeledCustomHeaderCompanion[RequestIdHeader] = RequestIdHeader
-
+final case class `X-Request-Id`(override val value: String) extends ModeledCustomHeader[`X-Request-Id`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Request-Id`] = `X-Request-Id`
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = true
 }
 
-object RequestIdHeader extends ModeledCustomHeaderCompanion[RequestIdHeader] {
+object `X-Request-Id` extends ModeledCustomHeaderCompanion[`X-Request-Id`] {
   override val name: String = "x-request-id"
-
-  override def parse(value: String): Try[RequestIdHeader] = Success(new RequestIdHeader(value))
+  override def parse(value: String): Try[`X-Request-Id`] = Success(new `X-Request-Id`(value))
 }
 
-final case class RouteNameHeader(override val value: String) extends ModeledCustomHeader[RouteNameHeader] {
+final case class `X-Route-Name`(override val value: String) extends ModeledCustomHeader[`X-Route-Name`] {
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = true
-
-  override def companion: ModeledCustomHeaderCompanion[RouteNameHeader] = RouteNameHeader
+  override def companion: ModeledCustomHeaderCompanion[`X-Route-Name`] = `X-Route-Name`
 }
 
-object RouteNameHeader extends ModeledCustomHeaderCompanion[RouteNameHeader] {
+object `X-Route-Name` extends ModeledCustomHeaderCompanion[`X-Route-Name`] {
   override val name: String = "x-route-name"
-
-  override def parse(value: String): Try[RouteNameHeader] = Success(new RouteNameHeader(value))
+  override def parse(value: String): Try[`X-Route-Name`] = Success(new `X-Route-Name`(value))
 }
 
-final case class RequestTimeHeader(override val value: String) extends ModeledCustomHeader[RequestTimeHeader] {
-  override def companion: ModeledCustomHeaderCompanion[RequestTimeHeader] = RequestTimeHeader
-
+final case class `X-Route-Time`(override val value: String) extends ModeledCustomHeader[`X-Route-Time`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Route-Time`] = `X-Route-Time`
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = true
 }
 
-object RequestTimeHeader extends ModeledCustomHeaderCompanion[RequestTimeHeader] {
+object `X-Route-Time` extends ModeledCustomHeaderCompanion[`X-Route-Time`] {
   override val name: String = "x-route-time"
-
-  override def parse(value: String): Try[RequestTimeHeader] =
+  override def parse(value: String): Try[`X-Route-Time`] =
     Failure(new NotImplementedError("Please use the apply from long instead"))
-
-  def apply(startTimeMillis: Long): RequestTimeHeader =
-    new RequestTimeHeader((System.currentTimeMillis() - startTimeMillis).toString)
+  def apply(startTimeMillis: Long): `X-Route-Time` =
+    new `X-Route-Time`((System.currentTimeMillis() - startTimeMillis).toString)
 }
 
-final case class ExternalIdHeader(override val value: String) extends ModeledCustomHeader[ExternalIdHeader] {
-  override def companion: ModeledCustomHeaderCompanion[ExternalIdHeader] = ExternalIdHeader
-
+final case class `X-Make-External-Id`(override val value: String) extends ModeledCustomHeader[`X-Make-External-Id`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-External-Id`] = `X-Make-External-Id`
   override def renderInRequests: Boolean = true
-
   override def renderInResponses: Boolean = true
 }
 
-object ExternalIdHeader extends ModeledCustomHeaderCompanion[ExternalIdHeader] {
+object `X-Make-External-Id` extends ModeledCustomHeaderCompanion[`X-Make-External-Id`] {
   override val name: String = "x-make-external-id"
 
-  override def parse(value: String): Try[ExternalIdHeader] = Success(new ExternalIdHeader(value))
+  override def parse(value: String): Try[`X-Make-External-Id`] = Success(new `X-Make-External-Id`(value))
 }
 
 trait MakeAuthenticationDirectives extends MakeAuthentication {
@@ -540,178 +543,189 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
 
 case object EmailNotVerifiedRejection extends Rejection
 
-final case class ThemeIdHeader(override val value: String) extends ModeledCustomHeader[ThemeIdHeader] {
-  override def companion: ModeledCustomHeaderCompanion[ThemeIdHeader] = ThemeIdHeader
+final case class `X-Make-Theme-Id`(override val value: String) extends ModeledCustomHeader[`X-Make-Theme-Id`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Theme-Id`] = `X-Make-Theme-Id`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object ThemeIdHeader extends ModeledCustomHeaderCompanion[ThemeIdHeader] {
+object `X-Make-Theme-Id` extends ModeledCustomHeaderCompanion[`X-Make-Theme-Id`] {
   override val name: String = "x-make-theme-id"
-  override def parse(value: String): Try[ThemeIdHeader] = Success(new ThemeIdHeader(value))
+  override def parse(value: String): Try[`X-Make-Theme-Id`] = Success(new `X-Make-Theme-Id`(value))
 }
 
-final case class OperationHeader(override val value: String) extends ModeledCustomHeader[OperationHeader] {
-  override def companion: ModeledCustomHeaderCompanion[OperationHeader] = OperationHeader
+final case class `X-Make-Operation`(override val value: String) extends ModeledCustomHeader[`X-Make-Operation`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Operation`] = `X-Make-Operation`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object OperationHeader extends ModeledCustomHeaderCompanion[OperationHeader] {
+object `X-Make-Operation` extends ModeledCustomHeaderCompanion[`X-Make-Operation`] {
   override val name: String = "x-make-operation"
-  override def parse(value: String): Try[OperationHeader] = Success(new OperationHeader(value))
+  override def parse(value: String): Try[`X-Make-Operation`] = Success(new `X-Make-Operation`(value))
 }
 
-final case class SourceHeader(override val value: String) extends ModeledCustomHeader[SourceHeader] {
-  override def companion: ModeledCustomHeaderCompanion[SourceHeader] = SourceHeader
+final case class `X-Make-Source`(override val value: String) extends ModeledCustomHeader[`X-Make-Source`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Source`] = `X-Make-Source`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object SourceHeader extends ModeledCustomHeaderCompanion[SourceHeader] {
+object `X-Make-Source` extends ModeledCustomHeaderCompanion[`X-Make-Source`] {
   override val name: String = "x-make-source"
-  override def parse(value: String): Try[SourceHeader] = Success(new SourceHeader(value))
+  override def parse(value: String): Try[`X-Make-Source`] = Success(new `X-Make-Source`(value))
 }
 
-final case class LocationHeader(override val value: String) extends ModeledCustomHeader[LocationHeader] {
-  override def companion: ModeledCustomHeaderCompanion[LocationHeader] = LocationHeader
+final case class `X-Make-Location`(override val value: String) extends ModeledCustomHeader[`X-Make-Location`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Location`] = `X-Make-Location`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object LocationHeader extends ModeledCustomHeaderCompanion[LocationHeader] {
+object `X-Make-Location` extends ModeledCustomHeaderCompanion[`X-Make-Location`] {
   override val name: String = "x-make-location"
-  override def parse(value: String): Try[LocationHeader] = Success(new LocationHeader(value))
+  override def parse(value: String): Try[`X-Make-Location`] = Success(new `X-Make-Location`(value))
 }
 
-final case class QuestionHeader(override val value: String) extends ModeledCustomHeader[QuestionHeader] {
-  override def companion: ModeledCustomHeaderCompanion[QuestionHeader] = QuestionHeader
+final case class `X-Make-Question`(override val value: String) extends ModeledCustomHeader[`X-Make-Question`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Question`] = `X-Make-Question`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object QuestionHeader extends ModeledCustomHeaderCompanion[QuestionHeader] {
+object `X-Make-Question` extends ModeledCustomHeaderCompanion[`X-Make-Question`] {
   override val name: String = "x-make-question"
-  override def parse(value: String): Try[QuestionHeader] = Success(new QuestionHeader(value))
+  override def parse(value: String): Try[`X-Make-Question`] = Success(new `X-Make-Question`(value))
 }
 
-final case class LanguageHeader(override val value: String) extends ModeledCustomHeader[LanguageHeader] {
-  override def companion: ModeledCustomHeaderCompanion[LanguageHeader] = LanguageHeader
+final case class `X-Make-Language`(override val value: String) extends ModeledCustomHeader[`X-Make-Language`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Language`] = `X-Make-Language`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object LanguageHeader extends ModeledCustomHeaderCompanion[LanguageHeader] {
+object `X-Make-Language` extends ModeledCustomHeaderCompanion[`X-Make-Language`] {
   override val name: String = "x-make-language"
-  override def parse(value: String): Try[LanguageHeader] = Success(new LanguageHeader(value))
+  override def parse(value: String): Try[`X-Make-Language`] = Success(new `X-Make-Language`(value))
 }
 
-final case class CountryHeader(override val value: String) extends ModeledCustomHeader[CountryHeader] {
-  override def companion: ModeledCustomHeaderCompanion[CountryHeader] = CountryHeader
+final case class `X-Make-Country`(override val value: String) extends ModeledCustomHeader[`X-Make-Country`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Country`] = `X-Make-Country`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object CountryHeader extends ModeledCustomHeaderCompanion[CountryHeader] {
+object `X-Make-Country` extends ModeledCustomHeaderCompanion[`X-Make-Country`] {
   override val name: String = "x-make-country"
-  override def parse(value: String): Try[CountryHeader] = Success(new CountryHeader(value))
+  override def parse(value: String): Try[`X-Make-Country`] = Success(new `X-Make-Country`(value))
 }
 
-final case class DetectedCountryHeader(override val value: String) extends ModeledCustomHeader[DetectedCountryHeader] {
-  override def companion: ModeledCustomHeaderCompanion[DetectedCountryHeader] = DetectedCountryHeader
+final case class `X-Detected-Country`(override val value: String) extends ModeledCustomHeader[`X-Detected-Country`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Detected-Country`] = `X-Detected-Country`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object DetectedCountryHeader extends ModeledCustomHeaderCompanion[DetectedCountryHeader] {
+object `X-Detected-Country` extends ModeledCustomHeaderCompanion[`X-Detected-Country`] {
   override val name: String = "x-detected-country"
-  override def parse(value: String): Try[DetectedCountryHeader] = Success(new DetectedCountryHeader(value))
+  override def parse(value: String): Try[`X-Detected-Country`] = Success(new `X-Detected-Country`(value))
 }
 
-final case class HostNameHeader(override val value: String) extends ModeledCustomHeader[HostNameHeader] {
-  override def companion: ModeledCustomHeaderCompanion[HostNameHeader] = HostNameHeader
+final case class `X-Hostname`(override val value: String) extends ModeledCustomHeader[`X-Hostname`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Hostname`] = `X-Hostname`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object HostNameHeader extends ModeledCustomHeaderCompanion[HostNameHeader] {
+object `X-Hostname` extends ModeledCustomHeaderCompanion[`X-Hostname`] {
   override val name: String = "x-hostname"
-  override def parse(value: String): Try[HostNameHeader] = Success(new HostNameHeader(value))
+  override def parse(value: String): Try[`X-Hostname`] = Success(new `X-Hostname`(value))
 }
 
-final case class GetParametersHeader(override val value: String) extends ModeledCustomHeader[GetParametersHeader] {
-  override def companion: ModeledCustomHeaderCompanion[GetParametersHeader] = GetParametersHeader
+final case class `X-Get-Parameters`(override val value: String) extends ModeledCustomHeader[`X-Get-Parameters`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Get-Parameters`] = `X-Get-Parameters`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object GetParametersHeader extends ModeledCustomHeaderCompanion[GetParametersHeader] {
+object `X-Get-Parameters` extends ModeledCustomHeaderCompanion[`X-Get-Parameters`] {
   override val name: String = "x-get-parameters"
-  override def parse(value: String): Try[GetParametersHeader] = Success(new GetParametersHeader(value))
+  override def parse(value: String): Try[`X-Get-Parameters`] = Success(new `X-Get-Parameters`(value))
 }
 
-final case class SessionIdHeader(override val value: String) extends ModeledCustomHeader[SessionIdHeader] {
-  override def companion: ModeledCustomHeaderCompanion[SessionIdHeader] = SessionIdHeader
+final case class `X-Session-Id`(override val value: String) extends ModeledCustomHeader[`X-Session-Id`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Session-Id`] = `X-Session-Id`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = true
 }
 
-object SessionIdHeader extends ModeledCustomHeaderCompanion[SessionIdHeader] {
+object `X-Session-Id` extends ModeledCustomHeaderCompanion[`X-Session-Id`] {
   override val name: String = "x-session-id"
-  override def parse(value: String): Try[SessionIdHeader] = Success(new SessionIdHeader(value))
+  override def parse(value: String): Try[`X-Session-Id`] = Success(new `X-Session-Id`(value))
 }
 
-final case class TotalCountHeader(override val value: String) extends ModeledCustomHeader[TotalCountHeader] {
-  override def companion: ModeledCustomHeaderCompanion[TotalCountHeader] = TotalCountHeader
+final case class `X-Total-Count`(override val value: String) extends ModeledCustomHeader[`X-Total-Count`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Total-Count`] = `X-Total-Count`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = true
 }
 
-object TotalCountHeader extends ModeledCustomHeaderCompanion[TotalCountHeader] {
+object `X-Total-Count` extends ModeledCustomHeaderCompanion[`X-Total-Count`] {
   val name: String = "x-total-count"
-  def parse(value: String): Try[TotalCountHeader] = Success(new TotalCountHeader(value))
+  def parse(value: String): Try[`X-Total-Count`] = Success(new `X-Total-Count`(value))
 }
 
-final case class VisitorIdHeader(override val value: String) extends ModeledCustomHeader[VisitorIdHeader] {
-  override def companion: ModeledCustomHeaderCompanion[VisitorIdHeader] = VisitorIdHeader
+final case class `X-Visitor-Id`(override val value: String) extends ModeledCustomHeader[`X-Visitor-Id`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Visitor-Id`] = `X-Visitor-Id`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = true
 }
 
-object VisitorIdHeader extends ModeledCustomHeaderCompanion[VisitorIdHeader] {
+object `X-Visitor-Id` extends ModeledCustomHeaderCompanion[`X-Visitor-Id`] {
   override val name: String = "x-visitor-id"
-  override def parse(value: String): Try[VisitorIdHeader] = Success(new VisitorIdHeader(value))
+  override def parse(value: String): Try[`X-Visitor-Id`] = Success(new `X-Visitor-Id`(value))
 }
 
-final case class QuestionIdHeader(override val value: String) extends ModeledCustomHeader[QuestionIdHeader] {
-  override def companion: ModeledCustomHeaderCompanion[QuestionIdHeader] = QuestionIdHeader
+final case class `X-Make-Question-Id`(override val value: String) extends ModeledCustomHeader[`X-Make-Question-Id`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Question-Id`] = `X-Make-Question-Id`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object QuestionIdHeader extends ModeledCustomHeaderCompanion[QuestionIdHeader] {
+object `X-Make-Question-Id` extends ModeledCustomHeaderCompanion[`X-Make-Question-Id`] {
   override val name: String = "x-make-question-id"
-  override def parse(value: String): Try[QuestionIdHeader] = Success(new QuestionIdHeader(value))
+  override def parse(value: String): Try[`X-Make-Question-Id`] = Success(new `X-Make-Question-Id`(value))
 }
 
-final case class ApplicationNameHeader(override val value: String) extends ModeledCustomHeader[ApplicationNameHeader] {
-  override def companion: ModeledCustomHeaderCompanion[ApplicationNameHeader] = ApplicationNameHeader
+final case class `X-Make-App-Name`(override val value: String) extends ModeledCustomHeader[`X-Make-App-Name`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-App-Name`] = `X-Make-App-Name`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object ApplicationNameHeader extends ModeledCustomHeaderCompanion[ApplicationNameHeader] {
+object `X-Make-App-Name` extends ModeledCustomHeaderCompanion[`X-Make-App-Name`] {
   override val name: String = "x-make-app-name"
-  override def parse(value: String): Try[ApplicationNameHeader] = Success(new ApplicationNameHeader(value))
+  override def parse(value: String): Try[`X-Make-App-Name`] = Success(new `X-Make-App-Name`(value))
 }
 
-final case class ReferrerHeader(override val value: String) extends ModeledCustomHeader[ReferrerHeader] {
-  override def companion: ModeledCustomHeaderCompanion[ReferrerHeader] = ReferrerHeader
+final case class `X-Make-Referrer`(override val value: String) extends ModeledCustomHeader[`X-Make-Referrer`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Referrer`] = `X-Make-Referrer`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object ReferrerHeader extends ModeledCustomHeaderCompanion[ReferrerHeader] {
+object `X-Make-Referrer` extends ModeledCustomHeaderCompanion[`X-Make-Referrer`] {
   override val name: String = "x-make-referrer"
-  override def parse(value: String): Try[ReferrerHeader] = Success(new ReferrerHeader(value))
+  override def parse(value: String): Try[`X-Make-Referrer`] = Success(new `X-Make-Referrer`(value))
+}
+
+final case class `X-Make-Custom-Data`(override val value: String) extends ModeledCustomHeader[`X-Make-Custom-Data`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Custom-Data`] = `X-Make-Custom-Data`
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = false
+}
+
+object `X-Make-Custom-Data` extends ModeledCustomHeaderCompanion[`X-Make-Custom-Data`] {
+  override val name: String = "x-make-custom-data"
+  override def parse(value: String): Try[`X-Make-Custom-Data`] = Success(new `X-Make-Custom-Data`(value))
 }

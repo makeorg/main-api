@@ -38,7 +38,7 @@ import org.make.api.proposal.{
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.storage.{Content, FileType, StorageServiceComponent, UploadResponse}
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
@@ -374,7 +374,7 @@ trait DefaultModerationQuestionComponent
                     complete(
                       (
                         StatusCodes.OK,
-                        scala.collection.immutable.Seq(TotalCountHeader(count.toString)),
+                        scala.collection.immutable.Seq(`X-Total-Count`(count.toString)),
                         results.map(ModerationQuestionResponse.apply)
                       )
                     )

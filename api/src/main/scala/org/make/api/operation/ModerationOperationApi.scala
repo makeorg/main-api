@@ -29,7 +29,7 @@ import org.make.api.sequence.SequenceServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
@@ -285,7 +285,7 @@ trait DefaultModerationOperationApiComponent
                       ) { operations =>
                         val operationResponses: Seq[ModerationOperationResponse] =
                           operations.map(operation => ModerationOperationResponse(operation))
-                        complete((StatusCodes.OK, List(TotalCountHeader(count.toString)), operationResponses))
+                        complete((StatusCodes.OK, List(`X-Total-Count`(count.toString)), operationResponses))
                       }
                     }
                   }
