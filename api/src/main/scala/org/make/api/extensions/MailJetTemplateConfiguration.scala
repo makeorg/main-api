@@ -29,10 +29,6 @@ class MailJetTemplateConfiguration(config: Config) extends Extension with Config
 
   override protected def configuration: Config = config
 
-  def getLegacyFrontendUrl(): String = {
-    config.getString("front-url")
-  }
-
   def getMainFrontendUrl(): String = {
     config.getString("front-main-url")
   }
