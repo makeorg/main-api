@@ -37,8 +37,8 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.User
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait SendMailPublisherServiceComponent {
   def sendMailPublisherService: SendMailPublisherService
@@ -65,6 +65,7 @@ trait SendMailPublisherService {
   def publishRefuseProposal(proposalId: ProposalId,
                             maybeOperationId: Option[OperationId],
                             requestContext: RequestContext): Future[Unit]
+  def resendRegistration(user: User, country: Country, language: Language, requestContext: RequestContext): Future[Unit]
 }
 
 trait DefaultSendMailPublisherServiceComponent
@@ -406,6 +407,17 @@ trait DefaultSendMailPublisherServiceComponent
         sendModerationMail(proposalId, maybeQuestionId, template, variables)
       }
 
+    }
+
+    override def resendRegistration(user: User,
+                                    country: Country,
+                                    language: Language,
+                                    requestContext: RequestContext): Future[Unit] = {
+
+      userService.changeEmailVerificationTokenIfNeeded(user.userId).flatMap {
+        case Some(_) => publishRegistration(user, country, language, requestContext)
+        case None    => Future.successful {}
+      }
     }
   }
 }

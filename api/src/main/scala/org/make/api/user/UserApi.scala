@@ -427,6 +427,22 @@ trait UserApi extends Directives {
   @Path(value = "/{userId}/reconnect")
   def reconnectInfo: Route
 
+  @ApiOperation(value = "resend-validation-email", httpMethod = "POST")
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content", response = classOf[Unit]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.user.ResendValidationEmailRequest"
+      )
+    )
+  )
+  @Path(value = "/validation-email")
+  def resendValidationEmail: Route
+
   def routes: Route =
     getMe ~
       getUser ~
@@ -445,7 +461,8 @@ trait UserApi extends Directives {
       deleteUser ~
       followUser ~
       unfollowUser ~
-      reconnectInfo
+      reconnectInfo ~
+      resendValidationEmail
 
   val userId: PathMatcher1[UserId] =
     Segment.map(id => UserId(id))
@@ -1104,6 +1121,34 @@ trait DefaultUserApiComponent
         }
       }
     }
+
+    override def resendValidationEmail: Route = {
+      post {
+        path("user" / "validation-email") {
+          makeOperation("ResendValidationEmail") { requestContext =>
+            decodeRequest {
+              entity(as[ResendValidationEmailRequest]) { entity =>
+                provideAsync(userService.getUserByEmail(entity.email)) { maybeUser =>
+                  maybeUser.foreach { user =>
+                    eventBusService.publish(
+                      ResendValidationEmailEvent(
+                        connectedUserId = None,
+                        eventDate = DateHelper.now(),
+                        userId = user.userId,
+                        country = user.country,
+                        language = user.language,
+                        requestContext = requestContext
+                      )
+                    )
+                  }
+                  complete(StatusCodes.NoContent)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -1367,4 +1412,10 @@ object UserResponse extends CirceFormatters {
     hasPassword = user.hashedPassword.isDefined,
     followedUsers = followedUsers
   )
+}
+
+final case class ResendValidationEmailRequest(email: String)
+
+object ResendValidationEmailRequest {
+  implicit val decoder: Decoder[ResendValidationEmailRequest] = deriveDecoder[ResendValidationEmailRequest]
 }

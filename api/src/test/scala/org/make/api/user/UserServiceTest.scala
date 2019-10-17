@@ -77,6 +77,18 @@ class UserServiceTest
 
   Mockito.when(makeSettings.defaultUserAnonymousParticipation).thenReturn(false)
 
+  Mockito
+    .when(persistentUserService.updateUser(any[User]))
+    .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0)))
+
+  Mockito
+    .when(persistentUserService.persist(any[User]))
+    .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0)))
+
+  Mockito
+    .when(userTokenGenerator.generateVerificationToken())
+    .thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
+
   override protected def afterEach(): Unit = {
     super.afterEach()
     Mockito.clearInvocations(eventBusService)
@@ -165,94 +177,41 @@ class UserServiceTest
     scenario("successful register user") {
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
 
-      val returnedProfile = Profile(
-        dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-        avatarUrl = None,
-        profession = None,
-        phoneNumber = None,
-        description = None,
-        twitterId = None,
-        facebookId = None,
-        googleId = None,
-        gender = Some(Gender.Male),
-        genderName = Some(Gender.Male.toString),
-        postalCode = None,
-        karmaLevel = None,
-        locale = None,
-        socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
-        optInPartner = Some(true),
-        registerQuestionId = Some(QuestionId("thequestionid"))
-      )
-
-      val returnedUser = User(
-        userId = UserId("AAA-BBB-CCC"),
-        email = "any@mail.com",
-        firstName = Some("olive"),
-        lastName = Some("tom"),
-        lastIp = Some("127.0.0.1"),
-        hashedPassword = Some("passpass"),
-        enabled = true,
-        emailVerified = false,
-        lastConnection = DateHelper.now(),
-        verificationToken = Some("Token"),
-        verificationTokenExpiresAt = Some(DateHelper.now()),
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq(RoleCitizen),
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = Some(returnedProfile),
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
-      )
-
-      Mockito
-        .when(
-          persistentUserService
-            .persist(any[User])
-        )
-        .thenReturn(Future.successful(returnedUser))
-
-      Mockito
-        .when(userTokenGenerator.generateVerificationToken())
-        .thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
-
       Mockito.clearInvocations(persistentUserService)
 
       val futureUser = userService.register(
         UserRegisterData(
           email = "any@mail.com",
-          firstName = Some("tom"),
-          lastName = Some("olive"),
+          firstName = Some("olive"),
+          lastName = Some("tom"),
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11")),
           country = Country("FR"),
           language = Language("fr"),
           gender = Some(Gender.Male),
-          socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
+          socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
+          questionId = Some(QuestionId("thequestionid"))
         ),
         RequestContext.empty
       )
 
       whenReady(futureUser, Timeout(2.seconds)) { user =>
-        user shouldBe a[User]
         user.email should be("any@mail.com")
-        user.firstName should be(Some("olive"))
-        user.lastName should be(Some("tom"))
-        user.profile.get.dateOfBirth should be(Some(LocalDate.parse("1984-10-11")))
-        user.profile.get.gender should be(Some(Gender.Male))
-        user.profile.get.genderName should be(Some(Gender.Male.toString))
-        user.profile.get.socioProfessionalCategory should be(Some(SocioProfessionalCategory.Employee))
-        user.profile.get.optInPartner should be(Some(true))
-        user.profile.get.registerQuestionId should be(Some(QuestionId("thequestionid")))
+        user.firstName should contain("olive")
+        user.lastName should contain("tom")
+        user.profile.flatMap(_.dateOfBirth) should contain(LocalDate.parse("1984-10-11"))
+        user.profile.flatMap(_.gender) should contain(Gender.Male)
+        user.profile.flatMap(_.socioProfessionalCategory) should be(Some(SocioProfessionalCategory.Employee))
+        user.profile.flatMap(_.optInPartner) should be(None)
+        user.profile.flatMap(_.registerQuestionId) should contain(QuestionId("thequestionid"))
 
         verify(persistentUserService).persist(ArgumentMatchers.argThat[User](!_.anonymousParticipation))
       }
     }
 
     scenario("successful register user from social") {
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(None))
 
       val info = UserInfo(
@@ -308,10 +267,7 @@ class UserServiceTest
       )
 
       Mockito
-        .when(
-          persistentUserService
-            .persist(any[User])
-        )
+        .when(persistentUserService.persist(any[User]))
         .thenReturn(Future.successful(returnedUser))
 
       Mockito.clearInvocations(persistentUserService)
@@ -343,7 +299,7 @@ class UserServiceTest
 
     scenario("successful register user from social with gender") {
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(None))
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
       val infoWithGender = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
@@ -395,10 +351,7 @@ class UserServiceTest
       )
 
       Mockito
-        .when(
-          persistentUserService
-            .persist(any[User])
-        )
+        .when(persistentUserService.persist(any[User]))
         .thenReturn(Future.successful(returnedUserWithGender))
 
       val futureUserWithGender =
@@ -422,8 +375,8 @@ class UserServiceTest
     }
 
     scenario("successful update user from social") {
-      Mockito.reset(eventBusService)
-      Mockito.reset(persistentUserService)
+      Mockito.clearInvocations(eventBusService)
+      Mockito.clearInvocations(persistentUserService)
 
       val info = UserInfo(
         email = Some("facebook@make.org"),
@@ -493,8 +446,8 @@ class UserServiceTest
     }
 
     scenario("successful update user without difference from social") {
-      Mockito.reset(eventBusService)
-      Mockito.reset(persistentUserService)
+      Mockito.clearInvocations(eventBusService)
+      Mockito.clearInvocations(persistentUserService)
 
       val info = UserInfo(
         email = Some("facebook@make.org"),
@@ -562,7 +515,7 @@ class UserServiceTest
 
     scenario("email already registred") {
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
       val futureUser = userService.register(
         UserRegisterData(
           email = "exist@mail.com",
@@ -632,7 +585,7 @@ class UserServiceTest
 
     scenario("email not verified already registred") {
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
 
       val user = User(
         userId = UserId("AAA-BBB-CCC-DDD-EEE"),
@@ -721,7 +674,7 @@ class UserServiceTest
       When("I update opt in newsletter using user email")
       Then("opt in value is updated")
 
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
       Mockito
         .when(
           persistentUserService
@@ -822,9 +775,6 @@ class UserServiceTest
       Then("fields are updated into user")
 
       Mockito
-        .when(persistentUserService.updateUser(ArgumentMatchers.eq(fooUser)))
-        .thenReturn(Future.successful(fooUser))
-      Mockito
         .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
         .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
 
@@ -842,7 +792,7 @@ class UserServiceTest
         johnDoeUser.copy(userId = UserId("userchangepasswordid"), hashedPassword = Some("mypassword".bcrypt))
       val newPassword: String = "mypassword2"
 
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
       Mockito
         .when(
           persistentUserService.updatePassword(
@@ -869,9 +819,6 @@ class UserServiceTest
   feature("anonymize user") {
     Mockito.when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.successful({}))
     scenario("anonymize user") {
-      Mockito
-        .when(persistentUserService.updateUser(ArgumentMatchers.any[User]))
-        .thenReturn(Future.successful(johnDoeUser))
       Mockito.when(proposalService.anonymizeByUserId(ArgumentMatchers.any[UserId])).thenReturn(Future.successful({}))
       Mockito
         .when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(ArgumentMatchers.any[UserId]))
@@ -895,7 +842,7 @@ class UserServiceTest
 
   feature("follow user") {
     scenario("follow user") {
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
       Mockito
         .when(persistentUserService.followUser(any[UserId], any[UserId]))
         .thenReturn(Future.successful({}))
@@ -911,7 +858,7 @@ class UserServiceTest
 
   feature("unfollow user") {
     scenario("unfollow user") {
-      Mockito.reset(eventBusService)
+      Mockito.clearInvocations(eventBusService)
       Mockito
         .when(persistentUserService.unfollowUser(any[UserId], any[UserId]))
         .thenReturn(Future.successful({}))
@@ -995,10 +942,6 @@ class UserServiceTest
         .when(persistentUserService.emailExists(isEqual("yopmail+some-other-hash@make.org")))
         .thenReturn(Future.successful(false))
 
-      Mockito
-        .when(userTokenGenerator.generateVerificationToken())
-        .thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
-
       val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"), Language("fr"))
 
       whenReady(result, Timeout(5.seconds)) { resultUser =>
@@ -1027,6 +970,78 @@ class UserServiceTest
           reconnect.connectionMode should contain(ConnectionMode.Facebook)
           reconnect.connectionMode should contain(ConnectionMode.Google)
         }
+      }
+    }
+  }
+
+  feature("changeEmailVerificationTokenIfNeeded") {
+    scenario("verification token changed more than 10 minutes ago") {
+      Mockito.clearInvocations(persistentUserService)
+
+      Mockito
+        .when(persistentUserService.get(UserId("old-verification-token")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              fooUser.copy(
+                emailVerified = false,
+                verificationTokenExpiresAt = Some(DateHelper.now().plusDays(30).minusMinutes(11))
+              )
+            )
+          )
+        )
+
+      whenReady(userService.changeEmailVerificationTokenIfNeeded(UserId("old-verification-token")), Timeout(2.seconds)) {
+        maybeToken =>
+          maybeToken should be(defined)
+          verify(persistentUserService).updateUser(any[User])
+      }
+    }
+    scenario("no verification token expiration") {
+      Mockito.clearInvocations(persistentUserService)
+
+      Mockito
+        .when(persistentUserService.get(UserId("no-verification-token")))
+        .thenReturn(Future.successful(Some(fooUser.copy(emailVerified = false, verificationTokenExpiresAt = None))))
+
+      whenReady(userService.changeEmailVerificationTokenIfNeeded(UserId("no-verification-token")), Timeout(2.seconds)) {
+        maybeToken =>
+          maybeToken should be(defined)
+          verify(persistentUserService).updateUser(any[User])
+      }
+    }
+    scenario("no verification token expiration but email verified") {
+      Mockito.clearInvocations(persistentUserService)
+
+      Mockito
+        .when(persistentUserService.get(UserId("no-verification-token-but-verified")))
+        .thenReturn(Future.successful(Some(fooUser.copy(verificationTokenExpiresAt = None, emailVerified = true))))
+
+      whenReady(
+        userService.changeEmailVerificationTokenIfNeeded(UserId("no-verification-token-but-verified")),
+        Timeout(2.seconds)
+      ) { maybeToken =>
+        maybeToken should be(None)
+        verify(persistentUserService, Mockito.never()).updateUser(any[User])
+      }
+    }
+    scenario("verification token changed less than 10 minutes ago") {
+      Mockito.clearInvocations(persistentUserService)
+
+      Mockito
+        .when(persistentUserService.get(UserId("young-verification-token")))
+        .thenReturn(
+          Future.successful(
+            Some(fooUser.copy(emailVerified = false, verificationTokenExpiresAt = Some(DateHelper.now().plusDays(30))))
+          )
+        )
+
+      whenReady(
+        userService.changeEmailVerificationTokenIfNeeded(UserId("young-verification-token")),
+        Timeout(2.seconds)
+      ) { maybeToken =>
+        maybeToken should be(None)
+        verify(persistentUserService, Mockito.never()).updateUser(any[User])
       }
     }
   }
