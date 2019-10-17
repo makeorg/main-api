@@ -294,7 +294,7 @@ trait DefaultAdminFeatureApiComponent
             requireAdminRole(auth.user) {
               provideAsyncOrNotFound(featureService.getFeature(featureId)) { _ =>
                 provideAsync(featureService.deleteFeature(featureId)) { _ =>
-                  complete(StatusCodes.OK)
+                  complete(StatusCodes.OK -> FeatureIdResponse(featureId))
                 }
               }
             }
@@ -329,4 +329,13 @@ object FeatureResponse {
 
   def apply(feature: Feature): FeatureResponse =
     FeatureResponse(id = feature.featureId, name = feature.name, slug = feature.slug)
+}
+
+final case class FeatureIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
+  featureId: FeatureId
+)
+
+object FeatureIdResponse {
+  implicit val encoder: Encoder[FeatureIdResponse] = deriveEncoder[FeatureIdResponse]
 }
