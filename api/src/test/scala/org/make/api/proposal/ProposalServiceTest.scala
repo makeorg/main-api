@@ -19,7 +19,7 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
@@ -40,6 +40,7 @@ import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualifications}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
+import org.make.core.profile.Profile
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
@@ -2126,4 +2127,105 @@ class ProposalServiceTest
       }
     }
   }
+
+  feature("get moderation proposal by id") {
+    scenario("regular participation") {
+
+      val proposalId = ProposalId("regular-participation")
+      val author = {
+        val baseUser = user(UserId("regular-participation"))
+        baseUser.copy(
+          firstName = Some("regular-participation-first-name"),
+          lastName = Some("regular-participation-last-name"),
+          organisationName = Some("regular-participation-organisation-name"),
+          anonymousParticipation = false,
+          profile = Some(
+            Profile(
+              Some(LocalDate.parse("1998-01-01")),
+              Some("https://some-url"),
+              None,
+              None,
+              None,
+              None,
+              None,
+              None,
+              None,
+              None,
+              Some("12345"),
+              None,
+              None
+            )
+          )
+        )
+      }
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId).copy(author = author.userId))))
+
+      Mockito
+        .when(userService.getUser(author.userId))
+        .thenReturn(Future.successful(Some(author)))
+
+      whenReady(proposalService.getModerationProposalById(proposalId), Timeout(2.seconds)) { maybeProposal =>
+        maybeProposal should be(defined)
+        val proposal = maybeProposal.get
+        proposal.author.firstName should contain("regular-participation-first-name")
+        proposal.author.lastName should contain("regular-participation-last-name")
+        proposal.author.postalCode should contain("12345")
+        proposal.author.age.get >= 21 should be(true)
+        proposal.author.organisationName should contain("regular-participation-organisation-name")
+        proposal.author.organisationSlug should contain("regular-participation-organisation-name")
+      }
+    }
+    scenario("anonymous participation") {
+      val proposalId = ProposalId("anonymous-participation")
+      val author = {
+        val baseUser = user(UserId("anonymous-participation"))
+        baseUser.copy(
+          firstName = Some("anonymous-participation-first-name"),
+          lastName = Some("anonymous-participation-last-name"),
+          organisationName = Some("anonymous-participation-organisation-name"),
+          anonymousParticipation = true,
+          profile = Some(
+            Profile(
+              Some(LocalDate.parse("1998-01-01")),
+              Some("https://some-url"),
+              None,
+              None,
+              None,
+              None,
+              None,
+              None,
+              None,
+              None,
+              Some("12345"),
+              None,
+              None
+            )
+          )
+        )
+      }
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId).copy(author = author.userId))))
+
+      Mockito
+        .when(userService.getUser(author.userId))
+        .thenReturn(Future.successful(Some(author)))
+
+      whenReady(proposalService.getModerationProposalById(proposalId), Timeout(2.seconds)) { maybeProposal =>
+        maybeProposal should be(defined)
+        val proposal = maybeProposal.get
+        proposal.author.firstName should be(None)
+        proposal.author.lastName should be(None)
+        proposal.author.postalCode should be(None)
+        proposal.author.age should be(None)
+        proposal.author.organisationName should be(None)
+        proposal.author.organisationSlug should be(None)
+      }
+    }
+  }
+
 }

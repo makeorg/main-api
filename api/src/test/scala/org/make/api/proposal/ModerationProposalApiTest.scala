@@ -32,7 +32,7 @@ import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.SimilarIdea
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
-import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
@@ -461,24 +461,15 @@ class ModerationProposalApiTest
           proposalId = proposalSim123.proposalId,
           slug = proposalSim123.slug,
           content = proposalSim123.content,
-          author = UserResponse(
+          author = ModerationProposalAuthorResponse(
             proposalSim123.author,
-            email = "g@rr.martin",
             firstName = Some("Georges"),
             lastName = Some("Martin"),
+            postalCode = None,
+            age = None,
+            avatarUrl = None,
             organisationName = None,
-            enabled = true,
-            emailVerified = true,
-            isOrganisation = false,
-            lastConnection = DateHelper.now(),
-            roles = Seq.empty,
-            None,
-            country = Country("FR"),
-            language = Language("fr"),
-            isHardBounce = false,
-            lastMailingError = None,
-            hasPassword = false,
-            followedUsers = Seq.empty
+            organisationSlug = None
           ),
           labels = proposalSim123.labels,
           theme = None,
@@ -510,24 +501,15 @@ class ModerationProposalApiTest
           proposalId = proposalSim124.proposalId,
           slug = proposalSim124.slug,
           content = proposalSim124.content,
-          author = UserResponse(
+          author = ModerationProposalAuthorResponse(
             proposalSim124.author,
-            email = "g@rr.martin",
             firstName = Some("Georges"),
             lastName = Some("Martin"),
             organisationName = None,
-            enabled = true,
-            emailVerified = true,
-            isOrganisation = false,
-            lastConnection = DateHelper.now(),
-            roles = Seq.empty,
-            None,
-            country = Country("FR"),
-            language = Language("fr"),
-            isHardBounce = false,
-            lastMailingError = None,
-            hasPassword = false,
-            followedUsers = Seq.empty
+            organisationSlug = None,
+            postalCode = None,
+            age = None,
+            avatarUrl = None
           ),
           labels = proposalSim124.labels,
           theme = None,
@@ -600,24 +582,15 @@ class ModerationProposalApiTest
       proposalId = id,
       slug = "a-song-of-fire-and-ice",
       content = "A song of fire and ice",
-      author = UserResponse(
+      author = ModerationProposalAuthorResponse(
         UserId("Georges RR Martin"),
-        email = "g@rr.martin",
         firstName = Some("Georges"),
         lastName = Some("Martin"),
         organisationName = None,
-        enabled = true,
-        emailVerified = true,
-        isOrganisation = false,
-        lastConnection = DateHelper.now(),
-        roles = Seq.empty,
-        None,
-        country = Country("FR"),
-        language = Language("fr"),
-        isHardBounce = false,
-        lastMailingError = None,
-        hasPassword = false,
-        followedUsers = Seq.empty
+        postalCode = None,
+        age = None,
+        avatarUrl = None,
+        organisationSlug = None
       ),
       labels = Seq(),
       theme = None,
