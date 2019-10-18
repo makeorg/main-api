@@ -89,9 +89,10 @@ import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecu
 import org.make.api.technical.storage._
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
 import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
-import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user._
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
+import org.make.api.user.validation.DefaultUserRegistrationValidatorComponent
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
   UserHistoryCoordinator,
@@ -232,7 +233,8 @@ trait MakeApi
     with SequenceConfigurationActorComponent
     with SessionHistoryCoordinatorComponent
     with StrictLogging
-    with UserHistoryCoordinatorComponent {
+    with UserHistoryCoordinatorComponent
+    with DefaultUserRegistrationValidatorComponent {
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
@@ -413,6 +415,8 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
   def exceptionHandler(routeName: String, requestId: String): ExceptionHandler = ExceptionHandler {
     case e: EmailAlreadyRegisteredException =>
       complete(StatusCodes.BadRequest -> Seq(ValidationError("email", "already_registered", Option(e.getMessage))))
+    case e: EmailNotAllowed =>
+      complete(StatusCodes.Forbidden -> Seq(ValidationError("email", "not_allowed_to_register", Option(e.getMessage))))
     case ValidationFailedError(messages) =>
       complete(
         HttpResponse(

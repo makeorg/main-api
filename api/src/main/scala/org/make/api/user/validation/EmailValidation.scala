@@ -17,13 +17,24 @@
  *
  */
 
-package org.make.api.user
+package org.make.api.user.validation
 
-/**
-  * Created by amine on 30/06/2017.
-  */
-object UserExceptions {
-  final case class EmailAlreadyRegisteredException(email: String) extends Exception(s"Email $email already exist")
-  final case class EmailNotAllowed(email: String) extends Exception(s"Email $email is not allowed to register")
-  final case class ResetTokenRequestException() extends Exception("request reset token failed")
+import com.typesafe.config.Config
+import org.make.api.user.UserRegisterData
+
+import scala.concurrent.Future
+
+trait EmailValidation {
+
+  def init(name: String, config: Config): Unit
+
+  def canRegister(userData: UserRegisterData): Future[Boolean]
+
+}
+
+class AlwaysAuthorize extends EmailValidation {
+  override def init(name: String, config: Config): Unit = {}
+  override def canRegister(userData: UserRegisterData): Future[Boolean] = {
+    Future.successful(true)
+  }
 }
