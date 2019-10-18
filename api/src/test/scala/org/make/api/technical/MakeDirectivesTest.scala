@@ -78,8 +78,8 @@ class MakeDirectivesTest
 
   val routeMakeTrace: Route = sealRoute(get {
     path("testMakeTrace") {
-      makeOperation("test Make trace!") { _: RequestContext =>
-        complete(StatusCodes.OK)
+      makeOperation("test Make trace!") { ctx: RequestContext =>
+        complete(StatusCodes.OK -> ctx)
       }
     }
   })
@@ -171,16 +171,16 @@ class MakeDirectivesTest
 
   feature("external id management") {
     scenario("return external request id if provided") {
-      Get("/test").withHeaders(ExternalIdHeader("test-id")) ~> route ~> check {
+      Get("/test").withHeaders(`X-Make-External-Id`("test-id")) ~> route ~> check {
         status should be(StatusCodes.OK)
-        header[ExternalIdHeader].map(_.value) should be(Some("test-id"))
+        header[`X-Make-External-Id`].map(_.value) should be(Some("test-id"))
       }
     }
 
     scenario("provide a random external id if none is provided") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
-        header[ExternalIdHeader] shouldBe defined
+        header[`X-Make-External-Id`] shouldBe defined
       }
     }
   }
@@ -189,7 +189,7 @@ class MakeDirectivesTest
     scenario("return a request id") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
-        header[RequestIdHeader] shouldBe defined
+        header[`X-Request-Id`] shouldBe defined
       }
     }
   }
@@ -198,9 +198,9 @@ class MakeDirectivesTest
     scenario("return the request time as a long") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
-        header[RequestTimeHeader] shouldBe defined
+        header[`X-Route-Time`] shouldBe defined
         // Ensure value can be converted to long
-        header[RequestTimeHeader].get.value.toLong
+        header[`X-Route-Time`].get.value.toLong
       }
     }
   }
@@ -209,8 +209,8 @@ class MakeDirectivesTest
     scenario("return the route name header") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
-        header[RouteNameHeader] shouldBe defined
-        header[RouteNameHeader].map(_.value) shouldBe Some("test")
+        header[`X-Route-Name`] shouldBe defined
+        header[`X-Route-Name`].map(_.value) shouldBe Some("test")
       }
     }
   }
@@ -315,14 +315,14 @@ class MakeDirectivesTest
 
   feature("get parameters management") {
     scenario("return get parameters if provided") {
-      Get("/testWithParameter").addHeader(GetParametersHeader("foo=bar&baz=bibi")) ~> routeWithParameters ~> check {
+      Get("/testWithParameter").addHeader(`X-Get-Parameters`("foo=bar&baz=bibi")) ~> routeWithParameters ~> check {
         status should be(StatusCodes.OK)
         responseAs[Map[String, String]] should be(Map("foo" -> "bar", "baz" -> "bibi"))
       }
     }
 
     scenario("return get parameters when value not provided") {
-      Get("/testWithParameter").addHeader(GetParametersHeader("foo")) ~> routeWithParameters ~> check {
+      Get("/testWithParameter").addHeader(`X-Get-Parameters`("foo")) ~> routeWithParameters ~> check {
         status should be(StatusCodes.OK)
         responseAs[Map[String, String]] should be(Map("foo" -> ""))
       }
@@ -333,8 +333,18 @@ class MakeDirectivesTest
     scenario("slugify the makeTrace parameter") {
       Get("/testMakeTrace") ~> routeMakeTrace ~> check {
         status should be(StatusCodes.OK)
-        header[RouteNameHeader].map(_.value) shouldBe Some("test-make-trace")
+        header[`X-Route-Name`].map(_.value) shouldBe Some("test-make-trace")
       }
+    }
+
+    scenario("Header parsing") {
+      Get("/testMakeTrace").withHeaders(`X-Make-Custom-Data`("first%3DG%C3%A9nial%2Cother%3D%26%26%26")) ~>
+        routeMakeTrace ~>
+        check {
+          status should be(StatusCodes.OK)
+          val context = entityAs[RequestContext]
+          context.customData should be(Map("first" -> "Génial", "other" -> "&&&"))
+        }
     }
   }
 

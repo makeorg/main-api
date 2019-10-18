@@ -35,8 +35,8 @@ import stamina.json._
 
 object ProposalSerializers extends SprayJsonFormatters {
 
-  private val proposalProposedSerializer: JsonPersister[ProposalProposed, V3] =
-    persister[ProposalProposed, V3](
+  private val proposalProposedSerializer: JsonPersister[ProposalProposed, V4] =
+    persister[ProposalProposed, V4](
       "proposal-proposed",
       from[V1]
         .to[V2](
@@ -46,28 +46,47 @@ object ProposalSerializers extends SprayJsonFormatters {
         .to[V3] {
           _.update('initialProposal ! set[Boolean](false))
         }
+        .to[V4](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalViewedSerializer: JsonPersister[ProposalViewed, V1] =
-    persister[ProposalViewed]("proposal-viewed")
+  private val proposalViewedSerializer: JsonPersister[ProposalViewed, V2] =
+    persister[ProposalViewed, V2](
+      "proposal-viewed",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalUpdatedSerializer: JsonPersister[ProposalUpdated, V1] =
-    persister[ProposalUpdated]("proposal-updated")
+  private val proposalUpdatedSerializer: JsonPersister[ProposalUpdated, V2] =
+    persister[ProposalUpdated, V2](
+      "proposal-updated",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalAcceptedSerializer: JsonPersister[ProposalAccepted, V1] =
-    persister[ProposalAccepted]("proposal-accepted")
+  private val proposalAcceptedSerializer: JsonPersister[ProposalAccepted, V2] =
+    persister[ProposalAccepted, V2](
+      "proposal-accepted",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalRefusedSerializer: JsonPersister[ProposalRefused, V1] =
-    persister[ProposalRefused]("proposal-refused")
+  private val proposalRefusedSerializer: JsonPersister[ProposalRefused, V2] =
+    persister[ProposalRefused, V2](
+      "proposal-refused",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalPostponedSerializer: JsonPersister[ProposalPostponed, V1] =
-    persister[ProposalPostponed]("proposal-postponed")
+  private val proposalPostponedSerializer: JsonPersister[ProposalPostponed, V2] =
+    persister[ProposalPostponed, V2](
+      "proposal-postponed",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalVotesVerifiedUpdatedSerializer: JsonPersister[ProposalVotesVerifiedUpdated, V1] =
-    persister[ProposalVotesVerifiedUpdated]("proposal-votes-verified-updated")
+  private val proposalVotesVerifiedUpdatedSerializer: JsonPersister[ProposalVotesVerifiedUpdated, V2] =
+    persister[ProposalVotesVerifiedUpdated, V2](
+      "proposal-votes-verified-updated",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalVotedSerializer: JsonPersister[ProposalVoted, V4] =
-    persister[ProposalVoted, V4](
+  private val proposalVotedSerializer: JsonPersister[ProposalVoted, V5] =
+    persister[ProposalVoted, V5](
       "proposal-voted",
       from[V1]
         .to[V2](_.update('organisationInfo ! set[Option[OrganisationInfo]](None)))
@@ -79,10 +98,11 @@ object ProposalSerializers extends SprayJsonFormatters {
           }.getOrElse(json)
         }
         .to[V4](_.update('voteTrust ! set[String]("trusted")))
+        .to[V5](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalUnvotedSerializer: JsonPersister[ProposalUnvoted, V4] =
-    persister[ProposalUnvoted, V4](
+  private val proposalUnvotedSerializer: JsonPersister[ProposalUnvoted, V5] =
+    persister[ProposalUnvoted, V5](
       "proposal-unvoted",
       from[V1]
         .to[V2](_.update('organisationInfo ! set[Option[OrganisationInfo]](None)))
@@ -94,28 +114,39 @@ object ProposalSerializers extends SprayJsonFormatters {
           }.getOrElse(json)
         }
         .to[V4](_.update('voteTrust ! set[String]("trusted")))
+        .to[V5](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalQualifiedSerializer: JsonPersister[ProposalQualified, V2] =
-    persister[ProposalQualified, V2](
+  private val proposalQualifiedSerializer: JsonPersister[ProposalQualified, V3] =
+    persister[ProposalQualified, V3](
       "proposal-qualified",
-      from[V1].to[V2](_.update('voteTrust ! set[String]("trusted")))
+      from[V1]
+        .to[V2](_.update('voteTrust ! set[String]("trusted")))
+        .to[V3](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalUnqualifiedSerializer: JsonPersister[ProposalUnqualified, V2] =
-    persister[ProposalUnqualified, V2](
+  private val proposalUnqualifiedSerializer: JsonPersister[ProposalUnqualified, V3] =
+    persister[ProposalUnqualified, V3](
       "proposal-unqualified",
-      from[V1].to[V2](_.update('voteTrust ! set[String]("trusted")))
+      from[V1]
+        .to[V2](_.update('voteTrust ! set[String]("trusted")))
+        .to[V3](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val similarProposalsAddedSerializer: JsonPersister[SimilarProposalsAdded, V1] =
-    persister[SimilarProposalsAdded]("similar-proposals-added")
+  private val similarProposalsAddedSerializer: JsonPersister[SimilarProposalsAdded, V2] =
+    persister[SimilarProposalsAdded, V2](
+      "similar-proposals-added",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalLockedSerializer: JsonPersister[ProposalLocked, V1] =
-    persister[ProposalLocked]("proposal-locked")
+  private val proposalLockedSerializer: JsonPersister[ProposalLocked, V2] =
+    persister[ProposalLocked, V2](
+      "proposal-locked",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalStateSerializer: JsonPersister[ProposalState, V6] =
-    persister[ProposalState, V6](
+  private val proposalStateSerializer: JsonPersister[ProposalState, V7] =
+    persister[ProposalState, V7](
       "proposalState",
       from[V1]
         .to[V2](
@@ -153,16 +184,23 @@ object ProposalSerializers extends SprayJsonFormatters {
             })
           json.update('proposal / 'votes, votes)
         }
+        .to[V7](_.update('proposal / 'creationContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V1] =
-    persister[SimilarProposalRemoved]("similar-proposal-removed")
+  private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V2] =
+    persister[SimilarProposalRemoved, V2](
+      "similar-proposal-removed",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val similarProposalsClearedSerializer: JsonPersister[SimilarProposalsCleared, V1] =
-    persister[SimilarProposalsCleared]("similar-proposals-cleared")
+  private val similarProposalsClearedSerializer: JsonPersister[SimilarProposalsCleared, V2] =
+    persister[SimilarProposalsCleared, V2](
+      "similar-proposals-cleared",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V5] =
-    persister[ProposalPatched, V5](
+  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V6] =
+    persister[ProposalPatched, V6](
       "proposal-tags-updated",
       from[V1]
         .to[V2](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
@@ -196,16 +234,29 @@ object ProposalSerializers extends SprayJsonFormatters {
             })
           json.update('proposal / 'votes, votes)
         }
+        .to[V6](
+          _.update('requestContext / 'customData ! set[Map[String, String]](Map.empty))
+            .update('proposal / 'creationContext / 'customData ! set[Map[String, String]](Map.empty))
+        )
     )
 
-  private val proposalAnonymizedSerializer: JsonPersister[ProposalAnonymized, V1] =
-    persister[ProposalAnonymized]("proposal-anonymized")
+  private val proposalAnonymizedSerializer: JsonPersister[ProposalAnonymized, V2] =
+    persister[ProposalAnonymized, V2](
+      "proposal-anonymized",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalAddedToOperationSerializer: JsonPersister[ProposalAddedToOperation, V1] =
-    persister[ProposalAddedToOperation]("proposal-added-to-operation")
+  private val proposalAddedToOperationSerializer: JsonPersister[ProposalAddedToOperation, V2] =
+    persister[ProposalAddedToOperation, V2](
+      "proposal-added-to-operation",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
-  private val proposalRemovedFromOperationSerializer: JsonPersister[ProposalRemovedFromOperation, V1] =
-    persister[ProposalRemovedFromOperation]("proposal-removed-from-operation")
+  private val proposalRemovedFromOperationSerializer: JsonPersister[ProposalRemovedFromOperation, V2] =
+    persister[ProposalRemovedFromOperation, V2](
+      "proposal-removed-from-operation",
+      from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
+    )
 
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(

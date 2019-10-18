@@ -32,7 +32,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.Validation.{validate, validateColor, validateField, validateUserInput}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
@@ -294,7 +294,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         complete(
                           (
                             StatusCodes.OK,
-                            List(TotalCountHeader(count.toString)),
+                            List(`X-Total-Count`(count.toString)),
                             result
                               .map(
                                 operationOfQuestion =>

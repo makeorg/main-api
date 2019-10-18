@@ -29,7 +29,7 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
@@ -336,7 +336,7 @@ trait DefaultAdminUserApiComponent
                         )
                       ) { users =>
                         complete(
-                          (StatusCodes.OK, List(TotalCountHeader(count.toString)), users.map(AdminUserResponse.apply))
+                          (StatusCodes.OK, List(`X-Total-Count`(count.toString)), users.map(AdminUserResponse.apply))
                         )
                       }
                   }
@@ -461,7 +461,7 @@ trait DefaultAdminUserApiComponent
                       )
                     ) { users =>
                       complete(
-                        (StatusCodes.OK, List(TotalCountHeader(count.toString)), users.map(ModeratorResponse.apply))
+                        (StatusCodes.OK, List(`X-Total-Count`(count.toString)), users.map(ModeratorResponse.apply))
                       )
                     }
                   }

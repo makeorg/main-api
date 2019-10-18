@@ -26,7 +26,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.tag.{TagService, TagServiceComponent}
-import org.make.api.technical.CountryHeader
+import org.make.api.technical.`X-Make-Country`
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -293,7 +293,7 @@ class OperationApiTest
       And("the landing sequence id is the one defined by the users country")
       Get("/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(CountryHeader("GB")) ~> routes ~> check {
+        .withHeaders(`X-Make-Country`("GB")) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val operationResponse: OperationResponse = entityAs[OperationResponse]
         operationResponse.slug should be(firstOperation.slug)

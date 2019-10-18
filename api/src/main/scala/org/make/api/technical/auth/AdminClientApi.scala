@@ -232,9 +232,7 @@ trait DefaultAdminClientApiComponent
               requireAdminRole(userAuth.user) {
                 provideAsync(clientService.count(name)) { count =>
                   onSuccess(clientService.search(start.getOrElse(0), end, name)) { clients =>
-                    complete(
-                      (StatusCodes.OK, List(TotalCountHeader(count.toString)), clients.map(ClientResponse.apply))
-                    )
+                    complete((StatusCodes.OK, List(`X-Total-Count`(count.toString)), clients.map(ClientResponse.apply)))
                   }
                 }
               }

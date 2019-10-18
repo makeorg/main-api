@@ -28,7 +28,7 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.tag.{TagTypeDisplay, TagTypeId}
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
@@ -233,7 +233,7 @@ trait DefaultModerationTagTypeApiComponent
                     complete(
                       (
                         StatusCodes.OK,
-                        List(TotalCountHeader(filteredTagTypes.size.toString)),
+                        List(`X-Total-Count`(filteredTagTypes.size.toString)),
                         filteredTagTypes.slice(start.getOrElse(0), end.getOrElse(10)).map(TagTypeResponse.apply)
                       )
                     )

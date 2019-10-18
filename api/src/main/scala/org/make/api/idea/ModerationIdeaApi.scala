@@ -30,7 +30,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Order
@@ -227,7 +227,7 @@ trait DefaultModerationIdeaApiComponent
                       complete(
                         (
                           StatusCodes.OK,
-                          List(TotalCountHeader(ideas.total.toString)),
+                          List(`X-Total-Count`(ideas.total.toString)),
                           ideas.results.map(IdeaResponse.apply)
                         )
                       )

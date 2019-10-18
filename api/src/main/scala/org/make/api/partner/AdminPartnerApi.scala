@@ -27,7 +27,7 @@ import javax.ws.rs.Path
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.Validation._
 import org.make.core.{HttpCodes, ParameterExtractors, Requirement}
@@ -190,7 +190,7 @@ trait DefaultAdminPartnerApiComponent
                       result =>
                         provideAsync(partnerService.count(questionId, organisationId)) { count =>
                           complete(
-                            (StatusCodes.OK, List(TotalCountHeader(count.toString)), result.map(PartnerResponse.apply))
+                            (StatusCodes.OK, List(`X-Total-Count`(count.toString)), result.map(PartnerResponse.apply))
                           )
                         }
                     }

@@ -28,7 +28,7 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, TotalCountHeader}
+import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.operation.{FeaturedOperation, FeaturedOperationId}
@@ -204,7 +204,7 @@ trait DefaultAdminFeaturedOperationApiComponent
                   complete(
                     (
                       StatusCodes.OK,
-                      List(TotalCountHeader(result.size.toString)),
+                      List(`X-Total-Count`(result.size.toString)),
                       result.map(FeaturedOperationResponse.apply)
                     )
                   )
