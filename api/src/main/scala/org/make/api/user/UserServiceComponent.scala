@@ -31,9 +31,10 @@ import org.make.api.technical.auth.{TokenGeneratorComponent, UserTokenGeneratorC
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
-import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
+import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.UserEvent._
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
@@ -121,7 +122,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with CrmServiceComponent
     with EventBusServiceComponent
     with TokenGeneratorComponent
-    with MakeSettingsComponent =>
+    with MakeSettingsComponent
+    with UserRegistrationValidatorComponent =>
 
   override lazy val userService: UserService = new DefaultUserService
 
@@ -188,13 +190,21 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.persist(user)
     }
 
-    private def generateVerificationToken(lowerCasedEmail: String, emailExists: Boolean): Future[String] = {
+    private def validateAccountCreation(emailExists: Boolean,
+                                        canRegister: Boolean,
+                                        lowerCasedEmail: String): Future[Unit] = {
       if (emailExists) {
         Future.failed(EmailAlreadyRegisteredException(lowerCasedEmail))
+      } else if (!canRegister) {
+        Future.failed(EmailNotAllowed(lowerCasedEmail))
       } else {
-        userTokenGenerator.generateVerificationToken().map {
-          case (_, token) => token
-        }
+        Future.successful {}
+      }
+    }
+
+    private def generateVerificationToken(): Future[String] = {
+      userTokenGenerator.generateVerificationToken().map {
+        case (_, token) => token
       }
     }
 
@@ -230,7 +240,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
       val result = for {
         emailExists             <- persistentUserService.emailExists(lowerCasedEmail)
-        hashedVerificationToken <- generateVerificationToken(lowerCasedEmail, emailExists)
+        canRegister             <- userRegistrationValidator.canRegister(userRegisterData)
+        _                       <- validateAccountCreation(emailExists, canRegister, lowerCasedEmail)
+        hashedVerificationToken <- generateVerificationToken()
         user                    <- registerUser(userRegisterData, lowerCasedEmail, country, language, profile, hashedVerificationToken)
       } yield user
 

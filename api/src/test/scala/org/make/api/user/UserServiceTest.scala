@@ -29,8 +29,9 @@ import org.make.api.question.AuthorRequest
 import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
-import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
+import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
+import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.profile.Gender.Female
@@ -61,7 +62,8 @@ class UserServiceTest
     with CrmServiceComponent
     with TokenGeneratorComponent
     with EventBusServiceComponent
-    with MakeSettingsComponent {
+    with MakeSettingsComponent
+    with UserRegistrationValidatorComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -74,6 +76,7 @@ class UserServiceTest
   override val eventBusService: EventBusService = mock[EventBusService]
   override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
+  override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
 
   Mockito.when(makeSettings.defaultUserAnonymousParticipation).thenReturn(false)
 
@@ -88,6 +91,8 @@ class UserServiceTest
   Mockito
     .when(userTokenGenerator.generateVerificationToken())
     .thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
+
+  Mockito.when(userRegistrationValidator.canRegister(any[UserRegisterData])).thenReturn(Future.successful(true))
 
   override protected def afterEach(): Unit = {
     super.afterEach()
@@ -633,6 +638,33 @@ class UserServiceTest
       verify(eventBusService, Mockito.never())
         .publish(ArgumentMatchers.any[AnyRef])
 
+    }
+
+    scenario("email not allowed") {
+      Mockito
+        .when(persistentUserService.emailExists("notvalidated@make.org"))
+        .thenReturn(Future.successful(false))
+
+      Mockito
+        .when(userRegistrationValidator.canRegister(argThat[UserRegisterData](_.email == "notvalidated@make.org")))
+        .thenReturn(Future.successful(false))
+
+      val register = userService.register(
+        UserRegisterData(
+          email = "notvalidated@make.org",
+          firstName = None,
+          password = None,
+          lastIp = None,
+          country = Country("FR"),
+          language = Language("fr")
+        ),
+        RequestContext.empty
+      )
+
+      whenReady(register.failed, Timeout(2.seconds)) {
+        case EmailNotAllowed(_) =>
+        case other              => fail(s"${other.getClass.getName} is not the expected EmailNotAllowed exception")
+      }
     }
   }
 
