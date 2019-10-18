@@ -20,8 +20,8 @@
 package org.make.api.question
 import java.util.Date
 
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.util.ByteString
@@ -38,27 +38,26 @@ import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{FileType, StorageService, StorageServiceComponent, UploadResponse}
-import org.make.api.user.UserResponse
-import org.make.core.{DateHelper, RequestContext}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.{ProposalId, _}
 import org.make.core.proposal.indexed._
+import org.make.core.proposal.{ProposalId, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
+import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class ModerationQuestionApiTest
     extends MakeApiTestBase
@@ -406,24 +405,15 @@ class ModerationQuestionApiTest
               proposalId = ProposalId("aaa-bbb-ccc"),
               content = "il faut fou",
               slug = "il-faut-fou",
-              author = UserResponse(
+              author = ModerationProposalAuthorResponse(
                 UserId("Georges RR Martin"),
-                email = "g@rr.martin",
                 firstName = Some("Georges"),
                 lastName = Some("Martin"),
                 organisationName = None,
-                enabled = true,
-                emailVerified = true,
-                isOrganisation = false,
-                lastConnection = DateHelper.now(),
-                roles = Seq.empty,
-                None,
-                country = Country("FR"),
-                language = Language("fr"),
-                isHardBounce = false,
-                lastMailingError = None,
-                hasPassword = false,
-                followedUsers = Seq.empty
+                postalCode = None,
+                age = None,
+                avatarUrl = None,
+                organisationSlug = None
               ),
               labels = Seq(),
               theme = None,

@@ -19,7 +19,8 @@
 
 package org.make.api.proposal
 
-import java.time.ZonedDateTime
+import java.time.{LocalDate, ZonedDateTime}
+import java.time.temporal.ChronoUnit
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
@@ -33,17 +34,62 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagId, TagTypeId}
-import org.make.core.user.UserId
-import org.make.core.{CirceFormatters, RequestContext}
+import org.make.core.user.{User, UserId}
+import org.make.core.{CirceFormatters, RequestContext, SlugHelper}
 
 import scala.annotation.meta.field
+
+final case class ModerationProposalAuthorResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "c39c35cd-87dc-430f-841b-609b776ab720")
+  userId: UserId,
+  firstName: Option[String],
+  lastName: Option[String],
+  postalCode: Option[String],
+  age: Option[Int],
+  avatarUrl: Option[String],
+  organisationName: Option[String],
+  organisationSlug: Option[String]
+)
+
+object ModerationProposalAuthorResponse {
+  def apply(user: User): ModerationProposalAuthorResponse = {
+    if (user.anonymousParticipation) {
+      ModerationProposalAuthorResponse(
+        userId = user.userId,
+        firstName = None,
+        lastName = None,
+        postalCode = None,
+        age = None,
+        avatarUrl = None,
+        organisationName = None,
+        organisationSlug = None
+      )
+    } else {
+      ModerationProposalAuthorResponse(
+        userId = user.userId,
+        firstName = user.firstName,
+        lastName = user.lastName,
+        postalCode = user.profile.flatMap(_.postalCode),
+        age = user.profile
+          .flatMap(_.dateOfBirth)
+          .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
+        avatarUrl = user.profile.flatMap(_.avatarUrl),
+        organisationName = user.organisationName,
+        organisationSlug = user.organisationName.map(SlugHelper.apply)
+      )
+    }
+  }
+
+  implicit val encoder: Encoder[ModerationProposalAuthorResponse] = deriveEncoder[ModerationProposalAuthorResponse]
+  implicit val decoder: Decoder[ModerationProposalAuthorResponse] = deriveDecoder[ModerationProposalAuthorResponse]
+}
 
 final case class ModerationProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
   proposalId: ProposalId,
   slug: String,
   content: String,
-  author: UserResponse,
+  author: ModerationProposalAuthorResponse,
   @(ApiModelProperty @field)(dataType = "list[string]")
   labels: Seq[LabelId],
   @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
