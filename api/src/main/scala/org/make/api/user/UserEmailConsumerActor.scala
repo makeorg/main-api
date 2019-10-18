@@ -46,7 +46,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case event: UserValidatedAccountEvent       => handleUserValidatedAccountEvent(event)
       case event: UserConnectedEvent              => doNothing(event)
       case event: UserUpdatedTagEvent             => doNothing(event)
-      case event: ResendValidationEmailEvent      => doNothing(event)
+      case event: ResendValidationEmailEvent      => handleResendValidationEmailEvent(event)
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
       case event: OrganisationInitializationEvent => handleOrganisationAskPassword(event)
@@ -57,11 +57,19 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     }
   }
 
+  def handleResendValidationEmailEvent(event: ResendValidationEmailEvent): Future[Unit] = {
+    getUserWithValidEmail(event.userId).flatMap {
+      case Some(user) =>
+        sendMailPublisherService.resendRegistration(user, event.country, event.language, event.requestContext)
+      case None => Future.successful {}
+    }
+  }
+
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) =>
         sendMailPublisherService.publishWelcome(user, event.country, event.language, event.requestContext)
-      case None => Future.successful({})
+      case None => Future.successful {}
     }
   }
 
@@ -69,7 +77,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if !event.isSocialLogin =>
         sendMailPublisherService.publishRegistration(user, event.country, event.language, event.requestContext)
-      case _ => Future.successful({})
+      case _ => Future.successful {}
     }
   }
 
@@ -77,7 +85,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) =>
         sendMailPublisherService.publishForgottenPassword(user, event.country, event.language, event.requestContext)
-      case None => Future.successful({})
+      case None => Future.successful {}
     }
   }
 
@@ -86,7 +94,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case Some(organisation) =>
         sendMailPublisherService
           .publishForgottenPasswordOrganisation(organisation, event.country, event.language, event.requestContext)
-      case None => Future.successful({})
+      case None => Future.successful {}
     }
   }
 

@@ -91,6 +91,7 @@ trait UserService extends ShortenedNames {
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
   def adminCountUsers(email: Option[String], firstName: Option[String], role: Option[Role]): Future[Int]
   def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]]
+  def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]]
 }
 
 case class UserRegisterData(email: String,
@@ -690,6 +691,28 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               getConnectionModes(user)
             )
           }
+      }
+    }
+
+    override def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]] = {
+      getUser(userId).flatMap {
+        case Some(user)
+            // if last verification token was changed more than 10 minutes ago
+            if user.verificationTokenExpiresAt
+              .forall(_.minusSeconds(validationTokenExpiresIn).plusMinutes(10).isBefore(DateHelper.now()))
+              && !user.emailVerified =>
+          userTokenGenerator.generateVerificationToken().flatMap {
+            case (_, token) =>
+              persistentUserService
+                .updateUser(
+                  user.copy(
+                    verificationToken = Some(token),
+                    verificationTokenExpiresAt = Some(DateHelper.now().plusSeconds(validationTokenExpiresIn))
+                  )
+                )
+                .map(_.verificationToken)
+          }
+        case _ => Future.successful(None)
       }
     }
   }
