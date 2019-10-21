@@ -25,6 +25,7 @@ import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
+import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.semantic._
 import org.make.api.sessionhistory._
 import org.make.api.tag.{TagService, TagServiceComponent}
@@ -37,7 +38,7 @@ import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, Req
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualifications}
+import org.make.core.history.HistoryActions.{Segment, Sequence, Troll, Trusted, VoteAndQualifications}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
@@ -79,7 +80,8 @@ class ProposalServiceTest
     with IdeaServiceComponent
     with IdeaMappingServiceComponent
     with TagTypeServiceComponent
-    with SecurityConfigurationComponent {
+    with SecurityConfigurationComponent
+    with SegmentServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
@@ -100,6 +102,9 @@ class ProposalServiceTest
   override val ideaMappingService: IdeaMappingService = mock[IdeaMappingService]
   override val tagTypeService: TagTypeService = mock[TagTypeService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
+  override val segmentService: SegmentService = mock[SegmentService]
+
+  Mockito.when(segmentService.resolveSegment(any[RequestContext])).thenReturn(Future.successful(None))
 
   Mockito.when(securityConfiguration.secureHashSalt).thenReturn("some-hashed-supposed-to-be-secure")
 
@@ -199,12 +204,14 @@ class ProposalServiceTest
       createdAt = DateHelper.now(),
       updatedAt = None,
       votes = Seq(
-        IndexedVote(Agree, 42, 42, Seq.empty),
-        IndexedVote(Disagree, 42, 42, Seq.empty),
-        IndexedVote(Neutral, 42, 42, Seq.empty)
+        IndexedVote(Agree, 42, 42, 42, 42, Seq.empty),
+        IndexedVote(Disagree, 42, 42, 42, 42, Seq.empty),
+        IndexedVote(Neutral, 42, 42, 42, 42, Seq.empty)
       ),
       votesCount = 0,
       votesVerifiedCount = 0,
+      votesSequenceCount = 0,
+      votesSegmentCount = 0,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -1537,6 +1544,10 @@ class ProposalServiceTest
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
+
+      Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
       Mockito
@@ -1550,7 +1561,7 @@ class ProposalServiceTest
           proposalCoordinatorService
             .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1569,6 +1580,10 @@ class ProposalServiceTest
       val votes = VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
+
+      Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
 
@@ -1583,7 +1598,7 @@ class ProposalServiceTest
           proposalCoordinatorService
             .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1600,6 +1615,10 @@ class ProposalServiceTest
       val sessionId = SessionId("vote-failed-voted-unlogged")
       val proposalId = ProposalId("vote-failed-voted-unlogged")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1631,6 +1650,10 @@ class ProposalServiceTest
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
+
+      Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.failed(ConcurrentModification("talk to my hand")))
 
@@ -1659,6 +1682,10 @@ class ProposalServiceTest
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
+
+      Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
       Mockito
@@ -1672,7 +1699,7 @@ class ProposalServiceTest
           proposalCoordinatorService
             .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Troll))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 0, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 0, 0, 0, Seq.empty))))
 
       whenReady(
         proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, Some("fake")),
@@ -1690,6 +1717,10 @@ class ProposalServiceTest
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
+
+      Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
       Mockito
@@ -1703,7 +1734,7 @@ class ProposalServiceTest
           proposalCoordinatorService
             .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1722,6 +1753,10 @@ class ProposalServiceTest
       val votes = VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
+
+      Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
 
@@ -1736,7 +1771,7 @@ class ProposalServiceTest
           proposalCoordinatorService
             .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
         )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, Seq.empty))))
+        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1753,6 +1788,10 @@ class ProposalServiceTest
       val sessionId = SessionId("unvote-failed-unvoted-unlogged")
       val proposalId = ProposalId("unvote-failed-unvoted-unlogged")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1784,6 +1823,10 @@ class ProposalServiceTest
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
       Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
+
+      Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.failed(ConcurrentModification("talk to my hand")))
 
@@ -1812,6 +1855,10 @@ class ProposalServiceTest
       val sessionId = SessionId("successful-qualification")
       val proposalId = ProposalId("successful-qualification")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
 
       Mockito
         .when(
@@ -1861,6 +1908,10 @@ class ProposalServiceTest
       val sessionId = SessionId("qualification-failed")
       val proposalId = ProposalId("qualification-failed")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
 
       Mockito
         .when(
@@ -1946,6 +1997,10 @@ class ProposalServiceTest
       val sessionId = SessionId("successful-qualification-removal")
       val proposalId = ProposalId("successful-qualification-removal")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(proposalId))))
 
       Mockito
         .when(
@@ -2072,6 +2127,93 @@ class ProposalServiceTest
             )
           )
       }
+    }
+  }
+
+  feature("trust resolution") {
+
+    def key(proposalId: ProposalId, requestContext: RequestContext): String = SecurityHelper.generateProposalKeyHash(
+      proposalId,
+      requestContext.sessionId,
+      requestContext.location,
+      securityConfiguration.secureVoteSalt
+    )
+
+    scenario("in segment") {
+      val proposalId = ProposalId("in segment")
+      val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
+
+      proposalService.resolveVoteTrust(
+        Some(key(proposalId, requestContext)),
+        proposalId,
+        Some("segment"),
+        Some("segment"),
+        requestContext
+      ) should be(Segment)
+    }
+
+    scenario("segments do not match") {
+      val proposalId = ProposalId("segments do not match")
+      val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
+
+      proposalService.resolveVoteTrust(
+        Some(key(proposalId, requestContext)),
+        proposalId,
+        Some("user-segment"),
+        Some("proposal-segment"),
+        requestContext
+      ) should be(Sequence)
+    }
+
+    scenario("no segment") {
+      val proposalId = ProposalId("no segment")
+      val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
+
+      proposalService.resolveVoteTrust(Some(key(proposalId, requestContext)), proposalId, None, None, requestContext) should be(
+        Sequence
+      )
+    }
+
+    scenario("not in sequence") {
+      val proposalId = ProposalId("not in sequence")
+      val requestContext = RequestContext.empty.copy(location = Some("operation-page 123456"))
+
+      proposalService
+        .resolveVoteTrust(Some(key(proposalId, requestContext)), proposalId, None, None, requestContext) should be(
+        Trusted
+      )
+    }
+
+    scenario("not in sequence but in segment") {
+      val proposalId = ProposalId("not in sequence but in segment")
+      val requestContext = RequestContext.empty.copy(location = Some("operation-page 123456"))
+
+      proposalService
+        .resolveVoteTrust(
+          Some(key(proposalId, requestContext)),
+          proposalId,
+          Some("segment"),
+          Some("segment"),
+          requestContext
+        ) should be(Trusted)
+    }
+
+    scenario("bad proposal key") {
+      val proposalId = ProposalId("bad proposal key")
+      val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
+
+      proposalService
+        .resolveVoteTrust(Some("I am a troll"), proposalId, Some("segment"), Some("segment"), requestContext) should be(
+        Troll
+      )
+    }
+
+    scenario("no proposal key") {
+      val proposalId = ProposalId("no proposal key")
+      val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
+
+      proposalService
+        .resolveVoteTrust(None, proposalId, Some("segment"), Some("segment"), requestContext) should be(Troll)
     }
   }
 

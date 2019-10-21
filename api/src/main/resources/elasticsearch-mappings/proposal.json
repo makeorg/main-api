@@ -919,26 +919,38 @@
             },
             "countVerified": {
               "type": "integer",
-              "index": true
+              "index": false
             },
-            "selected": {
-              "type": "boolean",
-              "index": true
+            "countSequence": {
+              "type": "integer",
+              "index": false
+            },
+            "countSegment": {
+              "type": "integer",
+              "index": false
             },
             "qualifications": {
               "type": "object",
               "properties": {
                 "key": {
                   "type": "keyword",
-                  "index": true
+                  "index": false
                 },
                 "count": {
                   "type": "integer",
-                  "index": true
+                  "index": false
                 },
                 "countVerified": {
                   "type": "integer",
-                  "index": true
+                  "index": false
+                },
+                "countSequence": {
+                  "type": "integer",
+                  "index": false
+                },
+                "countSegment": {
+                  "type": "integer",
+                  "index": false
                 }
               }
             }
@@ -949,6 +961,14 @@
           "index": true
         },
         "votesVerifiedCount": {
+          "type": "integer",
+          "index": true
+        },
+        "votesSequenceCount": {
+          "type": "integer",
+          "index": true
+        },
+        "votesSegmentCount": {
           "type": "integer",
           "index": true
         },

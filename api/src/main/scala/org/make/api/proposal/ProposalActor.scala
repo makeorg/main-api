@@ -1009,16 +1009,23 @@ object ProposalActor {
   def applyProposalVoted(state: ProposalState, event: ProposalVoted): ProposalState = {
     state.copy(
       proposal = state.proposal.copy(
-        votes = state.proposal.votes.map {
-          case vote if vote.key == event.voteKey =>
-            val voteIncreased = vote.copy(count = vote.count + 1)
-            if (event.voteTrust.isTrusted) {
-              voteIncreased.copy(countVerified = vote.countVerified + 1)
-            } else {
+        votes =
+          state.proposal.votes.map {
+            case vote if vote.key == event.voteKey =>
+              var voteIncreased = vote.copy(count = vote.count + 1)
+              if (event.voteTrust.isInSegment) {
+                voteIncreased = voteIncreased.copy(countSegment = voteIncreased.countSegment + 1)
+              }
+              if (event.voteTrust.isInSequence) {
+                voteIncreased = voteIncreased.copy(countSequence = voteIncreased.countSequence + 1)
+              }
+              if (event.voteTrust.isTrusted) {
+                voteIncreased = voteIncreased.copy(countVerified = vote.countVerified + 1)
+              }
               voteIncreased
-            }
-          case vote => vote
-        },
+
+            case vote => vote
+          },
         organisationIds = event.maybeOrganisationId match {
           case Some(organisationId)
               if !state.proposal.organisationIds
@@ -1031,36 +1038,50 @@ object ProposalActor {
   }
 
   def applyProposalUnvoted(state: ProposalState, event: ProposalUnvoted): ProposalState = {
-    state.copy(proposal = state.proposal.copy(votes = state.proposal.votes.map {
-      case vote if vote.key == event.voteKey =>
-        vote.copy(
-          count = vote.count - 1,
-          countVerified = if (event.voteTrust.isTrusted) {
-            vote.countVerified - 1
-          } else {
-            vote.countVerified
-          },
-          qualifications = vote.qualifications
-            .map(qualification => applyUnqualifVote(qualification, event.selectedQualifications, event.voteTrust))
-        )
-      case vote => vote
-    }, organisationIds = event.maybeOrganisationId match {
-      case Some(organisationId) =>
-        state.proposal.organisationIds.filterNot(_.value == organisationId.value)
-      case _ => state.proposal.organisationIds
-    }))
+    state.copy(
+      proposal =
+        state.proposal.copy(votes = state.proposal.votes.map {
+          case vote if vote.key == event.voteKey =>
+            var voteDecreased = vote.copy(count = vote.count - 1)
+            if (event.voteTrust.isInSegment) {
+              voteDecreased = voteDecreased.copy(countSegment = voteDecreased.countSegment - 1)
+            }
+            if (event.voteTrust.isInSequence) {
+              voteDecreased = voteDecreased.copy(countSequence = voteDecreased.countSequence - 1)
+            }
+            if (event.voteTrust.isTrusted) {
+              voteDecreased = voteDecreased.copy(countVerified = vote.countVerified - 1)
+            }
+
+            voteDecreased.copy(
+              qualifications = voteDecreased.qualifications
+                .map(qualification => applyUnqualifVote(qualification, event.selectedQualifications, event.voteTrust))
+            )
+          case vote => vote
+        }, organisationIds = event.maybeOrganisationId match {
+          case Some(organisationId) =>
+            state.proposal.organisationIds.filterNot(_.value == organisationId.value)
+          case _ => state.proposal.organisationIds
+        })
+    )
   }
 
   def applyUnqualifVote(qualification: Qualification,
                         selectedQualifications: Seq[QualificationKey],
                         voteTrust: VoteTrust): Qualification = {
     if (selectedQualifications.contains(qualification.key)) {
-      val qualificationDecreased = qualification.copy(count = qualification.count - 1)
+      var qualificationDecreased = qualification.copy(count = qualification.count - 1)
       if (voteTrust.isTrusted) {
-        qualificationDecreased.copy(countVerified = qualification.countVerified - 1)
-      } else {
-        qualificationDecreased
+        qualificationDecreased = qualificationDecreased.copy(countVerified = qualification.countVerified - 1)
       }
+      if (voteTrust.isInSequence) {
+        qualificationDecreased = qualificationDecreased.copy(countSequence = qualification.countSequence - 1)
+      }
+      if (voteTrust.isInSegment) {
+        qualificationDecreased = qualificationDecreased.copy(countSegment = qualification.countSegment - 1)
+      }
+      qualificationDecreased
+
     } else {
       qualification
     }
@@ -1071,12 +1092,18 @@ object ProposalActor {
       case vote if vote.key == event.voteKey =>
         vote.copy(qualifications = vote.qualifications.map {
           case qualification if qualification.key == event.qualificationKey =>
-            val qualificationIncreased = qualification.copy(count = qualification.count + 1)
+            var qualificationIncreased = qualification.copy(count = qualification.count + 1)
             if (event.voteTrust.isTrusted) {
-              qualificationIncreased.copy(countVerified = qualification.countVerified + 1)
-            } else {
-              qualificationIncreased
+              qualificationIncreased = qualificationIncreased.copy(countVerified = qualification.countVerified + 1)
             }
+            if (event.voteTrust.isInSequence) {
+              qualificationIncreased = qualificationIncreased.copy(countSequence = qualification.countSequence + 1)
+            }
+            if (event.voteTrust.isInSegment) {
+              qualificationIncreased = qualificationIncreased.copy(countSegment = qualification.countSegment + 1)
+            }
+            qualificationIncreased
+
           case qualification => qualification
         })
       case vote => vote
@@ -1086,16 +1113,9 @@ object ProposalActor {
   def applyProposalUnqualified(state: ProposalState, event: ProposalUnqualified): ProposalState = {
     state.copy(proposal = state.proposal.copy(votes = state.proposal.votes.map {
       case vote if vote.key == event.voteKey =>
-        vote.copy(qualifications = vote.qualifications.map {
-          case qualification if qualification.key == event.qualificationKey =>
-            val qualificationDecresed = qualification.copy(count = qualification.count - 1)
-            if (event.voteTrust.isTrusted) {
-              qualificationDecresed.copy(countVerified = qualification.countVerified - 1)
-            } else {
-              qualificationDecresed
-            }
-          case qualification => qualification
-        })
+        vote.copy(
+          qualifications = vote.qualifications.map(applyUnqualifVote(_, Seq(event.qualificationKey), event.voteTrust))
+        )
       case vote => vote
     }))
   }

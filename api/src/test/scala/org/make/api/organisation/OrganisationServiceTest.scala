@@ -464,6 +464,8 @@ class OrganisationServiceTest
           votes = Seq.empty,
           votesCount = 0,
           votesVerifiedCount = 0,
+          votesSequenceCount = 0,
+          votesSegmentCount = 0,
           toEnrich = false,
           scores = IndexedScores.empty,
           context = None,

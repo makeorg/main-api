@@ -90,6 +90,8 @@ class ProposalSearchEngineTest
     ),
     votesCount = 3,
     votesVerifiedCount = 3,
+    votesSequenceCount = 3,
+    votesSegmentCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
     context = Some(

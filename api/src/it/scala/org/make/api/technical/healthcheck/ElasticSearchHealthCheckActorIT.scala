@@ -108,6 +108,8 @@ class ElasticSearchHealthCheckActorIT
       ),
       votesCount = 267,
       votesVerifiedCount = 267,
+      votesSequenceCount = 267,
+      votesSegmentCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(

@@ -295,9 +295,9 @@ class ProposalScorerHelperTest extends MakeUnitTest {
               qualifsNeutral: Seq[Qualification] = Seq.empty,
               qualifsDisagree: Seq[Qualification] = Seq.empty): Seq[Vote] =
       Seq(
-        Vote(Agree, 0, agree, qualifsAgree),
-        Vote(Neutral, 0, neutral, qualifsNeutral),
-        Vote(Disagree, 0, disagree, qualifsDisagree)
+        Vote(Agree, agree, agree, agree, 0, qualifsAgree),
+        Vote(Neutral, neutral, neutral, neutral, 0, qualifsNeutral),
+        Vote(Disagree, disagree, disagree, disagree, 0, qualifsDisagree)
       )
     def qualifications(platitudeAgree: Int,
                        platitudeDisagree: Int,
