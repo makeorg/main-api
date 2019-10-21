@@ -284,7 +284,8 @@ trait ProposalIndexationStream
         sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status),
         initialProposal = proposal.initialProposal,
         refusalReason = proposal.refusalReason,
-        operationKind = Option(operation.operationKind)
+        operationKind = Option(operation.operationKind),
+        segment = None // TODO: compute it!
       )
     }
 

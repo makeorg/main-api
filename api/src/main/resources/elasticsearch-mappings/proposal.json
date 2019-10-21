@@ -1145,6 +1145,10 @@
         "operationKind": {
           "type": "keyword",
           "index": true
+        },
+        "segment": {
+          "type": "keyword",
+          "index": true
         }
       }
     }

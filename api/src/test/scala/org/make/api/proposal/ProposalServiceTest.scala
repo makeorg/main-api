@@ -230,7 +230,8 @@ class ProposalServiceTest
       sequencePool = SequencePool.New,
       initialProposal = false,
       refusalReason = None,
-      operationKind = None
+      operationKind = None,
+      segment = None
     )
   }
 

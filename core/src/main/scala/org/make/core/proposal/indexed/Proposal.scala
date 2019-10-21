@@ -105,6 +105,7 @@ object ProposalElasticsearchFieldNames {
   val refusalReason: String = "refusalReason"
   val scores: String = "scores"
   val scoreUpperBound: String = "scores.scoreUpperBound"
+  val segment: String = "segment"
   val sequencePool: String = "sequencePool"
   val slug: String = "slug"
   val status: String = "status"
@@ -159,7 +160,8 @@ case class IndexedProposal(
   initialProposal: Boolean,
   refusalReason: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "GREAT_CAUSE")
-  operationKind: Option[OperationKind]
+  operationKind: Option[OperationKind],
+  segment: Option[String]
 )
 
 object IndexedProposal extends CirceFormatters {

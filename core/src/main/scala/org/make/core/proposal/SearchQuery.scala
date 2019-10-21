@@ -82,7 +82,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          createdAt: Option[CreatedAtSearchFilter] = None,
                          sequencePool: Option[SequencePoolSearchFilter] = None,
                          operationKinds: Option[OperationKindsSearchFilter] = None,
-                         questionIsOpen: Option[QuestionIsOpenSearchFilter] = None)
+                         questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
+                         segment: Option[SegmentSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -221,7 +222,8 @@ object SearchFilters extends ElasticDsl {
       buildCreatedAtSearchFilter(searchQuery),
       buildSequencePoolSearchFilter(searchQuery),
       buildOperationKindSearchFilter(searchQuery),
-      buildQuestionIsOpenSearchFilter(searchQuery)
+      buildQuestionIsOpenSearchFilter(searchQuery),
+      buildSegmentSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -577,52 +579,63 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
+  def buildSegmentSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    searchQuery.filters.flatMap {
+      _.segment match {
+        case Some(SegmentSearchFilter(segment)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.segment, segment))
+        case _ => None
+      }
+    }
+  }
+
 }
 
-case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
+final case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
 
-case class UserSearchFilter(userId: UserId)
+final case class UserSearchFilter(userId: UserId)
 
-case class InitialProposalFilter(isInitialProposal: Boolean)
+final case class InitialProposalFilter(isInitialProposal: Boolean)
 
-case class QuestionSearchFilter(questionIds: Seq[QuestionId])
+final case class QuestionSearchFilter(questionIds: Seq[QuestionId])
 
-case class TagsSearchFilter(tagIds: Seq[TagId]) {
+final case class TagsSearchFilter(tagIds: Seq[TagId]) {
   validate(validateField("tagId", "mandatory", tagIds.nonEmpty, "ids cannot be empty in tag search filters"))
 }
 
-case class LabelsSearchFilter(labelIds: Seq[LabelId]) {
+final case class LabelsSearchFilter(labelIds: Seq[LabelId]) {
   validate(validateField("labelIds", "mandatory", labelIds.nonEmpty, "ids cannot be empty in label search filters"))
 }
 
-case class OperationSearchFilter(operationIds: Seq[OperationId])
+final case class OperationSearchFilter(operationIds: Seq[OperationId])
 
-case class TrendingSearchFilter(trending: String) {
+final case class TrendingSearchFilter(trending: String) {
   validate(validateField("trending", "mandatory", trending.nonEmpty, "trending cannot be empty in search filters"))
 }
 
-case class CreatedAtSearchFilter(before: Option[ZonedDateTime], after: Option[ZonedDateTime])
+final case class CreatedAtSearchFilter(before: Option[ZonedDateTime], after: Option[ZonedDateTime])
 
-case class ContentSearchFilter(text: String)
+final case class ContentSearchFilter(text: String)
 
-case class StatusSearchFilter(status: Seq[ProposalStatus])
+final case class StatusSearchFilter(status: Seq[ProposalStatus])
 
-case class ContextSearchFilter(operation: Option[OperationId] = None,
-                               source: Option[String] = None,
-                               location: Option[String] = None,
-                               question: Option[String] = None)
+final case class ContextSearchFilter(operation: Option[OperationId] = None,
+                                     source: Option[String] = None,
+                                     location: Option[String] = None,
+                                     question: Option[String] = None)
 
-case class SlugSearchFilter(slug: String)
+final case class SlugSearchFilter(slug: String)
 
-case class IdeaSearchFilter(ideaId: IdeaId)
+final case class IdeaSearchFilter(ideaId: IdeaId)
 
-case class Limit(value: Int)
+final case class Limit(value: Int)
 
-case class Skip(value: Int)
+final case class Skip(value: Int)
 
-case class MinVotesCountSearchFilter(minVotesCount: Int)
-case class ToEnrichSearchFilter(toEnrich: Boolean)
-case class MinScoreSearchFilter(minScore: Float)
-case class SequencePoolSearchFilter(sequencePool: String)
-case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
-case class QuestionIsOpenSearchFilter(isOpen: Boolean)
+final case class MinVotesCountSearchFilter(minVotesCount: Int)
+final case class ToEnrichSearchFilter(toEnrich: Boolean)
+final case class MinScoreSearchFilter(minScore: Float)
+final case class SequencePoolSearchFilter(sequencePool: String)
+final case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
+final case class QuestionIsOpenSearchFilter(isOpen: Boolean)
+final case class SegmentSearchFilter(segment: String)
