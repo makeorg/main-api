@@ -116,7 +116,8 @@ class ProposalSearchEngineTest
     sequencePool = SequencePool.New,
     initialProposal = false,
     refusalReason = None,
-    operationKind = None
+    operationKind = None,
+    segment = None
   )
 
   val normalProposal: IndexedProposal = proposal(42, 1, 3)

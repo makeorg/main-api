@@ -894,7 +894,8 @@ class CrmServiceComponentTest
           sequencePool = SequencePool.New,
           initialProposal = false,
           refusalReason = None,
-          operationKind = None
+          operationKind = None,
+          segment = None
         ),
         IndexedProposal(
           id = ProposalId("proposal-2"),
@@ -932,7 +933,8 @@ class CrmServiceComponentTest
           sequencePool = SequencePool.New,
           initialProposal = false,
           refusalReason = None,
-          operationKind = None
+          operationKind = None,
+          segment = None
         )
       )
 

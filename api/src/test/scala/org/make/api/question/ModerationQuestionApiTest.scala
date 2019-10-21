@@ -383,7 +383,8 @@ class ModerationQuestionApiTest
                 refusalReason = None,
                 scores = IndexedScores.empty,
                 sequencePool = SequencePool.New,
-                operationKind = None
+                operationKind = None,
+                segment = None
               )
             )
           )

@@ -80,7 +80,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
                    votes: Map[VoteKey, Int],
                    sequencePool: SequencePool,
                    idea: Option[IdeaId] = None,
-                   createdAt: ZonedDateTime = DateHelper.now()): IndexedProposal = {
+                   createdAt: ZonedDateTime = DateHelper.now(),
+                   segment: Option[String] = None): IndexedProposal = {
     IndexedProposal(
       id = id,
       userId = UserId(s"fake-$id"),
@@ -129,7 +130,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       sequencePool = sequencePool,
       initialProposal = false,
       refusalReason = None,
-      operationKind = None
+      operationKind = None,
+      segment = segment
     )
   }
 
@@ -137,7 +139,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
                          votes: Map[VoteKey, (Int, Map[QualificationKey, Int])],
                          sequencePool: SequencePool,
                          idea: Option[IdeaId] = None,
-                         createdAt: ZonedDateTime = DateHelper.now()): IndexedProposal = {
+                         createdAt: ZonedDateTime = DateHelper.now(),
+                         segment: Option[String] = None): IndexedProposal = {
     IndexedProposal(
       id = id,
       userId = UserId(s"fake-$id"),
@@ -189,7 +192,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       sequencePool = sequencePool,
       initialProposal = false,
       refusalReason = None,
-      operationKind = None
+      operationKind = None,
+      segment = segment
     )
   }
 
