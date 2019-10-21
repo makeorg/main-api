@@ -57,6 +57,7 @@ import org.make.api.partner.{
 }
 import org.make.api.proposal._
 import org.make.api.question._
+import org.make.api.segment.DefaultSegmentServiceComponent
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence.{SequenceApi, _}
 import org.make.api.sessionhistory.{
@@ -201,6 +202,7 @@ trait MakeApi
     with DefaultReadJournalComponent
     with DefaultSecurityApiComponent
     with DefaultSecurityConfigurationComponent
+    with DefaultSegmentServiceComponent
     with DefaultSelectionAlgorithmComponent
     with DefaultSemanticComponent
     with DefaultSemanticConfigurationComponent
@@ -222,6 +224,7 @@ trait MakeApi
     with DefaultTrackingApiComponent
     with DefaultUserApiComponent
     with DefaultUserHistoryCoordinatorServiceComponent
+    with DefaultUserRegistrationValidatorComponent
     with DefaultUserServiceComponent
     with DefaultUserTokenGeneratorComponent
     with DefaultWidgetApiComponent
@@ -233,8 +236,7 @@ trait MakeApi
     with SequenceConfigurationActorComponent
     with SessionHistoryCoordinatorComponent
     with StrictLogging
-    with UserHistoryCoordinatorComponent
-    with DefaultUserRegistrationValidatorComponent {
+    with UserHistoryCoordinatorComponent {
 
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem

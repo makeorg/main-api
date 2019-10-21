@@ -39,6 +39,7 @@ import org.make.api.proposal.{
   ProposalSearchEngineComponent
 }
 import org.make.api.question.QuestionServiceComponent
+import org.make.api.segment.SegmentServiceComponent
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
 import org.make.api.tag.TagServiceComponent
@@ -77,7 +78,8 @@ trait ProposalIndexationStream
     with ProposalSearchEngineComponent
     with SequenceConfigurationComponent
     with SemanticComponent
-    with StrictLogging {
+    with StrictLogging
+    with SegmentServiceComponent {
 
   object ProposalStream {
     val maybeIndexedProposal: Flow[ProposalId, Option[IndexedProposal], NotUsed] =
@@ -167,9 +169,8 @@ trait ProposalIndexationStream
     }
 
     def getOperation: Option[OperationId] => Future[Option[Operation]] = {
-      case Some(operationId) =>
-        operationService.findOne(operationId)
-      case None => Future.successful[Option[Operation]](None)
+      case Some(operationId) => operationService.findOne(operationId)
+      case None              => Future.successful(None)
     }
 
     val maybeResult: OptionT[Future, IndexedProposal] = for {
@@ -187,6 +188,9 @@ trait ProposalIndexationStream
       operationOfQuestion   <- OptionT(getOperationOfQuestion(proposal.questionId))
       sequenceConfiguration <- OptionT(getSequenceConfiguration(proposal.questionId))
       operation             <- OptionT(getOperation(question.operationId))
+      // in order to insert this in this for-comprehension correctly we need to transform the Future[Option[String]]
+      // into a Future[Option[Option[String]]] since we want to keep an Option[String] in the end.
+      segment <- OptionT(segmentService.resolveSegment(proposal.creationContext).map(Option(_)))
     } yield {
       val isBeforeContextSourceFeature: Boolean =
         proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
@@ -285,7 +289,7 @@ trait ProposalIndexationStream
         initialProposal = proposal.initialProposal,
         refusalReason = proposal.refusalReason,
         operationKind = Option(operation.operationKind),
-        segment = None // TODO: compute it!
+        segment = segment
       )
     }
 
