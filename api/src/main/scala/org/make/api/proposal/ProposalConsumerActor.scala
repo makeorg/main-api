@@ -32,6 +32,7 @@ import org.make.api.operation.{
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence.{SequenceConfigurationComponent, SequenceConfigurationService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
@@ -53,11 +54,13 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
                             override val tagService: TagService,
                             override val semanticService: SemanticService,
                             override val elasticsearchProposalAPI: ProposalSearchEngine,
-                            override val sequenceConfigurationService: SequenceConfigurationService)
+                            override val sequenceConfigurationService: SequenceConfigurationService,
+                            override val segmentService: SegmentService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
     with ActorLogging
-    with ProposalIndexationStream {
+    with ProposalIndexationStream
+    with SegmentServiceComponent {
 
   override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
   override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
@@ -111,6 +114,7 @@ object ProposalConsumerActor {
       with OperationOfQuestionServiceComponent
       with OperationServiceComponent
       with QuestionServiceComponent
+      with SegmentServiceComponent
 
   def props(proposalCoordinatorService: ProposalCoordinatorService,
             dependencies: ProposalConsumerActorDependencies): Props =
@@ -126,7 +130,8 @@ object ProposalConsumerActor {
         dependencies.tagService,
         dependencies.semanticService,
         dependencies.elasticsearchProposalAPI,
-        dependencies.sequenceConfigurationService
+        dependencies.sequenceConfigurationService,
+        dependencies.segmentService
       )
     )
   val name: String = "proposal-consumer"

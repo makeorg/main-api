@@ -25,6 +25,7 @@ import org.make.api.crmTemplates.CrmTemplatesServiceComponent
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
 import org.make.api.question.QuestionServiceComponent
+import org.make.api.segment.SegmentServiceComponent
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceComponent}
 import org.make.api.tag.TagServiceComponent
@@ -107,6 +108,7 @@ object ProposalSupervisor {
     with CrmTemplatesServiceComponent
     with SequenceServiceComponent
     with TagServiceComponent
+    with SegmentServiceComponent
 
   val name: String = "proposal"
   def props(userHistoryCoordinator: ActorRef,

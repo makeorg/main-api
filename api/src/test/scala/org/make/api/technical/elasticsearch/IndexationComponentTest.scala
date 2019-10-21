@@ -23,15 +23,7 @@ import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.{DefaultPersistentIdeaServiceComponent, IdeaSearchEngine, IdeaSearchEngineComponent}
-import org.make.api.operation.{
-  OperationOfQuestionSearchEngine,
-  OperationOfQuestionService,
-  OperationOfQuestionServiceComponent,
-  OperationService,
-  OperationServiceComponent,
-  PersistentOperationOfQuestionService,
-  PersistentOperationOfQuestionServiceComponent
-}
+import org.make.api.operation._
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.{
   ProposalCoordinatorService,
@@ -40,6 +32,7 @@ import org.make.api.proposal.{
   ProposalSearchEngineComponent
 }
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.semantic.{SemanticComponent, SemanticService}
 import org.make.api.sequence._
 import org.make.api.tag.{TagService, TagServiceComponent}
@@ -50,6 +43,7 @@ import org.make.api.theme.{PersistentThemeService, PersistentThemeServiceCompone
 import org.make.api.user._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
+import org.make.core.RequestContext
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -81,7 +75,8 @@ class IndexationComponentTest
     with OperationServiceComponent
     with OperationOfQuestionServiceComponent
     with QuestionServiceComponent
-    with PersistentOperationOfQuestionServiceComponent {
+    with PersistentOperationOfQuestionServiceComponent
+    with SegmentServiceComponent {
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
@@ -118,10 +113,14 @@ class IndexationComponentTest
   when(elasticsearchConfiguration.proposalAliasName).thenReturn("proposal")
   when(elasticsearchConfiguration.operationOfQuestionAliasName).thenReturn("operation-of-question")
 
+  override val segmentService: SegmentService = mock[SegmentService]
+
   private val ideaHash = "idea#hash"
   private val organisationHash = "organisation#hash"
   private val proposalHash = "proposal#hash"
   private val operationOfQuestionHash = "operationOfQuestion#hash"
+
+  when(segmentService.resolveSegment(ArgumentMatchers.any[RequestContext])).thenReturn(Future.successful(None))
 
   when(elasticsearchClient.getHashFromIndex(ideaHash)).thenReturn(ideaHash)
   when(elasticsearchClient.getHashFromIndex(organisationHash)).thenReturn(organisationHash)
