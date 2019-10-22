@@ -42,6 +42,7 @@ trait CrmTemplatesService extends ShortenedNames {
            questionId: Option[QuestionId],
            locale: Option[String]): Future[Seq[CrmTemplates]]
   def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int]
+  def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]]
 }
 
 trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
@@ -113,6 +114,13 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
         case None    => locale
       }
       persistentCrmTemplatesService.count(questionId, searchByLocale)
+    }
+
+    override def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]] = {
+      persistentCrmTemplatesService.find(start = 0, end = Some(1), questionId = None, locale = locale).map {
+        case templates if templates.isEmpty => None
+        case templates                      => Some(templates.head)
+      }
     }
   }
 }

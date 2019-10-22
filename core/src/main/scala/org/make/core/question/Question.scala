@@ -31,7 +31,9 @@ case class Question(questionId: QuestionId,
                     language: Language,
                     question: String,
                     operationId: Option[OperationId],
-                    themeId: Option[ThemeId])
+                    themeId: Option[ThemeId]) {
+  def getLocale: String = s"${language.value.toLowerCase}_${country.value.toUpperCase}"
+}
 
 case class QuestionId(value: String) extends StringValue
 

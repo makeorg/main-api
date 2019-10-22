@@ -68,7 +68,7 @@ object TemplateId {
   implicit lazy val TemplateIdEncoder: Encoder[TemplateId] =
     (a: TemplateId) => Json.fromString(a.value)
   implicit lazy val TemplateIdDecoder: Decoder[TemplateId] =
-    Decoder.decodeString.map(TemplateId(_))
+    Decoder.decodeInt.map(id => TemplateId(id.toString))
 
   implicit val TemplateIdFormatter: JsonFormat[TemplateId] = new JsonFormat[TemplateId] {
     override def read(json: JsValue): TemplateId = json match {

@@ -28,21 +28,31 @@ import org.make.core.reference.{Country, Language}
 
 import scala.annotation.meta.field
 
-// Requests
+trait CrmTemplatesRequest {
+  val registration: Option[TemplateId]
+  val welcome: Option[TemplateId]
+  val proposalAccepted: Option[TemplateId]
+  val proposalRefused: Option[TemplateId]
+  val forgottenPassword: Option[TemplateId]
+  val proposalAcceptedOrganisation: Option[TemplateId]
+  val proposalRefusedOrganisation: Option[TemplateId]
+  val forgottenPasswordOrganisation: Option[TemplateId]
+}
+
 final case class CreateTemplatesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "d1397b66-1f3d-4350-bfd9-d57775b83355")
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") registration: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") welcome: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefused: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPassword: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: TemplateId
-) {
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") registration: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") welcome: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefused: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPassword: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId]
+) extends CrmTemplatesRequest {
   def getLocale: Option[String] =
     for {
       c <- country
@@ -63,15 +73,15 @@ object CreateTemplatesRequest {
 }
 
 final case class UpdateTemplatesRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") registration: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") welcome: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefused: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPassword: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: TemplateId
-)
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") registration: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") welcome: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefused: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPassword: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId]
+) extends CrmTemplatesRequest
 
 object UpdateTemplatesRequest {
   implicit val decoder: Decoder[UpdateTemplatesRequest] = deriveDecoder[UpdateTemplatesRequest]
