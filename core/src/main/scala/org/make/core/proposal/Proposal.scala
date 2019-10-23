@@ -181,12 +181,16 @@ trait BaseQualification {
   def key: QualificationKey
   def count: Int
   def countVerified: Int
+  def countSequence: Int
+  def countSegment: Int
 }
 
 final case class Qualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
                                override val key: QualificationKey,
                                override val count: Int = 0,
-                               override val countVerified: Int = 0)
+                               override val countVerified: Int = 0,
+                               override val countSequence: Int = 0,
+                               override val countSegment: Int = 0)
     extends BaseQualification
 
 object Qualification {
@@ -194,14 +198,16 @@ object Qualification {
   implicit val decoder: Decoder[Qualification] = deriveDecoder[Qualification]
 
   implicit val qualificationFormatter: RootJsonFormat[Qualification] =
-    DefaultJsonProtocol.jsonFormat3(Qualification.apply)
+    DefaultJsonProtocol.jsonFormat5(Qualification.apply)
 
 }
 
 trait BaseVote {
   def key: VoteKey
-  def count: Int = 0
-  def countVerified: Int = 0
+  def count: Int
+  def countVerified: Int
+  def countSequence: Int
+  def countSegment: Int = 0
   def qualifications: Seq[BaseQualification]
 }
 
@@ -209,6 +215,8 @@ final case class Vote(@(ApiModelProperty @field)(dataType = "string", example = 
                       override val key: VoteKey,
                       override val count: Int = 0,
                       override val countVerified: Int = 0,
+                      override val countSequence: Int = 0,
+                      override val countSegment: Int = 0,
                       override val qualifications: Seq[Qualification])
     extends BaseVote
 
@@ -217,7 +225,7 @@ object Vote {
   implicit val decoder: Decoder[Vote] = deriveDecoder[Vote]
 
   implicit val voteFormatter: RootJsonFormat[Vote] =
-    DefaultJsonProtocol.jsonFormat4(Vote.apply)
+    DefaultJsonProtocol.jsonFormat6(Vote.apply)
 }
 
 sealed trait VoteKey { val shortName: String }

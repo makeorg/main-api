@@ -217,6 +217,8 @@ trait ProposalIndexationStream
         votes = proposal.votes.map(IndexedVote.apply),
         votesCount = proposal.votes.map(_.count).sum,
         votesVerifiedCount = proposal.votes.map(_.countVerified).sum,
+        votesSequenceCount = proposal.votes.map(_.countSequence).sum,
+        votesSegmentCount = proposal.votes.map(_.countSegment).sum,
         toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
         scores = IndexedScores(
           engagement = ProposalScorerHelper.engagement(proposal.votes),

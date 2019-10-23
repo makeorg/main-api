@@ -171,6 +171,8 @@ class ProposalSearchEngineIT
     ),
     votesCount = 3,
     votesVerifiedCount = 3,
+    votesSequenceCount = 3,
+    votesSegmentCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
     context = Some(
@@ -244,6 +246,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 287,
       votesVerifiedCount = 287,
+      votesSequenceCount = 287,
+      votesSegmentCount = 287,
       toEnrich = true,
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 84),
       context = Some(
@@ -313,6 +317,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 310,
       votesVerifiedCount = 310,
+      votesSequenceCount = 310,
+      votesSegmentCount = 310,
       toEnrich = true,
       scores = IndexedScores.empty,
       context = Some(
@@ -382,6 +388,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 127,
       votesVerifiedCount = 127,
+      votesSequenceCount = 127,
+      votesSegmentCount = 127,
       toEnrich = true,
       scores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
@@ -453,6 +461,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 353,
       votesVerifiedCount = 353,
+      votesSequenceCount = 353,
+      votesSegmentCount = 353,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -522,6 +532,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 368,
       votesVerifiedCount = 368,
+      votesSequenceCount = 368,
+      votesSegmentCount = 368,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -593,6 +605,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 305,
       votesVerifiedCount = 305,
+      votesSequenceCount = 305,
+      votesSegmentCount = 305,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -660,6 +674,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 286,
       votesVerifiedCount = 286,
+      votesSequenceCount = 286,
+      votesSegmentCount = 286,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -737,6 +753,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 162,
       votesVerifiedCount = 162,
+      votesSequenceCount = 162,
+      votesSegmentCount = 162,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = None,
@@ -819,6 +837,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 178,
       votesVerifiedCount = 178,
+      votesSequenceCount = 178,
+      votesSegmentCount = 178,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -890,6 +910,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 131,
       votesVerifiedCount = 131,
+      votesSequenceCount = 131,
+      votesSegmentCount = 131,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -961,6 +983,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 356,
       votesVerifiedCount = 356,
+      votesSequenceCount = 356,
+      votesSegmentCount = 356,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -1032,6 +1056,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 347,
       votesVerifiedCount = 347,
+      votesSequenceCount = 347,
+      votesSegmentCount = 347,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -1101,6 +1127,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 267,
       votesVerifiedCount = 267,
+      votesSequenceCount = 267,
+      votesSegmentCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -1170,6 +1198,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 204,
       votesVerifiedCount = 204,
+      votesSequenceCount = 204,
+      votesSegmentCount = 204,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(
@@ -1240,6 +1270,8 @@ class ProposalSearchEngineIT
       ),
       votesCount = 254,
       votesVerifiedCount = 254,
+      votesSequenceCount = 254,
+      votesSegmentCount = 254,
       toEnrich = false,
       scores = IndexedScores.empty,
       context = Some(

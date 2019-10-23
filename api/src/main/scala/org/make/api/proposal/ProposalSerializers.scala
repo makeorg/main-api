@@ -19,8 +19,6 @@
 
 package org.make.api.proposal
 
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
 import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
@@ -145,8 +143,42 @@ object ProposalSerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalStateSerializer: JsonPersister[ProposalState, V7] =
-    persister[ProposalState, V7](
+  private val proposalStateSerializer: JsonPersister[ProposalState, V8] = {
+    case class QualificationV5(key: QualificationKey, count: Int)
+    implicit val qualificationV5Formatter: RootJsonFormat[QualificationV5] =
+      DefaultJsonProtocol.jsonFormat2(QualificationV5.apply)
+
+    case class VoteV5(key: VoteKey, count: Int, qualifications: Seq[QualificationV5])
+    implicit val voteV5Formatter: RootJsonFormat[VoteV5] =
+      DefaultJsonProtocol.jsonFormat3(VoteV5.apply)
+
+    case class QualificationV6(key: QualificationKey, count: Int, countVerified: Int)
+    implicit val qualificationV6formatter: RootJsonFormat[QualificationV6] =
+      DefaultJsonProtocol.jsonFormat3(QualificationV6.apply)
+
+    case class VoteV6(key: VoteKey, count: Int, countVerified: Int, qualifications: Seq[QualificationV6])
+    implicit val voteV6formatter: RootJsonFormat[VoteV6] =
+      DefaultJsonProtocol.jsonFormat4(VoteV6.apply)
+
+    final case class QualificationV8(key: QualificationKey,
+                                     count: Int,
+                                     countVerified: Int,
+                                     countSequence: Int,
+                                     countSegment: Int)
+    implicit val qualificationV8formatter: RootJsonFormat[QualificationV8] =
+      DefaultJsonProtocol.jsonFormat5(QualificationV8.apply)
+
+    final case class VoteV8(key: VoteKey,
+                            count: Int,
+                            countVerified: Int,
+                            countSequence: Int,
+                            countSegment: Int,
+                            qualifications: Seq[QualificationV8])
+
+    implicit val voteV8formatter: RootJsonFormat[VoteV8] =
+      DefaultJsonProtocol.jsonFormat6(VoteV8.apply)
+
+    persister[ProposalState, V8](
       "proposalState",
       from[V1]
         .to[V2](
@@ -162,30 +194,44 @@ object ProposalSerializers extends SprayJsonFormatters {
           _.update('proposal / 'initialProposal ! set[Boolean](false))
         }
         .to[V6] { json =>
-          case class QualificationOld(key: QualificationKey, count: Int)
-          case class VoteOld(key: VoteKey, count: Int, qualifications: Seq[QualificationOld])
-          object QualificationOld {
-            implicit val decoder: Decoder[QualificationOld] = deriveDecoder[QualificationOld]
-            implicit val voteFormatter: RootJsonFormat[QualificationOld] =
-              DefaultJsonProtocol.jsonFormat2(QualificationOld.apply)
-          }
-          object VoteOld {
-            implicit val decoder: Decoder[VoteOld] = deriveDecoder[VoteOld]
-            implicit val voteFormatter: RootJsonFormat[VoteOld] =
-              DefaultJsonProtocol.jsonFormat3(VoteOld.apply)
-          }
-
-          val votes: Seq[Vote] = json
-            .extract[Seq[VoteOld]]('proposal / 'votes)
+          val votes: Seq[VoteV6] = json
+            .extract[Seq[VoteV5]]('proposal / 'votes)
             .map(vote => {
-              val qualifications: Seq[Qualification] = vote.qualifications
-                .map(qualification => Qualification(qualification.key, qualification.count, qualification.count))
-              Vote(vote.key, vote.count, vote.count, qualifications)
+              val qualifications: Seq[QualificationV6] = vote.qualifications
+                .map(qualification => QualificationV6(qualification.key, qualification.count, qualification.count))
+              VoteV6(vote.key, vote.count, vote.count, qualifications)
             })
           json.update('proposal / 'votes, votes)
         }
         .to[V7](_.update('proposal / 'creationContext / 'customData ! set[Map[String, String]](Map.empty)))
+        .to[V8] { json =>
+          val votes: Seq[VoteV8] = json
+            .extract[Seq[VoteV6]]('proposal / 'votes)
+            .map(vote => {
+              val qualifications: Seq[QualificationV8] = vote.qualifications
+                .map(
+                  qualification =>
+                    QualificationV8(
+                      key = qualification.key,
+                      count = qualification.count,
+                      countVerified = qualification.countVerified,
+                      countSequence = qualification.countVerified,
+                      countSegment = 0
+                  )
+                )
+              VoteV8(
+                key = vote.key,
+                count = vote.count,
+                countVerified = vote.countVerified,
+                countSequence = vote.countVerified,
+                countSegment = 0,
+                qualifications = qualifications
+              )
+            })
+          json.update('proposal / 'votes, votes)
+        }
     )
+  }
 
   private val similarProposalRemovedSerializer: JsonPersister[SimilarProposalRemoved, V2] =
     persister[SimilarProposalRemoved, V2](
@@ -199,8 +245,43 @@ object ProposalSerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V6] =
-    persister[ProposalPatched, V6](
+  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V7] = {
+
+    case class QualificationV4(key: QualificationKey, count: Int)
+    implicit val qualificationV4Formatter: RootJsonFormat[QualificationV4] =
+      DefaultJsonProtocol.jsonFormat2(QualificationV4.apply)
+
+    case class VoteV4(key: VoteKey, count: Int, qualifications: Seq[QualificationV4])
+    implicit val voteV4Formatter: RootJsonFormat[VoteV4] =
+      DefaultJsonProtocol.jsonFormat3(VoteV4.apply)
+
+    case class QualificationV5(key: QualificationKey, count: Int, countVerified: Int)
+    implicit val qualificationV5Formatter: RootJsonFormat[QualificationV5] =
+      DefaultJsonProtocol.jsonFormat3(QualificationV5.apply)
+
+    case class VoteV5(key: VoteKey, count: Int, countVerified: Int, qualifications: Seq[QualificationV5])
+    implicit val voteV5Formatter: RootJsonFormat[VoteV5] =
+      DefaultJsonProtocol.jsonFormat4(VoteV5.apply)
+
+    final case class QualificationV7(key: QualificationKey,
+                                     count: Int,
+                                     countVerified: Int,
+                                     countSequence: Int,
+                                     countSegment: Int)
+    implicit val qualificationV7formatter: RootJsonFormat[QualificationV7] =
+      DefaultJsonProtocol.jsonFormat5(QualificationV7.apply)
+
+    final case class VoteV7(key: VoteKey,
+                            count: Int,
+                            countVerified: Int,
+                            countSequence: Int,
+                            countSegment: Int,
+                            qualifications: Seq[QualificationV7])
+
+    implicit val voteV7formatter: RootJsonFormat[VoteV7] =
+      DefaultJsonProtocol.jsonFormat6(VoteV7.apply)
+
+    persister[ProposalPatched, V7](
       "proposal-tags-updated",
       from[V1]
         .to[V2](_.update('proposal / 'organisations ! set[Seq[OrganisationInfo]](Seq.empty)))
@@ -212,25 +293,12 @@ object ProposalSerializers extends SprayJsonFormatters {
           _.update('proposal / 'initialProposal ! set[Boolean](false))
         }
         .to[V5] { json =>
-          case class QualificationOld(key: QualificationKey, count: Int)
-          case class VoteOld(key: VoteKey, count: Int, qualifications: Seq[QualificationOld])
-          object QualificationOld {
-            implicit val decoder: Decoder[QualificationOld] = deriveDecoder[QualificationOld]
-            implicit val voteFormatter: RootJsonFormat[QualificationOld] =
-              DefaultJsonProtocol.jsonFormat2(QualificationOld.apply)
-          }
-          object VoteOld {
-            implicit val decoder: Decoder[VoteOld] = deriveDecoder[VoteOld]
-            implicit val voteFormatter: RootJsonFormat[VoteOld] =
-              DefaultJsonProtocol.jsonFormat3(VoteOld.apply)
-          }
-
-          val votes: Seq[Vote] = json
-            .extract[Seq[VoteOld]]('proposal / 'votes)
+          val votes: Seq[VoteV5] = json
+            .extract[Seq[VoteV4]]('proposal / 'votes)
             .map(vote => {
-              val qualifications: Seq[Qualification] = vote.qualifications
-                .map(qualification => Qualification(qualification.key, qualification.count, qualification.count))
-              Vote(vote.key, vote.count, vote.count, qualifications)
+              val qualifications: Seq[QualificationV5] = vote.qualifications
+                .map(qualification => QualificationV5(qualification.key, qualification.count, qualification.count))
+              VoteV5(vote.key, vote.count, vote.count, qualifications)
             })
           json.update('proposal / 'votes, votes)
         }
@@ -238,7 +306,34 @@ object ProposalSerializers extends SprayJsonFormatters {
           _.update('requestContext / 'customData ! set[Map[String, String]](Map.empty))
             .update('proposal / 'creationContext / 'customData ! set[Map[String, String]](Map.empty))
         )
+        .to[V7] { json =>
+          val votes: Seq[VoteV7] = json
+            .extract[Seq[VoteV5]]('proposal / 'votes)
+            .map(vote => {
+              val qualifications: Seq[QualificationV7] = vote.qualifications
+                .map(
+                  qualification =>
+                    QualificationV7(
+                      key = qualification.key,
+                      count = qualification.countVerified,
+                      countVerified = qualification.countVerified,
+                      countSequence = qualification.count,
+                      countSegment = 0
+                  )
+                )
+              VoteV7(
+                key = vote.key,
+                count = vote.count,
+                countVerified = vote.countVerified,
+                countSequence = vote.countVerified,
+                countSegment = 0,
+                qualifications = qualifications
+              )
+            })
+          json.update('proposal / 'votes, votes)
+        }
     )
+  }
 
   private val proposalAnonymizedSerializer: JsonPersister[ProposalAnonymized, V2] =
     persister[ProposalAnonymized, V2](

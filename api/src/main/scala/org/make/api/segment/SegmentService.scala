@@ -45,10 +45,11 @@ trait DefaultSegmentServiceComponent extends SegmentServiceComponent {
     }
 
     val segmentResolverFromDepartment: SegmentResolver = { requestContext =>
+      val customData = requestContext.customData
       Future.successful(
-        requestContext.customData
+        customData
           .get("declared_department")
-          .orElse(requestContext.customData.get("detected_department"))
+          .orElse(customData.get("detected_department"))
       )
     }
 

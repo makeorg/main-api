@@ -30,6 +30,7 @@ import kamon.tag.TagSet
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.{IdeaMappingServiceComponent, IdeaServiceComponent}
 import org.make.api.question.{AuthorRequest, QuestionServiceComponent}
+import org.make.api.segment.SegmentServiceComponent
 import org.make.api.semantic.{GetPredictedTagsResponse, PredictedTagsEvent, SemanticComponent, SimilarIdea}
 import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
@@ -40,7 +41,7 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions.{Troll, Trusted, VoteAndQualifications, VoteTrust}
+import org.make.core.history.HistoryActions.{Segment, Sequence, Troll, Trusted, VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Pending
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
@@ -192,7 +193,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with IdeaMappingServiceComponent
     with TagServiceComponent
     with TagTypeServiceComponent
-    with SecurityConfigurationComponent =>
+    with SecurityConfigurationComponent
+    with SegmentServiceComponent =>
 
   override lazy val proposalService: DefaultProposalService = new DefaultProposalService
 
@@ -617,48 +619,61 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }.getOrElse(Future.successful(None))
     }
 
-    private def isVoteTrusted(proposalKey: Option[String],
-                              proposalId: ProposalId,
-                              requestContext: RequestContext): VoteTrust = {
-      proposalKey.map { key =>
-        val newHash =
-          SecurityHelper.generateProposalKeyHash(
-            proposalId,
-            requestContext.sessionId,
-            requestContext.location,
-            securityConfiguration.secureVoteSalt
-          )
-        if (newHash == key) {
-          Trusted
-        } else {
-          logger.warn(s"Bad proposal key found while voting on proposal $proposalId, requestContext is $requestContext")
-          Kamon
-            .counter("vote_trolls")
-            .withTags(
-              TagSet.from(
-                Map(
-                  "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
-                  "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
-                )
-              )
+    private def incrementTrollCounter(requestContext: RequestContext) = {
+      Kamon
+        .counter("vote_trolls")
+        .withTags(
+          TagSet.from(
+            Map(
+              "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
+              "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
             )
-            .increment()
+          )
+        )
+        .increment()
+    }
+
+    def resolveVoteTrust(proposalKey: Option[String],
+                         proposalId: ProposalId,
+                         maybeUserSegment: Option[String],
+                         maybeProposalSegment: Option[String],
+                         requestContext: RequestContext): VoteTrust = {
+
+      val newHash =
+        SecurityHelper.generateProposalKeyHash(
+          proposalId,
+          requestContext.sessionId,
+          requestContext.location,
+          securityConfiguration.secureVoteSalt
+        )
+      val page = requestContext.location.flatMap(_.split(" ").headOption)
+
+      val isInSegment = (
+        for {
+          userSegment     <- maybeUserSegment
+          proposalSegment <- maybeProposalSegment
+        } yield userSegment == proposalSegment
+      ).exists(identity)
+
+      (proposalKey, proposalKey.contains(newHash), page.contains("sequence"), isInSegment) match {
+        case (None, _, _, _) =>
+          logger.warn(s"No proposal key for proposal $proposalId, on context $requestContext")
+          incrementTrollCounter(requestContext)
           Troll
-        }
-      }.getOrElse {
-        logger.warn(s"No proposal key found while voting on proposal $proposalId, requestContext is $requestContext")
-        Kamon
-          .counter("vote_trolls")
-          .withTags(
-            TagSet.from(
-              Map(
-                "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
-                "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
-              )
-            )
-          )
-          .increment()
-        Troll
+        case (Some(_), false, _, _) =>
+          logger.warn(s"Bad proposal key found for proposal $proposalId, on context $requestContext")
+          incrementTrollCounter(requestContext)
+          Troll
+        case (Some(_), true, true, true) => Segment
+        case (Some(_), true, true, _)    => Sequence
+        case (Some(_), true, _, _)       => Trusted
+      }
+    }
+
+    private def getSegmentForProposal(proposalId: ProposalId): Future[Option[String]] = {
+      proposalCoordinatorService.getProposal(proposalId).flatMap {
+        case None           => Future.successful(None)
+        case Some(proposal) => segmentService.resolveSegment(proposal.creationContext)
       }
     }
 
@@ -669,9 +684,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                               proposalKey: Option[String]): Future[Option[Vote]] = {
 
       val result = for {
-        _     <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
-        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
-        user  <- retrieveUser(maybeUserId)
+        _                    <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        user                 <- retrieveUser(maybeUserId)
+        maybeProposalSegment <- getSegmentForProposal(proposalId)
+        maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         vote <- proposalCoordinatorService.vote(
           VoteProposalCommand(
             proposalId = proposalId,
@@ -680,7 +697,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             voteKey = voteKey,
             maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
             vote = votes.get(proposalId),
-            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
+            voteTrust =
+              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
@@ -703,9 +721,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                 proposalKey: Option[String]): Future[Option[Vote]] = {
 
       val result = for {
-        _     <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
-        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
-        user  <- retrieveUser(maybeUserId)
+        _                    <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        user                 <- retrieveUser(maybeUserId)
+        maybeUserSegment     <- segmentService.resolveSegment(requestContext)
+        maybeProposalSegment <- getSegmentForProposal(proposalId)
         unvote <- proposalCoordinatorService.unvote(
           UnvoteProposalCommand(
             proposalId = proposalId,
@@ -714,7 +734,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             voteKey = voteKey,
             maybeOrganisationId = user.filter(_.isOrganisation).map(_.userId),
             vote = votes.get(proposalId),
-            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
+            voteTrust =
+              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForVote(requestContext.sessionId, proposalId)
@@ -742,7 +763,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           proposalId,
           qualificationKey
         )
-        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        maybeUserSegment     <- segmentService.resolveSegment(requestContext)
+        maybeProposalSegment <- getSegmentForProposal(proposalId)
         qualify <- proposalCoordinatorService.qualification(
           QualifyVoteCommand(
             proposalId = proposalId,
@@ -751,7 +774,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             voteKey = voteKey,
             qualificationKey = qualificationKey,
             vote = votes.get(proposalId),
-            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
+            voteTrust =
+              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(
@@ -786,7 +810,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           proposalId,
           qualificationKey
         )
-        votes <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        maybeUserSegment     <- segmentService.resolveSegment(requestContext)
+        maybeProposalSegment <- getSegmentForProposal(proposalId)
         removeQualification <- proposalCoordinatorService.unqualification(
           UnqualifyVoteCommand(
             proposalId = proposalId,
@@ -795,7 +821,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             voteKey = voteKey,
             qualificationKey = qualificationKey,
             vote = votes.get(proposalId),
-            voteTrust = isVoteTrusted(proposalKey, proposalId, requestContext)
+            voteTrust =
+              resolveVoteTrust(proposalKey, proposalId, maybeUserSegment, maybeProposalSegment, requestContext)
           )
         )
         _ <- sessionHistoryCoordinatorService.unlockSessionForQualification(

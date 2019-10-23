@@ -136,6 +136,8 @@ case class IndexedProposal(
   votes: Seq[IndexedVote],
   votesCount: Int,
   votesVerifiedCount: Int,
+  votesSequenceCount: Int,
+  votesSegmentCount: Int,
   toEnrich: Boolean,
   scores: IndexedScores,
   context: Option[IndexedContext],
@@ -238,6 +240,8 @@ final case class IndexedVote(@(ApiModelProperty @field)(dataType = "string", exa
                              override val key: VoteKey,
                              override val count: Int = 0,
                              override val countVerified: Int = 0,
+                             override val countSequence: Int = 0,
+                             override val countSegment: Int = 0,
                              override val qualifications: Seq[IndexedQualification])
     extends BaseVote
 
@@ -257,7 +261,9 @@ object IndexedVote {
 final case class IndexedQualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
                                       override val key: QualificationKey,
                                       override val count: Int = 0,
-                                      override val countVerified: Int = 0)
+                                      override val countVerified: Int = 0,
+                                      override val countSequence: Int = 0,
+                                      override val countSegment: Int = 0)
     extends BaseQualification
 
 object IndexedQualification {
