@@ -150,6 +150,7 @@ class SortAlgorithmIT
     votesSegmentCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
+    segmentScores = IndexedScores.empty,
     context = None,
     author = IndexedAuthor(
       firstName = None,
@@ -172,6 +173,7 @@ class SortAlgorithmIT
     operationId = None,
     question = None,
     sequencePool = SequencePool.New,
+    sequenceSegmentPool = SequencePool.New,
     initialProposal = false,
     refusalReason = None,
     operationKind = None,
@@ -257,10 +259,7 @@ class SortAlgorithmIT
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 4L
-        result.results.head should be(proposals.find(_.id.value == "actor-4").get)
-        result.results(1) should be(proposals.find(_.id.value == "actor-3").get)
-        result.results(2) should be(proposals.find(_.id.value == "actor-2").get)
-        result.results(3) should be(proposals.find(_.id.value == "actor-1").get)
+        result.results.take(4).map(_.id.value) should be(Seq("actor-4", "actor-3", "actor-2", "actor-1"))
       }
     }
 
@@ -270,16 +269,10 @@ class SortAlgorithmIT
 
       whenReady(elasticsearchProposalAPI.searchProposals(firstQuery), Timeout(3.seconds)) { firstResult =>
         firstResult.total should be > 4L
-        firstResult.results.head should be(proposals.find(_.id.value == "actor-4").get)
-        firstResult.results(1) should be(proposals.find(_.id.value == "actor-3").get)
-        firstResult.results(2) should be(proposals.find(_.id.value == "actor-2").get)
-        firstResult.results(3) should be(proposals.find(_.id.value == "actor-1").get)
+        firstResult.results.take(4).map(_.id.value) should be(Seq("actor-4", "actor-3", "actor-2", "actor-1"))
         whenReady(elasticsearchProposalAPI.searchProposals(secondQuery), Timeout(3.seconds)) { secondResult =>
           secondResult.total should be > 4L
-          secondResult.results.head should be(proposals.find(_.id.value == "actor-4").get)
-          secondResult.results(1) should be(proposals.find(_.id.value == "actor-3").get)
-          secondResult.results(2) should be(proposals.find(_.id.value == "actor-2").get)
-          secondResult.results(3) should be(proposals.find(_.id.value == "actor-1").get)
+          secondResult.results.take(4).map(_.id.value) should be(Seq("actor-4", "actor-3", "actor-2", "actor-1"))
           firstResult.results != secondResult.results should be(true)
           firstResult.results.take(4) == secondResult.results.take(4) should be(true)
         }
@@ -336,10 +329,7 @@ class SortAlgorithmIT
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 4L
-        result.results.head should be(proposals.find(_.id.value == "actor-4").get)
-        result.results(1) should be(proposals.find(_.id.value == "actor-2").get)
-        result.results(2) should be(proposals.find(_.id.value == "actor-3").get)
-        result.results(3) should be(proposals.find(_.id.value == "actor-1").get)
+        result.results.take(4).map(_.id.value) should be(Seq("actor-4", "actor-2", "actor-3", "actor-1"))
       }
     }
   }

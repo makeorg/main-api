@@ -106,6 +106,7 @@ object ProposalElasticsearchFieldNames {
   val scores: String = "scores"
   val scoreUpperBound: String = "scores.scoreUpperBound"
   val segment: String = "segment"
+  val sequenceSegmentPool: String = "sequenceSegmentPool"
   val sequencePool: String = "sequencePool"
   val slug: String = "slug"
   val status: String = "status"
@@ -140,6 +141,7 @@ case class IndexedProposal(
   votesSegmentCount: Int,
   toEnrich: Boolean,
   scores: IndexedScores,
+  segmentScores: IndexedScores,
   context: Option[IndexedContext],
   trending: Option[String],
   labels: Seq[String],
@@ -159,6 +161,8 @@ case class IndexedProposal(
   operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "tested")
   sequencePool: SequencePool,
+  @(ApiModelProperty @field)(dataType = "string", example = "tested")
+  sequenceSegmentPool: SequencePool,
   initialProposal: Boolean,
   refusalReason: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "GREAT_CAUSE")

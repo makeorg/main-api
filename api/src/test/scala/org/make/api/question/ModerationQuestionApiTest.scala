@@ -384,7 +384,9 @@ class ModerationQuestionApiTest
                 ideaId = None,
                 refusalReason = None,
                 scores = IndexedScores.empty,
+                segmentScores = IndexedScores.empty,
                 sequencePool = SequencePool.New,
+                sequenceSegmentPool = SequencePool.New,
                 operationKind = None,
                 segment = None
               )

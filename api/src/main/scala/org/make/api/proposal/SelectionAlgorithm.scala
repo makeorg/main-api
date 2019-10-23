@@ -21,6 +21,7 @@ package org.make.api.proposal
 
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
+import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.sequence.SequenceConfiguration
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper._
@@ -243,7 +244,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       if (includedProposals.isEmpty && testedIncludedProposals.nonEmpty) {
         // pick most engaging
         val sortedTestedProposal: Seq[IndexedProposal] =
-          testedIncludedProposals.sortBy(p => -1 * ProposalScorerHelper.engagement(p.votes))
+          testedIncludedProposals.sortBy { proposal =>
+            // TODO: choose the score to use
+            val scores = ScoreCounts(proposal.votes, _.countVerified, _.countVerified)
+            -1 * scores.engagement()
+          }
         Seq(sortedTestedProposal.head) ++ MakeRandom.random.shuffle(newIncludedProposals ++ sortedTestedProposal.tail)
       } else if (includedProposals.nonEmpty && testedIncludedProposals.nonEmpty) {
         includedProposals ++ MakeRandom.random.shuffle(newIncludedProposals ++ testedIncludedProposals)
@@ -281,7 +286,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                              proposals: Seq[IndexedProposal]): IndexedProposal = {
 
       val proposalsScored: Seq[ScoredProposal] =
-        proposals.map(p => ScoredProposal(p, ProposalScorerHelper.sampleTopScore(p.votes)))
+        proposals.map { p =>
+          // TODO: choose the score to use
+          val scores = ScoreCounts(p.votes, _.countVerified, _.countVerified)
+          ScoredProposal(p, scores.sampleTopScore())
+        }
 
       val shortList = if (proposals.length < sequenceConfiguration.intraIdeaMinCount) {
         proposals
@@ -298,7 +307,11 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
     def chooseChampion(proposals: Seq[IndexedProposal]): IndexedProposal = {
       val scoredProposal: Seq[ScoredProposal] =
-        proposals.map(p => ScoredProposal(p, ProposalScorerHelper.topScore(p.votes)))
+        proposals.map { proposal =>
+          // TODO: choose the correct score
+          val scores = ScoreCounts(proposal.votes, _.countVerified, _.countVerified)
+          ScoredProposal(proposal, scores.topScore())
+        }
       scoredProposal.maxBy(_.score).proposal
     }
 
@@ -306,13 +319,23 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
 
     def selectIdeasWithChampions(champions: Map[IdeaId, IndexedProposal], count: Int): Seq[IdeaId] = {
       val scoredIdea: Seq[ScoredIdeaId] =
-        champions.toSeq.map { case (i, p) => ScoredIdeaId(i, ProposalScorerHelper.sampleTopScore(p.votes)) }
+        champions.toSeq.map {
+          case (idea, proposal) =>
+            // TODO: choose the score to use
+            val scores = ScoreCounts(proposal.votes, _.countVerified, _.countVerified)
+            ScoredIdeaId(idea, scores.sampleTopScore())
+        }
       scoredIdea.sortBy(-_.score).take(count).map(_.ideaId)
     }
 
     def selectControversialIdeasWithChampions(champions: Map[IdeaId, IndexedProposal], count: Int): Seq[IdeaId] = {
       val scoredIdea: Seq[ScoredIdeaId] =
-        champions.toSeq.map { case (i, p) => ScoredIdeaId(i, ProposalScorerHelper.sampleControversy(p.votes)) }
+        champions.toSeq.map {
+          case (idea, proposal) =>
+            // TODO: choose the score to use
+            val scores = ScoreCounts(proposal.votes, _.countVerified, _.countVerified)
+            ScoredIdeaId(idea, scores.sampleControversy())
+        }
       scoredIdea.sortBy(-_.score).take(count).map(_.ideaId)
     }
 

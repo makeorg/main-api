@@ -921,14 +921,16 @@ object ProposalActor {
         Qualification(
           qualification.key,
           count = qualification.count,
-          countVerified =
-            ProposalScorerHelper.verifiedQualificationCount(event.votesVerified, vote.key, qualification.key)
+          countVerified = event.votesVerified
+            .filter(_.key == vote.key)
+            .flatMap(_.qualifications.filter(_.key == qualification.key).map(_.countVerified))
+            .sum
         )
       }
       Vote(
         key = vote.key,
         count = vote.count,
-        countVerified = ProposalScorerHelper.verifiedVoteCount(event.votesVerified, vote.key),
+        countVerified = event.votesVerified.filter(_.key == vote.key).map(_.countVerified).sum,
         qualifications = qualifications,
       )
     })

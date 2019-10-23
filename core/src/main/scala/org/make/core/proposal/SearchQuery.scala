@@ -81,6 +81,7 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          minScore: Option[MinScoreSearchFilter] = None,
                          createdAt: Option[CreatedAtSearchFilter] = None,
                          sequencePool: Option[SequencePoolSearchFilter] = None,
+                         sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
                          operationKinds: Option[OperationKindsSearchFilter] = None,
                          questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
                          segment: Option[SegmentSearchFilter] = None)
@@ -108,10 +109,11 @@ object SearchFilters extends ElasticDsl {
             minScore: Option[MinScoreSearchFilter] = None,
             createdAt: Option[CreatedAtSearchFilter] = None,
             sequencePool: Option[SequencePoolSearchFilter] = None,
+            sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
             operationKinds: Option[OperationKindsSearchFilter] = None,
             questionIsOpen: Option[QuestionIsOpenSearchFilter] = None): Option[SearchFilters] = {
 
-    (
+    Seq(
       proposals,
       initialProposal,
       tags,
@@ -132,34 +134,11 @@ object SearchFilters extends ElasticDsl {
       minScore,
       createdAt,
       sequencePool,
+      sequenceSegmentPool,
       operationKinds,
       questionIsOpen
-    ) match {
-      case (
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None
-          ) =>
-        None
+    ).flatten match {
+      case Seq() => None
       case _ =>
         Some(
           SearchFilters(
@@ -183,6 +162,7 @@ object SearchFilters extends ElasticDsl {
             minScore,
             createdAt,
             sequencePool,
+            sequenceSegmentPool,
             operationKinds,
             questionIsOpen
           )
@@ -221,6 +201,7 @@ object SearchFilters extends ElasticDsl {
       buildMinScoreSearchFilter(searchQuery),
       buildCreatedAtSearchFilter(searchQuery),
       buildSequencePoolSearchFilter(searchQuery),
+      buildSequenceSegmentPoolSearchFilter(searchQuery),
       buildOperationKindSearchFilter(searchQuery),
       buildQuestionIsOpenSearchFilter(searchQuery),
       buildSegmentSearchFilter(searchQuery)
@@ -551,6 +532,16 @@ object SearchFilters extends ElasticDsl {
       _.sequencePool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool))
+        case _ => None
+      }
+    }
+  }
+
+  def buildSequenceSegmentPoolSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    searchQuery.filters.flatMap {
+      _.sequenceSegmentPool match {
+        case Some(SequencePoolSearchFilter(sequencePool)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequenceSegmentPool, sequencePool))
         case _ => None
       }
     }

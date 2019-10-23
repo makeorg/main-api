@@ -135,107 +135,73 @@ class ProposalScorerHelperTest extends MakeUnitTest {
       impossibleCount = 1
     )
 
-  feature("count vote by voteKey") {
+  feature("counts") {
     scenario("count vote when proposal has no vote") {
-      ProposalScorerHelper.voteCount(proposalWithoutvote.votes, VoteKey.Neutral) should be(0)
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).neutralCount should be(0)
     }
 
     scenario("count vote when proposal has vote") {
-      ProposalScorerHelper.voteCount(proposalWithVote.votes, VoteKey.Neutral) should be(20)
+      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).neutralCount should be(20)
     }
-  }
 
-  feature("count qualification by voteKey and qualification key") {
     scenario("count qualification when proposal has no vote") {
-      ProposalScorerHelper.qualificationCount(proposalWithoutvote.votes, VoteKey.Neutral, QualificationKey.NoOpinion) should be(
-        0
-      )
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).realistic() should be(0)
     }
 
     scenario("count vote when proposal has vote and qualification") {
-      ProposalScorerHelper.qualificationCount(
-        proposalWithVoteandQualification.votes,
-        VoteKey.Agree,
-        QualificationKey.LikeIt
-      ) should be(10)
+      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).loveCount should be(10)
     }
   }
 
-  feature("count score of a proposal") {
-    scenario("return a ScoreCounts object") {
-      ProposalScorerHelper.scoreCounts(proposalWithVoteandQualification.votes) shouldBe a[ScoreCounts]
-    }
-  }
-
-  feature("calculate engagement") {
-    scenario("calculate engagement from proposal") {
-      ProposalScorerHelper.engagement(proposalWithoutvote.votes) should equal(0.66 +- 0.01)
-      ProposalScorerHelper.engagement(proposalWithVote.votes) should equal(0.87 +- 0.01)
-      ProposalScorerHelper.engagement(proposalWithVoteandQualification.votes) should equal(0.87 +- 0.01)
+  feature("scores") {
+    scenario("calculate engagement") {
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).engagement() should equal(0.66 +- 0.01)
+      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).engagement() should equal(0.87 +- 0.01)
+      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).engagement() should equal(
+        0.87 +- 0.01
+      )
+      scoreCounts.engagement() should equal(0.79 +- 0.01)
     }
 
-    scenario("calculate engagement from count score") {
-      ProposalScorerHelper.engagement(scoreCounts) should equal(0.79 +- 0.01)
-    }
-  }
-
-  feature("calculate adhesion") {
-    scenario("calculate adhesion from proposal") {
-      ProposalScorerHelper.adhesion(proposalWithoutvote.votes) should equal(0.0)
-      ProposalScorerHelper.adhesion(proposalWithVote.votes) should equal(0.0)
-      ProposalScorerHelper.adhesion(proposalWithVoteandQualification.votes) should equal(-0.14 +- 0.01)
+    scenario("calculate adhesion") {
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).adhesion() should equal(0.0)
+      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).adhesion() should equal(0.0)
+      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).adhesion() should equal(
+        -0.14 +- 0.01
+      )
+      scoreCounts.adhesion() should equal(0.41 +- 0.01)
     }
 
-    scenario("calculate adhesion from count score") {
-      ProposalScorerHelper.adhesion(scoreCounts) should equal(0.41 +- 0.01)
-    }
-  }
-
-  feature("calculate realistic") {
-    scenario("calculate realistic from proposal") {
-      ProposalScorerHelper.realistic(proposalWithoutvote.votes) should equal(0.0)
-      ProposalScorerHelper.realistic(proposalWithVote.votes) should equal(0.0)
-      ProposalScorerHelper.realistic(proposalWithVoteandQualification.votes) should equal(0.07 +- 0.01)
+    scenario("calculate realistic") {
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).realistic() should equal(0.0)
+      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).realistic() should equal(0.0)
+      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).realistic() should equal(
+        0.07 +- 0.01
+      )
+      scoreCounts.realistic() should equal(0.23 +- 0.01)
     }
 
-    scenario("calculate realistic from count score") {
-      ProposalScorerHelper.realistic(scoreCounts) should equal(0.23 +- 0.01)
-    }
-  }
-
-  feature("calculate topScore") {
     scenario("calculate topScore from proposal") {
-      ProposalScorerHelper.topScore(proposalWithoutvote.votes) should equal(-1.84 +- 0.01)
-      ProposalScorerHelper.topScore(proposalWithVote.votes) should equal(-0.62 +- 0.01)
-      ProposalScorerHelper.topScore(proposalWithVoteandQualification.votes) should equal(-4.16 +- 0.01)
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).topScore() should equal(-1.84 +- 0.01)
+      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).topScore() should equal(-0.62 +- 0.01)
+      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).topScore() should equal(
+        -4.16 +- 0.01
+      )
+      scoreCounts.topScore() should equal(-2.80 +- 0.01)
     }
 
-    scenario("calculate topScore from count score") {
-      ProposalScorerHelper.topScore(scoreCounts) should equal(-2.80 +- 0.01)
-    }
-  }
-
-  feature("calculate controversy") {
     scenario("calculate controversy from proposal") {
-      ProposalScorerHelper.controversy(proposalWithoutvote.votes) should equal(0.01 +- 0.01)
-      ProposalScorerHelper.controversy(proposalWithVote.votes) should equal(0.01 +- 0.01)
-      //ProposalScorerHelper.controversy(proposalWithVoteandQualification.votes) should equal(0.0009 +- 0.01)
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).controversy() should equal(0.01 +- 0.01)
+      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).controversy() should equal(0.01 +- 0.01)
+      scoreCounts.controversy() should equal(0.17 +- 0.01)
     }
 
-    scenario("calculate controversy from count score") {
-      ProposalScorerHelper.controversy(scoreCounts) should equal(0.17 +- 0.01)
-    }
-  }
-
-  feature("calculate rejection") {
-    scenario("calculate rejection from proposal") {
-      ProposalScorerHelper.rejection(proposalWithoutvote.votes) should equal(0.0)
-      ProposalScorerHelper.rejection(proposalWithVote.votes) should equal(0.0)
-      ProposalScorerHelper.rejection(proposalWithVoteandQualification.votes) should equal(0.14 +- 0.01)
-    }
-
-    scenario("calculate rejection from count score") {
-      ProposalScorerHelper.rejection(scoreCounts) should equal(-0.41 +- 0.01)
+    scenario("calculate rejection") {
+      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).rejection() should equal(0.0)
+      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).rejection() should equal(0.0)
+      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified)
+        .rejection() should equal(0.14 +- 0.01)
+      scoreCounts.rejection() should equal(-0.41 +- 0.01)
     }
   }
 
@@ -261,9 +227,10 @@ class ProposalScorerHelperTest extends MakeUnitTest {
           nbQualificationPlatitudeDisagree = rgen.nextInt(1 + nbVoteDisagree / 3)
         )
 
-        val score = ProposalScorerHelper.topScore(proposal.votes)
-        val confidence_interval = ProposalScorerHelper.topScoreConfidenceInterval(proposal.votes)
-        val sampleScore = ProposalScorerHelper.sampleTopScore(proposal.votes)
+        val counts = ScoreCounts(proposal.votes, _.countVerified, _.countVerified)
+        val score = counts.topScore()
+        val confidence_interval = counts.topScoreConfidenceInterval()
+        val sampleScore = counts.sampleTopScore()
 
         if (sampleScore > score - confidence_interval && sampleScore < score + confidence_interval) {
           1
@@ -276,13 +243,16 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
     logger.debug(success.toString)
 
-    (success should be).equals(0.95 +- 0.05)
+    success should be(0.95 +- 0.05)
   }
 
   feature("proposal pool") {
     scenario("news proposal") {
       val configuration = SequenceConfiguration(SequenceId("fake"), QuestionId("fake-too"))
-      ProposalScorerHelper.sequencePool(configuration, proposalWithoutvote.votes, Accepted) should be(SequencePool.New)
+      ProposalScorerHelper
+        .sequencePool(configuration, proposalWithoutvote.votes, Accepted, _.countVerified, _.countVerified) should be(
+        SequencePool.New
+      )
     }
 
   }
@@ -314,89 +284,99 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         Qualification(Impossible, 0, impossible)
       )
     scenario("votes") {
-      ProposalScorerHelper.scoreCounts(votes(1, 2, 3)).votes shouldBe 6
-      ProposalScorerHelper.scoreCounts(votes(10, 20, 30)).votes shouldBe 60
-      ProposalScorerHelper.scoreCounts(votes(17, 15, 10)).votes shouldBe 42
+      ScoreCounts(votes(1, 2, 3), _.countVerified, _.countVerified).votes shouldBe 6
+      ScoreCounts(votes(10, 20, 30), _.countVerified, _.countVerified).votes shouldBe 60
+      ScoreCounts(votes(17, 15, 10), _.countVerified, _.countVerified).votes shouldBe 42
     }
 
     scenario("agreeCount") {
-      ProposalScorerHelper.scoreCounts(votes(42, 0, 1)).agreeCount shouldBe 42
-      ProposalScorerHelper.scoreCounts(votes(0, 1, 2)).agreeCount shouldBe 0
-      ProposalScorerHelper.scoreCounts(votes(1, 564, 126)).agreeCount shouldBe 1
+      ScoreCounts(votes(42, 0, 1), _.countVerified, _.countVerified).agreeCount shouldBe 42
+      ScoreCounts(votes(0, 1, 2), _.countVerified, _.countVerified).agreeCount shouldBe 0
+      ScoreCounts(votes(1, 564, 126), _.countVerified, _.countVerified).agreeCount shouldBe 1
     }
 
     scenario("disagreeCount") {
-      ProposalScorerHelper.scoreCounts(votes(42, 0, 1)).disagreeCount shouldBe 0
-      ProposalScorerHelper.scoreCounts(votes(0, 1, 2)).disagreeCount shouldBe 1
-      ProposalScorerHelper.scoreCounts(votes(1, 564, 126)).disagreeCount shouldBe 564
+      ScoreCounts(votes(42, 0, 1), _.countVerified, _.countVerified).disagreeCount shouldBe 0
+      ScoreCounts(votes(0, 1, 2), _.countVerified, _.countVerified).disagreeCount shouldBe 1
+      ScoreCounts(votes(1, 564, 126), _.countVerified, _.countVerified).disagreeCount shouldBe 564
     }
 
     scenario("neutralCount") {
-      ProposalScorerHelper.scoreCounts(votes(42, 0, 0)).neutralCount shouldBe 0
-      ProposalScorerHelper.scoreCounts(votes(0, 1, 2)).neutralCount shouldBe 2
-      ProposalScorerHelper.scoreCounts(votes(1, 564, 126)).neutralCount shouldBe 126
+      ScoreCounts(votes(42, 0, 0), _.countVerified, _.countVerified).neutralCount shouldBe 0
+      ScoreCounts(votes(0, 1, 2), _.countVerified, _.countVerified).neutralCount shouldBe 2
+      ScoreCounts(votes(1, 564, 126), _.countVerified, _.countVerified).neutralCount shouldBe 126
     }
 
     scenario("platitudeAgreeCount") {
-      ProposalScorerHelper.scoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).platitudeAgreeCount shouldBe 0
-      ProposalScorerHelper
-        .scoreCounts(votes(0, 0, 0, qualifications(42, 0, 0, 0, 0, 0)))
-        .platitudeAgreeCount shouldBe 42
-      ProposalScorerHelper
-        .scoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)))
-        .platitudeAgreeCount shouldBe 500
+      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).platitudeAgreeCount shouldBe 0
+      ScoreCounts(votes(0, 0, 0, qualifications(42, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).platitudeAgreeCount shouldBe 42
+      ScoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)), _.countVerified, _.countVerified).platitudeAgreeCount shouldBe 500
     }
 
     scenario("platitudeDisagreeCount") {
-      ProposalScorerHelper
-        .scoreCounts(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
-        .platitudeDisagreeCount shouldBe 0
-      ProposalScorerHelper
-        .scoreCounts(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 42, 0, 0, 0, 0)))
-        .platitudeDisagreeCount shouldBe 42
-      ProposalScorerHelper
-        .scoreCounts(votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)))
-        .platitudeDisagreeCount shouldBe 12
+      ScoreCounts(
+        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)),
+        _.countVerified,
+        _.countVerified
+      ).platitudeDisagreeCount shouldBe 0
+      ScoreCounts(
+        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 42, 0, 0, 0, 0)),
+        _.countVerified,
+        _.countVerified
+      ).platitudeDisagreeCount shouldBe 42
+      ScoreCounts(
+        votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)),
+        _.countVerified,
+        _.countVerified
+      ).platitudeDisagreeCount shouldBe 12
     }
 
     scenario("loveCount") {
-      ProposalScorerHelper.scoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).loveCount shouldBe 0
-      ProposalScorerHelper.scoreCounts(votes(0, 0, 0, qualifications(0, 0, 42, 0, 0, 0))).loveCount shouldBe 42
-      ProposalScorerHelper
-        .scoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)))
-        .loveCount shouldBe 423
+      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).loveCount shouldBe 0
+      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 42, 0, 0, 0)), _.countVerified, _.countVerified).loveCount shouldBe 42
+      ScoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)), _.countVerified, _.countVerified).loveCount shouldBe 423
     }
 
     scenario("hateCount") {
-      ProposalScorerHelper
-        .scoreCounts(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
-        .hateCount shouldBe 0
-      ProposalScorerHelper
-        .scoreCounts(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 42, 0, 0)))
-        .hateCount shouldBe 42
-      ProposalScorerHelper
-        .scoreCounts(votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)))
-        .hateCount shouldBe 14
+      ScoreCounts(
+        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)),
+        _.countVerified,
+        _.countVerified
+      ).hateCount shouldBe 0
+      ScoreCounts(
+        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 42, 0, 0)),
+        _.countVerified,
+        _.countVerified
+      ).hateCount shouldBe 42
+      ScoreCounts(
+        votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)),
+        _.countVerified,
+        _.countVerified
+      ).hateCount shouldBe 14
     }
 
     scenario("doableCount") {
-      ProposalScorerHelper.scoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).doableCount shouldBe 0
-      ProposalScorerHelper.scoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 42, 0))).doableCount shouldBe 42
-      ProposalScorerHelper
-        .scoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)))
-        .doableCount shouldBe 324
+      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).doableCount shouldBe 0
+      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 42, 0)), _.countVerified, _.countVerified).doableCount shouldBe 42
+      ScoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)), _.countVerified, _.countVerified).doableCount shouldBe 324
     }
 
     scenario("impossibleCount") {
-      ProposalScorerHelper
-        .scoreCounts(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
-        .impossibleCount shouldBe 0
-      ProposalScorerHelper
-        .scoreCounts(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 42)))
-        .impossibleCount shouldBe 42
-      ProposalScorerHelper
-        .scoreCounts(votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)))
-        .impossibleCount shouldBe 210
+      ScoreCounts(
+        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)),
+        _.countVerified,
+        _.countVerified
+      ).impossibleCount shouldBe 0
+      ScoreCounts(
+        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 42)),
+        _.countVerified,
+        _.countVerified
+      ).impossibleCount shouldBe 42
+      ScoreCounts(
+        votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)),
+        _.countVerified,
+        _.countVerified
+      ).impossibleCount shouldBe 210
     }
 
   }

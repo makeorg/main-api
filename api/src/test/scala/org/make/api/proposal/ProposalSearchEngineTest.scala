@@ -94,6 +94,7 @@ class ProposalSearchEngineTest
     votesSegmentCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
+    segmentScores = IndexedScores.empty,
     context = Some(
       IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
     ),
@@ -116,6 +117,7 @@ class ProposalSearchEngineTest
     operationId = None,
     question = None,
     sequencePool = SequencePool.New,
+    sequenceSegmentPool = SequencePool.New,
     initialProposal = false,
     refusalReason = None,
     operationKind = None,

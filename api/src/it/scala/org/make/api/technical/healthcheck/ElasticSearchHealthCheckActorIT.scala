@@ -112,6 +112,7 @@ class ElasticSearchHealthCheckActorIT
       votesSegmentCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -134,6 +135,7 @@ class ElasticSearchHealthCheckActorIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
