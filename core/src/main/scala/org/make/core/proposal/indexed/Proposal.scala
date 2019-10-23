@@ -254,6 +254,8 @@ object IndexedVote {
       key = vote.key,
       count = vote.count,
       countVerified = vote.countVerified,
+      countSequence = vote.countSequence,
+      countSegment = vote.countSegment,
       qualifications = vote.qualifications.map(IndexedQualification.apply)
     )
 }
@@ -274,7 +276,9 @@ object IndexedQualification {
     IndexedQualification(
       key = qualification.key,
       count = qualification.count,
-      countVerified = qualification.countVerified
+      countVerified = qualification.countVerified,
+      countSequence = qualification.countSequence,
+      countSegment = qualification.countSegment
     )
 }
 
