@@ -111,7 +111,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
       waitForCompletion(insertDependencies)
 
       whenReady(persistentCrmTemplatesService.getById(crmTemplates.crmTemplatesId), Timeout(2.seconds)) { result =>
-        result.contains(crmTemplates) should be(true)
+        result should contain(crmTemplates)
       }
 
       waitForCompletion(
@@ -122,10 +122,10 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
       )
 
       whenReady(persistentCrmTemplatesService.getById(crmTemplates.crmTemplatesId), Timeout(2.seconds)) { result =>
-        result.contains(
+        result should contain(
           crmTemplates
             .copy(registration = TemplateId("new-registration"), proposalAccepted = TemplateId("new-accepted"))
-        ) should be(true)
+        )
       }
     }
 
@@ -182,7 +182,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
       }
 
       whenReady(persistentCrmTemplatesService.find(0, None, None, Some("fr_FR")), Timeout(2.seconds)) { result =>
-        result.map(_.crmTemplatesId.value).contains("template-id-4") should be(true)
+        result.map(_.crmTemplatesId.value) should contain("template-id-4")
       }
 
       whenReady(persistentCrmTemplatesService.count(Some(QuestionId("unknown")), None)) { _ should be(0) }

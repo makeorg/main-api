@@ -127,6 +127,20 @@ class AdminCrmTemplatesApiTest
         )
     )
 
+  val defaultCrmTemplate = CrmTemplates(
+    crmTemplatesId = CrmTemplatesId("default-id"),
+    questionId = None,
+    locale = Some("fr_FR"),
+    registration = TemplateId("56780"),
+    welcome = TemplateId("56781"),
+    proposalAccepted = TemplateId("56782"),
+    proposalRefused = TemplateId("56783"),
+    forgottenPassword = TemplateId("56784"),
+    proposalAcceptedOrganisation = TemplateId("56785"),
+    proposalRefusedOrganisation = TemplateId("56786"),
+    forgottenPasswordOrganisation = TemplateId("56787")
+  )
+
   val validCrmTemplates = CrmTemplates(
     crmTemplatesId = CrmTemplatesId("id"),
     questionId = Some(QuestionId("question-id")),
@@ -143,7 +157,7 @@ class AdminCrmTemplatesApiTest
 
   when(crmTemplatesService.createCrmTemplates(ArgumentMatchers.any[CreateCrmTemplates])).thenAnswer { invocation =>
     invocation.getArgument[CreateCrmTemplates](0) match {
-      case create if create.questionId.contains(QuestionId("question-id")) && create.locale.contains("fr_FR") =>
+      case create if create.questionId.contains(QuestionId("question-id")) =>
         Future.successful(validCrmTemplates)
       case create if create.questionId.isEmpty && create.locale.contains("fr_FR") =>
         Future.successful(validCrmTemplates.copy(questionId = None))
@@ -170,19 +184,18 @@ class AdminCrmTemplatesApiTest
 
   when(crmTemplatesService.updateCrmTemplates(ArgumentMatchers.any[UpdateCrmTemplates])).thenAnswer { invocation =>
     invocation.getArgument[UpdateCrmTemplates](0).crmTemplatesId.value match {
-      case "id"   => Future.successful(Some(validCrmTemplates.copy(registration = TemplateId("updated"))))
+      case "id"   => Future.successful(Some(validCrmTemplates.copy(registration = TemplateId("56789"))))
       case "fake" => Future.successful(None)
       case _      => throw new NullPointerException()
     }
   }
 
-  when(
-    crmTemplatesService.count(ArgumentMatchers.eq(Some(QuestionId("question-id"))), ArgumentMatchers.eq(Some("fr_FR")))
-  ).thenReturn(Future.successful(0))
+  when(crmTemplatesService.count(ArgumentMatchers.eq(Some(QuestionId("question-id"))), ArgumentMatchers.eq(None)))
+    .thenReturn(Future.successful(0))
 
   when(
     crmTemplatesService
-      .count(ArgumentMatchers.eq(Some(QuestionId("existing-question-id"))), ArgumentMatchers.eq(Some("fr_FR")))
+      .count(ArgumentMatchers.eq(Some(QuestionId("existing-question-id"))), ArgumentMatchers.eq(None))
   ).thenReturn(Future.successful(1))
 
   when(
@@ -202,14 +215,18 @@ class AdminCrmTemplatesApiTest
   when(questionService.getQuestion(QuestionId("existing-question-id")))
     .thenReturn(Future.successful(Some(question.copy(questionId = QuestionId("existing-question-id")))))
 
+  when(crmTemplatesService.getDefaultTemplate(locale = Some("fr_FR")))
+    .thenReturn(Future.successful(Some(defaultCrmTemplate)))
+
+  when(crmTemplatesService.getDefaultTemplate(locale = Some("en_GB")))
+    .thenReturn(Future.successful(None))
+
   val routes: Route = sealRoute(adminCrmTemplateApi.routes)
 
   feature("create a crmTemplates") {
     val crmTemplateData =
       """{
          |  "questionId": "question-id",
-         |  "country": "FR",
-         |  "language": "fr",
          |  "registration": "12340",
          |  "welcome": "12341",
          |  "proposalAccepted": "12342",
@@ -290,6 +307,23 @@ class AdminCrmTemplatesApiTest
 
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, requestNoQuestionIdNoLocale))
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+
+      val requestDefaultDoesntExistAndSomeTemplatesAreMissing =
+        """{
+          |  "country": "GB"
+          |  "language": "en",
+          |  "proposalRefused": "12343",
+          |  "forgottenPassword": "12344",
+          |  "proposalAcceptedOrganisation": "12345",
+          |  "proposalRefusedOrganisation": "12346",
+          |  "forgottenPasswordOrganisation": "12347"
+          |}""".stripMargin
+
+      Post("/admin/crm/templates")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, requestDefaultDoesntExistAndSomeTemplatesAreMissing))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
@@ -419,7 +453,7 @@ class AdminCrmTemplatesApiTest
         status should be(StatusCodes.OK)
         val crmTemplates: CrmTemplatesResponse = entityAs[CrmTemplatesResponse]
         crmTemplates.id.value should be("id")
-        crmTemplates.registration should be(TemplateId("updated"))
+        crmTemplates.registration should be(TemplateId("56789"))
       }
     }
 

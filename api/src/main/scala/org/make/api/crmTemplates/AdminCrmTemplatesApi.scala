@@ -188,23 +188,45 @@ trait DefaultAdminCrmTemplatesApiComponent
                               "Question is invalid"
                             )
                         )
-                        onSuccess(
-                          crmTemplatesService.createCrmTemplates(
+                        val locale = request.getLocale.orElse(question.map(_.getLocale))
+                        provideAsync(crmTemplatesService.getDefaultTemplate(locale = locale)) { defaultTemplate =>
+                          val crmTemplates = for {
+                            registration <- request.registration.orElse(defaultTemplate.map(_.registration))
+                            welcome      <- request.welcome.orElse(defaultTemplate.map(_.welcome))
+                            proposalAccepted <- request.proposalAccepted
+                              .orElse(defaultTemplate.map(_.proposalAccepted))
+                            proposalRefused <- request.proposalRefused.orElse(defaultTemplate.map(_.proposalRefused))
+                            forgottenPassword <- request.forgottenPassword
+                              .orElse(defaultTemplate.map(_.forgottenPassword))
+                            proposalAcceptedOrganisation <- request.proposalAcceptedOrganisation
+                              .orElse(defaultTemplate.map(_.proposalAcceptedOrganisation))
+                            proposalRefusedOrganisation <- request.proposalRefusedOrganisation
+                              .orElse(defaultTemplate.map(_.proposalRefusedOrganisation))
+                            forgottenPasswordOrganisation <- request.forgottenPasswordOrganisation
+                              .orElse(defaultTemplate.map(_.forgottenPasswordOrganisation))
+                          } yield {
                             CreateCrmTemplates(
                               questionId = question.map(_.questionId),
                               locale = request.getLocale,
-                              registration = request.registration,
-                              welcome = request.welcome,
-                              proposalAccepted = request.proposalAccepted,
-                              proposalRefused = request.proposalRefused,
-                              forgottenPassword = request.forgottenPassword,
-                              proposalAcceptedOrganisation = request.proposalAcceptedOrganisation,
-                              proposalRefusedOrganisation = request.proposalRefusedOrganisation,
-                              forgottenPasswordOrganisation = request.forgottenPasswordOrganisation
+                              registration,
+                              welcome,
+                              proposalAccepted,
+                              proposalRefused,
+                              forgottenPassword,
+                              proposalAcceptedOrganisation,
+                              proposalRefusedOrganisation,
+                              forgottenPasswordOrganisation
                             )
-                          )
-                        ) { crmTemplates =>
-                          complete(StatusCodes.Created -> CrmTemplatesIdResponse(crmTemplates.crmTemplatesId))
+                          }
+                          crmTemplates match {
+                            case None =>
+                              validateDefaultTemplates(request)
+                              complete(StatusCodes.BadRequest)
+                            case Some(createCrmTemplates) =>
+                              onSuccess(crmTemplatesService.createCrmTemplates(createCrmTemplates)) { crmTemplates =>
+                                complete(StatusCodes.Created -> CrmTemplatesIdResponse(crmTemplates.crmTemplatesId))
+                              }
+                          }
                         }
                     }
                   }
@@ -223,22 +245,51 @@ trait DefaultAdminCrmTemplatesApiComponent
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[UpdateTemplatesRequest]) { request: UpdateTemplatesRequest =>
-                  provideAsyncOrNotFound(
-                    crmTemplatesService.updateCrmTemplates(
-                      UpdateCrmTemplates(
-                        crmTemplatesId = crmTemplatesId,
-                        registration = request.registration,
-                        welcome = request.welcome,
-                        proposalAccepted = request.proposalAccepted,
-                        proposalRefused = request.proposalRefused,
-                        forgottenPassword = request.forgottenPassword,
-                        proposalAcceptedOrganisation = request.proposalAcceptedOrganisation,
-                        proposalRefusedOrganisation = request.proposalRefusedOrganisation,
-                        forgottenPasswordOrganisation = request.forgottenPasswordOrganisation
-                      )
-                    )
-                  ) { crmTemplates =>
-                    complete(CrmTemplatesResponse(crmTemplates))
+                  provideAsyncOrNotFound(crmTemplatesService.getCrmTemplates(crmTemplatesId)) { crmTemplate =>
+                    provideAsync(
+                      crmTemplate.questionId.map(questionService.getQuestion).getOrElse(Future.successful(None))
+                    ) { question =>
+                      val locale = crmTemplate.locale.orElse(question.map(_.getLocale))
+                      provideAsync(crmTemplatesService.getDefaultTemplate(locale = locale)) { defaultTemplate =>
+                        val crmTemplates = for {
+                          registration <- request.registration.orElse(defaultTemplate.map(_.registration))
+                          welcome      <- request.welcome.orElse(defaultTemplate.map(_.welcome))
+                          proposalAccepted <- request.proposalAccepted
+                            .orElse(defaultTemplate.map(_.proposalAccepted))
+                          proposalRefused <- request.proposalRefused.orElse(defaultTemplate.map(_.proposalRefused))
+                          forgottenPassword <- request.forgottenPassword
+                            .orElse(defaultTemplate.map(_.forgottenPassword))
+                          proposalAcceptedOrganisation <- request.proposalAcceptedOrganisation
+                            .orElse(defaultTemplate.map(_.proposalAcceptedOrganisation))
+                          proposalRefusedOrganisation <- request.proposalRefusedOrganisation
+                            .orElse(defaultTemplate.map(_.proposalRefusedOrganisation))
+                          forgottenPasswordOrganisation <- request.forgottenPasswordOrganisation
+                            .orElse(defaultTemplate.map(_.forgottenPasswordOrganisation))
+                        } yield {
+                          UpdateCrmTemplates(
+                            crmTemplatesId = crmTemplatesId,
+                            registration,
+                            welcome,
+                            proposalAccepted,
+                            proposalRefused,
+                            forgottenPassword,
+                            proposalAcceptedOrganisation,
+                            proposalRefusedOrganisation,
+                            forgottenPasswordOrganisation
+                          )
+                        }
+                        crmTemplates match {
+                          case None =>
+                            validateDefaultTemplates(request)
+                            complete(StatusCodes.BadRequest)
+                          case Some(updateCrmTemplates) =>
+                            provideAsyncOrNotFound(crmTemplatesService.updateCrmTemplates(updateCrmTemplates)) {
+                              crmTemplates =>
+                                complete(CrmTemplatesResponse(crmTemplates))
+                            }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -246,6 +297,31 @@ trait DefaultAdminCrmTemplatesApiComponent
           }
         }
       }
+    }
+
+    private def validateDefaultTemplates(request: CrmTemplatesRequest): Unit = {
+      Validation.validate(
+        Validation.requirePresent(fieldName = "registration", fieldValue = request.registration),
+        Validation.requirePresent(fieldName = "welcome", fieldValue = request.welcome),
+        Validation
+          .requirePresent(fieldName = "proposalAccepted", fieldValue = request.proposalAccepted),
+        Validation
+          .requirePresent(fieldName = "proposalRefused", fieldValue = request.proposalRefused),
+        Validation
+          .requirePresent(fieldName = "forgottenPassword", fieldValue = request.forgottenPassword),
+        Validation
+          .requirePresent(
+            fieldName = "proposalAcceptedOrganisation",
+            fieldValue = request.proposalAcceptedOrganisation
+          ),
+        Validation
+          .requirePresent(fieldName = "proposalRefusedOrganisation", fieldValue = request.proposalRefusedOrganisation),
+        Validation
+          .requirePresent(
+            fieldName = "forgottenPasswordOrganisation",
+            fieldValue = request.forgottenPasswordOrganisation
+          )
+      )
     }
 
     override def adminGetCrmTemplates: Route = {
