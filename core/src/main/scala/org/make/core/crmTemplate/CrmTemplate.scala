@@ -31,6 +31,7 @@ case class CrmTemplates(crmTemplatesId: CrmTemplatesId,
                         proposalAccepted: TemplateId,
                         proposalRefused: TemplateId,
                         forgottenPassword: TemplateId,
+                        resendRegistration: TemplateId,
                         proposalAcceptedOrganisation: TemplateId,
                         proposalRefusedOrganisation: TemplateId,
                         forgottenPasswordOrganisation: TemplateId)

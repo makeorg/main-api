@@ -74,6 +74,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
               column.proposalAccepted -> crmTemplates.proposalAccepted.value,
               column.proposalRefused -> crmTemplates.proposalRefused.value,
               column.forgottenPassword -> crmTemplates.forgottenPassword.value,
+              column.resendRegistration -> crmTemplates.resendRegistration.value,
               column.proposalAcceptedOrganisation -> crmTemplates.proposalAcceptedOrganisation.value,
               column.proposalRefusedOrganisation -> crmTemplates.proposalRefusedOrganisation.value,
               column.forgottenPasswordOrganisation -> crmTemplates.forgottenPasswordOrganisation.value
@@ -95,6 +96,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
               column.proposalAccepted -> crmTemplates.proposalAccepted.value,
               column.proposalRefused -> crmTemplates.proposalRefused.value,
               column.forgottenPassword -> crmTemplates.forgottenPassword.value,
+              column.resendRegistration -> crmTemplates.resendRegistration.value,
               column.proposalAcceptedOrganisation -> crmTemplates.proposalAcceptedOrganisation.value,
               column.proposalRefusedOrganisation -> crmTemplates.proposalRefusedOrganisation.value,
               column.forgottenPasswordOrganisation -> crmTemplates.forgottenPasswordOrganisation.value
@@ -167,6 +169,7 @@ object DefaultPersistentCrmTemplatesServiceComponent {
                                     proposalAccepted: String,
                                     proposalRefused: String,
                                     forgottenPassword: String,
+                                    resendRegistration: String,
                                     proposalAcceptedOrganisation: String,
                                     proposalRefusedOrganisation: String,
                                     forgottenPasswordOrganisation: String) {
@@ -181,6 +184,7 @@ object DefaultPersistentCrmTemplatesServiceComponent {
         proposalAccepted = TemplateId(proposalAccepted),
         proposalRefused = TemplateId(proposalRefused),
         forgottenPassword = TemplateId(forgottenPassword),
+        resendRegistration = TemplateId(resendRegistration),
         proposalAcceptedOrganisation = TemplateId(proposalAcceptedOrganisation),
         proposalRefusedOrganisation = TemplateId(proposalRefusedOrganisation),
         forgottenPasswordOrganisation = TemplateId(forgottenPasswordOrganisation)
@@ -201,6 +205,7 @@ object DefaultPersistentCrmTemplatesServiceComponent {
       "proposal_accepted",
       "proposal_refused",
       "forgotten_password",
+      "resend_registration",
       "proposal_accepted_organisation",
       "proposal_refused_organisation",
       "forgotten_password_organisation"
@@ -225,6 +230,7 @@ object DefaultPersistentCrmTemplatesServiceComponent {
         proposalAccepted = resultSet.string(crmTemplatesResultName.proposalAccepted),
         proposalRefused = resultSet.string(crmTemplatesResultName.proposalRefused),
         forgottenPassword = resultSet.string(crmTemplatesResultName.forgottenPassword),
+        resendRegistration = resultSet.string(crmTemplatesResultName.resendRegistration),
         proposalAcceptedOrganisation = resultSet.string(crmTemplatesResultName.proposalAcceptedOrganisation),
         proposalRefusedOrganisation = resultSet.string(crmTemplatesResultName.proposalRefusedOrganisation),
         forgottenPasswordOrganisation = resultSet.string(crmTemplatesResultName.forgottenPasswordOrganisation)

@@ -114,6 +114,10 @@ trait DefaultSendMailPublisherServiceComponent
     s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$appParams"
   }
 
+  private def getLocale(country: Country, language: Language): String = {
+    s"${language.value}_${country.value}"
+  }
+
   def resolveQuestionSlug(country: Country, language: Language, requestContext: RequestContext): Future[String] = {
     requestContext.questionId
       .map(questionService.getQuestion)
@@ -141,7 +145,7 @@ trait DefaultSendMailPublisherServiceComponent
     val maybePublish: OptionT[Future, Unit] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
-      locale = s"${user.language.value}_${user.country.value}"
+      locale = getLocale(user.country, user.language)
       crmTemplates <- OptionT(findCrmTemplates(questionId, locale))
     } yield {
       if (user.emailVerified) {
@@ -186,7 +190,7 @@ trait DefaultSendMailPublisherServiceComponent
                                 country: Country,
                                 language: Language,
                                 requestContext: RequestContext): Future[Unit] = {
-      val locale = s"${language.value}_${country.value}"
+      val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, requestContext)
       def publishSendEmail(questionSlug: String, crmTemplates: CrmTemplates): Unit =
@@ -223,7 +227,7 @@ trait DefaultSendMailPublisherServiceComponent
                                      country: Country,
                                      language: Language,
                                      requestContext: RequestContext): Future[Unit] = {
-      val locale = s"${language.value}_${country.value}"
+      val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val verificationToken: String = user.verificationToken match {
         case Some(token) => token
@@ -259,11 +263,47 @@ trait DefaultSendMailPublisherServiceComponent
       })
     }
 
+    def publishResendRegistration(user: User,
+                                  country: Country,
+                                  language: Language,
+                                  requestContext: RequestContext): Future[Unit] = {
+      val locale = getLocale(country, language)
+      val questionId = requestContext.questionId
+      val verificationToken: String = user.verificationToken match {
+        case Some(token) => token
+        case _ =>
+          throw new IllegalStateException(s"verification token required but not provided for user ${user.userId.value}")
+      }
+
+      def publishSendEmail(crmTemplates: CrmTemplates): Unit =
+        eventBusService.publish(
+          SendEmail.create(
+            templateId = Some(crmTemplates.resendRegistration.value.toInt),
+            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+            from = Some(
+              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+            ),
+            variables = Some(
+              Map(
+                "firstname" -> user.firstName.getOrElse(""),
+                "email_validation_url" -> getAccountValidationUrl(user, verificationToken, requestContext)
+              )
+            ),
+            customCampaign = None,
+            monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+          )
+        )
+
+      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+        publishSendEmail(crmTemplates)
+      })
+    }
+
     override def publishForgottenPassword(user: User,
                                           country: Country,
                                           language: Language,
                                           requestContext: RequestContext): Future[Unit] = {
-      val locale = s"${language.value}_${country.value}"
+      val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val resetToken: String = user.resetToken match {
         case Some(token) => token
@@ -301,7 +341,7 @@ trait DefaultSendMailPublisherServiceComponent
                                                       country: Country,
                                                       language: Language,
                                                       requestContext: RequestContext): Future[Unit] = {
-      val locale = s"${language.value}_${country.value}"
+      val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val resetToken: String = organisation.resetToken match {
         case Some(token) => token
@@ -415,7 +455,7 @@ trait DefaultSendMailPublisherServiceComponent
                                     requestContext: RequestContext): Future[Unit] = {
 
       userService.changeEmailVerificationTokenIfNeeded(user.userId).flatMap {
-        case Some(_) => publishRegistration(user, country, language, requestContext)
+        case Some(_) => publishResendRegistration(user, country, language, requestContext)
         case None    => Future.successful {}
       }
     }

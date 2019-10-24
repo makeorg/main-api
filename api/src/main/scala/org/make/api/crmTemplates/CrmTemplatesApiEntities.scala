@@ -34,6 +34,7 @@ trait CrmTemplatesRequest {
   val proposalAccepted: Option[TemplateId]
   val proposalRefused: Option[TemplateId]
   val forgottenPassword: Option[TemplateId]
+  val resendRegistration: Option[TemplateId]
   val proposalAcceptedOrganisation: Option[TemplateId]
   val proposalRefusedOrganisation: Option[TemplateId]
   val forgottenPasswordOrganisation: Option[TemplateId]
@@ -49,6 +50,7 @@ final case class CreateTemplatesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefused: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPassword: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") resendRegistration: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId]
@@ -78,6 +80,7 @@ final case class UpdateTemplatesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefused: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPassword: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") resendRegistration: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId]
@@ -108,6 +111,7 @@ final case class CrmTemplatesResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: TemplateId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefused: TemplateId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPassword: TemplateId,
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") resendRegistration: TemplateId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: TemplateId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: TemplateId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: TemplateId
@@ -127,6 +131,7 @@ object CrmTemplatesResponse {
       proposalAccepted = crmTemplates.proposalAccepted,
       proposalRefused = crmTemplates.proposalRefused,
       forgottenPassword = crmTemplates.forgottenPassword,
+      resendRegistration = crmTemplates.resendRegistration,
       proposalAcceptedOrganisation = crmTemplates.proposalAcceptedOrganisation,
       proposalRefusedOrganisation = crmTemplates.proposalRefusedOrganisation,
       forgottenPasswordOrganisation = crmTemplates.forgottenPasswordOrganisation
