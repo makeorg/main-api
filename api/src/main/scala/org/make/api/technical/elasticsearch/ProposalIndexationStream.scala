@@ -204,11 +204,11 @@ trait ProposalIndexationStream
           case _                        => true
         }
       }
-      val regularScore = ScoreCounts(proposal.votes, _.countSequence, _.countSequence)
+      val regularScore = ScoreCounts.fromSequenceVotes(proposal.votes)
 
       // If the proposal is not segmented, the scores should all be at 0
       val segmentScore = segment.map { _ =>
-        ScoreCounts(proposal.votes, _.countSegment, _.countSegment)
+        ScoreCounts.fromSegmentVotes(proposal.votes)
       }.getOrElse(ScoreCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
       IndexedProposal(
@@ -307,9 +307,9 @@ trait ProposalIndexationStream
           )
         ),
         sequencePool = ProposalScorerHelper
-          .sequencePool(sequenceConfiguration, proposal.votes, proposal.status, _.countSequence, _.countSequence),
+          .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSequenceVotes(proposal.votes)),
         sequenceSegmentPool = ProposalScorerHelper
-          .sequencePool(sequenceConfiguration, proposal.votes, proposal.status, _.countSegment, _.countSegment),
+          .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSegmentVotes(proposal.votes)),
         initialProposal = proposal.initialProposal,
         refusalReason = proposal.refusalReason,
         operationKind = Option(operation.operationKind),

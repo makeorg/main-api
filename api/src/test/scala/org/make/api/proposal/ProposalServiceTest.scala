@@ -1889,7 +1889,7 @@ class ProposalServiceTest
             )
           )
         )
-        .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1))))
+        .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -2031,7 +2031,7 @@ class ProposalServiceTest
             )
           )
         )
-        .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1))))
+        .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
 
       val hash = generateHash(proposalId, requestContext)
 

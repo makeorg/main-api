@@ -139,11 +139,8 @@ class SortAlgorithmIT
     slug = "this-is-a-test-proposal",
     createdAt = now,
     updatedAt = Some(now),
-    votes = Seq(
-      IndexedVote(key = VoteKey.Agree, qualifications = Seq.empty),
-      IndexedVote(key = VoteKey.Disagree, qualifications = Seq.empty),
-      IndexedVote(key = VoteKey.Neutral, qualifications = Seq.empty)
-    ),
+    votes =
+      Seq(IndexedVote.empty(VoteKey.Agree), IndexedVote.empty(VoteKey.Disagree), IndexedVote.empty(VoteKey.Neutral)),
     votesCount = 3,
     votesVerifiedCount = 3,
     votesSequenceCount = 3,

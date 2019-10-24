@@ -23,6 +23,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal._
+import org.make.api.segment.SegmentServiceComponent
 import org.make.api.sessionhistory._
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeRandom}
@@ -31,8 +32,14 @@ import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, Req
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames}
-import org.make.core.proposal.{ProposalId, QuestionSearchFilter, RandomAlgorithm, SequencePoolSearchFilter}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, SequencePool}
+import org.make.core.proposal.{
+  ProposalId,
+  QuestionSearchFilter,
+  RandomAlgorithm,
+  SegmentSearchFilter,
+  SequencePoolSearchFilter
+}
 import org.make.core.sequence._
 import org.make.core.tag.TagId
 import org.make.core.user._
@@ -67,6 +74,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     with SelectionAlgorithmComponent
     with SequenceConfigurationComponent
     with SecurityConfigurationComponent
+    with SegmentServiceComponent
     with StrictLogging =>
 
   override lazy val sequenceService: SequenceService = new DefaultSequenceService
@@ -146,15 +154,21 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         Future.successful(Seq.empty)
       }
 
-      val futureNewProposalsPool: Future[Seq[IndexedProposal]] =
+      def futureNewProposalsPool(maybeSegment: Option[String]): Future[Seq[IndexedProposal]] = {
+        val (poolSearch, segmentPoolSearch) = maybeSegment match {
+          case None    => (Some(SequencePoolSearchFilter(SequencePool.New)), None)
+          case Some(_) => (None, Some(SequencePoolSearchFilter(SequencePool.New)))
+        }
         elasticsearchProposalAPI
           .searchProposals(
             proposal.SearchQuery(
               filters = Some(
                 proposal.SearchFilters(
-                  sequencePool = Some(SequencePoolSearchFilter("new")),
+                  sequencePool = poolSearch,
+                  sequenceSegmentPool = segmentPoolSearch,
                   question = Some(QuestionSearchFilter(Seq(sequenceConfiguration.questionId))),
-                  tags = tagsIds.map(proposal.TagsSearchFilter.apply)
+                  tags = tagsIds.map(proposal.TagsSearchFilter.apply),
+                  segment = maybeSegment.map(SegmentSearchFilter.apply)
                 )
               ),
               limit = Some(sequenceConfiguration.sequenceSize * 3),
@@ -162,16 +176,23 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             )
           )
           .map(_.results)
+      }
 
-      val futureTestedProposalsPool: Future[Seq[IndexedProposal]] =
+      def futureTestedProposalsPool(maybeSegment: Option[String]): Future[Seq[IndexedProposal]] = {
+        val (poolSearch, segmentPoolSearch) = maybeSegment match {
+          case None    => (Some(SequencePoolSearchFilter(SequencePool.Tested)), None)
+          case Some(_) => (None, Some(SequencePoolSearchFilter(SequencePool.Tested)))
+        }
         elasticsearchProposalAPI
           .searchProposals(
             proposal.SearchQuery(
               filters = Some(
                 proposal.SearchFilters(
-                  sequencePool = Some(SequencePoolSearchFilter("tested")),
+                  sequencePool = poolSearch,
+                  sequenceSegmentPool = segmentPoolSearch,
                   question = Some(QuestionSearchFilter(Seq(sequenceConfiguration.questionId))),
-                  tags = tagsIds.map(proposal.TagsSearchFilter.apply)
+                  tags = tagsIds.map(proposal.TagsSearchFilter.apply),
+                  segment = maybeSegment.map(SegmentSearchFilter.apply)
                 )
               ),
               limit = Some(sequenceConfiguration.maxTestedProposalCount),
@@ -179,12 +200,15 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
             )
           )
           .map(_.results)
+      }
 
       for {
         includedProposals  <- futureIncludedProposals
-        allNewProposals    <- futureNewProposalsPool
-        allTestedProposals <- futureTestedProposalsPool
+        maybeSegment       <- segmentService.resolveSegment(requestContext)
+        allNewProposals    <- futureNewProposalsPool(maybeSegment)
+        allTestedProposals <- futureTestedProposalsPool(maybeSegment)
         allVotes           <- futureVotedProposals(maybeUserId, requestContext)
+        userSegment        <- segmentService.resolveSegment(requestContext)
 
         newProposals = allNewProposals.groupBy(_.userId).values.map(_.head).toSeq
         testedProposals = allTestedProposals.groupBy(_.userId).values.map(_.head).toSeq
@@ -197,7 +221,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               includedProposals = includedProposals,
               newProposals = newProposals,
               testedProposals = testedProposals,
-              votedProposals = votes
+              votedProposals = votes,
+              userSegment = userSegment
             )
           case SelectionAlgorithmName.RoundRobin =>
             roundRobinSelectionAlgorithm.selectProposalsForSequence(
@@ -205,7 +230,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               includedProposals = includedProposals,
               newProposals = allNewProposals,
               testedProposals = allTestedProposals,
-              votedProposals = votes
+              votedProposals = votes,
+              userSegment = userSegment
             )
         }
         sequenceVotes <- futureVotedProposalsAndVotes(maybeUserId, requestContext, selectedProposals.map(_.id))

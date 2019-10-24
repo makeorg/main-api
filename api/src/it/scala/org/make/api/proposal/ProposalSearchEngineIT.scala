@@ -144,30 +144,33 @@ class ProposalSearchEngineIT
     createdAt = now,
     updatedAt = None,
     votes = Seq(
-      IndexedVote(
-        key = VoteKey.Agree,
-        qualifications = Seq(
-          IndexedQualification(key = QualificationKey.LikeIt),
-          IndexedQualification(key = QualificationKey.Doable),
-          IndexedQualification(key = QualificationKey.PlatitudeAgree)
+      IndexedVote
+        .empty(VoteKey.Agree)
+        .copy(
+          qualifications = Seq(
+            IndexedQualification.empty(QualificationKey.LikeIt),
+            IndexedQualification.empty(QualificationKey.Doable),
+            IndexedQualification.empty(QualificationKey.PlatitudeAgree)
+          )
+        ),
+      IndexedVote
+        .empty(key = VoteKey.Disagree)
+        .copy(
+          qualifications = Seq(
+            IndexedQualification.empty(QualificationKey.NoWay),
+            IndexedQualification.empty(QualificationKey.Impossible),
+            IndexedQualification.empty(QualificationKey.PlatitudeDisagree)
+          )
+        ),
+      IndexedVote
+        .empty(key = VoteKey.Neutral)
+        .copy(
+          qualifications = Seq(
+            IndexedQualification.empty(QualificationKey.DoNotUnderstand),
+            IndexedQualification.empty(QualificationKey.NoOpinion),
+            IndexedQualification.empty(QualificationKey.DoNotCare)
+          )
         )
-      ),
-      IndexedVote(
-        key = VoteKey.Disagree,
-        qualifications = Seq(
-          IndexedQualification(key = QualificationKey.NoWay),
-          IndexedQualification(key = QualificationKey.Impossible),
-          IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-        )
-      ),
-      IndexedVote(
-        key = VoteKey.Neutral,
-        qualifications = Seq(
-          IndexedQualification(key = QualificationKey.DoNotUnderstand),
-          IndexedQualification(key = QualificationKey.NoOpinion),
-          IndexedQualification(key = QualificationKey.DoNotCare)
-        )
-      )
     ),
     votesCount = 3,
     votesVerifiedCount = 3,
@@ -218,33 +221,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 123,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 123,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 105,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 59,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 105,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 59,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 287,
       votesVerifiedCount = 287,
@@ -291,33 +297,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 79,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 79,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 104,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 127,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 104,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 127,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 310,
       votesVerifiedCount = 310,
@@ -364,33 +373,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-03T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-03T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 56,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 56,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 18,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 53,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 18,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 53,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 127,
       votesVerifiedCount = 127,
@@ -439,33 +451,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 152,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 152,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 78,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 123,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 78,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 123,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 353,
       votesVerifiedCount = 353,
@@ -512,33 +527,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 175,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 175,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 70,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 123,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 70,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 123,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 368,
       votesVerifiedCount = 368,
@@ -587,33 +605,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-01T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 48,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 48,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 70,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 187,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 70,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 187,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 305,
       votesVerifiedCount = 305,
@@ -658,33 +679,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-05T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-05T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 60,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 60,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 56,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 170,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 56,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 170,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 286,
       votesVerifiedCount = 286,
@@ -739,33 +763,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-07T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-07T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 95,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 95,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 32,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 35,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 32,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 35,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 162,
       votesVerifiedCount = 162,
@@ -825,33 +852,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 37,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 37,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 66,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 75,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 66,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 75,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 178,
       votesVerifiedCount = 178,
@@ -900,33 +930,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 67,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 67,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 42,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 22,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 42,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 22,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 131,
       votesVerifiedCount = 131,
@@ -975,33 +1008,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 116,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 116,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 167,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 73,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 167,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 73,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 356,
       votesVerifiedCount = 356,
@@ -1050,33 +1086,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 86,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 86,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 165,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 96,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 165,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 96,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 347,
       votesVerifiedCount = 347,
@@ -1123,33 +1162,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 170,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 170,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 33,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 64,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 33,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 64,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 267,
       votesVerifiedCount = 267,
@@ -1196,33 +1238,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 17,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 17,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 119,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 68,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 119,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 68,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 204,
       votesVerifiedCount = 204,
@@ -1270,33 +1315,36 @@ class ProposalSearchEngineIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 124,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 124,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.LikeIt),
+              IndexedQualification.empty(key = QualificationKey.Doable),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 74,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.NoWay),
+              IndexedQualification.empty(key = QualificationKey.Impossible),
+              IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 56,
+            qualifications = Seq(
+              IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(key = QualificationKey.NoOpinion),
+              IndexedQualification.empty(key = QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 74,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 56,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 254,
       votesVerifiedCount = 254,
@@ -1575,7 +1623,7 @@ class ProposalSearchEngineIT
   feature("search proposals by sequence segment pool") {
     scenario("search for pool new") {
       val query = SearchQuery(
-        filters = Some(SearchFilters(sequenceSegmentPool = Some(SequencePoolSearchFilter(SequencePool.New.shortName))))
+        filters = Some(SearchFilters(sequenceSegmentPool = Some(SequencePoolSearchFilter(SequencePool.New))))
       )
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>

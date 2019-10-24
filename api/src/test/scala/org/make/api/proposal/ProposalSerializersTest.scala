@@ -239,8 +239,16 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
           count = 20,
           countVerified = 20,
           countSequence = 20,
-          qualifications =
-            Seq(Qualification(key = QualificationKey.Doable, count = 12, countVerified = 12, countSequence = 12))
+          countSegment = 0,
+          qualifications = Seq(
+            Qualification(
+              key = QualificationKey.Doable,
+              count = 12,
+              countVerified = 12,
+              countSequence = 12,
+              countSegment = 0
+            )
+          )
         )
       ),
       events = List(

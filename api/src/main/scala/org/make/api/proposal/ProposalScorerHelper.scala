@@ -217,6 +217,9 @@ object ProposalScorerHelper extends StrictLogging {
 
   object ScoreCounts {
 
+    def fromSequenceVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countSequence, _.countSequence)
+    def fromSegmentVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countSegment, _.countSegment)
+
     /*
      * Note on bayesian estimates: the estimator requires a prior,
      * i.e. an initial probability to start the estimate from.
@@ -261,9 +264,9 @@ object ProposalScorerHelper extends StrictLogging {
       new BetaDistribution(random, successes + prior, trials - successes + ScoreCounts.CountPrior).sample()
     }
 
-    def apply(votes: Seq[BaseVote],
-              voteCounter: BaseVote                   => Int,
-              qualificationCounter: BaseQualification => Int): ScoreCounts = {
+    private def apply(votes: Seq[BaseVote],
+                      voteCounter: BaseVote                   => Int,
+                      qualificationCounter: BaseQualification => Int): ScoreCounts = {
       ScoreCounts(
         votes = totalVoteCount(votes, voteCounter),
         agreeCount = voteCount(votes, Agree, voteCounter),
@@ -298,12 +301,8 @@ object ProposalScorerHelper extends StrictLogging {
   }
 
   def sequencePool(sequenceConfiguration: SequenceConfiguration,
-                   votes: Seq[BaseVote],
                    status: ProposalStatus,
-                   votesCounter: BaseVote                  => Int,
-                   qualificationCounter: BaseQualification => Int): SequencePool = {
-
-    val scores = ScoreCounts(votes, votesCounter, qualificationCounter)
+                   scores: ScoreCounts): SequencePool = {
 
     val votesCount: Int = scores.votes
     val engagementRate: Double = scores.engagementUpperBound()

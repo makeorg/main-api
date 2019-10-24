@@ -60,33 +60,36 @@ class ProposalSearchEngineTest
     createdAt = DateHelper.now(),
     updatedAt = Some(DateHelper.now()),
     votes = Seq(
-      IndexedVote(
-        key = VoteKey.Agree,
-        count = nbAgree,
-        qualifications = Seq(
-          IndexedQualification(key = QualificationKey.LikeIt),
-          IndexedQualification(key = QualificationKey.Doable),
-          IndexedQualification(key = QualificationKey.PlatitudeAgree)
+      IndexedVote
+        .empty(key = VoteKey.Agree)
+        .copy(
+          count = nbAgree,
+          qualifications = Seq(
+            IndexedQualification.empty(key = QualificationKey.LikeIt),
+            IndexedQualification.empty(key = QualificationKey.Doable),
+            IndexedQualification.empty(key = QualificationKey.PlatitudeAgree)
+          )
+        ),
+      IndexedVote
+        .empty(key = VoteKey.Disagree)
+        .copy(
+          count = nbDisagree,
+          qualifications = Seq(
+            IndexedQualification.empty(key = QualificationKey.NoWay),
+            IndexedQualification.empty(key = QualificationKey.Impossible),
+            IndexedQualification.empty(key = QualificationKey.PlatitudeDisagree)
+          )
+        ),
+      IndexedVote
+        .empty(key = VoteKey.Neutral)
+        .copy(
+          count = nbNeutral,
+          qualifications = Seq(
+            IndexedQualification.empty(key = QualificationKey.DoNotUnderstand),
+            IndexedQualification.empty(key = QualificationKey.NoOpinion),
+            IndexedQualification.empty(key = QualificationKey.DoNotCare)
+          )
         )
-      ),
-      IndexedVote(
-        key = VoteKey.Disagree,
-        count = nbDisagree,
-        qualifications = Seq(
-          IndexedQualification(key = QualificationKey.NoWay),
-          IndexedQualification(key = QualificationKey.Impossible),
-          IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-        )
-      ),
-      IndexedVote(
-        key = VoteKey.Neutral,
-        count = nbNeutral,
-        qualifications = Seq(
-          IndexedQualification(key = QualificationKey.DoNotUnderstand),
-          IndexedQualification(key = QualificationKey.NoOpinion),
-          IndexedQualification(key = QualificationKey.DoNotCare)
-        )
-      )
     ),
     votesCount = 3,
     votesVerifiedCount = 3,

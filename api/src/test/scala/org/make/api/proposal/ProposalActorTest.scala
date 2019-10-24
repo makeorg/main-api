@@ -168,26 +168,38 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       Vote(
         key = VoteKey.Agree,
         qualifications = Seq(
-          Qualification(key = QualificationKey.LikeIt),
-          Qualification(key = QualificationKey.Doable),
-          Qualification(key = QualificationKey.PlatitudeAgree)
-        )
+          Qualification(QualificationKey.LikeIt, 0, 0, 0, 0),
+          Qualification(QualificationKey.Doable, 0, 0, 0, 0),
+          Qualification(QualificationKey.PlatitudeAgree, 0, 0, 0, 0)
+        ),
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
       ),
       Vote(
         key = VoteKey.Disagree,
         qualifications = Seq(
-          Qualification(key = QualificationKey.NoWay),
-          Qualification(key = QualificationKey.Impossible),
-          Qualification(key = QualificationKey.PlatitudeDisagree)
-        )
+          Qualification(QualificationKey.NoWay, 0, 0, 0, 0),
+          Qualification(QualificationKey.Impossible, 0, 0, 0, 0),
+          Qualification(QualificationKey.PlatitudeDisagree, 0, 0, 0, 0)
+        ),
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
       ),
       Vote(
         key = VoteKey.Neutral,
         qualifications = Seq(
-          Qualification(key = QualificationKey.DoNotUnderstand),
-          Qualification(key = QualificationKey.NoOpinion),
-          Qualification(key = QualificationKey.DoNotCare)
-        )
+          Qualification(QualificationKey.DoNotUnderstand, 0, 0, 0, 0),
+          Qualification(QualificationKey.NoOpinion, 0, 0, 0, 0),
+          Qualification(QualificationKey.DoNotCare, 0, 0, 0, 0)
+        ),
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
       )
     ),
     events = List(
@@ -1398,10 +1410,12 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         key = VoteKey.Agree,
         count = 1,
         countVerified = 1,
+        countSequence = 0,
+        countSegment = 0,
         qualifications = Seq(
-          Qualification(key = QualificationKey.LikeIt),
-          Qualification(key = QualificationKey.Doable),
-          Qualification(key = QualificationKey.PlatitudeAgree)
+          Qualification(QualificationKey.LikeIt, 0, 0, 0, 0),
+          Qualification(QualificationKey.Doable, 0, 0, 0, 0),
+          Qualification(QualificationKey.PlatitudeAgree, 0, 0, 0, 0)
         )
       )
 
@@ -1421,10 +1435,12 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         key = VoteKey.Disagree,
         count = 1,
         countVerified = 1,
+        countSequence = 0,
+        countSegment = 0,
         qualifications = Seq(
-          Qualification(key = QualificationKey.NoWay),
-          Qualification(key = QualificationKey.Impossible),
-          Qualification(key = QualificationKey.PlatitudeDisagree)
+          Qualification(QualificationKey.NoWay, 0, 0, 0, 0),
+          Qualification(QualificationKey.Impossible, 0, 0, 0, 0),
+          Qualification(QualificationKey.PlatitudeDisagree, 0, 0, 0, 0)
         )
       )
 
@@ -1689,29 +1705,68 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val votesVerified = Seq(
         Vote(
           key = VoteKey.Agree,
+          count = 0,
           countVerified = 12,
+          countSequence = 0,
+          countSegment = 0,
           qualifications = Seq(
-            Qualification(QualificationKey.LikeIt, countVerified = 1),
-            Qualification(QualificationKey.Doable, countVerified = 2),
-            Qualification(QualificationKey.PlatitudeAgree, countVerified = 3)
+            Qualification(QualificationKey.LikeIt, count = 0, countVerified = 1, countSequence = 0, countSegment = 0),
+            Qualification(QualificationKey.Doable, count = 0, countVerified = 2, countSequence = 0, countSegment = 0),
+            Qualification(
+              QualificationKey.PlatitudeAgree,
+              count = 0,
+              countVerified = 3,
+              countSequence = 0,
+              countSegment = 0
+            )
           )
         ),
         Vote(
           key = VoteKey.Disagree,
+          count = 0,
           countVerified = 24,
+          countSequence = 0,
+          countSegment = 0,
           qualifications = Seq(
-            Qualification(QualificationKey.NoWay, countVerified = 4),
-            Qualification(QualificationKey.Impossible, countVerified = 5),
-            Qualification(QualificationKey.PlatitudeDisagree, countVerified = 6)
+            Qualification(QualificationKey.NoWay, count = 0, countVerified = 4, countSequence = 0, countSegment = 0),
+            Qualification(
+              QualificationKey.Impossible,
+              count = 0,
+              countVerified = 5,
+              countSequence = 0,
+              countSegment = 0
+            ),
+            Qualification(
+              QualificationKey.PlatitudeDisagree,
+              count = 0,
+              countVerified = 6,
+              countSequence = 0,
+              countSegment = 0
+            )
           )
         ),
         Vote(
           key = VoteKey.Neutral,
+          count = 0,
           countVerified = 36,
+          countSequence = 0,
+          countSegment = 0,
           qualifications = Seq(
-            Qualification(QualificationKey.NoOpinion, countVerified = 7),
-            Qualification(QualificationKey.DoNotUnderstand, countVerified = 8),
-            Qualification(QualificationKey.DoNotCare, countVerified = 9)
+            Qualification(
+              QualificationKey.NoOpinion,
+              count = 0,
+              countVerified = 7,
+              countSequence = 0,
+              countSegment = 0
+            ),
+            Qualification(
+              QualificationKey.DoNotUnderstand,
+              count = 0,
+              countVerified = 8,
+              countSequence = 0,
+              countSegment = 0
+            ),
+            Qualification(QualificationKey.DoNotCare, count = 0, countVerified = 9, countSequence = 0, countSegment = 0)
           )
         )
       )
@@ -1770,29 +1825,68 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val votesVerified = Seq(
         Vote(
           key = VoteKey.Agree,
+          count = 0,
           countVerified = 12,
+          countSequence = 0,
+          countSegment = 0,
           qualifications = Seq(
-            Qualification(QualificationKey.LikeIt, countVerified = 1),
-            Qualification(QualificationKey.Doable, countVerified = 2),
-            Qualification(QualificationKey.PlatitudeAgree, countVerified = 3)
+            Qualification(QualificationKey.LikeIt, count = 0, countVerified = 1, countSequence = 0, countSegment = 0),
+            Qualification(QualificationKey.Doable, count = 0, countVerified = 2, countSequence = 0, countSegment = 0),
+            Qualification(
+              QualificationKey.PlatitudeAgree,
+              count = 0,
+              countVerified = 3,
+              countSequence = 0,
+              countSegment = 0
+            )
           )
         ),
         Vote(
           key = VoteKey.Disagree,
+          count = 0,
           countVerified = 24,
+          countSequence = 0,
+          countSegment = 0,
           qualifications = Seq(
-            Qualification(QualificationKey.NoWay, countVerified = 4),
-            Qualification(QualificationKey.Impossible, countVerified = 5),
-            Qualification(QualificationKey.PlatitudeDisagree, countVerified = 6)
+            Qualification(QualificationKey.NoWay, count = 0, countVerified = 4, countSequence = 0, countSegment = 0),
+            Qualification(
+              QualificationKey.Impossible,
+              count = 0,
+              countVerified = 5,
+              countSequence = 0,
+              countSegment = 0
+            ),
+            Qualification(
+              QualificationKey.PlatitudeDisagree,
+              count = 0,
+              countVerified = 6,
+              countSequence = 0,
+              countSegment = 0
+            )
           )
         ),
         Vote(
           key = VoteKey.Neutral,
+          count = 0,
           countVerified = 36,
+          countSequence = 0,
+          countSegment = 0,
           qualifications = Seq(
-            Qualification(QualificationKey.NoOpinion, countVerified = 7),
-            Qualification(QualificationKey.DoNotUnderstand, countVerified = 8),
-            Qualification(QualificationKey.DoNotCare, countVerified = 9)
+            Qualification(
+              QualificationKey.NoOpinion,
+              count = 0,
+              countVerified = 7,
+              countSequence = 0,
+              countSegment = 0
+            ),
+            Qualification(
+              QualificationKey.DoNotUnderstand,
+              count = 0,
+              countVerified = 8,
+              countSequence = 0,
+              countSegment = 0
+            ),
+            Qualification(QualificationKey.DoNotCare, count = 0, countVerified = 9, countSequence = 0, countSegment = 0)
           )
         )
       )

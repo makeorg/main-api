@@ -65,34 +65,92 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     votes = Seq(
       Vote(
         key = VoteKey.Agree,
+        count = nbVoteAgree,
         countVerified = nbVoteAgree,
+        countSequence = nbVoteAgree,
+        countSegment = nbVoteAgree,
         qualifications = Seq(
           Qualification(
             key = QualificationKey.LikeIt,
             count = nbQualificationLikeIt,
-            countVerified = nbQualificationLikeIt
+            countVerified = nbQualificationLikeIt,
+            countSequence = nbQualificationLikeIt,
+            countSegment = nbQualificationLikeIt
           ),
-          Qualification(key = QualificationKey.Doable, countVerified = nbQualificationDoable),
-          Qualification(key = QualificationKey.PlatitudeAgree, countVerified = nbQualificationPlatitudeAgree)
+          Qualification(
+            key = QualificationKey.Doable,
+            count = nbQualificationDoable,
+            countVerified = nbQualificationDoable,
+            countSequence = nbQualificationDoable,
+            countSegment = nbQualificationDoable
+          ),
+          Qualification(
+            key = QualificationKey.PlatitudeAgree,
+            count = nbQualificationPlatitudeAgree,
+            countVerified = nbQualificationPlatitudeAgree,
+            countSequence = nbQualificationPlatitudeAgree,
+            countSegment = nbQualificationPlatitudeAgree
+          )
         )
       ),
       Vote(
         key = VoteKey.Disagree,
+        count = nbVoteDisagree,
         countVerified = nbVoteDisagree,
+        countSequence = nbVoteDisagree,
+        countSegment = nbVoteDisagree,
         qualifications = Seq(
-          Qualification(key = QualificationKey.NoWay, countVerified = nbQualificationNoWay),
-          Qualification(key = QualificationKey.Impossible, countVerified = nbQualificationImpossible),
-          Qualification(key = QualificationKey.PlatitudeDisagree, countVerified = nbQualificationPlatitudeDisagree)
+          Qualification(
+            key = QualificationKey.NoWay,
+            count = nbQualificationNoWay,
+            countVerified = nbQualificationNoWay,
+            countSequence = nbQualificationNoWay,
+            countSegment = nbQualificationNoWay
+          ),
+          Qualification(
+            key = QualificationKey.Impossible,
+            count = nbQualificationImpossible,
+            countVerified = nbQualificationImpossible,
+            countSequence = nbQualificationImpossible,
+            countSegment = nbQualificationImpossible
+          ),
+          Qualification(
+            key = QualificationKey.PlatitudeDisagree,
+            count = nbQualificationPlatitudeDisagree,
+            countVerified = nbQualificationPlatitudeDisagree,
+            countSequence = nbQualificationPlatitudeDisagree,
+            countSegment = nbQualificationPlatitudeDisagree
+          )
         )
       ),
       Vote(
         key = VoteKey.Neutral,
         count = nbVoteNeutral,
         countVerified = nbVoteNeutral,
+        countSequence = nbVoteNeutral,
+        countSegment = nbVoteNeutral,
         qualifications = Seq(
-          Qualification(key = QualificationKey.DoNotUnderstand, countVerified = nbQualificationDoNotUnderstand),
-          Qualification(key = QualificationKey.NoOpinion, countVerified = nbQualificationNoOpinion),
-          Qualification(key = QualificationKey.DoNotCare, countVerified = nbQualificationDoNotCare)
+          Qualification(
+            key = QualificationKey.DoNotUnderstand,
+            count = nbQualificationDoNotUnderstand,
+            countVerified = nbQualificationDoNotUnderstand,
+            countSequence = nbQualificationDoNotUnderstand,
+            countSegment = nbQualificationDoNotUnderstand
+          ),
+          Qualification(
+            key = QualificationKey.NoOpinion,
+            count = nbQualificationNoOpinion,
+            countVerified = nbQualificationNoOpinion,
+            countSequence = nbQualificationNoOpinion,
+            countSegment = nbQualificationNoOpinion
+          ),
+          Qualification(
+            key = QualificationKey.DoNotCare,
+            count = nbQualificationDoNotCare,
+            countVerified = nbQualificationDoNotCare,
+            countSequence = nbQualificationDoNotCare,
+            countSegment = nbQualificationDoNotCare
+          )
         )
       )
     ),
@@ -137,69 +195,62 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   feature("counts") {
     scenario("count vote when proposal has no vote") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).neutralCount should be(0)
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).neutralCount should be(0)
     }
 
     scenario("count vote when proposal has vote") {
-      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).neutralCount should be(20)
+      ScoreCounts.fromSequenceVotes(proposalWithVote.votes).neutralCount should be(20)
     }
 
     scenario("count qualification when proposal has no vote") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).realistic() should be(0)
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).realistic() should be(0)
     }
 
     scenario("count vote when proposal has vote and qualification") {
-      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).loveCount should be(10)
+      ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).loveCount should be(10)
     }
   }
 
   feature("scores") {
     scenario("calculate engagement") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).engagement() should equal(0.66 +- 0.01)
-      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).engagement() should equal(0.87 +- 0.01)
-      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).engagement() should equal(
-        0.87 +- 0.01
-      )
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).engagement() should equal(0.66 +- 0.01)
+      ScoreCounts.fromSequenceVotes(proposalWithVote.votes).engagement() should equal(0.87 +- 0.01)
+      ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).engagement() should equal(0.87 +- 0.01)
       scoreCounts.engagement() should equal(0.79 +- 0.01)
     }
 
     scenario("calculate adhesion") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).adhesion() should equal(0.0)
-      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).adhesion() should equal(0.0)
-      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).adhesion() should equal(
-        -0.14 +- 0.01
-      )
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).adhesion() should equal(0.0)
+      ScoreCounts.fromSequenceVotes(proposalWithVote.votes).adhesion() should equal(0.0)
+      ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).adhesion() should equal(-0.14 +- 0.01)
       scoreCounts.adhesion() should equal(0.41 +- 0.01)
     }
 
     scenario("calculate realistic") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).realistic() should equal(0.0)
-      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).realistic() should equal(0.0)
-      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).realistic() should equal(
-        0.07 +- 0.01
-      )
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).realistic() should equal(0.0)
+      ScoreCounts.fromSequenceVotes(proposalWithVote.votes).realistic() should equal(0.0)
+      ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).realistic() should equal(0.07 +- 0.01)
       scoreCounts.realistic() should equal(0.23 +- 0.01)
     }
 
     scenario("calculate topScore from proposal") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).topScore() should equal(-1.84 +- 0.01)
-      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).topScore() should equal(-0.62 +- 0.01)
-      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified).topScore() should equal(
-        -4.16 +- 0.01
-      )
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).topScore() should equal(-1.84 +- 0.01)
+      ScoreCounts.fromSequenceVotes(proposalWithVote.votes).topScore() should equal(-0.62 +- 0.01)
+      ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).topScore() should equal(-4.16 +- 0.01)
       scoreCounts.topScore() should equal(-2.80 +- 0.01)
     }
 
     scenario("calculate controversy from proposal") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).controversy() should equal(0.01 +- 0.01)
-      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).controversy() should equal(0.01 +- 0.01)
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).controversy() should equal(0.01 +- 0.01)
+      ScoreCounts.fromSequenceVotes(proposalWithVote.votes).controversy() should equal(0.01 +- 0.01)
       scoreCounts.controversy() should equal(0.17 +- 0.01)
     }
 
     scenario("calculate rejection") {
-      ScoreCounts(proposalWithoutvote.votes, _.countVerified, _.countVerified).rejection() should equal(0.0)
-      ScoreCounts(proposalWithVote.votes, _.countVerified, _.countVerified).rejection() should equal(0.0)
-      ScoreCounts(proposalWithVoteandQualification.votes, _.countVerified, _.countVerified)
+      ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).rejection() should equal(0.0)
+      ScoreCounts.fromSequenceVotes(proposalWithVote.votes).rejection() should equal(0.0)
+      ScoreCounts
+        .fromSequenceVotes(proposalWithVoteandQualification.votes)
         .rejection() should equal(0.14 +- 0.01)
       scoreCounts.rejection() should equal(-0.41 +- 0.01)
     }
@@ -227,7 +278,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
           nbQualificationPlatitudeDisagree = rgen.nextInt(1 + nbVoteDisagree / 3)
         )
 
-        val counts = ScoreCounts(proposal.votes, _.countVerified, _.countVerified)
+        val counts = ScoreCounts.fromSequenceVotes(proposal.votes)
         val score = counts.topScore()
         val confidence_interval = counts.topScoreConfidenceInterval()
         val sampleScore = counts.sampleTopScore()
@@ -250,7 +301,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     scenario("news proposal") {
       val configuration = SequenceConfiguration(SequenceId("fake"), QuestionId("fake-too"))
       ProposalScorerHelper
-        .sequencePool(configuration, proposalWithoutvote.votes, Accepted, _.countVerified, _.countVerified) should be(
+        .sequencePool(configuration, Accepted, ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes)) should be(
         SequencePool.New
       )
     }
@@ -276,107 +327,95 @@ class ProposalScorerHelperTest extends MakeUnitTest {
                        doable: Int,
                        impossible: Int): Seq[Qualification] =
       Seq(
-        Qualification(PlatitudeAgree, 0, platitudeAgree),
-        Qualification(PlatitudeDisagree, 0, platitudeDisagree),
-        Qualification(LikeIt, 0, likeIt),
-        Qualification(NoWay, 0, noWay),
-        Qualification(Doable, 0, doable),
-        Qualification(Impossible, 0, impossible)
+        Qualification(PlatitudeAgree, 0, 0, platitudeAgree, 0),
+        Qualification(PlatitudeDisagree, 0, 0, platitudeDisagree, 0),
+        Qualification(LikeIt, 0, 0, likeIt, 0),
+        Qualification(NoWay, 0, 0, noWay, 0),
+        Qualification(Doable, 0, 0, doable, 0),
+        Qualification(Impossible, 0, 0, impossible, 0)
       )
     scenario("votes") {
-      ScoreCounts(votes(1, 2, 3), _.countVerified, _.countVerified).votes shouldBe 6
-      ScoreCounts(votes(10, 20, 30), _.countVerified, _.countVerified).votes shouldBe 60
-      ScoreCounts(votes(17, 15, 10), _.countVerified, _.countVerified).votes shouldBe 42
+      ScoreCounts.fromSequenceVotes(votes(1, 2, 3)).votes shouldBe 6
+      ScoreCounts.fromSequenceVotes(votes(10, 20, 30)).votes shouldBe 60
+      ScoreCounts.fromSequenceVotes(votes(17, 15, 10)).votes shouldBe 42
     }
 
     scenario("agreeCount") {
-      ScoreCounts(votes(42, 0, 1), _.countVerified, _.countVerified).agreeCount shouldBe 42
-      ScoreCounts(votes(0, 1, 2), _.countVerified, _.countVerified).agreeCount shouldBe 0
-      ScoreCounts(votes(1, 564, 126), _.countVerified, _.countVerified).agreeCount shouldBe 1
+      ScoreCounts.fromSequenceVotes(votes(42, 0, 1)).agreeCount shouldBe 42
+      ScoreCounts.fromSequenceVotes(votes(0, 1, 2)).agreeCount shouldBe 0
+      ScoreCounts.fromSequenceVotes(votes(1, 564, 126)).agreeCount shouldBe 1
     }
 
     scenario("disagreeCount") {
-      ScoreCounts(votes(42, 0, 1), _.countVerified, _.countVerified).disagreeCount shouldBe 0
-      ScoreCounts(votes(0, 1, 2), _.countVerified, _.countVerified).disagreeCount shouldBe 1
-      ScoreCounts(votes(1, 564, 126), _.countVerified, _.countVerified).disagreeCount shouldBe 564
+      ScoreCounts.fromSequenceVotes(votes(42, 0, 1)).disagreeCount shouldBe 0
+      ScoreCounts.fromSequenceVotes(votes(0, 1, 2)).disagreeCount shouldBe 1
+      ScoreCounts.fromSequenceVotes(votes(1, 564, 126)).disagreeCount shouldBe 564
     }
 
     scenario("neutralCount") {
-      ScoreCounts(votes(42, 0, 0), _.countVerified, _.countVerified).neutralCount shouldBe 0
-      ScoreCounts(votes(0, 1, 2), _.countVerified, _.countVerified).neutralCount shouldBe 2
-      ScoreCounts(votes(1, 564, 126), _.countVerified, _.countVerified).neutralCount shouldBe 126
+      ScoreCounts.fromSequenceVotes(votes(42, 0, 0)).neutralCount shouldBe 0
+      ScoreCounts.fromSequenceVotes(votes(0, 1, 2)).neutralCount shouldBe 2
+      ScoreCounts.fromSequenceVotes(votes(1, 564, 126)).neutralCount shouldBe 126
     }
 
     scenario("platitudeAgreeCount") {
-      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).platitudeAgreeCount shouldBe 0
-      ScoreCounts(votes(0, 0, 0, qualifications(42, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).platitudeAgreeCount shouldBe 42
-      ScoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)), _.countVerified, _.countVerified).platitudeAgreeCount shouldBe 500
+      ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).platitudeAgreeCount shouldBe 0
+      ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(42, 0, 0, 0, 0, 0))).platitudeAgreeCount shouldBe 42
+      ScoreCounts
+        .fromSequenceVotes(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)))
+        .platitudeAgreeCount shouldBe 500
     }
 
     scenario("platitudeDisagreeCount") {
-      ScoreCounts(
-        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)),
-        _.countVerified,
-        _.countVerified
-      ).platitudeDisagreeCount shouldBe 0
-      ScoreCounts(
-        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 42, 0, 0, 0, 0)),
-        _.countVerified,
-        _.countVerified
-      ).platitudeDisagreeCount shouldBe 42
-      ScoreCounts(
-        votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)),
-        _.countVerified,
-        _.countVerified
-      ).platitudeDisagreeCount shouldBe 12
+      ScoreCounts
+        .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
+        .platitudeDisagreeCount shouldBe 0
+      ScoreCounts
+        .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 42, 0, 0, 0, 0)))
+        .platitudeDisagreeCount shouldBe 42
+      ScoreCounts
+        .fromSequenceVotes(votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)))
+        .platitudeDisagreeCount shouldBe 12
     }
 
     scenario("loveCount") {
-      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).loveCount shouldBe 0
-      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 42, 0, 0, 0)), _.countVerified, _.countVerified).loveCount shouldBe 42
-      ScoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)), _.countVerified, _.countVerified).loveCount shouldBe 423
+      ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).loveCount shouldBe 0
+      ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 42, 0, 0, 0))).loveCount shouldBe 42
+      ScoreCounts
+        .fromSequenceVotes(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)))
+        .loveCount shouldBe 423
     }
 
     scenario("hateCount") {
-      ScoreCounts(
-        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)),
-        _.countVerified,
-        _.countVerified
-      ).hateCount shouldBe 0
-      ScoreCounts(
-        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 42, 0, 0)),
-        _.countVerified,
-        _.countVerified
-      ).hateCount shouldBe 42
-      ScoreCounts(
-        votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)),
-        _.countVerified,
-        _.countVerified
-      ).hateCount shouldBe 14
+      ScoreCounts
+        .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
+        .hateCount shouldBe 0
+      ScoreCounts
+        .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 42, 0, 0)))
+        .hateCount shouldBe 42
+      ScoreCounts
+        .fromSequenceVotes(votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)))
+        .hateCount shouldBe 14
     }
 
     scenario("doableCount") {
-      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0)), _.countVerified, _.countVerified).doableCount shouldBe 0
-      ScoreCounts(votes(0, 0, 0, qualifications(0, 0, 0, 0, 42, 0)), _.countVerified, _.countVerified).doableCount shouldBe 42
-      ScoreCounts(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)), _.countVerified, _.countVerified).doableCount shouldBe 324
+      ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).doableCount shouldBe 0
+      ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 42, 0))).doableCount shouldBe 42
+      ScoreCounts
+        .fromSequenceVotes(votes(1102, 564, 126, qualifications(500, 12, 423, 14, 324, 210)))
+        .doableCount shouldBe 324
     }
 
     scenario("impossibleCount") {
-      ScoreCounts(
-        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)),
-        _.countVerified,
-        _.countVerified
-      ).impossibleCount shouldBe 0
-      ScoreCounts(
-        votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 42)),
-        _.countVerified,
-        _.countVerified
-      ).impossibleCount shouldBe 42
-      ScoreCounts(
-        votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)),
-        _.countVerified,
-        _.countVerified
-      ).impossibleCount shouldBe 210
+      ScoreCounts
+        .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
+        .impossibleCount shouldBe 0
+      ScoreCounts
+        .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 42)))
+        .impossibleCount shouldBe 42
+      ScoreCounts
+        .fromSequenceVotes(votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)))
+        .impossibleCount shouldBe 210
     }
 
   }

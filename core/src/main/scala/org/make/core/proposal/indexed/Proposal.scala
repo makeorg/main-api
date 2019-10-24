@@ -242,10 +242,10 @@ object IndexedOrganisationInfo {
 
 final case class IndexedVote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
                              override val key: VoteKey,
-                             override val count: Int = 0,
-                             override val countVerified: Int = 0,
-                             override val countSequence: Int = 0,
-                             override val countSegment: Int = 0,
+                             override val count: Int,
+                             override val countVerified: Int,
+                             override val countSequence: Int,
+                             override val countSegment: Int,
                              override val qualifications: Seq[IndexedQualification])
     extends BaseVote
 
@@ -262,14 +262,16 @@ object IndexedVote {
       countSegment = vote.countSegment,
       qualifications = vote.qualifications.map(IndexedQualification.apply)
     )
+
+  def empty(key: VoteKey): IndexedVote = IndexedVote(key, 0, 0, 0, 0, Seq.empty)
 }
 
 final case class IndexedQualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
                                       override val key: QualificationKey,
-                                      override val count: Int = 0,
-                                      override val countVerified: Int = 0,
-                                      override val countSequence: Int = 0,
-                                      override val countSegment: Int = 0)
+                                      override val count: Int,
+                                      override val countVerified: Int,
+                                      override val countSequence: Int,
+                                      override val countSegment: Int)
     extends BaseQualification
 
 object IndexedQualification {
@@ -284,6 +286,8 @@ object IndexedQualification {
       countSequence = qualification.countSequence,
       countSegment = qualification.countSegment
     )
+
+  def empty(key: QualificationKey): IndexedQualification = IndexedQualification(key, 0, 0, 0, 0)
 }
 
 final case class IndexedScores(boost: Double = 0,

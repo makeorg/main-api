@@ -92,7 +92,15 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       createdAt = createdAt,
       updatedAt = None,
       votes = votes.map {
-        case (k, amount) => IndexedVote(key = k, count = amount, countVerified = amount, qualifications = Seq.empty)
+        case (k, amount) =>
+          IndexedVote(
+            key = k,
+            count = amount,
+            countVerified = amount,
+            countSequence = amount,
+            countSegment = 0,
+            qualifications = Seq.empty
+          )
       }.toSeq,
       votesCount = votes.values.sum,
       votesVerifiedCount = votes.values.sum,
@@ -156,9 +164,23 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       updatedAt = None,
       votes = votes.map {
         case (k, (amount, qualifs)) =>
-          IndexedVote(key = k, countVerified = amount, qualifications = qualifs.map {
-            case (qualifKey, count) => IndexedQualification(key = qualifKey, countVerified = count)
-          }.toSeq)
+          IndexedVote(
+            key = k,
+            count = 0,
+            countVerified = amount,
+            countSequence = amount,
+            countSegment = 0,
+            qualifications = qualifs.map {
+              case (qualifKey, count) =>
+                IndexedQualification(
+                  key = qualifKey,
+                  count = 0,
+                  countVerified = count,
+                  countSequence = count,
+                  countSegment = 0
+                )
+            }.toSeq
+          )
       }.toSeq,
       votesCount = votes.values.map(_._1).sum,
       votesVerifiedCount = votes.values.map(_._1).sum,
@@ -218,7 +240,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = proposals,
           newProposals = Seq.empty,
           testedProposals = Seq.empty,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       selectedProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -243,7 +266,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         includedProposals = included,
         newProposals = Seq.empty,
         testedProposals = proposals,
-        votedProposals = Seq.empty
+        votedProposals = Seq.empty,
+        userSegment = None
       )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -268,7 +292,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize - 1)
@@ -299,7 +324,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = included,
           newProposals = Seq.empty,
           testedProposals = proposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -322,7 +348,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       selectedProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -340,7 +367,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = banditProposalIds
+          votedProposals = banditProposalIds,
+          userSegment = None
         )
 
       selectedProposals.size should be(0)
@@ -357,7 +385,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = banditProposalIds
+          votedProposals = banditProposalIds,
+          userSegment = None
         )
 
       selectedProposals.size should be(0)
@@ -374,7 +403,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = newProposals,
           testedProposals = Seq.empty,
-          votedProposals = banditProposalIds
+          votedProposals = banditProposalIds,
+          userSegment = None
         )
 
       selectedProposals.size should be(0)
@@ -391,7 +421,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = newProposals,
           testedProposals = Seq.empty,
-          votedProposals = banditProposalIds
+          votedProposals = banditProposalIds,
+          userSegment = None
         )
 
       selectedProposals.size should be(0)
@@ -413,7 +444,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         includedProposals = included,
         newProposals = Seq.empty,
         testedProposals = proposals,
-        votedProposals = Seq.empty
+        votedProposals = Seq.empty,
+        userSegment = None
       )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -440,7 +472,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = proposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize - 1)
@@ -473,7 +506,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = included,
           newProposals = Seq.empty,
           testedProposals = proposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -504,7 +538,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = newProposals,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       selectedProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -535,7 +570,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = included,
           newProposals = newProposals,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -567,7 +603,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = newProposals,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize - 1)
@@ -605,7 +642,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = included,
           newProposals = newProposals,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -643,7 +681,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = newProposalsRandom,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(banditSequenceConfiguration.sequenceSize)
@@ -689,52 +728,12 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = newProposals,
           testedProposals = testedProposalsRandom,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       sequenceProposals.size should be(12)
       sequenceProposals.head.id should be(ProposalId("testedProposal6"))
-    }
-  }
-
-  feature("bandit: allocate votes inversely proportional to current vote count") {
-    scenario("sequential vote counts") {
-      val testedProposals: Seq[IndexedProposal] = (1 to 10).map { i =>
-        fakeProposal(
-          ProposalId(s"testedProposal$i"),
-          Map(VoteKey.Agree -> 100 * i),
-          SequencePool.Tested,
-          None,
-          DateHelper.now()
-        )
-      }
-
-      val counts = new mutable.HashMap[ProposalId, Int]() { override def default(key: ProposalId) = 0 }
-
-      InverseWeightedRandom.random = new Random(0)
-
-      val samples = 10000
-      for (_ <- 1 to samples) {
-        banditSelectionAlgorithm
-          .chooseProposals(proposals = testedProposals, count = 1, algorithm = InverseWeightedRandom)
-          .foreach(p => counts(p.id) += 1)
-      }
-
-      val proportions: mutable.Map[ProposalId, Double] = counts.map {
-        case (i, p) => (i, p.toDouble / samples)
-      }
-
-      val confidenceInterval: Double = 0.015
-      proportions(testedProposals.head.id) should equal(0.34 +- confidenceInterval)
-      proportions(testedProposals(1).id) should equal(0.17 +- confidenceInterval)
-      proportions(testedProposals(2).id) should equal(0.11 +- confidenceInterval)
-      proportions(testedProposals(3).id) should equal(0.09 +- confidenceInterval)
-      proportions(testedProposals(4).id) should equal(0.07 +- confidenceInterval)
-      proportions(testedProposals(5).id) should equal(0.06 +- confidenceInterval)
-      proportions(testedProposals(6).id) should equal(0.05 +- confidenceInterval)
-      proportions(testedProposals(7).id) should equal(0.04 +- confidenceInterval)
-      proportions(testedProposals(8).id) should equal(0.04 +- confidenceInterval)
-      proportions(testedProposals(9).id) should equal(0.03 +- confidenceInterval)
     }
   }
 
@@ -782,7 +781,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       )
 
       val testProposal = fakeProposalQualif(ProposalId("tested"), votes, SequencePool.Tested)
-      val counts = ScoreCounts(testProposal.votes, _.countVerified, _.countVerified)
+      val counts = ScoreCounts.fromSequenceVotes(testProposal.votes)
       val testProposalScore = counts.topScore()
 
       ProposalScorerHelper.random = new MersenneTwister(0)
@@ -806,7 +805,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       val testProposal: IndexedProposal =
         fakeProposalQualif(ProposalId("tested"), votes, SequencePool.Tested)
 
-      val scores = ScoreCounts(testProposal.votes, _.countVerified, _.countVerified)
+      val scores = ScoreCounts.fromSequenceVotes(testProposal.votes)
 
       val testProposalScore: Double = scores.topScore()
       val testProposalScoreSample: Double = scores.sampleTopScore()
@@ -842,14 +841,17 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         .map(
           p =>
             banditSelectionAlgorithm
-              .ScoredProposal(p, ScoreCounts(p.votes, _.countVerified, _.countVerified).sampleTopScore())
+              .ScoredProposal(p, ScoreCounts.fromSequenceVotes(p.votes).sampleTopScore())
         )
         .sortWith(_.score > _.score)
         .map(sp => sp.proposal.id)
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 10000)
-          .map(_ => banditSelectionAlgorithm.chooseProposalBandit(banditSequenceConfiguration, testedProposals).id -> 1)
+          .map(
+            _ =>
+              banditSelectionAlgorithm.chooseProposalBandit(banditSequenceConfiguration, testedProposals, None).id -> 1
+          )
           .groupBy(_._1)
           .mapValues(_.map(_._2).sum)
           .toSeq
@@ -897,7 +899,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[IndexedProposal] =
-        banditSelectionAlgorithm.chooseTestedProposals(banditSequenceConfiguration, testedProposals, 10)
+        banditSelectionAlgorithm.chooseTestedProposals(banditSequenceConfiguration, testedProposals, 10, None)
       chosen.length should be(10)
     }
 
@@ -949,7 +951,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[IndexedProposal] =
-        banditSelectionAlgorithm.chooseTestedProposals(noBanditConfiguration, testedProposals, 10)
+        banditSelectionAlgorithm.chooseTestedProposals(noBanditConfiguration, testedProposals, 10, None)
       chosen.length should be(10)
     }
 
@@ -1001,7 +1003,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ProposalScorerHelper.random = new MersenneTwister(0)
 
       val chosen: Seq[IndexedProposal] =
-        banditSelectionAlgorithm.chooseTestedProposals(noBanditRatioConfiguration, testedProposals, 10)
+        banditSelectionAlgorithm.chooseTestedProposals(noBanditRatioConfiguration, testedProposals, 10, None)
       chosen.length should be(10)
     }
   }
@@ -1026,7 +1028,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, SequencePool.Tested)
       }
 
-      val champion = banditSelectionAlgorithm.chooseChampion(testedProposals)
+      val champion = banditSelectionAlgorithm.chooseChampion(testedProposals, None)
 
       champion.id.value should be("testedProposal20")
     }
@@ -1051,7 +1053,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         (ideaId, fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, SequencePool.Tested, Some(ideaId)))
       }.toMap
 
-      val ideas = banditSelectionAlgorithm.selectIdeasWithChampions(ideasWithChampion, 5)
+      val ideas = banditSelectionAlgorithm.selectIdeasWithChampions(ideasWithChampion, 5, None)
 
       ideas.length should be(5)
 
@@ -1063,7 +1065,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       val samples = 1000
       for (_ <- 1 to samples) {
         banditSelectionAlgorithm
-          .selectIdeasWithChampions(ideasWithChampion, 5)
+          .selectIdeasWithChampions(ideasWithChampion, 5, None)
           .foreach(counts(_) += 1)
       }
 
@@ -1096,7 +1098,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         (ideaId, fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, SequencePool.Tested, Some(ideaId)))
       }.toMap
 
-      val ideas = banditSelectionAlgorithm.selectControversialIdeasWithChampions(ideasWithChampion, 5)
+      val ideas = banditSelectionAlgorithm.selectControversialIdeasWithChampions(ideasWithChampion, 5, None)
 
       ideas.length should be(5)
 
@@ -1108,7 +1110,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       val samples = 1000
       for (_ <- 1 to samples) {
         banditSelectionAlgorithm
-          .selectControversialIdeasWithChampions(ideasWithChampion, 5)
+          .selectControversialIdeasWithChampions(ideasWithChampion, 5, None)
           .foreach(counts(_) += 1)
       }
 
@@ -1162,7 +1164,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       banditSelectionAlgorithm.random = new Random(0)
 
       val chosen: Seq[IndexedProposal] =
-        banditSelectionAlgorithm.chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10)
+        banditSelectionAlgorithm.chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10, None)
       chosen.length should be(10)
 
       val counts = new mutable.HashMap[ProposalId, Int]() {
@@ -1172,7 +1174,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       val samples = 1000
       for (_ <- 1 to samples) {
         banditSelectionAlgorithm
-          .chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10)
+          .chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10, None)
           .foreach(p => counts(p.id) += 1)
       }
 
@@ -1242,7 +1244,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
       chosen.length should be(10)
     }
@@ -1256,7 +1259,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = Seq.empty,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
       chosen.length should be(0)
     }
@@ -1271,7 +1275,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = proposals,
           newProposals = Seq.empty,
           testedProposals = Seq.empty,
-          votedProposals = Seq.empty
+          votedProposals = Seq.empty,
+          userSegment = None
         )
 
       selectedProposals.size should be(roundRobinSequenceConfiguration.sequenceSize)
@@ -1289,7 +1294,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = roundRobinProposalIds
+          votedProposals = roundRobinProposalIds,
+          userSegment = None
         )
 
       selectedProposals.size should be(1)
@@ -1307,7 +1313,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = roundRobinProposalIds
+          votedProposals = roundRobinProposalIds,
+          userSegment = None
         )
 
       selectedProposals.size should be(0)
@@ -1331,7 +1338,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           includedProposals = Seq.empty,
           newProposals = Seq.empty,
           testedProposals = testedProposals,
-          votedProposals = roundRobinProposalIds
+          votedProposals = roundRobinProposalIds,
+          userSegment = None
         )
 
       selectedProposals.size should be(roundRobinSequenceConfiguration.sequenceSize)

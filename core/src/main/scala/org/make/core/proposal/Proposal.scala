@@ -187,10 +187,10 @@ trait BaseQualification {
 
 final case class Qualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
                                override val key: QualificationKey,
-                               override val count: Int = 0,
-                               override val countVerified: Int = 0,
-                               override val countSequence: Int = 0,
-                               override val countSegment: Int = 0)
+                               override val count: Int,
+                               override val countVerified: Int,
+                               override val countSequence: Int,
+                               override val countSegment: Int)
     extends BaseQualification
 
 object Qualification {
@@ -207,16 +207,16 @@ trait BaseVote {
   def count: Int
   def countVerified: Int
   def countSequence: Int
-  def countSegment: Int = 0
+  def countSegment: Int
   def qualifications: Seq[BaseQualification]
 }
 
 final case class Vote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
                       override val key: VoteKey,
-                      override val count: Int = 0,
-                      override val countVerified: Int = 0,
-                      override val countSequence: Int = 0,
-                      override val countSegment: Int = 0,
+                      override val count: Int,
+                      override val countVerified: Int,
+                      override val countSequence: Int,
+                      override val countSegment: Int,
                       override val qualifications: Seq[Qualification])
     extends BaseVote
 
@@ -226,6 +226,8 @@ object Vote {
 
   implicit val voteFormatter: RootJsonFormat[Vote] =
     DefaultJsonProtocol.jsonFormat6(Vote.apply)
+
+  def empty(key: VoteKey): Vote = Vote(key, 0, 0, 0, 0, Seq.empty)
 }
 
 sealed trait VoteKey { val shortName: String }
