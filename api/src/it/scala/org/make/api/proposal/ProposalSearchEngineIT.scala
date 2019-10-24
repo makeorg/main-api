@@ -175,6 +175,7 @@ class ProposalSearchEngineIT
     votesSegmentCount = 3,
     toEnrich = false,
     scores = IndexedScores.empty,
+    segmentScores = IndexedScores.empty,
     context = Some(
       IndexedContext(operation = None, location = None, question = None, source = None, getParameters = Seq.empty)
     ),
@@ -198,7 +199,8 @@ class ProposalSearchEngineIT
     ideaId = None,
     operationId = None,
     question = None,
-    sequencePool = SequencePool.New,
+    sequencePool = SequencePool.Tested,
+    sequenceSegmentPool = SequencePool.Tested,
     initialProposal = false,
     refusalReason = None,
     operationKind = None,
@@ -250,6 +252,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 287,
       toEnrich = true,
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 84),
+      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -272,6 +275,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.New,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -321,6 +325,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 310,
       toEnrich = true,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -343,6 +348,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -392,6 +398,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 127,
       toEnrich = true,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       context = Some(
@@ -414,6 +421,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -465,6 +473,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 353,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -487,6 +496,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -536,6 +546,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 368,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -558,6 +569,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -609,6 +621,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 305,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq(),
@@ -629,6 +642,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -678,6 +692,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 286,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq(),
@@ -708,6 +723,7 @@ class ProposalSearchEngineIT
         )
       ),
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -757,6 +773,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 162,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq(),
@@ -787,6 +804,7 @@ class ProposalSearchEngineIT
         )
       ),
       sequencePool = SequencePool.Tested,
+      sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -841,6 +859,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 178,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -863,6 +882,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -914,6 +934,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 131,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -936,6 +957,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -987,6 +1009,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 356,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -1009,6 +1032,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -1060,6 +1084,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 347,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -1082,6 +1107,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -1131,6 +1157,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 267,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -1153,6 +1180,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -1202,6 +1230,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 204,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -1224,6 +1253,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -1274,6 +1304,7 @@ class ProposalSearchEngineIT
       votesSegmentCount = 254,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -1296,6 +1327,7 @@ class ProposalSearchEngineIT
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
+      sequenceSegmentPool = SequencePool.Excluded,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -1536,6 +1568,20 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
         results.results.size should be(1)
         results.results.foreach(_.segment should contain("ubik"))
+      }
+    }
+  }
+
+  feature("search proposals by sequence segment pool") {
+    scenario("search for pool new") {
+      val query = SearchQuery(
+        filters = Some(SearchFilters(sequenceSegmentPool = Some(SequencePoolSearchFilter(SequencePool.New.shortName))))
+      )
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
+        results.results.size should be(1)
+        results.results.foreach(_.sequenceSegmentPool should be(SequencePool.New))
+        results.results.foreach(_.id.value should be("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"))
       }
     }
   }

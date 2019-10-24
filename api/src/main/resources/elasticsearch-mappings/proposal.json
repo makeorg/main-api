@@ -1021,6 +1021,51 @@
             }
           }
         },
+        "segmentScores": {
+          "type": "object",
+          "properties": {
+            "boost": {
+              "type": "double",
+              "index": true
+            },
+            "engagement": {
+              "type": "double",
+              "index": true
+            },
+            "agreement": {
+              "type": "double",
+              "index": true
+            },
+            "adhesion": {
+              "type": "double",
+              "index": true
+            },
+            "realistic": {
+              "type": "double",
+              "index": true
+            },
+            "platitude": {
+              "type": "double",
+              "index": true
+            },
+            "topScore": {
+              "type": "double",
+              "index": true
+            },
+            "controversy": {
+              "type": "double",
+              "index": true
+            },
+            "rejection": {
+              "type": "double",
+              "index": true
+            },
+            "scoreUpperBound": {
+              "type": "double",
+              "index": true
+            }
+          }
+        },
         "slug": {
           "type": "keyword",
           "index": true
@@ -1155,6 +1200,10 @@
           "index": true
         },
         "sequencePool": {
+          "type": "keyword",
+          "index": true
+        },
+        "sequenceSegmentPool": {
           "type": "keyword",
           "index": true
         },

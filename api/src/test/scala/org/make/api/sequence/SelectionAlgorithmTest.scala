@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit
 
 import org.apache.commons.math3.random.MersenneTwister
 import org.make.api.MakeUnitTest
+import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.proposal._
 import org.make.api.technical.MakeRandom
 import org.make.core.idea.IdeaId
@@ -99,6 +100,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       votesSegmentCount = votes.values.sum,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq.empty,
@@ -130,6 +132,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ideaId = idea,
       operationId = None,
       sequencePool = sequencePool,
+      sequenceSegmentPool = sequencePool,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -163,6 +166,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       votesSegmentCount = votes.values.map(_._1).sum,
       toEnrich = false,
       scores = IndexedScores.empty,
+      segmentScores = IndexedScores.empty,
       context = None,
       trending = None,
       labels = Seq.empty,
@@ -194,6 +198,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ideaId = idea,
       operationId = None,
       sequencePool = sequencePool,
+      sequenceSegmentPool = sequencePool,
       initialProposal = false,
       refusalReason = None,
       operationKind = None,
@@ -777,11 +782,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       )
 
       val testProposal = fakeProposalQualif(ProposalId("tested"), votes, SequencePool.Tested)
-      val testProposalScore = ProposalScorerHelper.topScore(testProposal.votes)
+      val counts = ScoreCounts(testProposal.votes, _.countVerified, _.countVerified)
+      val testProposalScore = counts.topScore()
 
       ProposalScorerHelper.random = new MersenneTwister(0)
       val trials = 1000
-      val samples = (1 to trials).map(_ => ProposalScorerHelper.sampleTopScore(testProposal.votes))
+      val samples =
+        (1 to trials).map(_ => counts.sampleTopScore())
 
       testProposal.votes.map(_.countVerified).sum should be(100)
       samples.max should be > testProposalScore + 0.1
@@ -795,11 +802,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         VoteKey.Disagree -> (0 -> Map.empty),
         VoteKey.Neutral -> (0 -> Map.empty)
       )
+
       val testProposal: IndexedProposal =
         fakeProposalQualif(ProposalId("tested"), votes, SequencePool.Tested)
 
-      val testProposalScore: Double = ProposalScorerHelper.topScore(testProposal.votes)
-      val testProposalScoreSample: Double = ProposalScorerHelper.sampleTopScore(testProposal.votes)
+      val scores = ScoreCounts(testProposal.votes, _.countVerified, _.countVerified)
+
+      val testProposalScore: Double = scores.topScore()
+      val testProposalScoreSample: Double = scores.sampleTopScore()
 
       testProposalScore should be > -10.0
       testProposalScoreSample should be > -10.0
@@ -829,7 +839,11 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ProposalScorerHelper.random = new MersenneTwister(0)
 
       val sortedProposals: Seq[ProposalId] = testedProposals
-        .map(p => banditSelectionAlgorithm.ScoredProposal(p, ProposalScorerHelper.sampleTopScore(p.votes)))
+        .map(
+          p =>
+            banditSelectionAlgorithm
+              .ScoredProposal(p, ScoreCounts(p.votes, _.countVerified, _.countVerified).sampleTopScore())
+        )
         .sortWith(_.score > _.score)
         .map(sp => sp.proposal.id)
 

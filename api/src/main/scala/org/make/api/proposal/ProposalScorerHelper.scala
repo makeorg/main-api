@@ -26,7 +26,7 @@ import org.make.api.sequence.SequenceConfiguration
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal.indexed.SequencePool
-import org.make.core.proposal.{BaseVote, ProposalStatus, QualificationKey, VoteKey}
+import org.make.core.proposal.{BaseQualification, BaseVote, ProposalStatus, QualificationKey, VoteKey}
 
 object ProposalScorerHelper extends StrictLogging {
   var random: RandomGenerator = new MersenneTwister()
@@ -52,225 +52,231 @@ object ProposalScorerHelper extends StrictLogging {
                          loveCount: Int,
                          hateCount: Int,
                          doableCount: Int,
-                         impossibleCount: Int)
+                         impossibleCount: Int) {
 
-  def totalVoteCount(votes: Seq[BaseVote]): Int = {
-    votes.map(_.count).sum
-  }
+    def engagement(): Double = {
+      (agreeCount + disagreeCount + 2 * ScoreCounts.VotePrior) / (votes + ScoreCounts.CountPrior).toDouble
+    }
 
-  def voteCount(votes: Seq[BaseVote], voteKey: VoteKey): Int = {
-    votes.filter(_.key == voteKey).map(_.count).sum
-  }
+    def agreement(): Double = {
+      (agreeCount + ScoreCounts.VotePrior) / (votes + ScoreCounts.CountPrior).toDouble
+    }
 
-  def qualificationCount(votes: Seq[BaseVote], voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
-    votes
-      .filter(_.key == voteKey)
-      .flatMap(_.qualifications.filter(_.key == qualificationKey).map(_.count))
-      .sum
-  }
+    def adhesion(): Double = {
+      (loveCount - hateCount) / (agreeCount + disagreeCount + ScoreCounts.CountPrior).toDouble
+    }
 
-  def verifiedTotalVoteCount(votes: Seq[BaseVote]): Int = {
-    votes.map(_.countVerified).sum
-  }
+    def realistic(): Double = {
+      (doableCount - impossibleCount) / (agreeCount + disagreeCount + ScoreCounts.CountPrior).toDouble
+    }
 
-  def verifiedVoteCount(votes: Seq[BaseVote], voteKey: VoteKey): Int = {
-    votes.filter(_.key == voteKey).map(_.countVerified).sum
-  }
+    def platitude(): Double = {
+      (platitudeAgreeCount + platitudeDisagreeCount) / (agreeCount + disagreeCount + ScoreCounts.CountPrior).toDouble
+    }
 
-  def verifiedQualificationCount(votes: Seq[BaseVote], voteKey: VoteKey, qualificationKey: QualificationKey): Int = {
-    votes
-      .filter(_.key == voteKey)
-      .flatMap(_.qualifications.filter(_.key == qualificationKey).map(_.countVerified))
-      .sum
-  }
-
-  def scoreCounts(votes: Seq[BaseVote]): ScoreCounts = {
-    ScoreCounts(
-      votes = verifiedTotalVoteCount(votes),
-      agreeCount = verifiedVoteCount(votes, Agree),
-      disagreeCount = verifiedVoteCount(votes, Disagree),
-      neutralCount = verifiedVoteCount(votes, Neutral),
-      platitudeAgreeCount = verifiedQualificationCount(votes, Agree, PlatitudeAgree),
-      platitudeDisagreeCount = verifiedQualificationCount(votes, Disagree, PlatitudeDisagree),
-      loveCount = verifiedQualificationCount(votes, Agree, LikeIt),
-      hateCount = verifiedQualificationCount(votes, Disagree, NoWay),
-      doableCount = verifiedQualificationCount(votes, Agree, Doable),
-      impossibleCount = verifiedQualificationCount(votes, Disagree, Impossible)
+    /**
+      * The score components are first standardized == centered to their mean and rescaled by their standard error
+      * this scale the score back to a distribution of mean=0 and var=std=1
+      *
+      * Then the score components are summed with their respective weigths
+      *
+      * Finally the score itself is normalized by the theoretical standard error of a weigthed sum of random variable of variance 1
+      *
+      * This should ensure that the top score itself is standardized
+      *
+      * */
+    val topScoreFunctions: Map[String, () => Double] = Map(
+      "engagement" -> engagement,
+      "agreement" -> agreement,
+      "adhesion" -> adhesion,
+      "realistic" -> realistic,
+      "platitude" -> platitude
     )
+
+    def topScore(): Double = {
+      val sumScores =
+        topScoreComponents.map(sc => sc.weight * (topScoreFunctions(sc.name)() - sc.mean) / sc.std).sum
+      sumScores / combinedStd
+    }
+
+    def controversy(): Double = {
+      math.min(loveCount + ScoreCounts.QualificationPrior, hateCount + ScoreCounts.QualificationPrior) / (votes - neutralCount + ScoreCounts.CountPrior).toDouble
+    }
+
+    def rejection(): Double = {
+      -1 * adhesion()
+    }
+
+    def sampleEngagement(): Double = {
+      ScoreCounts.sampleRate(agreeCount + disagreeCount, votes, 2 * ScoreCounts.VotePrior)
+    }
+
+    def sampleAgreement(): Double = {
+      ScoreCounts.sampleRate(agreeCount, votes, ScoreCounts.VotePrior)
+    }
+
+    def sampleAdhesion(): Double = {
+      (ScoreCounts.sampleRate(loveCount, votes - neutralCount, ScoreCounts.QualificationPrior)
+        - ScoreCounts.sampleRate(hateCount, votes - neutralCount, ScoreCounts.QualificationPrior))
+    }
+
+    def sampleRealistic(): Double = {
+      (ScoreCounts.sampleRate(doableCount, votes - neutralCount, ScoreCounts.QualificationPrior)
+        - ScoreCounts.sampleRate(impossibleCount, votes - neutralCount, ScoreCounts.QualificationPrior))
+    }
+
+    def samplePlatitude(): Double = {
+      (ScoreCounts.sampleRate(platitudeAgreeCount, votes - neutralCount, ScoreCounts.QualificationPrior)
+        + ScoreCounts.sampleRate(platitudeDisagreeCount, votes - neutralCount, ScoreCounts.QualificationPrior))
+    }
+
+    def sampleControversy(): Double = {
+      ScoreCounts.sampleRate(math.min(loveCount, hateCount), votes - neutralCount, ScoreCounts.QualificationPrior)
+    }
+
+    val topScoreSampleFunctions: Map[String, () => Double] = Map(
+      "engagement" -> sampleEngagement,
+      "agreement" -> sampleAgreement,
+      "adhesion" -> sampleAdhesion,
+      "realistic" -> sampleRealistic,
+      "platitude" -> samplePlatitude
+    )
+
+    def sampleTopScore(): Double = {
+      val sumScores =
+        topScoreComponents.map(sc => sc.weight * (topScoreSampleFunctions(sc.name)() - sc.mean) / sc.std).sum
+      sumScores / combinedStd
+    }
+
+    def engagementUpperBound(): Double = {
+      val engagementEstimate: RateEstimate =
+        rateEstimate(agreeCount + disagreeCount, votes)
+
+      engagementEstimate.rate + ScoreCounts.ConfidenceInterval95Percent * engagementEstimate.sd
+    }
+
+    def engagementConfidenceInterval(): Double = {
+      val estimate = rateEstimate(agreeCount + disagreeCount, votes)
+      ScoreCounts.ConfidenceInterval95Percent * estimate.sd
+    }
+
+    def agreementConfidenceInterval(): Double = {
+      val estimate = rateEstimate(agreeCount, votes)
+      ScoreCounts.ConfidenceInterval95Percent * estimate.sd
+    }
+
+    def adhesionCondidenceInterval(): Double = {
+      val loveEstimate = rateEstimate(loveCount, agreeCount + disagreeCount)
+      val hateEstimate = rateEstimate(hateCount, agreeCount + disagreeCount)
+      ScoreCounts.ConfidenceInterval95Percent * math.hypot(loveEstimate.sd, hateEstimate.sd)
+    }
+
+    def realisticConfidenceInterval(): Double = {
+      val doableEstimate = rateEstimate(doableCount, agreeCount + disagreeCount)
+      val impossibleEstimate = rateEstimate(impossibleCount, agreeCount + disagreeCount)
+      ScoreCounts.ConfidenceInterval95Percent * math.hypot(doableEstimate.sd, impossibleEstimate.sd)
+    }
+
+    def platitudeConfidenceInterval(): Double = {
+      val platitudeAgreeEstimate = rateEstimate(platitudeAgreeCount, agreeCount + disagreeCount)
+      val platitudeDisagreeEstimate =
+        rateEstimate(platitudeDisagreeCount, agreeCount + disagreeCount)
+      ScoreCounts.ConfidenceInterval95Percent * math.hypot(platitudeAgreeEstimate.sd, platitudeDisagreeEstimate.sd)
+    }
+
+    val topScoreConfidenceIntervalFunctions: Map[String, () => Double] = Map(
+      "engagement" -> engagementConfidenceInterval,
+      "agreement" -> agreementConfidenceInterval,
+      "adhesion" -> adhesionCondidenceInterval,
+      "realistic" -> realisticConfidenceInterval,
+      "platitude" -> platitudeConfidenceInterval
+    )
+
+    def topScoreConfidenceInterval(): Double = {
+      val sumCI = math.sqrt(
+        topScoreComponents
+          .map(sc => math.pow(sc.weight * topScoreConfidenceIntervalFunctions(sc.name)() / sc.std, 2))
+          .sum
+      )
+      sumCI / combinedStd
+    }
+
+    def topScoreUpperBound(): Double = {
+      val score = topScore()
+      val confidenceInterval = topScoreConfidenceInterval()
+      score + confidenceInterval
+    }
+
+    def controversyUpperBound(): Double = {
+      val controversyEstimate: RateEstimate =
+        rateEstimate(math.min(loveCount, hateCount), votes - neutralCount)
+
+      controversyEstimate.rate + ScoreCounts.ConfidenceInterval95Percent * controversyEstimate.sd
+    }
   }
 
-  /*
-   * Note on bayesian estimates: the estimator requires a prior,
-   * i.e. an initial probability to start the estimate from.
-   *
-   * We choose 1/3 for the vote because there are 3 possible choices.
-   * The prior for the qualification is 0.01 because we want a value close to 0 but not null
-   * The prior is used with a basis of 1 vote
-   */
-  val VotePrior = 0.33
-  val QualificationPrior = 0.01
-  val CountPrior = 1
+  object ScoreCounts {
 
-  def engagement(counts: ScoreCounts): Double = {
-    (counts.agreeCount + counts.disagreeCount + 2 * VotePrior) / (counts.votes + CountPrior).toDouble
-  }
+    /*
+     * Note on bayesian estimates: the estimator requires a prior,
+     * i.e. an initial probability to start the estimate from.
+     *
+     * We choose 1/3 for the vote because there are 3 possible choices.
+     * The prior for the qualification is 0.01 because we want a value close to 0 but not null
+     * The prior is used with a basis of 1 vote
+     */
+    val VotePrior = 0.33
+    val QualificationPrior = 0.01
+    val CountPrior = 1
 
-  def engagement(votes: Seq[BaseVote]): Double = {
-    engagement(scoreCounts(votes))
-  }
+    /*
+     * Note on confidence intervals:
+     * For a normal (gaussian) random variable, the 95% confidence interval is mean +/- 2 * standard error
+     */
+    val ConfidenceInterval95Percent = 2
 
-  def agreement(counts: ScoreCounts): Double = {
-    (counts.agreeCount + VotePrior) / (counts.votes + CountPrior).toDouble
-  }
+    private def totalVoteCount(votes: Seq[BaseVote], counter: BaseVote => Int): Int = {
+      votes.map(counter).sum
+    }
 
-  def agreement(votes: Seq[BaseVote]): Double = {
-    agreement(scoreCounts(votes))
-  }
+    private def voteCount(votes: Seq[BaseVote], voteKey: VoteKey, counter: BaseVote => Int): Int = {
+      votes.filter(_.key == voteKey).map(counter).sum
+    }
 
-  def adhesion(counts: ScoreCounts): Double = {
-    (counts.loveCount - counts.hateCount) / (counts.agreeCount + counts.disagreeCount + CountPrior).toDouble
-  }
+    private def qualificationCount(votes: Seq[BaseVote],
+                                   voteKey: VoteKey,
+                                   qualificationKey: QualificationKey,
+                                   counter: BaseQualification => Int): Int = {
+      votes
+        .filter(_.key == voteKey)
+        .flatMap(_.qualifications.filter(_.key == qualificationKey).map(counter))
+        .sum
+    }
 
-  def adhesion(votes: Seq[BaseVote]): Double = {
-    adhesion(scoreCounts(votes))
-  }
+    /*
+     * Samples are taken from a beta distribution, which is the bayesian companion distribution for the binomial distribution
+     * Each rate is sampled from its own beta distribution with a prior at 0.33 for votes and 0.01 for qualifications
+     */
+    def sampleRate(successes: Int, trials: Int, prior: Double): Double = {
+      new BetaDistribution(random, successes + prior, trials - successes + ScoreCounts.CountPrior).sample()
+    }
 
-  def realistic(counts: ScoreCounts): Double = {
-    (counts.doableCount - counts.impossibleCount) / (counts.agreeCount + counts.disagreeCount + CountPrior).toDouble
-  }
-
-  def realistic(votes: Seq[BaseVote]): Double = {
-    realistic(scoreCounts(votes))
-  }
-
-  def platitude(counts: ScoreCounts): Double = {
-    (counts.platitudeAgreeCount + counts.platitudeDisagreeCount) / (counts.agreeCount + counts.disagreeCount + CountPrior).toDouble
-  }
-
-  def platitude(votes: Seq[BaseVote]): Double = {
-    platitude(scoreCounts(votes))
-  }
-
-  /**
-    * The score components are first standardized == centered to their mean and rescaled by their standard error
-    * this scale the score back to a distribution of mean=0 and var=std=1
-    *
-    * Then the score components are summed with their respective weigths
-    *
-    * Finally the score itself is normalized by the theoretical standard error of a weigthed sum of random variable of variance 1
-    *
-    * This should ensure that the top score itself is standardized
-    *
-    * */
-  val topScoreFunctions: Map[String, ScoreCounts => Double] = Map(
-    "engagement" -> engagement,
-    "agreement" -> agreement,
-    "adhesion" -> adhesion,
-    "realistic" -> realistic,
-    "platitude" -> platitude
-  )
-
-  def topScore(counts: ScoreCounts): Double = {
-    val sumScores =
-      topScoreComponents.map(sc => sc.weight * (topScoreFunctions(sc.name)(counts) - sc.mean) / sc.std).sum
-    sumScores / combinedStd
-  }
-
-  def topScore(votes: Seq[BaseVote]): Double = {
-    topScore(scoreCounts(votes))
-  }
-
-  def controversy(counts: ScoreCounts): Double = {
-    math.min(counts.loveCount + QualificationPrior, counts.hateCount + QualificationPrior) / (counts.votes - counts.neutralCount + CountPrior).toDouble
-  }
-
-  def controversy(votes: Seq[BaseVote]): Double = {
-    controversy(scoreCounts(votes))
-  }
-
-  def rejection(counts: ScoreCounts): Double = {
-    -1 * adhesion(counts)
-  }
-
-  def rejection(votes: Seq[BaseVote]): Double = {
-    rejection(scoreCounts(votes))
-  }
-
-  /*
-   * Samples are taken from a beta distribution, which is the bayesian companion distribution for the binomial distribution
-   * Each rate is sampled from its own beta distribution with a prior at 0.33 for votes and 0.01 for qualifications
-   */
-  def sampleRate(successes: Int, trials: Int, prior: Double): Double = {
-    new BetaDistribution(random, successes + prior, trials - successes + CountPrior).sample()
-  }
-
-  def sampleEngagement(counts: ScoreCounts): Double = {
-    sampleRate(counts.agreeCount + counts.disagreeCount, counts.votes, 2 * VotePrior)
-  }
-
-  def sampleEngagement(votes: Seq[BaseVote]): Double = {
-    sampleEngagement(scoreCounts(votes))
-  }
-
-  def sampleAgreement(counts: ScoreCounts): Double = {
-    sampleRate(counts.agreeCount, counts.votes, VotePrior)
-  }
-
-  def sampleAgreement(votes: Seq[BaseVote]): Double = {
-    sampleAgreement(scoreCounts(votes))
-  }
-
-  def sampleAdhesion(counts: ScoreCounts): Double = {
-    (sampleRate(counts.loveCount, counts.votes - counts.neutralCount, QualificationPrior)
-      - sampleRate(counts.hateCount, counts.votes - counts.neutralCount, QualificationPrior))
-  }
-
-  def sampleAdhesion(votes: Seq[BaseVote]): Double = {
-    sampleAdhesion(scoreCounts(votes))
-  }
-
-  def sampleRealistic(counts: ScoreCounts): Double = {
-    (sampleRate(counts.doableCount, counts.votes - counts.neutralCount, QualificationPrior)
-      - sampleRate(counts.impossibleCount, counts.votes - counts.neutralCount, QualificationPrior))
-  }
-
-  def sampleRealistic(votes: Seq[BaseVote]): Double = {
-    sampleRealistic(scoreCounts(votes))
-  }
-
-  def samplePlatitude(counts: ScoreCounts): Double = {
-    (sampleRate(counts.platitudeAgreeCount, counts.votes - counts.neutralCount, QualificationPrior)
-      + sampleRate(counts.platitudeDisagreeCount, counts.votes - counts.neutralCount, QualificationPrior))
-  }
-
-  def samplePlatitude(votes: Seq[BaseVote]): Double = {
-    samplePlatitude(scoreCounts(votes))
-  }
-
-  def sampleControversy(counts: ScoreCounts): Double = {
-    sampleRate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount, QualificationPrior)
-  }
-
-  def sampleControversy(votes: Seq[BaseVote]): Double = {
-    sampleControversy(scoreCounts(votes))
-  }
-
-  val topScoreSampleFunctions: Map[String, ScoreCounts => Double] = Map(
-    "engagement" -> sampleEngagement,
-    "agreement" -> sampleAgreement,
-    "adhesion" -> sampleAdhesion,
-    "realistic" -> sampleRealistic,
-    "platitude" -> samplePlatitude
-  )
-
-  def sampleTopScore(counts: ScoreCounts): Double = {
-    val sumScores =
-      topScoreComponents.map(sc => sc.weight * (topScoreSampleFunctions(sc.name)(counts) - sc.mean) / sc.std).sum
-    sumScores / combinedStd
-  }
-
-  def sampleTopScore(votes: Seq[BaseVote]): Double = {
-    sampleTopScore(scoreCounts(votes))
+    def apply(votes: Seq[BaseVote],
+              voteCounter: BaseVote                   => Int,
+              qualificationCounter: BaseQualification => Int): ScoreCounts = {
+      ScoreCounts(
+        votes = totalVoteCount(votes, voteCounter),
+        agreeCount = voteCount(votes, Agree, voteCounter),
+        disagreeCount = voteCount(votes, Disagree, voteCounter),
+        neutralCount = voteCount(votes, Neutral, voteCounter),
+        platitudeAgreeCount = qualificationCount(votes, Agree, PlatitudeAgree, qualificationCounter),
+        platitudeDisagreeCount = qualificationCount(votes, Disagree, PlatitudeDisagree, qualificationCounter),
+        loveCount = qualificationCount(votes, Agree, LikeIt, qualificationCounter),
+        hateCount = qualificationCount(votes, Disagree, NoWay, qualificationCounter),
+        doableCount = qualificationCount(votes, Agree, Doable, qualificationCounter),
+        impossibleCount = qualificationCount(votes, Disagree, Impossible, qualificationCounter)
+      )
+    }
   }
 
   /*
@@ -291,94 +297,19 @@ object ProposalScorerHelper extends StrictLogging {
     RateEstimate(pp, sd)
   }
 
-  /*
-   * Note on confidence intervals:
-   * For a normal (gaussian) random variable, the 95% confidence interval is mean +/- 2 * standard error
-   */
-  val ConfidenceInterval95Percent = 2
-
-  def engagementUpperBound(votes: Seq[BaseVote]): Double = {
-    val counts = scoreCounts(votes)
-
-    val engagementEstimate: RateEstimate =
-      rateEstimate(counts.agreeCount + counts.disagreeCount, counts.votes)
-
-    engagementEstimate.rate + ConfidenceInterval95Percent * engagementEstimate.sd
-  }
-
-  def engagementConfidenceInterval(counts: ScoreCounts): Double = {
-    val estimate = rateEstimate(counts.agreeCount + counts.disagreeCount, counts.votes)
-    ConfidenceInterval95Percent * estimate.sd
-  }
-
-  def agreementConfidenceInterval(counts: ScoreCounts): Double = {
-    val estimate = rateEstimate(counts.agreeCount, counts.votes)
-    ConfidenceInterval95Percent * estimate.sd
-  }
-
-  def adhesionCondidenceInterval(counts: ScoreCounts): Double = {
-    val loveEstimate = rateEstimate(counts.loveCount, counts.agreeCount + counts.disagreeCount)
-    val hateEstimate = rateEstimate(counts.hateCount, counts.agreeCount + counts.disagreeCount)
-    ConfidenceInterval95Percent * math.hypot(loveEstimate.sd, hateEstimate.sd)
-  }
-
-  def realisticConfidenceInterval(counts: ScoreCounts): Double = {
-    val doableEstimate = rateEstimate(counts.doableCount, counts.agreeCount + counts.disagreeCount)
-    val impossibleEstimate = rateEstimate(counts.impossibleCount, counts.agreeCount + counts.disagreeCount)
-    ConfidenceInterval95Percent * math.hypot(doableEstimate.sd, impossibleEstimate.sd)
-  }
-
-  def platitudeConfidenceInterval(counts: ScoreCounts): Double = {
-    val platitudeAgreeEstimate = rateEstimate(counts.platitudeAgreeCount, counts.agreeCount + counts.disagreeCount)
-    val platitudeDisagreeEstimate =
-      rateEstimate(counts.platitudeDisagreeCount, counts.agreeCount + counts.disagreeCount)
-    ConfidenceInterval95Percent * math.hypot(platitudeAgreeEstimate.sd, platitudeDisagreeEstimate.sd)
-  }
-
-  val topScoreConfidenceIntervalFunctions: Map[String, ScoreCounts => Double] = Map(
-    "engagement" -> engagementConfidenceInterval,
-    "agreement" -> agreementConfidenceInterval,
-    "adhesion" -> adhesionCondidenceInterval,
-    "realistic" -> realisticConfidenceInterval,
-    "platitude" -> platitudeConfidenceInterval
-  )
-
-  def topScoreConfidenceInterval(counts: ScoreCounts): Double = {
-    val sumCI = math.sqrt(
-      topScoreComponents
-        .map(sc => math.pow(sc.weight * topScoreConfidenceIntervalFunctions(sc.name)(counts) / sc.std, 2))
-        .sum
-    )
-    sumCI / combinedStd
-  }
-
-  def topScoreConfidenceInterval(votes: Seq[BaseVote]): Double = {
-    topScoreConfidenceInterval(scoreCounts(votes))
-  }
-
-  def topScoreUpperBound(votes: Seq[BaseVote]): Double = {
-    val counts = scoreCounts(votes)
-    val score = topScore(counts)
-    val confidenceInterval = topScoreConfidenceInterval(counts)
-    score + confidenceInterval
-  }
-
-  def controversyUpperBound(votes: Seq[BaseVote]): Double = {
-    val counts = scoreCounts(votes)
-
-    val controversyEstimate: RateEstimate =
-      rateEstimate(math.min(counts.loveCount, counts.hateCount), counts.votes - counts.neutralCount)
-
-    controversyEstimate.rate + ConfidenceInterval95Percent * controversyEstimate.sd
-  }
-
   def sequencePool(sequenceConfiguration: SequenceConfiguration,
                    votes: Seq[BaseVote],
-                   status: ProposalStatus): SequencePool = {
-    val votesCount: Int = votes.map(_.countVerified).sum
-    val engagementRate: Double = ProposalScorerHelper.engagementUpperBound(votes)
-    val scoreRate: Double = ProposalScorerHelper.topScoreUpperBound(votes)
-    val controversyRate: Double = ProposalScorerHelper.controversyUpperBound(votes)
+                   status: ProposalStatus,
+                   votesCounter: BaseVote                  => Int,
+                   qualificationCounter: BaseQualification => Int): SequencePool = {
+
+    val scores = ScoreCounts(votes, votesCounter, qualificationCounter)
+
+    val votesCount: Int = scores.votes
+    val engagementRate: Double = scores.engagementUpperBound()
+    val scoreRate: Double = scores.topScoreUpperBound()
+    val controversyRate: Double = scores.controversyUpperBound()
+
     def isTestedFromScoreAndControversy: Boolean =
       (sequenceConfiguration.testedProposalsScoreThreshold, sequenceConfiguration.testedProposalsControversyThreshold) match {
         case (Some(scoreBase), Some(controversyBase)) => scoreRate >= scoreBase || controversyRate >= controversyBase

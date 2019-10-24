@@ -32,6 +32,7 @@ import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
+import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.proposal.{
   ProposalCoordinatorServiceComponent,
   ProposalScorerHelper,
@@ -44,7 +45,6 @@ import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
-import org.make.core.{DateHelper, SlugHelper}
 import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -61,6 +61,7 @@ import org.make.core.proposal.indexed.{
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.User
+import org.make.core.{DateHelper, SlugHelper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -203,6 +204,13 @@ trait ProposalIndexationStream
           case _                        => true
         }
       }
+      val regularScore = ScoreCounts(proposal.votes, _.countSequence, _.countSequence)
+
+      // If the proposal is not segmented, the scores should all be at 0
+      val segmentScore = segment.map { _ =>
+        ScoreCounts(proposal.votes, _.countSegment, _.countSegment)
+      }.getOrElse(ScoreCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
       IndexedProposal(
         id = proposal.proposalId,
         userId = proposal.author,
@@ -221,15 +229,26 @@ trait ProposalIndexationStream
         votesSegmentCount = proposal.votes.map(_.countSegment).sum,
         toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
         scores = IndexedScores(
-          engagement = ProposalScorerHelper.engagement(proposal.votes),
-          agreement = ProposalScorerHelper.agreement(proposal.votes),
-          adhesion = ProposalScorerHelper.adhesion(proposal.votes),
-          realistic = ProposalScorerHelper.realistic(proposal.votes),
-          platitude = ProposalScorerHelper.platitude(proposal.votes),
-          topScore = ProposalScorerHelper.topScore(proposal.votes),
-          controversy = ProposalScorerHelper.controversy(proposal.votes),
-          rejection = ProposalScorerHelper.rejection(proposal.votes),
-          scoreUpperBound = ProposalScorerHelper.topScoreUpperBound(proposal.votes)
+          engagement = regularScore.engagement(),
+          agreement = regularScore.agreement(),
+          adhesion = regularScore.adhesion(),
+          realistic = regularScore.realistic(),
+          platitude = regularScore.platitude(),
+          topScore = regularScore.topScore(),
+          controversy = regularScore.controversy(),
+          rejection = regularScore.rejection(),
+          scoreUpperBound = regularScore.topScoreUpperBound()
+        ),
+        segmentScores = IndexedScores(
+          engagement = segmentScore.engagement(),
+          agreement = segmentScore.agreement(),
+          adhesion = segmentScore.adhesion(),
+          realistic = segmentScore.realistic(),
+          platitude = segmentScore.platitude(),
+          topScore = segmentScore.topScore(),
+          controversy = segmentScore.controversy(),
+          rejection = segmentScore.rejection(),
+          scoreUpperBound = segmentScore.topScoreUpperBound()
         ),
         context = Some(
           ProposalContext(
@@ -287,7 +306,10 @@ trait ProposalIndexationStream
               isOpen = questionIsOpen
           )
         ),
-        sequencePool = ProposalScorerHelper.sequencePool(sequenceConfiguration, proposal.votes, proposal.status),
+        sequencePool = ProposalScorerHelper
+          .sequencePool(sequenceConfiguration, proposal.votes, proposal.status, _.countSequence, _.countSequence),
+        sequenceSegmentPool = ProposalScorerHelper
+          .sequencePool(sequenceConfiguration, proposal.votes, proposal.status, _.countSegment, _.countSegment),
         initialProposal = proposal.initialProposal,
         refusalReason = proposal.refusalReason,
         operationKind = Option(operation.operationKind),
