@@ -199,7 +199,7 @@ trait DefaultAuthenticationApiComponent
             makeOAuth2 { user =>
               decodeRequest {
                 entity(as[CreateAuthorizationCodeRequest]) { request =>
-                  provideAsync(
+                  provideAsyncOrNotFound(
                     oauth2DataHandler
                       .createAuthorizationCode(user.user.userId, request.clientId, request.scope, request.redirectUri)
                   ) { code =>
