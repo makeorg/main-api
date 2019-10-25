@@ -44,7 +44,7 @@ trait MakeDataHandler extends DataHandler[UserRights] {
   def createAuthorizationCode(userId: UserId,
                               clientId: ClientId,
                               scope: Option[String],
-                              redirectUri: Option[String]): Future[AuthCode]
+                              redirectUri: Option[String]): Future[Option[AuthCode]]
   def removeTokenByUserId(userId: UserId): Future[Int]
   def refreshIfTokenIsExpired(token: String): Future[Option[AccessToken]]
 }
@@ -324,18 +324,30 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     override def createAuthorizationCode(userId: UserId,
                                          clientId: ClientId,
                                          scope: Option[String],
-                                         redirectUri: Option[String]): Future[AuthCode] = {
-      persistentAuthCodeService.persist(
-        AuthCode(
-          authorizationCode = idGenerator.nextId(),
-          scope = scope,
-          redirectUri = redirectUri,
-          createdAt = DateHelper.now(),
-          expiresIn = validityDurationAccessTokenSeconds,
-          user = userId,
-          client = clientId
-        )
-      )
+                                         redirectUri: Option[String]): Future[Option[AuthCode]] = {
+
+      persistentClientService.get(clientId).flatMap {
+        case None => Future.successful(None)
+        case Some(client) =>
+          persistentUserService.get(userId).flatMap {
+            case None => Future.successful(None)
+            case Some(user) if userIsRelatedToClient(client)(user) =>
+              persistentAuthCodeService
+                .persist(
+                  AuthCode(
+                    authorizationCode = idGenerator.nextId(),
+                    scope = scope,
+                    redirectUri = redirectUri,
+                    createdAt = DateHelper.now(),
+                    expiresIn = validityDurationAccessTokenSeconds,
+                    user = userId,
+                    client = clientId
+                  )
+                )
+                .map(Some(_))
+            case Some(user) => Future.failed(ClientAccessUnauthorizedException(user, client))
+          }
+      }
     }
 
     override def refreshIfTokenIsExpired(tokenValue: String): Future[Option[AccessToken]] = {
