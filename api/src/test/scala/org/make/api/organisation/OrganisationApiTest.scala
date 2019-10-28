@@ -19,19 +19,20 @@
 
 package org.make.api.organisation
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 import java.util.Date
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
+import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import org.make.api.MakeApiTestBase
-import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal._
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
+import org.make.core.common.indexed.Sort
 import org.make.core.idea.IdeaId
-import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
+import org.make.core.operation.OperationId
 import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -50,14 +51,12 @@ class OrganisationApiTest
     extends MakeApiTestBase
     with DefaultOrganisationApiComponent
     with ProposalServiceComponent
-    with OperationServiceComponent
     with OrganisationServiceComponent
     with OrganisationSearchEngineComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
   override val organisationService: OrganisationService = mock[OrganisationService]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
-  override val operationService: OperationService = mock[OperationService]
 
   private val validAccessToken = "my-valid-access-token"
   val tokenCreationDate = new Date()
@@ -128,7 +127,7 @@ class OrganisationApiTest
     .thenReturn(Future.successful(None))
 
   val proposalsList = ProposalsResultSeededResponse(
-    total = 2,
+    total = 4,
     results = Seq(
       ProposalResponse(
         id = ProposalId("proposal-1"),
@@ -291,34 +290,6 @@ class OrganisationApiTest
   )
 
   Mockito
-    .when(
-      operationService.find(
-        ArgumentMatchers.any[Option[String]],
-        ArgumentMatchers.any[Option[Country]],
-        ArgumentMatchers.any[Option[String]],
-        ArgumentMatchers.any[Option[LocalDate]]
-      )
-    )
-    .thenReturn(
-      Future.successful(
-        Seq(
-          Operation(
-            operationId = OperationId("operation1"),
-            status = OperationStatus.Pending,
-            slug = "operation1",
-            defaultLanguage = Language("fr"),
-            allowedSources = Seq("core"),
-            operationKind = OperationKind.PublicConsultation,
-            events = List.empty,
-            createdAt = Some(DateHelper.now()),
-            updatedAt = None,
-            questions = Seq.empty
-          )
-        )
-      )
-    )
-
-  Mockito
     .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
     .thenReturn(Future.successful(proposalsList))
 
@@ -449,12 +420,9 @@ class OrganisationApiTest
       Get("/organisations/make-org/proposals") ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val proposalsSearchResult: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
-        proposalsSearchResult.total shouldBe 2
-        proposalsSearchResult.results.size shouldBe 2
-        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
-        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
-        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-3")) shouldBe false
-        proposalsSearchResult.results.exists(_.id == ProposalId("proposal-4")) shouldBe false
+        proposalsSearchResult.total shouldBe 4
+        proposalsSearchResult.results.size shouldBe 4
+        proposalsSearchResult.results.map(_.id) should contain(ProposalId("proposal-1"))
       }
     }
 
@@ -463,12 +431,9 @@ class OrganisationApiTest
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val proposalsResultSeededResponse: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
-        proposalsResultSeededResponse.total shouldBe 2
-        proposalsResultSeededResponse.results.size shouldBe 2
-        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-1")) shouldBe true
-        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-2")) shouldBe true
-        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-3")) shouldBe false
-        proposalsResultSeededResponse.results.exists(_.id == ProposalId("proposal-4")) shouldBe false
+        proposalsResultSeededResponse.total shouldBe 4
+        proposalsResultSeededResponse.results.size shouldBe 4
+        proposalsResultSeededResponse.results.map(_.id) should contain(ProposalId("proposal-1"))
       }
     }
 
@@ -477,7 +442,7 @@ class OrganisationApiTest
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val proposalsResultSeededResponse: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
-        proposalsResultSeededResponse.total shouldBe 2
+        proposalsResultSeededResponse.total shouldBe 4
       }
     }
   }
@@ -501,11 +466,14 @@ class OrganisationApiTest
     Mockito
       .when(
         organisationService.getVotedProposals(
-          ArgumentMatchers.any[UserId],
-          ArgumentMatchers.any[Option[UserId]],
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.any[RequestContext]
+          organisationId = ArgumentMatchers.any[UserId],
+          maybeUserId = ArgumentMatchers.any[Option[UserId]],
+          filterVotes = ArgumentMatchers.eq(None),
+          filterQualifications = ArgumentMatchers.eq(None),
+          sort = ArgumentMatchers.eq(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
+          limit = ArgumentMatchers.eq(None),
+          skip = ArgumentMatchers.eq(None),
+          requestContext = ArgumentMatchers.any[RequestContext]
         )
       )
       .thenReturn(Future.successful(proposalListWithVote))
@@ -515,11 +483,7 @@ class OrganisationApiTest
         status should be(StatusCodes.OK)
         val votedProposals: ProposalsResultWithUserVoteSeededResponse =
           entityAs[ProposalsResultWithUserVoteSeededResponse]
-        votedProposals.total should be(2)
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-1")) shouldBe true
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-2")) shouldBe true
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-3")) shouldBe false
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-4")) shouldBe false
+        votedProposals.total should be(4)
       }
     }
 
@@ -529,11 +493,7 @@ class OrganisationApiTest
         status should be(StatusCodes.OK)
         val votedProposals: ProposalsResultWithUserVoteSeededResponse =
           entityAs[ProposalsResultWithUserVoteSeededResponse]
-        votedProposals.total should be(2)
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-1")) shouldBe true
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-2")) shouldBe true
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-3")) shouldBe false
-        votedProposals.results.exists(_.proposal.id == ProposalId("proposal-4")) shouldBe false
+        votedProposals.total should be(4)
       }
     }
 

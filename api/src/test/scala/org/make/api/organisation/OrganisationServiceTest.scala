@@ -554,7 +554,16 @@ class OrganisationServiceTest
         )
 
       val futureProposalsVoted =
-        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, None, None, RequestContext.empty)
+        organisationService.getVotedProposals(
+          organisationId = UserId("AAA-BBB-CCC"),
+          maybeUserId = None,
+          filterVotes = None,
+          filterQualifications = None,
+          sort = None,
+          limit = None,
+          skip = None,
+          RequestContext.empty
+        )
 
       whenReady(futureProposalsVoted, Timeout(2.seconds)) { proposalsList =>
         proposalsList.total shouldBe 2
@@ -572,7 +581,16 @@ class OrganisationServiceTest
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
 
       val futureProposalsVoted =
-        organisationService.getVotedProposals(UserId("AAA-BBB-CCC"), None, None, None, RequestContext.empty)
+        organisationService.getVotedProposals(
+          organisationId = UserId("AAA-BBB-CCC"),
+          maybeUserId = None,
+          filterVotes = None,
+          filterQualifications = None,
+          sort = None,
+          limit = None,
+          skip = None,
+          RequestContext.empty
+        )
 
       whenReady(futureProposalsVoted, Timeout(2.seconds)) { proposalsList =>
         proposalsList.total shouldBe 0

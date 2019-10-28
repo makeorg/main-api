@@ -77,6 +77,9 @@ trait ProposalService {
   def searchProposalsVotedByUser(userId: UserId,
                                  filterVotes: Option[Seq[VoteKey]],
                                  filterQualifications: Option[Seq[QualificationKey]],
+                                 sort: Option[Sort],
+                                 limit: Option[Int],
+                                 skip: Option[Int],
                                  requestContext: RequestContext): Future[ProposalsResultResponse]
 
   def propose(user: User,
@@ -228,6 +231,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def searchProposalsVotedByUser(userId: UserId,
                                             filterVotes: Option[Seq[VoteKey]],
                                             filterQualifications: Option[Seq[QualificationKey]],
+                                            sort: Option[Sort],
+                                            limit: Option[Int],
+                                            skip: Option[Int],
                                             requestContext: RequestContext): Future[ProposalsResultResponse] = {
       val votedProposals: Future[Map[ProposalId, VoteAndQualifications]] =
         for {
@@ -253,7 +259,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             .searchForUser(
               Some(userId),
               SearchQuery(
-                filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
+                filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds)))),
+                sort = sort,
+                limit = limit,
+                skip = skip
               ),
               requestContext
             )

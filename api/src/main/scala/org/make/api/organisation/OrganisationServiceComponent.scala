@@ -32,7 +32,9 @@ import org.make.api.userhistory.UserEvent.{
 }
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions
+import org.make.core.operation.OperationKind
 import org.make.core.profile.Profile
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
@@ -64,6 +66,9 @@ trait OrganisationService extends ShortenedNames {
                         maybeUserId: Option[UserId],
                         filterVotes: Option[Seq[VoteKey]],
                         filterQualifications: Option[Seq[QualificationKey]],
+                        sort: Option[Sort],
+                        limit: Option[Int],
+                        skip: Option[Int],
                         requestContext: RequestContext): Future[ProposalsResultWithUserVoteSeededResponse]
 }
 
@@ -237,15 +242,23 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
     private def updateProposalsFromOrganisation(organisationId: UserId): Future[Unit] = {
       for {
-        _ <- getVotedProposals(organisationId, None, None, None, RequestContext.empty)
-          .map(
-            result =>
-              result.results.foreach(
-                proposalWithVote =>
-                  eventBusService
-                    .publish(ReindexProposal(proposalWithVote.proposal.id, DateHelper.now(), RequestContext.empty))
-            )
+        _ <- getVotedProposals(
+          organisationId,
+          maybeUserId = None,
+          filterVotes = None,
+          filterQualifications = None,
+          sort = None,
+          limit = None,
+          skip = None,
+          RequestContext.empty
+        ).map(
+          result =>
+            result.results.foreach(
+              proposalWithVote =>
+                eventBusService
+                  .publish(ReindexProposal(proposalWithVote.proposal.id, DateHelper.now(), RequestContext.empty))
           )
+        )
         _ <- proposalService
           .searchForUser(
             userId = Some(organisationId),
@@ -317,6 +330,9 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       maybeUserId: Option[UserId],
       filterVotes: Option[Seq[VoteKey]],
       filterQualifications: Option[Seq[QualificationKey]],
+      sort: Option[Sort],
+      limit: Option[Int],
+      skip: Option[Int],
       requestContext: RequestContext
     ): Future[ProposalsResultWithUserVoteSeededResponse] = {
       val futureProposalWithVotes: Future[Map[ProposalId, HistoryActions.VoteAndQualifications]] = for {
@@ -345,7 +361,23 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             .searchForUser(
               userId = Some(organisationId),
               query = SearchQuery(
-                filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = proposalIds))))
+                filters = Some(
+                  SearchFilters(
+                    proposal = Some(ProposalSearchFilter(proposalIds = proposalIds)),
+                    operationKinds = Some(
+                      OperationKindsSearchFilter(
+                        Seq(
+                          OperationKind.GreatCause,
+                          OperationKind.PublicConsultation,
+                          OperationKind.BusinessConsultation
+                        )
+                      )
+                    )
+                  )
+                ),
+                sort = sort,
+                limit = limit,
+                skip = skip
               ),
               requestContext = requestContext
             )

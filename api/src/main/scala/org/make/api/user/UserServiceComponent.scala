@@ -511,7 +511,15 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     private def updateProposalVotedByOrganisation(user: User): Future[Unit] = {
       if (user.isOrganisation) {
         proposalService
-          .searchProposalsVotedByUser(user.userId, None, None, RequestContext.empty)
+          .searchProposalsVotedByUser(
+            userId = user.userId,
+            filterVotes = None,
+            filterQualifications = None,
+            sort = None,
+            limit = None,
+            skip = None,
+            RequestContext.empty
+          )
           .map(
             result =>
               result.results.foreach(
