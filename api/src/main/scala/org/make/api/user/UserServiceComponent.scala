@@ -27,7 +27,8 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.question.AuthorRequest
-import org.make.api.technical.auth.{TokenGeneratorComponent, UserTokenGeneratorComponent}
+import org.make.api.technical.auth.AuthenticationApi.TokenResponse
+import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenGeneratorComponent, UserTokenGeneratorComponent}
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
@@ -36,6 +37,7 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.UserEvent._
+import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -44,6 +46,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
 import org.make.core.{BusinessConfig, DateHelper, RequestContext}
+import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -73,7 +76,7 @@ trait UserService extends ShortenedNames {
                                    requestContext: RequestContext): Future[User]
   def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean]
-  def validateEmail(verificationToken: String): Future[Boolean]
+  def validateEmail(user: User, verificationToken: String): Future[TokenResponse]
   def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean]
   def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean]
   def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean]
@@ -115,6 +118,7 @@ case class UserRegisterData(email: String,
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
+    with MakeDataHandlerComponent
     with UserTokenGeneratorComponent
     with PersistentUserServiceComponent
     with PersistentUserToAnonymizeServiceComponent
@@ -440,8 +444,26 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.updatePassword(userId, resetToken, password.bcrypt)
     }
 
-    override def validateEmail(verificationToken: String): Future[Boolean] = {
-      persistentUserService.validateEmail(verificationToken)
+    override def validateEmail(user: User, verificationToken: String): Future[TokenResponse] = {
+
+      for {
+        emailVerified <- persistentUserService.validateEmail(verificationToken)
+        accessToken <- oauth2DataHandler.createAccessToken(
+          authInfo = AuthInfo(
+            user = UserRights(user.userId, user.roles, user.availableQuestions, emailVerified),
+            clientId = None,
+            scope = None,
+            redirectUri = None
+          )
+        )
+      } yield {
+        TokenResponse(
+          "Bearer",
+          accessToken.token,
+          accessToken.expiresIn.getOrElse(1L),
+          accessToken.refreshToken.getOrElse("")
+        )
+      }
     }
 
     override def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean] = {

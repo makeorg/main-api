@@ -19,6 +19,7 @@
 
 package org.make.api.user
 
+import java.text.SimpleDateFormat
 import java.time.{LocalDate, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
@@ -26,6 +27,7 @@ import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.question.AuthorRequest
+import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
@@ -34,6 +36,7 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.SearchQuery
@@ -46,6 +49,7 @@ import org.mockito.ArgumentMatchers.{eq => isEqual, _}
 import org.mockito.Mockito.{times, verify}
 import org.mockito._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -53,6 +57,7 @@ import scala.concurrent.duration.DurationInt
 class UserServiceTest
     extends MakeUnitTest
     with DefaultUserServiceComponent
+    with MakeDataHandlerComponent
     with IdGeneratorComponent
     with UserTokenGeneratorComponent
     with UserHistoryCoordinatorServiceComponent
@@ -77,6 +82,7 @@ class UserServiceTest
   override val tokenGenerator: TokenGenerator = mock[TokenGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
+  override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
 
   Mockito.when(makeSettings.defaultUserAnonymousParticipation).thenReturn(false)
 
@@ -681,6 +687,36 @@ class UserServiceTest
 
       whenReady(userService.requestPasswordReset(userId), Timeout(3.seconds)) { result =>
         result shouldBe true
+      }
+    }
+  }
+
+  feature("validate email") {
+    scenario("Send access token when validate email") {
+      val expireInSeconds = 123000
+      val refreshTokenValue = "my_refresh_token"
+      val accessTokenValue = "my_access_token"
+
+      val accessToken = AccessToken(
+        accessTokenValue,
+        Some(refreshTokenValue),
+        None,
+        Some(expireInSeconds),
+        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2018-07-13 12:00:00"),
+        Map.empty
+      )
+
+      Mockito
+        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
+        .thenReturn(Future.successful(accessToken))
+
+      Mockito.when(persistentUserService.validateEmail(any[String])).thenReturn(Future.successful(true))
+
+      whenReady(userService.validateEmail(fooUser, "verificationToken"), Timeout(2.seconds)) { tokenResponse =>
+        tokenResponse should be(a[TokenResponse])
+        tokenResponse.access_token should be(accessTokenValue)
+        tokenResponse.refresh_token should be(refreshTokenValue)
+        tokenResponse.token_type should be("Bearer")
       }
     }
   }

@@ -42,7 +42,6 @@ import org.make.api.technical.monitoring.MonitoringMessageHelper
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
 import org.make.core.Validation.validateField
-import org.make.core.{RequestContext, _}
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -50,6 +49,7 @@ import org.make.core.reference.{Country, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
+import org.make.core.{RequestContext, _}
 import scalaoauth2.provider.AccessToken
 
 import scala.collection.immutable
@@ -455,6 +455,54 @@ trait MakeDirectives
           provideAsync(uploadFile(extension, contentType.value, FileContent(file))).map { path =>
             (path, file)
           }
+      }
+    }
+  }
+
+  def setMakeSecure(access_token: String, userId: UserId): Directive0 = {
+    mapResponseHeaders { responseHeaders =>
+      if (responseHeaders.exists {
+            case `Set-Cookie`(cookie) => cookie.name == makeSettings.SecureCookie.name
+            case _                    => false
+          }) {
+        responseHeaders
+      } else {
+        responseHeaders ++ Seq(
+          `Set-Cookie`(
+            HttpCookie(
+              name = makeSettings.SecureCookie.name,
+              value = access_token,
+              secure = makeSettings.SecureCookie.isSecure,
+              httpOnly = true,
+              maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
+              path = Some("/"),
+              domain = Some(makeSettings.SecureCookie.domain)
+            )
+          ),
+          `Set-Cookie`(
+            HttpCookie(
+              name = makeSettings.SecureCookie.expirationName,
+              value = DateHelper
+                .format(DateHelper.now().plusSeconds(makeSettings.SecureCookie.lifetime.toSeconds)),
+              secure = makeSettings.SecureCookie.isSecure,
+              httpOnly = false,
+              maxAge = Some(365.days.toSeconds),
+              path = Some("/"),
+              domain = Some(makeSettings.SecureCookie.domain)
+            )
+          ),
+          `Set-Cookie`(
+            HttpCookie(
+              name = makeSettings.UserIdCookie.name,
+              value = userId.value,
+              secure = makeSettings.UserIdCookie.isSecure,
+              httpOnly = true,
+              maxAge = Some(365.days.toSeconds),
+              path = Some("/"),
+              domain = Some(makeSettings.UserIdCookie.domain)
+            )
+          )
+        )
       }
     }
   }
