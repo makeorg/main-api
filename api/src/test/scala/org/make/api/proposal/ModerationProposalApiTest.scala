@@ -419,9 +419,30 @@ class ModerationProposalApiTest
     author = UserId("Georges RR Martin"),
     labels = Seq.empty,
     votes = Seq(
-      Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-      Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-      Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+      Vote(
+        key = VoteKey.Agree,
+        qualifications = Seq.empty,
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
+      ),
+      Vote(
+        key = VoteKey.Disagree,
+        qualifications = Seq.empty,
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
+      ),
+      Vote(
+        key = VoteKey.Neutral,
+        qualifications = Seq.empty,
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
+      )
     ),
     creationContext = RequestContext.empty,
     createdAt = Some(DateHelper.now()),
@@ -439,9 +460,30 @@ class ModerationProposalApiTest
     author = UserId("Georges RR Martin"),
     labels = Seq.empty,
     votes = Seq(
-      Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-      Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-      Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+      Vote(
+        key = VoteKey.Agree,
+        qualifications = Seq.empty,
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
+      ),
+      Vote(
+        key = VoteKey.Disagree,
+        qualifications = Seq.empty,
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
+      ),
+      Vote(
+        key = VoteKey.Neutral,
+        qualifications = Seq.empty,
+        count = 0,
+        countVerified = 0,
+        countSequence = 0,
+        countSegment = 0
+      )
     ),
     creationContext = RequestContext.empty,
     createdAt = Some(DateHelper.now()),
@@ -597,9 +639,30 @@ class ModerationProposalApiTest
       status = Accepted,
       tags = Seq(),
       votes = Seq(
-        Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-        Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-        Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+        Vote(
+          key = VoteKey.Agree,
+          qualifications = Seq.empty,
+          count = 0,
+          countVerified = 0,
+          countSequence = 0,
+          countSegment = 0
+        ),
+        Vote(
+          key = VoteKey.Disagree,
+          qualifications = Seq.empty,
+          count = 0,
+          countVerified = 0,
+          countSequence = 0,
+          countSegment = 0
+        ),
+        Vote(
+          key = VoteKey.Neutral,
+          qualifications = Seq.empty,
+          count = 0,
+          countVerified = 0,
+          countSequence = 0,
+          countSegment = 0
+        )
       ),
       context = RequestContext.empty,
       createdAt = Some(DateHelper.now()),
@@ -625,9 +688,30 @@ class ModerationProposalApiTest
       status = Accepted,
       tags = Seq(),
       votes = Seq(
-        Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-        Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-        Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
+        Vote(
+          key = VoteKey.Agree,
+          qualifications = Seq.empty,
+          count = 0,
+          countVerified = 0,
+          countSequence = 0,
+          countSegment = 0
+        ),
+        Vote(
+          key = VoteKey.Disagree,
+          qualifications = Seq.empty,
+          count = 0,
+          countVerified = 0,
+          countSequence = 0,
+          countSegment = 0
+        ),
+        Vote(
+          key = VoteKey.Neutral,
+          qualifications = Seq.empty,
+          count = 0,
+          countVerified = 0,
+          countSequence = 0,
+          countSegment = 0
+        )
       ),
       refusalReason = None,
       organisations = Seq.empty,
@@ -1403,27 +1487,36 @@ class ModerationProposalApiTest
             key = VoteKey.Agree,
             count = 100,
             countVerified = 100,
-            qualifications =
-              Seq(Qualification(LikeIt, 50, 50), Qualification(Doable, 50, 50), Qualification(PlatitudeAgree, 50, 50))
+            countSequence = 100,
+            countSegment = 100,
+            qualifications = Seq(
+              Qualification(LikeIt, 50, 50, 50, 50),
+              Qualification(Doable, 50, 50, 50, 50),
+              Qualification(PlatitudeAgree, 50, 50, 50, 50)
+            )
           ),
           Vote(
             key = VoteKey.Disagree,
             count = 100,
             countVerified = 100,
+            countSequence = 100,
+            countSegment = 100,
             qualifications = Seq(
-              Qualification(NoWay, 50, 50),
-              Qualification(Impossible, 50, 50),
-              Qualification(PlatitudeDisagree, 50, 50)
+              Qualification(NoWay, 50, 50, 50, 50),
+              Qualification(Impossible, 50, 50, 50, 50),
+              Qualification(PlatitudeDisagree, 50, 50, 50, 50)
             )
           ),
           Vote(
             key = VoteKey.Neutral,
             count = 100,
             countVerified = 100,
+            countSequence = 100,
+            countSegment = 100,
             qualifications = Seq(
-              Qualification(DoNotUnderstand, 50, 50),
-              Qualification(DoNotCare, 50, 50),
-              Qualification(NoOpinion, 50, 50)
+              Qualification(DoNotUnderstand, 50, 50, 50, 50),
+              Qualification(DoNotCare, 50, 50, 50, 50),
+              Qualification(NoOpinion, 50, 50, 50, 50)
             )
           )
         ),
@@ -1456,29 +1549,38 @@ class ModerationProposalApiTest
         votesVerified = Seq(
           Vote(
             key = Agree,
+            count = 12,
             countVerified = 12,
+            countSequence = 12,
+            countSegment = 12,
             qualifications = Seq(
-              Qualification(LikeIt, countVerified = 1),
-              Qualification(Doable, countVerified = 2),
-              Qualification(PlatitudeAgree, countVerified = 3)
+              Qualification(LikeIt, countVerified = 1, count = 1, countSequence = 1, countSegment = 1),
+              Qualification(Doable, countVerified = 2, count = 2, countSequence = 2, countSegment = 2),
+              Qualification(PlatitudeAgree, countVerified = 3, count = 3, countSequence = 3, countSegment = 3)
             )
           ),
           Vote(
             key = Disagree,
+            count = 24,
             countVerified = 24,
+            countSequence = 24,
+            countSegment = 24,
             qualifications = Seq(
-              Qualification(NoWay, countVerified = 4),
-              Qualification(Impossible, countVerified = 5),
-              Qualification(PlatitudeDisagree, countVerified = 6)
+              Qualification(NoWay, countVerified = 4, count = 4, countSequence = 4, countSegment = 4),
+              Qualification(Impossible, countVerified = 5, count = 5, countSequence = 5, countSegment = 5),
+              Qualification(PlatitudeDisagree, countVerified = 6, count = 6, countSequence = 6, countSegment = 6)
             )
           ),
           Vote(
             key = VoteKey.Neutral,
+            count = 36,
             countVerified = 36,
+            countSequence = 36,
+            countSegment = 36,
             qualifications = Seq(
-              Qualification(NoOpinion, countVerified = 7),
-              Qualification(DoNotUnderstand, countVerified = 8),
-              Qualification(DoNotCare, countVerified = 9)
+              Qualification(NoOpinion, countVerified = 7, count = 7, countSequence = 7, countSegment = 7),
+              Qualification(DoNotUnderstand, countVerified = 8, count = 8, countSequence = 8, countSegment = 8),
+              Qualification(DoNotCare, countVerified = 9, count = 9, countSequence = 9, countSegment = 9)
             )
           )
         )

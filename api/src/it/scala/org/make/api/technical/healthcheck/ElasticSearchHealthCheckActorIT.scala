@@ -78,33 +78,36 @@ class ElasticSearchHealthCheckActorIT
       createdAt = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       updatedAt = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       votes = Seq(
-        IndexedVote(
-          key = VoteKey.Agree,
-          count = 123,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.LikeIt),
-            IndexedQualification(key = QualificationKey.Doable),
-            IndexedQualification(key = QualificationKey.PlatitudeAgree)
+        IndexedVote
+          .empty(key = VoteKey.Agree)
+          .copy(
+            count = 123,
+            qualifications = Seq(
+              IndexedQualification.empty(QualificationKey.LikeIt),
+              IndexedQualification.empty(QualificationKey.Doable),
+              IndexedQualification.empty(QualificationKey.PlatitudeAgree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Disagree)
+          .copy(
+            count = 105,
+            qualifications = Seq(
+              IndexedQualification.empty(QualificationKey.NoWay),
+              IndexedQualification.empty(QualificationKey.Impossible),
+              IndexedQualification.empty(QualificationKey.PlatitudeDisagree)
+            )
+          ),
+        IndexedVote
+          .empty(key = VoteKey.Neutral)
+          .copy(
+            count = 59,
+            qualifications = Seq(
+              IndexedQualification.empty(QualificationKey.DoNotUnderstand),
+              IndexedQualification.empty(QualificationKey.NoOpinion),
+              IndexedQualification.empty(QualificationKey.DoNotCare)
+            )
           )
-        ),
-        IndexedVote(
-          key = VoteKey.Disagree,
-          count = 105,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.NoWay),
-            IndexedQualification(key = QualificationKey.Impossible),
-            IndexedQualification(key = QualificationKey.PlatitudeDisagree)
-          )
-        ),
-        IndexedVote(
-          key = VoteKey.Neutral,
-          count = 59,
-          qualifications = Seq(
-            IndexedQualification(key = QualificationKey.DoNotUnderstand),
-            IndexedQualification(key = QualificationKey.NoOpinion),
-            IndexedQualification(key = QualificationKey.DoNotCare)
-          )
-        )
       ),
       votesCount = 267,
       votesVerifiedCount = 267,

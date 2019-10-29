@@ -424,11 +424,7 @@ class ModerationQuestionApiTest
               theme = None,
               status = Accepted,
               tags = Seq(),
-              votes = Seq(
-                Vote(key = VoteKey.Agree, qualifications = Seq.empty),
-                Vote(key = VoteKey.Disagree, qualifications = Seq.empty),
-                Vote(key = VoteKey.Neutral, qualifications = Seq.empty)
-              ),
+              votes = Seq(Vote.empty(VoteKey.Agree), Vote.empty(VoteKey.Disagree), Vote.empty(VoteKey.Neutral)),
               context = RequestContext.empty,
               createdAt = Some(DateHelper.now()),
               updatedAt = Some(DateHelper.now()),

@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal._
+import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
@@ -54,6 +55,7 @@ class SequenceServiceComponentTest
     with MakeSettingsComponent
     with SelectionAlgorithmComponent
     with SecurityConfigurationComponent
+    with SegmentServiceComponent
     with StrictLogging {
 
   override val eventBusService: EventBusService = mock[EventBusService]
@@ -71,6 +73,7 @@ class SequenceServiceComponentTest
   override val roundRobinSelectionAlgorithm: SelectionAlgorithm = mock[SelectionAlgorithm]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
+  override val segmentService: SegmentService = mock[SegmentService]
 
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
@@ -88,7 +91,15 @@ class SequenceServiceComponentTest
       createdAt = Some(createdAt),
       updatedAt = None,
       votes = votes.map {
-        case (k, amount) => Vote(key = k, count = amount, qualifications = Seq.empty)
+        case (k, amount) =>
+          Vote(
+            key = k,
+            count = amount,
+            countVerified = amount,
+            countSequence = amount,
+            countSegment = 0,
+            qualifications = Seq.empty
+          )
       }.toSeq,
       labels = Seq.empty,
       theme = None,

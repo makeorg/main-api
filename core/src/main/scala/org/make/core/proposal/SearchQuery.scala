@@ -32,7 +32,7 @@ import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.{OperationId, OperationKind}
-import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.proposal.indexed.{ProposalElasticsearchFieldNames, SequencePool}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{LabelId, Language}
 import org.make.core.tag.TagId
@@ -531,7 +531,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.sequencePool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool.shortName))
         case _ => None
       }
     }
@@ -541,7 +541,7 @@ object SearchFilters extends ElasticDsl {
     searchQuery.filters.flatMap {
       _.sequenceSegmentPool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequenceSegmentPool, sequencePool))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequenceSegmentPool, sequencePool.shortName))
         case _ => None
       }
     }
@@ -626,7 +626,7 @@ final case class Skip(value: Int)
 final case class MinVotesCountSearchFilter(minVotesCount: Int)
 final case class ToEnrichSearchFilter(toEnrich: Boolean)
 final case class MinScoreSearchFilter(minScore: Float)
-final case class SequencePoolSearchFilter(sequencePool: String)
+final case class SequencePoolSearchFilter(sequencePool: SequencePool)
 final case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
 final case class QuestionIsOpenSearchFilter(isOpen: Boolean)
 final case class SegmentSearchFilter(segment: String)

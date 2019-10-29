@@ -787,23 +787,50 @@ class ProposalActor(sessionHistoryActor: ActorRef)
             votes = Seq(
               Vote(
                 key = Agree,
-                qualifications =
-                  Seq(Qualification(key = LikeIt), Qualification(key = Doable), Qualification(key = PlatitudeAgree))
+                count = 0,
+                countVerified = 0,
+                countSequence = 0,
+                countSegment = 0,
+                qualifications = Seq(
+                  Qualification(key = LikeIt, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                  Qualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                  Qualification(key = PlatitudeAgree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+                )
               ),
               Vote(
                 key = Disagree,
+                count = 0,
+                countVerified = 0,
+                countSequence = 0,
+                countSegment = 0,
                 qualifications = Seq(
-                  Qualification(key = NoWay),
-                  Qualification(key = Impossible),
-                  Qualification(key = PlatitudeDisagree)
+                  Qualification(key = NoWay, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                  Qualification(key = Impossible, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                  Qualification(
+                    key = PlatitudeDisagree,
+                    count = 0,
+                    countVerified = 0,
+                    countSequence = 0,
+                    countSegment = 0
+                  )
                 )
               ),
               Vote(
                 key = Neutral,
+                count = 0,
+                countVerified = 0,
+                countSequence = 0,
+                countSegment = 0,
                 qualifications = Seq(
-                  Qualification(key = DoNotUnderstand),
-                  Qualification(key = NoOpinion),
-                  Qualification(key = DoNotCare)
+                  Qualification(
+                    key = DoNotUnderstand,
+                    count = 0,
+                    countVerified = 0,
+                    countSequence = 0,
+                    countSegment = 0
+                  ),
+                  Qualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                  Qualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
                 )
               )
             ),
@@ -921,6 +948,8 @@ object ProposalActor {
         Qualification(
           qualification.key,
           count = qualification.count,
+          countSequence = qualification.countSequence,
+          countSegment = qualification.countSegment,
           countVerified = event.votesVerified
             .filter(_.key == vote.key)
             .flatMap(_.qualifications.filter(_.key == qualification.key).map(_.countVerified))
@@ -930,6 +959,8 @@ object ProposalActor {
       Vote(
         key = vote.key,
         count = vote.count,
+        countSequence = vote.countSequence,
+        countSegment = vote.countSegment,
         countVerified = event.votesVerified.filter(_.key == vote.key).map(_.countVerified).sum,
         qualifications = qualifications,
       )
