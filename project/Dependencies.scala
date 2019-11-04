@@ -25,7 +25,7 @@ object Dependencies {
   private val akkaHttpVersion = "10.1.10"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
-  private val elastic4sVersion = "6.5.1"
+  private val elastic4sVersion = "6.5.4"
   private val kamonVersion = "2.0.0"
   private val kamonAkkaVersion = "2.0.0"
   private val kamonAkkaHttpVersion = "2.0.1"
@@ -66,8 +66,8 @@ object Dependencies {
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
   val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"
-  // TODO: Version 0.6.0 will support 2.13
-  val kryoSerializer: ModuleID = "com.github.romix.akka" %% "akka-kryo-serialization" % "0.5.2"
+
+  val kryoSerializer: ModuleID = "io.altoo" %% "akka-kryo-serialization" % "1.0.0"
 
   val swaggerUi: ModuleID = "org.webjars" % "swagger-ui" % swaggerUiVersion
 
@@ -94,7 +94,7 @@ object Dependencies {
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.5.0"
   val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "4.1"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.3.5"
+  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.4.0"
   val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.2.2"
   val flywaydb: ModuleID = "org.flywaydb"     % "flyway-core"  % "5.2.0"
 
@@ -115,13 +115,12 @@ object Dependencies {
 
   val configuration: ModuleID = "com.typesafe" % "config" % "1.3.3"
 
-  // TODO: find a working version
   val elastic4s: ModuleID = "com.sksamuel.elastic4s"      %% "elastic4s-core"  % elastic4sVersion
   val elastic4sHttp: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-http"  % elastic4sVersion
   val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
-  // TODO: Fork it!
+  // TODO: Wait for release
   val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.4"
   val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.5"
 
@@ -140,7 +139,7 @@ object Dependencies {
   val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"     % "it"
   val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"     % "it"
   val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % "it,test"
-  // TODO: fork it!
+  // TODO: Wait for release
   val staminaTestKit: ModuleID = "com.scalapenos" %% "stamina-testkit" % "0.1.4" % "test"
 
   // apache math

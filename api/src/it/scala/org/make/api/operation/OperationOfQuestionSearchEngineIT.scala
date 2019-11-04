@@ -226,7 +226,7 @@ class OperationOfQuestionSearchEngineIT
           entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
         )
       )
-    Await.result(responseFuture, 5.seconds)
+    Await.result(responseFuture, 20.seconds)
     responseFuture.onComplete {
       case Failure(e) =>
         logger.error(s"Cannot create elasticsearch schema: ${e.getStackTrace.mkString("\n")}")
