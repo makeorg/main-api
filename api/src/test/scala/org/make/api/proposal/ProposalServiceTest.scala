@@ -716,6 +716,9 @@ class ProposalServiceTest
           userId = paul.userId,
           filterVotes = None,
           filterQualifications = None,
+          sort = None,
+          limit = None,
+          skip = None,
           requestContext = RequestContext.empty
         ),
         Timeout(3.seconds)
@@ -797,6 +800,9 @@ class ProposalServiceTest
           userId = gil.userId,
           filterVotes = None,
           filterQualifications = None,
+          sort = None,
+          limit = None,
+          skip = None,
           requestContext = RequestContext.empty.copy(sessionId = SessionId("my-session"))
         ),
         Timeout(3.seconds)

@@ -28,7 +28,6 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, RemoteAddress, Status
 import akka.http.scaladsl.server.Route
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.proposal.{
   ProposalResponse,
   ProposalService,
@@ -49,13 +48,13 @@ import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort
-import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
+import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
-import org.make.core.user.{ConnectionMode, ReconnectInfo, Role, User, UserId}
+import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
@@ -70,7 +69,6 @@ class UserApiTest
     with DefaultUserApiComponent
     with QuestionServiceComponent
     with ProposalServiceComponent
-    with OperationServiceComponent
     with UserServiceComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -89,7 +87,6 @@ class UserApiTest
   override val facebookApi: FacebookApi = mock[FacebookApi]
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val proposalService: ProposalService = mock[ProposalService]
-  override val operationService: OperationService = mock[OperationService]
   override val questionService: QuestionService = mock[QuestionService]
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
@@ -1072,39 +1069,14 @@ class UserApiTest
 
     Mockito
       .when(
-        operationService.find(
-          ArgumentMatchers.any[Option[String]],
-          ArgumentMatchers.any[Option[Country]],
-          ArgumentMatchers.any[Option[String]],
-          ArgumentMatchers.any[Option[LocalDate]]
-        )
-      )
-      .thenReturn(
-        Future.successful(
-          Seq(
-            Operation(
-              operationId = OperationId("operation1"),
-              status = OperationStatus.Pending,
-              slug = "operation1",
-              defaultLanguage = Language("fr"),
-              allowedSources = Seq("core"),
-              operationKind = OperationKind.PublicConsultation,
-              events = List.empty,
-              createdAt = Some(DateHelper.now()),
-              updatedAt = None,
-              questions = Seq.empty
-            )
-          )
-        )
-      )
-
-    Mockito
-      .when(
         proposalService
           .searchProposalsVotedByUser(
             userId = ArgumentMatchers.eq(paul.userId),
             filterVotes = ArgumentMatchers.eq(None),
             filterQualifications = ArgumentMatchers.eq(None),
+            sort = ArgumentMatchers.eq(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
+            limit = ArgumentMatchers.eq(None),
+            skip = ArgumentMatchers.eq(None),
             requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
@@ -1116,6 +1088,9 @@ class UserApiTest
             userId = ArgumentMatchers.eq(gaston.userId),
             filterVotes = ArgumentMatchers.eq(None),
             filterQualifications = ArgumentMatchers.eq(None),
+            sort = ArgumentMatchers.eq(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
+            limit = ArgumentMatchers.eq(None),
+            skip = ArgumentMatchers.eq(None),
             requestContext = ArgumentMatchers.any[RequestContext]
           )
       )
@@ -1147,8 +1122,7 @@ class UserApiTest
         .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val result = entityAs[ProposalsResultResponse]
-        result.total should be(1)
-        result.results.head.id should be(ProposalId("proposal-1"))
+        result.results.map(_.id) should contain(ProposalId("proposal-1"))
       }
     }
   }
@@ -1234,34 +1208,6 @@ class UserApiTest
     Mockito
       .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(accessToken2)))
       .thenReturn(Future.successful(Some(fakeAuthInfo2)))
-
-    Mockito
-      .when(
-        operationService.find(
-          ArgumentMatchers.any[Option[String]],
-          ArgumentMatchers.any[Option[Country]],
-          ArgumentMatchers.any[Option[String]],
-          ArgumentMatchers.any[Option[LocalDate]]
-        )
-      )
-      .thenReturn(
-        Future.successful(
-          Seq(
-            Operation(
-              operationId = OperationId("operation1"),
-              status = OperationStatus.Pending,
-              slug = "operation1",
-              defaultLanguage = Language("fr"),
-              allowedSources = Seq("core"),
-              operationKind = OperationKind.PublicConsultation,
-              events = List.empty,
-              createdAt = Some(DateHelper.now()),
-              updatedAt = None,
-              questions = Seq.empty
-            )
-          )
-        )
-      )
 
     Mockito
       .when(

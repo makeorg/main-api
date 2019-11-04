@@ -34,19 +34,12 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.OperationServiceComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{
-  EndpointType,
-  EventBusServiceComponent,
-  IdGeneratorComponent,
-  MakeAuthenticationDirectives,
-  ReadJournalComponent
-}
+import org.make.api.technical._
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
@@ -59,7 +52,7 @@ import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.{MailingErrorLog, ReconnectInfo, Role, User, UserId}
+import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -137,7 +130,11 @@ trait UserApi extends Directives {
         example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
       ),
       new ApiImplicitParam(name = "votes", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "qualifications", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "qualifications", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer")
     )
   )
   @ApiResponses(
@@ -287,7 +284,11 @@ trait UserApi extends Directives {
         paramType = "path",
         dataType = "string",
         example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
-      )
+      ),
+      new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer")
     )
   )
   @ApiResponses(
@@ -483,7 +484,6 @@ trait DefaultUserApiComponent
     with IdGeneratorComponent
     with SocialServiceComponent
     with ProposalServiceComponent
-    with OperationServiceComponent
     with QuestionServiceComponent
     with EventBusServiceComponent
     with PersistentUserServiceComponent
@@ -631,31 +631,39 @@ trait DefaultUserApiComponent
       path("user" / userId / "votes") { userId: UserId =>
         makeOperation("UserVotedProposals") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            parameters(('votes.as[immutable.Seq[VoteKey]].?, 'qualifications.as[immutable.Seq[QualificationKey]].?)) {
-              (votes: Option[Seq[VoteKey]], qualifications: Option[Seq[QualificationKey]]) =>
+            parameters(
+              (
+                'votes.as[immutable.Seq[VoteKey]].?,
+                'qualifications.as[immutable.Seq[QualificationKey]].?,
+                'sort.?,
+                'order.as[SortOrder].?,
+                'limit.as[Int].?,
+                'skip.as[Int].?
+              )
+            ) {
+              (votes: Option[Seq[VoteKey]],
+               qualifications: Option[Seq[QualificationKey]],
+               sort: Option[String],
+               order: Option[SortOrder],
+               limit: Option[Int],
+               skip: Option[Int]) =>
                 if (userAuth.user.userId != userId) {
                   complete(StatusCodes.Forbidden)
                 } else {
+                  val defaultSort = Some("createdAt")
+                  val defaultOrder = Some(Desc)
                   provideAsync(
-                    operationService
-                      .find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
-                  ) { operations =>
-                    provideAsync(
-                      proposalService.searchProposalsVotedByUser(
-                        userId = userId,
-                        filterVotes = votes,
-                        filterQualifications = qualifications,
-                        requestContext = requestContext
-                      )
-                    ) { proposalsSearchResult =>
-                      val proposalListFiltered = proposalsSearchResult.results.filter { proposal =>
-                        proposal.operationId
-                          .exists(operationId => operations.map(_.operationId).contains(operationId))
-                      }
-                      val result =
-                        proposalsSearchResult.copy(total = proposalListFiltered.size, results = proposalListFiltered)
-                      complete(result)
-                    }
+                    proposalService.searchProposalsVotedByUser(
+                      userId = userId,
+                      filterVotes = votes,
+                      filterQualifications = qualifications,
+                      sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                      limit = limit,
+                      skip = skip,
+                      requestContext = requestContext
+                    )
+                  ) { proposalsSearchResult =>
+                    complete(proposalsSearchResult)
                   }
                 }
             }
@@ -865,14 +873,12 @@ trait DefaultUserApiComponent
       path("user" / userId / "proposals") { userId: UserId =>
         makeOperation("UserProposals") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            parameters(('sort.?, 'order.as[SortOrder].?)) { (sort: Option[String], order: Option[SortOrder]) =>
-              val connectedUserId: UserId = userAuth.user.userId
-              if (connectedUserId != userId) {
-                complete(StatusCodes.Forbidden)
-              } else {
-                provideAsync(
-                  operationService.find(slug = None, country = None, maybeSource = requestContext.source, openAt = None)
-                ) { operations =>
+            parameters(('sort.?, 'order.as[SortOrder].?, 'limit.as[Int].?, 'skip.as[Int].?)) {
+              (sort: Option[String], order: Option[SortOrder], limit: Option[Int], skip: Option[Int]) =>
+                val connectedUserId: UserId = userAuth.user.userId
+                if (connectedUserId != userId) {
+                  complete(StatusCodes.Forbidden)
+                } else {
                   val defaultSort = Some("createdAt")
                   val defaultOrder = Some(Desc)
                   provideAsync(
@@ -887,21 +893,17 @@ trait DefaultUserApiComponent
                             }.toSeq))
                           )
                         ),
-                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder)))
+                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                        limit = limit,
+                        skip = skip
                       ),
                       requestContext = requestContext
                     )
                   ) { proposalsSearchResult =>
-                    val proposalListFiltered = proposalsSearchResult.results.filter { proposal =>
-                      proposal.operationId
-                        .exists(operationId => operations.map(_.operationId).contains(operationId))
-                    }
-                    val result =
-                      proposalsSearchResult.copy(total = proposalListFiltered.size, results = proposalListFiltered)
-                    complete(result)
+                    complete(proposalsSearchResult)
                   }
                 }
-              }
+
             }
           }
         }
