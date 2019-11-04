@@ -38,7 +38,6 @@ import scalaoauth2.provider._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 @Api(value = "Authentication")
@@ -300,43 +299,7 @@ trait DefaultAuthenticationApiComponent
             Found
           )
         case None =>
-          mapResponseHeaders(
-            _ ++ Seq(
-              `Set-Cookie`(
-                HttpCookie(
-                  name = makeSettings.SecureCookie.name,
-                  value = grantResult.accessToken,
-                  secure = makeSettings.SecureCookie.isSecure,
-                  httpOnly = true,
-                  maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
-                  path = Some("/"),
-                  domain = Some(makeSettings.SecureCookie.domain)
-                )
-              ),
-              `Set-Cookie`(
-                HttpCookie(
-                  name = makeSettings.SecureCookie.expirationName,
-                  value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SecureCookie.lifetime.toSeconds)),
-                  secure = makeSettings.SecureCookie.isSecure,
-                  httpOnly = false,
-                  maxAge = Some(365.days.toSeconds),
-                  path = Some("/"),
-                  domain = Some(makeSettings.SecureCookie.domain)
-                )
-              ),
-              `Set-Cookie`(
-                HttpCookie(
-                  name = makeSettings.UserIdCookie.name,
-                  value = grantResult.authInfo.user.userId.value,
-                  secure = makeSettings.UserIdCookie.isSecure,
-                  httpOnly = true,
-                  maxAge = Some(365.days.toSeconds),
-                  path = Some("/"),
-                  domain = Some(makeSettings.UserIdCookie.domain)
-                )
-              )
-            )
-          ) {
+          setMakeSecure(grantResult.accessToken, grantResult.authInfo.user.userId) {
             complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
           }
       }

@@ -22,7 +22,6 @@ package org.make.api.user
 import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import com.sksamuel.elastic4s.searches.sort.SortOrder
@@ -59,7 +58,6 @@ import scala.annotation.meta.field
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 import scala.util.{Success, Try}
 
 @Api(value = "User")
@@ -564,54 +562,7 @@ trait DefaultUserApiComponent
                           .map(_ => social)
                       }
                   ) { social =>
-                    mapResponseHeaders { responseHeaders =>
-                      if (responseHeaders.exists(
-                            header =>
-                              header.name() == `Set-Cookie`.name && header
-                                .asInstanceOf[`Set-Cookie`]
-                                .cookie
-                                .name == makeSettings.SecureCookie.name
-                          )) {
-                        responseHeaders
-                      } else {
-                        responseHeaders ++ Seq(
-                          `Set-Cookie`(
-                            HttpCookie(
-                              name = makeSettings.SecureCookie.name,
-                              value = social.token.access_token,
-                              secure = makeSettings.SecureCookie.isSecure,
-                              httpOnly = true,
-                              maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
-                              path = Some("/"),
-                              domain = Some(makeSettings.SecureCookie.domain)
-                            )
-                          ),
-                          `Set-Cookie`(
-                            HttpCookie(
-                              name = makeSettings.SecureCookie.expirationName,
-                              value = DateHelper
-                                .format(DateHelper.now().plusSeconds(makeSettings.SecureCookie.lifetime.toSeconds)),
-                              secure = makeSettings.SecureCookie.isSecure,
-                              httpOnly = false,
-                              maxAge = Some(365.days.toSeconds),
-                              path = Some("/"),
-                              domain = Some(makeSettings.SecureCookie.domain)
-                            )
-                          ),
-                          `Set-Cookie`(
-                            HttpCookie(
-                              name = makeSettings.UserIdCookie.name,
-                              value = social.userId.value,
-                              secure = makeSettings.UserIdCookie.isSecure,
-                              httpOnly = true,
-                              maxAge = Some(365.days.toSeconds),
-                              path = Some("/"),
-                              domain = Some(makeSettings.UserIdCookie.domain)
-                            )
-                          )
-                        )
-                      }
-                    } {
+                    setMakeSecure(social.token.access_token, social.userId) {
                       complete(StatusCodes.Created -> social.token)
                     }
                   }
@@ -736,8 +687,8 @@ trait DefaultUserApiComponent
               } else {
                 onSuccess(
                   userService
-                    .validateEmail(verificationToken = verificationToken)
-                    .map { result =>
+                    .validateEmail(user = user, verificationToken = verificationToken)
+                    .map { token =>
                       eventBusService.publish(
                         UserValidatedAccountEvent(
                           userId = userId,
@@ -747,10 +698,12 @@ trait DefaultUserApiComponent
                           eventDate = DateHelper.now()
                         )
                       )
-                      result
+                      token
                     }
-                ) { _ =>
-                  complete(StatusCodes.NoContent)
+                ) { token =>
+                  setMakeSecure(token.access_token, userId) {
+                    complete(StatusCodes.NoContent)
+                  }
                 }
               }
             }
