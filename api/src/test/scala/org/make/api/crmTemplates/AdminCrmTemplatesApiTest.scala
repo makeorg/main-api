@@ -136,9 +136,10 @@ class AdminCrmTemplatesApiTest
     proposalAccepted = TemplateId("56782"),
     proposalRefused = TemplateId("56783"),
     forgottenPassword = TemplateId("56784"),
-    proposalAcceptedOrganisation = TemplateId("56785"),
-    proposalRefusedOrganisation = TemplateId("56786"),
-    forgottenPasswordOrganisation = TemplateId("56787")
+    resendRegistration = TemplateId("56785"),
+    proposalAcceptedOrganisation = TemplateId("56786"),
+    proposalRefusedOrganisation = TemplateId("56787"),
+    forgottenPasswordOrganisation = TemplateId("56788")
   )
 
   val validCrmTemplates = CrmTemplates(
@@ -150,9 +151,10 @@ class AdminCrmTemplatesApiTest
     proposalAccepted = TemplateId("12342"),
     proposalRefused = TemplateId("12343"),
     forgottenPassword = TemplateId("12344"),
-    proposalAcceptedOrganisation = TemplateId("12345"),
-    proposalRefusedOrganisation = TemplateId("12346"),
-    forgottenPasswordOrganisation = TemplateId("12347")
+    resendRegistration = TemplateId("12345"),
+    proposalAcceptedOrganisation = TemplateId("12346"),
+    proposalRefusedOrganisation = TemplateId("12347"),
+    forgottenPasswordOrganisation = TemplateId("12348")
   )
 
   when(crmTemplatesService.createCrmTemplates(ArgumentMatchers.any[CreateCrmTemplates])).thenAnswer { invocation =>
@@ -232,9 +234,10 @@ class AdminCrmTemplatesApiTest
          |  "proposalAccepted": "12342",
          |  "proposalRefused": "12343",
          |  "forgottenPassword": "12344",
-         |  "proposalAcceptedOrganisation": "12345",
-         |  "proposalRefusedOrganisation": "12346",
-         |  "forgottenPasswordOrganisation": "12347"
+         |  "resendRegistration": "12345",
+         |  "proposalAcceptedOrganisation": "12346",
+         |  "proposalRefusedOrganisation": "12347",
+         |  "forgottenPasswordOrganisation": "12348"
          |}""".stripMargin
     scenario("unauthenticated") {
       Post("/admin/crm/templates")
@@ -275,9 +278,10 @@ class AdminCrmTemplatesApiTest
            |  "proposalAccepted": "12342",
            |  "proposalRefused": "12343",
            |  "forgottenPassword": "12344",
-           |  "proposalAcceptedOrganisation": "12345",
-           |  "proposalRefusedOrganisation": "12346",
-           |  "forgottenPasswordOrganisation": "12347"
+           |  "resendRegistration": "12345",
+           |  "proposalAcceptedOrganisation": "12346",
+           |  "proposalRefusedOrganisation": "12347",
+           |  "forgottenPasswordOrganisation": "12348"
            |}""".stripMargin
 
       Post("/admin/crm/templates")
@@ -300,9 +304,10 @@ class AdminCrmTemplatesApiTest
            |  "proposalAccepted": "12342",
            |  "proposalRefused": "12343",
            |  "forgottenPassword": "12344",
-           |  "proposalAcceptedOrganisation": "12345",
-           |  "proposalRefusedOrganisation": "12346",
-           |  "forgottenPasswordOrganisation": "12347"
+           |  "resendRegistration": "12345",
+           |  "proposalAcceptedOrganisation": "12346",
+           |  "proposalRefusedOrganisation": "12347",
+           |  "forgottenPasswordOrganisation": "12348"
            |}""".stripMargin
 
       Post("/admin/crm/templates")
@@ -392,9 +397,10 @@ class AdminCrmTemplatesApiTest
          |  "proposalAccepted": "12342",
          |  "proposalRefused": "12343",
          |  "forgottenPassword": "12344",
-         |  "proposalAcceptedOrganisation": "12345",
-         |  "proposalRefusedOrganisation": "12346",
-         |  "forgottenPasswordOrganisation": "12347"
+         |  "resendRegistration": "12345",
+         |  "proposalAcceptedOrganisation": "12346",
+         |  "proposalRefusedOrganisation": "12347",
+         |  "forgottenPasswordOrganisation": "12348"
          |}""".stripMargin
 
     scenario("update fake crmTemplates") {
@@ -434,9 +440,10 @@ class AdminCrmTemplatesApiTest
           |  "proposalAccepted": "12342",
           |  "proposalRefused": "12343",
           |  "forgottenPassword": "12344",
-          |  "proposalAcceptedOrganisation": "12345",
-          |  "proposalRefusedOrganisation": "12346",
-          |  "forgottenPasswordOrganisation": "12347"
+          |  "resendRegistration": "12345",
+          |  "proposalAcceptedOrganisation": "12346",
+          |  "proposalRefusedOrganisation": "12347",
+          |  "forgottenPasswordOrganisation": "12348"
           |}""".stripMargin
 
       Put("/admin/crm/templates/fake")

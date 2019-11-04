@@ -60,6 +60,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         proposalAccepted = TemplateId("accepted-id"),
         proposalRefused = TemplateId("refused-id"),
         forgottenPassword = TemplateId("forgot_password-id"),
+        resendRegistration = TemplateId("resend-registration-id"),
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
         forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id")
@@ -98,6 +99,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         proposalAccepted = TemplateId("accepted-id"),
         proposalRefused = TemplateId("refused-id"),
         forgottenPassword = TemplateId("forgot_password-id"),
+        resendRegistration = TemplateId("resend-registration-id"),
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
         forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id")
@@ -143,6 +145,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         proposalAccepted = TemplateId("accepted-id"),
         proposalRefused = TemplateId("refused-id"),
         forgottenPassword = TemplateId("forgot_password-id"),
+        resendRegistration = TemplateId("resend-registration-id"),
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
         forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id")

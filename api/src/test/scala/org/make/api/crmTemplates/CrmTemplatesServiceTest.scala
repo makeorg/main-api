@@ -58,6 +58,7 @@ class CrmTemplatesServiceTest
           proposalAccepted = TemplateId("123456"),
           proposalRefused = TemplateId("123456"),
           forgottenPassword = TemplateId("123456"),
+          resendRegistration = TemplateId("123456"),
           proposalAcceptedOrganisation = TemplateId("123456"),
           proposalRefusedOrganisation = TemplateId("123456"),
           forgottenPasswordOrganisation = TemplateId("123456")
@@ -77,6 +78,7 @@ class CrmTemplatesServiceTest
               proposalAccepted = TemplateId("123456"),
               proposalRefused = TemplateId("123456"),
               forgottenPassword = TemplateId("123456"),
+              resendRegistration = TemplateId("123456"),
               proposalAcceptedOrganisation = TemplateId("123456"),
               proposalRefusedOrganisation = TemplateId("123456"),
               forgottenPasswordOrganisation = TemplateId("123456")
@@ -98,6 +100,7 @@ class CrmTemplatesServiceTest
           proposalAccepted = TemplateId("123456"),
           proposalRefused = TemplateId("123456"),
           forgottenPassword = TemplateId("123456"),
+          resendRegistration = TemplateId("123456"),
           proposalAcceptedOrganisation = TemplateId("123456"),
           proposalRefusedOrganisation = TemplateId("123456"),
           forgottenPasswordOrganisation = TemplateId("123456")
@@ -119,6 +122,7 @@ class CrmTemplatesServiceTest
         proposalAccepted = TemplateId("123456"),
         proposalRefused = TemplateId("123456"),
         forgottenPassword = TemplateId("123456"),
+        resendRegistration = TemplateId("123456"),
         proposalAcceptedOrganisation = TemplateId("123456"),
         proposalRefusedOrganisation = TemplateId("123456"),
         forgottenPasswordOrganisation = TemplateId("123456")
@@ -138,6 +142,7 @@ class CrmTemplatesServiceTest
           proposalAccepted = TemplateId("123456"),
           proposalRefused = TemplateId("123456"),
           forgottenPassword = TemplateId("123456"),
+          resendRegistration = TemplateId("123456"),
           proposalAcceptedOrganisation = TemplateId("123456"),
           proposalRefusedOrganisation = TemplateId("123456"),
           forgottenPasswordOrganisation = TemplateId("123456")
@@ -160,6 +165,7 @@ class CrmTemplatesServiceTest
       proposalAccepted = TemplateId("123456"),
       proposalRefused = TemplateId("123456"),
       forgottenPassword = TemplateId("123456"),
+      resendRegistration = TemplateId("123456"),
       proposalAcceptedOrganisation = TemplateId("123456"),
       proposalRefusedOrganisation = TemplateId("123456"),
       forgottenPasswordOrganisation = TemplateId("123456")

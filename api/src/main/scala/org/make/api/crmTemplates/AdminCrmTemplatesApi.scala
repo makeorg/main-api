@@ -198,6 +198,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                             proposalRefused <- request.proposalRefused.orElse(defaultTemplate.map(_.proposalRefused))
                             forgottenPassword <- request.forgottenPassword
                               .orElse(defaultTemplate.map(_.forgottenPassword))
+                            resendRegistration <- request.resendRegistration
+                              .orElse(defaultTemplate.map(_.resendRegistration))
                             proposalAcceptedOrganisation <- request.proposalAcceptedOrganisation
                               .orElse(defaultTemplate.map(_.proposalAcceptedOrganisation))
                             proposalRefusedOrganisation <- request.proposalRefusedOrganisation
@@ -213,6 +215,7 @@ trait DefaultAdminCrmTemplatesApiComponent
                               proposalAccepted,
                               proposalRefused,
                               forgottenPassword,
+                              resendRegistration,
                               proposalAcceptedOrganisation,
                               proposalRefusedOrganisation,
                               forgottenPasswordOrganisation
@@ -259,6 +262,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                           proposalRefused <- request.proposalRefused.orElse(defaultTemplate.map(_.proposalRefused))
                           forgottenPassword <- request.forgottenPassword
                             .orElse(defaultTemplate.map(_.forgottenPassword))
+                          resendRegistration <- request.resendRegistration
+                            .orElse(defaultTemplate.map(_.resendRegistration))
                           proposalAcceptedOrganisation <- request.proposalAcceptedOrganisation
                             .orElse(defaultTemplate.map(_.proposalAcceptedOrganisation))
                           proposalRefusedOrganisation <- request.proposalRefusedOrganisation
@@ -273,6 +278,7 @@ trait DefaultAdminCrmTemplatesApiComponent
                             proposalAccepted,
                             proposalRefused,
                             forgottenPassword,
+                            resendRegistration,
                             proposalAcceptedOrganisation,
                             proposalRefusedOrganisation,
                             forgottenPasswordOrganisation
@@ -309,6 +315,8 @@ trait DefaultAdminCrmTemplatesApiComponent
           .requirePresent(fieldName = "proposalRefused", fieldValue = request.proposalRefused),
         Validation
           .requirePresent(fieldName = "forgottenPassword", fieldValue = request.forgottenPassword),
+        Validation
+          .requirePresent(fieldName = "resendRegistration", fieldValue = request.resendRegistration),
         Validation
           .requirePresent(
             fieldName = "proposalAcceptedOrganisation",
