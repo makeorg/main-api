@@ -247,7 +247,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       votedProposals.flatMap {
         case proposalIdsWithVotes if proposalIdsWithVotes.isEmpty =>
-          Future.successful(Seq.empty)
+          Future.successful((0L, Seq.empty))
         case proposalIdsWithVotes =>
           val proposalIds: Seq[ProposalId] = proposalIdsWithVotes.toSeq.sortWith {
             case ((_, firstVotesAndQualifications), (_, nextVotesAndQualifications)) =>
@@ -267,12 +267,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
               requestContext
             )
             .map { proposalResultSeededResponse =>
-              proposalResultSeededResponse.results.sortWith {
+              val proposalResult = proposalResultSeededResponse.results.sortWith {
                 case (first, next) => proposalIds.indexOf(first.id) < proposalIds.indexOf(next.id)
               }
+              (proposalResultSeededResponse.total, proposalResult)
             }
-      }.map { proposalResult =>
-        ProposalsResultResponse(total = proposalResult.size, results = proposalResult)
+      }.map {
+        case (total, proposalResult) =>
+          ProposalsResultResponse(total = total, results = proposalResult)
       }
     }
 

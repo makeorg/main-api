@@ -382,14 +382,14 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
               requestContext = requestContext
             )
             .map { proposalResultSeededResponse =>
-              proposalResultSeededResponse.results.sortWith {
+              proposalResultSeededResponse.copy(results = proposalResultSeededResponse.results.sortWith {
                 case (first, next) => proposalIds.indexOf(first.id) < proposalIds.indexOf(next.id)
-              }
+              })
             }
-            .map { results =>
+            .map { proposalResults =>
               ProposalsResultWithUserVoteSeededResponse(
-                total = results.size,
-                results = results.map { proposal =>
+                total = proposalResults.total,
+                results = proposalResults.results.map { proposal =>
                   val proposalVoteAndQualification = proposalIdsWithVotes(proposal.id)
                   ProposalResultWithUserVote(
                     proposal,
