@@ -79,9 +79,6 @@ object Dependencies {
   val kamonScalaFutures: ModuleID = "io.kamon" %% "kamon-scala-future" % kamonScalaFuturesVersion
   val kamonAkkaHttp: ModuleID =
     ("io.kamon" %% "kamon-akka-http" % kamonAkkaHttpVersion).exclude("ch.qos.logback", "logback-classic")
-  // TODO: wait for release of next RC or official version
-  val kamonAkkaRemote: ModuleID = ("io.kamon" %% "kamon-akka-remote" % kamonAkkaRemoteVersion)
-    .exclude("ch.qos.logback", "logback-classic")
   val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonSystemMetricsVersion
   val kamonPrometheus: ModuleID = "io.kamon"    %% "kamon-prometheus"     % kamonPrometheusVersion
 
