@@ -204,7 +204,8 @@ class ModerationQuestionApiTest
     metas = Metas(title = None, description = None, picture = None),
     theme = QuestionTheme.default,
     description = OperationOfQuestion.defaultDescription,
-    imageUrl = Some("image-url"),
+    consultationImage = Some("image-url"),
+    descriptionImage = None,
     displayResults = false
   )
 
@@ -550,7 +551,7 @@ class ModerationQuestionApiTest
 
   feature("upload image") {
     implicit val timeout: RouteTestTimeout = RouteTestTimeout(300.seconds)
-    def uri(id: String = "question-id") = s"/moderation/questions/$id/images"
+    def uri(id: String = "question-id") = s"/moderation/questions/$id/consultation-image"
 
     when(questionService.getQuestion(QuestionId("question-id-no-operation")))
       .thenReturn(Future.successful(Some(baseQuestion.copy(operationId = None))))

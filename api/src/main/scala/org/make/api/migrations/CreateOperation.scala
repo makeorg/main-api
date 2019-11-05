@@ -58,7 +58,7 @@ object CreateOperation {
                                          sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default,
                                          canPropose: Boolean = true,
                                          aboutUrl: Option[String],
-                                         imageUrl: Option[String])
+                                         consultationImage: Option[String])
 
   final case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 

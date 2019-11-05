@@ -90,7 +90,7 @@ class HomeViewServiceComponentTest
     slug = "",
     description = "Description opeOfQue",
     theme = QuestionTheme("#000000", "#000000", "#000000", "#000000"),
-    imageUrl = None,
+    consultationImage = None,
     country = Country("FR"),
     language = Language("fr"),
     operationKind = "",

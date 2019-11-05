@@ -130,7 +130,8 @@ class QuestionApiTest
     metas = Metas(title = None, description = None, picture = None),
     theme = QuestionTheme.default,
     description = OperationOfQuestion.defaultDescription,
-    imageUrl = None,
+    consultationImage = None,
+    descriptionImage = None,
     displayResults = false
   )
 
@@ -161,7 +162,8 @@ class QuestionApiTest
       metas = Metas(title = None, description = None, picture = None),
       theme = QuestionTheme.default,
       description = OperationOfQuestion.defaultDescription,
-      imageUrl = None,
+      consultationImage = None,
+      descriptionImage = None,
       displayResults = false
     )
     scenario("valid question") {
@@ -283,7 +285,7 @@ class QuestionApiTest
         footerFontColor = "#242424"
       ),
       description = "awesome description",
-      imageUrl = None,
+      consultationImage = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = OperationId("operation-id"),

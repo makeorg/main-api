@@ -74,7 +74,7 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            country: Country,
                                            language: Language,
                                            question: String,
-                                           imageUrl: Option[String])
+                                           consultationImage: Option[String])
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]] = None,
                                              operationIds: Option[Seq[OperationId]] = None,
@@ -201,7 +201,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         metas = Metas(None, None, None),
         theme = QuestionTheme.default,
         description = OperationOfQuestion.defaultDescription,
-        imageUrl = parameters.imageUrl,
+        consultationImage = parameters.consultationImage,
+        descriptionImage = None,
         displayResults = false
       )
 

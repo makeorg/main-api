@@ -653,7 +653,7 @@
           "type": "text",
           "index": true
         },
-        "imageUrl": {
+        "consultationImage": {
           "type": "text",
           "index": false
         },
