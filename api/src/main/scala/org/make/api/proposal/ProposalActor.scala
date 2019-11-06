@@ -63,23 +63,23 @@ class ProposalActor(sessionHistoryActor: ActorRef)
   def proposalId: ProposalId = ProposalId(self.path.name)
 
   override def receiveCommand: Receive = {
-    case _: GetProposal                              => sender() ! state.map(_.proposal)
-    case command: ViewProposalCommand                => onViewProposalCommand(command)
-    case command: ProposeCommand                     => onProposeCommand(command)
-    case command: UpdateProposalCommand              => onUpdateProposalCommand(command)
-    case command: UpdateProposalVotesVerifiedCommand => onUpdateProposalVotesVerifiedCommand(command)
-    case command: AcceptProposalCommand              => onAcceptProposalCommand(command)
-    case command: RefuseProposalCommand              => onRefuseProposalCommand(command)
-    case command: PostponeProposalCommand            => onPostponeProposalCommand(command)
-    case command: VoteProposalCommand                => onVoteProposalCommand(command)
-    case command: UnvoteProposalCommand              => onUnvoteProposalCommand(command)
-    case command: QualifyVoteCommand                 => onQualificationProposalCommand(command)
-    case command: UnqualifyVoteCommand               => onUnqualificationProposalCommand(command)
-    case command: LockProposalCommand                => onLockProposalCommand(command)
-    case command: PatchProposalCommand               => onPatchProposalCommand(command)
-    case command: AnonymizeProposalCommand           => onAnonymizeProposalCommand(command)
-    case Snapshot                                    => saveSnapshot()
-    case _: KillProposalShard                        => self ! PoisonPill
+    case _: GetProposal                      => sender() ! state.map(_.proposal)
+    case command: ViewProposalCommand        => onViewProposalCommand(command)
+    case command: ProposeCommand             => onProposeCommand(command)
+    case command: UpdateProposalCommand      => onUpdateProposalCommand(command)
+    case command: UpdateProposalVotesCommand => onUpdateProposalVotesCommand(command)
+    case command: AcceptProposalCommand      => onAcceptProposalCommand(command)
+    case command: RefuseProposalCommand      => onRefuseProposalCommand(command)
+    case command: PostponeProposalCommand    => onPostponeProposalCommand(command)
+    case command: VoteProposalCommand        => onVoteProposalCommand(command)
+    case command: UnvoteProposalCommand      => onUnvoteProposalCommand(command)
+    case command: QualifyVoteCommand         => onQualificationProposalCommand(command)
+    case command: UnqualifyVoteCommand       => onUnqualificationProposalCommand(command)
+    case command: LockProposalCommand        => onLockProposalCommand(command)
+    case command: PatchProposalCommand       => onPatchProposalCommand(command)
+    case command: AnonymizeProposalCommand   => onAnonymizeProposalCommand(command)
+    case Snapshot                            => saveSnapshot()
+    case _: KillProposalShard                => self ! PoisonPill
   }
 
   def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
@@ -444,8 +444,8 @@ class ProposalActor(sessionHistoryActor: ActorRef)
     }
   }
 
-  private def onUpdateProposalVotesVerifiedCommand(command: UpdateProposalVotesVerifiedCommand): Unit = {
-    val maybeEvent = validateUpdateVotesVerifiedCommand(command)
+  private def onUpdateProposalVotesCommand(command: UpdateProposalVotesCommand): Unit = {
+    val maybeEvent = validateUpdateVotesCommand(command)
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
@@ -565,8 +565,8 @@ class ProposalActor(sessionHistoryActor: ActorRef)
     }.getOrElse(Right(None))
   }
 
-  private def validateUpdateVotesVerifiedCommand(
-    command: UpdateProposalVotesVerifiedCommand
+  private def validateUpdateVotesCommand(
+    command: UpdateProposalVotesCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
     state.map {
       case ProposalState(proposal, _) =>
@@ -585,18 +585,55 @@ class ProposalActor(sessionHistoryActor: ActorRef)
         } else {
           Right(
             Some(
-              ProposalVotesVerifiedUpdated(
+              ProposalVotesUpdated(
                 id = proposalId,
                 eventDate = DateHelper.now(),
                 requestContext = command.requestContext,
                 updatedAt = command.updatedAt,
                 moderator = Some(command.moderator),
-                votesVerified = command.votesVerified
+                newVotes = mergeVotes(proposal.votes, command.votes)
               )
             )
           )
         }
     }.getOrElse(Right(None))
+  }
+
+  private def mergeQualifications(proposalQualifications: Seq[Qualification],
+                                  commandQualification: Seq[UpdateQualificationRequest]): Seq[Qualification] = {
+    val commandQualificationsAsMap: Map[QualificationKey, UpdateQualificationRequest] =
+      commandQualification.map(qualification => qualification.key -> qualification).toMap
+
+    proposalQualifications.map { qualification =>
+      commandQualificationsAsMap.get(qualification.key) match {
+        case None => qualification
+        case Some(updatedQualification) =>
+          qualification.copy(
+            count = updatedQualification.count.getOrElse(qualification.count),
+            countVerified = updatedQualification.countVerified.getOrElse(qualification.countVerified),
+            countSequence = updatedQualification.countSequence.getOrElse(qualification.countSequence),
+            countSegment = updatedQualification.countSegment.getOrElse(qualification.countSegment),
+          )
+      }
+
+    }
+  }
+
+  private def mergeVotes(proposalVotes: Seq[Vote], commandVotes: Seq[UpdateVoteRequest]): Seq[Vote] = {
+    val commandVotesAsMap: Map[VoteKey, UpdateVoteRequest] = commandVotes.map(vote => vote.key -> vote).toMap
+    proposalVotes.map { vote =>
+      commandVotesAsMap.get(vote.key) match {
+        case None => vote
+        case Some(updatedVote) =>
+          vote.copy(
+            count = updatedVote.count.getOrElse(vote.count),
+            countVerified = updatedVote.countVerified.getOrElse(vote.countVerified),
+            countSequence = updatedVote.countSequence.getOrElse(vote.countSequence),
+            countSegment = updatedVote.countSegment.getOrElse(vote.countSegment),
+            qualifications = mergeQualifications(vote.qualifications, updatedVote.qualifications)
+          )
+      }
+    }
   }
 
   private def validateAcceptCommand(
@@ -851,6 +888,7 @@ class ProposalActor(sessionHistoryActor: ActorRef)
       )
     case e: ProposalUpdated              => state.map(applyProposalUpdated(_, e))
     case e: ProposalVotesVerifiedUpdated => state.map(applyProposalVotesVerifiedUpdated(_, e))
+    case e: ProposalVotesUpdated         => state.map(applyProposalVotesUpdated(_, e))
     case e: ProposalAccepted             => state.map(applyProposalAccepted(_, e))
     case e: ProposalRefused              => state.map(applyProposalRefused(_, e))
     case e: ProposalPostponed            => state.map(applyProposalPostponed(_, e))
@@ -968,6 +1006,10 @@ object ProposalActor {
     val proposal = state.proposal.copy(votes = votes)
 
     state.copy(proposal = proposal, None)
+  }
+
+  def applyProposalVotesUpdated(state: ProposalState, event: ProposalVotesUpdated): ProposalState = {
+    state.copy(proposal = state.proposal.copy(votes = event.newVotes))
   }
 
   def applyProposalAccepted(state: ProposalState, event: ProposalAccepted): ProposalState = {

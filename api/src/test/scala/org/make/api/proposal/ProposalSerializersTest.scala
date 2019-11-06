@@ -28,6 +28,18 @@ import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.Trusted
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
+import org.make.core.proposal.QualificationKey.{
+  DoNotCare,
+  DoNotUnderstand,
+  Doable,
+  Impossible,
+  LikeIt,
+  NoOpinion,
+  NoWay,
+  PlatitudeAgree,
+  PlatitudeDisagree
+}
+import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
@@ -216,6 +228,52 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
         moderatorId = userId
       )
 
+    val proposalVotesUpdated = ProposalVotesUpdated(
+      id = proposalId,
+      eventDate = eventDate,
+      requestContext = requestContext,
+      updatedAt = eventDate,
+      moderator = Some(userId),
+      newVotes = Seq(
+        Vote(
+          key = Agree,
+          count = 1,
+          countVerified = 2,
+          countSequence = 3,
+          countSegment = 4,
+          qualifications = Seq(
+            Qualification(LikeIt, 101, 102, 103, 104),
+            Qualification(Doable, 111, 112, 113, 114),
+            Qualification(PlatitudeAgree, 121, 122, 123, 124)
+          )
+        ),
+        Vote(
+          key = Disagree,
+          count = 11,
+          countVerified = 12,
+          countSequence = 13,
+          countSegment = 14,
+          qualifications = Seq(
+            Qualification(NoWay, 201, 202, 203, 204),
+            Qualification(Impossible, 211, 212, 213, 214),
+            Qualification(PlatitudeDisagree, 221, 222, 223, 224)
+          )
+        ),
+        Vote(
+          key = Neutral,
+          count = 21,
+          countVerified = 22,
+          countSequence = 23,
+          countSegment = 24,
+          qualifications = Seq(
+            Qualification(DoNotUnderstand, 301, 302, 303, 304),
+            Qualification(NoOpinion, 311, 312, 313, 314),
+            Qualification(DoNotCare, 321, 322, 323, 324)
+          )
+        )
+      )
+    )
+
     val proposal = Proposal(
       proposalId = proposalId,
       slug = "my-proposal",
@@ -289,6 +347,7 @@ class ProposalSerializersTest extends WordSpec with StaminaTestKit {
       sample(proposalAddedToOperation),
       sample(proposalRemovedFromOperation),
       sample(proposalPatched),
+      sample(proposalVotesUpdated),
       sample(proposalState)
     )
 

@@ -83,6 +83,9 @@ object ProposalSerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update('requestContext / 'customData ! set[Map[String, String]](Map.empty)))
     )
 
+  private val proposalVotesUpdatedSerializer: JsonPersister[ProposalVotesUpdated, V1] =
+    persister[ProposalVotesUpdated]("proposal-votes-updated")
+
   private val proposalVotedSerializer: JsonPersister[ProposalVoted, V5] =
     persister[ProposalVoted, V5](
       "proposal-voted",
@@ -362,6 +365,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalRefusedSerializer,
       proposalPostponedSerializer,
       proposalVotesVerifiedUpdatedSerializer,
+      proposalVotesUpdatedSerializer,
       proposalVotedSerializer,
       proposalUnvotedSerializer,
       proposalQualifiedSerializer,

@@ -89,7 +89,7 @@ object PublishedProposalEvent {
     ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
       ProposalUpdated :+: ProposalVotesVerifiedUpdated :+: ReindexProposal :+: ProposalVoted :+: ProposalUnvoted :+:
       ProposalQualified :+: ProposalUnqualified :+: SimilarProposalsAdded :+: ProposalLocked :+: ProposalPatched :+:
-      ProposalAddedToOperation :+: ProposalRemovedFromOperation :+: ProposalAnonymized :+: CNil
+      ProposalAddedToOperation :+: ProposalRemovedFromOperation :+: ProposalAnonymized :+: ProposalVotesUpdated :+: CNil
 
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
@@ -107,6 +107,7 @@ object PublishedProposalEvent {
       case e: ProposalViewed               => Coproduct[AnyProposalEvent](e)
       case e: ProposalUpdated              => Coproduct[AnyProposalEvent](e)
       case e: ProposalVotesVerifiedUpdated => Coproduct[AnyProposalEvent](e)
+      case e: ProposalVotesUpdated         => Coproduct[AnyProposalEvent](e)
       case e: ReindexProposal              => Coproduct[AnyProposalEvent](e)
       case e: ProposalVoted                => Coproduct[AnyProposalEvent](e)
       case e: ProposalUnvoted              => Coproduct[AnyProposalEvent](e)
@@ -126,6 +127,7 @@ object PublishedProposalEvent {
     implicit val atProposalUpdated: Case.Aux[ProposalUpdated, ProposalUpdated] = at(identity)
     implicit val atProposalVotesVerifiedUpdated: Case.Aux[ProposalVotesVerifiedUpdated, ProposalVotesVerifiedUpdated] =
       at(identity)
+    implicit val atProposalVotesUpdated: Case.Aux[ProposalVotesUpdated, ProposalVotesUpdated] = at(identity)
     implicit val atProposalTagsUpdated: Case.Aux[ReindexProposal, ReindexProposal] = at(identity)
     implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
     implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
@@ -254,6 +256,24 @@ object PublishedProposalEvent {
     implicit val formatter: RootJsonFormat[ProposalVotesVerifiedUpdated] =
       DefaultJsonProtocol.jsonFormat7(ProposalVotesVerifiedUpdated.apply)
 
+  }
+
+  final case class ProposalVotesUpdated(id: ProposalId,
+                                        eventDate: ZonedDateTime,
+                                        requestContext: RequestContext,
+                                        updatedAt: ZonedDateTime,
+                                        moderator: Option[UserId] = None,
+                                        newVotes: Seq[Vote])
+      extends PublishedProposalEvent {
+
+    override def version(): Int = MakeSerializable.V1
+  }
+
+  object ProposalVotesUpdated {
+    val actionType: String = "proposal-votes-updated"
+
+    implicit val formatter: RootJsonFormat[ProposalVotesUpdated] =
+      DefaultJsonProtocol.jsonFormat6(ProposalVotesUpdated.apply)
   }
 
   final case class ReindexProposal(id: ProposalId, eventDate: ZonedDateTime, requestContext: RequestContext)

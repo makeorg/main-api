@@ -157,33 +157,6 @@ trait ModerationProposalApi extends Directives {
   def updateProposal: Route
 
   @ApiOperation(
-    value = "update-proposal-votes-verified",
-    httpMethod = "PUT",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.proposal.UpdateProposalVotesVerifiedRequest"
-      ),
-      new ApiImplicitParam(name = "proposalId", paramType = "path", required = true, value = "", dataType = "string")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
-  )
-  @Path(value = "/{proposalId}/votes-verified")
-  def updateProposalVotesVerified: Route
-
-  @ApiOperation(
     value = "validate-proposal",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -284,29 +257,6 @@ trait ModerationProposalApi extends Directives {
   def lock: Route
 
   @ApiOperation(
-    value = "patch-proposal",
-    httpMethod = "PATCH",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationProposalResponse]))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "body", paramType = "body", dataType = "org.make.api.proposal.PatchProposalRequest")
-    )
-  )
-  @Path(value = "/{proposalId}")
-  def patchProposal: Route
-
-  @ApiOperation(
     value = "duplicates",
     httpMethod = "GET",
     code = HttpCodes.OK,
@@ -400,13 +350,11 @@ trait ModerationProposalApi extends Directives {
       refuseProposal ~
       postponeProposal ~
       lock ~
-      patchProposal ~
       getDuplicates ~
       changeProposalsIdea ~
       getModerationProposal ~
       nextProposalToModerate ~
-      getPredictedTagsForProposal ~
-      updateProposalVotesVerified
+      getPredictedTagsForProposal
 }
 
 trait ModerationProposalApiComponent {
@@ -438,7 +386,7 @@ trait DefaultModerationProposalApiComponent
 
     val moderationProposalId: PathMatcher1[ProposalId] = Segment.map(id => ProposalId(id))
 
-    def getModerationProposal: Route = {
+    override def getModerationProposal: Route = {
       get {
         path("moderation" / "proposals" / moderationProposalId) { proposalId =>
           makeOperation("GetModerationProposal") { _ =>
@@ -458,7 +406,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def searchAllProposals: Route = {
+    override def searchAllProposals: Route = {
       get {
         path("moderation" / "proposals") {
           makeOperation("SearchAll") { requestContext =>
@@ -605,7 +553,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def updateProposal: Route = put {
+    override def updateProposal: Route = put {
       path("moderation" / "proposals" / moderationProposalId) { proposalId =>
         makeOperation("EditProposal") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
@@ -665,46 +613,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    private def retrieveProposalQuestion(proposalId: ProposalId): Future[Option[Question]] = {
-      proposalCoordinatorService.getProposal(proposalId).flatMap {
-        case Some(proposal) =>
-          proposal.questionId
-            .map(questionService.getQuestion)
-            .getOrElse(Future.successful(None))
-        case None =>
-          Future.successful(None)
-      }
-    }
-
-    def updateProposalVotesVerified: Route = put {
-      path("moderation" / "proposals" / moderationProposalId / "votes-verified") { proposalId =>
-        makeOperation("EditProposalVotesVerified") { requestContext =>
-          makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            requireAdminRole(userAuth.user) {
-              decodeRequest {
-                entity(as[UpdateProposalVotesVerifiedRequest]) { request =>
-                  provideAsyncOrNotFound(retrieveProposalQuestion(proposalId)) { _ =>
-                    provideAsyncOrNotFound(
-                      proposalService.updateVotesVerified(
-                        proposalId = proposalId,
-                        moderator = userAuth.user.userId,
-                        requestContext = requestContext,
-                        updatedAt = DateHelper.now(),
-                        votesVerified = request.votesVerified
-                      )
-                    ) { moderationProposalResponse: ModerationProposalResponse =>
-                      complete(moderationProposalResponse)
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    def acceptProposal: Route = post {
+    override def acceptProposal: Route = post {
       path("moderation" / "proposals" / moderationProposalId / "accept") { proposalId =>
         makeOperation("ValidateProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
@@ -739,7 +648,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def refuseProposal: Route = post {
+    override def refuseProposal: Route = post {
       path("moderation" / "proposals" / moderationProposalId / "refuse") { proposalId =>
         makeOperation("RefuseProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
@@ -768,7 +677,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def postponeProposal: Route = post {
+    override def postponeProposal: Route = post {
       path("moderation" / "proposals" / moderationProposalId / "postpone") { proposalId =>
         makeOperation("PostponeProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
@@ -795,7 +704,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def lock: Route = post {
+    override def lock: Route = post {
       path("moderation" / "proposals" / moderationProposalId / "lock") { proposalId =>
         makeOperation("LockProposal") { requestContext =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
@@ -820,28 +729,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def patchProposal: Route = {
-      patch {
-        path("moderation" / "proposals" / moderationProposalId) { id =>
-          makeOperation("PatchProposal") { context =>
-            makeOAuth2 { auth =>
-              requireAdminRole(auth.user) {
-                decodeRequest {
-                  entity(as[PatchProposalRequest]) { patch =>
-                    provideAsyncOrNotFound(proposalService.patchProposal(id, auth.user.userId, context, patch)) {
-                      proposal =>
-                        complete(proposal)
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    def getDuplicates: Route = {
+    override def getDuplicates: Route = {
       get {
         path("moderation" / "proposals" / moderationProposalId / "duplicates") { proposalId =>
           makeOperation("Duplicates") { requestContext =>
@@ -861,7 +749,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def changeProposalsIdea: Route = post {
+    override def changeProposalsIdea: Route = post {
       path("moderation" / "proposals" / "change-idea") {
         makeOperation("ChangeProposalsIdea") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
@@ -908,7 +796,7 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    def nextProposalToModerate: Route = post {
+    override def nextProposalToModerate: Route = post {
       path("moderation" / "proposals" / "next") {
         makeOperation("NextProposalToModerate") { context =>
           makeOAuth2 { user =>
