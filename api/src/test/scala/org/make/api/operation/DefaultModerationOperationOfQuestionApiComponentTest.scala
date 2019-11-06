@@ -133,7 +133,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         metas = Metas(title = None, description = None, picture = None),
         theme = QuestionTheme.default,
         description = OperationOfQuestion.defaultDescription,
-        imageUrl = None,
+        consultationImage = None,
+        descriptionImage = None,
         displayResults = false
       )
     )
@@ -169,7 +170,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None,
+          consultationImage = None,
+          descriptionImage = None,
           displayResults = false
         )
       )
@@ -231,7 +233,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None,
+          consultationImage = None,
+          descriptionImage = None,
           displayResults = false
         ),
         OperationOfQuestion(
@@ -260,7 +263,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None,
+          consultationImage = None,
+          descriptionImage = None,
           displayResults = false
         )
       )
@@ -340,7 +344,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None,
+          consultationImage = None,
+          descriptionImage = None,
           displayResults = false
         ),
         OperationOfQuestion(
@@ -369,7 +374,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None,
+          consultationImage = None,
+          descriptionImage = None,
           displayResults = false
         )
       )
@@ -506,7 +512,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             language = Language("fr"),
             question = "how to save the world?",
             questionSlug = "make-the-world-great-again",
-            imageUrl = Some("https://example.com/image")
+            consultationImage = Some("https://example.com/image")
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -516,7 +522,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("create as moderator with bad imageUrl format") {
+    scenario("create as moderator with bad consultationImage format") {
       Post("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
         .withEntity(ContentTypes.`application/json`, """{
@@ -527,7 +533,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |"operationTitle": "my-operation",
             |"country": "FR",
             |"language": "fr",
-            |"imageUrl": "wrongurlformat"
+            |"consultationImage": "wrongurlformat"
             |}""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
@@ -564,7 +570,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
             description = OperationOfQuestion.defaultDescription,
-            imageUrl = Some("https://example.com/image"),
+            consultationImage = Some("https://example.com/image"),
+            descriptionImage = None,
             displayResults = false
           ).asJson.toString()
         ) ~> routes ~> check {
@@ -605,7 +612,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("update with bad imageUrl") {
+    scenario("update with bad consultationImage") {
 
       Put("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
@@ -630,7 +637,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "footerFontColor": "#000000"
             | },
             | description = "description",
-            | imageUrl = "wrongurlformat",
+            | consultationImage = "wrongurlformat",
             | displayResults = false
           }""".stripMargin) ~> routes ~> check {
 

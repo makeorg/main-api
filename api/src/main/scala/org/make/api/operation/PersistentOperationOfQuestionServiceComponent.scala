@@ -169,7 +169,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
               PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
-              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl,
+              PersistentOperationOfQuestion.column.consultationImage -> operationOfQuestion.consultationImage,
+              PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
               PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults
             )
         }.execute().apply()
@@ -211,7 +212,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.color -> operationOfQuestion.theme.color,
               PersistentOperationOfQuestion.column.footerFontColor -> operationOfQuestion.theme.footerFontColor,
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
-              PersistentOperationOfQuestion.column.imageUrl -> operationOfQuestion.imageUrl,
+              PersistentOperationOfQuestion.column.consultationImage -> operationOfQuestion.consultationImage,
+              PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
               PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults
             )
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
@@ -322,7 +324,8 @@ final case class PersistentOperationOfQuestion(questionId: String,
                                                color: String,
                                                footerFontColor: String,
                                                description: String,
-                                               imageUrl: Option[String],
+                                               consultationImage: Option[String],
+                                               descriptionImage: Option[String],
                                                displayResults: Boolean) {
   def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     questionId = QuestionId(this.questionId),
@@ -363,7 +366,8 @@ final case class PersistentOperationOfQuestion(questionId: String,
       footerFontColor = this.footerFontColor
     ),
     description = this.description,
-    imageUrl = this.imageUrl,
+    consultationImage = this.consultationImage,
+    descriptionImage = this.descriptionImage,
     displayResults = this.displayResults
   )
 }
@@ -407,7 +411,8 @@ object PersistentOperationOfQuestion
                                            color: String,
                                            footerFontColor: String,
                                            description: String,
-                                           imageUrl: Option[String],
+                                           consultationImage: Option[String],
+                                           descriptionImage: Option[String],
                                            displayResults: Boolean) {
     def toQuestionAndDetails: QuestionWithDetails = {
       QuestionWithDetails(
@@ -453,7 +458,8 @@ object PersistentOperationOfQuestion
             footerFontColor = this.footerFontColor
           ),
           description = this.description,
-          imageUrl = this.imageUrl,
+          consultationImage = this.consultationImage,
+          descriptionImage = this.descriptionImage,
           displayResults = this.displayResults
         )
       )
@@ -511,7 +517,8 @@ object PersistentOperationOfQuestion
         color = resultSet.string(operationOfQuestionAlias.color),
         footerFontColor = resultSet.string(operationOfQuestionAlias.footerFontColor),
         description = resultSet.string(operationOfQuestionAlias.description),
-        imageUrl = resultSet.stringOpt(operationOfQuestionAlias.imageUrl),
+        consultationImage = resultSet.stringOpt(operationOfQuestionAlias.consultationImage),
+        descriptionImage = resultSet.stringOpt(operationOfQuestionAlias.descriptionImage),
         displayResults = resultSet.boolean(operationOfQuestionAlias.displayResults)
       )
   }
@@ -550,7 +557,8 @@ object PersistentOperationOfQuestion
       "color",
       "footer_font_color",
       "description",
-      "image_url",
+      "consultation_image",
+      "description_image",
       "display_results"
     )
 
@@ -594,7 +602,8 @@ object PersistentOperationOfQuestion
       color = resultSet.string(resultName.color),
       footerFontColor = resultSet.string(resultName.footerFontColor),
       description = resultSet.string(resultName.description),
-      imageUrl = resultSet.stringOpt(resultName.imageUrl),
+      consultationImage = resultSet.stringOpt(resultName.consultationImage),
+      descriptionImage = resultSet.stringOpt(resultName.descriptionImage),
       displayResults = resultSet.boolean(resultName.displayResults)
     )
   }

@@ -198,7 +198,8 @@ case class QuestionDetailsResponse(
   aboutUrl: Option[String],
   partners: Seq[QuestionPartnerResponse],
   theme: QuestionThemeResponse,
-  imageUrl: Option[String],
+  consultationImage: Option[String],
+  descriptionImage: Option[String],
   displayResults: Boolean,
   operation: QuestionsOfOperationResponse,
   activeFeatures: Seq[String]
@@ -233,7 +234,8 @@ object QuestionDetailsResponse extends CirceFormatters {
     aboutUrl = operationOfQuestion.aboutUrl,
     partners = partners.map(QuestionPartnerResponse.apply),
     theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme),
-    imageUrl = operationOfQuestion.imageUrl,
+    consultationImage = operationOfQuestion.consultationImage,
+    descriptionImage = operationOfQuestion.descriptionImage,
     displayResults = operationOfQuestion.displayResults,
     operation = QuestionsOfOperationResponse(questionsOfOperation),
     activeFeatures = activeFeatures

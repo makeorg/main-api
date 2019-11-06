@@ -98,7 +98,7 @@ class OperationOfQuestionSearchEngineIT
         footerFontColor = "#424242"
       ),
       description = "some random description",
-      imageUrl = None,
+      consultationImage = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
@@ -119,7 +119,7 @@ class OperationOfQuestionSearchEngineIT
         footerFontColor = "#424242"
       ),
       description = "some random description",
-      imageUrl = None,
+      consultationImage = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
@@ -140,7 +140,7 @@ class OperationOfQuestionSearchEngineIT
         footerFontColor = "#424242"
       ),
       description = "some random description",
-      imageUrl = None,
+      consultationImage = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
@@ -161,7 +161,7 @@ class OperationOfQuestionSearchEngineIT
         footerFontColor = "#424242"
       ),
       description = "some random description",
-      imageUrl = None,
+      consultationImage = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
@@ -182,7 +182,7 @@ class OperationOfQuestionSearchEngineIT
         footerFontColor = "#424242"
       ),
       description = "some random description",
-      imageUrl = None,
+      consultationImage = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
@@ -203,7 +203,7 @@ class OperationOfQuestionSearchEngineIT
         footerFontColor = "#424242"
       ),
       description = "some random description",
-      imageUrl = None,
+      consultationImage = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = OperationId("operation-id"),

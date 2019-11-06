@@ -115,7 +115,8 @@ class OperationServiceTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None,
+          consultationImage = None,
+          descriptionImage = None,
           displayResults = false
         )
       ),
@@ -155,7 +156,8 @@ class OperationServiceTest
           metas = Metas(title = None, description = None, picture = None),
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
-          imageUrl = None,
+          consultationImage = None,
+          descriptionImage = None,
           displayResults = false
         )
       )

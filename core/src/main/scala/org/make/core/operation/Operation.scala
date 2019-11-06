@@ -166,7 +166,8 @@ final case class OperationOfQuestion(questionId: QuestionId,
                                      metas: Metas,
                                      theme: QuestionTheme,
                                      description: String,
-                                     imageUrl: Option[String],
+                                     consultationImage: Option[String],
+                                     descriptionImage: Option[String],
                                      displayResults: Boolean)
 
 object OperationOfQuestion {

@@ -365,7 +365,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 metas = request.metas,
                                 theme = request.theme,
                                 description = request.description,
-                                imageUrl = request.imageUrl,
+                                consultationImage = request.consultationImage,
+                                descriptionImage = request.descriptionImage,
                                 displayResults = request.displayResults
                               ),
                             updatedQuestion
@@ -415,7 +416,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         country = body.country,
                         language = body.language,
                         question = body.question,
-                        imageUrl = body.imageUrl
+                        consultationImage = body.consultationImage
                       )
                     )
                   ) { operationOfQuestion =>
@@ -445,7 +446,8 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   metas: Metas,
                                                   theme: QuestionTheme,
                                                   description: String,
-                                                  imageUrl: Option[String],
+                                                  consultationImage: Option[String],
+                                                  descriptionImage: Option[String],
                                                   displayResults: Boolean) {
   validate(
     validateUserInput("question", question, None),
@@ -455,10 +457,16 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
     validateColor("color", theme.color, None),
     validateColor("footerFontColor", theme.footerFontColor, None),
     validateField(
-      "imageUrl",
+      "consultationImage",
       "not_secure",
-      imageUrl.forall(_.startsWith("https://")),
-      "imageUrl must be a secure https url"
+      consultationImage.forall(_.startsWith("https://")),
+      "consultationImage must be a secure https url"
+    ),
+    validateField(
+      "descriptionImage",
+      "not_secure",
+      descriptionImage.forall(_.startsWith("https://")),
+      "descriptionImage must be a secure https url"
     )
   )
 }
@@ -483,17 +491,17 @@ final case class CreateOperationOfQuestionRequest(
   language: Language,
   question: String,
   questionSlug: String,
-  imageUrl: Option[String]
+  consultationImage: Option[String]
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),
     validateUserInput("question", question, None),
     validateUserInput("questionSlug", questionSlug, None),
     validateField(
-      "imageUrl",
+      "consultationImage",
       "not_secure",
-      imageUrl.forall(_.startsWith("https://")),
-      "imageUrl must be a secure https url"
+      consultationImage.forall(_.startsWith("https://")),
+      "consultationImage must be a secure https url"
     )
   )
 }
@@ -528,7 +536,8 @@ final case class OperationOfQuestionResponse(
   metas: Metas,
   theme: QuestionTheme,
   description: String,
-  imageUrl: Option[String],
+  consultationImage: Option[String],
+  descriptionImage: Option[String],
   displayResults: Boolean
 )
 
@@ -554,7 +563,8 @@ object OperationOfQuestionResponse extends CirceFormatters {
       metas = operationOfQuestion.metas,
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
-      imageUrl = operationOfQuestion.imageUrl,
+      consultationImage = operationOfQuestion.consultationImage,
+      descriptionImage = operationOfQuestion.descriptionImage,
       displayResults = operationOfQuestion.displayResults
     )
   }

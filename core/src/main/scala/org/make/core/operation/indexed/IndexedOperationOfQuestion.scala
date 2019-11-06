@@ -67,7 +67,7 @@ case class IndexedOperationOfQuestion(@(ApiModelProperty @field)(
                                       endDate: Option[ZonedDateTime],
                                       theme: QuestionTheme,
                                       description: String,
-                                      imageUrl: Option[String],
+                                      consultationImage: Option[String],
                                       @(ApiModelProperty @field)(dataType = "string", example = "FR")
                                       country: Country,
                                       @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -92,7 +92,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       endDate = operationOfQuestion.endDate,
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
-      imageUrl = operationOfQuestion.imageUrl,
+      consultationImage = operationOfQuestion.consultationImage,
       country = question.country,
       language = question.language,
       operationId = operationOfQuestion.operationId,

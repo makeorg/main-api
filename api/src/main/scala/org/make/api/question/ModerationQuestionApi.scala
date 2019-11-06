@@ -181,7 +181,7 @@ trait ModerationQuestionApi extends Directives {
   def createQuestion: Route
 
   @ApiOperation(
-    value = "upload-operation-image",
+    value = "upload-operation-consultation-image",
     httpMethod = "POST",
     code = HttpCodes.OK,
     consumes = "multipart/form-data",
@@ -199,11 +199,33 @@ trait ModerationQuestionApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UploadResponse])))
-  @Path(value = "/{questionId}/images")
-  def uploadQuestionImage: Route
+  @Path(value = "/{questionId}/consultation-image")
+  def uploadQuestionConsultationImage: Route
+
+  @ApiOperation(
+    value = "upload-operation-description-image",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "multipart/form-data",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "data", paramType = "formData", dataType = "file")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UploadResponse])))
+  @Path(value = "/{questionId}/description-image")
+  def uploadQuestionDescriptionImage: Route
 
   def routes: Route =
-    listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal ~ refuseInitialProposals ~ uploadQuestionImage
+    listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal ~ refuseInitialProposals ~ uploadQuestionConsultationImage ~ uploadQuestionDescriptionImage
 
 }
 
@@ -427,10 +449,10 @@ trait DefaultModerationQuestionComponent
         }
       }
 
-    override def uploadQuestionImage: Route = {
+    override def uploadQuestionConsultationImage: Route = {
       post {
-        path("moderation" / "questions" / questionId / "images") { questionId =>
-          makeOperation("uploadQuestionImage") { _ =>
+        path("moderation" / "questions" / questionId / "consultation-image") { questionId =>
+          makeOperation("uploadQuestionConsultationImage") { _ =>
             makeOAuth2 { user =>
               requireAdminRole(user.user) {
                 provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) { operationOfQuestion =>
@@ -445,10 +467,45 @@ trait DefaultModerationQuestionComponent
                         )
                     }
                     uploadImageAsync("data", uploadFile, sizeLimit = None) { (path, file) =>
-                      provideAsync(operationOfQuestionService.update(operationOfQuestion.copy(imageUrl = Some(path)))) {
-                        _ =>
-                          file.delete()
-                          complete(UploadResponse(path))
+                      provideAsync(
+                        operationOfQuestionService.update(operationOfQuestion.copy(consultationImage = Some(path)))
+                      ) { _ =>
+                        file.delete()
+                        complete(UploadResponse(path))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def uploadQuestionDescriptionImage: Route = {
+      post {
+        path("moderation" / "questions" / questionId / "description-image") { questionId =>
+          makeOperation("uploadQuestionDescriptionImage") { _ =>
+            makeOAuth2 { user =>
+              requireAdminRole(user.user) {
+                provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) { operationOfQuestion =>
+                  provideAsyncOrNotFound(operationService.findOneSimple(operationOfQuestion.operationId)) { operation =>
+                    def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] = {
+                      storageService
+                        .uploadFile(
+                          FileType.Operation,
+                          s"${operation.slug}/${idGenerator.nextId()}$extension",
+                          contentType,
+                          fileContent
+                        )
+                    }
+                    uploadImageAsync("data", uploadFile, sizeLimit = None) { (path, file) =>
+                      provideAsync(
+                        operationOfQuestionService.update(operationOfQuestion.copy(descriptionImage = Some(path)))
+                      ) { _ =>
+                        file.delete()
+                        complete(UploadResponse(path))
                       }
                     }
                   }
