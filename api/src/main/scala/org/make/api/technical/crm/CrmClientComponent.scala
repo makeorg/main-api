@@ -213,12 +213,25 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
     override def sendEmail(
       message: SendMessages
     )(implicit executionContext: ExecutionContext): Future[SendEmailResponse] = {
+      val messagesWithErrorHandling = message.copy(
+        messages = message.messages.map(
+          _.copy(
+            templateErrorReporting = Some(
+              TemplateErrorReporting(
+                mailJetConfiguration.errorReportingRecipient,
+                Some(mailJetConfiguration.errorReportingRecipientName)
+              )
+            )
+          )
+        )
+      )
+
       val request: HttpRequest = HttpRequest(
         method = HttpMethods.POST,
         uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
         headers = immutable
           .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
-        entity = HttpEntity(ContentTypes.`application/json`, printer.print(message.asJson))
+        entity = HttpEntity(ContentTypes.`application/json`, printer.print(messagesWithErrorHandling.asJson))
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>

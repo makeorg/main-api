@@ -37,6 +37,9 @@ class MailJetConfiguration(config: Config) extends Extension {
   val optInListId: String = config.getString("user-list.opt-in-list-id")
   val userListBatchSize: Int = config.getInt("user-list.batch-size")
   val httpBufferSize: Int = config.getInt("http-buffer-size")
+
+  val errorReportingRecipient: String = config.getString("error-reporting.recipient")
+  val errorReportingRecipientName: String = config.getString("error-reporting.recipient-name")
 }
 
 object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with ExtensionIdProvider {
