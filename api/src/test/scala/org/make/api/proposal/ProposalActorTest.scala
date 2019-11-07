@@ -1703,80 +1703,50 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       And("I update the verified votes for the Proposal")
       val votesVerified = Seq(
-        Vote(
+        UpdateVoteRequest(
           key = VoteKey.Agree,
-          count = 0,
-          countVerified = 12,
-          countSequence = 0,
-          countSegment = 0,
+          count = Some(12),
+          countVerified = Some(11),
+          countSequence = Some(10),
+          countSegment = Some(9),
           qualifications = Seq(
-            Qualification(QualificationKey.LikeIt, count = 0, countVerified = 1, countSequence = 0, countSegment = 0),
-            Qualification(QualificationKey.Doable, count = 0, countVerified = 2, countSequence = 0, countSegment = 0),
-            Qualification(
-              QualificationKey.PlatitudeAgree,
-              count = 0,
-              countVerified = 3,
-              countSequence = 0,
-              countSegment = 0
-            )
+            UpdateQualificationRequest(
+              QualificationKey.LikeIt,
+              count = Some(10),
+              countVerified = Some(11),
+              countSequence = Some(12),
+              countSegment = Some(13)
+            ),
+            UpdateQualificationRequest(QualificationKey.Doable, countVerified = Some(11)),
+            UpdateQualificationRequest(QualificationKey.PlatitudeAgree, countVerified = Some(14))
           )
         ),
-        Vote(
+        UpdateVoteRequest(
           key = VoteKey.Disagree,
-          count = 0,
-          countVerified = 24,
-          countSequence = 0,
-          countSegment = 0,
+          countVerified = Some(24),
           qualifications = Seq(
-            Qualification(QualificationKey.NoWay, count = 0, countVerified = 4, countSequence = 0, countSegment = 0),
-            Qualification(
-              QualificationKey.Impossible,
-              count = 0,
-              countVerified = 5,
-              countSequence = 0,
-              countSegment = 0
-            ),
-            Qualification(
-              QualificationKey.PlatitudeDisagree,
-              count = 0,
-              countVerified = 6,
-              countSequence = 0,
-              countSegment = 0
-            )
+            UpdateQualificationRequest(QualificationKey.NoWay, countVerified = Some(4)),
+            UpdateQualificationRequest(QualificationKey.Impossible, countVerified = Some(5)),
+            UpdateQualificationRequest(QualificationKey.PlatitudeDisagree, countVerified = Some(6))
           )
         ),
-        Vote(
+        UpdateVoteRequest(
           key = VoteKey.Neutral,
-          count = 0,
-          countVerified = 36,
-          countSequence = 0,
-          countSegment = 0,
+          countVerified = Some(36),
           qualifications = Seq(
-            Qualification(
-              QualificationKey.NoOpinion,
-              count = 0,
-              countVerified = 7,
-              countSequence = 0,
-              countSegment = 0
-            ),
-            Qualification(
-              QualificationKey.DoNotUnderstand,
-              count = 0,
-              countVerified = 8,
-              countSequence = 0,
-              countSegment = 0
-            ),
-            Qualification(QualificationKey.DoNotCare, count = 0, countVerified = 9, countSequence = 0, countSegment = 0)
+            UpdateQualificationRequest(QualificationKey.NoOpinion, countVerified = Some(7)),
+            UpdateQualificationRequest(QualificationKey.DoNotUnderstand, countVerified = Some(8)),
+            UpdateQualificationRequest(QualificationKey.DoNotCare, countVerified = Some(9))
           )
         )
       )
 
-      coordinator ! UpdateProposalVotesVerifiedCommand(
+      coordinator ! UpdateProposalVotesCommand(
         moderator = UserId("some user"),
         proposalId = proposalId,
         requestContext = RequestContext.empty,
         updatedAt = mainUpdatedAt.get,
-        votesVerified = votesVerified
+        votes = votesVerified
       )
 
       Then("I should receive the updated proposal")
@@ -1784,7 +1754,18 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
 
       response.proposalId should be(ProposalId("updateCommand"))
-      response.votes.filter(vote => vote.key == VoteKey.Agree).head.countVerified should be(12)
+      val voteAgree = response.votes.find(vote => vote.key == VoteKey.Agree)
+      voteAgree.map(_.count) should contain(12)
+      voteAgree.map(_.countVerified) should contain(11)
+      voteAgree.map(_.countSequence) should contain(10)
+      voteAgree.map(_.countSegment) should contain(9)
+
+      val likeIt = voteAgree.flatMap(_.qualifications.find(_.key == LikeIt))
+      likeIt.map(_.count) should contain(10)
+      likeIt.map(_.countVerified) should contain(11)
+      likeIt.map(_.countSequence) should contain(12)
+      likeIt.map(_.countSegment) should contain(13)
+
       response.votes.filter(vote => vote.key == VoteKey.Disagree).head.countVerified should be(24)
       response.votes.filter(vote => vote.key == VoteKey.Neutral).head.countVerified should be(36)
     }
@@ -1823,80 +1804,41 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       And("I update the verified votes for the Proposal")
       val votesVerified = Seq(
-        Vote(
+        UpdateVoteRequest(
           key = VoteKey.Agree,
-          count = 0,
-          countVerified = 12,
-          countSequence = 0,
-          countSegment = 0,
+          countVerified = Some(12),
           qualifications = Seq(
-            Qualification(QualificationKey.LikeIt, count = 0, countVerified = 1, countSequence = 0, countSegment = 0),
-            Qualification(QualificationKey.Doable, count = 0, countVerified = 2, countSequence = 0, countSegment = 0),
-            Qualification(
-              QualificationKey.PlatitudeAgree,
-              count = 0,
-              countVerified = 3,
-              countSequence = 0,
-              countSegment = 0
-            )
+            UpdateQualificationRequest(QualificationKey.LikeIt, countVerified = Some(1)),
+            UpdateQualificationRequest(QualificationKey.Doable, countVerified = Some(2)),
+            UpdateQualificationRequest(QualificationKey.PlatitudeAgree, countVerified = Some(3))
           )
         ),
-        Vote(
+        UpdateVoteRequest(
           key = VoteKey.Disagree,
-          count = 0,
-          countVerified = 24,
-          countSequence = 0,
-          countSegment = 0,
+          countVerified = Some(24),
           qualifications = Seq(
-            Qualification(QualificationKey.NoWay, count = 0, countVerified = 4, countSequence = 0, countSegment = 0),
-            Qualification(
-              QualificationKey.Impossible,
-              count = 0,
-              countVerified = 5,
-              countSequence = 0,
-              countSegment = 0
-            ),
-            Qualification(
-              QualificationKey.PlatitudeDisagree,
-              count = 0,
-              countVerified = 6,
-              countSequence = 0,
-              countSegment = 0
-            )
+            UpdateQualificationRequest(QualificationKey.NoWay, countVerified = Some(4)),
+            UpdateQualificationRequest(QualificationKey.Impossible, countVerified = Some(5)),
+            UpdateQualificationRequest(QualificationKey.PlatitudeDisagree, countVerified = Some(6))
           )
         ),
-        Vote(
+        UpdateVoteRequest(
           key = VoteKey.Neutral,
-          count = 0,
-          countVerified = 36,
-          countSequence = 0,
-          countSegment = 0,
+          countVerified = Some(36),
           qualifications = Seq(
-            Qualification(
-              QualificationKey.NoOpinion,
-              count = 0,
-              countVerified = 7,
-              countSequence = 0,
-              countSegment = 0
-            ),
-            Qualification(
-              QualificationKey.DoNotUnderstand,
-              count = 0,
-              countVerified = 8,
-              countSequence = 0,
-              countSegment = 0
-            ),
-            Qualification(QualificationKey.DoNotCare, count = 0, countVerified = 9, countSequence = 0, countSegment = 0)
+            UpdateQualificationRequest(QualificationKey.NoOpinion, countVerified = Some(7)),
+            UpdateQualificationRequest(QualificationKey.DoNotUnderstand, countVerified = Some(8)),
+            UpdateQualificationRequest(QualificationKey.DoNotCare, countVerified = Some(9))
           )
         )
       )
 
-      coordinator ! UpdateProposalVotesVerifiedCommand(
+      coordinator ! UpdateProposalVotesCommand(
         moderator = UserId("some user"),
         proposalId = proposalId,
         requestContext = RequestContext.empty,
         updatedAt = mainUpdatedAt.get,
-        votesVerified = votesVerified
+        votes = votesVerified
       )
 
       Then("I should receive an error")

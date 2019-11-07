@@ -120,6 +120,7 @@ trait MakeApi
     with DefaultAdminFeaturedOperationApiComponent
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminPartnerApiComponent
+    with DefaultAdminProposalApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAdminViewApiComponent
     with DefaultAuthenticationApiComponent
@@ -307,6 +308,7 @@ trait MakeApi
   private lazy val apiClasses: Set[Class[_]] =
     Set(
       classOf[AdminCrmTemplateApi],
+      classOf[AdminProposalApi],
       classOf[AuthenticationApi],
       classOf[UserApi],
       classOf[TagApi],
@@ -373,6 +375,7 @@ trait MakeApi
       adminFeatureApi.routes ~
       adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
+      adminProposalApi.routes ~
       adminUserApi.routes ~
       adminViewApi.routes ~
       authenticationApi.routes ~

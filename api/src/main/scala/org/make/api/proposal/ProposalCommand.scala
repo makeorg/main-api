@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
-import org.make.core.proposal.{ProposalId, QualificationKey, Vote, VoteKey}
+import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.question.Question
 import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
@@ -55,11 +55,11 @@ final case class UpdateProposalCommand(moderator: UserId,
                                        question: Question)
     extends ProposalCommand
 
-final case class UpdateProposalVotesVerifiedCommand(moderator: UserId,
-                                                    proposalId: ProposalId,
-                                                    requestContext: RequestContext,
-                                                    updatedAt: ZonedDateTime,
-                                                    votesVerified: Seq[Vote])
+final case class UpdateProposalVotesCommand(moderator: UserId,
+                                            proposalId: ProposalId,
+                                            requestContext: RequestContext,
+                                            updatedAt: ZonedDateTime,
+                                            votes: Seq[UpdateVoteRequest])
     extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand

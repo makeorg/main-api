@@ -65,7 +65,7 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(None) }
     }
 
-    scenario("feature flip segment_from_department declared but no data in custom data") {
+    scenario("feature flip consultation-department-compulsory declared but no data in custom data") {
       val featureId = FeatureId("got-feature")
 
       Mockito
@@ -78,7 +78,9 @@ class DefaultSegmentServiceComponentTest
       Mockito
         .when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(Seq(Feature(featureId = featureId, name = "blabla", slug = "segment_from_department")))
+          Future.successful(
+            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
+          )
         )
 
       whenReady(
@@ -87,7 +89,7 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(None) }
     }
 
-    scenario("feature flip segment_from_department declared and declared_department custom data") {
+    scenario("feature flip consultation-department-compulsory declared and declared_department custom data") {
       val featureId = FeatureId("got-feature2")
 
       Mockito
@@ -100,7 +102,9 @@ class DefaultSegmentServiceComponentTest
       Mockito
         .when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(Seq(Feature(featureId = featureId, name = "blabla", slug = "segment_from_department")))
+          Future.successful(
+            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
+          )
         )
 
       whenReady(
@@ -112,7 +116,7 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(Some("29")) }
     }
 
-    scenario("feature flip segment_from_department declared and detected_department custom data") {
+    scenario("feature flip consultation-department-compulsory declared and detected_department custom data") {
       val featureId = FeatureId("got-feature3")
 
       Mockito
@@ -125,7 +129,9 @@ class DefaultSegmentServiceComponentTest
       Mockito
         .when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(Seq(Feature(featureId = featureId, name = "blabla", slug = "segment_from_department")))
+          Future.successful(
+            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
+          )
         )
 
       whenReady(
@@ -137,7 +143,9 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(Some("35")) }
     }
 
-    scenario("feature flip segment_from_department declared and declared_department + detected_department custom data") {
+    scenario(
+      "feature flip consultation-department-compulsory declared and declared_department + detected_department custom data"
+    ) {
       val featureId = FeatureId("got-feature4")
 
       Mockito
@@ -150,7 +158,9 @@ class DefaultSegmentServiceComponentTest
       Mockito
         .when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(Seq(Feature(featureId = featureId, name = "blabla", slug = "segment_from_department")))
+          Future.successful(
+            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
+          )
         )
 
       whenReady(

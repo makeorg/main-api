@@ -100,11 +100,11 @@ trait ProposalService {
              predictedTags: Option[Seq[TagId]],
              predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]]
 
-  def updateVotesVerified(proposalId: ProposalId,
-                          moderator: UserId,
-                          requestContext: RequestContext,
-                          updatedAt: ZonedDateTime,
-                          votesVerified: Seq[Vote]): Future[Option[ModerationProposalResponse]]
+  def updateVotes(proposalId: ProposalId,
+                  moderator: UserId,
+                  requestContext: RequestContext,
+                  updatedAt: ZonedDateTime,
+                  votesVerified: Seq[UpdateVoteRequest]): Future[Option[ModerationProposalResponse]]
 
   def validateProposal(proposalId: ProposalId,
                        moderator: UserId,
@@ -507,19 +507,19 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def updateVotesVerified(proposalId: ProposalId,
-                                     moderator: UserId,
-                                     requestContext: RequestContext,
-                                     updatedAt: ZonedDateTime,
-                                     votesVerified: Seq[Vote]): Future[Option[ModerationProposalResponse]] = {
+    override def updateVotes(proposalId: ProposalId,
+                             moderator: UserId,
+                             requestContext: RequestContext,
+                             updatedAt: ZonedDateTime,
+                             votesVerified: Seq[UpdateVoteRequest]): Future[Option[ModerationProposalResponse]] = {
       toModerationProposalResponse(
-        proposalCoordinatorService.updateVotesVerified(
-          UpdateProposalVotesVerifiedCommand(
+        proposalCoordinatorService.updateVotes(
+          UpdateProposalVotesCommand(
             moderator = moderator,
             proposalId = proposalId,
             requestContext = requestContext,
             updatedAt = updatedAt,
-            votesVerified = votesVerified
+            votes = votesVerified
           )
         )
       )

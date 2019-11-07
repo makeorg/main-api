@@ -53,7 +53,10 @@ trait DefaultSegmentServiceComponent extends SegmentServiceComponent {
       )
     }
 
-    val segmentResolvers: Map[String, SegmentResolver] = Map("segment_from_department" -> segmentResolverFromDepartment)
+    val segmentResolvers: Map[String, SegmentResolver] = Map(
+      "consultation-department-compulsory" -> segmentResolverFromDepartment,
+      "segment_from_department" -> segmentResolverFromDepartment
+    )
 
     override def resolveSegment(requestContext: RequestContext): Future[Option[String]] = {
       requestContext.questionId.map { _ =>

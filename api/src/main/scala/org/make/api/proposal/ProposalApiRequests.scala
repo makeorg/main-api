@@ -112,12 +112,41 @@ object ValidateProposalRequest {
   implicit val encoder: Encoder[ValidateProposalRequest] = deriveEncoder[ValidateProposalRequest]
 }
 
-final case class UpdateProposalVotesVerifiedRequest(votesVerified: Seq[Vote])
+final case class UpdateQualificationRequest(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+                                            key: QualificationKey,
+                                            count: Option[Int] = None,
+                                            countVerified: Option[Int] = None,
+                                            countSequence: Option[Int] = None,
+                                            countSegment: Option[Int] = None)
 
-object UpdateProposalVotesVerifiedRequest {
-  implicit val decoder: Decoder[UpdateProposalVotesVerifiedRequest] = deriveDecoder[UpdateProposalVotesVerifiedRequest]
-  implicit val encoder: Encoder[UpdateProposalVotesVerifiedRequest] =
-    deriveEncoder[UpdateProposalVotesVerifiedRequest]
+object UpdateQualificationRequest {
+  implicit val decoder: Decoder[UpdateQualificationRequest] = deriveDecoder[UpdateQualificationRequest]
+  implicit val encoder: Encoder[UpdateQualificationRequest] =
+    deriveEncoder[UpdateQualificationRequest]
+
+}
+
+final case class UpdateVoteRequest(@(ApiModelProperty @field)(dataType = "string", example = "agree")
+                                   key: VoteKey,
+                                   count: Option[Int] = None,
+                                   countVerified: Option[Int] = None,
+                                   countSequence: Option[Int] = None,
+                                   countSegment: Option[Int] = None,
+                                   qualifications: Seq[UpdateQualificationRequest])
+
+object UpdateVoteRequest {
+  implicit val decoder: Decoder[UpdateVoteRequest] = deriveDecoder[UpdateVoteRequest]
+  implicit val encoder: Encoder[UpdateVoteRequest] =
+    deriveEncoder[UpdateVoteRequest]
+
+}
+
+final case class UpdateProposalVotesRequest(votes: Seq[UpdateVoteRequest])
+
+object UpdateProposalVotesRequest {
+  implicit val decoder: Decoder[UpdateProposalVotesRequest] = deriveDecoder[UpdateProposalVotesRequest]
+  implicit val encoder: Encoder[UpdateProposalVotesRequest] =
+    deriveEncoder[UpdateProposalVotesRequest]
 }
 
 final case class RefuseProposalRequest(sendNotificationEmail: Boolean, refusalReason: Option[String]) {

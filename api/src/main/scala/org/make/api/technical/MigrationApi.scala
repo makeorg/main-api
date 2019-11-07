@@ -34,7 +34,12 @@ import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.operation.OperationOfQuestionServiceComponent
-import org.make.api.proposal.{ProposalCoordinatorServiceComponent, UpdateProposalVotesVerifiedCommand}
+import org.make.api.proposal.{
+  ProposalCoordinatorServiceComponent,
+  UpdateProposalVotesCommand,
+  UpdateQualificationRequest,
+  UpdateVoteRequest
+}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.crm.CrmServiceComponent
@@ -174,22 +179,35 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                   .filter(_.exists(_.status == Accepted))
                   .mapAsync(4) { maybeProposal =>
                     val proposal = maybeProposal.get
-                    def updateCommand(votes: Seq[Vote]): UpdateProposalVotesVerifiedCommand = {
+                    def updateCommand(votes: Seq[Vote]): UpdateProposalVotesCommand = {
                       val votesResetQualifVerified = votes.map { vote =>
-                        vote.copy(
-                          countVerified = vote.count,
-                          qualifications = vote.qualifications.map(q => q.copy(countVerified = q.count))
+                        UpdateVoteRequest(
+                          count = None,
+                          key = vote.key,
+                          countVerified = Some(vote.count),
+                          countSequence = Some(vote.count),
+                          countSegment = Some(vote.count),
+                          qualifications = vote.qualifications.map(
+                            q =>
+                              UpdateQualificationRequest(
+                                count = None,
+                                key = q.key,
+                                countVerified = Some(q.count),
+                                countSequence = Some(q.count),
+                                countSegment = Some(q.count)
+                            )
+                          )
                         )
                       }
-                      UpdateProposalVotesVerifiedCommand(
+                      UpdateProposalVotesCommand(
                         moderator = userAuth.user.userId,
                         proposalId = proposal.proposalId,
                         requestContext = requestContext,
                         updatedAt = DateHelper.now(),
-                        votesVerified = votesResetQualifVerified
+                        votes = votesResetQualifVerified
                       )
                     }
-                    proposalCoordinatorService.updateVotesVerified(updateCommand(proposal.votes))
+                    proposalCoordinatorService.updateVotes(updateCommand(proposal.votes))
                   }
                   .runWith(Sink.ignore)
                 provideAsync(futureToComplete) { _ =>

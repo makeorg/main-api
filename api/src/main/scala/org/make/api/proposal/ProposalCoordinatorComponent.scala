@@ -55,7 +55,7 @@ trait ProposalCoordinatorService {
   def viewProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]]
   def propose(command: ProposeCommand): Future[ProposalId]
   def update(command: UpdateProposalCommand): Future[Option[Proposal]]
-  def updateVotesVerified(command: UpdateProposalVotesVerifiedCommand): Future[Option[Proposal]]
+  def updateVotes(command: UpdateProposalVotesCommand): Future[Option[Proposal]]
   def accept(command: AcceptProposalCommand): Future[Option[Proposal]]
   def refuse(command: RefuseProposalCommand): Future[Option[Proposal]]
   def postpone(command: PostponeProposalCommand): Future[Option[Proposal]]
@@ -112,7 +112,7 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
         .recoverWith(recover(command))
     }
 
-    override def updateVotesVerified(command: UpdateProposalVotesVerifiedCommand): Future[Option[Proposal]] = {
+    override def updateVotes(command: UpdateProposalVotesCommand): Future[Option[Proposal]] = {
       (proposalCoordinator ? command)
         .flatMap[Option[Proposal]] {
           case error: ValidationFailedError => Future.failed(error)
