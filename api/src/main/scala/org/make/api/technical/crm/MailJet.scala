@@ -276,7 +276,7 @@ case class Contact(email: String, name: Option[String] = None, properties: Optio
   def toStringCsv: String = {
     properties match {
       case None       => ""
-      case Some(prop) => s"""\"$email\",${prop.toStringCsv}"""
+      case Some(prop) => s"""\"$email\",${prop.toStringCsv}${String.format("%n")}"""
     }
   }
 }
