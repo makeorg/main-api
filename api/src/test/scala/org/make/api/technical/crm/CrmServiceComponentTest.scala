@@ -1193,7 +1193,8 @@ class CrmServiceComponentTest
       )
 
       contact.toStringCsv should be(
-        """"test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00""""
+        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
+          .format("%n")}"""
       )
     }
   }
@@ -1208,14 +1209,16 @@ class CrmServiceComponentTest
             0,
             mailJetConfiguration.userListBatchSize
           )
-      ).thenReturn(Future.successful(Seq(fooCrmUser)))
+      ).thenReturn(
+        Future.successful(Seq(fooCrmUser, fooCrmUser.copy(userId = "user-id-2", email = "foo2@example.com")))
+      )
 
       when(
         persistentCrmUserService
           .list(
             unsubscribed = CrmList.OptIn.unsubscribed,
             hardBounced = CrmList.OptIn.hardBounced,
-            1,
+            2,
             mailJetConfiguration.userListBatchSize
           )
       ).thenReturn(Future.successful(Seq.empty))
@@ -1227,7 +1230,10 @@ class CrmServiceComponentTest
 
       whenReady(crmService.createCsv(formattedDate, CrmList.OptIn), Timeout(30.seconds)) { file =>
         val bufferedFile = io.Source.fromFile(file.toFile)
-        val firstLine = bufferedFile.getLines.toSeq.head
+        val fileToSeq = bufferedFile.getLines.toSeq
+        val lineCount = fileToSeq.size
+        val firstLine = fileToSeq.head
+        lineCount should be(2)
         firstLine should be(
           s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
         )
