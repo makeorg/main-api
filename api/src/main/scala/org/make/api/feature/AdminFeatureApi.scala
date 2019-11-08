@@ -31,7 +31,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.feature.{Feature, FeatureId}
-import org.make.core.{feature, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -124,7 +124,7 @@ trait AdminFeatureApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[feature.Feature]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[FeatureResponse]))
   )
   @Path(value = "/{featureId}")
   def adminUpdateFeature: Route

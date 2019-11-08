@@ -34,6 +34,8 @@ import org.make.core.user.{CustomRole, Role, UserId}
 import org.make.core.{HttpCodes, Validation}
 import scalaoauth2.provider._
 
+import scala.annotation.meta.field
+
 @Api(value = "Client OAuth")
 @Path(value = "/admin/clients")
 trait AdminClientApi extends Directives {
@@ -245,14 +247,19 @@ trait DefaultAdminClientApiComponent
   }
 }
 
-final case class ClientResponse(clientId: ClientId,
-                                name: String,
-                                allowedGrantTypes: Seq[String],
-                                secret: Option[String],
-                                scope: Option[String],
-                                redirectUri: Option[String],
-                                defaultUserId: Option[UserId],
-                                roles: Seq[Role])
+final case class ClientResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "331ec138-1a68-4432-99a1-983a4200e1d1")
+  clientId: ClientId,
+  name: String,
+  allowedGrantTypes: Seq[String],
+  secret: Option[String],
+  scope: Option[String],
+  redirectUri: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
+  defaultUserId: Option[UserId],
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  roles: Seq[Role]
+)
 
 object ClientResponse {
   implicit val encoder: Encoder[ClientResponse] = deriveEncoder[ClientResponse]
@@ -270,13 +277,16 @@ object ClientResponse {
     )
 }
 
-final case class AdminCreateClientRequest(name: String,
-                                          secret: String,
-                                          allowedGrantTypes: Seq[String],
-                                          scope: Option[String],
-                                          redirectUri: Option[String],
-                                          defaultUserId: Option[UserId],
-                                          roles: Seq[String])
+final case class AdminCreateClientRequest(
+  name: String,
+  secret: String,
+  allowedGrantTypes: Seq[String],
+  scope: Option[String],
+  redirectUri: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
+  defaultUserId: Option[UserId],
+  roles: Seq[String]
+)
 
 object AdminCreateClientRequest {
   implicit val encoder: Encoder[AdminCreateClientRequest] = deriveEncoder[AdminCreateClientRequest]

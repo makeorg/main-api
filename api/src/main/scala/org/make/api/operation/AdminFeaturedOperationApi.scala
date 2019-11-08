@@ -67,7 +67,7 @@ trait AdminFeaturedOperationApi extends Directives {
   @Path(value = "/")
   def adminPostFeaturedOperation: Route
 
-  @ApiOperation(value = "put-featured-operation", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "put-featured-operation", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[FeaturedOperationIdResponse]))
   )
@@ -102,7 +102,7 @@ trait AdminFeaturedOperationApi extends Directives {
   @Path(value = "/{featuredOperationId}")
   def adminGetFeaturedOperation: Route
 
-  @ApiOperation(value = "delete-featured-operation", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(value = "delete-featured-operation", httpMethod = "DELETE", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "featuredOperationId", paramType = "path", dataType = "string"))

@@ -114,9 +114,13 @@ object ValidateProposalRequest {
 
 final case class UpdateQualificationRequest(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
                                             key: QualificationKey,
+                                            @(ApiModelProperty @field)(dataType = "int")
                                             count: Option[Int] = None,
+                                            @(ApiModelProperty @field)(dataType = "int")
                                             countVerified: Option[Int] = None,
+                                            @(ApiModelProperty @field)(dataType = "int")
                                             countSequence: Option[Int] = None,
+                                            @(ApiModelProperty @field)(dataType = "int")
                                             countSegment: Option[Int] = None)
 
 object UpdateQualificationRequest {
@@ -128,9 +132,13 @@ object UpdateQualificationRequest {
 
 final case class UpdateVoteRequest(@(ApiModelProperty @field)(dataType = "string", example = "agree")
                                    key: VoteKey,
+                                   @(ApiModelProperty @field)(dataType = "int")
                                    count: Option[Int] = None,
+                                   @(ApiModelProperty @field)(dataType = "int")
                                    countVerified: Option[Int] = None,
+                                   @(ApiModelProperty @field)(dataType = "int")
                                    countSequence: Option[Int] = None,
+                                   @(ApiModelProperty @field)(dataType = "int")
                                    countSegment: Option[Int] = None,
                                    qualifications: Seq[UpdateQualificationRequest])
 

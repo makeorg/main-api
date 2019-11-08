@@ -337,12 +337,17 @@ private object OrganisationValidation {
   }
 }
 
-case class OrganisationResponse(id: UserId,
-                                email: String,
-                                organisationName: Option[String],
-                                profile: Option[Profile],
-                                country: Country,
-                                language: Language)
+case class OrganisationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
+  id: UserId,
+  email: String,
+  organisationName: Option[String],
+  profile: Option[Profile],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language
+)
 
 object OrganisationResponse extends CirceFormatters {
   implicit val encoder: Encoder[OrganisationResponse] = deriveEncoder[OrganisationResponse]

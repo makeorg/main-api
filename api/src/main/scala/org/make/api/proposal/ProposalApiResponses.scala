@@ -45,6 +45,7 @@ final case class ModerationProposalAuthorResponse(
   firstName: Option[String],
   lastName: Option[String],
   postalCode: Option[String],
+  @(ApiModelProperty @field)(dataType = "int")
   age: Option[Int],
   avatarUrl: Option[String],
   organisationName: Option[String],
@@ -206,11 +207,14 @@ object AuthorResponse {
   }
 }
 
-final case class ProposalContextResponse(operation: Option[OperationId],
-                                         source: Option[String],
-                                         location: Option[String],
-                                         question: Option[String],
-                                         getParameters: Seq[GetParameterResponse])
+final case class ProposalContextResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "0bac0a8b-5faa-4872-90aa-6f9f3b07aa59")
+  operation: Option[OperationId],
+  source: Option[String],
+  location: Option[String],
+  question: Option[String],
+  getParameters: Seq[GetParameterResponse]
+)
 
 object ProposalContextResponse {
   implicit val encoder: Encoder[ProposalContextResponse] = deriveEncoder[ProposalContextResponse]
@@ -238,9 +242,12 @@ object GetParameterResponse {
   }
 }
 
-final case class OrganisationInfoResponse(organisationId: UserId,
-                                          organisationName: Option[String],
-                                          organisationSlug: Option[String])
+final case class OrganisationInfoResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
+  organisationId: UserId,
+  organisationName: Option[String],
+  organisationSlug: Option[String]
+)
 
 object OrganisationInfoResponse {
   implicit val encoder: Encoder[OrganisationInfoResponse] = deriveEncoder[OrganisationInfoResponse]
