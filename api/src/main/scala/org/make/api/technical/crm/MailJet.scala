@@ -28,27 +28,34 @@ import spray.json.{JsString, JsValue, JsonFormat}
 
 import scala.util.matching.Regex
 
-case class Field(name: String, value: Option[Json]) {
-  def toSeq: Seq[(String, Json)] =
-    value match {
-      case Some(originalValue) => Seq((name, originalValue))
-      case None                => Seq.empty
+final case class TemplateErrorReporting(email: String, name: Option[String])
+
+object TemplateErrorReporting {
+  implicit val encoder: Encoder[TemplateErrorReporting] =
+    (reporting: TemplateErrorReporting) => {
+
+      val fields: Seq[(String, Json)] =
+        Seq("Email" -> Some(reporting.email.asJson), "Name" -> reporting.name.map(_.asJson)).collect {
+          case (name, Some(value)) => name -> value
+        }
+      Json.obj(fields: _*)
     }
 }
 
-case class SendEmail(id: String = "unknown",
-                     from: Option[Recipient] = None,
-                     subject: Option[String] = None,
-                     textPart: Option[String] = None,
-                     htmlPart: Option[String] = None,
-                     useTemplateLanguage: Option[Boolean] = Some(true),
-                     templateId: Option[Int] = None,
-                     variables: Option[Map[String, String]] = None,
-                     recipients: Seq[Recipient],
-                     headers: Option[Map[String, String]] = None,
-                     emailId: Option[String] = None,
-                     customCampaign: Option[String] = None,
-                     monitoringCategory: Option[String] = None)
+final case class SendEmail(id: String = "unknown",
+                           from: Option[Recipient] = None,
+                           subject: Option[String] = None,
+                           textPart: Option[String] = None,
+                           htmlPart: Option[String] = None,
+                           useTemplateLanguage: Option[Boolean] = Some(true),
+                           templateId: Option[Int] = None,
+                           variables: Option[Map[String, String]] = None,
+                           recipients: Seq[Recipient],
+                           headers: Option[Map[String, String]] = None,
+                           emailId: Option[String] = None,
+                           customCampaign: Option[String] = None,
+                           monitoringCategory: Option[String] = None,
+                           templateErrorReporting: Option[TemplateErrorReporting] = None)
     extends Sharded {
   override def toString =
     s"SendEmail: (id = $id, from = $from, subject = $subject, textPart = $textPart, htmlPart = $htmlPart, useTemplateLanguage = $useTemplateLanguage, templateId = $templateId, variables = $variables, recipients = ${recipients
@@ -68,7 +75,8 @@ object SendEmail {
              headers: Option[Map[String, String]] = None,
              emailId: Option[String] = None,
              customCampaign: Option[String] = None,
-             monitoringCategory: Option[String] = None): SendEmail = {
+             monitoringCategory: Option[String] = None,
+             templateErrorReporting: Option[TemplateErrorReporting] = None): SendEmail = {
 
     SendEmail(
       recipients.headOption.map(head => SecurityHelper.anonymizeEmail(head.email)).getOrElse("unknown"),
@@ -83,7 +91,8 @@ object SendEmail {
       headers,
       emailId,
       customCampaign,
-      monitoringCategory
+      monitoringCategory,
+      templateErrorReporting
     )
   }
 
@@ -91,25 +100,30 @@ object SendEmail {
     (sendEmail: SendEmail) => {
 
       val fields: Seq[(String, Json)] =
-        Seq.empty ++
-          Field("From", sendEmail.from.map(_.asJson)).toSeq ++
-          Field("Subject", sendEmail.subject.map(_.asJson)).toSeq ++
-          Field("TextPart", sendEmail.textPart.map(_.asJson)).toSeq ++
-          Field("HTMLPart", sendEmail.htmlPart.map(_.asJson)).toSeq ++
-          Field("TemplateLanguage", sendEmail.useTemplateLanguage.map(_.asJson)).toSeq ++
-          Field("TemplateID", sendEmail.templateId.map(_.asJson)).toSeq ++
-          Field("TemplateID", sendEmail.templateId.map(_.asJson)).toSeq ++
-          Field("To", Some(sendEmail.recipients.asJson)).toSeq ++
-          Field("Headers", sendEmail.headers.map(_.asJson)).toSeq ++
-          Field("CustomID", sendEmail.emailId.map(_.asJson)).toSeq ++
-          Field("CustomCampaign", sendEmail.customCampaign.map(_.asJson)).toSeq ++
-          Field("MonitoringCategory", sendEmail.monitoringCategory.map(_.asJson)).toSeq ++
-          (sendEmail.variables match {
-            case Some(values: Map[String, String]) if values.nonEmpty =>
-              Field("Variables", Some(values.asJson)).toSeq
-            case _ => Seq.empty
-          })
-
+        Seq(
+          "From" -> sendEmail.from.map(_.asJson),
+          "Subject" -> sendEmail.subject.map(_.asJson),
+          "TextPart" -> sendEmail.textPart.map(_.asJson),
+          "HTMLPart" -> sendEmail.htmlPart.map(_.asJson),
+          "TemplateLanguage" -> sendEmail.useTemplateLanguage.map(_.asJson),
+          "TemplateID" -> sendEmail.templateId.map(_.asJson),
+          "TemplateID" -> sendEmail.templateId.map(_.asJson),
+          "To" -> Some(sendEmail.recipients.asJson),
+          "Headers" -> sendEmail.headers.map(_.asJson),
+          "CustomID" -> sendEmail.emailId.map(_.asJson),
+          "CustomCampaign" -> sendEmail.customCampaign.map(_.asJson),
+          "MonitoringCategory" -> sendEmail.monitoringCategory.map(_.asJson),
+          "TemplateErrorReporting" -> sendEmail.templateErrorReporting.map(_.asJson),
+          "Variables" -> sendEmail.variables.flatMap { variables =>
+            if (variables.isEmpty) {
+              None
+            } else {
+              Some(variables.asJson)
+            }
+          }
+        ).collect {
+          case (name, Some(value)) => name -> value
+        }
       Json.obj(fields: _*)
     }
 }
@@ -136,10 +150,9 @@ object SendMessages {
 
   implicit val encoder: Encoder[SendMessages] = { sendMessages: SendMessages =>
     val fields: Seq[(String, Json)] =
-      Seq.empty ++ Field("Messages", Some(sendMessages.messages.asJson)).toSeq ++ Field(
-        "SandboxMode",
-        sendMessages.sandboxMode.map(_.asJson)
-      ).toSeq
+      Seq("Messages" -> Some(sendMessages.messages.asJson), "SandboxMode" -> sendMessages.sandboxMode.map(_.asJson)).collect {
+        case (name, Some(value)) => name -> value
+      }
 
     Json.obj(fields: _*)
   }
@@ -181,13 +194,19 @@ object Recipient {
   implicit val encoder: Encoder[Recipient] =
     (recipient: Recipient) => {
       val fields: Seq[(String, Json)] =
-        Seq.empty ++
-          Field("Email", Some(recipient.email.asJson)).toSeq ++
-          Field("Name", recipient.name.map(_.asJson)).toSeq ++
-          (recipient.variables match {
-            case Some(values) if values.nonEmpty => Field("Variables", Some(values.asJson)).toSeq
-            case _                               => Seq.empty
-          })
+        Seq(
+          "Email" -> Some(recipient.email.asJson),
+          "Name" -> recipient.name.map(_.asJson),
+          "Variables" -> recipient.variables.flatMap { values =>
+            if (values.isEmpty) {
+              None
+            } else {
+              Some(values.asJson)
+            }
+          }
+        ).collect {
+          case (name, Some(value)) => name -> value
+        }
 
       Json.obj(fields: _*)
 
@@ -314,8 +333,10 @@ object ContactProperty {
 
   implicit def encoder[T](implicit toJson: ToJson[T]): Encoder[ContactProperty[T]] =
     (contactProperty: ContactProperty[T]) => {
-      val fields: Seq[(String, Json)] = Field("Name", Some(contactProperty.name.asJson)).toSeq ++
-        Field("Value", contactProperty.value.map(toJson.toJson)).toSeq
+      val fields: Seq[(String, Json)] =
+        Seq("Name" -> Some(contactProperty.name.asJson), "Value" -> contactProperty.value.map(toJson.toJson)).collect {
+          case (name, Some(value)) => name -> value
+        }
 
       Json.obj(fields: _*)
     }

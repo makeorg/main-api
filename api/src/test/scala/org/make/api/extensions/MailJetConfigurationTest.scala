@@ -39,7 +39,10 @@ class MailJetConfigurationTest
       |    basic-auth-password = "basicauthpassword"
       |    campaign-api-key = "campaignapikey"
       |    campaign-secret-key = "campaignsecretkey"
-      |    
+      |    error-reporting {
+      |      recipient = "emailing@make.org"
+      |      recipient-name = "emailing"
+      |    }
       |    
       |    user-list {
       |      hard-bounce-list-id = "hardbouncelistid"
