@@ -262,15 +262,23 @@ trait DefaultAdminActiveFeatureApiComponent
   }
 }
 
-case class CreateActiveFeatureRequest(featureId: FeatureId, maybeQuestionId: Option[QuestionId])
+case class CreateActiveFeatureRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "f403b357-a528-4657-b4e4-6dc07516f16a")
+  featureId: FeatureId,
+  @(ApiModelProperty @field)(dataType = "string", example = "afe70bf6-ae1b-4fd0-9051-0732958ca810")
+  maybeQuestionId: Option[QuestionId]
+)
 
 object CreateActiveFeatureRequest {
   implicit val decoder: Decoder[CreateActiveFeatureRequest] = deriveDecoder[CreateActiveFeatureRequest]
 }
 
 final case class ActiveFeatureResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "1c895cb8-f4fe-45ff-a1c2-24db14324a0f") id: ActiveFeatureId,
+  @(ApiModelProperty @field)(dataType = "string", example = "1c895cb8-f4fe-45ff-a1c2-24db14324a0f")
+  id: ActiveFeatureId,
+  @(ApiModelProperty @field)(dataType = "string", example = "f403b357-a528-4657-b4e4-6dc07516f16a")
   featureId: FeatureId,
+  @(ApiModelProperty @field)(dataType = "string", example = "afe70bf6-ae1b-4fd0-9051-0732958ca810")
   maybeQuestionId: Option[QuestionId]
 )
 

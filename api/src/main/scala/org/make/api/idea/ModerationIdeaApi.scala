@@ -35,7 +35,7 @@ import org.make.core.Validation._
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Order
 import org.make.core.idea._
-import org.make.core.idea.indexed.{IdeaSearchResult, IndexedIdea}
+import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -61,7 +61,7 @@ trait ModerationIdeaApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[IdeaSearchResult]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[IdeaResponse]]))
   )
   @ApiImplicitParams(
     value = Array(
@@ -102,7 +102,7 @@ trait ModerationIdeaApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Idea])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaResponse])))
   @Path(value = "/{ideaId}")
   def getIdea: Route
 
@@ -121,7 +121,9 @@ trait ModerationIdeaApi extends Directives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.idea.CreateIdeaRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[Idea])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[IdeaResponse]))
+  )
   @Path(value = "/")
   def createIdea: Route
 
@@ -338,11 +340,11 @@ trait DefaultModerationIdeaApiComponent
   }
 }
 
-final case class CreateIdeaRequest(name: String,
-                                   @(ApiModelProperty @field)(
-                                     dataType = "string",
-                                     example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d"
-                                   ) questionId: Option[QuestionId]) {
+final case class CreateIdeaRequest(
+  name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d")
+  questionId: Option[QuestionId]
+) {
   validate(Validation.validateUserInput("name", name, None))
 }
 
@@ -350,7 +352,9 @@ object CreateIdeaRequest {
   implicit val decoder: Decoder[CreateIdeaRequest] = deriveDecoder[CreateIdeaRequest]
 }
 
-final case class UpdateIdeaRequest(name: String, status: IdeaStatus) {
+final case class UpdateIdeaRequest(name: String,
+                                   @(ApiModelProperty @field)(dataType = "string", example = "Activated")
+                                   status: IdeaStatus) {
   validate(Validation.validateUserInput("name", name, None))
 }
 
@@ -399,15 +403,18 @@ object IdeaIdResponse {
 final case class IdeaResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "a10086bb-4312-4486-8f57-91b5e92b3eb9") id: IdeaId,
   name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "f4767b7b-06c1-479d-8bc1-6e2a2de97f22")
   operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d")
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "e65fb52e-6438-4074-a79f-adb38fdee544")
   themeId: Option[ThemeId],
-  @(ApiModelProperty @field)(dataType = "string", example = "Activated") status: IdeaStatus
+  @(ApiModelProperty @field)(dataType = "string", example = "Activated")
+  status: IdeaStatus
 )
 
 object IdeaResponse {

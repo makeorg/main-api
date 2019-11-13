@@ -65,18 +65,21 @@ object BusinessConsultationResponse extends CirceFormatters {
   implicit val decoder: Decoder[BusinessConsultationResponse] = deriveDecoder[BusinessConsultationResponse]
 }
 
-final case class FeaturedConsultationResponse(questionId: Option[QuestionId],
-                                              questionSlug: Option[String],
-                                              title: String,
-                                              description: Option[String],
-                                              landscapePicture: String,
-                                              portraitPicture: String,
-                                              altPicture: String,
-                                              label: String,
-                                              buttonLabel: String,
-                                              internalLink: Option[String],
-                                              externalLink: Option[String],
-                                              slot: Int)
+final case class FeaturedConsultationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "fd7dedff-79ba-4eef-8c3a-c12002d3453e")
+  questionId: Option[QuestionId],
+  questionSlug: Option[String],
+  title: String,
+  description: Option[String],
+  landscapePicture: String,
+  portraitPicture: String,
+  altPicture: String,
+  label: String,
+  buttonLabel: String,
+  internalLink: Option[String],
+  externalLink: Option[String],
+  slot: Int
+)
 
 object FeaturedConsultationResponse {
   implicit val encoder: Encoder[FeaturedConsultationResponse] = deriveEncoder[FeaturedConsultationResponse]
@@ -99,18 +102,21 @@ object FeaturedConsultationResponse {
     )
 }
 
-final case class CurrentConsultationResponse(questionId: Option[QuestionId],
-                                             questionSlug: Option[String],
-                                             picture: String,
-                                             altPicture: String,
-                                             description: String,
-                                             label: String,
-                                             linkLabel: String,
-                                             internalLink: Option[String],
-                                             externalLink: Option[String],
-                                             proposalsNumber: Long,
-                                             startDate: Option[ZonedDateTime],
-                                             endDate: Option[ZonedDateTime])
+final case class CurrentConsultationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "fd7dedff-79ba-4eef-8c3a-c12002d3453e")
+  questionId: Option[QuestionId],
+  questionSlug: Option[String],
+  picture: String,
+  altPicture: String,
+  description: String,
+  label: String,
+  linkLabel: String,
+  internalLink: Option[String],
+  externalLink: Option[String],
+  proposalsNumber: Long,
+  startDate: Option[ZonedDateTime],
+  endDate: Option[ZonedDateTime]
+)
 
 object CurrentConsultationResponse extends CirceFormatters {
   implicit val encoder: Encoder[CurrentConsultationResponse] = deriveEncoder[CurrentConsultationResponse]

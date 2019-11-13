@@ -72,6 +72,10 @@ case class IndexedOperationOfQuestion(@(ApiModelProperty @field)(
                                       country: Country,
                                       @(ApiModelProperty @field)(dataType = "string", example = "fr")
                                       language: Language,
+                                      @(ApiModelProperty @field)(
+                                        dataType = "string",
+                                        example = "57c4a8d0-f3c1-4391-b75b-03082ac94d19"
+                                      )
                                       operationId: OperationId,
                                       operationTitle: String,
                                       operationKind: String,

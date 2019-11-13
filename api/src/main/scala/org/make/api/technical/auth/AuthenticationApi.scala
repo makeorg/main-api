@@ -32,10 +32,11 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.core.auth.{ClientId, UserRights}
+import org.make.core.auth.{AuthCode, ClientId, UserRights}
 import org.make.core.{DateHelper, HttpCodes}
 import scalaoauth2.provider._
 
+import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -140,11 +141,12 @@ trait AuthenticationApi extends Directives {
       )
     )
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(paramType = "body", dataType = "org.make.core.auth.AuthCode")))
-  @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CreateAuthorizationCodeRequest]))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(paramType = "body", dataType = "org.make.api.technical.auth.CreateAuthorizationCodeRequest")
+    )
   )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[AuthCode])))
   @Path(value = "/oauth/code")
   def createAuthorizationCode: Route
 
@@ -410,7 +412,12 @@ trait DefaultAuthenticationApiComponent
   }
 }
 
-case class CreateAuthorizationCodeRequest(clientId: ClientId, scope: Option[String], redirectUri: Option[String])
+case class CreateAuthorizationCodeRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "7951a086-fa88-4cd0-815a-d76f514b2f1d")
+  clientId: ClientId,
+  scope: Option[String],
+  redirectUri: Option[String]
+)
 
 object CreateAuthorizationCodeRequest {
   implicit val decoder: Decoder[CreateAuthorizationCodeRequest] = deriveDecoder[CreateAuthorizationCodeRequest]

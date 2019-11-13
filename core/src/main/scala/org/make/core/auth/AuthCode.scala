@@ -23,15 +23,20 @@ import java.time.ZonedDateTime
 
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
 import org.make.core.user.UserId
+
+import scala.annotation.meta.field
 
 case class AuthCode(authorizationCode: String,
                     scope: Option[String],
                     redirectUri: Option[String],
                     createdAt: ZonedDateTime,
                     expiresIn: Int,
+                    @(ApiModelProperty @field)(dataType = "string", example = "a58da5a1-90c9-4216-8de0-5a5b18d1d398")
                     user: UserId,
+                    @(ApiModelProperty @field)(dataType = "string", example = "7951a086-fa88-4cd0-815a-d76f514b2f1d")
                     client: ClientId)
 
 object AuthCode extends CirceFormatters {

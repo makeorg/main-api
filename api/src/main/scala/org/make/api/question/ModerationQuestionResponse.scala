@@ -245,15 +245,22 @@ object QuestionDetailsResponse extends CirceFormatters {
   implicit val decoder: Decoder[QuestionDetailsResponse] = deriveDecoder[QuestionDetailsResponse]
 }
 
-final case class QuestionOfOperationResponse(questionId: QuestionId,
-                                             questionSlug: String,
-                                             question: String,
-                                             operationTitle: String,
-                                             country: Country,
-                                             language: Language,
-                                             startDate: Option[ZonedDateTime],
-                                             endDate: Option[ZonedDateTime],
-                                             theme: QuestionThemeResponse)
+final case class QuestionOfOperationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "1783f622-b9ea-4f8d-bb39-35bbfdc9ce88")
+  questionId: QuestionId,
+  questionSlug: String,
+  question: String,
+  operationTitle: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-11-08T17:23:00.000Z")
+  startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "string", example = "2020-01-08T17:23:00.000Z")
+  endDate: Option[ZonedDateTime],
+  theme: QuestionThemeResponse
+)
 
 object QuestionOfOperationResponse {
   implicit val encoder: Encoder[QuestionOfOperationResponse] = deriveEncoder[QuestionOfOperationResponse]

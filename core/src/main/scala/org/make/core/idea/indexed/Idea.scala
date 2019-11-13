@@ -23,14 +23,11 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
-import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
-
-import scala.annotation.meta.field
 
 object IdeaElasticsearchFieldNames {
   val ideaId: String = "ideaId"
@@ -70,25 +67,17 @@ object IdeaElasticsearchFieldNames {
   val updatedAt: String = "updatedAt"
 }
 
-case class IndexedIdea(
-  @(ApiModelProperty @field)(dataType = "string", example = "a10086bb-4312-4486-8f57-91b5e92b3eb9") ideaId: IdeaId,
-  name: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d") questionId: Option[
-    QuestionId
-  ],
-  @(ApiModelProperty @field)(dataType = "string", example = "f4767b7b-06c1-479d-8bc1-6e2a2de97f22") operationId: Option[
-    OperationId
-  ],
-  @(ApiModelProperty @field)(dataType = "string", example = "e65fb52e-6438-4074-a79f-adb38fdee544") themeId: Option[
-    ThemeId
-  ],
-  question: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string", example = "Activated") status: IdeaStatus,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z") createdAt: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z") updatedAt: Option[ZonedDateTime]
-)
+case class IndexedIdea(ideaId: IdeaId,
+                       name: String,
+                       questionId: Option[QuestionId],
+                       operationId: Option[OperationId],
+                       themeId: Option[ThemeId],
+                       question: Option[String],
+                       country: Option[Country],
+                       language: Option[Language],
+                       status: IdeaStatus,
+                       createdAt: ZonedDateTime,
+                       updatedAt: Option[ZonedDateTime])
 
 object IndexedIdea extends CirceFormatters {
   implicit val encoder: Encoder[IndexedIdea] = deriveEncoder[IndexedIdea]

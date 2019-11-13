@@ -51,7 +51,7 @@ import scala.annotation.meta.field
 @Path(value = "/admin/partners")
 trait AdminPartnerApi extends Directives {
 
-  @ApiOperation(value = "post-partner", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "post-partner", httpMethod = "POST", code = HttpCodes.Created)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[PartnerIdResponse]))
   )
@@ -63,7 +63,7 @@ trait AdminPartnerApi extends Directives {
   @Path(value = "/")
   def adminPostPartner: Route
 
-  @ApiOperation(value = "put-partner", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "put-partner", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PartnerIdResponse]))
   )
@@ -94,7 +94,7 @@ trait AdminPartnerApi extends Directives {
   @Path(value = "/{partnerId}")
   def adminGetPartner: Route
 
-  @ApiOperation(value = "delete-partner", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(value = "delete-partner", httpMethod = "DELETE", code = HttpCodes.OK)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "partnerId", paramType = "path", dataType = "string")))
   @Path(value = "/{partnerId}")
@@ -236,13 +236,18 @@ trait DefaultAdminPartnerApiComponent
   }
 }
 
-final case class CreatePartnerRequest(name: String,
-                                      logo: Option[String],
-                                      link: Option[String],
-                                      organisationId: Option[UserId],
-                                      partnerKind: PartnerKind,
-                                      questionId: QuestionId,
-                                      weight: Float) {
+final case class CreatePartnerRequest(
+  name: String,
+  logo: Option[String],
+  link: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
+  organisationId: Option[UserId],
+  @(ApiModelProperty @field)(dataType = "string", example = "FOUNDER")
+  partnerKind: PartnerKind,
+  @(ApiModelProperty @field)(dataType = "string", example = "6a90575f-f625-4025-a485-8769e8a26967")
+  questionId: QuestionId,
+  weight: Float
+) {
   validate(
     Requirement(
       field = "logo",
@@ -263,12 +268,16 @@ object CreatePartnerRequest {
   implicit val decoder: Decoder[CreatePartnerRequest] = deriveDecoder[CreatePartnerRequest]
 }
 
-final case class UpdatePartnerRequest(name: String,
-                                      logo: Option[String],
-                                      link: Option[String],
-                                      organisationId: Option[UserId],
-                                      partnerKind: PartnerKind,
-                                      weight: Float) {
+final case class UpdatePartnerRequest(
+  name: String,
+  logo: Option[String],
+  link: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
+  organisationId: Option[UserId],
+  @(ApiModelProperty @field)(dataType = "string", example = "FOUNDER")
+  partnerKind: PartnerKind,
+  weight: Float
+) {
   validate(
     Requirement(
       field = "logo",
@@ -289,13 +298,18 @@ object UpdatePartnerRequest {
   implicit val decoder: Decoder[UpdatePartnerRequest] = deriveDecoder[UpdatePartnerRequest]
 }
 
-final case class PartnerResponse(id: PartnerId,
-                                 name: String,
-                                 logo: Option[String],
-                                 link: Option[String],
-                                 organisationId: Option[UserId],
-                                 partnerKind: PartnerKind,
-                                 weight: Float)
+final case class PartnerResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "5c95a5b1-3722-4f49-93ec-2c2fcb5da051")
+  id: PartnerId,
+  name: String,
+  logo: Option[String],
+  link: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
+  organisationId: Option[UserId],
+  @(ApiModelProperty @field)(dataType = "string", example = "FOUNDER")
+  partnerKind: PartnerKind,
+  weight: Float
+)
 
 object PartnerResponse {
   def apply(partner: Partner): PartnerResponse = PartnerResponse(
