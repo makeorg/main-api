@@ -119,7 +119,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         postalCode = None,
         age = None,
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       country = Country("FR"),
@@ -199,7 +200,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         postalCode = None,
         age = None,
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       country = Country("FR"),

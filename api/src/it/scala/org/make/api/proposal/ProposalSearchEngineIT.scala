@@ -189,7 +189,8 @@ class ProposalSearchEngineIT
       postalCode = None,
       age = None,
       avatarUrl = None,
-      anonymousParticipation = false
+      anonymousParticipation = false,
+      isOrganisation = false
     ),
     organisations = Seq.empty,
     themeId = None,
@@ -271,7 +272,8 @@ class ProposalSearchEngineIT
         postalCode = Some("92876"),
         age = Some(25),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
@@ -347,7 +349,8 @@ class ProposalSearchEngineIT
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
@@ -425,7 +428,8 @@ class ProposalSearchEngineIT
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -501,7 +505,8 @@ class ProposalSearchEngineIT
         postalCode = Some("40734"),
         age = Some(23),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -577,7 +582,8 @@ class ProposalSearchEngineIT
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -653,7 +659,8 @@ class ProposalSearchEngineIT
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -727,7 +734,8 @@ class ProposalSearchEngineIT
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -811,7 +819,8 @@ class ProposalSearchEngineIT
         postalCode = Some("43324"),
         age = Some(31),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -902,7 +911,8 @@ class ProposalSearchEngineIT
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -980,7 +990,8 @@ class ProposalSearchEngineIT
         postalCode = Some("81966"),
         age = Some(21),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1052,13 +1063,14 @@ class ProposalSearchEngineIT
       trending = None,
       labels = Seq(),
       author = IndexedAuthor(
-        firstName = Some("Ronald"),
-        organisationName = None,
-        organisationSlug = None,
+        firstName = None,
+        organisationName = Some("organisation"),
+        organisationSlug = Some("orga"),
         postalCode = Some("40734"),
         age = Some(23),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = true
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1136,7 +1148,8 @@ class ProposalSearchEngineIT
         postalCode = Some("81966"),
         age = Some(21),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1212,7 +1225,8 @@ class ProposalSearchEngineIT
         postalCode = Some("40734"),
         age = Some(23),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1288,7 +1302,8 @@ class ProposalSearchEngineIT
         postalCode = Some("92876"),
         age = Some(25),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1365,7 +1380,8 @@ class ProposalSearchEngineIT
         postalCode = Some("41556"),
         age = Some(26),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1630,6 +1646,25 @@ class ProposalSearchEngineIT
         results.results.size should be(1)
         results.results.foreach(_.sequenceSegmentPool should be(SequencePool.New))
         results.results.foreach(_.id.value should be("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"))
+      }
+    }
+  }
+
+  feature("search proposals by author is organisation") {
+    scenario("search for author organisation") {
+      val query = SearchQuery(
+        filters = Some(
+          SearchFilters(
+            isOrganisation = Some(IsOrganisationSearchFilter(true)),
+            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+          )
+        )
+      )
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
+        results.results.size should be(1)
+        results.results.foreach(_.author.isOrganisation should be(true))
+        results.results.foreach(_.id.value should be("bd44db77-3096-4e3b-b539-a4038307d85e"))
       }
     }
   }

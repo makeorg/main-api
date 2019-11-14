@@ -156,7 +156,8 @@ class SortAlgorithmIT
       postalCode = None,
       age = None,
       avatarUrl = None,
-      anonymousParticipation = false
+      anonymousParticipation = false,
+      isOrganisation = false
     ),
     organisations = Seq.empty,
     themeId = None,

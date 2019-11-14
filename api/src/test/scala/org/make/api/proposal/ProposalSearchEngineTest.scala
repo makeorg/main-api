@@ -110,7 +110,8 @@ class ProposalSearchEngineTest
       postalCode = Some("11111"),
       age = Some(42),
       avatarUrl = None,
-      anonymousParticipation = false
+      anonymousParticipation = false,
+      isOrganisation = false
     ),
     organisations = Seq.empty,
     themeId = Some(ThemeId("foo-theme")),

@@ -367,7 +367,8 @@ class ModerationQuestionApiTest
                   postalCode = None,
                   age = None,
                   avatarUrl = None,
-                  anonymousParticipation = false
+                  anonymousParticipation = false,
+                  isOrganisation = false
                 ),
                 organisations = Seq.empty,
                 country = Country("FR"),

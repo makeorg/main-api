@@ -86,7 +86,8 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "isRandom", paramType = "query", dataType = "boolean"),
       new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean")
     )
   )
   def search: Route
@@ -270,7 +271,8 @@ trait DefaultProposalApiComponent
                   'skip.as[Int].?,
                   'isRandom.as[Boolean].?,
                   'sortAlgorithm.?,
-                  'operationKinds.as[immutable.Seq[OperationKind]].?
+                  'operationKinds.as[immutable.Seq[OperationKind]].?,
+                  'isOrganisation.as[Boolean].?
                 )
               ) {
                 (proposalIds: Option[Seq[ProposalId]],
@@ -293,7 +295,8 @@ trait DefaultProposalApiComponent
                  skip: Option[Int],
                  isRandom: Option[Boolean],
                  sortAlgorithm: Option[String],
-                 operationKinds: Option[Seq[OperationKind]]) =>
+                 operationKinds: Option[Seq[OperationKind]],
+                 isOrganisation: Option[Boolean]) =>
                   Validation.validate(Seq(country.map { countryValue =>
                     Validation.validChoices(
                       fieldName = "country",
@@ -370,7 +373,8 @@ trait DefaultProposalApiComponent
                       } else {
                         Some(Seq(GreatCause, PublicConsultation, BusinessConsultation))
                       }
-                    }
+                    },
+                    isOrganisation = isOrganisation
                   )
                   provideAsync(
                     proposalService

@@ -41,6 +41,7 @@ object ProposalElasticsearchFieldNames {
   val authorAge: String = "author.age"
   val authorFirstName: String = "author.firstName"
   val authorPostalCode: String = "author.postalCode"
+  val authorIsOrganisation: String = "author.isOrganisation"
   val content: String = "content"
   val contentBg: String = "content.bg"
   val contentBgStemmed: String = "content.stemmed-bg"
@@ -221,7 +222,8 @@ final case class IndexedAuthor(firstName: Option[String],
                                @(ApiModelProperty @field)(example = "21", dataType = "int")
                                age: Option[Int],
                                avatarUrl: Option[String],
-                               anonymousParticipation: Boolean)
+                               anonymousParticipation: Boolean,
+                               isOrganisation: Boolean)
 
 object IndexedAuthor {
   implicit val encoder: Encoder[IndexedAuthor] = deriveEncoder[IndexedAuthor]

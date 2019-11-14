@@ -1012,7 +1012,8 @@ class UserApiTest
         postalCode = Some("11111"),
         age = Some(26),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1156,7 +1157,8 @@ class UserApiTest
         postalCode = Some("11111"),
         age = Some(22),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = None,
