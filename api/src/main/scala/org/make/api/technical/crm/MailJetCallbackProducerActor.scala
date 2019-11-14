@@ -29,8 +29,8 @@ import org.make.core.{DateHelper, MakeSerializable}
 
 class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrapper, MailJetEvent] with StrictLogging {
   override protected lazy val eventClass: Class[MailJetEvent] = classOf[MailJetEvent]
-  override protected lazy val format: RecordFormat[MailJetEventWrapper] = RecordFormat[MailJetEventWrapper]
-  override protected lazy val schema: SchemaFor[MailJetEventWrapper] = SchemaFor[MailJetEventWrapper]
+  override protected lazy val format: RecordFormat[MailJetEventWrapper] = MailJetEventWrapper.recordFormat
+  override protected lazy val schema: SchemaFor[MailJetEventWrapper] = MailJetEventWrapper.schemaFor
   override val kafkaTopic: String = kafkaConfiguration.topics(MailJetCallbackProducerActor.topicKey)
   override protected def convert(event: MailJetEvent): MailJetEventWrapper = {
     logger.debug(s"Produce MailJetEvent: ${event.toString}")

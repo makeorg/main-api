@@ -31,7 +31,7 @@ class MailJetConsumerActor(crmService: CrmService)
     with MailJetConfigurationExtension {
 
   override protected lazy val kafkaTopic: String = MailJetProducerActor.topicKey
-  override protected val format: RecordFormat[SendEmail] = RecordFormat[SendEmail]
+  override protected val format: RecordFormat[SendEmail] = SendEmail.recordFormat
 
   override def handleMessage(message: SendEmail): Future[Unit] = {
     crmService.sendEmail(message)

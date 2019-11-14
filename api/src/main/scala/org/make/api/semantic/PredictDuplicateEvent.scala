@@ -21,8 +21,9 @@ package org.make.api.semantic
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
 import org.make.api.semantic.PredictDuplicateEvent.AnyPredictDuplicateEventEvent
-import org.make.core.EventWrapper
+import org.make.core.{AvroSerializers, EventWrapper}
 import org.make.core.proposal.ProposalId
 import shapeless.{:+:, CNil}
 
@@ -37,6 +38,14 @@ final case class PredictDuplicateEventWrapper(version: Int,
                                               eventType: String,
                                               event: AnyPredictDuplicateEventEvent)
     extends EventWrapper
+
+object PredictDuplicateEventWrapper extends AvroSerializers {
+  implicit lazy val schemaFor: SchemaFor[PredictDuplicateEventWrapper] = SchemaFor[PredictDuplicateEventWrapper]
+  implicit lazy val fromRecord: FromRecord[PredictDuplicateEventWrapper] = FromRecord[PredictDuplicateEventWrapper]
+  implicit lazy val toRecord: ToRecord[PredictDuplicateEventWrapper] = ToRecord[PredictDuplicateEventWrapper]
+  implicit lazy val recordFormat: RecordFormat[PredictDuplicateEventWrapper] =
+    RecordFormat[PredictDuplicateEventWrapper]
+}
 
 object PredictDuplicateEvent {
   type AnyPredictDuplicateEventEvent = PredictDuplicateEvent :+: CNil

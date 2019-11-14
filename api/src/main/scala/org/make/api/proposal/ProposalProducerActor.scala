@@ -27,8 +27,8 @@ import org.make.core.DateHelper
 
 class ProposalProducerActor extends BasicProducerActor[ProposalEventWrapper, PublishedProposalEvent] {
   override protected lazy val eventClass: Class[PublishedProposalEvent] = classOf[PublishedProposalEvent]
-  override protected lazy val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
-  override protected lazy val schema: SchemaFor[ProposalEventWrapper] = SchemaFor[ProposalEventWrapper]
+  override protected lazy val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
+  override protected lazy val schema: SchemaFor[ProposalEventWrapper] = ProposalEventWrapper.schemaFor
   override val kafkaTopic: String = kafkaConfiguration.topics(ProposalProducerActor.topicKey)
 
   override protected def convert(event: PublishedProposalEvent): ProposalEventWrapper = {

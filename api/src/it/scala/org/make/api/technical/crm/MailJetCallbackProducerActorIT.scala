@@ -25,8 +25,8 @@ import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.sksamuel.avro4s.{FromRecord, RecordFormat}
 import com.typesafe.config.ConfigFactory
-import org.make.api.technical.AvroSerializers
 import org.make.api.{KafkaTest, KafkaTestConsumerActor}
+import org.make.core.AvroSerializers
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt

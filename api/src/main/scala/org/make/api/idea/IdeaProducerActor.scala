@@ -26,8 +26,8 @@ import org.make.api.technical.{BasicProducerActor, ProducerActorCompanion}
 
 class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] {
   override protected lazy val eventClass: Class[IdeaEvent] = classOf[IdeaEvent]
-  override protected lazy val format: RecordFormat[IdeaEventWrapper] = RecordFormat[IdeaEventWrapper]
-  override protected lazy val schema: SchemaFor[IdeaEventWrapper] = SchemaFor[IdeaEventWrapper]
+  override protected lazy val format: RecordFormat[IdeaEventWrapper] = IdeaEventWrapper.recordFormat
+  override protected lazy val schema: SchemaFor[IdeaEventWrapper] = IdeaEventWrapper.schemaFor
   override val kafkaTopic: String = kafkaConfiguration.topics(IdeaProducerActor.topicKey)
 
   override protected def convert(event: IdeaEvent): IdeaEventWrapper = {

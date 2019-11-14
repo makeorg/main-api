@@ -26,6 +26,7 @@ import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.apache.kafka.clients.producer.{KafkaProducer, _}
 import org.apache.kafka.common.serialization.{Serializer, StringSerializer}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
+import org.make.core.AvroSerializers
 
 import scala.util.Try
 

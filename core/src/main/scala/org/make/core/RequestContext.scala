@@ -21,6 +21,7 @@ package org.make.core
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
@@ -138,7 +139,12 @@ final case class RequestContext(
   customData: Map[String, String] = Map.empty
 )
 
-object RequestContext extends CirceFormatters with SprayJsonFormatters {
+object RequestContext extends CirceFormatters with SprayJsonFormatters with AvroSerializers {
+  implicit lazy val schemaFor: SchemaFor[RequestContext] = SchemaFor[RequestContext]
+  implicit lazy val fromRecord: FromRecord[RequestContext] = FromRecord[RequestContext]
+  implicit lazy val toRecord: ToRecord[RequestContext] = ToRecord[RequestContext]
+  implicit lazy val recordFormat: RecordFormat[RequestContext] = RecordFormat[RequestContext]
+
   implicit val encoder: Encoder[RequestContext] = deriveEncoder[RequestContext]
   implicit val decoder: Decoder[RequestContext] = deriveDecoder[RequestContext]
 

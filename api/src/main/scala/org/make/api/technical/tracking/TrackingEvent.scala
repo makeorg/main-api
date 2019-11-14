@@ -21,8 +21,9 @@ package org.make.api.technical.tracking
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
 import org.make.api.technical.tracking.TrackingEvent.AnyTrackingEvent
-import org.make.core.{DateHelper, EventWrapper, RequestContext}
+import org.make.core.{AvroSerializers, DateHelper, EventWrapper, RequestContext}
 import shapeless.{:+:, CNil}
 
 final case class TrackingEvent(eventProvider: String,
@@ -38,6 +39,13 @@ final case class TrackingEventWrapper(version: Int,
                                       eventType: String,
                                       event: AnyTrackingEvent)
     extends EventWrapper
+
+object TrackingEventWrapper extends AvroSerializers {
+  implicit lazy val schemaFor: SchemaFor[TrackingEventWrapper] = SchemaFor[TrackingEventWrapper]
+  implicit lazy val fromRecord: FromRecord[TrackingEventWrapper] = FromRecord[TrackingEventWrapper]
+  implicit lazy val toRecord: ToRecord[TrackingEventWrapper] = ToRecord[TrackingEventWrapper]
+  implicit lazy val recordFormat: RecordFormat[TrackingEventWrapper] = RecordFormat[TrackingEventWrapper]
+}
 
 object TrackingEvent {
   type AnyTrackingEvent = TrackingEvent :+: CNil

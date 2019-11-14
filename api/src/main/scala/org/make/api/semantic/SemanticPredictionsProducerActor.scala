@@ -29,8 +29,8 @@ import shapeless.Coproduct
 class SemanticPredictionsProducerActor extends BasicProducerActor[PredictionsEventWrapper, PredictedTagsEvent] {
   override protected lazy val eventClass: Class[PredictedTagsEvent] = classOf[PredictedTagsEvent]
   override protected lazy val format: RecordFormat[PredictionsEventWrapper] =
-    RecordFormat[PredictionsEventWrapper]
-  override protected lazy val schema: SchemaFor[PredictionsEventWrapper] = SchemaFor[PredictionsEventWrapper]
+    PredictionsEventWrapper.recordFormat
+  override protected lazy val schema: SchemaFor[PredictionsEventWrapper] = PredictionsEventWrapper.schemaFor
   override val kafkaTopic: String = kafkaConfiguration.topics(SemanticPredictionsProducerActor.topicKey)
   override protected def convert(trackingEvent: PredictedTagsEvent): PredictionsEventWrapper =
     PredictionsEventWrapper(

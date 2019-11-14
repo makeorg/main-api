@@ -21,6 +21,7 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
 import org.make.api.proposal.ProposalEvent.DeprecatedEvent
 import org.make.core.SprayJsonFormatters._
 import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
@@ -31,7 +32,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.make.core.{EventWrapper, MakeSerializable, RequestContext}
+import org.make.core.{AvroSerializers, EventWrapper, MakeSerializable, RequestContext}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
@@ -98,7 +99,12 @@ object PublishedProposalEvent {
                                         event: AnyProposalEvent)
       extends EventWrapper
 
-  object ProposalEventWrapper {
+  object ProposalEventWrapper extends AvroSerializers {
+    implicit lazy val schemaFor: SchemaFor[ProposalEventWrapper] = SchemaFor[ProposalEventWrapper]
+    implicit lazy val fromRecord: FromRecord[ProposalEventWrapper] = FromRecord[ProposalEventWrapper]
+    implicit lazy val toRecord: ToRecord[ProposalEventWrapper] = ToRecord[ProposalEventWrapper]
+    implicit lazy val recordFormat: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
+
     def wrapEvent(event: PublishedProposalEvent): AnyProposalEvent = event match {
       case e: ProposalProposed             => Coproduct[AnyProposalEvent](e)
       case e: ProposalAccepted             => Coproduct[AnyProposalEvent](e)
@@ -231,6 +237,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalUpdated {
+
     val actionType: String = "proposal-updated"
 
     implicit val formatter: RootJsonFormat[ProposalUpdated] =
@@ -251,6 +258,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalVotesVerifiedUpdated {
+
     val actionType: String = "proposal-votes-verified-updated"
 
     implicit val formatter: RootJsonFormat[ProposalVotesVerifiedUpdated] =
@@ -270,6 +278,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalVotesUpdated {
+
     val actionType: String = "proposal-votes-updated"
 
     implicit val formatter: RootJsonFormat[ProposalVotesUpdated] =
@@ -282,6 +291,7 @@ object PublishedProposalEvent {
   }
 
   object ReindexProposal {
+
     val actionType: String = "proposals-tags-updated"
 
     implicit val formatter: RootJsonFormat[ReindexProposal] =
@@ -307,6 +317,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalAccepted {
+
     val actionType: String = "proposal-accepted"
 
     implicit val formatter: RootJsonFormat[ProposalAccepted] =
@@ -327,6 +338,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalRefused {
+
     val actionType: String = "proposal-refused"
 
     implicit val formatter: RootJsonFormat[ProposalRefused] =
@@ -344,6 +356,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalPostponed {
+
     val actionType: String = "proposal-postponed"
 
     implicit val formatter: RootJsonFormat[ProposalPostponed] =
@@ -464,6 +477,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalLocked {
+
     val actionType: String = "proposal-locked"
 
     implicit val formatter: RootJsonFormat[ProposalLocked] =
@@ -510,6 +524,7 @@ object PublishedProposalEvent {
   }
 
   object ProposalAnonymized {
+
     implicit val formatter: RootJsonFormat[ProposalAnonymized] =
       DefaultJsonProtocol.jsonFormat3(ProposalAnonymized.apply)
   }

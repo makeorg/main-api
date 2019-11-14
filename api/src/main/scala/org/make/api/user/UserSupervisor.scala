@@ -29,9 +29,10 @@ import org.make.api.organisation.{
 }
 import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
-import org.make.api.technical.{AvroSerializers, ShortenedNames}
+import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserSupervisor.UserSupervisorDependencies
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
+import org.make.core.AvroSerializers
 
 class UserSupervisor(userHistoryCoordinator: ActorRef, dependencies: UserSupervisorDependencies)
     extends Actor

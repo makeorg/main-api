@@ -23,10 +23,11 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
-import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor}
+import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.user.UserProducerActor
 import org.make.api.userhistory.UserEvent
 import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent, UserEventWrapper}
+import org.make.core.AvroSerializers
 import org.make.core.user.UserId
 import org.make.core.user.indexed.IndexedOrganisation
 
@@ -45,7 +46,7 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
-  override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
+  override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 

@@ -21,7 +21,7 @@ package org.make.api.avro
 
 import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel
 import org.apache.avro.Schema
-import org.make.api.technical.AvroSerializers
+import org.make.core.AvroSerializers
 
 object AvroCompatibilityChecker extends App with AvroSerializers {
 

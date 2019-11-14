@@ -34,7 +34,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     extends KafkaConsumerActor[UserEventWrapper] {
 
   override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
-  override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
+  override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
   override val groupId = "user-email"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout

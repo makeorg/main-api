@@ -26,11 +26,10 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.make.api.technical.AvroSerializers
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{KafkaTest, KafkaTestConsumerActor}
 import org.make.core.user.MailingErrorLog
-import org.make.core.{DateHelper, MakeSerializable}
+import org.make.core.{AvroSerializers, DateHelper, MakeSerializable}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.mockito.{ArgumentMatchers, Mockito}

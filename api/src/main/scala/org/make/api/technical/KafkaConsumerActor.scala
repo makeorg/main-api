@@ -28,6 +28,7 @@ import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.technical.KafkaConsumerActor.{CheckState, Consume, Ready, Waiting}
+import org.make.core.AvroSerializers
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global

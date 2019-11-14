@@ -63,7 +63,7 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
     with SegmentServiceComponent {
 
   override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
-  override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
+  override protected val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 

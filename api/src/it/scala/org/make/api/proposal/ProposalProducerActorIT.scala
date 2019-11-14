@@ -24,11 +24,10 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.sksamuel.avro4s.{FromRecord, RecordFormat}
 import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.PublishedProposalEvent.{ProposalAuthorInfo, ProposalEventWrapper, ProposalProposed}
-import org.make.api.technical.AvroSerializers
 import org.make.api.{KafkaTest, KafkaTestConsumerActor}
 import org.make.core.proposal.ProposalId
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{AvroSerializers, DateHelper, RequestContext}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
