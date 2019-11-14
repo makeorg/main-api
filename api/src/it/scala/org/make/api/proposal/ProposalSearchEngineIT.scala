@@ -42,6 +42,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
@@ -135,6 +136,16 @@ class ProposalSearchEngineIT
     Await.result(responseRefreshIdeaFuture, 5.seconds)
   }
 
+  val baseQuestion: IndexedProposalQuestion = IndexedProposalQuestion(
+    questionId = QuestionId("question-id"),
+    "slug",
+    "title",
+    "question",
+    None,
+    None,
+    isOpen = false
+  )
+
   private val now = DateHelper.now()
   private def newProposal = IndexedProposal(
     id = ProposalId(UUID.randomUUID().toString),
@@ -210,6 +221,11 @@ class ProposalSearchEngineIT
     operationKind = None,
     segment = None
   )
+  private def newTag(label: String) = IndexedTag(TagId(UUID.randomUUID().toString), label, true)
+
+  val tagAlpha = newTag("alpha")
+  val tagBeta = newTag("beta")
+  val tagGamma = newTag("gamma")
 
   private val acceptedProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
@@ -277,11 +293,11 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
-      tags = Seq(),
+      tags = Seq(tagAlpha, tagBeta, tagGamma),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      question = None,
+      question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.New,
       initialProposal = false,
@@ -354,11 +370,11 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
-      tags = Seq(),
+      tags = Seq(tagAlpha, tagBeta),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
-      question = None,
+      question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -433,9 +449,9 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq(tagBeta),
       operationId = None,
-      question = None,
+      question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -510,11 +526,11 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq(tagBeta),
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      question = None,
+      question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -743,17 +759,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      question = Some(
-        IndexedProposalQuestion(
-          questionId = QuestionId("question-id"),
-          "slug",
-          "title",
-          "question",
-          None,
-          None,
-          isOpen = false
-        )
-      ),
+      question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -828,17 +834,7 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
-      question = Some(
-        IndexedProposalQuestion(
-          questionId = QuestionId("question-id"),
-          "slug",
-          "title",
-          "question",
-          None,
-          None,
-          isOpen = true
-        )
-      ),
+      question = Some(baseQuestion.copy(isOpen = true)),
       sequencePool = SequencePool.Tested,
       sequenceSegmentPool = SequencePool.Tested,
       initialProposal = false,
@@ -1620,7 +1616,7 @@ class ProposalSearchEngineIT
         result.total should be(1L)
       }
       whenReady(elasticsearchProposalAPI.searchProposals(queryFalse), Timeout(3.seconds)) { result =>
-        result.total should be(1L)
+        result.total should be(5L)
       }
     }
   }
@@ -1665,6 +1661,25 @@ class ProposalSearchEngineIT
         results.results.size should be(1)
         results.results.foreach(_.author.isOrganisation should be(true))
         results.results.foreach(_.id.value should be("bd44db77-3096-4e3b-b539-a4038307d85e"))
+      }
+    }
+  }
+
+  feature("get popular tags") {
+    scenario("get tags for base question") {
+      whenReady(elasticsearchProposalAPI.getPopularTagsByProposal(baseQuestion.questionId, 10), Timeout(10.seconds)) {
+        results =>
+          results.size should be(3)
+          results.find(_.tagId == tagAlpha.tagId).foreach(_.proposalCount should be(2))
+          results.find(_.tagId == tagBeta.tagId).foreach(_.proposalCount should be(4))
+          results.find(_.tagId == tagGamma.tagId).foreach(_.proposalCount should be(1))
+      }
+    }
+
+    scenario("get tags for inexistent question") {
+      whenReady(elasticsearchProposalAPI.getPopularTagsByProposal(QuestionId("fake"), 10), Timeout(10.seconds)) {
+        results =>
+          results.size should be(0)
       }
     }
   }
