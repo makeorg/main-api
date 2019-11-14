@@ -22,47 +22,32 @@ package org.make.api.proposal
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.sequence.SequenceConfiguration
-import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{Doable, Impossible, LikeIt, NoWay, PlatitudeAgree, PlatitudeDisagree}
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.SequencePool
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.sequence.SequenceId
-import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext}
 
 import scala.collection.immutable.Seq
 import scala.util.Random
 
 class ProposalScorerHelperTest extends MakeUnitTest {
 
-  def createProposal(nbVoteAgree: Int = 0,
-                     nbVoteDisagree: Int = 0,
-                     nbVoteNeutral: Int = 0,
-                     nbQualificationLikeIt: Int = 0,
-                     nbQualificationDoable: Int = 0,
-                     nbQualificationPlatitudeAgree: Int = 0,
-                     nbQualificationNoWay: Int = 0,
-                     nbQualificationImpossible: Int = 0,
-                     nbQualificationPlatitudeDisagree: Int = 0,
-                     nbQualificationDoNotUnderstand: Int = 0,
-                     nbQualificationNoOpinion: Int = 0,
-                     nbQualificationDoNotCare: Int = 0): Proposal = Proposal(
-    proposalId = ProposalId("99999999-9999-9999-9999-999999999999"),
-    slug = "il-faut-faire-une-proposition",
-    country = Some(Country("FR")),
-    language = Some(Language("fr")),
-    content = "Il faut faire une proposition",
-    author = UserId("99999999-9999-9999-9999-999999999999"),
-    labels = Seq.empty,
-    theme = Some(ThemeId("foo-theme")),
-    status = ProposalStatus.Accepted,
-    createdAt = Some(DateHelper.now()),
-    updatedAt = Some(DateHelper.now()),
-    votes = Seq(
+  def createVotes(nbVoteAgree: Int = 0,
+                  nbVoteDisagree: Int = 0,
+                  nbVoteNeutral: Int = 0,
+                  nbQualificationLikeIt: Int = 0,
+                  nbQualificationDoable: Int = 0,
+                  nbQualificationPlatitudeAgree: Int = 0,
+                  nbQualificationNoWay: Int = 0,
+                  nbQualificationImpossible: Int = 0,
+                  nbQualificationPlatitudeDisagree: Int = 0,
+                  nbQualificationDoNotUnderstand: Int = 0,
+                  nbQualificationNoOpinion: Int = 0,
+                  nbQualificationDoNotCare: Int = 0): Seq[Vote] = {
+    Seq(
       Vote(
         key = VoteKey.Agree,
         count = nbVoteAgree,
@@ -153,32 +138,34 @@ class ProposalScorerHelperTest extends MakeUnitTest {
           )
         )
       )
-    ),
-    tags = Seq.empty,
-    organisations = Seq.empty,
-    creationContext = RequestContext.empty,
-    idea = Some(IdeaId("idea-id")),
-    operation = None,
-    events = List.empty
-  )
-
-  val proposalWithoutvote: Proposal = createProposal()
-  val proposalWithVote: Proposal = createProposal(nbVoteAgree = 100, nbVoteNeutral = 20, nbVoteDisagree = 42)
-  val proposalWithVoteandQualification: Proposal =
-    createProposal(
-      nbVoteAgree = 100,
-      nbVoteDisagree = 42,
-      nbVoteNeutral = 20,
-      nbQualificationLikeIt = 10,
-      nbQualificationDoable = 20,
-      nbQualificationPlatitudeAgree = 30,
-      nbQualificationNoWay = 30,
-      nbQualificationImpossible = 10,
-      nbQualificationPlatitudeDisagree = 12,
-      nbQualificationDoNotUnderstand = 5,
-      nbQualificationNoOpinion = 7,
-      nbQualificationDoNotCare = 4
     )
+  }
+
+  val proposalWithoutvote: Proposal = proposal(ProposalId("proposalWithoutvote"))
+  val proposalWithVote: Proposal =
+    proposal(
+      ProposalId("proposalWithVote"),
+      votes = createVotes(nbVoteAgree = 100, nbVoteNeutral = 20, nbVoteDisagree = 42)
+    )
+  val proposalWithVoteandQualification: Proposal =
+    proposal(
+      id = ProposalId("proposalWithVoteandQualification"),
+      votes = createVotes(
+        nbVoteAgree = 100,
+        nbVoteDisagree = 42,
+        nbVoteNeutral = 20,
+        nbQualificationLikeIt = 10,
+        nbQualificationDoable = 20,
+        nbQualificationPlatitudeAgree = 30,
+        nbQualificationNoWay = 30,
+        nbQualificationImpossible = 10,
+        nbQualificationPlatitudeDisagree = 12,
+        nbQualificationDoNotUnderstand = 5,
+        nbQualificationNoOpinion = 7,
+        nbQualificationDoNotCare = 4
+      )
+    )
+
   val scoreCounts: ScoreCounts =
     ScoreCounts(
       votes = 20,
@@ -266,7 +253,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         val nbVoteDisagree = rgen.nextInt(100 - nbVoteAgree)
         val nbVoteNeutral = 100 - nbVoteAgree - nbVoteDisagree
 
-        val proposal = createProposal(
+        val votes = createVotes(
           nbVoteAgree,
           nbVoteDisagree,
           nbVoteNeutral,
@@ -278,7 +265,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
           nbQualificationPlatitudeDisagree = rgen.nextInt(1 + nbVoteDisagree / 3)
         )
 
-        val counts = ScoreCounts.fromSequenceVotes(proposal.votes)
+        val counts = ScoreCounts.fromSequenceVotes(votes)
         val score = counts.topScore()
         val confidence_interval = counts.topScoreConfidenceInterval()
         val sampleScore = counts.sampleTopScore()
@@ -416,6 +403,23 @@ class ProposalScorerHelperTest extends MakeUnitTest {
       ScoreCounts
         .fromSequenceVotes(votes(1102, 564, 126, Seq.empty, Seq.empty, qualifications(500, 12, 423, 14, 324, 210)))
         .impossibleCount shouldBe 210
+    }
+
+    scenario("combined top score") {
+      val counts1 = ScoreCounts.fromSequenceVotes(proposalWithVote.votes)
+      val counts2 = ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes)
+
+      counts1.topScore() should equal(-0.62 +- 0.01)
+      counts2.topScore() should equal(-4.16 +- 0.01)
+
+      val sequenceConfiguration =
+        SequenceConfiguration(
+          sequenceId = SequenceId("fake"),
+          questionId = QuestionId("fake"),
+          nonSequenceVotesWeight = 0.4
+        )
+
+      ScoreCounts.topScore(sequenceConfiguration, counts1, counts2) should equal(-2.74 +- 0.02)
     }
 
   }

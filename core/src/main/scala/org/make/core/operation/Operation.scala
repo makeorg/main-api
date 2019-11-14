@@ -168,7 +168,17 @@ final case class OperationOfQuestion(questionId: QuestionId,
                                      description: String,
                                      consultationImage: Option[String],
                                      descriptionImage: Option[String],
-                                     displayResults: Boolean)
+                                     displayResults: Boolean) {
+
+  def isOpenAt(date: ZonedDateTime): Boolean = {
+    (startDate, endDate) match {
+      case (Some(start), Some(end)) => start.isBefore(date) && end.isAfter(date)
+      case (None, Some(end))        => end.isAfter(date)
+      case (Some(start), None)      => start.isBefore(date)
+      case _                        => true
+    }
+  }
+}
 
 object OperationOfQuestion {
   val defaultDescription: String = ""

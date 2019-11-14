@@ -109,7 +109,9 @@ case class SequenceConfiguration(
   @(ApiModelProperty @field)(dataType = "int", example = "12")
   sequenceSize: Int = 12,
   @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit
+  selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5")
+  nonSequenceVotesWeight: Double = 0.5
 )
 
 object SequenceConfiguration {
@@ -134,7 +136,8 @@ object SequenceConfiguration {
     interIdeaCompetitionControversialCount = 0,
     maxTestedProposalCount = 1000,
     sequenceSize = 12,
-    selectionAlgorithmName = SelectionAlgorithmName.Bandit
+    selectionAlgorithmName = SelectionAlgorithmName.Bandit,
+    nonSequenceVotesWeight = 0.5
   )
 
 }

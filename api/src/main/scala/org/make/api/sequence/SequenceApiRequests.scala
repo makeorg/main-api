@@ -155,7 +155,8 @@ final case class SequenceConfigurationRequest(
   @(ApiModelProperty @field)(dataType = "int", example = "1000") maxTestedProposalCount: Int,
   @(ApiModelProperty @field)(dataType = "int", example = "12") sequenceSize: Int,
   @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
-  selectionAlgorithmName: SelectionAlgorithmName
+  selectionAlgorithmName: SelectionAlgorithmName,
+  @(ApiModelProperty @field)(dataType = "double", example = "0.5") nonSequenceVotesWeight: Double,
 ) {
 
   def toSequenceConfiguration(sequenceId: SequenceId, questionId: QuestionId): SequenceConfiguration = {
@@ -177,7 +178,8 @@ final case class SequenceConfigurationRequest(
       interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount,
       maxTestedProposalCount = maxTestedProposalCount,
       sequenceSize = sequenceSize,
-      selectionAlgorithmName = selectionAlgorithmName
+      selectionAlgorithmName = selectionAlgorithmName,
+      nonSequenceVotesWeight = nonSequenceVotesWeight
     )
   }
 }

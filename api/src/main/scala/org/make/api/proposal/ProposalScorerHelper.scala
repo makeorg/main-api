@@ -219,6 +219,12 @@ object ProposalScorerHelper extends StrictLogging {
 
     def fromSequenceVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countSequence, _.countSequence)
     def fromSegmentVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countSegment, _.countSegment)
+    def fromVerifiedVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countVerified, _.countVerified)
+
+    def topScore(configuration: SequenceConfiguration, allScores: ScoreCounts, specificScores: ScoreCounts): Double = {
+      (1 - configuration.nonSequenceVotesWeight) * specificScores.topScore() +
+        configuration.nonSequenceVotesWeight * allScores.topScore()
+    }
 
     /*
      * Note on bayesian estimates: the estimator requires a prior,
