@@ -49,6 +49,8 @@ class MailJetConfigurationTest
       |      unsubscribe-list-id = "unsubscribelistid"
       |      opt-in-list-id = "optinlistid"
       |      batch-size = 100
+      |      csv-bytes-size = 2097152
+      |      csv-directory = "/tmp/make/crm"
       |    }
       |  }
       |}
@@ -79,6 +81,8 @@ class MailJetConfigurationTest
     mailJetConfiguration.url shouldBe ("mailjeturl")
     mailJetConfiguration.userListBatchSize shouldBe (100)
     mailJetConfiguration.httpBufferSize shouldBe (5)
+    mailJetConfiguration.csvSize shouldBe (2097152)
+    mailJetConfiguration.csvDirectory shouldBe ("/tmp/make/crm")
   }
 
 }

@@ -23,6 +23,8 @@ import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, Extension
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+
 class MailJetConfiguration(config: Config) extends Extension {
   val url: String = config.getString("url")
   val apiKey: String = config.getString("api-key")
@@ -37,9 +39,11 @@ class MailJetConfiguration(config: Config) extends Extension {
   val optInListId: String = config.getString("user-list.opt-in-list-id")
   val userListBatchSize: Int = config.getInt("user-list.batch-size")
   val httpBufferSize: Int = config.getInt("http-buffer-size")
-
   val errorReportingRecipient: String = config.getString("error-reporting.recipient")
   val errorReportingRecipientName: String = config.getString("error-reporting.recipient-name")
+  val csvDirectory: String = config.getString("user-list.csv-directory")
+  val csvSize: Int = config.getInt("user-list.csv-bytes-size")
+  def tickInterval: FiniteDuration = 10.seconds
 }
 
 object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with ExtensionIdProvider {

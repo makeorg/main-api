@@ -23,6 +23,7 @@ object Dependencies {
 
   private val akkaVersion = "2.5.25"
   private val akkaHttpVersion = "10.1.10"
+  private val alpakkaVersion = "1.1.2"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.5.4"
@@ -64,8 +65,9 @@ object Dependencies {
   val akkaPersistenceCassandra: ModuleID =
     ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.99")
       .exclude("io.netty", "netty-handler")
-  val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"     % akkaVersion
-  val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api" % "2.0.1"
+  val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"               % akkaVersion
+  val alpakka: ModuleID = "com.lightbend.akka"  %% "akka-stream-alpakka-file" % alpakkaVersion
+  val jaxRsApi: ModuleID = "javax.ws.rs"        % "javax.ws.rs-api"           % "2.0.1"
 
   val kryoSerializer: ModuleID = "io.altoo" %% "akka-kryo-serialization" % "1.0.0"
 

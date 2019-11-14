@@ -20,16 +20,18 @@
 package org.make.api.technical.crm
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
+import java.util.stream.Collectors
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.persistence.query.EventEnvelope
 import akka.stream._
-import akka.stream.scaladsl.{FileIO, Sink, Source}
+import akka.stream.alpakka.file.scaladsl.LogRotatorSink
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
@@ -55,13 +57,14 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 trait CrmService {
   def sendEmail(message: SendEmail): Future[Unit]
-  def synchronizeList(formattedDate: String, list: CrmList): Future[Unit]
+  def synchronizeList(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Done]
   def createCrmUsers(): Future[Unit]
   def anonymize(): Future[Unit]
   def synchronizeContactsWithCrm(): Future[Unit]
@@ -125,6 +128,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   class DefaultCrmService extends CrmService {
 
     private lazy val batchSize: Int = mailJetConfiguration.userListBatchSize
+    private lazy val baseCsvDirectory: String = mailJetConfiguration.csvDirectory
+    private lazy val csvSize: Int = mailJetConfiguration.csvSize
     private val retrievePropertiesParallelism = 10
     private val persistCrmUsersParallelism = 5
 
@@ -218,6 +223,22 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       } yield ()
     }
 
+    private def resetDirectory(directory: Path): Unit = {
+      if (Files.exists(directory)) {
+        Files.list(directory).forEach(file => Files.deleteIfExists(file))
+      } else {
+        Files.createDirectories(directory)
+      }
+    }
+
+    def initializeDirectories(): Future[Unit] = {
+      Future[Unit] {
+        resetDirectory(CrmList.HardBounce.targetDirectory(baseCsvDirectory))
+        resetDirectory(CrmList.OptOut.targetDirectory(baseCsvDirectory))
+        resetDirectory(CrmList.OptIn.targetDirectory(baseCsvDirectory))
+      }
+    }
+
     override def synchronizeContactsWithCrm(): Future[Unit] = {
       val startTime: Long = System.currentTimeMillis()
       val synchronizationTime = DateHelper.now().format(dateFormatter)
@@ -225,9 +246,22 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       val crmSynchronization =
         for {
           _ <- createCrmUsers()
-          _ <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptIn)
-          _ <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.OptOut)
-          _ <- synchronizeList(formattedDate = synchronizationTime, list = CrmList.HardBounce)
+          _ <- initializeDirectories()
+          _ <- synchronizeList(
+            formattedDate = synchronizationTime,
+            list = CrmList.OptIn,
+            csvDirectory = CrmList.OptIn.targetDirectory(baseCsvDirectory)
+          )
+          _ <- synchronizeList(
+            formattedDate = synchronizationTime,
+            list = CrmList.OptOut,
+            csvDirectory = CrmList.OptOut.targetDirectory(baseCsvDirectory)
+          )
+          _ <- synchronizeList(
+            formattedDate = synchronizationTime,
+            list = CrmList.HardBounce,
+            csvDirectory = CrmList.HardBounce.targetDirectory(baseCsvDirectory)
+          )
           _ <- anonymize()
         } yield {}
 
@@ -241,9 +275,21 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       crmSynchronization
     }
 
-    def createCsv(formattedDate: String, list: CrmList): Future[Path] = {
-      val file = Files.createTempFile("contacts", ".csv")
-      file.toFile.deleteOnExit()
+    private def fileSizeTriggerCreator(csvDirectory: Path): () => ByteString => Option[Path] = () => {
+      val max = csvSize
+      var size: Long = max
+      element: ByteString =>
+        if (size + element.size > max) {
+          val path = Files.createFile(csvDirectory.resolve(s"${DateHelper.now.toString}.csv"))
+          size = element.size
+          Some(path)
+        } else {
+          size += element.size
+          None
+        }
+    }
+
+    def createCsv(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Seq[Path]] = {
       StreamUtils
         .asyncPageToPageSource(persistentCrmUserService.list(list.unsubscribed, list.hardBounced, _, batchSize))
         .mapConcat(_.toVector)
@@ -255,8 +301,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           ).toStringCsv
         }
         .map(ByteString.apply(_, StandardCharsets.UTF_8))
-        .runWith(FileIO.toPath(file))
-        .map(_ => file)
+        .runWith(LogRotatorSink(fileSizeTriggerCreator(csvDirectory)))
+        .map(_ => Files.list(csvDirectory).collect(Collectors.toList[Path]).asScala)
     }
 
     private def sendCsvToHardBounceList(csv: Path, list: CrmList): Future[Long] = {
@@ -307,21 +353,29 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def synchronizeList(formattedDate: String, list: CrmList): Future[Unit] = {
-      createCsv(formattedDate, list).flatMap {
-        case csv if Files.size(csv) > 0 =>
+    override def synchronizeList(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Done] = {
+      Source
+        .fromFuture(createCsv(formattedDate, list, csvDirectory))
+        .mapConcat(_.toVector)
+        .filter(Files.size(_) > 0)
+        .mapAsync(1) { csv =>
           for {
             responseHardBouunce <- sendCsvToHardBounceList(csv, list)
             responseOptIn       <- sendCsvToOptInList(csv, list)
             responseUnsubscribe <- sendCsvToUnsubscribeList(csv, list)
-          } yield {
-            val jobIds = Seq(responseHardBouunce, responseOptIn, responseUnsubscribe)
-            val promise = Promise[Unit]()
-            actorSystem.actorOf(CrmSynchroCsvMonitor.props(crmClient, jobIds, promise))
-            promise.future
-          }
-        case _ => Future.successful {}
-      }
+            result              <- verifyJobCompletion(responseHardBouunce, responseOptIn, responseUnsubscribe)
+          } yield result
+        }
+        .runWith(Sink.ignore)
+    }
+
+    private def verifyJobCompletion(responseHardBouunce: Long,
+                                    responseOptIn: Long,
+                                    responseUnsubscribe: Long): Future[Unit] = {
+      val jobIds = Seq(responseHardBouunce, responseOptIn, responseUnsubscribe)
+      val promise = Promise[Unit]()
+      actorSystem.actorOf(CrmSynchroCsvMonitor.props(crmClient, jobIds, promise, mailJetConfiguration.tickInterval))
+      promise.future
     }
 
     private def computeAndPersistCrmUsers(questionResolver: QuestionResolver): Future[Unit] = {
@@ -835,6 +889,10 @@ sealed trait CrmList {
   def name: String
   def hardBounced: Boolean
   def unsubscribed: Option[Boolean]
+
+  def targetDirectory(csvDirectory: String): Path = {
+    Paths.get(csvDirectory, name)
+  }
 
   def actionOnHardBounce: ManageContactAction
   def actionOnOptIn: ManageContactAction

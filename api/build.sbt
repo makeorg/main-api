@@ -71,7 +71,8 @@ libraryDependencies ++= Seq(
   Dependencies.jerseyHk2,
   Dependencies.jaxRsApi,
   Dependencies.apacheMath,
-  Dependencies.staminaTestKit
+  Dependencies.staminaTestKit,
+  Dependencies.alpakka
 )
 
 libraryDependencies += {
