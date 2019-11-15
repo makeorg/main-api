@@ -33,26 +33,11 @@ import org.make.api.tag.TagService
 import org.make.api.user.UserService
 import org.make.core.RequestContext
 import org.make.core.operation._
-import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.QualificationKey.{
-  DoNotCare,
-  DoNotUnderstand,
-  Doable,
-  Impossible,
-  LikeIt,
-  NoOpinion,
-  NoWay,
-  PlatitudeAgree,
-  PlatitudeDisagree
-}
-import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.TagId
-import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{User, UserId}
+import org.make.core.user.UserId
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -72,45 +57,6 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
   override val userService: UserService = mock[UserService]
   override val questionService: QuestionService = mock[QuestionService]
 
-  private val defaultVotes: Seq[Vote] = Seq(
-    Vote(
-      key = Agree,
-      count = 0,
-      countVerified = 0,
-      countSegment = 0,
-      countSequence = 0,
-      qualifications = Seq(
-        Qualification(key = LikeIt, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-        Qualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-        Qualification(key = PlatitudeAgree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
-      )
-    ),
-    Vote(
-      key = Disagree,
-      count = 0,
-      countVerified = 0,
-      countSegment = 0,
-      countSequence = 0,
-      qualifications = Seq(
-        Qualification(key = NoWay, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-        Qualification(key = Impossible, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-        Qualification(key = PlatitudeDisagree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
-      )
-    ),
-    Vote(
-      key = Neutral,
-      count = 0,
-      countVerified = 0,
-      countSegment = 0,
-      countSequence = 0,
-      qualifications = Seq(
-        Qualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-        Qualification(key = DoNotUnderstand, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-        Qualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
-      )
-    ),
-  )
-
   private val emptySequenceConfiguration = SequenceCardsConfiguration(
     IntroCard(enabled = false, title = None, description = None),
     PushProposalCard(false),
@@ -125,67 +71,6 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
       linkUrl = None
     )
   )
-
-  def proposal(id: ProposalId,
-               votes: Seq[Vote] = defaultVotes,
-               author: UserId = UserId("author"),
-               tags: Seq[TagId] = Seq.empty,
-               organisations: Seq[OrganisationInfo] = Seq.empty,
-               questionId: QuestionId = QuestionId("question"),
-               operationId: OperationId = OperationId("operation"),
-               requestContext: RequestContext = RequestContext.empty): Proposal = {
-    Proposal(
-      proposalId = id,
-      votes = votes,
-      content = "Il faut tester l'indexation des propositions",
-      slug = "il-faut-tester-l-indexation-des-propositions",
-      author = author,
-      labels = Seq.empty,
-      theme = None,
-      status = Accepted,
-      refusalReason = None,
-      tags = tags,
-      organisations = organisations,
-      organisationIds = organisations.map(_.organisationId),
-      language = Some(Language("fr")),
-      country = Some(Country("FR")),
-      questionId = Some(questionId),
-      creationContext = requestContext,
-      idea = None,
-      operation = Some(operationId),
-      createdAt = Some(ZonedDateTime.parse("2019-10-10T10:10:10.000Z")),
-      updatedAt = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z")),
-      events = Nil
-    )
-  }
-
-  def user(id: UserId, anonymousParticipation: Boolean = false): User = {
-    User(
-      userId = id,
-      email = "test@make.org",
-      firstName = Some("Joe"),
-      lastName = Some("Chip"),
-      lastIp = None,
-      hashedPassword = None,
-      enabled = true,
-      emailVerified = true,
-      lastConnection = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
-      verificationToken = None,
-      verificationTokenExpiresAt = None,
-      resetToken = None,
-      resetTokenExpiresAt = None,
-      roles = Seq(RoleCitizen),
-      country = Country("FR"),
-      language = Language("fr"),
-      profile = None,
-      createdAt = None,
-      updatedAt = None,
-      lastMailingError = None,
-      organisationName = None,
-      availableQuestions = Seq.empty,
-      anonymousParticipation = anonymousParticipation
-    )
-  }
 
   Mockito
     .when(userService.getUser(ArgumentMatchers.any[UserId]))

@@ -34,3 +34,4 @@ trait MakeUnitTest
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with ScalaFutures
+    with TestUtils

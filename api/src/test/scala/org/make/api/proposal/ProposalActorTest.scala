@@ -24,25 +24,24 @@ import java.time.ZonedDateTime
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.ShardingActorTest
 import org.make.api.proposal.ProposalActor.ProposalState
-import org.make.core.history.HistoryActions.{Segment, Sequence, Troll, Trusted, VoteAndQualifications}
+import org.make.api.{ShardingActorTest, TestUtils}
+import org.make.core.history.HistoryActions._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
-import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
+import org.make.core.proposal.ProposalStatus.{Accepted, Pending, Postponed, Refused}
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
-import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.scalatest.GivenWhenThen
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
+import org.scalatestplus.mockito.MockitoSugar
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
 
@@ -129,91 +128,29 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))
   val mainUpdatedAt: Option[ZonedDateTime] = Some(DateHelper.now())
 
-  val user: User = User(
-    userId = mainUserId,
-    email = "john.snow@the-night-watch.com",
-    firstName = None,
-    lastName = None,
-    lastIp = None,
-    hashedPassword = None,
-    emailVerified = true,
-    enabled = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    resetToken = None,
-    verificationTokenExpiresAt = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    lastMailingError = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
-  )
+  val user: User = TestUtils.user(id = mainUserId)
 
-  private def proposal(proposalId: ProposalId, content: String, slug: String, question: Question) = Proposal(
-    proposalId = proposalId,
-    author = mainUserId,
-    content = content,
-    createdAt = mainCreatedAt,
-    updatedAt = None,
-    slug = slug,
-    creationContext = RequestContext.empty,
-    labels = Seq(),
-    theme = None,
-    status = ProposalStatus.Pending,
-    tags = Seq(),
-    votes = Seq(
-      Vote(
-        key = VoteKey.Agree,
-        qualifications = Seq(
-          Qualification(QualificationKey.LikeIt, 0, 0, 0, 0),
-          Qualification(QualificationKey.Doable, 0, 0, 0, 0),
-          Qualification(QualificationKey.PlatitudeAgree, 0, 0, 0, 0)
-        ),
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      ),
-      Vote(
-        key = VoteKey.Disagree,
-        qualifications = Seq(
-          Qualification(QualificationKey.NoWay, 0, 0, 0, 0),
-          Qualification(QualificationKey.Impossible, 0, 0, 0, 0),
-          Qualification(QualificationKey.PlatitudeDisagree, 0, 0, 0, 0)
-        ),
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
-      ),
-      Vote(
-        key = VoteKey.Neutral,
-        qualifications = Seq(
-          Qualification(QualificationKey.DoNotUnderstand, 0, 0, 0, 0),
-          Qualification(QualificationKey.NoOpinion, 0, 0, 0, 0),
-          Qualification(QualificationKey.DoNotCare, 0, 0, 0, 0)
-        ),
-        count = 0,
-        countVerified = 0,
-        countSequence = 0,
-        countSegment = 0
+  private def newProposal(proposalId: ProposalId, content: String, question: Question) =
+    TestUtils.proposal(
+      id = proposalId,
+      author = mainUserId,
+      createdAt = mainCreatedAt,
+      updatedAt = None,
+      status = Pending,
+      content = content,
+      country = question.country,
+      language = question.language,
+      questionId = question.questionId,
+      operationId = question.operationId,
+      events = List(
+        ProposalAction(
+          date = mainCreatedAt.get,
+          user = mainUserId,
+          actionType = ProposalProposeAction.name,
+          arguments = Map("content" -> content)
+        )
       )
-    ),
-    events = List(
-      ProposalAction(
-        date = mainCreatedAt.get,
-        user = mainUserId,
-        actionType = ProposalProposeAction.name,
-        arguments = Map("content" -> content)
-      )
-    ),
-    country = Some(question.country),
-    language = Some(question.language),
-    questionId = Some(question.questionId)
-  )
+    )
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
@@ -244,14 +181,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
       expectMsg(
-        Some(
-          proposal(
-            proposalId = proposalId,
-            content = "This is a proposal",
-            slug = "this-is-a-proposal",
-            question = questionOnNothingFr
-          )
-        )
+        Some(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
       )
 
       And("recover its state after having been kill")
@@ -262,14 +192,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
       expectMsg(
-        Some(
-          proposal(
-            proposalId = proposalId,
-            content = "This is a proposal",
-            slug = "this-is-a-proposal",
-            question = questionOnNothingFr
-          )
-        )
+        Some(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
       )
     }
 
@@ -297,10 +220,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       expectMsg(
         Some(
-          proposal(
+          newProposal(
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
-            slug = "this-is-an-italian-proposal",
             question = questionOnNothingIT
           )
         )
@@ -315,10 +237,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       expectMsg(
         Some(
-          proposal(
+          newProposal(
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
-            slug = "this-is-an-italian-proposal",
             question = questionOnNothingIT
           )
         )
@@ -361,14 +282,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       Then("returns the state")
       coordinator ! ViewProposalCommand(proposalId, RequestContext.empty)
       expectMsg(
-        Some(
-          proposal(
-            proposalId = proposalId,
-            content = "This is a proposal",
-            slug = "this-is-a-proposal",
-            question = questionOnNothingFr
-          )
-        )
+        Some(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
       )
     }
   }

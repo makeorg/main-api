@@ -36,12 +36,13 @@ import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigura
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
-import org.make.api.{ActorSystemComponent, MakeUnitTest}
+import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.{Segment, Sequence, Troll, Trusted, VoteAndQualifications}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
+import org.make.core.proposal.ProposalStatus.Pending
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
@@ -169,29 +170,7 @@ class ProposalServiceTest
 
   def user(id: UserId): User = {
     val idString = id.value
-    User(
-      userId = id,
-      email = s"$idString@make.org",
-      firstName = Some(idString),
-      lastName = None,
-      lastIp = None,
-      hashedPassword = None,
-      enabled = true,
-      emailVerified = true,
-      lastConnection = DateHelper.now(),
-      verificationToken = None,
-      verificationTokenExpiresAt = None,
-      resetToken = None,
-      resetTokenExpiresAt = None,
-      roles = Seq(Role.RoleCitizen),
-      country = Country("FR"),
-      language = Language("fr"),
-      profile = None,
-      createdAt = None,
-      updatedAt = None,
-      availableQuestions = Seq.empty,
-      anonymousParticipation = false
-    )
+    TestUtils.user(id = id, email = s"$idString@make.org", firstName = Some(idString))
   }
 
   def indexedProposal(id: ProposalId): IndexedProposal = {
@@ -245,24 +224,13 @@ class ProposalServiceTest
     )
   }
 
-  def proposal(id: ProposalId): Proposal = {
-    Proposal(
-      proposalId = id,
-      slug = s"proposal-with-id-${id.value}",
+  def simpleProposal(id: ProposalId): Proposal = {
+    TestUtils.proposal(
+      id = id,
       content = s"proposal with id ${id.value}",
       author = UserId(s"user-${id.value}"),
-      status = ProposalStatus.Pending,
-      createdAt = Some(DateHelper.now()),
-      updatedAt = None,
-      votes = Seq.empty,
-      labels = Seq.empty,
-      country = Some(Country("FR")),
-      language = Some(Language("fr")),
-      theme = None,
-      tags = Seq.empty,
-      questionId = None,
-      events = List.empty,
-      creationContext = RequestContext.empty
+      status = Pending,
+      createdAt = Some(DateHelper.now())
     )
   }
 
@@ -843,7 +811,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(ProposalId("my-proposal")))
-        .thenReturn(Future.successful(Some(proposal(ProposalId("my-proposal")))))
+        .thenReturn(Future.successful(Some(simpleProposal(ProposalId("my-proposal")))))
 
       Mockito
         .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
@@ -1046,7 +1014,7 @@ class ProposalServiceTest
       themeId = None
     )
 
-    val validatedProposal = proposal(proposalId)
+    val validatedProposal = simpleProposal(proposalId)
 
     Mockito
       .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
@@ -1128,7 +1096,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal")))
-        .thenReturn(Future.successful(Some(proposal(ProposalId("update-proposal")))))
+        .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal")))))
 
       Mockito
         .when(userService.getUser(UserId("user-update-proposal")))
@@ -1250,7 +1218,7 @@ class ProposalServiceTest
         )
         .thenReturn(
           Future.successful(
-            Some(proposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea"))))
+            Some(simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea"))))
           )
         )
 
@@ -1277,7 +1245,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-3")))
-        .thenReturn(Future.successful(Some(proposal(ProposalId("update-proposal-3")))))
+        .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal-3")))))
 
       Mockito
         .when(userService.getUser(UserId("user-update-proposal-3")))
@@ -1313,7 +1281,9 @@ class ProposalServiceTest
         )
         .thenReturn(
           Future.successful(
-            Some(proposal(ProposalId("update-proposal-3")).copy(tags = tagIds, idea = Some(IdeaId("moderator-idea"))))
+            Some(
+              simpleProposal(ProposalId("update-proposal-3")).copy(tags = tagIds, idea = Some(IdeaId("moderator-idea")))
+            )
           )
         )
 
@@ -1340,7 +1310,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-4")))
-        .thenReturn(Future.successful(Some(proposal(ProposalId("update-proposal-4")))))
+        .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal-4")))))
 
       Mockito
         .when(userService.getUser(UserId("user-update-proposal-4")))
@@ -1438,7 +1408,9 @@ class ProposalServiceTest
         )
         .thenReturn(
           Future.successful(
-            Some(proposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea-2"))))
+            Some(
+              simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea-2")))
+            )
           )
         )
 
@@ -1475,7 +1447,7 @@ class ProposalServiceTest
 
     val now = DateHelper.now()
 
-    val updatedProposal = proposal(proposalId)
+    val updatedProposal = simpleProposal(proposalId)
 
     Mockito
       .when(proposalCoordinatorService.update(any[UpdateProposalCommand]))
@@ -1554,7 +1526,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1590,7 +1562,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1627,7 +1599,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1660,7 +1632,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1692,7 +1664,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1727,7 +1699,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1763,7 +1735,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1800,7 +1772,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1833,7 +1805,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
@@ -1867,7 +1839,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(
@@ -1920,7 +1892,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(
@@ -2009,7 +1981,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
       Mockito
         .when(
@@ -2313,7 +2285,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId).copy(author = author.userId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId).copy(author = author.userId))))
 
       Mockito
         .when(userService.getUser(author.userId))
@@ -2361,7 +2333,7 @@ class ProposalServiceTest
 
       Mockito
         .when(proposalCoordinatorService.getProposal(proposalId))
-        .thenReturn(Future.successful(Some(proposal(proposalId).copy(author = author.userId))))
+        .thenReturn(Future.successful(Some(simpleProposal(proposalId).copy(author = author.userId))))
 
       Mockito
         .when(userService.getUser(author.userId))

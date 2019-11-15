@@ -19,8 +19,6 @@
 
 package org.make.api.sequence
 
-import java.time.ZonedDateTime
-
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
@@ -31,11 +29,7 @@ import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigura
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
-import org.make.core.idea.IdeaId
 import org.make.core.proposal._
-import org.make.core.reference.{Country, Language}
-import org.make.core.user.UserId
-import org.make.core.{proposal, DateHelper, RequestContext}
 import org.scalatest.PrivateMethodTester
 
 class SequenceServiceComponentTest
@@ -77,41 +71,6 @@ class SequenceServiceComponentTest
 
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
-
-  def fakeProposal(id: ProposalId,
-                   votes: Map[VoteKey, Int],
-                   ideaId: Option[IdeaId],
-                   createdAt: ZonedDateTime = DateHelper.now()): Proposal = {
-    proposal.Proposal(
-      proposalId = id,
-      author = UserId("fake"),
-      content = "fake",
-      slug = "fake",
-      status = ProposalStatus.Accepted,
-      createdAt = Some(createdAt),
-      updatedAt = None,
-      votes = votes.map {
-        case (k, amount) =>
-          Vote(
-            key = k,
-            count = amount,
-            countVerified = amount,
-            countSequence = amount,
-            countSegment = 0,
-            qualifications = Seq.empty
-          )
-      }.toSeq,
-      labels = Seq.empty,
-      theme = None,
-      refusalReason = None,
-      tags = Seq.empty,
-      idea = ideaId,
-      events = Nil,
-      creationContext = RequestContext.empty,
-      language = Some(Language("fr")),
-      country = Some(Country("FR"))
-    )
-  }
 
   feature("Starting a sequence") {}
 }

@@ -97,7 +97,7 @@ class ModerationProposalApiTest
   )
 
   when(proposalCoordinatorService.getProposal(any[ProposalId]))
-    .thenAnswer(invocation => Future.successful(Some(simpleProposal(invocation.getArgument[ProposalId](0)))))
+    .thenAnswer(invocation => Future.successful(Some(proposal(invocation.getArgument[ProposalId](0)))))
 
   private val john = User(
     userId = UserId("my-user-id"),
@@ -169,7 +169,7 @@ class ModerationProposalApiTest
     createdAt = None,
     updatedAt = None,
     availableQuestions = Seq(
-      QuestionId("my-question"),
+      QuestionId("question"),
       QuestionId("question-fire-and-ice"),
       QuestionId("some-question"),
       QuestionId("question-mieux-vivre-ensemble"),
@@ -350,7 +350,7 @@ class ModerationProposalApiTest
         any[Option[Seq[TagId]]],
         any[Option[String]]
       )
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
+  ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456")))))
   when(
     proposalService
       .validateProposal(
@@ -365,7 +365,7 @@ class ModerationProposalApiTest
         any[Option[Seq[TagId]]],
         any[Option[String]]
       )
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
+  ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("987654")))))
   when(
     proposalService
       .validateProposal(
@@ -384,11 +384,11 @@ class ModerationProposalApiTest
   when(
     proposalService
       .refuseProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("123456")))))
+  ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456")))))
   when(
     proposalService
       .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
-  ).thenReturn(Future.successful(Some(proposal(ProposalId("987654")))))
+  ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("987654")))))
   when(
     proposalService
       .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
@@ -607,7 +607,7 @@ class ModerationProposalApiTest
       .searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext])
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(1, Seq(proposalResult), Some(42))))
 
-  private def proposal(id: ProposalId): ModerationProposalResponse = {
+  private def proposalResponse(id: ProposalId): ModerationProposalResponse = {
     ModerationProposalResponse(
       proposalId = id,
       slug = "a-song-of-fire-and-ice",
@@ -661,57 +661,7 @@ class ModerationProposalApiTest
       operationId = None,
       language = Some(Language("fr")),
       country = Some(Country("FR")),
-      questionId = Some(QuestionId("my-question"))
-    )
-  }
-
-  private def simpleProposal(id: ProposalId): Proposal = {
-    Proposal(
-      proposalId = id,
-      slug = "a-song-of-fire-and-ice",
-      content = "A song of fire and ice",
-      author = UserId("Georges RR Martin"),
-      labels = Seq(),
-      theme = None,
-      status = Accepted,
-      tags = Seq(),
-      votes = Seq(
-        Vote(
-          key = VoteKey.Agree,
-          qualifications = Seq.empty,
-          count = 0,
-          countVerified = 0,
-          countSequence = 0,
-          countSegment = 0
-        ),
-        Vote(
-          key = VoteKey.Disagree,
-          qualifications = Seq.empty,
-          count = 0,
-          countVerified = 0,
-          countSequence = 0,
-          countSegment = 0
-        ),
-        Vote(
-          key = VoteKey.Neutral,
-          qualifications = Seq.empty,
-          count = 0,
-          countVerified = 0,
-          countSequence = 0,
-          countSegment = 0
-        )
-      ),
-      refusalReason = None,
-      organisations = Seq.empty,
-      creationContext = RequestContext.empty,
-      createdAt = Some(DateHelper.now()),
-      updatedAt = Some(DateHelper.now()),
-      events = Nil,
-      idea = None,
-      operation = None,
-      questionId = Some(QuestionId("some-question")),
-      language = Some(Language("fr")),
-      country = Some(Country("FR"))
+      questionId = Some(QuestionId("question"))
     )
   }
 
@@ -1280,7 +1230,7 @@ class ModerationProposalApiTest
           any[Option[Int]],
           any[Option[Float]]
         )
-      ).thenReturn(Future.successful(Some(proposal(ProposalId("123456789")))))
+      ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456789")))))
 
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
@@ -1311,7 +1261,7 @@ class ModerationProposalApiTest
           any[Option[Int]],
           any[Option[Float]]
         )
-      ).thenReturn(Future.successful(Some(proposal(ProposalId("123456789")))))
+      ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456789")))))
 
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
