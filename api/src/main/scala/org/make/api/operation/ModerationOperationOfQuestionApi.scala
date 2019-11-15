@@ -455,7 +455,7 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
     validateColor("gradientStart", theme.gradientStart, None),
     validateColor("gradientEnd", theme.gradientEnd, None),
     validateColor("color", theme.color, None),
-    validateColor("footerFontColor", theme.footerFontColor, None),
+    validateColor("fontColor", theme.fontColor, None),
     validateField(
       "consultationImage",
       "not_secure",

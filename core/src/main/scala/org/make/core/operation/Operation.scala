@@ -137,7 +137,7 @@ object Metas extends CirceFormatters {
   implicit val decoder: Decoder[Metas] = deriveDecoder[Metas]
 }
 
-final case class QuestionTheme(gradientStart: String, gradientEnd: String, color: String, footerFontColor: String)
+final case class QuestionTheme(gradientStart: String, gradientEnd: String, color: String, fontColor: String)
 
 object QuestionTheme {
   implicit val encoder: Encoder[QuestionTheme] = deriveEncoder[QuestionTheme]
@@ -149,7 +149,7 @@ object QuestionTheme {
       gradientStart = defaultColor,
       gradientEnd = defaultColor,
       color = defaultColor,
-      footerFontColor = defaultColor
+      fontColor = defaultColor
     )
   }
 }

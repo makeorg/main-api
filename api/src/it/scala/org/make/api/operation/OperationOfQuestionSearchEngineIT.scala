@@ -91,12 +91,8 @@ class OperationOfQuestionSearchEngineIT
       slug = "first-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
-      theme = QuestionTheme(
-        gradientStart = "#424242",
-        gradientEnd = "#424242",
-        color = "#424242",
-        footerFontColor = "#424242"
-      ),
+      theme =
+        QuestionTheme(gradientStart = "#424242", gradientEnd = "#424242", color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
       country = Country("FR"),
@@ -112,12 +108,8 @@ class OperationOfQuestionSearchEngineIT
       slug = "second-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2020-06-02T01:01:01.123Z"))),
-      theme = QuestionTheme(
-        gradientStart = "#424242",
-        gradientEnd = "#424242",
-        color = "#424242",
-        footerFontColor = "#424242"
-      ),
+      theme =
+        QuestionTheme(gradientStart = "#424242", gradientEnd = "#424242", color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
       country = Country("FR"),
@@ -133,12 +125,8 @@ class OperationOfQuestionSearchEngineIT
       slug = "third-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2018-11-22T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
-      theme = QuestionTheme(
-        gradientStart = "#424242",
-        gradientEnd = "#424242",
-        color = "#424242",
-        footerFontColor = "#424242"
-      ),
+      theme =
+        QuestionTheme(gradientStart = "#424242", gradientEnd = "#424242", color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
       country = Country("FR"),
@@ -154,12 +142,8 @@ class OperationOfQuestionSearchEngineIT
       slug = "fourth-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2018-06-02T01:01:01.123Z"))),
-      theme = QuestionTheme(
-        gradientStart = "#424242",
-        gradientEnd = "#424242",
-        color = "#424242",
-        footerFontColor = "#424242"
-      ),
+      theme =
+        QuestionTheme(gradientStart = "#424242", gradientEnd = "#424242", color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
       country = Country("FR"),
@@ -175,12 +159,8 @@ class OperationOfQuestionSearchEngineIT
       slug = "fifth-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      theme = QuestionTheme(
-        gradientStart = "#424242",
-        gradientEnd = "#424242",
-        color = "#424242",
-        footerFontColor = "#424242"
-      ),
+      theme =
+        QuestionTheme(gradientStart = "#424242", gradientEnd = "#424242", color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
       country = Country("FR"),
@@ -196,12 +176,8 @@ class OperationOfQuestionSearchEngineIT
       slug = "aines-question",
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
       endDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      theme = QuestionTheme(
-        gradientStart = "#424242",
-        gradientEnd = "#424242",
-        color = "#424242",
-        footerFontColor = "#424242"
-      ),
+      theme =
+        QuestionTheme(gradientStart = "#424242", gradientEnd = "#424242", color = "#424242", fontColor = "#424242"),
       description = "some random description",
       consultationImage = None,
       country = Country("FR"),

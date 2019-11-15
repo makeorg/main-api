@@ -602,7 +602,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "gradientStart": "wrongFormattedColor",
             |   "gradientEnd": "#000000",
             |   "color": "#000000",
-            |   "footerFontColor": "#000000"
+            |   "fontColor": "#000000"
             | },
             | description = "description",
             | displayResults = false
@@ -634,7 +634,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "gradientStart": "#000000",
             |   "gradientEnd": "#000000",
             |   "color": "#000000",
-            |   "footerFontColor": "#000000"
+            |   "fontColor": "#000000"
             | },
             | description = "description",
             | consultationImage = "wrongurlformat",
