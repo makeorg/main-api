@@ -267,10 +267,7 @@ object QuestionOfOperationResponse {
   implicit val decoder: Decoder[QuestionOfOperationResponse] = deriveDecoder[QuestionOfOperationResponse]
 }
 
-final case class QuestionThemeResponse(gradientStart: String,
-                                       gradientEnd: String,
-                                       color: String,
-                                       footerFontColor: String)
+final case class QuestionThemeResponse(gradientStart: String, gradientEnd: String, color: String, fontColor: String)
 
 object QuestionThemeResponse {
   def fromQuestionTheme(theme: QuestionTheme): QuestionThemeResponse = {
@@ -278,7 +275,7 @@ object QuestionThemeResponse {
       gradientStart = theme.gradientStart,
       gradientEnd = theme.gradientEnd,
       color = theme.color,
-      footerFontColor = theme.footerFontColor
+      fontColor = theme.fontColor
     )
   }
 
