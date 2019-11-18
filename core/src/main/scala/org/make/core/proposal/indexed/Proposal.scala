@@ -104,6 +104,7 @@ object ProposalElasticsearchFieldNames {
   val questionIsOpen: String = "question.isOpen"
   val refusalReason: String = "refusalReason"
   val scores: String = "scores"
+  val scoreRealistic: String = "scores.realistic"
   val scoreUpperBound: String = "scores.scoreUpperBound"
   val segment: String = "segment"
   val sequenceSegmentPool: String = "sequenceSegmentPool"

@@ -101,7 +101,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           userId = userId,
           language = language,
           country = country,
-          sortAlgorithm = PopularAlgorithm,
+          sortAlgorithm = PopularAlgorithm(),
           requestContext = requestContext
         )
         controversialProposals <- getProposals(
@@ -109,7 +109,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           userId = userId,
           language = language,
           country = country,
-          sortAlgorithm = ControversyAlgorithm,
+          sortAlgorithm = ControversyAlgorithm(),
           requestContext = requestContext
         )
         currentConsultations  <- currentOperationService.getAll

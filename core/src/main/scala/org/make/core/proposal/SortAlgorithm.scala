@@ -19,6 +19,7 @@
 
 package org.make.core.proposal
 
+import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.ElasticApi._
 import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, scriptScore}
 import com.sksamuel.elastic4s.script.Script
@@ -135,20 +136,35 @@ final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorith
 object ActorVoteAlgorithm { val shortName: String = "actorVote" }
 
 // Sort proposal by their controversy score
-case object ControversyAlgorithm extends SortAlgorithm {
-  val shortName: String = "controversy"
+case class ControversyAlgorithm(treshold: Double = 0.1) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    request.sortByFieldDesc(ProposalElasticsearchFieldNames.controversy)
+    request
+      .sortByFieldDesc(ProposalElasticsearchFieldNames.controversy)
+      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.controversy).gte(treshold))
+  }
+}
+case object ControversyAlgorithm { val shortName: String = "controversy" }
+
+// Sort proposal by their top score
+case class PopularAlgorithm(treshold: Double = 1.5) extends SortAlgorithm {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
+    request
+      .sortByFieldDesc(ProposalElasticsearchFieldNames.topScore)
+      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.topScore).gte(treshold))
   }
 }
 
-// Sort proposal by their top score
-case object PopularAlgorithm extends SortAlgorithm {
-  val shortName: String = "popular"
+case object PopularAlgorithm { val shortName: String = "popular" }
+
+// Sort proposal by their controversy score
+case class RealisticAlgorithm(treshold: Double = 0.2) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    request.sortByFieldDesc(ProposalElasticsearchFieldNames.topScore)
+    request
+      .sortByFieldDesc(ProposalElasticsearchFieldNames.scoreRealistic)
+      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.scoreRealistic).gte(treshold))
   }
 }
+case object RealisticAlgorithm { val shortName: String = "realistic" }
 
 case object AlgorithmSelector {
   val sortAlgorithmsName: Seq[String] = Seq(
@@ -157,16 +173,18 @@ case object AlgorithmSelector {
     ControversyAlgorithm.shortName,
     PopularAlgorithm.shortName,
     TaggedFirstLegacyAlgorithm.shortName,
-    TaggedFirstAlgorithm.shortName
+    TaggedFirstAlgorithm.shortName,
+    RealisticAlgorithm.shortName
   )
 
   def select(sortAlgorithm: Option[String], randomSeed: Int): Option[SortAlgorithm] = sortAlgorithm match {
     case Some(RandomAlgorithm.shortName)            => Some(RandomAlgorithm(randomSeed))
     case Some(ActorVoteAlgorithm.shortName)         => Some(ActorVoteAlgorithm(randomSeed))
-    case Some(ControversyAlgorithm.shortName)       => Some(ControversyAlgorithm)
-    case Some(PopularAlgorithm.shortName)           => Some(PopularAlgorithm)
+    case Some(ControversyAlgorithm.shortName)       => Some(ControversyAlgorithm())
+    case Some(PopularAlgorithm.shortName)           => Some(PopularAlgorithm())
     case Some(TaggedFirstLegacyAlgorithm.shortName) => Some(TaggedFirstLegacyAlgorithm(randomSeed))
     case Some(TaggedFirstAlgorithm.shortName)       => Some(TaggedFirstAlgorithm(randomSeed))
+    case Some(RealisticAlgorithm.shortName)         => Some(RealisticAlgorithm())
     case _                                          => None
   }
 
