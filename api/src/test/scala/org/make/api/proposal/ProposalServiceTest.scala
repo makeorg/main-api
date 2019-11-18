@@ -225,7 +225,8 @@ class ProposalServiceTest
         postalCode = Some("12345"),
         age = Some(25),
         avatarUrl = Some("http://some-url"),
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       country = Country("FR"),

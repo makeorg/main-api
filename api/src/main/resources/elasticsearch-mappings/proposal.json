@@ -1142,6 +1142,10 @@
             "anonymousParticipation": {
               "type": "boolean",
               "index": false
+            },
+            "isOrganisation": {
+              "type": "boolean",
+              "index": true
             }
           }
         },

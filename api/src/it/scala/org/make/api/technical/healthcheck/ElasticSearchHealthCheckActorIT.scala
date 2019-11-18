@@ -128,7 +128,8 @@ class ElasticSearchHealthCheckActorIT
         postalCode = Some("92876"),
         age = Some(25),
         avatarUrl = None,
-        anonymousParticipation = false
+        anonymousParticipation = false,
+        isOrganisation = false
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),

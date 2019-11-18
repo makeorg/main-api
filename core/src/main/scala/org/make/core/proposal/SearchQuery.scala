@@ -84,7 +84,8 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
                          operationKinds: Option[OperationKindsSearchFilter] = None,
                          questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
-                         segment: Option[SegmentSearchFilter] = None)
+                         segment: Option[SegmentSearchFilter] = None,
+                         isOrganisation: Option[IsOrganisationSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -111,7 +112,9 @@ object SearchFilters extends ElasticDsl {
             sequencePool: Option[SequencePoolSearchFilter] = None,
             sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
             operationKinds: Option[OperationKindsSearchFilter] = None,
-            questionIsOpen: Option[QuestionIsOpenSearchFilter] = None): Option[SearchFilters] = {
+            questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
+            segment: Option[SegmentSearchFilter] = None,
+            isOrganisation: Option[IsOrganisationSearchFilter] = None): Option[SearchFilters] = {
 
     Seq(
       proposals,
@@ -136,7 +139,9 @@ object SearchFilters extends ElasticDsl {
       sequencePool,
       sequenceSegmentPool,
       operationKinds,
-      questionIsOpen
+      questionIsOpen,
+      segment,
+      isOrganisation
     ).flatten match {
       case Seq() => None
       case _ =>
@@ -164,7 +169,9 @@ object SearchFilters extends ElasticDsl {
             sequencePool,
             sequenceSegmentPool,
             operationKinds,
-            questionIsOpen
+            questionIsOpen,
+            segment,
+            isOrganisation
           )
         )
     }
@@ -204,7 +211,8 @@ object SearchFilters extends ElasticDsl {
       buildSequenceSegmentPoolSearchFilter(searchQuery),
       buildOperationKindSearchFilter(searchQuery),
       buildQuestionIsOpenSearchFilter(searchQuery),
-      buildSegmentSearchFilter(searchQuery)
+      buildSegmentSearchFilter(searchQuery),
+      buildIsOrganisationSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -580,6 +588,15 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
+  def buildIsOrganisationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+    searchQuery.filters.flatMap {
+      _.isOrganisation match {
+        case Some(IsOrganisationSearchFilter(isOrganisation)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorIsOrganisation, isOrganisation))
+        case _ => None
+      }
+    }
+  }
 }
 
 final case class ProposalSearchFilter(proposalIds: Seq[ProposalId])
@@ -630,3 +647,4 @@ final case class SequencePoolSearchFilter(sequencePool: SequencePool)
 final case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
 final case class QuestionIsOpenSearchFilter(isOpen: Boolean)
 final case class SegmentSearchFilter(segment: String)
+final case class IsOrganisationSearchFilter(isOrganisation: Boolean)
