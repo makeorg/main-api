@@ -92,6 +92,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     with EventBusServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ProposalServiceComponent
+    with ProposalSearchEngineComponent
     with OrganisationSearchEngineComponent =>
 
   override lazy val organisationService: OrganisationService = new DefaultOrganisationService
@@ -240,7 +241,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       }
     }
 
-    private def updateProposalsFromOrganisation(organisationId: UserId): Future[Unit] = {
+    private def updateProposalsFromOrganisation(organisationId: UserId,
+                                                requestContext: RequestContext): Future[Unit] = {
       for {
         _ <- getVotedProposals(
           organisationId,
@@ -250,19 +252,18 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
           sort = None,
           limit = None,
           skip = None,
-          RequestContext.empty
+          requestContext
         ).map(
           result =>
             result.results.foreach(
               proposalWithVote =>
                 eventBusService
-                  .publish(ReindexProposal(proposalWithVote.proposal.id, DateHelper.now(), RequestContext.empty))
+                  .publish(ReindexProposal(proposalWithVote.proposal.id, DateHelper.now(), requestContext))
           )
         )
-        _ <- proposalService
-          .searchForUser(
-            userId = Some(organisationId),
-            query = SearchQuery(
+        _ <- elasticsearchProposalAPI
+          .searchProposals(
+            searchQuery = SearchQuery(
               filters = Some(
                 SearchFilters(
                   user = Some(UserSearchFilter(userId = organisationId)),
@@ -271,15 +272,14 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                   }.values.toSeq))
                 )
               )
-            ),
-            requestContext = RequestContext.empty
+            )
           )
           .map(
             result =>
               result.results.foreach(
                 proposal =>
                   eventBusService
-                    .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+                    .publish(ReindexProposal(proposal.id, DateHelper.now(), requestContext))
             )
           )
       } yield {}
@@ -293,7 +293,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         _           <- verifyEmail(organisation.email.toLowerCase, emailExists)
         update <- persistentUserService.modify(organisation).flatMap {
           case Right(orga) =>
-            updateProposalsFromOrganisation(orga.userId).flatMap { _ =>
+            updateProposalsFromOrganisation(orga.userId, requestContext).flatMap { _ =>
               eventBusService.publish(
                 OrganisationUpdatedEvent(
                   connectedUserId = Some(orga.userId),
