@@ -21,11 +21,14 @@ package org.make.api.technical.crm
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, DecodingFailure, HCursor}
 import io.circe.Decoder._
+import io.circe.{Decoder, DecodingFailure, HCursor}
+import org.apache.avro.Schema
+import org.apache.avro.Schema.Field
 import org.make.api.technical.crm.MailJetEvent.AnyMailJetEvent
-import org.make.core.{CirceFormatters, Sharded}
+import org.make.core.{AvroSerializers, CirceFormatters, Sharded}
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 sealed trait MailJetEvent {
@@ -69,7 +72,13 @@ object MailJetEvent {
 
 final case class MailJetEventWrapper(version: Int, id: String, date: ZonedDateTime, event: AnyMailJetEvent)
     extends Sharded
-object MailJetEventWrapper {
+
+object MailJetEventWrapper extends AvroSerializers {
+  implicit lazy val schemaFor: SchemaFor[MailJetEventWrapper] = SchemaFor[MailJetEventWrapper]
+  implicit lazy val fromRecord: FromRecord[MailJetEventWrapper] = FromRecord[MailJetEventWrapper]
+  implicit lazy val toRecord: ToRecord[MailJetEventWrapper] = ToRecord[MailJetEventWrapper]
+  implicit lazy val recordFormat: RecordFormat[MailJetEventWrapper] = RecordFormat[MailJetEventWrapper]
+
   def wrapEvent(event: MailJetEvent): AnyMailJetEvent = event match {
     case e: MailJetBaseEvent        => Coproduct[AnyMailJetEvent](e)
     case e: MailJetUnsubscribeEvent => Coproduct[AnyMailJetEvent](e)
@@ -115,6 +124,20 @@ sealed trait MailJetError {
   def name: String
 }
 object MailJetError extends StrictLogging {
+
+  implicit object MailJetErrorToValue extends ToValue[MailJetError] {
+    override def apply(value: MailJetError): String = value.name
+  }
+
+  implicit object MailJetErrorFromValue extends FromValue[MailJetError] {
+    override def apply(value: Any, field: Field): MailJetError =
+      MailJetError.errorMap
+        .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a MailJetError"))
+  }
+
+  implicit object MailJetErrorToSchema extends ToSchema[MailJetError] {
+    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  }
 
   val errorMap: Map[String, MailJetError] = Map(
     UserUnknown.name -> UserUnknown,

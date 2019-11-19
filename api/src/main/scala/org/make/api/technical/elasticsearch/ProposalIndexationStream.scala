@@ -45,8 +45,8 @@ import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
 import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
-import org.make.core.operation.{Operation, OperationId, OperationOfQuestion}
-import org.make.core.proposal.ProposalId
+import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
+import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
   IndexedAuthor,
@@ -55,6 +55,7 @@ import org.make.core.proposal.indexed.{
   IndexedProposal,
   IndexedProposalQuestion,
   IndexedScores,
+  IndexedTag,
   IndexedVote,
   IndexedContext => ProposalContext
 }
@@ -150,29 +151,12 @@ trait ProposalIndexationStream
       })
   }
 
-  private def getIndexedProposal(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
-    def getSequenceConfiguration: Option[QuestionId] => Future[Option[SequenceConfiguration]] = {
-      case Some(questionId) =>
-        sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).map(Option.apply)
-      case None => Future.successful[Option[SequenceConfiguration]](None)
-    }
+  private def getQuestion: Option[QuestionId] => Future[Option[Question]] = {
+    case Some(questionId) => questionService.getQuestion(questionId)
+    case None             => Future.successful[Option[Question]](None)
+  }
 
-    def getQuestion: Option[QuestionId] => Future[Option[Question]] = {
-      case Some(questionId) =>
-        questionService.getQuestion(questionId)
-      case None => Future.successful[Option[Question]](None)
-    }
-
-    def getOperationOfQuestion: Option[QuestionId] => Future[Option[OperationOfQuestion]] = {
-      case Some(questionId) =>
-        operationOfQuestionService.findByQuestionId(questionId)
-      case None => Future.successful[Option[OperationOfQuestion]](None)
-    }
-
-    def getOperation: Option[OperationId] => Future[Option[Operation]] = {
-      case Some(operationId) => operationService.findOne(operationId)
-      case None              => Future.successful(None)
-    }
+  def getIndexedProposal(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
 
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
@@ -185,140 +169,157 @@ trait ProposalIndexationStream
           }
           .map[Option[Seq[User]]](organisations => Some(organisations.flatten))
       )
-      question              <- OptionT(getQuestion(proposal.questionId))
-      operationOfQuestion   <- OptionT(getOperationOfQuestion(proposal.questionId))
-      sequenceConfiguration <- OptionT(getSequenceConfiguration(proposal.questionId))
-      operation             <- OptionT(getOperation(question.operationId))
+      question            <- OptionT(getQuestion(proposal.questionId))
+      operationOfQuestion <- OptionT(operationOfQuestionService.findByQuestionId(question.questionId))
+      sequenceConfiguration <- OptionT(
+        sequenceConfigurationService.getSequenceConfigurationByQuestionId(question.questionId).map(Option.apply)
+      )
+      operation <- OptionT(operationService.findOneSimple(operationOfQuestion.operationId))
       // in order to insert this in this for-comprehension correctly we need to transform the Future[Option[String]]
       // into a Future[Option[Option[String]]] since we want to keep an Option[String] in the end.
       segment <- OptionT(segmentService.resolveSegment(proposal.creationContext).map(Option(_)))
     } yield {
-      val isBeforeContextSourceFeature: Boolean =
-        proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
-      val questionIsOpen: Boolean = {
-        val now = DateHelper.now()
-        (operationOfQuestion.startDate, operationOfQuestion.endDate) match {
-          case (Some(start), Some(end)) => start.isBefore(now) && end.isAfter(now)
-          case (None, Some(end))        => end.isAfter(now)
-          case (Some(start), None)      => start.isBefore(now)
-          case _                        => true
-        }
-      }
-      val regularScore = ScoreCounts.fromSequenceVotes(proposal.votes)
-
-      // If the proposal is not segmented, the scores should all be at 0
-      val segmentScore = segment.map { _ =>
-        ScoreCounts.fromSegmentVotes(proposal.votes)
-      }.getOrElse(ScoreCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-
-      IndexedProposal(
-        id = proposal.proposalId,
-        userId = proposal.author,
-        content = proposal.content,
-        slug = proposal.slug,
-        status = proposal.status,
-        createdAt = proposal.createdAt match {
-          case Some(date) => date
-          case _          => throw new IllegalStateException("created at is required")
-        },
-        updatedAt = proposal.updatedAt,
-        votes = proposal.votes.map(IndexedVote.apply),
-        votesCount = proposal.votes.map(_.count).sum,
-        votesVerifiedCount = proposal.votes.map(_.countVerified).sum,
-        votesSequenceCount = proposal.votes.map(_.countSequence).sum,
-        votesSegmentCount = proposal.votes.map(_.countSegment).sum,
-        toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
-        scores = IndexedScores(
-          engagement = regularScore.engagement(),
-          agreement = regularScore.agreement(),
-          adhesion = regularScore.adhesion(),
-          realistic = regularScore.realistic(),
-          platitude = regularScore.platitude(),
-          topScore = regularScore.topScore(),
-          controversy = regularScore.controversy(),
-          rejection = regularScore.rejection(),
-          scoreUpperBound = regularScore.topScoreUpperBound()
-        ),
-        segmentScores = IndexedScores(
-          engagement = segmentScore.engagement(),
-          agreement = segmentScore.agreement(),
-          adhesion = segmentScore.adhesion(),
-          realistic = segmentScore.realistic(),
-          platitude = segmentScore.platitude(),
-          topScore = segmentScore.topScore(),
-          controversy = segmentScore.controversy(),
-          rejection = segmentScore.rejection(),
-          scoreUpperBound = segmentScore.topScoreUpperBound()
-        ),
-        context = Some(
-          ProposalContext(
-            operation = proposal.creationContext.operationId,
-            source = proposal.creationContext.source.filter(!_.isEmpty) match {
-              case None if isBeforeContextSourceFeature => Some("core")
-              case other                                => other
-            },
-            location = proposal.creationContext.location,
-            question = proposal.creationContext.question,
-            getParameters = proposal.creationContext.getParameters
-              .map(_.toSeq.map {
-                case (key, value) => IndexedGetParameters(key, value)
-              })
-              .getOrElse(Seq.empty)
-          )
-        ),
-        trending = None,
-        labels = proposal.labels.map(_.value),
-        author = IndexedAuthor(
-          firstName = user.firstName,
-          organisationName = user.organisationName,
-          organisationSlug = user.organisationName.map(name => SlugHelper(name)),
-          postalCode = user.profile.flatMap(_.postalCode),
-          age = user.profile
-            .flatMap(_.dateOfBirth)
-            .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
-          avatarUrl = user.profile.flatMap(_.avatarUrl),
-          anonymousParticipation = user.anonymousParticipation,
-          isOrganisation = user.isOrganisation
-        ),
-        organisations = organisationInfos
-          .map(
-            organisation =>
-              IndexedOrganisationInfo(
-                organisation.userId,
-                organisation.organisationName,
-                organisation.organisationName.map(name => SlugHelper(name))
-            )
-          ),
-        country = proposal.country.getOrElse(Country("FR")),
-        language = proposal.language.getOrElse(Language("fr")),
-        themeId = proposal.theme,
-        tags = tags,
-        ideaId = proposal.idea,
-        operationId = proposal.operation,
-        question = proposal.questionId.map(
-          questionId =>
-            IndexedProposalQuestion(
-              questionId = questionId,
-              slug = question.slug,
-              title = operationOfQuestion.operationTitle,
-              question = question.question,
-              startDate = operationOfQuestion.startDate,
-              endDate = operationOfQuestion.endDate,
-              isOpen = questionIsOpen
-          )
-        ),
-        sequencePool = ProposalScorerHelper
-          .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSequenceVotes(proposal.votes)),
-        sequenceSegmentPool = ProposalScorerHelper
-          .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSegmentVotes(proposal.votes)),
-        initialProposal = proposal.initialProposal,
-        refusalReason = proposal.refusalReason,
-        operationKind = Option(operation.operationKind),
-        segment = segment
+      createIndexedProposal(
+        proposal,
+        segment,
+        sequenceConfiguration,
+        user,
+        organisationInfos,
+        tags,
+        question,
+        operationOfQuestion,
+        operation
       )
     }
 
     maybeResult.value
+  }
+
+  private def createIndexedProposal(proposal: Proposal,
+                                    segment: Option[String],
+                                    sequenceConfiguration: SequenceConfiguration,
+                                    user: User,
+                                    organisationInfos: Seq[User],
+                                    tags: Seq[IndexedTag],
+                                    question: Question,
+                                    operationOfQuestion: OperationOfQuestion,
+                                    operation: SimpleOperation): IndexedProposal = {
+
+    val isBeforeContextSourceFeature: Boolean =
+      proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
+    val regularScore = ScoreCounts.fromSequenceVotes(proposal.votes)
+    val scoreWithEverything = ScoreCounts.fromVerifiedVotes(proposal.votes)
+
+    // If the proposal is not segmented, the scores should all be at 0
+    val segmentScore = segment.map { _ =>
+      ScoreCounts.fromSegmentVotes(proposal.votes)
+    }.getOrElse(ScoreCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+    IndexedProposal(
+      id = proposal.proposalId,
+      userId = proposal.author,
+      content = proposal.content,
+      slug = proposal.slug,
+      status = proposal.status,
+      createdAt = proposal.createdAt match {
+        case Some(date) => date
+        case _          => throw new IllegalStateException("created at is required")
+      },
+      updatedAt = proposal.updatedAt,
+      votes = proposal.votes.map(IndexedVote.apply),
+      votesCount = proposal.votes.map(_.count).sum,
+      votesVerifiedCount = proposal.votes.map(_.countVerified).sum,
+      votesSequenceCount = proposal.votes.map(_.countSequence).sum,
+      votesSegmentCount = proposal.votes.map(_.countSegment).sum,
+      toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
+      scores = IndexedScores(
+        engagement = regularScore.engagement(),
+        agreement = regularScore.agreement(),
+        adhesion = regularScore.adhesion(),
+        realistic = regularScore.realistic(),
+        platitude = regularScore.platitude(),
+        topScore = ScoreCounts.topScore(sequenceConfiguration, scoreWithEverything, regularScore),
+        controversy = regularScore.controversy(),
+        rejection = regularScore.rejection(),
+        scoreUpperBound = regularScore.topScoreUpperBound()
+      ),
+      segmentScores = IndexedScores(
+        engagement = segmentScore.engagement(),
+        agreement = segmentScore.agreement(),
+        adhesion = segmentScore.adhesion(),
+        realistic = segmentScore.realistic(),
+        platitude = segmentScore.platitude(),
+        topScore = ScoreCounts.topScore(sequenceConfiguration, scoreWithEverything, segmentScore),
+        controversy = segmentScore.controversy(),
+        rejection = segmentScore.rejection(),
+        scoreUpperBound = segmentScore.topScoreUpperBound()
+      ),
+      context = Some(
+        ProposalContext(
+          operation = proposal.creationContext.operationId,
+          source = proposal.creationContext.source.filter(!_.isEmpty) match {
+            case None if isBeforeContextSourceFeature => Some("core")
+            case other                                => other
+          },
+          location = proposal.creationContext.location,
+          question = proposal.creationContext.question,
+          getParameters = proposal.creationContext.getParameters
+            .map(_.toSeq.map {
+              case (key, value) => IndexedGetParameters(key, value)
+            })
+            .getOrElse(Seq.empty)
+        )
+      ),
+      trending = None,
+      labels = proposal.labels.map(_.value),
+      author = IndexedAuthor(
+        firstName = user.firstName,
+        organisationName = user.organisationName,
+        organisationSlug = user.organisationName.map(name => SlugHelper(name)),
+        postalCode = user.profile.flatMap(_.postalCode),
+        age = user.profile
+          .flatMap(_.dateOfBirth)
+          .map(date => ChronoUnit.YEARS.between(date, LocalDate.now()).toInt),
+        avatarUrl = user.profile.flatMap(_.avatarUrl),
+        anonymousParticipation = user.anonymousParticipation,
+        isOrganisation = user.isOrganisation
+      ),
+      organisations = organisationInfos
+        .map(
+          organisation =>
+            IndexedOrganisationInfo(
+              organisation.userId,
+              organisation.organisationName,
+              organisation.organisationName.map(name => SlugHelper(name))
+          )
+        ),
+      country = proposal.country.getOrElse(Country("FR")),
+      language = proposal.language.getOrElse(Language("fr")),
+      themeId = proposal.theme,
+      tags = tags,
+      ideaId = proposal.idea,
+      operationId = proposal.operation,
+      question = proposal.questionId.map(
+        questionId =>
+          IndexedProposalQuestion(
+            questionId = questionId,
+            slug = question.slug,
+            title = operationOfQuestion.operationTitle,
+            question = question.question,
+            startDate = operationOfQuestion.startDate,
+            endDate = operationOfQuestion.endDate,
+            isOpen = operationOfQuestion.isOpenAt(DateHelper.now())
+        )
+      ),
+      sequencePool = ProposalScorerHelper
+        .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSequenceVotes(proposal.votes)),
+      sequenceSegmentPool = ProposalScorerHelper
+        .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSegmentVotes(proposal.votes)),
+      initialProposal = proposal.initialProposal,
+      refusalReason = proposal.refusalReason,
+      operationKind = Option(operation.operationKind),
+      segment = segment
+    )
   }
 
   private def executeIndexProposals(proposals: Seq[IndexedProposal], indexName: String): Future[Done] = {

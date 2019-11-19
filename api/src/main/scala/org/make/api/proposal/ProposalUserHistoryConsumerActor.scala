@@ -34,7 +34,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
-  override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
+  override protected val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
   override val groupId = "proposal-user-history"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout

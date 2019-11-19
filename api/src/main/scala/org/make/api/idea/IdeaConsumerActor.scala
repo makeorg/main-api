@@ -50,7 +50,7 @@ class IdeaConsumerActor(ideaService: IdeaService,
     with ActorLogging {
 
   override protected lazy val kafkaTopic: String = IdeaProducerActor.topicKey
-  override protected val format: RecordFormat[IdeaEventWrapper] = RecordFormat[IdeaEventWrapper]
+  override protected val format: RecordFormat[IdeaEventWrapper] = IdeaEventWrapper.recordFormat
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 

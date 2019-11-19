@@ -21,11 +21,13 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor}
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, EventWrapper, MakeSerializable, RequestContext}
+import org.make.core.{AvroSerializers, DateHelper, EventWrapper, MakeSerializable, RequestContext}
+import shapeless.ops.product.ToRecord
 import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 trait UserRelatedEvent {
@@ -66,7 +68,12 @@ object UserEvent {
                                     event: AnyUserEvent)
       extends EventWrapper
 
-  object UserEventWrapper {
+  object UserEventWrapper extends AvroSerializers {
+    implicit lazy val schemaFor: SchemaFor[UserEventWrapper] = SchemaFor[UserEventWrapper]
+    implicit lazy val fromRecord: FromRecord[UserEventWrapper] = FromRecord[UserEventWrapper]
+    implicit lazy val toRecord: ToRecord[UserEventWrapper] = ToRecord[UserEventWrapper]
+    implicit lazy val recordFormat: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
+
     def wrapEvent(event: UserEvent): AnyUserEvent =
       event match {
         case e: ResetPasswordEvent              => Coproduct[AnyUserEvent](e)

@@ -28,8 +28,8 @@ import shapeless.Coproduct
 
 class TrackingProducerActor extends BasicProducerActor[TrackingEventWrapper, TrackingEvent] {
   override protected lazy val eventClass: Class[TrackingEvent] = classOf[TrackingEvent]
-  override protected lazy val format: RecordFormat[TrackingEventWrapper] = RecordFormat[TrackingEventWrapper]
-  override protected lazy val schema: SchemaFor[TrackingEventWrapper] = SchemaFor[TrackingEventWrapper]
+  override protected lazy val format: RecordFormat[TrackingEventWrapper] = TrackingEventWrapper.recordFormat
+  override protected lazy val schema: SchemaFor[TrackingEventWrapper] = TrackingEventWrapper.schemaFor
   override val kafkaTopic: String = kafkaConfiguration.topics(TrackingProducerActor.topicKey)
   override protected def convert(event: TrackingEvent): TrackingEventWrapper = {
     TrackingEventWrapper(

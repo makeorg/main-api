@@ -20,8 +20,9 @@
 package org.make.api.semantic
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
 import org.make.api.semantic.PredictionsEventWrapper.AnyPredictionsEvent
-import org.make.core.EventWrapper
+import org.make.core.{AvroSerializers, EventWrapper}
 import org.make.core.proposal.ProposalId
 import org.make.core.tag.TagId
 import shapeless.{:+:, CNil}
@@ -38,6 +39,11 @@ final case class PredictionsEventWrapper(version: Int,
                                          event: AnyPredictionsEvent)
     extends EventWrapper
 
-object PredictionsEventWrapper {
+object PredictionsEventWrapper extends AvroSerializers {
+  implicit lazy val schemaFor: SchemaFor[PredictionsEventWrapper] = SchemaFor[PredictionsEventWrapper]
+  implicit lazy val fromRecord: FromRecord[PredictionsEventWrapper] = FromRecord[PredictionsEventWrapper]
+  implicit lazy val toRecord: ToRecord[PredictionsEventWrapper] = ToRecord[PredictionsEventWrapper]
+  implicit lazy val recordFormat: RecordFormat[PredictionsEventWrapper] = RecordFormat[PredictionsEventWrapper]
+
   type AnyPredictionsEvent = PredictedTagsEvent :+: CNil
 }

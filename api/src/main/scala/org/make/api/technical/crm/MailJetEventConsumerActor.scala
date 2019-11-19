@@ -36,7 +36,7 @@ class MailJetEventConsumerActor(userService: UserService)
     with KafkaConfigurationExtension
     with ActorLogging {
   override protected val kafkaTopic: String = MailJetCallbackProducerActor.topicKey
-  override protected val format: RecordFormat[MailJetEventWrapper] = RecordFormat[MailJetEventWrapper]
+  override protected val format: RecordFormat[MailJetEventWrapper] = MailJetEventWrapper.recordFormat
   override def groupId: String = "mailJet-event-consumer"
 
   override def handleMessage(message: MailJetEventWrapper): Future[Unit] = {

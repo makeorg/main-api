@@ -27,8 +27,8 @@ import org.make.api.userhistory.UserEvent._
 
 class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] {
   override protected lazy val eventClass: Class[UserEvent] = classOf[UserEvent]
-  override protected lazy val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
-  override protected lazy val schema: SchemaFor[UserEventWrapper] = SchemaFor[UserEventWrapper]
+  override protected lazy val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
+  override protected lazy val schema: SchemaFor[UserEventWrapper] = UserEventWrapper.schemaFor
   override val kafkaTopic: String = kafkaConfiguration.topics(UserProducerActor.topicKey)
 
   override protected def convert(event: UserEvent): UserEventWrapper = {

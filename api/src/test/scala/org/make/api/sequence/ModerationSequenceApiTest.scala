@@ -138,7 +138,8 @@ class ModerationSequenceApiTest
                                                   |  "maxTestedProposalCount": 1000,
                                                   |  "sequenceSize": 12,
                                                   |  "maxVotes": 1500,
-                                                  |  "selectionAlgorithmName": "Bandit"
+                                                  |  "selectionAlgorithmName": "Bandit",
+                                                  |  "nonSequenceVotesWeight": 0.5
                                                   |}""".stripMargin
 
   val routes: Route = sealRoute(moderationSequenceApi.routes)

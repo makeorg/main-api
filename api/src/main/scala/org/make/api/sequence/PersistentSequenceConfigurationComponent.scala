@@ -111,7 +111,8 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               column.sequenceSize -> sequenceConfig.sequenceSize,
               column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
               column.createdAt -> DateHelper.now,
-              column.updatedAt -> DateHelper.now
+              column.updatedAt -> DateHelper.now,
+              column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
             )
         }.execute().apply()
       })
@@ -139,7 +140,8 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
               column.sequenceSize -> sequenceConfig.sequenceSize,
               column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName.shortName,
-              column.updatedAt -> DateHelper.now
+              column.updatedAt -> DateHelper.now,
+              column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight
             )
             .where(
               sqls
@@ -193,7 +195,8 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
                                              sequenceSize: Int,
                                              selectionAlgorithmName: String,
                                              createdAt: ZonedDateTime,
-                                             updatedAt: ZonedDateTime) {
+                                             updatedAt: ZonedDateTime,
+                                             nonSequenceVotesWeight: Double) {
     def toSequenceConfiguration: SequenceConfiguration =
       SequenceConfiguration(
         sequenceId = SequenceId(sequenceId),
@@ -213,7 +216,8 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         interIdeaCompetitionControversialCount = interIdeaCompetitionControversialCount,
         maxTestedProposalCount = maxTestedProposalCount,
         sequenceSize = sequenceSize,
-        selectionAlgorithmName = SelectionAlgorithmName.selectionAlgorithms(selectionAlgorithmName)
+        selectionAlgorithmName = SelectionAlgorithmName.selectionAlgorithms(selectionAlgorithmName),
+        nonSequenceVotesWeight = nonSequenceVotesWeight
       )
   }
 
@@ -243,7 +247,8 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         "sequence_size",
         "selection_algorithm_name",
         "created_at",
-        "updated_at"
+        "updated_at",
+        "non_sequence_votes_weight"
       )
 
     override val tableName: String = "sequence_configuration"
@@ -275,7 +280,8 @@ object DefaultPersistentSequenceConfigurationServiceComponent {
         sequenceSize = resultSet.int(resultName.sequenceSize),
         selectionAlgorithmName = resultSet.string(resultName.selectionAlgorithmName),
         createdAt = resultSet.zonedDateTime(resultName.createdAt),
-        updatedAt = resultSet.zonedDateTime(resultName.updatedAt)
+        updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
+        nonSequenceVotesWeight = resultSet.double(resultName.nonSequenceVotesWeight)
       )
     }
   }

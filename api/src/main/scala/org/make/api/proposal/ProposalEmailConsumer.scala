@@ -31,7 +31,7 @@ import scala.concurrent.Future
 class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
     extends KafkaConsumerActor[ProposalEventWrapper] {
   override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
-  override protected val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
+  override protected val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
   override val groupId = "proposal-email"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout

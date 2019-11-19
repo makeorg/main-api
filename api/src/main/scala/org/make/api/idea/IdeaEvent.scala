@@ -21,8 +21,9 @@ package org.make.api.idea
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
 import org.make.core.idea.{Idea, IdeaId}
-import org.make.core.{DateHelper, EventWrapper, MakeSerializable}
+import org.make.core.{AvroSerializers, DateHelper, EventWrapper, MakeSerializable}
 import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait IdeaEvent {
@@ -47,7 +48,12 @@ object IdeaEvent {
                                     event: AnyIdeaEvent)
       extends EventWrapper
 
-  object IdeaEventWrapper {
+  object IdeaEventWrapper extends AvroSerializers {
+    implicit lazy val schemaFor: SchemaFor[IdeaEventWrapper] = SchemaFor[IdeaEventWrapper]
+    implicit lazy val fromRecord: FromRecord[IdeaEventWrapper] = FromRecord[IdeaEventWrapper]
+    implicit lazy val toRecord: ToRecord[IdeaEventWrapper] = ToRecord[IdeaEventWrapper]
+    implicit lazy val recordFormat: RecordFormat[IdeaEventWrapper] = RecordFormat[IdeaEventWrapper]
+
     def wrapEvent(event: IdeaEvent): AnyIdeaEvent =
       event match {
         case e: IdeaCreatedEvent => Coproduct[AnyIdeaEvent](e)

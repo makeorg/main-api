@@ -26,10 +26,10 @@ import org.make.api.MakeUnitTest
 import org.make.api.idea.IdeaEvent.IdeaEventWrapper
 import org.make.api.proposal.PublishedProposalEvent.ProposalEventWrapper
 import org.make.api.semantic.{PredictDuplicateEventWrapper, PredictionsEventWrapper}
-import org.make.api.technical.AvroSerializers
 import org.make.api.technical.crm.{MailJetEventWrapper, SendEmail}
 import org.make.api.technical.tracking.TrackingEventWrapper
 import org.make.api.userhistory.UserEvent.UserEventWrapper
+import org.make.core.AvroSerializers
 
 class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with StrictLogging {
 

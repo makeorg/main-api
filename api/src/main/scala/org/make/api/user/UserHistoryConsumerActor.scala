@@ -22,9 +22,10 @@ package org.make.api.user
 import akka.actor.{ActorRef, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
-import org.make.api.technical.{ActorEventBusServiceComponent, AvroSerializers, KafkaConsumerActor, TimeSettings}
+import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory._
+import org.make.core.AvroSerializers
 
 import scala.concurrent.Future
 
@@ -34,7 +35,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     with AvroSerializers {
 
   override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
-  override protected val format: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
+  override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
   override val groupId = "user-history"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
