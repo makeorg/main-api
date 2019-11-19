@@ -33,7 +33,9 @@ import org.make.api.feature.{
 }
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
+import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
+import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature, FeatureId}
@@ -44,7 +46,7 @@ import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
@@ -68,7 +70,9 @@ class QuestionApiTest
     with MakeSettingsComponent
     with MakeAuthentication
     with FeatureServiceComponent
-    with ActiveFeatureServiceComponent {
+    with ActiveFeatureServiceComponent
+    with ProposalSearchEngineComponent
+    with TagServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -79,6 +83,8 @@ class QuestionApiTest
   override val partnerService: PartnerService = mock[PartnerService]
   override val featureService: FeatureService = mock[FeatureService]
   override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
+  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
+  override val tagService: TagService = mock[TagService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -322,6 +328,76 @@ class QuestionApiTest
     scenario("validation error on order") {
       Get("/questions/search?order=invalid") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
+      }
+    }
+  }
+
+  feature("popular tags") {
+    scenario("fake question") {
+      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("fake")))).thenReturn(Future.successful(None))
+      Get("/questions/fake/popular-tags") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    def newTag(s: String): Tag =
+      Tag(TagId(s), s, TagDisplay.Displayed, TagTypeId("type"), 42F, None, None, None, Country("FR"), Language("fr"))
+
+    val tag1 = newTag("tag1")
+    val tag2 = newTag("tag2")
+    val tag3 = newTag("tag3")
+
+    when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("question-id"))))
+      .thenReturn(Future.successful(Some(baseQuestion)))
+
+    scenario("all tags") {
+      when(
+        elasticsearchProposalAPI
+          .getPopularTagsByProposal(ArgumentMatchers.eq(QuestionId("question-id")), ArgumentMatchers.eq(10))
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            PopularTagResponse(TagId("tag1"), "tag1", 1L),
+            PopularTagResponse(TagId("tag2"), "tag2", 5L),
+            PopularTagResponse(TagId("tag3"), "tag3", 3L)
+          )
+        )
+      )
+      when(tagService.findByTagIds(ArgumentMatchers.eq(Seq(TagId("tag2"), TagId("tag3"), TagId("tag1")))))
+        .thenReturn(Future.successful(Seq(tag1, tag2, tag3)))
+
+      Get("/questions/question-id/popular-tags") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val res: Seq[PopularTagResponse] = entityAs[Seq[PopularTagResponse]]
+        res.size shouldBe 3
+        res.head.tagId shouldBe TagId("tag2")
+        res(1).tagId shouldBe TagId("tag3")
+        res(2).tagId shouldBe TagId("tag1")
+      }
+    }
+
+    scenario("with limit and skip") {
+      when(
+        elasticsearchProposalAPI
+          .getPopularTagsByProposal(ArgumentMatchers.eq(QuestionId("question-id")), ArgumentMatchers.eq(3))
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            PopularTagResponse(TagId("tag1"), "tag1", 1L),
+            PopularTagResponse(TagId("tag2"), "tag2", 5L),
+            PopularTagResponse(TagId("tag3"), "tag3", 3L)
+          )
+        )
+      )
+      when(tagService.findByTagIds(ArgumentMatchers.eq(Seq(TagId("tag3"), TagId("tag1")))))
+        .thenReturn(Future.successful(Seq(tag3, tag1)))
+
+      Get("/questions/question-id/popular-tags?limit=2&skip=1") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val res: Seq[PopularTagResponse] = entityAs[Seq[PopularTagResponse]]
+        res.size shouldBe 2
+        res.head.tagId shouldBe TagId("tag3")
+        res(1).tagId shouldBe TagId("tag1")
       }
     }
   }

@@ -25,8 +25,8 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -37,8 +37,10 @@ import org.make.api.operation.{
   PersistentOperationOfQuestionServiceComponent
 }
 import org.make.api.partner.PartnerServiceComponent
+import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
@@ -48,8 +50,11 @@ import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNam
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
+
+import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -107,7 +112,21 @@ trait QuestionApi extends Directives {
   @Path(value = "/search")
   def searchQuestions: Route
 
-  def routes: Route = questionDetails ~ startSequenceByQuestionId ~ searchQuestions
+  @ApiOperation(value = "get-question-popular-tags", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[PopularTagResponse]]))
+  )
+  @Path(value = "/{questionId}/popular-tags")
+  def getPopularTags: Route
+
+  def routes: Route = questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags
 }
 
 trait DefaultQuestionApiComponent
@@ -127,7 +146,9 @@ trait DefaultQuestionApiComponent
     with OperationOfQuestionServiceComponent
     with PartnerServiceComponent
     with FeatureServiceComponent
-    with ActiveFeatureServiceComponent =>
+    with ActiveFeatureServiceComponent
+    with ProposalSearchEngineComponent
+    with TagServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -324,6 +345,24 @@ trait DefaultQuestionApiComponent
 
       }
     }
+
+    override def getPopularTags: Route = get {
+      path("questions" / questionId / "popular-tags") { questionId =>
+        makeOperation("GetQuestionPopularTags") { _ =>
+          parameters(('limit.as[Int].?, 'skip.as[Int].?)) { (limit: Option[Int], skip: Option[Int]) =>
+            provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+              val size = limit.getOrElse(10) + skip.getOrElse(0)
+
+              provideAsync(elasticsearchProposalAPI.getPopularTagsByProposal(questionId, size)) { popularTagsResponse =>
+                val popularTags = popularTagsResponse.sortBy(_.proposalCount * -1).drop(skip.getOrElse(0))
+                complete(popularTags)
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }
 
@@ -331,4 +370,15 @@ final case class StartSequenceByQuestionIdRequest(include: Option[Seq[ProposalId
 
 object StartSequenceByQuestionIdRequest {
   implicit val decoder: Decoder[StartSequenceByQuestionIdRequest] = deriveDecoder[StartSequenceByQuestionIdRequest]
+}
+
+final case class PopularTagResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "7353ae89-0d05-4014-8aa0-1d7cb0b3aea3") tagId: TagId,
+  label: String,
+  proposalCount: Long
+)
+
+object PopularTagResponse {
+  implicit val decoder: Decoder[PopularTagResponse] = deriveDecoder[PopularTagResponse]
+  implicit val encoder: Encoder[PopularTagResponse] = deriveEncoder[PopularTagResponse]
 }

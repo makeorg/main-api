@@ -21,11 +21,15 @@ package org.make.api.proposal
 
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.http.search.TermBucket
+import com.sksamuel.elastic4s.script.Script
+import com.sksamuel.elastic4s.searches.aggs.TermsAggregation
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
 import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery, Query}
 import com.sksamuel.elastic4s.searches.{SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.question.PopularTagResponse
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.DateHelper
 import org.make.core.DateHelper._
@@ -33,6 +37,7 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.question.QuestionId
+import org.make.core.tag.TagId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -55,6 +60,7 @@ trait ProposalSearchEngine {
                      mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
   def updateProposals(records: Seq[IndexedProposal],
                       mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
+  def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
 }
 
 object ProposalSearchEngine {
@@ -228,6 +234,41 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         }))
         .map(_ => records.toSeq)
     }
+
+    override def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]] = {
+      // parse json string to build search query
+      val searchQuery: SearchQuery = SearchQuery(
+        filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId)))))
+      )
+      val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
+      val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
+
+      val finalRequest: ElasticSearchRequest = request
+        .aggregations(
+          TermsAggregation(
+            name = "popularTags",
+            script = Some(
+              Script(
+                "def tags = params._source['tags'];String[] idLabel = new String[tags.length]; for (int i = 0; i < tags.length; i++) { idLabel[i] = tags[i]['tagId'] + ',' + tags[i]['label'] } return idLabel"
+              )
+            )
+          ).size(size = size)
+        )
+        .limit(0)
+      def popularTagResponseFrombucket(bucket: TermBucket): PopularTagResponse = {
+        val Array(tagId, label) = bucket.key.split(",")
+        PopularTagResponse(TagId(tagId), label, bucket.docCount)
+      }
+
+      client.executeAsFuture(finalRequest).map { response =>
+        response.aggregations
+          .terms("popularTags")
+          .buckets
+          .map(popularTagResponseFrombucket)
+      }
+
+    }
+
   }
 
 }
