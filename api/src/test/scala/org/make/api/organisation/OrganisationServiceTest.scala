@@ -24,6 +24,8 @@ import java.time.ZonedDateTime
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.{
   ProposalResponse,
+  ProposalSearchEngine,
+  ProposalSearchEngineComponent,
   ProposalService,
   ProposalServiceComponent,
   ProposalsResultSeededResponse
@@ -42,7 +44,13 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
-import org.make.core.proposal.indexed.{IndexedAuthor, IndexedProposal, IndexedScores, SequencePool}
+import org.make.core.proposal.indexed.{
+  IndexedAuthor,
+  IndexedProposal,
+  IndexedScores,
+  ProposalsSearchResult,
+  SequencePool
+}
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleActor
@@ -68,6 +76,7 @@ class OrganisationServiceTest
     with UserHistoryCoordinatorServiceComponent
     with ProposalServiceComponent
     with EventBusServiceComponent
+    with ProposalSearchEngineComponent
     with OrganisationSearchEngineComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -77,6 +86,7 @@ class OrganisationServiceTest
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalService: ProposalService = mock[ProposalService]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
+  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
 
   class MatchRegisterEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
     override def matches(argument: AnyRef): Boolean =
@@ -273,6 +283,12 @@ class OrganisationServiceTest
         .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
         .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
       Mockito
+        .when(
+          elasticsearchProposalAPI
+            .searchProposals(any[SearchQuery])
+        )
+        .thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
+      Mockito
         .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq.empty))
       Mockito
@@ -292,6 +308,12 @@ class OrganisationServiceTest
     scenario("successfully update an organisation without changing anything") {
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
       Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
+      Mockito
+        .when(
+          elasticsearchProposalAPI
+            .searchProposals(any[SearchQuery])
+        )
+        .thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
 
       val futureOrganisation =
         organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
