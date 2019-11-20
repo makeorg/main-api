@@ -28,6 +28,7 @@ import org.make.core.feature.{ActiveFeatureId, FeatureId}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{CurrentOperationId, FeaturedOperationId, OperationId}
 import org.make.core.partner.PartnerId
+import org.make.core.personality.PersonalityId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
@@ -57,6 +58,7 @@ trait IdGenerator {
   def nextTagTypeId(): TagTypeId = TagTypeId(nextId())
   def nextUserId(): UserId = UserId(nextId())
   def nextVisitorId(): VisitorId = VisitorId(nextId())
+  def nextPersonalityId(): PersonalityId = PersonalityId(nextId())
 
   def nextId(): String
 }

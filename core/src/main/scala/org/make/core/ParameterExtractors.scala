@@ -28,6 +28,8 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.partner.PartnerKind
+import org.make.core.personality.PersonalityRole
+import org.make.core.personality.PersonalityRole.roleMap
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
@@ -176,4 +178,15 @@ trait ParameterExtractors {
         )
       )
     }
+
+  implicit val personalityRoleFronStringUnmarshaller: Unmarshaller[String, PersonalityRole] = {
+    Unmarshaller.strict[String, PersonalityRole] { value =>
+      roleMap.getOrElse(
+        value,
+        throw ValidationFailedError(
+          Seq(ValidationError("personalityRole", "invalid_value", Some(s"$value is not a valid personality role")))
+        )
+      )
+    }
+  }
 }

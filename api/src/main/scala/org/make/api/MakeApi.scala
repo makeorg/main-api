@@ -36,16 +36,7 @@ import org.make.api.crmTemplates.{
   DefaultPersistentCrmTemplatesServiceComponent
 }
 import org.make.api.extensions._
-import org.make.api.feature.{
-  AdminActiveFeatureApi,
-  AdminFeatureApi,
-  DefaultActiveFeatureServiceComponent,
-  DefaultAdminActiveFeatureApiComponent,
-  DefaultAdminFeatureApiComponent,
-  DefaultFeatureServiceComponent,
-  DefaultPersistentActiveFeatureServiceComponent,
-  DefaultPersistentFeatureServiceComponent
-}
+import org.make.api.feature._
 import org.make.api.idea._
 import org.make.api.operation._
 import org.make.api.organisation._
@@ -54,6 +45,12 @@ import org.make.api.partner.{
   DefaultAdminPartnerApiComponent,
   DefaultPartnerServiceComponent,
   DefaultPersistentPartnerServiceComponent
+}
+import org.make.api.personality.{
+  AdminPersonalityApi,
+  DefaultAdminPersonalityApiComponent,
+  DefaultPersistentPersonalityServiceComponent,
+  DefaultPersonalityServiceComponent
 }
 import org.make.api.proposal._
 import org.make.api.question._
@@ -120,6 +117,7 @@ trait MakeApi
     with DefaultAdminFeaturedOperationApiComponent
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminPartnerApiComponent
+    with DefaultAdminPersonalityApiComponent
     with DefaultAdminProposalApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAdminViewApiComponent
@@ -185,6 +183,7 @@ trait MakeApi
     with DefaultPersistentOperationOfQuestionServiceComponent
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentPartnerServiceComponent
+    with DefaultPersistentPersonalityServiceComponent
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentSequenceConfigurationServiceComponent
     with DefaultPersistentTagServiceComponent
@@ -193,6 +192,7 @@ trait MakeApi
     with DefaultPersistentTokenServiceComponent
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentUserToAnonymizeServiceComponent
+    with DefaultPersonalityServiceComponent
     with DefaultProposalApiComponent
     with DefaultProposalCoordinatorServiceComponent
     with DefaultProposalIndexerServiceComponent
@@ -307,44 +307,45 @@ trait MakeApi
 
   private lazy val apiClasses: Set[Class[_]] =
     Set(
+      classOf[AdminActiveFeatureApi],
+      classOf[AdminClientApi],
       classOf[AdminCrmTemplateApi],
+      classOf[AdminCurrentOperationApi],
+      classOf[AdminFeatureApi],
+      classOf[AdminFeaturedOperationApi],
+      classOf[AdminIdeaMappingApi],
+      classOf[AdminPartnerApi],
+      classOf[AdminPersonalityApi],
       classOf[AdminProposalApi],
+      classOf[AdminUserApi],
+      classOf[AdminViewApi],
       classOf[AuthenticationApi],
-      classOf[UserApi],
-      classOf[TagApi],
-      classOf[ModerationTagApi],
-      classOf[ModerationTagTypeApi],
-      classOf[ProposalApi],
-      classOf[OperationApi],
       classOf[ConfigurationsApi],
-      classOf[SequenceApi],
-      classOf[ModerationSequenceApi],
-      classOf[ModerationIdeaApi],
-      classOf[ElasticSearchApi],
-      classOf[TrackingApi],
-      classOf[MigrationApi],
-      classOf[HealthCheckApi],
       classOf[CrmApi],
+      classOf[ElasticSearchApi],
+      classOf[HealthCheckApi],
+      classOf[MigrationApi],
+      classOf[ModerationIdeaApi],
       classOf[ModerationOperationApi],
       classOf[ModerationOperationOfQuestionApi],
       classOf[ModerationOrganisationApi],
       classOf[ModerationProposalApi],
       classOf[ModerationQuestionApi],
+      classOf[ModerationSequenceApi],
+      classOf[ModerationTagApi],
+      classOf[ModerationTagTypeApi],
+      classOf[OperationApi],
       classOf[OrganisationApi],
+      classOf[ProposalApi],
       classOf[QuestionApi],
-      classOf[StorageApi],
-      classOf[WidgetApi],
-      classOf[AdminUserApi],
-      classOf[AdminIdeaMappingApi],
       classOf[SecurityApi],
-      classOf[AdminPartnerApi],
-      classOf[AdminFeaturedOperationApi],
-      classOf[AdminCurrentOperationApi],
+      classOf[SequenceApi],
+      classOf[StorageApi],
+      classOf[TagApi],
+      classOf[TrackingApi],
+      classOf[UserApi],
       classOf[ViewApi],
-      classOf[AdminViewApi],
-      classOf[AdminClientApi],
-      classOf[AdminFeatureApi],
-      classOf[AdminActiveFeatureApi]
+      classOf[WidgetApi]
     )
 
   private lazy val optionsCors: Route = options {
@@ -375,6 +376,8 @@ trait MakeApi
       adminFeatureApi.routes ~
       adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
+      adminPartnerApi.routes ~
+      adminPersonalityApi.routes ~
       adminProposalApi.routes ~
       adminUserApi.routes ~
       adminViewApi.routes ~
@@ -388,7 +391,6 @@ trait MakeApi
       moderationOperationApi.routes ~
       moderationOperationOfQuestionApi.routes ~
       moderationOrganisationApi.routes ~
-      moderationPartnerApi.routes ~
       moderationProposalApi.routes ~
       moderationQuestionApi.routes ~
       moderationSequenceApi.routes ~

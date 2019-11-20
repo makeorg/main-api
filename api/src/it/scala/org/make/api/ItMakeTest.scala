@@ -33,3 +33,4 @@ trait ItMakeTest
     with StrictLogging
     with BeforeAndAfterAll
     with ScalaFutures
+    with TestUtilsIT
