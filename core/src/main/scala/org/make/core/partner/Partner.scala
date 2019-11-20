@@ -58,7 +58,12 @@ sealed trait PartnerKind { def shortName: String }
 
 object PartnerKind {
   val kindMap: Map[String, PartnerKind] =
-    Map(Media.shortName -> Media, ActionPartner.shortName -> ActionPartner, Founder.shortName -> Founder)
+    Map(
+      Media.shortName -> Media,
+      ActionPartner.shortName -> ActionPartner,
+      Founder.shortName -> Founder,
+      Actor.shortName -> Actor
+    )
 
   implicit lazy val partnerKindEncoder: Encoder[PartnerKind] = (kind: PartnerKind) => Json.fromString(kind.shortName)
 
@@ -84,4 +89,5 @@ object PartnerKind {
   case object Media extends PartnerKind { override val shortName: String = "MEDIA" }
   case object ActionPartner extends PartnerKind { override val shortName: String = "ACTION_PARTNER" }
   case object Founder extends PartnerKind { override val shortName: String = "FOUNDER" }
+  case object Actor extends PartnerKind { override val shortName: String = "ACTOR" }
 }
