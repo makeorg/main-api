@@ -173,8 +173,8 @@ trait DefaultQuestionApiComponent
                       organisationId = None,
                       start = 0,
                       end = None,
-                      sort = None,
-                      order = None
+                      sort = Some("weight"),
+                      order = Some("DESC")
                     )
                   ) { partners =>
                     provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
