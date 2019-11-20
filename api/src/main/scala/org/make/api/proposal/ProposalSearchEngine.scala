@@ -249,7 +249,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
             name = "popularTags",
             script = Some(
               Script(
-                "def tags = params._source['tags'];String[] idLabel = new String[tags.length]; for (int i = 0; i < tags.length; i++) { idLabel[i] = tags[i]['tagId'] + ',' + tags[i]['label'] } return idLabel"
+                "def tags = params._source['tags'];tags.removeIf(tag -> !tag['display']);String[] idLabel = new String[tags.length]; for (int i = 0; i < tags.length; i++) { idLabel[i] = tags[i]['tagId'] + ',' + tags[i]['label'] } return idLabel"
               )
             )
           ).size(size = size)
