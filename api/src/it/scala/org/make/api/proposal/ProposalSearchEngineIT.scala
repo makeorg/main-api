@@ -221,11 +221,13 @@ class ProposalSearchEngineIT
     operationKind = None,
     segment = None
   )
-  private def newTag(label: String) = IndexedTag(TagId(UUID.randomUUID().toString), label, true)
+  private def newTag(label: String, display: Boolean = true) =
+    IndexedTag(TagId(UUID.randomUUID().toString), label, display)
 
   val tagAlpha = newTag("alpha")
   val tagBeta = newTag("beta")
   val tagGamma = newTag("gamma")
+  val tagDelta = newTag("delta", false)
 
   private val acceptedProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
@@ -293,7 +295,7 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
-      tags = Seq(tagAlpha, tagBeta, tagGamma),
+      tags = Seq(tagAlpha, tagBeta, tagGamma, tagDelta),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
@@ -370,7 +372,7 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
-      tags = Seq(tagAlpha, tagBeta),
+      tags = Seq(tagAlpha, tagBeta, tagDelta),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
@@ -1673,6 +1675,7 @@ class ProposalSearchEngineIT
           results.find(_.tagId == tagAlpha.tagId).foreach(_.proposalCount should be(2))
           results.find(_.tagId == tagBeta.tagId).foreach(_.proposalCount should be(4))
           results.find(_.tagId == tagGamma.tagId).foreach(_.proposalCount should be(1))
+          results.exists(_.tagId == tagDelta.tagId) shouldBe false
       }
     }
 
