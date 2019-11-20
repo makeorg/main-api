@@ -44,8 +44,11 @@ trait PersistentPartnerService {
            sort: Option[String],
            order: Option[String],
            questionId: Option[QuestionId],
-           organisationId: Option[UserId]): Future[Seq[Partner]]
-  def count(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Int]
+           organisationId: Option[UserId],
+           partnerKind: Option[PartnerKind]): Future[Seq[Partner]]
+  def count(questionId: Option[QuestionId],
+            organisationId: Option[UserId],
+            partnerKind: Option[PartnerKind]): Future[Int]
   def delete(partnerId: PartnerId): Future[Unit]
 }
 
@@ -115,7 +118,8 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
                       sort: Option[String],
                       order: Option[String],
                       questionId: Option[QuestionId],
-                      organisationId: Option[UserId]): Future[Seq[Partner]] = {
+                      organisationId: Option[UserId],
+                      partnerKind: Option[PartnerKind]): Future[Seq[Partner]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
@@ -124,7 +128,8 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
             .where(
               sqls.toAndConditionOpt(
                 questionId.map(questionId         => sqls.eq(partnerAlias.questionId, questionId.value)),
-                organisationId.map(organisationId => sqls.eq(partnerAlias.organisationId, organisationId.value))
+                organisationId.map(organisationId => sqls.eq(partnerAlias.organisationId, organisationId.value)),
+                partnerKind.map(kind              => sqls.eq(partnerAlias.partnerKind, kind.shortName))
               )
             )
 
@@ -145,7 +150,9 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
       }).map(_.map(_.toPartner))
     }
 
-    override def count(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Int] = {
+    override def count(questionId: Option[QuestionId],
+                       organisationId: Option[UserId],
+                       partnerKind: Option[PartnerKind]): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
@@ -154,7 +161,8 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
             .where(
               sqls.toAndConditionOpt(
                 questionId.map(questionId         => sqls.eq(partnerAlias.questionId, questionId.value)),
-                organisationId.map(organisationId => sqls.eq(partnerAlias.organisationId, organisationId.value))
+                organisationId.map(organisationId => sqls.eq(partnerAlias.organisationId, organisationId.value)),
+                partnerKind.map(kind              => sqls.eq(partnerAlias.partnerKind, kind.shortName))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)

@@ -25,8 +25,8 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -36,6 +36,7 @@ import org.make.api.operation.{
   OperationServiceComponent,
   PersistentOperationOfQuestionServiceComponent
 }
+import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
@@ -47,16 +48,18 @@ import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Order
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
+import org.make.core.partner.PartnerKind
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
+import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _, _}
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait QuestionApiComponent {
@@ -126,7 +129,23 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/popular-tags")
   def getPopularTags: Route
 
-  def routes: Route = questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags
+  @ApiOperation(value = "get-question-partners", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[PopularTagResponse]]))
+  )
+  @Path(value = "/{questionId}/partners")
+  def getPartners: Route
+
+  def routes: Route = questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getPartners
 }
 
 trait DefaultQuestionApiComponent
@@ -148,7 +167,8 @@ trait DefaultQuestionApiComponent
     with FeatureServiceComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
-    with TagServiceComponent =>
+    with TagServiceComponent
+    with OrganisationSearchEngineComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -174,7 +194,8 @@ trait DefaultQuestionApiComponent
                       start = 0,
                       end = None,
                       sort = Some("weight"),
-                      order = Some("DESC")
+                      order = Some("DESC"),
+                      partnerKind = None
                     )
                   ) { partners =>
                     provideAsync(findQuestionsOfOperation(operationOfQuestion.operationId)) { questions =>
@@ -358,6 +379,58 @@ trait DefaultQuestionApiComponent
                 complete(popularTags)
               }
             }
+          }
+        }
+      }
+    }
+
+    override def getPartners: Route = get {
+      path("questions" / questionId / "partners") { questionId =>
+        makeOperation("GetQuestionPartners") { _ =>
+          parameters(('sortAlgorithm.as[String].?, 'partnerKind.as[PartnerKind].?, 'limit.as[Int].?, 'skip.as[Int].?)) {
+            (sortAlgorithm: Option[String], partnerKind: Option[PartnerKind], limit: Option[Int], skip: Option[Int]) =>
+              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                Validation.validate(Seq(sortAlgorithm.map { sortAlgo =>
+                  Validation.validChoices(
+                    fieldName = "sortAlgorithm",
+                    message =
+                      Some(s"Invalid algorithm. Expected one of: ${OrganisationAlgorithmSelector.sortAlgorithmsName}"),
+                    Seq(sortAlgo),
+                    OrganisationAlgorithmSelector.sortAlgorithmsName
+                  )
+                }).flatten: _*)
+
+                provideAsync(
+                  partnerService
+                    .find(
+                      start = 0,
+                      end = Some(1000),
+                      sort = None,
+                      order = None,
+                      questionId = Some(questionId),
+                      organisationId = None,
+                      partnerKind = partnerKind
+                    )
+                ) { partners =>
+                  val maybeOrganisationIds: Option[Seq[UserId]] = partners.flatMap(_.organisationId) match {
+                    case empty if empty.isEmpty => None
+                    case organisationIds        => Some(organisationIds)
+                  }
+                  val query = OrganisationSearchQuery(
+                    filters = maybeOrganisationIds.map(
+                      organisationIds =>
+                        OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(organisationIds)))
+                    ),
+                    sortAlgorithm = OrganisationAlgorithmSelector.select(sortAlgorithm),
+                    limit = limit,
+                    skip = skip
+                  )
+
+                  provideAsync(elasticsearchOrganisationAPI.searchOrganisations(query)) { organisationSearchResult =>
+                    complete(organisationSearchResult)
+                  }
+                }
+              }
           }
         }
       }

@@ -32,6 +32,7 @@ import org.make.api.feature.{
   FeatureServiceComponent
 }
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
+import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEngineComponent}
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
@@ -47,7 +48,8 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.make.core.user.UserId
+import org.make.core.user._
+import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -72,7 +74,8 @@ class QuestionApiTest
     with FeatureServiceComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
-    with TagServiceComponent {
+    with TagServiceComponent
+    with OrganisationSearchEngineComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -85,6 +88,7 @@ class QuestionApiTest
   override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val tagService: TagService = mock[TagService]
+  override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -231,7 +235,8 @@ class QuestionApiTest
         start = 0,
         end = None,
         sort = Some("weight"),
-        order = Some("DESC")
+        order = Some("DESC"),
+        partnerKind = None
       )
     ).thenReturn(Future.successful(Seq(partner, partner2)))
     when(activeFeatureService.find(maybeQuestionId = Some(baseQuestion.questionId)))
@@ -398,6 +403,129 @@ class QuestionApiTest
         res.size shouldBe 2
         res.head.tagId shouldBe TagId("tag3")
         res(1).tagId shouldBe TagId("tag1")
+      }
+    }
+  }
+
+  feature("get partners") {
+    scenario("fake question") {
+      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("fake")))).thenReturn(Future.successful(None))
+      Get("/questions/fake/partners") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    def newPartner(partnerId: String, organisationId: Option[String] = None) =
+      Partner(
+        PartnerId(partnerId),
+        partnerId,
+        None,
+        None,
+        organisationId.map(UserId.apply),
+        PartnerKind.Actor,
+        QuestionId("question-id"),
+        0F
+      )
+
+    scenario("invalid sortAlgorithm") {
+      Get("/questions/question-id/partners?sortAlgorithm=fake") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("partners without organisationId") {
+      when(
+        partnerService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(Some(1000)),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(QuestionId("question-id"))),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(newPartner("partner1-no-orga"), newPartner("partner2-no-orga"), newPartner("partner3-no-orga"))
+        )
+      )
+      when(
+        elasticsearchOrganisationAPI.searchOrganisations(
+          ArgumentMatchers.eq(OrganisationSearchQuery(filters = None, sortAlgorithm = None, limit = None, skip = None))
+        )
+      ).thenReturn(Future.successful(OrganisationSearchResult(0L, Seq.empty)))
+
+      Get("/questions/question-id/partners") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val res: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        res.total shouldBe 0
+      }
+    }
+
+    scenario("all partners with participation algorithm and partnerKind") {
+      def newIndexedOrganisation(organisationId: String) =
+        IndexedOrganisation(
+          UserId(organisationId),
+          Some(organisationId),
+          None,
+          None,
+          None,
+          publicProfile = true,
+          None,
+          None,
+          Language("fr"),
+          Country("FR")
+        )
+      when(
+        partnerService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(Some(1000)),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(QuestionId("question-id"))),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(PartnerKind.Actor))
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            newPartner("partner1", Some("organisation-1")),
+            newPartner("partner2"),
+            newPartner("partner3", Some("organisation-2"))
+          )
+        )
+      )
+      when(
+        elasticsearchOrganisationAPI.searchOrganisations(
+          ArgumentMatchers.eq(
+            OrganisationSearchQuery(
+              filters = Some(
+                OrganisationSearchFilters(
+                  organisationIds =
+                    Some(OrganisationIdsSearchFilter(Seq(UserId("organisation-1"), UserId("organisation-2"))))
+                )
+              ),
+              sortAlgorithm = Some(ParticipationAlgorithm),
+              limit = Some(42),
+              skip = Some(14)
+            )
+          )
+        )
+      ).thenReturn(
+        Future.successful(
+          OrganisationSearchResult(
+            2L,
+            Seq(newIndexedOrganisation("organisation-1"), newIndexedOrganisation("organisation-2"))
+          )
+        )
+      )
+
+      Get("/questions/question-id/partners?sortAlgorithm=participation&partnerKind=ACTOR&limit=42&skip=14") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val res: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        res.total shouldBe 2L
+        res.results.exists(_.organisationId.value == "organisation-1") shouldBe true
+        res.results.exists(_.organisationId.value == "organisation-2") shouldBe true
       }
     }
   }

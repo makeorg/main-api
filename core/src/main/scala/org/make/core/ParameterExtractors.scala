@@ -27,6 +27,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
+import org.make.core.partner.PartnerKind
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
@@ -166,4 +167,13 @@ trait ParameterExtractors {
         )
     }
 
+  implicit val partnerKindFromStringUnmarshaller: Unmarshaller[String, PartnerKind] =
+    Unmarshaller.strict[String, PartnerKind] { string ⇒
+      PartnerKind.kindMap.getOrElse(
+        string,
+        throw ValidationFailedError(
+          Seq(ValidationError("partnerKind", "invalid_value", Some(s"$string is not a valid partner kind")))
+        )
+      )
+    }
 }

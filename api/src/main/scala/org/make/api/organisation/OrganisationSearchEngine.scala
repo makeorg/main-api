@@ -94,8 +94,13 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         .size(OrganisationSearchFilters.getLimitSearch(query))
         .from(OrganisationSearchFilters.getSkipSearch(query))
 
+      val requestSorted = query.sortAlgorithm match {
+        case None                => request
+        case Some(sortAlgorithm) => sortAlgorithm.sortDefinition(request)
+      }
+
       client
-        .executeAsFuture(request)
+        .executeAsFuture(requestSorted)
         .map { response =>
           OrganisationSearchResult(total = response.totalHits, results = response.to[IndexedOrganisation])
         }
