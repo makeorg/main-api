@@ -245,14 +245,23 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
           requireAdminRole(auth.user) {
             makeOperation("SynchronizeList") { _ =>
               val startTime = System.currentTimeMillis()
-              crmService.synchronizeList(DateHelper.now().toString, list).onComplete {
-                case Success(_) =>
-                  logger
-                    .info(s"Synchronizing list ${list.name} succeeded in ${System.currentTimeMillis() - startTime}ms")
-                case Failure(e) =>
-                  logger
-                    .error(s"Synchronizing list ${list.name} failed in ${System.currentTimeMillis() - startTime}ms", e)
-              }
+              crmService
+                .synchronizeList(
+                  DateHelper.now().toString,
+                  list,
+                  list.targetDirectory(mailJetConfiguration.csvDirectory)
+                )
+                .onComplete {
+                  case Success(_) =>
+                    logger
+                      .info(s"Synchronizing list ${list.name} succeeded in ${System.currentTimeMillis() - startTime}ms")
+                  case Failure(e) =>
+                    logger
+                      .error(
+                        s"Synchronizing list ${list.name} failed in ${System.currentTimeMillis() - startTime}ms",
+                        e
+                      )
+                }
               complete(StatusCodes.Accepted)
             }
           }

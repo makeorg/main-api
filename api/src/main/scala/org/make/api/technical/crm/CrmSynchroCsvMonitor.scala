@@ -26,21 +26,22 @@ import org.make.api.technical.crm.BasicCrmResponse.ManageContactsWithCsvResponse
 import org.make.api.technical.crm.CrmSynchroCsvMonitor._
 
 import scala.collection.mutable
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class CrmSynchroCsvMonitor(crmClient: CrmClient, jobIds: Seq[Long], promise: Promise[Unit])(
-  implicit executionContext: ExecutionContext
-) extends Actor
+class CrmSynchroCsvMonitor(crmClient: CrmClient,
+                           jobIds: Seq[Long],
+                           promise: Promise[Unit],
+                           tickInterval: FiniteDuration)(implicit executionContext: ExecutionContext)
+    extends Actor
     with StrictLogging {
 
   private val queue: mutable.Queue[Long] = mutable.Queue[Long]()
   private val pendingCalls: mutable.Set[Long] = mutable.Set[Long]()
 
   override def preStart(): Unit = {
-    logger.info("CrmSynchroCsvMonitor preStart")
     queue.enqueue(jobIds: _*)
-    context.system.scheduler.schedule(1.second, 1.second, self, Tick)
+    context.system.scheduler.schedule(0.seconds, tickInterval, self, Tick)
   }
 
   override def receive: Receive = {
@@ -61,6 +62,7 @@ class CrmSynchroCsvMonitor(crmClient: CrmClient, jobIds: Seq[Long], promise: Pro
   }
 
   private def handleTick(): Unit = {
+
     if (queue.isEmpty) {
       if (pendingCalls.isEmpty) {
         promise.success {}
@@ -95,8 +97,8 @@ class CrmSynchroCsvMonitor(crmClient: CrmClient, jobIds: Seq[Long], promise: Pro
 
   private def handleSuccessfulResponse(jobId: Long, response: ManageContactsWithCsvResponse): Unit = {
     pendingCalls -= jobId
-    if (response.data.forall(response => response.status == "Completed")) {
-      logger.debug(s"Job $jobId completed successfully: $response")
+    if (response.data.forall(response => response.status == "Completed" || response.status == "Abort")) {
+      logger.info(s"Job $jobId completed successfully: $response")
       if (response.data.forall(response => response.errorCount > 0)) {
         logger.error(
           s"Job $jobId has errors: $response, " +
@@ -110,10 +112,10 @@ class CrmSynchroCsvMonitor(crmClient: CrmClient, jobIds: Seq[Long], promise: Pro
 }
 
 object CrmSynchroCsvMonitor {
-  def props(crmClient: CrmClient, jobIds: Seq[Long], promise: Promise[Unit])(
+  def props(crmClient: CrmClient, jobIds: Seq[Long], promise: Promise[Unit], tickInterval: FiniteDuration)(
     implicit executionContext: ExecutionContext
   ): Props =
-    Props(new CrmSynchroCsvMonitor(crmClient, jobIds, promise))
+    Props(new CrmSynchroCsvMonitor(crmClient, jobIds, promise, tickInterval))
 
   case object Tick
   case object QuotaAvailable

@@ -20,6 +20,7 @@
 package org.make.api.technical.crm
 
 import java.io.{BufferedReader, InputStreamReader}
+import java.nio.file.Path
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
@@ -67,7 +68,7 @@ import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io
 
 class CrmServiceComponentTest
@@ -111,10 +112,17 @@ class CrmServiceComponentTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
+  when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
+  when(mailJetConfiguration.tickInterval).thenReturn(5.milliseconds)
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
   val zonedDateTimeNow: ZonedDateTime = DateHelper.now()
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    Await.result(crmService.initializeDirectories(), 5.seconds)
+  }
 
   def persistentCrmUser(id: String): PersistentCrmUser = {
     PersistentCrmUser(
@@ -193,6 +201,8 @@ class CrmServiceComponentTest
   when(mailJetConfiguration.httpBufferSize).thenReturn(200)
   when(mailJetConfiguration.campaignApiKey).thenReturn("api-key")
   when(mailJetConfiguration.campaignSecretKey).thenReturn("secret-key")
+  when(mailJetConfiguration.csvSize).thenReturn(300)
+  when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
 
   when(persistentUserToAnonymizeService.removeAllByEmails(any[Seq[String]]))
     .thenAnswer(invocation => Future.successful(invocation.getArgument[Seq[String]](0).size))
@@ -1157,6 +1167,128 @@ class CrmServiceComponentTest
     }
   }
 
+  feature("synchronizing list") {
+
+    scenario("no user to synchronize") {
+      when(
+        persistentCrmUserService.list(unsubscribed = Some(false), hardBounced = false, page = 0, numberPerPage = 1000)
+      ).thenReturn(Future.successful(Seq.empty))
+
+      whenReady(
+        crmService.synchronizeList(
+          DateHelper.now().toString,
+          CrmList.OptIn,
+          CrmList.OptIn.targetDirectory(mailJetConfiguration.csvDirectory)
+        ),
+        Timeout(2.seconds)
+      ) { _ =>
+        // Synchro should somewhat end
+      }
+    }
+
+    scenario("multiple users") {
+      when(persistentCrmUserService.list(matches(Some(true)), matches(false), any[Int], any[Int]))
+        .thenReturn(
+          Future.successful(Seq(persistentCrmUser("1"), persistentCrmUser("2"))),
+          Future.successful(Seq(persistentCrmUser("3"), persistentCrmUser("4"))),
+          Future.successful(Seq(persistentCrmUser("5"), persistentCrmUser("6"))),
+          Future.successful(Seq.empty)
+        )
+
+      when(crmClient.sendCsv(any[String], any[Path])(any[ExecutionContext])).thenReturn(
+        Future.successful(SendCsvResponse(1L)),
+        Future.successful(SendCsvResponse(2L)),
+        Future.successful(SendCsvResponse(3L)),
+        Future.successful(SendCsvResponse(4L)),
+        Future.successful(SendCsvResponse(5L)),
+        Future.successful(SendCsvResponse(6L))
+      )
+
+      def csvImportResponse(jobId: Long,
+                            dataId: Long,
+                            errorCount: Int,
+                            status: String): BasicCrmResponse[CsvImportResponse] = {
+        BasicCrmResponse[CsvImportResponse](
+          count = 1,
+          total = 1,
+          data = Seq(CsvImportResponse(jobId = jobId, dataId = dataId, errorCount = errorCount, status = status))
+        )
+      }
+
+      when(crmClient.manageContactListWithCsv(any[CsvImport])(any[ExecutionContext])).thenAnswer { invocation =>
+        val request = invocation.getArgument[CsvImport](0)
+        Future.successful(csvImportResponse(request.csvId.toLong * 10, request.csvId.toLong, 0, "Pending"))
+      }
+
+      when(crmClient.monitorCsvImport(matches(10L))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
+          Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
+          Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
+          Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
+          Future.successful(csvImportResponse(10L, 1L, 0, "Completed"))
+        )
+
+      when(crmClient.monitorCsvImport(matches(20L))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
+          Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
+          Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
+          Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
+          Future.successful(csvImportResponse(20L, 2L, 0, "Completed"))
+        )
+
+      when(crmClient.monitorCsvImport(matches(30L))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
+          Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
+          Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
+          Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
+          Future.successful(csvImportResponse(30L, 3L, 0, "Completed"))
+        )
+
+      when(crmClient.monitorCsvImport(matches(40L))(any[ExecutionContext]))
+        .thenReturn(
+          Future.failed(new IllegalStateException("Don't worry, this exception is fake")),
+          Future.successful(csvImportResponse(40L, 4L, 0, "Pending")),
+          Future.successful(csvImportResponse(40L, 4L, 0, "Pending")),
+          Future.successful(csvImportResponse(40L, 4L, 0, "Pending")),
+          Future.successful(csvImportResponse(40L, 4L, 0, "Completed"))
+        )
+
+      when(crmClient.monitorCsvImport(matches(50L))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
+          Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
+          Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
+          Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
+          Future.successful(csvImportResponse(50L, 5L, 2, "Completed"))
+        )
+
+      when(crmClient.monitorCsvImport(matches(60L))(any[ExecutionContext]))
+        .thenReturn(
+          Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
+          Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
+          Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
+          Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
+          Future.successful(csvImportResponse(60L, 6L, 2, "Completed"))
+        )
+
+      whenReady(
+        crmService.synchronizeList(
+          DateHelper.now().toString,
+          CrmList.OptOut,
+          CrmList.OptOut.targetDirectory(mailJetConfiguration.csvDirectory)
+        ),
+        Timeout(60.seconds)
+      ) { _ =>
+        Mockito
+          .verify(crmClient, Mockito.times(30))
+          .monitorCsvImport(any[Long])(any[ExecutionContext])
+      }
+    }
+  }
+
   feature("create csv") {
     scenario("create csv from contact") {
       val contact = Contact(
@@ -1202,7 +1334,7 @@ class CrmServiceComponentTest
   }
 
   feature("create csv stream") {
-    scenario("create csv") {
+    scenario("create one csv") {
       when(
         persistentCrmUserService
           .list(
@@ -1230,7 +1362,11 @@ class CrmServiceComponentTest
 
       val formattedDate = DateHelper.now().format(dateFormatter)
 
-      whenReady(crmService.createCsv(formattedDate, CrmList.OptIn), Timeout(30.seconds)) { file =>
+      whenReady(
+        crmService.createCsv(formattedDate, CrmList.OptIn, CrmList.OptIn.targetDirectory("/tmp/make/crm")),
+        Timeout(30.seconds)
+      ) { fileList =>
+        val file = fileList.head
         val bufferedFile = io.Source.fromFile(file.toFile)
         val fileToSeq = bufferedFile.getLines.toSeq
         val lineCount = fileToSeq.size
@@ -1240,6 +1376,45 @@ class CrmServiceComponentTest
           s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
         )
         bufferedFile.close()
+      }
+    }
+
+    scenario("split into 2 csv") {
+
+      def crmUser(id: String) = {
+        fooCrmUser.copy(userId = s"user-id-$id", email = s"foo$id@example.com")
+      }
+
+      when(
+        persistentCrmUserService
+          .list(
+            unsubscribed = CrmList.OptIn.unsubscribed,
+            hardBounced = CrmList.OptIn.hardBounced,
+            0,
+            mailJetConfiguration.userListBatchSize
+          )
+      ).thenReturn(Future.successful(Seq(crmUser("1"), crmUser("2"), crmUser("3"), crmUser("4"), crmUser("5"))))
+
+      when(
+        persistentCrmUserService
+          .list(
+            unsubscribed = CrmList.OptIn.unsubscribed,
+            hardBounced = CrmList.OptIn.hardBounced,
+            5,
+            mailJetConfiguration.userListBatchSize
+          )
+      ).thenReturn(Future.successful(Seq.empty))
+
+      val dateFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
+
+      val formattedDate = DateHelper.now().format(dateFormatter)
+
+      whenReady(
+        crmService.createCsv(formattedDate, CrmList.OptIn, CrmList.OptIn.targetDirectory("/tmp/make/crm")),
+        Timeout(30.seconds)
+      ) { fileList =>
+        fileList.size > 1 should be(true)
       }
     }
   }
