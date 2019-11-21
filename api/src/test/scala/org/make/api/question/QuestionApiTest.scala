@@ -230,8 +230,8 @@ class QuestionApiTest
         organisationId = None,
         start = 0,
         end = None,
-        sort = None,
-        order = None
+        sort = Some("weight"),
+        order = Some("DESC")
       )
     ).thenReturn(Future.successful(Seq(partner, partner2)))
     when(activeFeatureService.find(maybeQuestionId = Some(baseQuestion.questionId)))
