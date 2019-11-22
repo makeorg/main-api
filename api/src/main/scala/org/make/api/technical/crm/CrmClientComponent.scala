@@ -110,8 +110,12 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       })(Keep.left)
       .run()
 
-    private lazy val authorization = Authorization(
+    private lazy val campaignApiAuthorization = Authorization(
       BasicHttpCredentials(mailJetConfiguration.campaignApiKey, mailJetConfiguration.campaignSecretKey)
+    )
+
+    private lazy val transactionalApiAuthorization = Authorization(
+      BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey)
     )
 
     override def manageContactList(
@@ -121,7 +125,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
         HttpRequest(
           method = HttpMethods.POST,
           uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts"),
-          headers = immutable.Seq(authorization),
+          headers = immutable.Seq(campaignApiAuthorization),
           entity = HttpEntity(ContentTypes.`application/json`, printer.print(manageContactList.asJson))
         )
       doHttpCall(request).flatMap {
@@ -143,8 +147,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request: HttpRequest = HttpRequest(
         method = HttpMethods.POST,
         uri = Uri(s"${mailJetConfiguration.url}/v3/DATA/contactslist/$listId/CSVData/application:octet-stream"),
-        headers = immutable
-          .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
+        headers = immutable.Seq(campaignApiAuthorization),
         entity = HttpEntity(contentType = ContentTypes.`application/octet-stream`, data = FileIO.fromPath(csv))
       )
       doHttpCall(request).flatMap {
@@ -168,8 +171,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
         HttpRequest(
           method = HttpMethods.POST,
           uri = Uri(s"${mailJetConfiguration.url}/v3/REST/csvimport"),
-          headers = immutable
-            .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
+          headers = immutable.Seq(campaignApiAuthorization),
           entity = HttpEntity(ContentTypes.`application/json`, printer.print(csvImport.asJson))
         )
       doHttpCall(request).flatMap {
@@ -193,8 +195,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
         HttpRequest(
           method = HttpMethods.GET,
           uri = Uri(s"${mailJetConfiguration.url}/v3/REST/csvimport/$jobId"),
-          headers = immutable
-            .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey)))
+          headers = immutable.Seq(campaignApiAuthorization)
         )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
@@ -229,8 +230,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request: HttpRequest = HttpRequest(
         method = HttpMethods.POST,
         uri = Uri(s"${mailJetConfiguration.url}/v3.1/send"),
-        headers = immutable
-          .Seq(Authorization(BasicHttpCredentials(mailJetConfiguration.apiKey, mailJetConfiguration.secretKey))),
+        headers = immutable.Seq(transactionalApiAuthorization),
         entity = HttpEntity(ContentTypes.`application/json`, printer.print(messagesWithErrorHandling.asJson))
       )
       doHttpCall(request).flatMap {
@@ -271,7 +271,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact?$paramsQuery"),
-        headers = immutable.Seq(authorization)
+        headers = immutable.Seq(campaignApiAuthorization)
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
@@ -294,7 +294,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contactdata?$paramsQuery"),
-        headers = immutable.Seq(authorization)
+        headers = immutable.Seq(campaignApiAuthorization)
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
@@ -316,7 +316,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/managemanycontacts/$jobId"),
-        headers = immutable.Seq(authorization)
+        headers = immutable.Seq(campaignApiAuthorization)
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, responseEntity, _) if code.isSuccess() =>
@@ -338,7 +338,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request = HttpRequest(
         method = HttpMethods.GET,
         uri = Uri(s"${mailJetConfiguration.url}/v3/REST/contact/$identifier"),
-        headers = immutable.Seq(authorization)
+        headers = immutable.Seq(campaignApiAuthorization)
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
@@ -358,7 +358,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val request = HttpRequest(
         method = HttpMethods.DELETE,
         uri = Uri(s"${mailJetConfiguration.url}/v4/contacts/$contactId"),
-        headers = immutable.Seq(authorization)
+        headers = immutable.Seq(campaignApiAuthorization)
       )
       doHttpCall(request).flatMap {
         case HttpResponse(code, _, entity, _) if code.isSuccess() =>
