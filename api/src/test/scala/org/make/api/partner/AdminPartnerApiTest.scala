@@ -256,9 +256,18 @@ class AdminPartnerApiTest
     scenario("get partners with admin rights") {
 
       when(
-        partnerService.find(questionId = None, organisationId = None, start = 0, end = None, sort = None, order = None)
+        partnerService.find(
+          questionId = None,
+          organisationId = None,
+          start = 0,
+          end = None,
+          sort = None,
+          order = None,
+          partnerKind = None
+        )
       ).thenReturn(Future.successful(Seq(partner)))
-      when(partnerService.count(questionId = None, organisationId = None)).thenReturn(Future.successful(1))
+      when(partnerService.count(questionId = None, organisationId = None, partnerKind = None))
+        .thenReturn(Future.successful(1))
 
       Get("/admin/partners")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {

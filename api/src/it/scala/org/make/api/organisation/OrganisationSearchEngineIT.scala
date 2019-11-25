@@ -36,7 +36,7 @@ import org.make.api.technical.elasticsearch.{
 import org.make.core.CirceFormatters
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.IndexedOrganisation
-import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery, UserId}
+import org.make.core.user._
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -112,8 +112,8 @@ class OrganisationSearchEngineIT
       avatarUrl = Some("http://image-corp-c.net"),
       description = Some("long text for corp C"),
       publicProfile = true,
-      proposalsCount = Some(1000),
-      votesCount = Some(50000),
+      proposalsCount = Some(4321),
+      votesCount = Some(420123),
       language = Language("fr"),
       country = Country("FR")
     ),
@@ -124,8 +124,8 @@ class OrganisationSearchEngineIT
       avatarUrl = Some("http://image-corp-french.net"),
       description = Some("long text for corp french"),
       publicProfile = true,
-      proposalsCount = Some(1000),
-      votesCount = Some(50000),
+      proposalsCount = Some(228),
+      votesCount = Some(1000),
       language = Language("fr"),
       country = Country("FR")
     )
@@ -225,6 +225,21 @@ class OrganisationSearchEngineIT
     scenario("fnid zero result") {
       whenReady(elasticsearchOrganisationAPI.findOrganisationBySlug("fake"), Timeout(5.seconds)) { result =>
         result.isDefined shouldBe false
+      }
+    }
+  }
+
+  feature("sort organisation with sortAlgorithm") {
+    scenario("participation algorithm") {
+      whenReady(
+        elasticsearchOrganisationAPI.searchOrganisations(
+          OrganisationSearchQuery(sortAlgorithm = Some(ParticipationAlgorithm))
+        ),
+        Timeout(5.seconds)
+      ) { result =>
+        result.total shouldBe organisations.size.toLong
+        result.results.head.organisationId shouldBe UserId("orga-c")
+        result.results(1).organisationId shouldBe UserId("orga-accent")
       }
     }
   }

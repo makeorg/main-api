@@ -29,15 +29,17 @@ import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
 /**
   * The class holding the entire search query
   *
-  * @param filters organisation of search filters
-  * @param limit   number of items to fetch
-  * @param skip    number of items to skip
+  * @param filters       organisation of search filters
+  * @param limit         number of items to fetch
+  * @param skip          number of items to skip
+  * @param sortAlgorithm algorithm used for sorting
   */
 case class OrganisationSearchQuery(filters: Option[OrganisationSearchFilters] = None,
                                    limit: Option[Int] = None,
                                    skip: Option[Int] = None,
                                    sort: Option[String] = None,
-                                   order: Option[String] = None)
+                                   order: Option[String] = None,
+                                   sortAlgorithm: Option[OrganisationSortAlgorithm] = None)
 
 /**
   * The class holding the filters

@@ -81,7 +81,15 @@ trait AdminPartnerApi extends Directives {
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[PartnerResponse]]))
   )
   @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"))
+    value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "organisationId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string"),
+    )
   )
   @Path(value = "/")
   def adminGetPartners: Route
@@ -175,7 +183,8 @@ trait DefaultAdminPartnerApiComponent
                 '_sort.?,
                 '_order.?,
                 'questionId.as[QuestionId].?,
-                'organisationId.as[UserId].?
+                'organisationId.as[UserId].?,
+                'partnerKind.as[PartnerKind].?
               )
             ) {
               (start: Option[Int],
@@ -183,16 +192,18 @@ trait DefaultAdminPartnerApiComponent
                sort: Option[String],
                order: Option[String],
                questionId: Option[QuestionId],
-               organisationId: Option[UserId]) =>
+               organisationId: Option[UserId],
+               partnerKind: Option[PartnerKind]) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
-                    provideAsync(partnerService.find(start.getOrElse(0), end, sort, order, questionId, organisationId)) {
-                      result =>
-                        provideAsync(partnerService.count(questionId, organisationId)) { count =>
-                          complete(
-                            (StatusCodes.OK, List(`X-Total-Count`(count.toString)), result.map(PartnerResponse.apply))
-                          )
-                        }
+                    provideAsync(
+                      partnerService.find(start.getOrElse(0), end, sort, order, questionId, organisationId, partnerKind)
+                    ) { result =>
+                      provideAsync(partnerService.count(questionId, organisationId, partnerKind)) { count =>
+                        complete(
+                          (StatusCodes.OK, List(`X-Total-Count`(count.toString)), result.map(PartnerResponse.apply))
+                        )
+                      }
                     }
                   }
                 }

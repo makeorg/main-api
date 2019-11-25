@@ -20,7 +20,7 @@
 package org.make.api.partner
 
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
-import org.make.core.partner.{Partner, PartnerId}
+import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 
@@ -38,8 +38,11 @@ trait PartnerService extends ShortenedNames {
            sort: Option[String],
            order: Option[String],
            questionId: Option[QuestionId],
-           organisationId: Option[UserId]): Future[Seq[Partner]]
-  def count(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Int]
+           organisationId: Option[UserId],
+           partnerKind: Option[PartnerKind]): Future[Seq[Partner]]
+  def count(questionId: Option[QuestionId],
+            organisationId: Option[UserId],
+            partnerKind: Option[PartnerKind]): Future[Int]
   def createPartner(request: CreatePartnerRequest): Future[Partner]
   def updatePartner(partnerId: PartnerId, request: UpdatePartnerRequest): Future[Option[Partner]]
   def deletePartner(partnerId: PartnerId): Future[Unit]
@@ -94,12 +97,15 @@ trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
                       sort: Option[String],
                       order: Option[String],
                       questionId: Option[QuestionId],
-                      organisationId: Option[UserId]): Future[Seq[Partner]] = {
-      persistentPartnerService.find(start, end, sort, order, questionId, organisationId)
+                      organisationId: Option[UserId],
+                      partnerKind: Option[PartnerKind]): Future[Seq[Partner]] = {
+      persistentPartnerService.find(start, end, sort, order, questionId, organisationId, partnerKind)
     }
 
-    override def count(questionId: Option[QuestionId], organisationId: Option[UserId]): Future[Int] = {
-      persistentPartnerService.count(questionId, organisationId)
+    override def count(questionId: Option[QuestionId],
+                       organisationId: Option[UserId],
+                       partnerKind: Option[PartnerKind]): Future[Int] = {
+      persistentPartnerService.count(questionId, organisationId, partnerKind)
     }
 
     override def deletePartner(partnerId: PartnerId): Future[Unit] = {

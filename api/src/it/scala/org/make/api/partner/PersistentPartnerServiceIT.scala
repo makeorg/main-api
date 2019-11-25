@@ -87,7 +87,8 @@ class PersistentPartnerServiceIT
           start = 0,
           end = None,
           sort = None,
-          order = None
+          order = None,
+          partnerKind = None
         )
       } yield partners
 
@@ -111,12 +112,39 @@ class PersistentPartnerServiceIT
           start = 0,
           end = None,
           sort = None,
-          order = None
+          order = None,
+          partnerKind = None
         )
       } yield partners
 
       whenReady(futurePartner, Timeout(2.seconds)) { partners =>
         partners.map(_.partnerId).contains(PartnerId("partner4")) should be(true)
+      }
+    }
+
+    scenario("search by partnerKind") {
+      val futurePartner = for {
+        _ <- persistentPartnerService.persist(
+          partner.copy(partnerId = PartnerId("partner6"), partnerKind = PartnerKind.Media)
+        )
+        _ <- persistentPartnerService.persist(
+          partner.copy(partnerId = PartnerId("partner7"), partnerKind = PartnerKind.Media)
+        )
+        partners <- persistentPartnerService.find(
+          questionId = None,
+          organisationId = None,
+          start = 0,
+          end = None,
+          sort = None,
+          order = None,
+          partnerKind = Some(PartnerKind.Media)
+        )
+      } yield partners
+
+      whenReady(futurePartner, Timeout(2.seconds)) { partners =>
+        partners.size shouldBe 2
+        partners.map(_.partnerId).contains(PartnerId("partner6")) should be(true)
+        partners.map(_.partnerId).contains(PartnerId("partner7")) should be(true)
       }
     }
   }
@@ -142,7 +170,29 @@ class PersistentPartnerServiceIT
         )
         count <- persistentPartnerService.count(
           questionId = Some(QuestionId("question-for-count-partner-scenario")),
-          organisationId = None
+          organisationId = None,
+          partnerKind = None
+        )
+      } yield count
+
+      whenReady(futurePartnerCount, Timeout(2.seconds)) { count =>
+        count should be(2)
+      }
+    }
+
+    scenario("count by partnerKind") {
+
+      val futurePartnerCount = for {
+        _ <- persistentPartnerService.persist(
+          partner.copy(partnerId = PartnerId("partner-count-3"), partnerKind = PartnerKind.Actor)
+        )
+        _ <- persistentPartnerService.persist(
+          partner.copy(partnerId = PartnerId("partner-count-4"), partnerKind = PartnerKind.Actor)
+        )
+        count <- persistentPartnerService.count(
+          questionId = None,
+          organisationId = None,
+          partnerKind = Some(PartnerKind.Actor)
         )
       } yield count
 
