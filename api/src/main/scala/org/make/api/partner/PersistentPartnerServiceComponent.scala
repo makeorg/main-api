@@ -60,8 +60,6 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
     private val column = PersistentPartner.column
 
-    private val defaultLimit = 10
-
     override def persist(partner: Partner): Future[Partner] = {
       implicit val context: EC = writeExecutionContext
       Future(NamedDB('WRITE).retryableTx { implicit session =>
@@ -141,7 +139,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
           }
           end match {
             case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered.limit(defaultLimit)
+            case None        => queryOrdered
           }
         }.map(PersistentPartner.apply()).list().apply()
       }).map(_.map(_.toPartner))
