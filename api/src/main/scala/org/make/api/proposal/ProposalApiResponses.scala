@@ -443,7 +443,6 @@ object VoteResponse {
 final case class QualificationResponse(@(ApiModelProperty @field)(dataType = "string", example = "likeIt")
                                        qualificationKey: QualificationKey,
                                        count: Int,
-                                       countVerified: Int,
                                        hasQualified: Boolean)
 
 object QualificationResponse {
@@ -454,14 +453,12 @@ object QualificationResponse {
     QualificationResponse(
       qualificationKey = qualification.key,
       count = qualification.count,
-      countVerified = qualification.countVerified,
       hasQualified = hasQualified
     )
   def parseQualification(qualification: IndexedQualification, hasQualified: Boolean): QualificationResponse =
     QualificationResponse(
       qualificationKey = qualification.key,
       count = qualification.count,
-      countVerified = qualification.countVerified,
       hasQualified = hasQualified
     )
 }
