@@ -167,7 +167,9 @@ case class Profile(
   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5")
   registerQuestionId: Option[QuestionId] = None,
-  @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean] = None
+  @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean] = None,
+  politicalParty: Option[String],
+  website: Option[String]
 ) extends MakeSerializable
 
 object Profile extends CirceFormatters {
@@ -176,16 +178,18 @@ object Profile extends CirceFormatters {
 
   def validateProfile(profile: Profile): Unit = {
     Validation.validateOptional(
-      profile.avatarUrl.map(value   => validateUserInput("avatarUrl", value, None)),
-      profile.description.map(value => validateUserInput("description", value, None)),
-      profile.facebookId.map(value  => validateUserInput("facebookId", value, None)),
-      profile.genderName.map(value  => validateUserInput("genderName", value, None)),
-      profile.googleId.map(value    => validateUserInput("googleId", value, None)),
-      profile.locale.map(value      => validateUserInput("locale", value, None)),
-      profile.phoneNumber.map(value => validateUserInput("phoneNumber", value, None)),
-      profile.postalCode.map(value  => validatePostalCode("postalCode", value, None)),
-      profile.profession.map(value  => validateUserInput("profession", value, None)),
-      profile.twitterId.map(value   => validateUserInput("twitterId", value, None))
+      profile.avatarUrl.map(value      => validateUserInput("avatarUrl", value, None)),
+      profile.description.map(value    => validateUserInput("description", value, None)),
+      profile.facebookId.map(value     => validateUserInput("facebookId", value, None)),
+      profile.genderName.map(value     => validateUserInput("genderName", value, None)),
+      profile.googleId.map(value       => validateUserInput("googleId", value, None)),
+      profile.locale.map(value         => validateUserInput("locale", value, None)),
+      profile.phoneNumber.map(value    => validateUserInput("phoneNumber", value, None)),
+      profile.postalCode.map(value     => validatePostalCode("postalCode", value, None)),
+      profile.profession.map(value     => validateUserInput("profession", value, None)),
+      profile.twitterId.map(value      => validateUserInput("twitterId", value, None)),
+      profile.politicalParty.map(value => validateUserInput("politicalParty", value, None)),
+      profile.website.map(value        => validateUserInput("website", value, None))
     )
   }
 
@@ -205,7 +209,9 @@ object Profile extends CirceFormatters {
     locale = None,
     socioProfessionalCategory = None,
     registerQuestionId = None,
-    optInPartner = None
+    optInPartner = None,
+    politicalParty = None,
+    website = None
   )
 
   def parseProfile(dateOfBirth: Option[LocalDate] = None,
@@ -224,7 +230,9 @@ object Profile extends CirceFormatters {
                    optInNewsletter: Boolean = true,
                    socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
                    registerQuestionId: Option[QuestionId] = None,
-                   optInPartner: Option[Boolean] = None): Option[Profile] = {
+                   optInPartner: Option[Boolean] = None,
+                   politicalParty: Option[String] = None,
+                   website: Option[String] = None): Option[Profile] = {
 
     val profile = Profile(
       dateOfBirth = dateOfBirth,
@@ -243,7 +251,9 @@ object Profile extends CirceFormatters {
       optInNewsletter = optInNewsletter,
       socioProfessionalCategory = socioProfessionalCategory,
       registerQuestionId = registerQuestionId,
-      optInPartner = optInPartner
+      optInPartner = optInPartner,
+      politicalParty = politicalParty,
+      website = website
     )
     Some(profile)
   }

@@ -123,7 +123,7 @@ class OrganisationServiceTest
     roles = Seq(RoleActor),
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(Profile(None, Some("avatarUrl"), None, None, None, None, None, None, None, None, None, None, None)),
+    profile = Profile.parseProfile(avatarUrl = Some("avatarUrl")),
     availableQuestions = Seq.empty,
     anonymousParticipation = false
   )
@@ -184,7 +184,9 @@ class OrganisationServiceTest
           avatar = None,
           description = None,
           country = Country("FR"),
-          language = Language("fr")
+          language = Language("fr"),
+          politicalParty = Some("PP"),
+          website = Some("http://example.com")
         ),
         RequestContext.empty
       )
@@ -223,7 +225,9 @@ class OrganisationServiceTest
           avatar = None,
           description = None,
           country = Country("FR"),
-          language = Language("fr")
+          language = Language("fr"),
+          politicalParty = None,
+          website = None
         ),
         RequestContext.empty
       )
@@ -259,7 +263,9 @@ class OrganisationServiceTest
           avatar = None,
           description = None,
           country = Country("FR"),
-          language = Language("fr")
+          language = Language("fr"),
+          politicalParty = None,
+          website = None
         ),
         RequestContext.empty
       )

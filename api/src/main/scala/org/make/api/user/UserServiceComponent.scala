@@ -114,7 +114,9 @@ case class UserRegisterData(email: String,
                             optIn: Option[Boolean] = None,
                             optInPartner: Option[Boolean] = None,
                             roles: Seq[Role] = Seq(Role.RoleCitizen),
-                            availableQuestions: Seq[QuestionId] = Seq.empty)
+                            availableQuestions: Seq[QuestionId] = Seq.empty,
+                            politicalParty: Option[String] = None,
+                            website: Option[String] = None)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -239,7 +241,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           socioProfessionalCategory = userRegisterData.socioProfessionalCategory,
           registerQuestionId = userRegisterData.questionId,
           optInNewsletter = userRegisterData.optIn.getOrElse(true),
-          optInPartner = userRegisterData.optInPartner
+          optInPartner = userRegisterData.optInPartner,
+          politicalParty = userRegisterData.politicalParty,
+          website = userRegisterData.website
         )
 
       val result = for {

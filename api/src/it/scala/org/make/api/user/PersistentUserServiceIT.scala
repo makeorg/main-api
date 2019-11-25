@@ -56,7 +56,9 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     locale = Some("FR_FR"),
     socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
     registerQuestionId = Some(QuestionId("the question")),
-    optInPartner = Some(true)
+    optInPartner = Some(true),
+    politicalParty = None,
+    website = None
   )
 
   val johnDoe = User(

@@ -22,6 +22,9 @@ package org.make.api.user
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
+import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiImplicitParam, _}
@@ -33,6 +36,7 @@ import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthen
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
@@ -368,6 +372,14 @@ trait DefaultAdminUserApiComponent
                             )
                           )
                         }
+                        val profile: Option[Profile] = user.profile
+                          .map(_.copy(website = request.website.map(_.value), politicalParty = request.politicalParty))
+                          .orElse(
+                            Profile.parseProfile(
+                              website = request.website.map(_.value),
+                              politicalParty = request.politicalParty
+                            )
+                          )
 
                         onSuccess(
                           userService.update(
@@ -380,7 +392,8 @@ trait DefaultAdminUserApiComponent
                               organisationName = request.organisationName,
                               isOrganisation = request.isOrganisation,
                               roles = request.roles.map(_.map(Role.matchRole)).getOrElse(user.roles),
-                              availableQuestions = request.availableQuestions
+                              availableQuestions = request.availableQuestions,
+                              profile = profile
                             ),
                             requestContext
                           )
@@ -723,7 +736,9 @@ case class AdminUserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "list[string]")
-  availableQuestions: Seq[QuestionId]
+  availableQuestions: Seq[QuestionId],
+  website: Option[String],
+  politicalParty: Option[String]
 ) {
   validate(validateUserInput("email", email, None))
 }
@@ -742,7 +757,9 @@ object AdminUserResponse extends CirceFormatters {
     roles = user.roles.map(role => CustomRole(role.shortName)),
     country = user.country,
     language = user.language,
-    availableQuestions = user.availableQuestions
+    availableQuestions = user.availableQuestions,
+    politicalParty = user.profile.flatMap(_.politicalParty),
+    website = user.profile.flatMap(_.website)
   )
 }
 
@@ -756,7 +773,9 @@ final case class AdminUpdateUserRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
-  availableQuestions: Seq[QuestionId]
+  availableQuestions: Seq[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url],
+  politicalParty: Option[String]
 ) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3

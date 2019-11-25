@@ -64,7 +64,9 @@ class OperationServiceIT
     postalCode = Some("75"),
     karmaLevel = Some(2),
     locale = Some("FR_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
+    politicalParty = None,
+    website = None
   )
   val userId: UserId = UserId(UUID.randomUUID().toString)
   private val languageFr: Language = Language("fr")

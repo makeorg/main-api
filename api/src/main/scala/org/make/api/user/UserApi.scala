@@ -27,6 +27,9 @@ import akka.stream.ActorMaterializer
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
+import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
@@ -655,7 +658,9 @@ trait DefaultUserApiComponent
                         socioProfessionalCategory = request.socioProfessionalCategory,
                         questionId = maybeQuestion.map(_.questionId),
                         optIn = request.optIn,
-                        optInPartner = request.optInPartner
+                        optInPartner = request.optInPartner,
+                        politicalParty = request.politicalParty,
+                        website = request.website.map(_.value)
                       ),
                       requestContext
                     )
@@ -885,23 +890,25 @@ trait DefaultUserApiComponent
                         case Some("") => None
                         case date     => date.map(date => LocalDate.parse(date))
                       },
-                      profession = UpdateUserRequest.updateValue(user.profile.flatMap(_.profession), request.profession),
-                      postalCode = UpdateUserRequest.updateValue(user.profile.flatMap(_.postalCode), request.postalCode),
-                      phoneNumber =
-                        UpdateUserRequest.updateValue(user.profile.flatMap(_.phoneNumber), request.phoneNumber),
-                      description =
-                        UpdateUserRequest.updateValue(user.profile.flatMap(_.description), request.description),
+                      profession = RequestHelper.updateValue(user.profile.flatMap(_.profession), request.profession),
+                      postalCode = RequestHelper.updateValue(user.profile.flatMap(_.postalCode), request.postalCode),
+                      phoneNumber = RequestHelper.updateValue(user.profile.flatMap(_.phoneNumber), request.phoneNumber),
+                      description = RequestHelper.updateValue(user.profile.flatMap(_.description), request.description),
                       optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
-                      gender = UpdateUserRequest
+                      gender = RequestHelper
                         .updateValue(user.profile.flatMap(_.gender.map(_.shortName)), request.gender)
                         .flatMap(Gender.matchGender),
                       genderName = request.genderName.orElse(user.profile.flatMap(_.genderName)),
-                      socioProfessionalCategory = UpdateUserRequest
+                      socioProfessionalCategory = RequestHelper
                         .updateValue(
                           user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
                           request.socioProfessionalCategory
                         )
-                        .flatMap(SocioProfessionalCategory.matchSocioProfessionalCategory)
+                        .flatMap(SocioProfessionalCategory.matchSocioProfessionalCategory),
+                      politicalParty = RequestHelper
+                        .updateValue(user.profile.flatMap(_.politicalParty), request.politicalParty),
+                      website = RequestHelper
+                        .updateValue(user.profile.flatMap(_.website), request.website.map(_.value))
                     )
 
                     onSuccess(
@@ -1125,7 +1132,9 @@ case class RegisterUserRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5") questionId: Option[
     QuestionId
   ],
-  @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean]
+  @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean],
+  politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url]
 ) {
 
   validate(
@@ -1169,7 +1178,9 @@ case class UpdateUserRequest(
   genderName: Option[String],
   @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
-  socioProfessionalCategory: Option[String]
+  socioProfessionalCategory: Option[String],
+  politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url]
 ) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
@@ -1221,14 +1232,6 @@ case class UpdateUserRequest(
 
 object UpdateUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]
-
-  def updateValue(oldValue: Option[String], newValue: Option[String]): Option[String] = {
-    newValue match {
-      case None     => oldValue
-      case Some("") => None
-      case value    => value
-    }
-  }
 }
 
 case class SocialLoginRequest(provider: String,
@@ -1339,7 +1342,8 @@ case class UserResponse(
   @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse")
   lastMailingError: Option[MailingErrorLogResponse],
   hasPassword: Boolean,
-  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty
+  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty,
+  website: Option[String]
 )
 
 object UserResponse extends CirceFormatters {
@@ -1365,7 +1369,8 @@ object UserResponse extends CirceFormatters {
     isHardBounce = user.isHardBounce,
     lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
     hasPassword = user.hashedPassword.isDefined,
-    followedUsers = followedUsers
+    followedUsers = followedUsers,
+    website = user.profile.flatMap(_.website)
   )
 }
 
