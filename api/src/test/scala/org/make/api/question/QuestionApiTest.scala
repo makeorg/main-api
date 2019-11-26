@@ -451,7 +451,14 @@ class QuestionApiTest
       )
       when(
         elasticsearchOrganisationAPI.searchOrganisations(
-          ArgumentMatchers.eq(OrganisationSearchQuery(filters = None, sortAlgorithm = None, limit = None, skip = None))
+          ArgumentMatchers.eq(
+            OrganisationSearchQuery(
+              filters = Some(OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(Seq.empty)))),
+              sortAlgorithm = None,
+              limit = None,
+              skip = None
+            )
+          )
         )
       ).thenReturn(Future.successful(OrganisationSearchResult(0L, Seq.empty)))
 

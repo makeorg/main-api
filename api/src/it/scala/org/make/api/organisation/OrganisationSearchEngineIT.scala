@@ -100,8 +100,8 @@ class OrganisationSearchEngineIT
       avatarUrl = Some("http://image-corp-b.net"),
       description = Some("long text for corp B"),
       publicProfile = true,
-      proposalsCount = Some(1),
-      votesCount = Some(3),
+      proposalsCount = None,
+      votesCount = None,
       language = Language("fr"),
       country = Country("FR")
     ),
@@ -237,9 +237,10 @@ class OrganisationSearchEngineIT
         ),
         Timeout(5.seconds)
       ) { result =>
-        result.total shouldBe organisations.size.toLong
+        result.total shouldBe organisations.size.toLong - 1
         result.results.head.organisationId shouldBe UserId("orga-c")
         result.results(1).organisationId shouldBe UserId("orga-accent")
+        result.results.exists(_.organisationId.value == "orga-b") shouldBe false
       }
     }
   }
