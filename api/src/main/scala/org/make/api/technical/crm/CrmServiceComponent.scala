@@ -718,7 +718,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          accountCreationSlug = accumulator.accountCreationSlug.orElse(maybeQuestion.map(_.slug)),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
