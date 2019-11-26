@@ -17,7 +17,7 @@
  *
  */
 
-package org.make.api.partner
+package org.make.api.personality
 
 import java.util.Date
 
@@ -27,7 +27,7 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.auth.UserRights
-import org.make.core.partner.{Partner, PartnerId, PartnerKind}
+import org.make.core.personality.{Candidate, Personality, PersonalityId}
 import org.make.core.question.QuestionId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
@@ -37,15 +37,15 @@ import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
-class AdminPartnerApiTest
+class AdminPersonalityApiTest
     extends MakeApiTestBase
-    with DefaultAdminPartnerApiComponent
-    with PartnerServiceComponent
+    with DefaultAdminPersonalityApiComponent
+    with PersonalityServiceComponent
     with MakeDataHandlerComponent {
 
-  override val partnerService: PartnerService = mock[PartnerService]
+  override val personalityService: PersonalityService = mock[PersonalityService]
 
-  val routes: Route = sealRoute(adminPartnerApi.routes)
+  val routes: Route = sealRoute(adminPersonalityApi.routes)
 
   val validAccessToken = "my-valid-access-token"
   val adminToken = "my-admin-access-token"
@@ -117,196 +117,180 @@ class AdminPartnerApiTest
         )
     )
 
-  val partner: Partner = Partner(
-    partnerId = PartnerId("partner-id"),
-    name = "partner name",
-    logo = Some("partner logo"),
-    link = None,
-    organisationId = None,
-    partnerKind = PartnerKind.Founder,
+  val personality: Personality = Personality(
+    personalityId = PersonalityId("personality-id"),
+    userId = UserId("user-id"),
     questionId = QuestionId("question-id"),
-    weight = 20F
+    personalityRole = Candidate
   )
 
-  feature("post partner") {
-    scenario("post partner unauthenticated") {
-      Post("/admin/partners").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
+  feature("post personality") {
+    scenario("post personality unauthenticated") {
+      Post("/admin/personalities").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("post partner without admin rights") {
-      Post("/admin/partners")
+    scenario("post personality without admin rights") {
+      Post("/admin/personalities")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("post partner with admin rights") {
+    scenario("post personality with admin rights") {
 
-      when(partnerService.createPartner(any[CreatePartnerRequest])).thenReturn(Future.successful(partner))
+      when(personalityService.createPersonality(any[CreatePersonalityRequest]))
+        .thenReturn(Future.successful(personality))
 
-      Post("/admin/partners")
+      Post("/admin/personalities")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-            | "name": "partner name",
-            | "logo": "partner logo",
-            | "partnerKind": "FOUNDER",
-            | "link": "http://link.com",
-            | "questionId": "question-id",
-            | "weight": "20.0"
-            |}""".stripMargin))
+                                                                  | "userId": "user-id",
+                                                                  | "questionId": "question-id",
+                                                                  | "personalityRole": "CANDIDATE"
+                                                                  |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.Created
       }
     }
 
     scenario("post scenario with wrong request") {
-      Post("/admin/partners")
+      Post("/admin/personalities")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-          | "name": "partner name",
-          | "partnerKind": "FOUNDER",
-          | "questionId": "question-id",
-          | "weight": "20.0"
-          |}""".stripMargin))
+                                                                  | "questionId": "question-id"
+                                                                  |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
   }
 
-  feature("put partner") {
-    scenario("put partner unauthenticated") {
-      Put("/admin/partners/partner-id")
+  feature("put personality") {
+    scenario("put personality unauthenticated") {
+      Put("/admin/personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("put partner without admin rights") {
-      Put("/admin/partners/partner-id")
+    scenario("put personality without admin rights") {
+      Put("/admin/personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("put partner with admin rights") {
+    scenario("put personality with admin rights") {
 
-      when(partnerService.updatePartner(matches(PartnerId("partner-id")), any[UpdatePartnerRequest]))
-        .thenReturn(Future.successful(Some(partner)))
+      when(
+        personalityService.updatePersonality(matches(PersonalityId("personality-id")), any[UpdatePersonalityRequest])
+      ).thenReturn(Future.successful(Some(personality)))
 
-      Put("/admin/partners/partner-id")
+      Put("/admin/personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-            | "name": "update name",
-            | "logo": "logo",
-            | "partnerKind": "FOUNDER",
-            | "link": "http://link.com",
-            | "weight": "20.0"
-            |}""".stripMargin))
+                                                                  | "userId": "user-id",
+                                                                  | "personalityRole": "CANDIDATE"
+                                                                  |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }
 
-    scenario("put partner with wrong request") {
-      Put("/admin/partners/partner-id")
+    scenario("put personality with wrong request") {
+      Put("/admin/personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-          | "name": "update name",
-          | "partnerKind": "FOUNDER",
-          | "weight": "20.0"
-          |}""".stripMargin))
+                                                                  | "personalityRole": "CANDIDATE"
+                                                                  |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
 
-    scenario("put non existent partner") {
-      when(partnerService.updatePartner(matches(PartnerId("not-found")), any[UpdatePartnerRequest]))
+    scenario("put non existent personality") {
+      when(personalityService.updatePersonality(matches(PersonalityId("not-found")), any[UpdatePersonalityRequest]))
         .thenReturn(Future.successful(None))
 
-      Put("/admin/partners/not-found")
+      Put("/admin/personalities/not-found")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-          | "name": "update name",
-          | "logo": "logo",
-          | "partnerKind": "FOUNDER",
-          | "link": "http://link.com",
-          | "weight": "20.0"
-          |}""".stripMargin))
+                                                                  | "userId": "user-id",
+                                                                  | "personalityRole": "CANDIDATE"
+                                                                  |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
   }
 
-  feature("get partners") {
-    scenario("get partners unauthenticated") {
-      Get("/admin/partners") ~> routes ~> check {
+  feature("get personalities") {
+    scenario("get personalities unauthenticated") {
+      Get("/admin/personalities") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get partners without admin rights") {
-      Get("/admin/partners")
+    scenario("get personalities without admin rights") {
+      Get("/admin/personalities")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get partners with admin rights") {
+    scenario("get personalities with admin rights") {
 
       when(
-        partnerService.find(
+        personalityService.find(
           questionId = None,
-          organisationId = None,
+          userId = None,
           start = 0,
           end = None,
           sort = None,
           order = None,
-          partnerKind = None
+          personalityRole = None
         )
-      ).thenReturn(Future.successful(Seq(partner)))
-      when(partnerService.count(questionId = None, organisationId = None, partnerKind = None))
+      ).thenReturn(Future.successful(Seq(personality)))
+      when(personalityService.count(userId = None, questionId = None, personalityRole = None))
         .thenReturn(Future.successful(1))
 
-      Get("/admin/partners")
+      Get("/admin/personalities")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }
   }
 
-  feature("get partner") {
-    scenario("get partner unauthenticated") {
-      Get("/admin/partners/partner-id") ~> routes ~> check {
+  feature("get personality") {
+    scenario("get personality unauthenticated") {
+      Get("/admin/personalities/personality-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get partners without admin rights") {
-      Get("/admin/partners/partner-id")
+    scenario("get personalities without admin rights") {
+      Get("/admin/personalities/personality-id")
         .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get partner with admin rights") {
+    scenario("get personality with admin rights") {
 
-      when(partnerService.getPartner(matches(PartnerId("partner-id"))))
-        .thenReturn(Future.successful(Some(partner)))
+      when(personalityService.getPersonality(matches(PersonalityId("personality-id"))))
+        .thenReturn(Future.successful(Some(personality)))
 
-      Get("/admin/partners/partner-id")
+      Get("/admin/personalities/personality-id")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }
 
-    scenario("get non existent partner") {
+    scenario("get non existent personality") {
 
-      when(partnerService.getPartner(matches(PartnerId("not-found"))))
+      when(personalityService.getPersonality(matches(PersonalityId("not-found"))))
         .thenReturn(Future.successful(None))
 
-      Get("/admin/partners/not-found")
+      Get("/admin/personalities/not-found")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }

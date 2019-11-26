@@ -113,7 +113,7 @@ trait AdminPartnerApi extends Directives {
 }
 
 trait AdminPartnerApiComponent {
-  def moderationPartnerApi: AdminPartnerApi
+  def adminPartnerApi: AdminPartnerApi
 }
 
 trait DefaultAdminPartnerApiComponent
@@ -126,7 +126,7 @@ trait DefaultAdminPartnerApiComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
-  override lazy val moderationPartnerApi: AdminPartnerApi = new DefaultAdminPartnerApi
+  override lazy val adminPartnerApi: AdminPartnerApi = new DefaultAdminPartnerApi
 
   class DefaultAdminPartnerApi extends AdminPartnerApi {
 
