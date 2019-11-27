@@ -19,6 +19,7 @@
 
 package org.make.core.user
 
+import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.sort.{ScriptSort, ScriptSortType, SortOrder}
@@ -43,6 +44,7 @@ case object ParticipationAlgorithm extends OrganisationSortAlgorithm {
           order = Some(SortOrder.DESC)
         )
       )
+      .postFilter(ElasticApi.scriptQuery(Script("doc['proposalsCount'].value + doc['votesCount'].value > 0")))
   }
 
   val shortName: String = "participation"

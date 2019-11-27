@@ -412,14 +412,11 @@ trait DefaultQuestionApiComponent
                       partnerKind = partnerKind
                     )
                 ) { partners =>
-                  val maybeOrganisationIds: Option[Seq[UserId]] = partners.flatMap(_.organisationId) match {
-                    case empty if empty.isEmpty => None
-                    case organisationIds        => Some(organisationIds)
-                  }
                   val query = OrganisationSearchQuery(
-                    filters = maybeOrganisationIds.map(
-                      organisationIds =>
-                        OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(organisationIds)))
+                    filters = Some(
+                      OrganisationSearchFilters(
+                        organisationIds = Some(OrganisationIdsSearchFilter(partners.flatMap(_.organisationId)))
+                      )
                     ),
                     sortAlgorithm = OrganisationAlgorithmSelector.select(sortAlgorithm),
                     limit = limit,
