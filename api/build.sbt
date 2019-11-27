@@ -72,7 +72,9 @@ libraryDependencies ++= Seq(
   Dependencies.jaxRsApi,
   Dependencies.apacheMath,
   Dependencies.staminaTestKit,
-  Dependencies.alpakka
+  Dependencies.alpakka,
+  Dependencies.refinedScala,
+  Dependencies.refinedCirce
 )
 
 libraryDependencies += {

@@ -120,7 +120,9 @@ class UserServiceTest
     postalCode = Some("93"),
     karmaLevel = Some(2),
     locale = Some("fr_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers)
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
+    website = Some("http://example.com"),
+    politicalParty = Some("PP")
   )
   val fooUser = User(
     userId = UserId("1"),
@@ -159,7 +161,9 @@ class UserServiceTest
     postalCode = None,
     karmaLevel = None,
     locale = None,
-    socioProfessionalCategory = None
+    socioProfessionalCategory = None,
+    website = None,
+    politicalParty = None
   )
 
   val johnDoeUser: User = User(
@@ -252,7 +256,9 @@ class UserServiceTest
         karmaLevel = None,
         locale = None,
         socioProfessionalCategory = None,
-        registerQuestionId = Some(QuestionId("question"))
+        registerQuestionId = Some(QuestionId("question")),
+        website = None,
+        politicalParty = None
       )
 
       val returnedUser = User(
@@ -336,7 +342,9 @@ class UserServiceTest
         genderName = Some("female"),
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        website = None,
+        politicalParty = None
       )
 
       val returnedUserWithGender = User(
@@ -414,7 +422,9 @@ class UserServiceTest
         genderName = None,
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        website = None,
+        politicalParty = None
       )
 
       val returnedUser = User(
@@ -485,7 +495,9 @@ class UserServiceTest
         genderName = None,
         postalCode = None,
         karmaLevel = None,
-        locale = None
+        locale = None,
+        website = None,
+        politicalParty = None
       )
 
       val returnedUser = User(

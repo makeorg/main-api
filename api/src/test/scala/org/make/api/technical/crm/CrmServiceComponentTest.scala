@@ -300,7 +300,9 @@ class CrmServiceComponentTest
     postalCode = Some("93"),
     karmaLevel = Some(2),
     locale = Some("fr_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers)
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
+    website = Some("http://example.com"),
+    politicalParty = Some("PP")
   )
 
   val fooUser = User(

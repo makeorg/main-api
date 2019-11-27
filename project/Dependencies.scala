@@ -35,7 +35,7 @@ object Dependencies {
   private val kamonAkkaRemoteVersion = "2.0.0-RC2"
   private val kamonSystemMetricsVersion = "2.0.0"
   private val kamonPrometheusVersion = "2.0.0"
-  private val circeVersion = "0.12.1"
+  private val circeVersion = "0.12.3"
   val kanelaVersion: String = "1.0.1"
   val swaggerUiVersion: String = "3.20.9"
 
@@ -143,4 +143,7 @@ object Dependencies {
 
   // apache math
   val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
+
+  val refinedScala: ModuleID = "eu.timepit" %% "refined"       % "0.9.10"
+  val refinedCirce: ModuleID = "io.circe"   %% "circe-refined" % circeVersion
 }

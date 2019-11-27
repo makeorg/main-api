@@ -269,7 +269,9 @@ class UserApiTest
           | "postalCode": "75011",
           | "profession": "football player",
           | "country": "FR",
-          | "language": "fr"
+          | "language": "fr",
+          | "politicalParty": "PP",
+          | "website":"http://example.com"
           |}
         """.stripMargin
 
@@ -290,7 +292,9 @@ class UserApiTest
               profession = Some("football player"),
               country = Country("FR"),
               language = Language("fr"),
-              questionId = None
+              questionId = None,
+              politicalParty = Some("PP"),
+              website = Some("http://example.com")
             )
           ),
           any[RequestContext]
@@ -449,6 +453,30 @@ class UserApiTest
         val errors = entityAs[Seq[ValidationError]]
         val genderError = errors.find(_.field == "gender")
         genderError should be(Some(ValidationError("gender", "malformed", Some("S is not a Gender"))))
+      }
+    }
+
+    scenario("validation failed for invalid website") {
+      val request =
+        """
+          |{
+          | "email": "foo",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "country": "FR",
+          | "language": "fr",
+          | "website": "fake website"
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val genderError = errors.find(_.field == "website")
+        genderError should be(
+          Some(ValidationError("website", "malformed", Some("Url predicate failed: no protocol: fake website")))
+        )
       }
     }
 

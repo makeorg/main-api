@@ -22,6 +22,9 @@ package org.make.api.organisation
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
+import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
@@ -148,7 +151,9 @@ trait DefaultModerationOrganisationApiComponent
                             avatar = request.avatarUrl,
                             description = request.description,
                             country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
-                            language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+                            language = request.language.orElse(requestContext.language).getOrElse(Language("fr")),
+                            politicalParty = request.politicalParty,
+                            website = request.website.map(_.value)
                           ),
                           requestContext
                         )
@@ -190,7 +195,9 @@ trait DefaultModerationOrganisationApiComponent
                                     .orElse(organisation.profile.flatMap(_.avatarUrl)),
                                   description = request.profile
                                     .flatMap(_.description)
-                                    .orElse(organisation.profile.flatMap(_.description))
+                                    .orElse(organisation.profile.flatMap(_.description)),
+                                  politicalParty = request.politicalParty,
+                                  website = request.website.map(_.value)
                                 )
                               )
                             ),
@@ -265,18 +272,23 @@ trait DefaultModerationOrganisationApiComponent
 }
 
 @ApiModel
-final case class ModerationCreateOrganisationRequest(organisationName: String,
-                                                     email: String,
-                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     password: Option[String],
-                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     description: Option[String],
-                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     avatarUrl: Option[String],
-                                                     @(ApiModelProperty @field)(dataType = "string", example = "FR")
-                                                     country: Option[Country],
-                                                     @(ApiModelProperty @field)(dataType = "string", example = "fr")
-                                                     language: Option[Language]) {
+final case class ModerationCreateOrganisationRequest(
+  organisationName: String,
+  email: String,
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  password: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Option[Language],
+  politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  website: Option[String Refined Url]
+) {
   OrganisationValidation.validateCreate(organisationName = organisationName, email = email, description = description)
 }
 
@@ -285,11 +297,16 @@ object ModerationCreateOrganisationRequest {
     deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
-final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     organisationName: Option[String] = None,
-                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     email: Option[String] = None,
-                                                     profile: Option[Profile]) {
+final case class ModerationUpdateOrganisationRequest(
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  organisationName: Option[String] = None,
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  email: Option[String] = None,
+  profile: Option[Profile],
+  politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  website: Option[String Refined Url]
+) {
   OrganisationValidation.validateUpdate(
     organisationName = organisationName,
     email = email,
@@ -346,7 +363,9 @@ case class OrganisationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language
+  language: Language,
+  politicalParty: Option[String],
+  website: Option[String]
 )
 
 object OrganisationResponse extends CirceFormatters {
@@ -360,6 +379,8 @@ object OrganisationResponse extends CirceFormatters {
     profile = user.profile,
     country = user.country,
     language = user.language,
+    politicalParty = user.profile.flatMap(_.politicalParty),
+    website = user.profile.flatMap(_.website)
   )
 }
 

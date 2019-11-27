@@ -91,7 +91,9 @@ object PersistentUserServiceComponent {
                             availableQuestions: Array[String],
                             reconnectToken: Option[String],
                             reconnectTokenCreatedAt: Option[ZonedDateTime],
-                            anonymousParticipation: Boolean) {
+                            anonymousParticipation: Boolean,
+                            politicalParty: Option[String],
+                            website: Option[String]) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -158,7 +160,9 @@ object PersistentUserServiceComponent {
         optInNewsletter = optInNewsletter,
         socioProfessionalCategory = toSocioProfessionalCategory(socioProfessionalCategory),
         registerQuestionId = registerQuestionId.map(QuestionId.apply),
-        optInPartner = optInPartner
+        optInPartner = optInPartner,
+        politicalParty = politicalParty,
+        website = website
       )
     }
   }
@@ -182,7 +186,9 @@ object PersistentUserServiceComponent {
       "opt_in_newsletter",
       "socio_professional_category",
       "register_question_id",
-      "opt_in_partner"
+      "opt_in_partner",
+      "political_party",
+      "website"
     )
 
     private val userColumnNames: Seq[String] = Seq(
@@ -273,7 +279,9 @@ object PersistentUserServiceComponent {
           .getOrElse(Array()),
         reconnectToken = resultSet.stringOpt(userResultName.reconnectToken),
         reconnectTokenCreatedAt = resultSet.zonedDateTimeOpt(userResultName.reconnectTokenCreatedAt),
-        anonymousParticipation = resultSet.boolean(userResultName.anonymousParticipation)
+        anonymousParticipation = resultSet.boolean(userResultName.anonymousParticipation),
+        politicalParty = resultSet.stringOpt(userResultName.politicalParty),
+        website = resultSet.stringOpt(userResultName.website)
       )
     }
   }
@@ -728,6 +736,8 @@ trait DefaultPersistentUserServiceComponent
               column.availableQuestions -> session.connection
                 .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray),
               column.anonymousParticipation -> user.anonymousParticipation,
+              column.politicalParty -> user.profile.flatMap(_.politicalParty),
+              column.website -> user.profile.flatMap(_.website)
             )
         }.execute().apply()
       }).map(_ => user)
@@ -808,7 +818,9 @@ trait DefaultPersistentUserServiceComponent
               column.optInPartner -> user.profile.flatMap(_.optInPartner),
               column.availableQuestions -> session.connection
                 .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray),
-              column.anonymousParticipation -> user.anonymousParticipation
+              column.anonymousParticipation -> user.anonymousParticipation,
+              column.politicalParty -> user.profile.flatMap(_.politicalParty),
+              column.website -> user.profile.flatMap(_.website)
             )
             .where(
               sqls

@@ -2263,22 +2263,10 @@ class ProposalServiceTest
           lastName = Some("regular-participation-last-name"),
           organisationName = Some("regular-participation-organisation-name"),
           anonymousParticipation = false,
-          profile = Some(
-            Profile(
-              Some(LocalDate.parse("1998-01-01")),
-              Some("https://some-url"),
-              None,
-              None,
-              None,
-              None,
-              None,
-              None,
-              None,
-              None,
-              Some("12345"),
-              None,
-              None
-            )
+          profile = Profile.parseProfile(
+            dateOfBirth = Some(LocalDate.parse("1998-01-01")),
+            avatarUrl = Some("https://some-url"),
+            postalCode = Some("12345")
           )
         )
       }
@@ -2311,22 +2299,10 @@ class ProposalServiceTest
           lastName = Some("anonymous-participation-last-name"),
           organisationName = Some("anonymous-participation-organisation-name"),
           anonymousParticipation = true,
-          profile = Some(
-            Profile(
-              Some(LocalDate.parse("1998-01-01")),
-              Some("https://some-url"),
-              None,
-              None,
-              None,
-              None,
-              None,
-              None,
-              None,
-              None,
-              Some("12345"),
-              None,
-              None
-            )
+          profile = Profile.parseProfile(
+            dateOfBirth = Some(LocalDate.parse("1998-01-01")),
+            avatarUrl = Some("https://some-url"),
+            postalCode = Some("12345")
           )
         )
       }

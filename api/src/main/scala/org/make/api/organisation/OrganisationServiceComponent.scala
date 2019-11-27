@@ -78,12 +78,16 @@ case class OrganisationRegisterData(name: String,
                                     avatar: Option[String],
                                     description: Option[String],
                                     country: Country,
-                                    language: Language)
+                                    language: Language,
+                                    politicalParty: Option[String],
+                                    website: Option[String])
 
 case class OrganisationUpdateData(name: Option[String],
                                   email: Option[String],
                                   avatar: Option[String],
-                                  description: Option[String])
+                                  description: Option[String],
+                                  politicalParty: Option[String],
+                                  website: Option[String])
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
   this: IdGeneratorComponent
@@ -169,24 +173,11 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         roles = Seq(Role.RoleActor),
         country = country,
         language = language,
-        profile = Some(
-          Profile(
-            dateOfBirth = None,
-            avatarUrl = organisationRegisterData.avatar,
-            profession = None,
-            phoneNumber = None,
-            description = organisationRegisterData.description,
-            twitterId = None,
-            facebookId = None,
-            googleId = None,
-            gender = None,
-            genderName = None,
-            postalCode = None,
-            karmaLevel = None,
-            locale = None,
-            optInNewsletter = false,
-            socioProfessionalCategory = None
-          )
+        profile = Profile.parseProfile(
+          avatarUrl = organisationRegisterData.avatar,
+          description = organisationRegisterData.description,
+          optInNewsletter = false,
+          website = organisationRegisterData.website
         ),
         publicProfile = true,
         availableQuestions = Seq.empty,

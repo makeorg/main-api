@@ -65,7 +65,9 @@ class PersistentOperationServiceIT
     postalCode = Some("93"),
     karmaLevel = Some(2),
     locale = Some("FR_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
+    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
+    politicalParty = None,
+    website = None
   )
   val userId: UserId = idGenerator.nextUserId()
   val johnDoe = User(
