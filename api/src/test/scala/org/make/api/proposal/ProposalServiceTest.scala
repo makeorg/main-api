@@ -38,12 +38,22 @@ import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, Req
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions.{Segment, Sequence, Troll, Trusted, VoteAndQualifications}
+import org.make.core.history.HistoryActions._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.Pending
-import org.make.core.proposal.QualificationKey.LikeIt
+import org.make.core.proposal.QualificationKey.{
+  DoNotCare,
+  DoNotUnderstand,
+  Doable,
+  Impossible,
+  LikeIt,
+  NoOpinion,
+  NoWay,
+  PlatitudeAgree,
+  PlatitudeDisagree
+}
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -2325,6 +2335,159 @@ class ProposalServiceTest
         proposal.author.organisationName should be(None)
         proposal.author.organisationSlug should be(None)
       }
+    }
+  }
+
+  feature("need reset votes") {
+    val adminId = UserId("admin")
+    val requestContext = RequestContext.empty
+
+    scenario("trolled proposal on votes") {
+      val votes: Seq[Vote] = Seq(
+        Vote(
+          key = Agree,
+          count = 1234,
+          countVerified = 42,
+          countSegment = 1,
+          countSequence = 22,
+          qualifications = Seq(
+            Qualification(key = LikeIt, count = 10, countVerified = 10, countSequence = 1, countSegment = 1),
+            Qualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+            Qualification(key = PlatitudeAgree, count = 4, countVerified = 4, countSequence = 0, countSegment = 2)
+          )
+        ),
+        Vote(
+          key = Disagree,
+          count = 12,
+          countVerified = 12,
+          countSegment = 2,
+          countSequence = 8,
+          qualifications = Seq(
+            Qualification(key = NoWay, count = 1, countVerified = 1, countSequence = 1, countSegment = 0),
+            Qualification(key = Impossible, count = 3, countVerified = 3, countSequence = 1, countSegment = 2),
+            Qualification(key = PlatitudeDisagree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+          )
+        ),
+        Vote(
+          key = Neutral,
+          count = 3,
+          countVerified = 3,
+          countSegment = 0,
+          countSequence = 3,
+          qualifications = Seq(
+            Qualification(key = DoNotUnderstand, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+            Qualification(key = NoOpinion, count = 1, countVerified = 1, countSequence = 0, countSegment = 1),
+            Qualification(key = DoNotCare, count = 1, countVerified = 1, countSequence = 1, countSegment = 0)
+          )
+        ),
+      )
+      val proposal =
+        TestUtils.proposal(id = ProposalId("trolled-votes"), status = ProposalStatus.Accepted, votes = votes)
+      proposalService.needVoteReset(proposal) shouldBe true
+
+      val updates = proposalService.updateCommand(adminId, requestContext, proposal.proposalId, proposal.votes)
+      updates.votes.size shouldBe 1
+      updates.votes.exists(_.key == Agree) shouldBe true
+      updates.votes.head.count shouldBe Some(42)
+      updates.votes.flatMap(_.qualifications).isEmpty shouldBe true
+    }
+
+    scenario("trolled proposal on qualifications") {
+      val votes: Seq[Vote] = Seq(
+        Vote(
+          key = Agree,
+          count = 42,
+          countVerified = 42,
+          countSegment = 1,
+          countSequence = 22,
+          qualifications = Seq(
+            Qualification(key = LikeIt, count = 10, countVerified = 10, countSequence = 1, countSegment = 1),
+            Qualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+            Qualification(key = PlatitudeAgree, count = 4, countVerified = 4, countSequence = 0, countSegment = 2)
+          )
+        ),
+        Vote(
+          key = Disagree,
+          count = 12,
+          countVerified = 12,
+          countSegment = 2,
+          countSequence = 8,
+          qualifications = Seq(
+            Qualification(key = NoWay, count = 1000, countVerified = 1, countSequence = 1, countSegment = 0),
+            Qualification(key = Impossible, count = 3, countVerified = 3, countSequence = 1, countSegment = 2),
+            Qualification(key = PlatitudeDisagree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+          )
+        ),
+        Vote(
+          key = Neutral,
+          count = 3,
+          countVerified = 3,
+          countSegment = 0,
+          countSequence = 3,
+          qualifications = Seq(
+            Qualification(key = DoNotUnderstand, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+            Qualification(key = NoOpinion, count = 1, countVerified = 1, countSequence = 0, countSegment = 1),
+            Qualification(key = DoNotCare, count = 1, countVerified = 1, countSequence = 1, countSegment = 0)
+          )
+        ),
+      )
+      val proposal =
+        TestUtils.proposal(id = ProposalId("trolled-qualification"), status = ProposalStatus.Accepted, votes = votes)
+      proposalService.needVoteReset(proposal) shouldBe true
+
+      val updates = proposalService.updateCommand(adminId, requestContext, proposal.proposalId, proposal.votes)
+      updates.votes.size shouldBe 1
+      updates.votes.exists(_.key == Disagree) shouldBe true
+      updates.votes.head.qualifications.exists(_.key == NoWay) shouldBe true
+      updates.votes.head.qualifications.head.count shouldBe Some(1)
+    }
+
+    scenario("not trolled proposal") {
+      val votes: Seq[Vote] = Seq(
+        Vote(
+          key = Agree,
+          count = 42,
+          countVerified = 42,
+          countSegment = 1,
+          countSequence = 22,
+          qualifications = Seq(
+            Qualification(key = LikeIt, count = 10, countVerified = 10, countSequence = 1, countSegment = 1),
+            Qualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+            Qualification(key = PlatitudeAgree, count = 4, countVerified = 4, countSequence = 0, countSegment = 2)
+          )
+        ),
+        Vote(
+          key = Disagree,
+          count = 12,
+          countVerified = 12,
+          countSegment = 2,
+          countSequence = 8,
+          qualifications = Seq(
+            Qualification(key = NoWay, count = 1, countVerified = 1, countSequence = 1, countSegment = 0),
+            Qualification(key = Impossible, count = 3, countVerified = 3, countSequence = 1, countSegment = 2),
+            Qualification(key = PlatitudeDisagree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+          )
+        ),
+        Vote(
+          key = Neutral,
+          count = 3,
+          countVerified = 3,
+          countSegment = 0,
+          countSequence = 3,
+          qualifications = Seq(
+            Qualification(key = DoNotUnderstand, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+            Qualification(key = NoOpinion, count = 1, countVerified = 1, countSequence = 0, countSegment = 1),
+            Qualification(key = DoNotCare, count = 1, countVerified = 1, countSequence = 1, countSegment = 0)
+          )
+        ),
+      )
+      val proposal = TestUtils.proposal(id = ProposalId("correct"), status = ProposalStatus.Accepted, votes = votes)
+      proposalService.needVoteReset(proposal) shouldBe false
+    }
+
+    scenario("not accepted proposal") {
+      val proposal = TestUtils.proposal(id = ProposalId("not-accepted"), status = ProposalStatus.Pending)
+      proposalService.needVoteReset(proposal) shouldBe false
     }
   }
 

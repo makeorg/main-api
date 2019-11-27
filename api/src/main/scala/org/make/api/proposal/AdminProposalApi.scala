@@ -19,6 +19,7 @@
 
 package org.make.api.proposal
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -67,6 +68,21 @@ trait AdminProposalApi extends Directives {
   def updateProposalVotes: Route
 
   @ApiOperation(
+    value = "reset-unverified-proposal-votes",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
+  @Path(value = "/reset-votes")
+  def resetVotes: Route
+
+  @ApiOperation(
     value = "patch-proposal",
     httpMethod = "PATCH",
     code = HttpCodes.OK,
@@ -89,7 +105,7 @@ trait AdminProposalApi extends Directives {
   @Path(value = "/{proposalId}")
   def patchProposal: Route
 
-  def routes: Route = patchProposal ~ updateProposalVotes
+  def routes: Route = patchProposal ~ updateProposalVotes ~ resetVotes
 }
 
 trait AdminProposalApiComponent {
@@ -173,5 +189,22 @@ trait DefaultAdminProposalApiComponent
           Future.successful(None)
       }
     }
+
+    override def resetVotes: Route = post {
+      path("admin" / "proposals" / "reset-votes") {
+        withoutRequestTimeout {
+          makeOperation("ResetVotes") { requestContext =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                provideAsync(proposalService.resetVotes(userAuth.user.userId, requestContext)) { _ =>
+                  complete(StatusCodes.Accepted)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }

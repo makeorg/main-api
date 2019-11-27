@@ -21,11 +21,9 @@ package org.make.api.technical
 
 import java.time.ZonedDateTime
 
-import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -34,19 +32,11 @@ import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.operation.OperationOfQuestionServiceComponent
-import org.make.api.proposal.{
-  ProposalCoordinatorServiceComponent,
-  UpdateProposalVotesCommand,
-  UpdateQualificationRequest,
-  UpdateVoteRequest
-}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.operation.OperationOfQuestion
-import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.{ProposalId, Vote}
 import org.make.core.tag.{Tag => _}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Validation}
 
@@ -60,21 +50,6 @@ import scala.util.{Failure, Success}
 trait MigrationApi extends Directives {
 
   def emptyRoute: Route
-
-  @ApiOperation(
-    value = "reset-qualification-count",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
-  @Path(value = "/reset-qualification-count")
-  def resetQualificationCount: Route
 
   @ApiOperation(
     value = "delete-mailjet-anoned-contacts",
@@ -130,8 +105,7 @@ trait MigrationApi extends Directives {
   @Path(value = "/count-damage-user-account")
   def countDamageUserAccount: Route
 
-  def routes: Route =
-    resetQualificationCount ~ deleteMailjetAnonedContacts ~ setProperSignUpOperation ~ countDamageUserAccount
+  def routes: Route = deleteMailjetAnonedContacts ~ setProperSignUpOperation ~ countDamageUserAccount
 }
 
 trait MigrationApiComponent {
@@ -142,9 +116,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
   this: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with ProposalCoordinatorServiceComponent
     with ActorSystemComponent
-    with ReadJournalComponent
     with SessionHistoryCoordinatorServiceComponent
     with CrmServiceComponent
     with MailJetConfigurationComponent
@@ -162,63 +134,6 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
           complete(StatusCodes.OK)
         }
       }
-
-    override def resetQualificationCount: Route = post {
-      path("migrations" / "reset-qualification-count") {
-        withoutRequestTimeout {
-          makeOperation("ResetQualificationCount") { requestContext =>
-            makeOAuth2 { userAuth =>
-              requireAdminRole(userAuth.user) {
-                implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-                val futureToComplete: Future[Done] = proposalJournal
-                  .currentPersistenceIds()
-                  .mapAsync(4) { id =>
-                    val proposalId = ProposalId(id)
-                    proposalCoordinatorService.getProposal(proposalId)
-                  }
-                  .filter(_.exists(_.status == Accepted))
-                  .mapAsync(4) { maybeProposal =>
-                    val proposal = maybeProposal.get
-                    def updateCommand(votes: Seq[Vote]): UpdateProposalVotesCommand = {
-                      val votesResetQualifVerified = votes.map { vote =>
-                        UpdateVoteRequest(
-                          count = None,
-                          key = vote.key,
-                          countVerified = Some(vote.count),
-                          countSequence = Some(vote.count),
-                          countSegment = Some(vote.count),
-                          qualifications = vote.qualifications.map(
-                            q =>
-                              UpdateQualificationRequest(
-                                count = None,
-                                key = q.key,
-                                countVerified = Some(q.count),
-                                countSequence = Some(q.count),
-                                countSegment = Some(q.count)
-                            )
-                          )
-                        )
-                      }
-                      UpdateProposalVotesCommand(
-                        moderator = userAuth.user.userId,
-                        proposalId = proposal.proposalId,
-                        requestContext = requestContext,
-                        updatedAt = DateHelper.now(),
-                        votes = votesResetQualifVerified
-                      )
-                    }
-                    proposalCoordinatorService.updateVotes(updateCommand(proposal.votes))
-                  }
-                  .runWith(Sink.ignore)
-                provideAsync(futureToComplete) { _ =>
-                  complete(StatusCodes.NoContent)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
 
     override def deleteMailjetAnonedContacts: Route = post {
       path("migrations" / "delete-mailjet-anoned-contacts") {
