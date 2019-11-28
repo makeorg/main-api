@@ -21,6 +21,8 @@ package org.make.api.technical.storage
 import java.io.{ByteArrayOutputStream, File, FileInputStream, InputStream}
 import java.net.URL
 
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.api.ActorSystemComponent
 import org.make.swift.model.Bucket
 
@@ -31,6 +33,13 @@ trait StorageService {
 
   def uploadFile(fileType: FileType, name: String, contentType: String, content: Content): Future[String]
 
+}
+
+case class UploadResponse(path: String)
+
+object UploadResponse {
+  implicit val encoder: Encoder[UploadResponse] = deriveEncoder[UploadResponse]
+  implicit val decoder: Decoder[UploadResponse] = deriveDecoder[UploadResponse]
 }
 
 sealed trait FileType {
@@ -120,7 +129,7 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
 
 }
 
-case class StorageConfiguration(bucketName: String, baseUrl: String)
+case class StorageConfiguration(bucketName: String, baseUrl: String, maxFileSize: Long)
 
 trait StorageConfigurationComponent {
   def storageConfiguration: StorageConfiguration
@@ -133,7 +142,8 @@ trait DefaultStorageConfigurationComponent extends StorageConfigurationComponent
     val configuration = actorSystem.settings.config.getConfig("make-api.storage")
     StorageConfiguration(
       bucketName = configuration.getString("bucket-name"),
-      baseUrl = configuration.getString("base-url")
+      baseUrl = configuration.getString("base-url"),
+      maxFileSize = configuration.getLong("max-upload-file-size")
     )
   }
 }

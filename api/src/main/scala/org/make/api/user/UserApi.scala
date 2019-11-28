@@ -39,9 +39,16 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse, ProposalsResultSeededResponse}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical._
+import org.make.api.technical.storage.{
+  Content,
+  FileType,
+  StorageConfigurationComponent,
+  StorageServiceComponent,
+  UploadResponse
+}
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
@@ -445,6 +452,28 @@ trait UserApi extends Directives {
   @Path(value = "/validation-email")
   def resendValidationEmail: Route
 
+  @ApiOperation(
+    value = "upload-avatar",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "multipart/form-data",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "data", paramType = "formData", dataType = "file")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UploadResponse])))
+  @Path(value = "/{userId}/upload-avatar")
+  def uploadAvatar: Route
+
   def routes: Route =
     getMe ~
       getUser ~
@@ -464,7 +493,8 @@ trait UserApi extends Directives {
       followUser ~
       unfollowUser ~
       reconnectInfo ~
-      resendValidationEmail
+      resendValidationEmail ~
+      uploadAvatar
 
   val userId: PathMatcher1[UserId] =
     Segment.map(id => UserId(id))
@@ -492,7 +522,9 @@ trait DefaultUserApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with UserHistoryCoordinatorServiceComponent
     with ReadJournalComponent
-    with ActorSystemComponent =>
+    with ActorSystemComponent
+    with StorageServiceComponent
+    with StorageConfigurationComponent =>
 
   override lazy val userApi: UserApi = new DefaultUserApi
 
@@ -861,7 +893,6 @@ trait DefaultUserApiComponent
                     complete(proposalsSearchResult)
                   }
                 }
-
             }
           }
         }
@@ -1104,6 +1135,43 @@ trait DefaultUserApiComponent
                     )
                   }
                   complete(StatusCodes.NoContent)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def uploadAvatar: Route = {
+      post {
+        path("user" / userId / "upload-avatar") { userId =>
+          makeOperation("UserUploadAvatar") { requestContext =>
+            makeOAuth2 { user =>
+              authorize(user.user.userId == userId || user.user.roles.contains(RoleAdmin)) {
+                val date = DateHelper.now()
+                def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] = {
+                  storageService
+                    .uploadFile(
+                      FileType.Avatar,
+                      s"${date.getYear}/${date.getMonthValue}/${userId.value}/${idGenerator.nextId()}$extension",
+                      contentType,
+                      fileContent
+                    )
+                }
+                uploadImageAsync("data", uploadFile, sizeLimit = Some(storageConfiguration.maxFileSize)) {
+                  (path, file) =>
+                    file.delete()
+                    provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                      val modifiedProfile = user.profile match {
+                        case Some(profile) => profile.copy(avatarUrl = Some(path))
+                        case None          => Profile.default.copy(avatarUrl = Some(path))
+                      }
+
+                      onSuccess(userService.update(user.copy(profile = Some(modifiedProfile)), requestContext)) { _ =>
+                        complete(UploadResponse(path))
+                      }
+                    }
                 }
               }
             }

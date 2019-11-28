@@ -214,7 +214,6 @@ trait MakeApi
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultSocialServiceComponent
     with DefaultStorageConfigurationComponent
-    with DefaultStorageApiComponent
     with DefaultStorageServiceComponent
     with DefaultSwiftClientComponent
     with DefaultTagApiComponent
@@ -340,7 +339,6 @@ trait MakeApi
       classOf[QuestionApi],
       classOf[SecurityApi],
       classOf[SequenceApi],
-      classOf[StorageApi],
       classOf[TagApi],
       classOf[TrackingApi],
       classOf[UserApi],
@@ -402,7 +400,6 @@ trait MakeApi
       questionApi.routes ~
       securityApi.routes ~
       sequenceApi.routes ~
-      storageApi.routes ~
       tagApi.routes ~
       trackingApi.routes ~
       userApi.routes ~
