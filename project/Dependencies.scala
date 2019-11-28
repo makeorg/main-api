@@ -119,8 +119,7 @@ object Dependencies {
   val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
-  // TODO: Wait for release
-  val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.4"
+  val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.5"
   val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.5"
 
   // Test related dependencies
@@ -138,8 +137,7 @@ object Dependencies {
   val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"     % "it"
   val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"     % "it"
   val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % "it,test"
-  // TODO: Wait for release
-  val staminaTestKit: ModuleID = "com.scalapenos" %% "stamina-testkit" % "0.1.4" % "test"
+  val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % "0.1.5"    % "test"
 
   // apache math
   val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
