@@ -365,8 +365,6 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 metas = request.metas,
                                 theme = request.theme,
                                 description = request.description,
-                                consultationImage = request.consultationImage,
-                                descriptionImage = request.descriptionImage,
                                 displayResults = request.displayResults
                               ),
                             updatedQuestion
@@ -446,8 +444,6 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   metas: Metas,
                                                   theme: QuestionTheme,
                                                   description: String,
-                                                  consultationImage: Option[String],
-                                                  descriptionImage: Option[String],
                                                   displayResults: Boolean) {
   validate(
     validateUserInput("question", question, None),
@@ -455,19 +451,7 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
     validateColor("gradientStart", theme.gradientStart, None),
     validateColor("gradientEnd", theme.gradientEnd, None),
     validateColor("color", theme.color, None),
-    validateColor("fontColor", theme.fontColor, None),
-    validateField(
-      "consultationImage",
-      "not_secure",
-      consultationImage.forall(_.startsWith("https://")),
-      "consultationImage must be a secure https url"
-    ),
-    validateField(
-      "descriptionImage",
-      "not_secure",
-      descriptionImage.forall(_.startsWith("https://")),
-      "descriptionImage must be a secure https url"
-    )
+    validateColor("fontColor", theme.fontColor, None)
   )
 }
 

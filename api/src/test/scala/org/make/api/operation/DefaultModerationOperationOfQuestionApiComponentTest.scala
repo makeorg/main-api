@@ -570,8 +570,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
             description = OperationOfQuestion.defaultDescription,
-            consultationImage = Some("https://example.com/image"),
-            descriptionImage = None,
             displayResults = false
           ).asJson.toString()
         ) ~> routes ~> check {
@@ -605,39 +603,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             |   "fontColor": "#000000"
             | },
             | description = "description",
-            | displayResults = false
-          }""".stripMargin) ~> routes ~> check {
-
-        status should be(StatusCodes.BadRequest)
-      }
-    }
-
-    scenario("update with bad consultationImage") {
-
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
-        .withEntity(ContentTypes.`application/json`, """{
-            | "startDate": "2018-12-01T10:15:30+00:00",
-            | "canPropose": true,
-            | "question": "question ?",
-            | "sequenceCardsConfiguration": {
-            |   "introCard": { "enabled": true },
-            |   "pushProposalCard": { "enabled": true },
-            |   "signUpCard": { "enabled": true },
-            |   finalCard = {
-            |     "enabled": true,
-            |     "sharingEnabled": false
-            |   }
-            | },
-            | metas = { "title": "metas" },
-            | theme = {
-            |   "gradientStart": "#000000",
-            |   "gradientEnd": "#000000",
-            |   "color": "#000000",
-            |   "fontColor": "#000000"
-            | },
-            | description = "description",
-            | consultationImage = "wrongurlformat",
             | displayResults = false
           }""".stripMargin) ~> routes ~> check {
 
