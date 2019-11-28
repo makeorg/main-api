@@ -121,6 +121,7 @@ object Dependencies {
 
   val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.5"
   val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.5"
+  val jsonLenses = "net.virtual-void"      %% "json-lenses"  % "0.6.2"
 
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"       %% "akka-testkit"             % akkaVersion     % "it,test"
