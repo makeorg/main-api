@@ -22,6 +22,7 @@ package org.make.api.proposal
 import java.time.ZonedDateTime
 import java.util.Date
 
+import akka.Done
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -360,6 +361,37 @@ class DefaultAdminProposalApiComponentTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("reset votes") {
+    scenario("unauthorized user") {
+      Post("/admin/proposals/reset-votes") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("forbidden citizen") {
+      Post("/admin/proposals/reset-votes")
+        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("forbidden moderator") {
+      Post("/admin/proposals/reset-votes")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("allowed admin") {
+      when(proposalService.resetVotes(any[UserId], any[RequestContext]))
+        .thenReturn(Future.successful(Done))
+      Post("/admin/proposals/reset-votes")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.Accepted)
       }
     }
   }

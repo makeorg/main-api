@@ -21,6 +21,9 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import akka.Done
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
@@ -36,7 +39,7 @@ import org.make.api.sessionhistory._
 import org.make.api.tag.TagServiceComponent
 import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent}
+import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ReadJournalComponent}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
@@ -178,6 +181,8 @@ trait ProposalService {
                             moderatorRequestContext: RequestContext): Future[ProposalId]
 
   def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse]
+
+  def resetVotes(adminUserId: UserId, requestContext: RequestContext): Future[Done]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -197,7 +202,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     with TagServiceComponent
     with TagTypeServiceComponent
     with SecurityConfigurationComponent
-    with SegmentServiceComponent =>
+    with SegmentServiceComponent
+    with ReadJournalComponent =>
 
   override lazy val proposalService: DefaultProposalService = new DefaultProposalService
 
@@ -1010,6 +1016,66 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             TagsForProposalResponse(tags = tags, modelName = predictedTags.modelName)
         }
       }.getOrElse(Future.successful(TagsForProposalResponse.empty))
+    }
+
+    def trolledQualification(qualification: Qualification): Boolean =
+      qualification.count != qualification.countVerified
+
+    def trolledVote(vote: Vote): Boolean =
+      vote.count != vote.countVerified || vote.qualifications.exists(trolledQualification)
+
+    def needVoteReset(proposal: Proposal): Boolean =
+      proposal.status == ProposalStatus.Accepted && proposal.votes.exists(trolledVote)
+
+    def updateCommand(adminUserId: UserId,
+                      requestContext: RequestContext,
+                      proposalId: ProposalId,
+                      votes: Seq[Vote]): UpdateProposalVotesCommand = {
+      UpdateProposalVotesCommand(
+        moderator = adminUserId,
+        proposalId = proposalId,
+        requestContext = requestContext,
+        updatedAt = DateHelper.now(),
+        votes = votes.collect {
+          case vote if trolledVote(vote) =>
+            UpdateVoteRequest(
+              key = vote.key,
+              count = Some(vote.countVerified),
+              countVerified = None,
+              countSequence = None,
+              countSegment = None,
+              qualifications = vote.qualifications.collect {
+                case qualification if trolledQualification(qualification) =>
+                  UpdateQualificationRequest(
+                    key = qualification.key,
+                    count = Some(qualification.countVerified),
+                    countVerified = None,
+                    countSequence = None,
+                    countSegment = None
+                  )
+              }
+            )
+        }
+      )
+    }
+
+    override def resetVotes(adminUserId: UserId, requestContext: RequestContext): Future[Done] = {
+      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+
+      proposalJournal
+        .currentPersistenceIds()
+        .mapAsync(4) { id =>
+          proposalCoordinatorService.getProposal(ProposalId(id))
+        }
+        .collect {
+          case Some(proposal) if needVoteReset(proposal) => proposal
+        }
+        .mapAsync(4) { proposal =>
+          proposalCoordinatorService.updateVotes(
+            updateCommand(adminUserId, requestContext, proposal.proposalId, proposal.votes)
+          )
+        }
+        .runWith(Sink.ignore)
     }
   }
 }

@@ -1342,8 +1342,7 @@ case class UserResponse(
   @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse")
   lastMailingError: Option[MailingErrorLogResponse],
   hasPassword: Boolean,
-  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty,
-  website: Option[String]
+  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty
 )
 
 object UserResponse extends CirceFormatters {
@@ -1369,8 +1368,7 @@ object UserResponse extends CirceFormatters {
     isHardBounce = user.isHardBounce,
     lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
     hasPassword = user.hashedPassword.isDefined,
-    followedUsers = followedUsers,
-    website = user.profile.flatMap(_.website)
+    followedUsers = followedUsers
   )
 }
 
