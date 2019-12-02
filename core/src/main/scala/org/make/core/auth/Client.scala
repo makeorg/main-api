@@ -34,7 +34,8 @@ case class Client(clientId: ClientId,
                   override val createdAt: Option[ZonedDateTime] = None,
                   override val updatedAt: Option[ZonedDateTime] = None,
                   defaultUserId: Option[UserId],
-                  roles: Seq[Role])
+                  roles: Seq[Role],
+                  tokenExpirationSeconds: Int)
     extends Timestamped
 
 case class ClientId(value: String) extends StringValue

@@ -127,7 +127,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       scope = None,
       redirectUri = None,
       defaultUserId = None,
-      roles = Seq.empty
+      roles = Seq.empty,
+      tokenExpirationSeconds = 300
     )
 
     when(
@@ -139,7 +140,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
           scope = ArgumentMatchers.eq(Some("scope")),
           redirectUri = ArgumentMatchers.eq(Some("http://redirect-uri.com")),
           defaultUserId = ArgumentMatchers.eq(Some(UserId("123456-12345"))),
-          roles = ArgumentMatchers.eq(Seq(CustomRole("role_custom"), CustomRole("role_default")))
+          roles = ArgumentMatchers.eq(Seq(CustomRole("role_custom"), CustomRole("role_default"))),
+          tokenExpirationSeconds = ArgumentMatchers.eq(300)
         )
     ).thenReturn(Future.successful(validClient))
 
@@ -173,7 +175,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
               |  "scope" : "scope",
               |  "redirectUri" : "http://redirect-uri.com",
               |  "defaultUserId" : "123456-12345",
-              |  "roles" : ["role_custom","role_default"]
+              |  "roles" : ["role_custom","role_default"],
+              |  "tokenExpirationSeconds": 300
               |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
         status should be(StatusCodes.Created)
@@ -190,7 +193,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       scope = None,
       redirectUri = None,
       defaultUserId = None,
-      roles = Seq.empty
+      roles = Seq.empty,
+      tokenExpirationSeconds = 300
     )
 
     when(clientService.getClient(ArgumentMatchers.eq(client.clientId)))
@@ -243,7 +247,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       scope = None,
       redirectUri = None,
       defaultUserId = None,
-      roles = Seq.empty
+      roles = Seq.empty,
+      tokenExpirationSeconds = 300
     )
     val updatedClient = Client(
       clientId = ClientId("apiclient"),
@@ -253,7 +258,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       scope = None,
       redirectUri = None,
       defaultUserId = None,
-      roles = Seq.empty
+      roles = Seq.empty,
+      tokenExpirationSeconds = 300
     )
 
     when(clientService.getClient(ArgumentMatchers.eq(client.clientId)))
@@ -267,7 +273,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
         ArgumentMatchers.eq(None),
         ArgumentMatchers.eq(None),
         ArgumentMatchers.eq(None),
-        ArgumentMatchers.eq(Seq.empty)
+        ArgumentMatchers.eq(Seq.empty),
+        ArgumentMatchers.eq(300)
       )
     ).thenReturn(Future.successful(Some(updatedClient)))
     when(
@@ -280,6 +287,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
         ArgumentMatchers.any[Option[String]],
         ArgumentMatchers.any[Option[UserId]],
         ArgumentMatchers.any[Seq[CustomRole]],
+        ArgumentMatchers.any[Int],
       )
     ).thenReturn(Future.successful(None))
 
@@ -313,7 +321,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "scope" : null,
                                                |  "redirectUri" : null,
                                                |  "defaultUserId" : null,
-                                               |  "roles" : []
+                                               |  "roles" : [],
+                                               |  "tokenExpirationSeconds": 300
                                                |}""".stripMargin)
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
@@ -334,7 +343,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "scope" : null,
                                                |  "redirectUri" : null,
                                                |  "defaultUserId" : null,
-                                               |  "roles" : []
+                                               |  "roles" : [],
+                                               |  "tokenExpirationSeconds": 300
                                                |}""".stripMargin)
         )
         .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {

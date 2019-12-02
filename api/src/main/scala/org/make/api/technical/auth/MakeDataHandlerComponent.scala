@@ -62,7 +62,6 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
   class DefaultMakeDataHandler extends MakeDataHandler {
 
-    lazy val validityDurationAccessTokenSeconds: Int = makeSettings.Oauth.accessTokenLifetime
     lazy val validityDurationRefreshTokenSeconds: Int = makeSettings.Oauth.refreshTokenLifetime
     lazy val validityDurationReconnectTokenSeconds: Int = makeSettings.Oauth.reconnectTokenLifetime
 
@@ -191,20 +190,22 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       val futureResult: Future[(Token, String, String)] = for {
         (accessToken, _)  <- futureAccessTokens
         (refreshToken, _) <- futureRefreshTokens
-        client            <- futureClient
-      } yield
+        maybeClient       <- futureClient
+      } yield {
+        val client = maybeClient.getOrElse(throw new IllegalArgumentException(s"Client with id $clientId not found"))
         (
           Token(
             accessToken = accessToken,
             refreshToken = Some(refreshToken),
             scope = None,
-            expiresIn = validityDurationAccessTokenSeconds,
+            expiresIn = client.tokenExpirationSeconds,
             user = authInfo.user,
-            client = client.getOrElse(throw new IllegalArgumentException(s"Client with id $clientId not found"))
+            client = client
           ),
           accessToken,
           refreshToken
         )
+      }
 
       futureResult.flatMap { result =>
         val (token, accessToken, refreshToken) = result
@@ -339,7 +340,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
                     scope = scope,
                     redirectUri = redirectUri,
                     createdAt = DateHelper.now(),
-                    expiresIn = validityDurationAccessTokenSeconds,
+                    expiresIn = client.tokenExpirationSeconds,
                     user = userId,
                     client = clientId
                   )

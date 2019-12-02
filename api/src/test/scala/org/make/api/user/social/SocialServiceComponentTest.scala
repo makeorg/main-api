@@ -65,7 +65,7 @@ class SocialServiceComponentTest
   var accessTokenValue = "my_access_token"
 
   val defaultClient: Client =
-    Client(ClientId("default-client-id"), "default", Seq.empty, None, None, None, None, None, None, Seq.empty)
+    Client(ClientId("default-client-id"), "default", Seq.empty, None, None, None, None, None, None, Seq.empty, 300)
   Mockito
     .when(clientService.getClient(ArgumentMatchers.eq(ClientId("client"))))
     .thenReturn(Future.successful(Some(defaultClient)))

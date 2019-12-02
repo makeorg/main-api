@@ -59,7 +59,8 @@ class ClientServiceTest
           scope = None,
           redirectUri = None,
           defaultUserId = None,
-          roles = Seq.empty
+          roles = Seq.empty,
+          tokenExpirationSeconds = 300
         )
 
       Mockito
@@ -73,7 +74,8 @@ class ClientServiceTest
         scope = None,
         redirectUri = None,
         defaultUserId = None,
-        roles = Seq.empty
+        roles = Seq.empty,
+        tokenExpirationSeconds = 300
       )
 
       whenReady(futureNewClient, Timeout(3.seconds)) { _ =>
@@ -105,7 +107,8 @@ class ClientServiceTest
         scope = None,
         redirectUri = None,
         defaultUserId = None,
-        roles = Seq.empty
+        roles = Seq.empty,
+        tokenExpirationSeconds = 300
       )
       val newClient = Client(
         clientId = ClientId("client"),
@@ -115,7 +118,8 @@ class ClientServiceTest
         scope = None,
         redirectUri = None,
         defaultUserId = None,
-        roles = Seq.empty
+        roles = Seq.empty,
+        tokenExpirationSeconds = 300
       )
       Mockito
         .when(persistentClientService.get(ClientId("client")))
@@ -132,7 +136,8 @@ class ClientServiceTest
         scope = None,
         redirectUri = None,
         defaultUserId = None,
-        roles = Seq.empty
+        roles = Seq.empty,
+        tokenExpirationSeconds = 300
       )
 
       whenReady(futureClient, Timeout(3.seconds)) { client =>
@@ -151,7 +156,8 @@ class ClientServiceTest
         scope = None,
         redirectUri = None,
         defaultUserId = None,
-        roles = Seq.empty
+        roles = Seq.empty,
+        tokenExpirationSeconds = 300
       )
 
       whenReady(futureClient) { client =>
