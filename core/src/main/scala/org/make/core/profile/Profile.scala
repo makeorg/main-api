@@ -24,12 +24,8 @@ import java.time.LocalDate
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
-import io.swagger.annotations.ApiModelProperty
-import org.make.core.Validation.{validatePostalCode, validateUserInput}
 import org.make.core.question.QuestionId
-import org.make.core.{CirceFormatters, MakeSerializable, Validation}
-
-import scala.annotation.meta.field
+import org.make.core.CirceFormatters
 
 sealed trait Gender {
   def shortName: String
@@ -148,71 +144,29 @@ object SocioProfessionalCategory extends StrictLogging {
   }
 }
 
-case class Profile(
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
-  avatarUrl: Option[String],
-  profession: Option[String],
-  phoneNumber: Option[String],
-  description: Option[String],
-  twitterId: Option[String],
-  facebookId: Option[String],
-  googleId: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
-  genderName: Option[String],
-  postalCode: Option[String],
-  @(ApiModelProperty @field)(dataType = "integer") karmaLevel: Option[Int],
-  locale: Option[String],
-  optInNewsletter: Boolean = true,
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O")
-  socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5")
-  registerQuestionId: Option[QuestionId] = None,
-  @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean] = None,
-  politicalParty: Option[String],
-  website: Option[String]
-) extends MakeSerializable
+case class Profile(dateOfBirth: Option[LocalDate],
+                   avatarUrl: Option[String],
+                   profession: Option[String],
+                   phoneNumber: Option[String],
+                   description: Option[String],
+                   twitterId: Option[String],
+                   facebookId: Option[String],
+                   googleId: Option[String],
+                   gender: Option[Gender],
+                   genderName: Option[String],
+                   postalCode: Option[String],
+                   karmaLevel: Option[Int],
+                   locale: Option[String],
+                   optInNewsletter: Boolean = true,
+                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+                   registerQuestionId: Option[QuestionId] = None,
+                   optInPartner: Option[Boolean] = None,
+                   politicalParty: Option[String],
+                   website: Option[String])
 
 object Profile extends CirceFormatters {
   implicit val encoder: Encoder[Profile] = deriveEncoder[Profile]
   implicit val decoder: Decoder[Profile] = deriveDecoder[Profile]
-
-  def validateProfile(profile: Profile): Unit = {
-    Validation.validateOptional(
-      profile.avatarUrl.map(value      => validateUserInput("avatarUrl", value, None)),
-      profile.description.map(value    => validateUserInput("description", value, None)),
-      profile.facebookId.map(value     => validateUserInput("facebookId", value, None)),
-      profile.genderName.map(value     => validateUserInput("genderName", value, None)),
-      profile.googleId.map(value       => validateUserInput("googleId", value, None)),
-      profile.locale.map(value         => validateUserInput("locale", value, None)),
-      profile.phoneNumber.map(value    => validateUserInput("phoneNumber", value, None)),
-      profile.postalCode.map(value     => validatePostalCode("postalCode", value, None)),
-      profile.profession.map(value     => validateUserInput("profession", value, None)),
-      profile.twitterId.map(value      => validateUserInput("twitterId", value, None)),
-      profile.politicalParty.map(value => validateUserInput("politicalParty", value, None)),
-      profile.website.map(value        => validateUserInput("website", value, None))
-    )
-  }
-
-  def default: Profile = Profile(
-    dateOfBirth = None,
-    avatarUrl = None,
-    profession = None,
-    phoneNumber = None,
-    description = None,
-    twitterId = None,
-    facebookId = None,
-    googleId = None,
-    gender = None,
-    genderName = None,
-    postalCode = None,
-    karmaLevel = None,
-    locale = None,
-    socioProfessionalCategory = None,
-    registerQuestionId = None,
-    optInPartner = None,
-    politicalParty = None,
-    website = None
-  )
 
   def parseProfile(dateOfBirth: Option[LocalDate] = None,
                    avatarUrl: Option[String] = None,

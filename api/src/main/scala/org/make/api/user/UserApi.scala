@@ -19,7 +19,7 @@
 
 package org.make.api.user
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.LocalDate
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
@@ -27,11 +27,6 @@ import akka.stream.ActorMaterializer
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.string.Url
-import io.circe.refined._
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
@@ -52,23 +47,20 @@ import org.make.api.technical.storage.{
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
 
-import scala.annotation.meta.field
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Success, Try}
 
 @Api(value = "User")
 @Path(value = "/user")
@@ -913,7 +905,7 @@ trait DefaultUserApiComponent
                       case _                                 => false
                     }
 
-                    val profile: Profile = user.profile.getOrElse(Profile.default)
+                    val profile: Profile = user.profile.getOrElse(Profile.parseProfile().get)
 
                     val updatedProfile: Profile = profile.copy(
                       dateOfBirth = request.dateOfBirth match {
@@ -1164,11 +1156,11 @@ trait DefaultUserApiComponent
                     file.delete()
                     provideAsyncOrNotFound(userService.getUser(userId)) { user =>
                       val modifiedProfile = user.profile match {
-                        case Some(profile) => profile.copy(avatarUrl = Some(path))
-                        case None          => Profile.default.copy(avatarUrl = Some(path))
+                        case Some(profile) => Some(profile.copy(avatarUrl = Some(path)))
+                        case None          => Profile.parseProfile(avatarUrl = Some(path))
                       }
 
-                      onSuccess(userService.update(user.copy(profile = Some(modifiedProfile)), requestContext)) { _ =>
+                      onSuccess(userService.update(user.copy(profile = modifiedProfile), requestContext)) { _ =>
                         complete(UploadResponse(path))
                       }
                     }
@@ -1180,268 +1172,4 @@ trait DefaultUserApiComponent
       }
     }
   }
-}
-
-case class RegisterUserRequest(
-  email: String,
-  password: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
-  firstName: Option[String],
-  lastName: Option[String],
-  profession: Option[String],
-  postalCode: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "boolean") optIn: Option[Boolean],
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O") socioProfessionalCategory: Option[
-    SocioProfessionalCategory
-  ],
-  @(ApiModelProperty @field)(dataType = "string", example = "e4805533-7b46-41b6-8ef6-58caabb2e4e5") questionId: Option[
-    QuestionId
-  ],
-  @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean],
-  politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url]
-) {
-
-  validate(
-    mandatoryField("firstName", firstName),
-    validateOptionalUserInput("firstName", firstName, None),
-    mandatoryField("email", email),
-    validateEmail("email", email.toLowerCase),
-    validateUserInput("email", email, None),
-    mandatoryField("password", password),
-    validateField(
-      "password",
-      "invalid_password",
-      Option(password).exists(_.length >= 8),
-      "Password must be at least 8 characters"
-    ),
-    validateOptionalUserInput("lastName", lastName, None),
-    validateOptionalUserInput("profession", profession, None),
-    validateOptionalUserInput("postalCode", postalCode, None),
-    mandatoryField("language", language),
-    mandatoryField("country", country),
-    validateAge("dateOfBirth", dateOfBirth)
-  )
-  validateOptional(postalCode.map(value => validatePostalCode("postalCode", value, None)))
-}
-
-object RegisterUserRequest extends CirceFormatters {
-  implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
-}
-
-case class UpdateUserRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[String],
-  firstName: Option[String],
-  lastName: Option[String],
-  organisationName: Option[String],
-  profession: Option[String],
-  postalCode: Option[String],
-  phoneNumber: Option[String],
-  description: Option[String],
-  @(ApiModelProperty @field)(dataType = "boolean") optInNewsletter: Option[Boolean],
-  gender: Option[String],
-  genderName: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
-  socioProfessionalCategory: Option[String],
-  politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url]
-) {
-  private val maxLanguageLength = 3
-  private val maxCountryLength = 3
-  private val maxDescriptionLength = 450
-
-  validateOptional(
-    firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
-    Some(validateOptionalUserInput("firstName", firstName, None)),
-    organisationName.map(
-      value => requireNonEmpty("organisationName", value, Some("organisationName should not be an empty string"))
-    ),
-    Some(validateOptionalUserInput("organisationName", organisationName, None)),
-    postalCode.map(value => validatePostalCode("postalCode", value, None)),
-    language.map(lang    => maxLength("language", maxLanguageLength, lang.value)),
-    country.map(country  => maxLength("country", maxCountryLength, country.value)),
-    gender.map(
-      value =>
-        validateField(
-          "gender",
-          "invalid_value",
-          value == "" || Gender.matchGender(value).isDefined,
-          s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
-      )
-    ),
-    socioProfessionalCategory.map(
-      value =>
-        validateField(
-          "socio professional category",
-          "invalid_value",
-          value == "" || SocioProfessionalCategory.matchSocioProfessionalCategory(value).isDefined,
-          s"CSP should be on of this specified values: ${SocioProfessionalCategory.socioProfessionalCategories.keys.mkString(",")}"
-      )
-    ),
-    description.map(value => maxLength("description", maxDescriptionLength, value)),
-    Some(validateOptionalUserInput("phoneNumber", phoneNumber, None)),
-    Some(validateOptionalUserInput("description", description, None)),
-    dateOfBirth match {
-      case Some("") => None
-      case None     => None
-      case Some(date) =>
-        val localDate = Try(LocalDate.parse(date)) match {
-          case Success(parsedDate) => Some(parsedDate)
-          case _                   => None
-        }
-        Some(validateAge("dateOfBirth", localDate))
-    }
-  )
-}
-
-object UpdateUserRequest extends CirceFormatters {
-  implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]
-}
-
-case class SocialLoginRequest(provider: String,
-                              token: String,
-                              @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-                              @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
-                              clientId: Option[ClientId]) {
-  validate(mandatoryField("language", language), mandatoryField("country", country))
-}
-
-object SocialLoginRequest {
-  implicit val decoder: Decoder[SocialLoginRequest] = deriveDecoder[SocialLoginRequest]
-}
-
-final case class ResetPasswordRequest(email: String) {
-  validate(
-    mandatoryField("email", email),
-    validateEmail("email", email.toLowerCase),
-    validateUserInput("email", email, None)
-  )
-}
-
-object ResetPasswordRequest {
-  implicit val decoder: Decoder[ResetPasswordRequest] = deriveDecoder[ResetPasswordRequest]
-}
-
-final case class ResetPassword(resetToken: String, password: String) {
-  validate(mandatoryField("resetToken", resetToken))
-  validate(
-    mandatoryField("password", password),
-    validateField(
-      "password",
-      "invalid_password",
-      Option(password).exists(_.length >= 8),
-      "Password must be at least 8 characters"
-    )
-  )
-}
-
-object ResetPassword {
-  implicit val decoder: Decoder[ResetPassword] = deriveDecoder[ResetPassword]
-}
-
-final case class ChangePasswordRequest(actualPassword: Option[String], newPassword: String) {
-  validate(
-    mandatoryField("newPassword", newPassword),
-    validateField(
-      "newPassword",
-      "invalid_password",
-      Option(newPassword).exists(_.length >= 8),
-      "Password must be at least 8 characters"
-    )
-  )
-}
-
-object ChangePasswordRequest {
-  implicit val decoder: Decoder[ChangePasswordRequest] = deriveDecoder[ChangePasswordRequest]
-}
-
-final case class DeleteUserRequest(password: Option[String])
-
-object DeleteUserRequest {
-  implicit val decoder: Decoder[DeleteUserRequest] = deriveDecoder[DeleteUserRequest]
-}
-
-final case class SubscribeToNewsLetter(email: String) {
-  validate(
-    mandatoryField("email", email),
-    validateEmail("email", email.toLowerCase),
-    validateUserInput("email", email, None)
-  )
-}
-
-object SubscribeToNewsLetter {
-  implicit val decoder: Decoder[SubscribeToNewsLetter] = deriveDecoder[SubscribeToNewsLetter]
-}
-
-case class MailingErrorLogResponse(error: String,
-                                   @(ApiModelProperty @field)(
-                                     dataType = "string",
-                                     example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]"
-                                   ) date: ZonedDateTime)
-object MailingErrorLogResponse extends CirceFormatters {
-  implicit val encoder: Encoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
-  implicit val decoder: Decoder[MailingErrorLogResponse] = deriveDecoder[MailingErrorLogResponse]
-
-  def apply(mailingErrorLog: MailingErrorLog): MailingErrorLogResponse =
-    MailingErrorLogResponse(error = mailingErrorLog.error, date = mailingErrorLog.date)
-}
-
-case class UserResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55") userId: UserId,
-  email: String,
-  firstName: Option[String],
-  lastName: Option[String],
-  organisationName: Option[String],
-  enabled: Boolean,
-  emailVerified: Boolean,
-  isOrganisation: Boolean,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]")
-  lastConnection: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "list[string]", allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN")
-  roles: Seq[Role],
-  profile: Option[Profile],
-  @(ApiModelProperty @field)(dataType = "string") country: Country,
-  @(ApiModelProperty @field)(dataType = "string") language: Language,
-  isHardBounce: Boolean,
-  @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse")
-  lastMailingError: Option[MailingErrorLogResponse],
-  hasPassword: Boolean,
-  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty
-)
-
-object UserResponse extends CirceFormatters {
-  implicit val encoder: Encoder[UserResponse] = deriveEncoder[UserResponse]
-  implicit val decoder: Decoder[UserResponse] = deriveDecoder[UserResponse]
-
-  def apply(user: User): UserResponse = UserResponse(user, Seq.empty)
-
-  def apply(user: User, followedUsers: Seq[UserId]): UserResponse = UserResponse(
-    userId = user.userId,
-    email = user.email,
-    firstName = user.firstName,
-    lastName = user.lastName,
-    organisationName = user.organisationName,
-    enabled = user.enabled,
-    emailVerified = user.emailVerified,
-    isOrganisation = user.isOrganisation,
-    lastConnection = user.lastConnection,
-    roles = user.roles,
-    profile = user.profile,
-    country = user.country,
-    language = user.language,
-    isHardBounce = user.isHardBounce,
-    lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
-    hasPassword = user.hashedPassword.isDefined,
-    followedUsers = followedUsers
-  )
-}
-
-final case class ResendValidationEmailRequest(email: String)
-
-object ResendValidationEmailRequest {
-  implicit val decoder: Decoder[ResendValidationEmailRequest] = deriveDecoder[ResendValidationEmailRequest]
 }

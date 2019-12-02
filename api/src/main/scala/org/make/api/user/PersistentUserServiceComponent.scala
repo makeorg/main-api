@@ -754,6 +754,8 @@ trait DefaultPersistentUserServiceComponent
               column.email -> organisation.email,
               column.avatarUrl -> organisation.profile.flatMap(_.avatarUrl),
               column.description -> organisation.profile.flatMap(_.description),
+              column.politicalParty -> organisation.profile.flatMap(_.politicalParty),
+              column.website -> organisation.profile.flatMap(_.website),
               column.updatedAt -> nowDate
             )
             .where(
