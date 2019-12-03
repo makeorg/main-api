@@ -19,7 +19,6 @@
 
 package org.make.api.idea
 
-import org.make.api.idea.IdeaEvent.{IdeaCreatedEvent, IdeaUpdatedEvent}
 import org.make.api.idea.IdeaExceptions.{IdeaAlreadyExistsException, IdeaDoesnotExistsException}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper

@@ -19,57 +19,57 @@
 
 package org.make.api.avro
 
-import com.sksamuel.avro4s.SchemaFor
+import com.sksamuel.avro4s.DefaultFieldMapper
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.Schema
 import org.make.api.MakeUnitTest
-import org.make.api.idea.IdeaEvent.IdeaEventWrapper
+import org.make.api.idea.IdeaEventWrapper
 import org.make.api.proposal.PublishedProposalEvent.ProposalEventWrapper
 import org.make.api.semantic.{PredictDuplicateEventWrapper, PredictionsEventWrapper}
 import org.make.api.technical.crm.{MailJetEventWrapper, SendEmail}
 import org.make.api.technical.tracking.TrackingEventWrapper
-import org.make.api.userhistory.UserEvent.UserEventWrapper
+import org.make.api.userhistory.UserEventWrapper
 import org.make.core.AvroSerializers
 
 class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with StrictLogging {
 
   feature("avro schemas") {
+
     scenario("check avro compatibility for SendEmail") {
-      val currentSchema: Schema = SchemaFor[SendEmail]()
+      val currentSchema: Schema = SendEmail.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "SendEmail")
     }
     scenario("check avro compatibility for UserEventWrapper") {
-      val currentSchema: Schema = SchemaFor[UserEventWrapper]()
+      val currentSchema: Schema = UserEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "UserEventWrapper")
     }
     scenario("check avro compatibility for ProposalEventWrapper") {
-      val currentSchema: Schema = SchemaFor[ProposalEventWrapper]()
+      val currentSchema: Schema = ProposalEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "ProposalEventWrapper")
     }
     scenario("check avro compatibility for MailJetEventWrapper") {
-      val currentSchema: Schema = SchemaFor[MailJetEventWrapper]()
+      val currentSchema: Schema = MailJetEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "MailJetEventWrapper")
     }
     scenario("check avro compatibility for TrackingEventWrapper") {
-      val currentSchema: Schema = SchemaFor[TrackingEventWrapper]()
+      val currentSchema: Schema = TrackingEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "TrackingEventWrapper")
     }
     scenario("check avro compatibility for PredictionsEventWrapper") {
-      val currentSchema: Schema = SchemaFor[PredictionsEventWrapper]()
+      val currentSchema: Schema = PredictionsEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "PredictionsEventWrapper")
     }
     scenario("check avro compatibility for IdeaEventWrapper") {
-      val currentSchema: Schema = SchemaFor[IdeaEventWrapper]()
+      val currentSchema: Schema = IdeaEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "IdeaEventWrapper")
     }
     scenario("check avro compatibility for PredictDuplicateEventWrapper") {
-      val currentSchema: Schema = SchemaFor[PredictDuplicateEventWrapper]()
+      val currentSchema: Schema = PredictDuplicateEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "PredictDuplicateEventWrapper")
     }
   }
 
   private def checkEntityType(currentSchema: Schema, name: String): Unit = {
-    logger.info(s"Current schema for $name is $currentSchema")
     val schemas = AvroCompatibilityChecker.loadSchemas(name)
 
     if (schemas.isEmpty) {
@@ -84,6 +84,6 @@ class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with Stric
     }
 
     // check that the current schema is in the list of schemas
-    currentSchema should be(schemas.last)
+    schemas.last.toString(true) should be(currentSchema.toString(true))
   }
 }

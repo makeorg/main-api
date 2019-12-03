@@ -24,7 +24,7 @@ import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.crm.SendMailPublisherService
 import org.make.api.technical.{KafkaConsumerActor, TimeSettings}
-import org.make.api.userhistory.UserEvent._
+import org.make.api.userhistory._
 import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,7 +40,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
-    message.event.fold(HandledMessages) match {
+    message.event match {
       case event: ResetPasswordEvent              => handleResetPasswordEvent(event)
       case event: UserRegisteredEvent             => handleUserRegisteredEvent(event)
       case event: UserValidatedAccountEvent       => handleUserValidatedAccountEvent(event)

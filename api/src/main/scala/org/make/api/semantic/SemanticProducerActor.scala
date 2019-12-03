@@ -21,10 +21,8 @@ package org.make.api.semantic
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.semantic.PredictDuplicateEvent.AnyPredictDuplicateEventEvent
 import org.make.api.technical.BasicProducerActor
 import org.make.core.{DateHelper, MakeSerializable}
-import shapeless.Coproduct
 
 class SemanticProducerActor extends BasicProducerActor[PredictDuplicateEventWrapper, PredictDuplicateEvent] {
   override protected lazy val eventClass: Class[PredictDuplicateEvent] = classOf[PredictDuplicateEvent]
@@ -38,7 +36,7 @@ class SemanticProducerActor extends BasicProducerActor[PredictDuplicateEventWrap
       id = trackingEvent.proposalId.value,
       date = DateHelper.now(),
       eventType = trackingEvent.getClass.getSimpleName,
-      event = Coproduct[AnyPredictDuplicateEventEvent](trackingEvent)
+      event = trackingEvent
     )
 }
 

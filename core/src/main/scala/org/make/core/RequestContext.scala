@@ -21,7 +21,8 @@ package org.make.core
 
 import java.time.ZonedDateTime
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
+import com.sksamuel.avro4s
+import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
@@ -140,10 +141,10 @@ final case class RequestContext(
 )
 
 object RequestContext extends CirceFormatters with SprayJsonFormatters with AvroSerializers {
-  implicit lazy val schemaFor: SchemaFor[RequestContext] = SchemaFor[RequestContext]
-  implicit lazy val fromRecord: FromRecord[RequestContext] = FromRecord[RequestContext]
-  implicit lazy val toRecord: ToRecord[RequestContext] = ToRecord[RequestContext]
-  implicit lazy val recordFormat: RecordFormat[RequestContext] = RecordFormat[RequestContext]
+  lazy val schemaFor: SchemaFor[RequestContext] = SchemaFor.gen[RequestContext]
+  implicit lazy val fromRecord: avro4s.Decoder[RequestContext] = avro4s.Decoder.gen[RequestContext]
+  implicit lazy val toRecord: avro4s.Encoder[RequestContext] = avro4s.Encoder.gen[RequestContext]
+  lazy val recordFormat: RecordFormat[RequestContext] = RecordFormat[RequestContext]
 
   implicit val encoder: Encoder[RequestContext] = deriveEncoder[RequestContext]
   implicit val decoder: Decoder[RequestContext] = deriveDecoder[RequestContext]
@@ -170,7 +171,8 @@ object RequestContext extends CirceFormatters with SprayJsonFormatters with Avro
       userAgent = None,
       questionId = None,
       applicationName = None,
-      referrer = None
+      referrer = None,
+      customData = Map.empty
     )
 
   implicit val requestContextFormatter: RootJsonFormat[RequestContext] =

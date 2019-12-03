@@ -21,7 +21,6 @@ package org.make.api.idea
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.idea.IdeaEvent._
 import org.make.api.technical.{BasicProducerActor, ProducerActorCompanion}
 
 class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] {
@@ -36,7 +35,7 @@ class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] 
       id = event.ideaId.value,
       date = event.eventDate,
       eventType = event.getClass.getSimpleName,
-      event = IdeaEventWrapper.wrapEvent(event)
+      event = event
     )
   }
 }

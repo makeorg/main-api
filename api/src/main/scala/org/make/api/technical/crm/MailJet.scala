@@ -19,13 +19,13 @@
 
 package org.make.api.technical.crm
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor}
+import com.sksamuel.avro4s
+import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import org.make.api.technical.security.SecurityHelper
-import org.make.core.{AvroSerializers, Sharded}
 import org.make.core.user.UserId
-import shapeless.ops.product.ToRecord
+import org.make.core.{AvroSerializers, Sharded}
 import spray.json.{JsString, JsValue, JsonFormat}
 
 import scala.util.matching.Regex
@@ -66,10 +66,11 @@ final case class SendEmail(id: String = "unknown",
 
 object SendEmail extends AvroSerializers {
 
-  implicit lazy val schemaFor: SchemaFor[SendEmail] = SchemaFor[SendEmail]
-  implicit lazy val fromRecord: FromRecord[SendEmail] = FromRecord[SendEmail]
-  implicit lazy val toRecord: ToRecord[SendEmail] = ToRecord[SendEmail]
-  implicit lazy val recordFormat: RecordFormat[SendEmail] = RecordFormat[SendEmail]
+  lazy val schemaFor: SchemaFor[SendEmail] = SchemaFor.gen[SendEmail]
+  implicit lazy val avroDecoder: avro4s.Decoder[SendEmail] = avro4s.Decoder.gen[SendEmail]
+  implicit lazy val avroEncoder: avro4s.Encoder[SendEmail] = avro4s.Encoder.gen[SendEmail]
+  lazy val recordFormat: RecordFormat[SendEmail] =
+    RecordFormat[SendEmail](schemaFor.schema(DefaultFieldMapper))
 
   def create(from: Option[Recipient] = None,
              subject: Option[String] = None,

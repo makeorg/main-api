@@ -23,7 +23,6 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.idea.IdeaEvent.{IdeaCreatedEvent, IdeaEventWrapper, IdeaUpdatedEvent}
 import org.make.api.technical.KafkaConsumerActor
 import org.make.api.technical.elasticsearch.{
   ElasticsearchClient,
@@ -33,7 +32,6 @@ import org.make.api.technical.elasticsearch.{
 }
 import org.make.core.idea.IdeaId
 import org.make.core.idea.indexed.IndexedIdea
-import shapeless.Poly1
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -55,15 +53,10 @@ class IdeaConsumerActor(ideaService: IdeaService,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   override def handleMessage(message: IdeaEventWrapper): Future[Unit] = {
-    message.event.fold(ToIdeaEvent) match {
+    message.event match {
       case event: IdeaCreatedEvent => onCreateOrUpdate(event)
       case event: IdeaUpdatedEvent => onCreateOrUpdate(event)
     }
-  }
-
-  object ToIdeaEvent extends Poly1 {
-    implicit val atIdeaCreated: Case.Aux[IdeaCreatedEvent, IdeaCreatedEvent] = at(identity)
-    implicit val atIdeaUpdated: Case.Aux[IdeaUpdatedEvent, IdeaUpdatedEvent] = at(identity)
   }
 
   def onCreateOrUpdate(event: IdeaEvent): Future[Unit] = {

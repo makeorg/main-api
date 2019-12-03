@@ -21,32 +21,28 @@ package org.make.api.semantic
 
 import java.time.ZonedDateTime
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
-import org.make.api.semantic.PredictDuplicateEvent.AnyPredictDuplicateEventEvent
-import org.make.core.{AvroSerializers, EventWrapper}
+import com.sksamuel.avro4s._
 import org.make.core.proposal.ProposalId
-import shapeless.{:+:, CNil}
+import org.make.core.{AvroSerializers, EventWrapper}
 
+sealed trait PredictDuplicate
 case class PredictDuplicateEvent(proposalId: ProposalId,
                                  predictedDuplicates: Seq[ProposalId],
                                  predictedScores: Seq[Double],
                                  algoLabel: String)
+    extends PredictDuplicate
 
 final case class PredictDuplicateEventWrapper(version: Int,
                                               id: String,
                                               date: ZonedDateTime,
                                               eventType: String,
-                                              event: AnyPredictDuplicateEventEvent)
-    extends EventWrapper
+                                              event: PredictDuplicate)
+    extends EventWrapper[PredictDuplicate]
 
 object PredictDuplicateEventWrapper extends AvroSerializers {
-  implicit lazy val schemaFor: SchemaFor[PredictDuplicateEventWrapper] = SchemaFor[PredictDuplicateEventWrapper]
-  implicit lazy val fromRecord: FromRecord[PredictDuplicateEventWrapper] = FromRecord[PredictDuplicateEventWrapper]
-  implicit lazy val toRecord: ToRecord[PredictDuplicateEventWrapper] = ToRecord[PredictDuplicateEventWrapper]
-  implicit lazy val recordFormat: RecordFormat[PredictDuplicateEventWrapper] =
-    RecordFormat[PredictDuplicateEventWrapper]
-}
-
-object PredictDuplicateEvent {
-  type AnyPredictDuplicateEventEvent = PredictDuplicateEvent :+: CNil
+  lazy val schemaFor: SchemaFor[PredictDuplicateEventWrapper] = SchemaFor.gen[PredictDuplicateEventWrapper]
+  implicit lazy val decoder: Decoder[PredictDuplicateEventWrapper] = Decoder.gen[PredictDuplicateEventWrapper]
+  implicit lazy val encoder: Encoder[PredictDuplicateEventWrapper] = Encoder.gen[PredictDuplicateEventWrapper]
+  lazy val recordFormat: RecordFormat[PredictDuplicateEventWrapper] =
+    RecordFormat[PredictDuplicateEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }

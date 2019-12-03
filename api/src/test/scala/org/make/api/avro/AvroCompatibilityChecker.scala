@@ -19,11 +19,14 @@
 
 package org.make.api.avro
 
+import com.typesafe.scalalogging.StrictLogging
 import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel
 import org.apache.avro.Schema
 import org.make.core.AvroSerializers
 
-object AvroCompatibilityChecker extends App with AvroSerializers {
+import scala.util.{Failure, Success, Try}
+
+object AvroCompatibilityChecker extends App with AvroSerializers with StrictLogging {
 
   def isCompatible(newSchema: Schema, currentSchema: Schema): Boolean = {
     AvroCompatibilityLevel.BACKWARD.compatibilityChecker.isCompatible(newSchema, currentSchema)
@@ -44,8 +47,15 @@ object AvroCompatibilityChecker extends App with AvroSerializers {
   }
 
   private def loadSchema(className: String, version: Int): Option[Schema] = {
-    Option(Thread.currentThread().getContextClassLoader.getResourceAsStream(s"avro/$className-v$version.avro"))
-      .map(new Schema.Parser().parse)
+    Option(Thread.currentThread().getContextClassLoader.getResourceAsStream(s"avro/$className-v$version.avro")).map {
+      stream =>
+        Try(new Schema.Parser().parse(stream)) match {
+          case Success(value) => value
+          case Failure(exception) =>
+            logger.error(s"Error while loading definition $className with version $version", exception)
+            throw exception
+        }
+    }
   }
 
 }

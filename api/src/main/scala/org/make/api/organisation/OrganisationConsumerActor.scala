@@ -26,7 +26,8 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfiguration, Elastic
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor}
 import org.make.api.user.UserProducerActor
 import org.make.api.userhistory.UserEvent
-import org.make.api.userhistory.UserEvent.{OrganisationRegisteredEvent, OrganisationUpdatedEvent, UserEventWrapper}
+import org.make.api.userhistory.UserEventWrapper
+import org.make.api.userhistory.{OrganisationRegisteredEvent, OrganisationUpdatedEvent}
 import org.make.core.AvroSerializers
 import org.make.core.user.UserId
 import org.make.core.user.indexed.IndexedOrganisation
@@ -51,7 +52,7 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
-    message.event.fold(UserEvent.HandledMessages) match {
+    message.event match {
       case event: OrganisationRegisteredEvent => onCreateOrUpdate(event)
       case event: OrganisationUpdatedEvent    => onCreateOrUpdate(event)
       case event                              => doNothing(event)

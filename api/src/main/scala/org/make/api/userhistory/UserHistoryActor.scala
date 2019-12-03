@@ -29,7 +29,6 @@ import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
 import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.technical.{ActorReadJournalComponent, MakePersistentActor}
-import org.make.api.userhistory.UserEvent.SnapshotUser
 import org.make.api.userhistory.UserHistoryActor._
 import org.make.core.MakeSerializable
 import org.make.core.history.HistoryActions._

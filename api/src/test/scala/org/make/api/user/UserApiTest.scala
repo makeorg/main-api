@@ -62,7 +62,7 @@ import org.make.api.technical.storage.{
 }
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
-import org.make.api.userhistory.UserEvent.ResetPasswordEvent
+import org.make.api.userhistory.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
 import org.make.core.auth.{ClientId, UserRights}

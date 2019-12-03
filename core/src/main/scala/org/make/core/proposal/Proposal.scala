@@ -21,6 +21,7 @@ package org.make.core.proposal
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s.AvroSortPriority
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto._
@@ -48,7 +49,8 @@ final case class Proposal(proposalId: ProposalId,
                           refusalReason: Option[String] = None,
                           tags: Seq[TagId] = Seq.empty,
                           votes: Seq[Vote],
-                          @Deprecated organisations: Seq[OrganisationInfo] = Seq.empty,
+                          // @deprecated "Use the organisationIds field instead"
+                          organisations: Seq[OrganisationInfo] = Seq.empty,
                           organisationIds: Seq[UserId] = Seq.empty,
                           language: Option[Language] = None,
                           country: Option[Country] = None,
@@ -302,22 +304,27 @@ object ProposalStatus {
     }
   }
 
+  @AvroSortPriority(5)
   case object Pending extends ProposalStatus {
     override val shortName = "Pending"
   }
 
+  @AvroSortPriority(1)
   case object Accepted extends ProposalStatus {
     override val shortName = "Accepted"
   }
 
+  @AvroSortPriority(3)
   case object Refused extends ProposalStatus {
     override val shortName = "Refused"
   }
 
+  @AvroSortPriority(4)
   case object Postponed extends ProposalStatus {
     override val shortName = "Postponed"
   }
 
+  @AvroSortPriority(2)
   case object Archived extends ProposalStatus {
     override val shortName = "Archived"
   }

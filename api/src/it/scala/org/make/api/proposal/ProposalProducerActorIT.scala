@@ -21,7 +21,7 @@ package org.make.api.proposal
 
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.sksamuel.avro4s.{FromRecord, RecordFormat}
+import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.config.ConfigFactory
 import org.make.api.proposal.PublishedProposalEvent.{ProposalAuthorInfo, ProposalEventWrapper, ProposalProposed}
 import org.make.api.{KafkaTest, KafkaTestConsumerActor}
@@ -45,7 +45,6 @@ class ProposalProducerActorIT
       val producer: ActorRef = actorSystem.actorOf(ProposalProducerActor.props, ProposalProducerActor.name)
 
       val probe = TestProbe()
-      implicit val fromRecord: FromRecord[ProposalEventWrapper] = FromRecord[ProposalEventWrapper]
       val consumer = {
         val (name: String, props: Props) =
           KafkaTestConsumerActor.propsAndName(
