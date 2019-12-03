@@ -940,7 +940,7 @@ trait DefaultUserApiComponent
                         requestContext
                       )
                     ) { user: User =>
-                      if (optInNewsletterHasChanged && !user.isOrganisation) {
+                      if (optInNewsletterHasChanged && user.userType == UserType.UserTypeUser) {
                         eventBusService.publish(
                           UserUpdatedOptInNewsletterEvent(
                             connectedUserId = Some(userAuth.user.userId),
@@ -953,7 +953,7 @@ trait DefaultUserApiComponent
                           )
                         )
                       }
-                      if (user.isOrganisation) {
+                      if (user.userType == UserType.UserTypeOrganisation) {
                         eventBusService.publish(
                           OrganisationUpdatedEvent(
                             connectedUserId = Some(user.userId),

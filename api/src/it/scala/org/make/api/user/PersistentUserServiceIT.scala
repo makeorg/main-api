@@ -22,13 +22,13 @@ package org.make.api.user
 import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
-import org.make.api.DatabaseTest
+import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.core.DateHelper
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{MailingErrorLog, Role, User, UserId}
+import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -61,186 +61,113 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     website = None
   )
 
-  val johnDoe = User(
-    userId = UserId("1"),
+  val johnDoe = TestUtilsIT.user(
+    id = UserId("1"),
     email = "doe@example.com",
     firstName = Some("John"),
     lastName = Some("Doe"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
     profile = Some(profile),
-    availableQuestions = Seq.empty,
     anonymousParticipation = true
   )
 
-  val jennaDoo = User(
-    userId = UserId("2"),
+  val jennaDoo = TestUtilsIT.user(
+    id = UserId("2"),
     email = "jennaDoo@example.com",
     firstName = Some("Jenna"),
     lastName = Some("Doo"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
-    verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    verificationTokenExpiresAt = Some(before)
   )
 
-  val janeDee = User(
-    userId = UserId("3"),
+  val janeDee = TestUtilsIT.user(
+    id = UserId("3"),
     email = "janeDee@example.com",
     firstName = Some("Jane"),
     lastName = Some("Dee"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin, Role.RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
-  val passwordUser = User(
-    userId = UserId("4"),
+  val passwordUser = TestUtilsIT.user(
+    id = UserId("4"),
     email = "password@example.com",
     firstName = Some("user-with"),
     lastName = Some("Password"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("123456".bcrypt),
-    enabled = true,
-    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin, Role.RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
-  val socialUser = User(
-    userId = UserId("5"),
+  val socialUser = TestUtilsIT.user(
+    id = UserId("5"),
     email = "social@example.com",
     firstName = Some("Social"),
     lastName = Some("User"),
     lastIp = Some("0.0.0.0"),
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin, Role.RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator)
   )
 
-  val userOrganisationDGSE = User(
-    userId = UserId("DGSE"),
+  val userOrganisationDGSE = TestUtilsIT.user(
+    id = UserId("DGSE"),
     email = "dgse@secret-agency.com",
     firstName = None,
     lastName = None,
     lastIp = Some("-1.-1.-1.-1"),
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
     organisationName = Some("Direction Générale de la Sécurité Extérieure"),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationCSIS = User(
-    userId = UserId("CSIS"),
+  val userOrganisationCSIS = TestUtilsIT.user(
+    id = UserId("CSIS"),
     email = "csis@secret-agency.com",
     firstName = None,
     lastName = None,
     lastIp = Some("-1.-1.-1.-1"),
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
     organisationName = Some("Canadian Security Intelligence Service"),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationFSB = User(
-    userId = UserId("FSB"),
+  val userOrganisationFSB = TestUtilsIT.user(
+    id = UserId("FSB"),
     email = "fsb@secret-agency.com",
     firstName = None,
     lastName = None,
     lastIp = Some("-1.-1.-1.-1"),
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
     country = Country("RU"),
     language = Language("ru"),
-    profile = None,
     organisationName = Some("Federal Security Service"),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
   val johnMailing: User = johnDoe.copy(
@@ -257,99 +184,66 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = Some(profile.copy(registerQuestionId = None))
   )
 
-  val userOrganisationCIA = User(
-    userId = UserId("CIA"),
+  val userOrganisationCIA = TestUtilsIT.user(
+    id = UserId("CIA"),
     email = "cia@secret-agency.com",
     firstName = None,
     lastName = None,
     lastIp = Some("-1.-1.-1.-1"),
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
     country = Country("US"),
     language = Language("en"),
-    profile = None,
     organisationName = Some("Central Intelligence Agency - CIA"),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationFBI = User(
-    userId = UserId("FBI"),
+  val userOrganisationFBI = TestUtilsIT.user(
+    id = UserId("FBI"),
     email = "fbi@secret-agency.com",
     firstName = None,
     lastName = None,
     lastIp = Some("-1.-1.-1.-1"),
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
     country = Country("US"),
     language = Language("en"),
-    profile = None,
     organisationName = Some("Federal Bureau of Investigation - FBI"),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
-  val userOrganisationMI5 = User(
-    userId = UserId("MI5"),
+  val userOrganisationMI5 = TestUtilsIT.user(
+    id = UserId("MI5"),
     email = "mi5@secret-agency.com",
     firstName = None,
     lastName = None,
     lastIp = Some("-1.-1.-1.-1"),
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleActor),
     country = Country("UK"),
     language = Language("en"),
-    profile = None,
     organisationName = Some("Military Intelligence, Section 5 - MI5"),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
-  val updateUser = User(
-    userId = UserId("update-user-1"),
+  val updateUser = TestUtilsIT.user(
+    id = UserId("update-user-1"),
     email = "foo@example.com",
     firstName = Some("John"),
     lastName = Some("Doe"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = Some(profile),
-    createdAt = Some(DateHelper.now()),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    profile = Some(profile)
   )
 
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
@@ -635,7 +529,17 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
   feature("find moderators") {
     scenario("find all moderators") {
       whenReady(
-        persistentUserService.adminFindUsers(0, None, None, None, None, None, Some(Role.RoleModerator)),
+        persistentUserService.adminFindUsers(
+          start = 0,
+          end = None,
+          sort = None,
+          order = None,
+          email = None,
+          firstName = None,
+          lastName = None,
+          maybeRole = Some(Role.RoleModerator),
+          maybeUserType = None
+        ),
         Timeout(3.seconds)
       ) { moderators =>
         moderators.size should be(6)
@@ -645,7 +549,17 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     scenario("find moderators with email filter") {
       whenReady(
         persistentUserService
-          .adminFindUsers(0, None, None, None, Some("doe@example.com"), None, None),
+          .adminFindUsers(
+            start = 0,
+            end = None,
+            sort = None,
+            order = None,
+            email = Some("doe@example.com"),
+            firstName = None,
+            lastName = None,
+            maybeRole = Some(Role.RoleModerator),
+            maybeUserType = None
+          ),
         Timeout(3.seconds)
       ) { moderators =>
         moderators.size should be(1)

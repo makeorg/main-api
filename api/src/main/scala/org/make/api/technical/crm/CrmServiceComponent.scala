@@ -54,7 +54,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 
 import scala.collection.JavaConverters._
@@ -519,7 +519,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         emailHardBounceStatus = user.isHardBounce,
         unsubscribeStatus = user.profile.exists(!_.optInNewsletter),
         accountCreationDate = user.createdAt,
-        isOrganisation = user.isOrganisation,
+        userB2B = user.userType != UserType.UserTypeUser,
         updatedAt = Some(DateHelper.now()),
         accountCreationCountry = Some(user.country.value),
         lastLanguageActivity = Some(user.language.value),
@@ -555,7 +555,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         activeCore = userProperty.activeCore,
         daysOfActivity = Some(userProperty.daysOfActivity.distinct.length),
         daysOfActivity30 = Some(userProperty.daysOfActivity30d.distinct.length),
-        userType = if (userProperty.isOrganisation) {
+        userType = if (userProperty.userB2B) {
           Some("B2B")
         } else {
           Some("B2C")
@@ -830,7 +830,7 @@ final case class UserProperties(userId: UserId,
                                 emailHardBounceStatus: Boolean,
                                 unsubscribeStatus: Boolean,
                                 accountCreationDate: Option[ZonedDateTime],
-                                isOrganisation: Boolean,
+                                userB2B: Boolean,
                                 accountCreationSource: Option[String] = None,
                                 accountCreationOrigin: Option[String] = None,
                                 accountCreationSlug: Option[String] = None,

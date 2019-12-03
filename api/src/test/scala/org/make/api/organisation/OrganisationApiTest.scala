@@ -26,9 +26,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
-import org.make.api.MakeApiTestBase
 import org.make.api.proposal._
 import org.make.api.user.UserResponse
+import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
 import org.make.core.idea.IdeaId
@@ -38,7 +38,7 @@ import org.make.core.proposal._
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -87,31 +87,16 @@ class OrganisationApiTest
 
   val now: ZonedDateTime = DateHelper.now()
 
-  val returnedOrganisation = User(
-    userId = UserId("make-org"),
+  val returnedOrganisation = TestUtils.user(
+    id = UserId("make-org"),
     email = "make@make.org",
     firstName = None,
     lastName = None,
-    lastIp = None,
-    hashedPassword = None,
     enabled = true,
     emailVerified = true,
-    isOrganisation = true,
-    lastConnection = now,
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    lastMailingError = None,
     organisationName = Some("Make.org"),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
   Mockito
@@ -157,6 +142,7 @@ class OrganisationApiTest
           postalCode = None,
           age = None,
           avatarUrl = None,
+          userType = None
         ),
         organisations = Seq.empty,
         themeId = None,
@@ -196,6 +182,7 @@ class OrganisationApiTest
           postalCode = None,
           age = None,
           avatarUrl = None,
+          userType = None
         ),
         organisations = Seq.empty,
         themeId = None,
@@ -234,7 +221,8 @@ class OrganisationApiTest
           organisationSlug = None,
           postalCode = None,
           age = None,
-          avatarUrl = None
+          avatarUrl = None,
+          userType = None
         ),
         organisations = Seq.empty,
         themeId = None,
@@ -274,6 +262,7 @@ class OrganisationApiTest
           postalCode = None,
           age = None,
           avatarUrl = None,
+          userType = None
         ),
         organisations = Seq.empty,
         themeId = Some(ThemeId("bar-theme")),

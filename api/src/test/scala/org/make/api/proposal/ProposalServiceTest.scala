@@ -61,7 +61,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
 import org.make.core.tag._
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.{never, times, verify}
@@ -150,28 +150,12 @@ class ProposalServiceTest
 
   val moderatorId = UserId("moderator-id")
 
-  private val moderator = User(
-    userId = moderatorId,
+  private val moderator = TestUtils.user(
+    id = moderatorId,
     email = "moderator@make.org",
     firstName = Some("mode"),
     lastName = Some("rator"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleCitizen, Role.RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(Role.RoleCitizen, Role.RoleModerator)
   )
 
   Mockito
@@ -215,7 +199,7 @@ class ProposalServiceTest
         age = Some(25),
         avatarUrl = Some("http://some-url"),
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       country = Country("FR"),

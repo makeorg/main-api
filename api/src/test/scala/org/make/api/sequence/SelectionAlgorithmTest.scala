@@ -33,7 +33,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.DateHelper
 
 import scala.collection.mutable
@@ -120,7 +120,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         age = None,
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       country = Country("FR"),
@@ -201,7 +201,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         age = None,
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       country = Country("FR"),

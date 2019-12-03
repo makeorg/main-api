@@ -21,21 +21,21 @@ package org.make.api.user.social
 
 import java.text.SimpleDateFormat
 
-import org.make.api.MakeUnitTest
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
 import org.make.api.user.social.models.google.{UserInfo   => GoogleUserInfos}
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.{MakeUnitTest, TestUtils}
+import org.make.core.RequestContext
 import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.verify
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
@@ -96,30 +96,8 @@ class SocialServiceComponentTest
         kid = None
       )
 
-      val userFromGoogle = User(
-        userId = UserId("boo"),
-        email = "google@make.org",
-        firstName = None,
-        lastName = None,
-        lastIp = None,
-        hashedPassword = None,
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        createdAt = None,
-        updatedAt = None,
-        lastMailingError = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
-      )
+      val userFromGoogle =
+        TestUtils.user(id = UserId("boo"), email = "google@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -208,29 +186,8 @@ class SocialServiceComponentTest
         kid = None
       )
 
-      val userFromGoogle = User(
-        userId = UserId("boo"),
-        email = "google@make.org",
-        firstName = None,
-        lastName = None,
-        lastIp = None,
-        hashedPassword = None,
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        createdAt = None,
-        updatedAt = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
-      )
+      val userFromGoogle =
+        TestUtils.user(id = UserId("boo"), email = "google@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -319,29 +276,8 @@ class SocialServiceComponentTest
         kid = None
       )
 
-      val userFromGoogle = User(
-        userId = UserId("boo"),
-        email = "google@make.org",
-        firstName = None,
-        lastName = None,
-        lastIp = None,
-        hashedPassword = None,
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        createdAt = None,
-        updatedAt = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
-      )
+      val userFromGoogle =
+        TestUtils.user(id = UserId("boo"), email = "google@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -430,29 +366,8 @@ class SocialServiceComponentTest
         lastName = Some("user")
       )
 
-      val userFromFacebook = User(
-        userId = UserId("boo"),
-        email = "facebook@make.org",
-        firstName = None,
-        lastName = None,
-        lastIp = None,
-        hashedPassword = None,
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        createdAt = None,
-        updatedAt = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
-      )
+      val userFromFacebook =
+        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -531,29 +446,8 @@ class SocialServiceComponentTest
       val facebookData =
         FacebookUserInfos(id = "444444", email = Some("facebook@make.org"), firstName = None, lastName = None)
 
-      val userFromFacebook = User(
-        userId = UserId("boo"),
-        email = "facebook@make.org",
-        firstName = None,
-        lastName = None,
-        lastIp = None,
-        hashedPassword = None,
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        createdAt = None,
-        updatedAt = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
-      )
+      val userFromFacebook =
+        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -637,29 +531,8 @@ class SocialServiceComponentTest
         lastName = Some("USER")
       )
 
-      val userFromFacebook = User(
-        userId = UserId("boo"),
-        email = "facebook@make.org",
-        firstName = None,
-        lastName = None,
-        lastIp = None,
-        hashedPassword = None,
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        createdAt = None,
-        updatedAt = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
-      )
+      val userFromFacebook =
+        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,

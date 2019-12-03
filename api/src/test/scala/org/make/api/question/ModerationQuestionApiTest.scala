@@ -48,7 +48,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -368,7 +368,7 @@ class ModerationQuestionApiTest
                   age = None,
                   avatarUrl = None,
                   anonymousParticipation = false,
-                  isOrganisation = false
+                  userType = UserType.UserTypeUser
                 ),
                 organisations = Seq.empty,
                 country = Country("FR"),

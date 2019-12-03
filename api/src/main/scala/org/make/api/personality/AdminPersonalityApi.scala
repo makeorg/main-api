@@ -1,45 +1,28 @@
-/*
- *  Make.org Core API
- *  Copyright (C) 2018 Make.org
- *
- * This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- */
-
 package org.make.api.personality
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
-import io.swagger.annotations._
+import io.swagger.annotations.{ApiImplicitParam, _}
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.user.{UserRegisterData, UserServiceComponent}
+import org.make.core.Validation._
+import org.make.core._
 import org.make.core.auth.UserRights
-import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
-import org.make.core.question.QuestionId
-import org.make.core.user.UserId
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.profile.{Gender, Profile}
+import org.make.core.reference.{Country, Language}
+import org.make.core.user.{Role, User, UserId, UserType}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
 
 @Api(
-  value = "Admin Personality",
+  value = "Admin Personalities",
   authorizations = Array(
     new Authorization(
       value = "MakeApi",
@@ -50,78 +33,81 @@ import scala.annotation.meta.field
 @Path(value = "/admin/personalities")
 trait AdminPersonalityApi extends Directives {
 
-  @ApiOperation(value = "post-personality", httpMethod = "POST", code = HttpCodes.Created)
+  @ApiOperation(value = "get-personality", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[PersonalityIdResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityResponse]))
   )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.personality.CreatePersonalityRequest"
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
       )
     )
   )
-  @Path(value = "/")
-  def adminPostPersonality: Route
-
-  @ApiOperation(value = "put-personality", httpMethod = "PUT", code = HttpCodes.OK)
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityIdResponse]))
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        name = "body",
-        paramType = "body",
-        dataType = "org.make.api.personality.UpdatePersonalityRequest"
-      ),
-      new ApiImplicitParam(name = "personalityId", paramType = "path", dataType = "string")
-    )
-  )
-  @Path(value = "/{personalityId}")
-  def adminPutPersonality: Route
+  @Path(value = "/{userId}")
+  def getPersonality: Route
 
   @ApiOperation(value = "get-personalities", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[PersonalityResponse]]))
-  )
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "userId", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "personalityRole", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "firstName", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "lastName", paramType = "query", dataType = "string")
     )
   )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[PersonalityResponse]]))
+  )
   @Path(value = "/")
-  def adminGetPersonalities: Route
+  def getPersonalities: Route
 
-  @ApiOperation(value = "get-personality", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(value = "create-personality", httpMethod = "POST", code = HttpCodes.Created)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.personality.CreatePersonalityRequest"
+      )
+    )
+  )
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityResponse]))
   )
-  @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "personalityId", paramType = "path", dataType = "string"))
-  )
-  @Path(value = "/{personalityId}")
-  def adminGetPersonality: Route
+  @Path(value = "/")
+  def createPersonality: Route
 
-  @ApiOperation(value = "delete-personality", httpMethod = "DELETE", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "OK")))
+  @ApiOperation(value = "update-personality", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiImplicitParams(
-    value = Array(new ApiImplicitParam(name = "personalityId", paramType = "path", dataType = "string"))
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.personality.UpdatePersonalityRequest"
+      ),
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      )
+    )
   )
-  @Path(value = "/{personalityId}")
-  def adminDeletePersonality: Route
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityResponse]))
+  )
+  @Path(value = "/{userId}")
+  def updatePersonality: Route
 
-  def routes: Route =
-    adminGetPersonality ~ adminGetPersonalities ~ adminPostPersonality ~ adminPutPersonality ~ adminDeletePersonality
+  def routes: Route = getPersonality ~ getPersonalities ~ createPersonality ~ updatePersonality
+
 }
 
 trait AdminPersonalityApiComponent {
@@ -132,9 +118,9 @@ trait DefaultAdminPersonalityApiComponent
     extends AdminPersonalityApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
-  this: PersonalityServiceComponent
-    with MakeDataHandlerComponent
+  this: MakeDataHandlerComponent
     with SessionHistoryCoordinatorServiceComponent
+    with UserServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent =>
 
@@ -142,21 +128,15 @@ trait DefaultAdminPersonalityApiComponent
 
   class DefaultAdminPersonalityApi extends AdminPersonalityApi {
 
-    private val personalityId: PathMatcher1[PersonalityId] = Segment.map(id => PersonalityId(id))
+    val userId: PathMatcher1[UserId] = Segment.map(UserId.apply)
 
-    override def adminPostPersonality: Route = {
-      post {
-        path("admin" / "personalities") {
-          makeOperation("ModerationPostPersonality") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                decodeRequest {
-                  entity(as[CreatePersonalityRequest]) { request =>
-                    onSuccess(personalityService.createPersonality(request)) { result =>
-                      complete(StatusCodes.Created -> PersonalityIdResponse(result.personalityId))
-                    }
-                  }
-                }
+    override def getPersonality: Route = get {
+      path("admin" / "personalities" / userId) { userId =>
+        makeOperation("GetPersonality") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                complete(PersonalityResponse(user))
               }
             }
           }
@@ -164,149 +144,243 @@ trait DefaultAdminPersonalityApiComponent
       }
     }
 
-    override def adminPutPersonality: Route = {
-      put {
-        path("admin" / "personalities" / personalityId) { personalityId =>
-          makeOperation("ModerationPutPersonality") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                decodeRequest {
-                  entity(as[UpdatePersonalityRequest]) { request =>
-                    provideAsyncOrNotFound(personalityService.updatePersonality(personalityId, request)) { result =>
-                      complete(StatusCodes.OK -> PersonalityIdResponse(result.personalityId))
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    override def adminGetPersonalities: Route = {
-      get {
-        path("admin" / "personalities") {
-          makeOperation("ModerationGetPersonalities") { _ =>
-            parameters(
-              (
-                '_start.as[Int].?,
-                '_end.as[Int].?,
-                '_sort.?,
-                '_order.?,
-                'userId.as[UserId].?,
-                'questionId.as[QuestionId].?,
-                'personalityRole.as[PersonalityRole].?
-              )
-            ) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               userId: Option[UserId],
-               questionId: Option[QuestionId],
-               personalityRole: Option[PersonalityRole]) =>
-                makeOAuth2 { auth: AuthInfo[UserRights] =>
-                  requireAdminRole(auth.user) {
+    override def getPersonalities: Route = get {
+      path("admin" / "personalities") {
+        makeOperation("GetPersonalities") { _ =>
+          parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'email.?, 'firstName.?, 'lastName.?)) {
+            (start: Option[Int],
+             end: Option[Int],
+             sort: Option[String],
+             order: Option[String],
+             email: Option[String],
+             firstName: Option[String],
+             lastName: Option[String]) =>
+              makeOAuth2 { auth: AuthInfo[UserRights] =>
+                requireAdminRole(auth.user) {
+                  provideAsync(
+                    userService.adminCountUsers(
+                      email = email,
+                      firstName = firstName,
+                      lastName = lastName,
+                      role = None,
+                      userType = Some(UserType.UserTypePersonality)
+                    )
+                  ) { count =>
                     provideAsync(
-                      personalityService.find(start.getOrElse(0), end, sort, order, userId, questionId, personalityRole)
-                    ) { result =>
-                      provideAsync(personalityService.count(userId, questionId, personalityRole)) { count =>
-                        complete(
-                          (StatusCodes.OK, List(`X-Total-Count`(count.toString)), result.map(PersonalityResponse.apply))
-                        )
+                      userService.adminFindUsers(
+                        start.getOrElse(0),
+                        end,
+                        sort,
+                        order,
+                        email = email,
+                        firstName = firstName,
+                        lastName = lastName,
+                        role = None,
+                        userType = Some(UserType.UserTypePersonality)
+                      )
+                    ) { users =>
+                      complete(
+                        (StatusCodes.OK, List(`X-Total-Count`(count.toString)), users.map(PersonalityResponse.apply))
+                      )
+                    }
+                  }
+                }
+              }
+          }
+        }
+      }
+    }
+
+    override def createPersonality: Route = post {
+      path("admin" / "personalities") {
+        makeOperation("CreatePersonality") { requestContext =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[CreatePersonalityRequest]) { request: CreatePersonalityRequest =>
+                  provideAsync(
+                    userService
+                      .registerPersonality(
+                        UserRegisterData(
+                          email = request.email,
+                          firstName = request.firstName,
+                          lastName = request.lastName,
+                          password = None,
+                          lastIp = None,
+                          country = request.country,
+                          language = request.language,
+                          optIn = Some(false),
+                          optInPartner = Some(false),
+                          roles = Seq(Role.RoleCitizen),
+                          publicProfile = true
+                        ),
+                        requestContext
+                      )
+                  ) { result =>
+                    complete(StatusCodes.Created -> PersonalityResponse(result))
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def updatePersonality: Route =
+      put {
+        path("admin" / "personalities" / userId) { userId =>
+          makeOperation("UpdatePersonality") { requestContext =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              requireAdminRole(userAuth.user) {
+                decodeRequest {
+                  entity(as[UpdatePersonalityRequest]) { request: UpdatePersonalityRequest =>
+                    provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                      val lowerCasedEmail: String = request.email.getOrElse(user.email).toLowerCase()
+                      provideAsync(userService.getUserByEmail(lowerCasedEmail)) { maybeUser =>
+                        maybeUser.foreach { userToCheck =>
+                          Validation.validate(
+                            Validation.validateField(
+                              field = "email",
+                              "already_registered",
+                              condition = userToCheck.userId.value == user.userId.value,
+                              message = s"Email $lowerCasedEmail already exists"
+                            )
+                          )
+                        }
+                        onSuccess(
+                          userService.update(
+                            user.copy(
+                              email = lowerCasedEmail,
+                              firstName = request.firstName.orElse(user.firstName),
+                              lastName = request.lastName.orElse(user.lastName),
+                              country = request.country.getOrElse(user.country),
+                              language = request.language.getOrElse(user.language),
+                              profile = user.profile
+                                .map(
+                                  _.copy(
+                                    avatarUrl = request.avatarUrl.orElse(user.profile.flatMap(_.avatarUrl)),
+                                    description = request.description.orElse(user.profile.flatMap(_.description)),
+                                    gender = request.gender.orElse(user.profile.flatMap(_.gender)),
+                                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
+                                  )
+                                )
+                                .orElse(
+                                  Profile.parseProfile(
+                                    avatarUrl = request.avatarUrl,
+                                    description = request.description,
+                                    gender = request.gender,
+                                    genderName = request.genderName
+                                  )
+                                )
+                            ),
+                            requestContext
+                          )
+                        ) { user: User =>
+                          complete(StatusCodes.OK -> PersonalityResponse(user))
+                        }
                       }
                     }
                   }
                 }
-            }
-          }
-        }
-      }
-    }
-
-    override def adminGetPersonality: Route = {
-      get {
-        path("admin" / "personalities" / personalityId) { personalityId =>
-          makeOperation("ModerationGetPersonality") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                provideAsyncOrNotFound(personalityService.getPersonality(personalityId)) { personality =>
-                  complete(PersonalityResponse(personality))
-                }
               }
             }
           }
         }
       }
-    }
-
-    override def adminDeletePersonality: Route = {
-      delete {
-        path("admin" / "personalities" / personalityId) { personalityId =>
-          makeOperation("ModerationDeletePersonality") { _ =>
-            makeOAuth2 { auth: AuthInfo[UserRights] =>
-              requireAdminRole(auth.user) {
-                provideAsync(personalityService.deletePersonality(personalityId)) { _ =>
-                  complete(StatusCodes.NoContent)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
   }
+
 }
 
 final case class CreatePersonalityRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  userId: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "6a90575f-f625-4025-a485-8769e8a26967")
-  questionId: QuestionId,
-  @(ApiModelProperty @field)(dataType = "string", example = "CANDIDATE")
-  personalityRole: PersonalityRole
-)
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
+  @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
+  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String]
+) {
+  validate(
+    mandatoryField("firstName", firstName),
+    validateOptionalUserInput("firstName", firstName, None),
+    validateOptionalUserInput("lastName", lastName, None),
+    mandatoryField("email", email),
+    validateEmail("email", email.toLowerCase),
+    validateUserInput("email", email, None),
+    mandatoryField("language", language),
+    mandatoryField("country", country)
+  )
+}
 
 object CreatePersonalityRequest {
   implicit val decoder: Decoder[CreatePersonalityRequest] = deriveDecoder[CreatePersonalityRequest]
 }
 
 final case class UpdatePersonalityRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  userId: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "CANDIDATE")
-  personalityRole: PersonalityRole
-)
+  email: Option[String],
+  firstName: Option[String],
+  lastName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
+  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String]
+) {
+  private val maxLanguageLength = 3
+  private val maxCountryLength = 3
+
+  validateOptional(
+    email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
+    email.map(email       => validateUserInput("email", email, None)),
+    firstName.map(value   => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
+    firstName.map(value   => validateUserInput("firstName", value, None)),
+    lastName.map(value    => validateUserInput("lastName", value, None)),
+    country.map(country   => maxLength("country", maxCountryLength, country.value)),
+    language.map(language => maxLength("language", maxLanguageLength, language.value))
+  )
+}
 
 object UpdatePersonalityRequest {
   implicit val decoder: Decoder[UpdatePersonalityRequest] = deriveDecoder[UpdatePersonalityRequest]
 }
 
-final case class PersonalityResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "5c95a5b1-3722-4f49-93ec-2c2fcb5da051")
-  id: PersonalityId,
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
-  userId: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "CANDIDATE")
-  personalityRole: PersonalityRole
-)
-
-object PersonalityResponse {
-  def apply(personality: Personality): PersonalityResponse = PersonalityResponse(
-    id = personality.personalityId,
-    userId = personality.userId,
-    personalityRole = personality.personalityRole
+case class PersonalityResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
+  @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
+  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String]
+) {
+  validate(
+    validateUserInput("email", email, None),
+    validateOptionalUserInput("firstName", firstName, None),
+    validateOptionalUserInput("lastName", lastName, None)
   )
-
-  implicit val decoder: Decoder[PersonalityResponse] = deriveDecoder[PersonalityResponse]
-  implicit val encoder: Encoder[PersonalityResponse] = deriveEncoder[PersonalityResponse]
 }
 
-final case class PersonalityIdResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") personalityId: PersonalityId
-)
+object PersonalityResponse extends CirceFormatters {
+  implicit val encoder: Encoder[PersonalityResponse] = deriveEncoder[PersonalityResponse]
+  implicit val decoder: Decoder[PersonalityResponse] = deriveDecoder[PersonalityResponse]
 
-object PersonalityIdResponse {
-  implicit val encoder: Encoder[PersonalityIdResponse] = deriveEncoder[PersonalityIdResponse]
+  def apply(user: User): PersonalityResponse = PersonalityResponse(
+    id = user.userId,
+    email = user.email,
+    firstName = user.firstName,
+    lastName = user.lastName,
+    country = user.country,
+    language = user.language,
+    avatarUrl = user.profile.flatMap(_.avatarUrl),
+    description = user.profile.flatMap(_.description),
+    gender = user.profile.flatMap(_.gender),
+    genderName = user.profile.flatMap(_.genderName)
+  )
 }

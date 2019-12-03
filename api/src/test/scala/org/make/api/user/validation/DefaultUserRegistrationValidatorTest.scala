@@ -31,23 +31,12 @@ import scala.concurrent.duration.DurationInt
 class DefaultUserRegistrationValidatorTest extends MakeUnitTest {
 
   val data = UserRegisterData(
-    "test",
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    Country("FR"),
-    Language("fr"),
-    None,
-    None,
-    None,
-    Seq.empty,
-    Seq.empty
+    email = "test",
+    firstName = None,
+    password = None,
+    lastIp = None,
+    country = Country("FR"),
+    language = Language("fr")
   )
 
   feature("email validation") {

@@ -177,6 +177,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                           None,
                           None,
                           None,
+                          None,
+                          None,
                           None
                       )
                     )
@@ -218,6 +220,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                         userService.adminFindUsers(
                           start = offset,
                           end = Some(mailJetConfiguration.userListBatchSize),
+                          None,
+                          None,
                           None,
                           None,
                           None,

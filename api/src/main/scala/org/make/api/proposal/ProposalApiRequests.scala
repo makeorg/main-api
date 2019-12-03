@@ -34,7 +34,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{BusinessConfig, CirceFormatters, FrontConfiguration, RequestContext, Validation}
 
 import scala.annotation.meta.field
@@ -199,7 +199,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                @Deprecated isRandom: Option[Boolean] = Some(false),
                                sortAlgorithm: Option[String] = None,
                                operationKinds: Option[Seq[OperationKind]] = None,
-                               isOrganisation: Option[Boolean] = None) {
+                               userType: Option[UserType] = None) {
 
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =
@@ -217,7 +217,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         language = language.map(LanguageSearchFilter.apply),
         country = country.map(CountrySearchFilter.apply),
         operationKinds = operationKinds.map(OperationKindsSearchFilter.apply),
-        isOrganisation = isOrganisation.map(IsOrganisationSearchFilter.apply)
+        userType = userType.map(UserTypeSearchFilter.apply)
       )
 
     val randomSeed: Int = seed.getOrElse(MakeRandom.random.nextInt())

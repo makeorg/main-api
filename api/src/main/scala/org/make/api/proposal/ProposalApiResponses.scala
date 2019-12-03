@@ -34,7 +34,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference._
 import org.make.core.tag.{Tag, TagId, TagTypeId}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{CirceFormatters, RequestContext, SlugHelper}
 
 import scala.annotation.meta.field
@@ -178,7 +178,8 @@ final case class AuthorResponse(firstName: Option[String],
                                 postalCode: Option[String],
                                 @(ApiModelProperty @field)(example = "21", dataType = "int")
                                 age: Option[Int],
-                                avatarUrl: Option[String])
+                                avatarUrl: Option[String],
+                                userType: Option[UserType])
 
 object AuthorResponse {
   implicit val encoder: Encoder[AuthorResponse] = deriveEncoder[AuthorResponse]
@@ -192,7 +193,8 @@ object AuthorResponse {
         organisationSlug = None,
         postalCode = None,
         age = None,
-        avatarUrl = None
+        avatarUrl = None,
+        userType = None
       )
     } else {
       AuthorResponse(
@@ -201,7 +203,8 @@ object AuthorResponse {
         organisationSlug = author.organisationSlug,
         postalCode = author.postalCode,
         age = author.age,
-        avatarUrl = author.avatarUrl
+        avatarUrl = author.avatarUrl,
+        userType = Some(author.userType)
       )
     }
   }

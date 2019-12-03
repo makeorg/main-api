@@ -30,13 +30,14 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class PersonalityServiceTest
+class QuestionPersonalityServiceTest
     extends MakeUnitTest
-    with DefaultPersonalityServiceComponent
-    with PersistentPersonalityServiceComponent
+    with DefaultQuestionPersonalityServiceComponent
+    with PersistentQuestionPersonalityServiceComponent
     with IdGeneratorComponent {
 
-  override val persistentPersonalityService: PersistentPersonalityService = mock[PersistentPersonalityService]
+  override val persistentQuestionPersonalityService: PersistentQuestionPersonalityService =
+    mock[PersistentQuestionPersonalityService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
 
   val personality: Personality = Personality(
@@ -49,11 +50,11 @@ class PersonalityServiceTest
   feature("create personality") {
     scenario("creation") {
       Mockito.when(idGenerator.nextPersonalityId()).thenReturn(PersonalityId("personality"))
-      Mockito.when(persistentPersonalityService.persist(personality)).thenReturn(Future.successful(personality))
+      Mockito.when(persistentQuestionPersonalityService.persist(personality)).thenReturn(Future.successful(personality))
 
       whenReady(
-        personalityService.createPersonality(
-          request = CreatePersonalityRequest(
+        questionPersonalityService.createPersonality(
+          request = CreateQuestionPersonalityRequest(
             userId = UserId("user-id"),
             questionId = QuestionId("question"),
             personalityRole = Candidate
@@ -68,12 +69,14 @@ class PersonalityServiceTest
 
   feature("update personality") {
     scenario("update when no personality is found") {
-      Mockito.when(persistentPersonalityService.getById(PersonalityId("not-found"))).thenReturn(Future.successful(None))
+      Mockito
+        .when(persistentQuestionPersonalityService.getById(PersonalityId("not-found")))
+        .thenReturn(Future.successful(None))
 
       whenReady(
-        personalityService.updatePersonality(
+        questionPersonalityService.updatePersonality(
           personalityId = PersonalityId("not-found"),
-          UpdatePersonalityRequest(userId = UserId("user-id"), personalityRole = Candidate)
+          UpdateQuestionPersonalityRequest(userId = UserId("user-id"), personalityRole = Candidate)
         ),
         Timeout(2.seconds)
       ) { personality =>
@@ -85,16 +88,16 @@ class PersonalityServiceTest
       val updatedPersonality: Personality = personality.copy(userId = UserId("update-user"))
 
       Mockito
-        .when(persistentPersonalityService.getById(PersonalityId("personality")))
+        .when(persistentQuestionPersonalityService.getById(PersonalityId("personality")))
         .thenReturn(Future.successful(Some(personality)))
       Mockito
-        .when(persistentPersonalityService.modify(updatedPersonality))
+        .when(persistentQuestionPersonalityService.modify(updatedPersonality))
         .thenReturn(Future.successful(updatedPersonality))
 
       whenReady(
-        personalityService.updatePersonality(
+        questionPersonalityService.updatePersonality(
           personalityId = PersonalityId("personality"),
-          UpdatePersonalityRequest(userId = UserId("update-user"), personalityRole = Candidate)
+          UpdateQuestionPersonalityRequest(userId = UserId("update-user"), personalityRole = Candidate)
         ),
         Timeout(2.seconds)
       ) { personality =>

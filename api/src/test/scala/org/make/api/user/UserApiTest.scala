@@ -24,15 +24,7 @@ import java.time.{Instant, LocalDate}
 import java.util.Date
 
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{
-  ContentType,
-  ContentTypes,
-  HttpEntity,
-  MediaTypes,
-  Multipart,
-  RemoteAddress,
-  StatusCodes
-}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
@@ -44,7 +36,6 @@ import org.make.api.proposal.{
   ProposalsResultSeededResponse,
   _
 }
-
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -52,19 +43,12 @@ import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.storage.Content.FileContent
-import org.make.api.technical.storage.{
-  FileType,
-  StorageConfiguration,
-  StorageConfigurationComponent,
-  StorageService,
-  StorageServiceComponent,
-  UploadResponse
-}
+import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
 import org.make.api.userhistory.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
-import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
+import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationId
@@ -128,26 +112,17 @@ class UserApiTest
 
   val expiresInSecond = 1000
 
-  val fakeUser = User(
-    userId = UserId("ABCD"),
+  val fakeUser = TestUtils.user(
+    id = UserId("ABCD"),
     email = "foo@bar.com",
     firstName = Some("olive"),
     lastName = Some("tom"),
     lastIp = Some("127.0.0.1"),
     hashedPassword = Some("passpass"),
-    enabled = true,
     emailVerified = false,
     lastConnection = DateHelper.now(),
     verificationToken = Some("token"),
-    verificationTokenExpiresAt = Some(DateHelper.now()),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq.empty,
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    verificationTokenExpiresAt = Some(DateHelper.now())
   )
 
   val sylvain: User =
@@ -672,26 +647,17 @@ class UserApiTest
     info("As a user with an email")
     info("I want to use api to reset my password")
 
-    val johnDoeUser = User(
-      userId = UserId("JOHNDOE"),
+    val johnDoeUser = TestUtils.user(
+      id = UserId("JOHNDOE"),
       email = "john.doe@example.com",
       firstName = Some("John"),
       lastName = Some("Doe"),
       lastIp = Some("127.0.0.1"),
       hashedPassword = Some("passpass"),
-      enabled = true,
       emailVerified = false,
       lastConnection = DateHelper.now(),
       verificationToken = Some("token"),
       verificationTokenExpiresAt = Some(DateHelper.now()),
-      resetToken = None,
-      resetTokenExpiresAt = None,
-      roles = Seq.empty,
-      country = Country("FR"),
-      language = Language("fr"),
-      profile = None,
-      availableQuestions = Seq.empty,
-      anonymousParticipation = false
     )
     Mockito
       .when(persistentUserService.findByEmail("john.doe@example.com"))
@@ -711,50 +677,26 @@ class UserApiTest
       .thenReturn(Future.successful(None))
 
     val fooBarUserId = UserId("foo-bar")
-    val fooBarUser = User(
-      userId = fooBarUserId,
+    val fooBarUser = TestUtils.user(
+      id = fooBarUserId,
       email = "foo@exemple.com",
       firstName = None,
       lastName = None,
-      lastIp = None,
-      hashedPassword = None,
-      enabled = true,
-      emailVerified = true,
       lastConnection = DateHelper.now(),
-      verificationToken = None,
-      verificationTokenExpiresAt = None,
       resetToken = Some("baz-bar"),
-      resetTokenExpiresAt = Some(DateHelper.now().minusDays(1)),
-      roles = Seq(Role.RoleCitizen),
-      country = Country("FR"),
-      language = Language("fr"),
-      profile = None,
-      availableQuestions = Seq.empty,
-      anonymousParticipation = false
+      resetTokenExpiresAt = Some(DateHelper.now().minusDays(1))
     )
 
     val notExpiredResetTokenUserId: UserId = UserId("not-expired-reset-token-user-id")
     val validResetToken: String = "valid-reset-token"
-    val notExpiredResetTokenUser = User(
-      userId = notExpiredResetTokenUserId,
+    val notExpiredResetTokenUser = TestUtils.user(
+      id = notExpiredResetTokenUserId,
       email = "foo@exemple.com",
       firstName = None,
       lastName = None,
-      lastIp = None,
-      hashedPassword = None,
-      enabled = true,
-      emailVerified = true,
       lastConnection = DateHelper.now(),
-      verificationToken = None,
-      verificationTokenExpiresAt = None,
       resetToken = Some("valid-reset-token"),
-      resetTokenExpiresAt = Some(DateHelper.now().plusDays(1)),
-      roles = Seq(Role.RoleCitizen),
-      country = Country("FR"),
-      language = Language("fr"),
-      profile = None,
-      availableQuestions = Seq.empty,
-      anonymousParticipation = false
+      resetTokenExpiresAt = Some(DateHelper.now().plusDays(1))
     )
 
     Mockito
@@ -997,7 +939,7 @@ class UserApiTest
         age = Some(26),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1129,7 +1071,7 @@ class UserApiTest
         age = Some(22),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,

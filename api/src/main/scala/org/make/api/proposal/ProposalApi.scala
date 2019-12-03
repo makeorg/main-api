@@ -39,8 +39,9 @@ import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, 
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, LabelId, Language}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
+import org.make.core.user.UserType
 import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -68,7 +69,6 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "themesIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "labelsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
@@ -87,7 +87,8 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "isRandom", paramType = "query", dataType = "boolean"),
       new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean")
+      new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean"),
+      new ApiImplicitParam(name = "userType", paramType = "query", dataType = "string")
     )
   )
   def search: Route
@@ -254,7 +255,6 @@ trait DefaultProposalApiComponent
                   'proposalIds.as[immutable.Seq[ProposalId]].?,
                   'questionId.as[immutable.Seq[QuestionId]].?,
                   'tagsIds.as[immutable.Seq[TagId]].?,
-                  'labelsIds.as[immutable.Seq[LabelId]].?,
                   'operationId.as[OperationId].?,
                   'trending.?,
                   'content.?,
@@ -272,13 +272,13 @@ trait DefaultProposalApiComponent
                   'isRandom.as[Boolean].?,
                   'sortAlgorithm.?,
                   'operationKinds.as[immutable.Seq[OperationKind]].?,
-                  'isOrganisation.as[Boolean].?
+                  'isOrganisation.as[Boolean].?,
+                  "userType".as[UserType].?
                 )
               ) {
                 (proposalIds: Option[Seq[ProposalId]],
                  questionIds: Option[Seq[QuestionId]],
                  tagsIds: Option[Seq[TagId]],
-                 labelsIds: Option[Seq[LabelId]],
                  operationId: Option[OperationId],
                  trending: Option[String],
                  content: Option[String],
@@ -296,7 +296,8 @@ trait DefaultProposalApiComponent
                  isRandom: Option[Boolean],
                  sortAlgorithm: Option[String],
                  operationKinds: Option[Seq[OperationKind]],
-                 isOrganisation: Option[Boolean]) =>
+                 isOrganisation: Option[Boolean],
+                 userType: Option[UserType]) =>
                   Validation.validate(Seq(country.map { countryValue =>
                     Validation.validChoices(
                       fieldName = "country",
@@ -353,7 +354,6 @@ trait DefaultProposalApiComponent
                     proposalIds = proposalIds,
                     questionIds = questionIds,
                     tagsIds = tagsIds,
-                    labelsIds = labelsIds,
                     operationId = operationId,
                     trending = trending,
                     content = content,
@@ -374,7 +374,13 @@ trait DefaultProposalApiComponent
                         Some(Seq(GreatCause, PublicConsultation, BusinessConsultation))
                       }
                     },
-                    isOrganisation = isOrganisation
+                    userType = userType.orElse(isOrganisation.flatMap { isOrganisation =>
+                      if (isOrganisation) {
+                        Some(UserType.UserTypeOrganisation)
+                      } else {
+                        None
+                      }
+                    })
                   )
                   provideAsync(
                     proposalService

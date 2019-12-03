@@ -21,7 +21,7 @@ package org.make.api.personality
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.personality.DefaultPersistentPersonalityServiceComponent.PersistentPersonality
+import org.make.api.personality.DefaultPersistentQuestionPersonalityServiceComponent.PersistentPersonality
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
@@ -31,11 +31,11 @@ import scalikejdbc._
 
 import scala.concurrent.Future
 
-trait PersistentPersonalityServiceComponent {
-  def persistentPersonalityService: PersistentPersonalityService
+trait PersistentQuestionPersonalityServiceComponent {
+  def persistentQuestionPersonalityService: PersistentQuestionPersonalityService
 }
 
-trait PersistentPersonalityService {
+trait PersistentQuestionPersonalityService {
   def persist(personality: Personality): Future[Personality]
   def modify(personality: Personality): Future[Personality]
   def getById(personalityId: PersonalityId): Future[Option[Personality]]
@@ -52,13 +52,13 @@ trait PersistentPersonalityService {
   def delete(personalityId: PersonalityId): Future[Unit]
 }
 
-trait DefaultPersistentPersonalityServiceComponent extends PersistentPersonalityServiceComponent {
+trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQuestionPersonalityServiceComponent {
   this: MakeDBExecutionContextComponent =>
 
-  override lazy val persistentPersonalityService: DefaultPersistentPersonalityService =
-    new DefaultPersistentPersonalityService
+  override lazy val persistentQuestionPersonalityService: DefaultPersistentQuestionPersonalityService =
+    new DefaultPersistentQuestionPersonalityService
 
-  class DefaultPersistentPersonalityService extends PersistentPersonalityService with ShortenedNames {
+  class DefaultPersistentQuestionPersonalityService extends PersistentQuestionPersonalityService with ShortenedNames {
 
     private val personalityAlias = PersistentPersonality.personalityAlias
 
@@ -175,7 +175,7 @@ trait DefaultPersistentPersonalityServiceComponent extends PersistentPersonality
   }
 }
 
-object DefaultPersistentPersonalityServiceComponent {
+object DefaultPersistentQuestionPersonalityServiceComponent {
 
   case class PersistentPersonality(id: String, userId: String, questionId: String, personalityRole: String) {
     def toPersonality: Personality = {

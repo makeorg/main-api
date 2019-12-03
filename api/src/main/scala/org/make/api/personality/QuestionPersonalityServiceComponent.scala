@@ -27,11 +27,11 @@ import org.make.core.user.UserId
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait PersonalityServiceComponent {
-  def personalityService: PersonalityService
+trait QuestionPersonalityServiceComponent {
+  def questionPersonalityService: QuestionPersonalityService
 }
 
-trait PersonalityService extends ShortenedNames {
+trait QuestionPersonalityService extends ShortenedNames {
   def getPersonality(personalityId: PersonalityId): Future[Option[Personality]]
   def find(start: Int,
            end: Option[Int],
@@ -43,37 +43,39 @@ trait PersonalityService extends ShortenedNames {
   def count(userId: Option[UserId],
             questionId: Option[QuestionId],
             personalityRole: Option[PersonalityRole]): Future[Int]
-  def createPersonality(request: CreatePersonalityRequest): Future[Personality]
-  def updatePersonality(personalityId: PersonalityId, request: UpdatePersonalityRequest): Future[Option[Personality]]
+  def createPersonality(request: CreateQuestionPersonalityRequest): Future[Personality]
+  def updatePersonality(personalityId: PersonalityId,
+                        request: UpdateQuestionPersonalityRequest): Future[Option[Personality]]
   def deletePersonality(personalityId: PersonalityId): Future[Unit]
 }
 
-trait DefaultPersonalityServiceComponent extends PersonalityServiceComponent {
-  this: PersistentPersonalityServiceComponent with IdGeneratorComponent =>
+trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServiceComponent {
+  this: PersistentQuestionPersonalityServiceComponent with IdGeneratorComponent =>
 
-  override lazy val personalityService: DefaultPersonalityService = new DefaultPersonalityService
+  override lazy val questionPersonalityService: DefaultQuestionPersonalityService =
+    new DefaultQuestionPersonalityService
 
-  class DefaultPersonalityService extends PersonalityService {
+  class DefaultQuestionPersonalityService extends QuestionPersonalityService {
 
     override def getPersonality(personalityId: PersonalityId): Future[Option[Personality]] = {
-      persistentPersonalityService.getById(personalityId)
+      persistentQuestionPersonalityService.getById(personalityId)
     }
 
-    override def createPersonality(request: CreatePersonalityRequest): Future[Personality] = {
+    override def createPersonality(request: CreateQuestionPersonalityRequest): Future[Personality] = {
       val personality: Personality = Personality(
         personalityId = idGenerator.nextPersonalityId(),
         userId = request.userId,
         questionId = request.questionId,
         personalityRole = request.personalityRole
       )
-      persistentPersonalityService.persist(personality)
+      persistentQuestionPersonalityService.persist(personality)
     }
 
     override def updatePersonality(personalityId: PersonalityId,
-                                   request: UpdatePersonalityRequest): Future[Option[Personality]] = {
-      persistentPersonalityService.getById(personalityId).flatMap {
+                                   request: UpdateQuestionPersonalityRequest): Future[Option[Personality]] = {
+      persistentQuestionPersonalityService.getById(personalityId).flatMap {
         case Some(personality) =>
-          persistentPersonalityService
+          persistentQuestionPersonalityService
             .modify(personality.copy(userId = request.userId, personalityRole = request.personalityRole))
             .map(Some.apply)
         case None => Future.successful(None)
@@ -87,17 +89,17 @@ trait DefaultPersonalityServiceComponent extends PersonalityServiceComponent {
                       userId: Option[UserId],
                       questionId: Option[QuestionId],
                       personalityRole: Option[PersonalityRole]): Future[Seq[Personality]] = {
-      persistentPersonalityService.find(start, end, sort, order, userId, questionId, personalityRole)
+      persistentQuestionPersonalityService.find(start, end, sort, order, userId, questionId, personalityRole)
     }
 
     override def count(userId: Option[UserId],
                        questionId: Option[QuestionId],
                        personalityRole: Option[PersonalityRole]): Future[Int] = {
-      persistentPersonalityService.count(userId, questionId, personalityRole)
+      persistentQuestionPersonalityService.count(userId, questionId, personalityRole)
     }
 
     override def deletePersonality(personalityId: PersonalityId): Future[Unit] = {
-      persistentPersonalityService.delete(personalityId)
+      persistentQuestionPersonalityService.delete(personalityId)
     }
 
   }

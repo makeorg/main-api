@@ -80,6 +80,48 @@ object CustomRole extends StrictLogging {
     Decoder.decodeString.map(CustomRole(_))
 }
 
+sealed trait UserType {
+  def shortName: String
+}
+
+object UserType {
+  implicit lazy val userTypeEncoder: Encoder[UserType] = (userType: UserType) => Json.fromString(userType.shortName)
+  implicit lazy val userTypeDecoder: Decoder[UserType] = Decoder.decodeString.map(UserType.matchUserType)
+
+  implicit val UserTypeFormatter: JsonFormat[UserType] = new JsonFormat[UserType] {
+    override def read(json: JsValue): UserType = json match {
+      case JsString(s) => matchUserType(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: UserType): JsValue = {
+      JsString(obj.shortName)
+    }
+  }
+
+  val userTypes: Map[String, UserType] = Map(
+    UserTypeUser.shortName -> UserTypeUser,
+    UserTypeOrganisation.shortName -> UserTypeOrganisation,
+    UserTypePersonality.shortName -> UserTypePersonality
+  )
+
+  def matchUserType(userType: String): UserType = {
+    userTypes.getOrElse(userType, UserTypeUser)
+  }
+
+  case object UserTypeUser extends UserType {
+    val shortName: String = "USER"
+  }
+
+  case object UserTypeOrganisation extends UserType {
+    val shortName: String = "ORGANISATION"
+  }
+
+  case object UserTypePersonality extends UserType {
+    val shortName: String = "PERSONALITY"
+  }
+}
+
 case class MailingErrorLog(error: String, date: ZonedDateTime)
 
 case class User(userId: UserId,
@@ -90,7 +132,7 @@ case class User(userId: UserId,
                 hashedPassword: Option[String],
                 enabled: Boolean,
                 emailVerified: Boolean,
-                isOrganisation: Boolean = false,
+                userType: UserType,
                 lastConnection: ZonedDateTime,
                 verificationToken: Option[String],
                 verificationTokenExpiresAt: Option[ZonedDateTime],

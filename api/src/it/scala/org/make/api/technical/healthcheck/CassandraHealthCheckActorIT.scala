@@ -23,16 +23,15 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.make.api.ItMakeTest
 import org.make.api.docker.DockerCassandraService
 import org.make.api.proposal.{ProposalCoordinator, ProposeCommand}
 import org.make.api.technical.TimeSettings
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
+import org.make.api.{ItMakeTest, TestUtilsIT}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{User, UserId}
+import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext
@@ -77,28 +76,7 @@ class CassandraHealthCheckActorIT
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
-        user = User(
-          userId = UserId("fake-user"),
-          email = "fake@user.com",
-          firstName = None,
-          lastName = None,
-          lastIp = None,
-          hashedPassword = None,
-          enabled = true,
-          emailVerified = true,
-          lastConnection = DateHelper.now(),
-          verificationToken = None,
-          resetToken = None,
-          verificationTokenExpiresAt = None,
-          resetTokenExpiresAt = None,
-          roles = Seq(RoleCitizen),
-          country = Country("FR"),
-          language = Language("fr"),
-          profile = None,
-          lastMailingError = None,
-          availableQuestions = Seq.empty,
-          anonymousParticipation = false
-        ),
+        user = TestUtilsIT.user(id = UserId("fake-user"), email = "fake@user.com", firstName = None, lastName = None),
         createdAt = DateHelper.now(),
         content = "This is a proposal",
         question = Question(

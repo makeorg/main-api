@@ -99,7 +99,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
   class DefaultOrganisationService extends OrganisationService {
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
-      persistentUserService.get(userId).map(_.filter(_.isOrganisation))
+      persistentUserService.get(userId).map(_.filter(_.userType == UserType.UserTypeOrganisation))
     }
 
     override def getOrganisations: Future[Seq[User]] = {
@@ -160,7 +160,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         hashedPassword = organisationRegisterData.password.map(_.bcrypt),
         enabled = true,
         emailVerified = true,
-        isOrganisation = true,
+        userType = UserType.UserTypeOrganisation,
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,

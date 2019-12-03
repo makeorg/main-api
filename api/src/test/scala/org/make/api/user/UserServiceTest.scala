@@ -23,7 +23,6 @@ import java.text.SimpleDateFormat
 import java.time.{LocalDate, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
-import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.question.AuthorRequest
@@ -36,14 +35,14 @@ import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.SearchQuery
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{ConnectionMode, MailingErrorLog, Role, User, UserId}
+import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => isEqual, _}
 import org.mockito.Mockito.{times, verify}
@@ -124,27 +123,19 @@ class UserServiceTest
     website = Some("http://example.com"),
     politicalParty = Some("PP")
   )
-  val fooUser = User(
-    userId = UserId("1"),
+  val fooUser = TestUtils.user(
+    id = UserId("1"),
     email = "foo@example.com",
     firstName = Some("Foo"),
     lastName = Some("John"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = zonedDateTimeInThePast,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(zonedDateTimeInThePast),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
     profile = Some(fooProfile),
-    createdAt = Some(zonedDateTimeInThePast),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    createdAt = Some(zonedDateTimeInThePast)
   )
 
   val johnDoeProfile: Profile = Profile(
@@ -166,26 +157,17 @@ class UserServiceTest
     politicalParty = None
   )
 
-  val johnDoeUser: User = User(
-    userId = UserId("AAA-BBB-CCC-DDD"),
+  val johnDoeUser: User = TestUtils.user(
+    id = UserId("AAA-BBB-CCC-DDD"),
     email = "johndoe@example.com",
     firstName = Some("john"),
     lastName = Some("doe"),
     lastIp = Some("127.0.0.1"),
     hashedPassword = Some("passpass".bcrypt),
-    enabled = true,
-    emailVerified = true,
     lastConnection = DateHelper.now(),
     verificationToken = Some("Token"),
     verificationTokenExpiresAt = Some(DateHelper.now()),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = Some(johnDoeProfile),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    profile = Some(johnDoeProfile)
   )
 
   feature("register user") {
@@ -261,26 +243,17 @@ class UserServiceTest
         politicalParty = None
       )
 
-      val returnedUser = User(
-        userId = UserId("AAA-BBB-CCC-DDD"),
+      val returnedUser = TestUtils.user(
+        id = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
         firstName = info.firstName,
         lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        enabled = true,
-        emailVerified = true,
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq(RoleCitizen),
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = Some(returnedProfile),
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        profile = Some(returnedProfile)
       )
 
       Mockito
@@ -347,26 +320,17 @@ class UserServiceTest
         politicalParty = None
       )
 
-      val returnedUserWithGender = User(
-        userId = UserId("AAA-BBB-CCC-DDD-EEE"),
+      val returnedUserWithGender = TestUtils.user(
+        id = UserId("AAA-BBB-CCC-DDD-EEE"),
         email = infoWithGender.email.getOrElse(""),
         firstName = infoWithGender.firstName,
         lastName = infoWithGender.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        enabled = true,
-        emailVerified = true,
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq(RoleCitizen),
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = Some(returnedProfileWithGender),
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        profile = Some(returnedProfileWithGender)
       )
 
       Mockito
@@ -427,26 +391,17 @@ class UserServiceTest
         politicalParty = None
       )
 
-      val returnedUser = User(
-        userId = UserId("AAA-BBB-CCC-DDD"),
+      val returnedUser = TestUtils.user(
+        id = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
         firstName = info.firstName,
         lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        enabled = true,
-        emailVerified = true,
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq(RoleCitizen),
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = Some(returnedProfile),
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        profile = Some(returnedProfile)
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -500,26 +455,17 @@ class UserServiceTest
         politicalParty = None
       )
 
-      val returnedUser = User(
-        userId = UserId("AAA-BBB-CCC-DDD"),
+      val returnedUser = TestUtils.user(
+        id = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
         firstName = info.firstName,
         lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
-        enabled = true,
-        emailVerified = true,
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq(RoleCitizen),
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = Some(returnedProfile),
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        profile = Some(returnedProfile)
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -558,26 +504,12 @@ class UserServiceTest
         exception.asInstanceOf[EmailAlreadyRegisteredException].email should be("exist@mail.com")
       }
 
-      val user = User(
-        userId = UserId("AAA-BBB-CCC-DDD-EEE"),
+      val user = TestUtils.user(
+        id = UserId("AAA-BBB-CCC-DDD-EEE"),
         email = "existing-user@gmail.com",
         firstName = None,
         lastName = None,
-        lastIp = None,
-        hashedPassword = Some("hashedPassword"),
-        enabled = true,
-        emailVerified = true,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq(),
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        hashedPassword = Some("hashedPassword")
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
@@ -610,26 +542,13 @@ class UserServiceTest
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
       Mockito.clearInvocations(eventBusService)
 
-      val user = User(
-        userId = UserId("AAA-BBB-CCC-DDD-EEE"),
+      val user = TestUtils.user(
+        id = UserId("AAA-BBB-CCC-DDD-EEE"),
         email = "existing-user@gmail.com",
         firstName = None,
         lastName = None,
-        lastIp = None,
         hashedPassword = Some("hashedPassword"),
-        enabled = true,
-        emailVerified = false,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq(),
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        emailVerified = false
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(user)))
@@ -964,28 +883,13 @@ class UserServiceTest
         )
 
       Mockito.when(tokenGenerator.tokenToHash(isEqual(request.toString))).thenReturn("some-hash")
-      val user = User(
-        userId = UserId("existing-user-id"),
+      val user = TestUtils.user(
+        id = UserId("existing-user-id"),
         email = "yopmail+some-hash@make.org",
         firstName = Some(request.firstName),
         lastName = None,
-        lastIp = None,
-        hashedPassword = None,
         enabled = false,
-        emailVerified = false,
-        lastConnection = DateHelper.now(),
-        verificationToken = None,
-        verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
-        roles = Seq.empty,
-        country = Country("FR"),
-        language = Language("fr"),
-        profile = None,
-        createdAt = None,
-        updatedAt = None,
-        availableQuestions = Seq.empty,
-        anonymousParticipation = false
+        emailVerified = false
       )
       Mockito
         .when(persistentUserService.findByEmail("yopmail+some-hash@make.org"))

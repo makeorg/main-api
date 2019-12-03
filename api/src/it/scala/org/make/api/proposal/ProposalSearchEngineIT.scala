@@ -43,7 +43,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -201,7 +201,7 @@ class ProposalSearchEngineIT
       age = None,
       avatarUrl = None,
       anonymousParticipation = false,
-      isOrganisation = false
+      userType = UserType.UserTypeUser
     ),
     organisations = Seq.empty,
     themeId = None,
@@ -291,7 +291,7 @@ class ProposalSearchEngineIT
         age = Some(25),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
@@ -368,7 +368,7 @@ class ProposalSearchEngineIT
         age = Some(26),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
@@ -447,7 +447,7 @@ class ProposalSearchEngineIT
         age = Some(26),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -524,7 +524,7 @@ class ProposalSearchEngineIT
         age = Some(23),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -601,7 +601,7 @@ class ProposalSearchEngineIT
         age = Some(31),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -678,7 +678,7 @@ class ProposalSearchEngineIT
         age = Some(31),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -753,7 +753,7 @@ class ProposalSearchEngineIT
         age = Some(31),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -828,7 +828,7 @@ class ProposalSearchEngineIT
         age = Some(31),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -910,7 +910,7 @@ class ProposalSearchEngineIT
         age = Some(26),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -989,7 +989,7 @@ class ProposalSearchEngineIT
         age = Some(21),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1068,7 +1068,7 @@ class ProposalSearchEngineIT
         age = Some(23),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = true
+        userType = UserType.UserTypeOrganisation
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1147,7 +1147,7 @@ class ProposalSearchEngineIT
         age = Some(21),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1224,7 +1224,7 @@ class ProposalSearchEngineIT
         age = Some(23),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1301,7 +1301,7 @@ class ProposalSearchEngineIT
         age = Some(25),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1379,7 +1379,7 @@ class ProposalSearchEngineIT
         age = Some(26),
         avatarUrl = None,
         anonymousParticipation = false,
-        isOrganisation = false
+        userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1653,7 +1653,7 @@ class ProposalSearchEngineIT
       val query = SearchQuery(
         filters = Some(
           SearchFilters(
-            isOrganisation = Some(IsOrganisationSearchFilter(true)),
+            userType = Some(UserTypeSearchFilter(UserType.UserTypeOrganisation)),
             status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
           )
         )
@@ -1661,7 +1661,7 @@ class ProposalSearchEngineIT
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
         results.results.size should be(1)
-        results.results.foreach(_.author.isOrganisation should be(true))
+        results.results.foreach(_.author.userType should be(UserType.UserTypeOrganisation))
         results.results.foreach(_.id.value should be("bd44db77-3096-4e3b-b539-a4038307d85e"))
       }
     }

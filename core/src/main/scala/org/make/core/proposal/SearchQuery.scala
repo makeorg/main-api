@@ -36,7 +36,7 @@ import org.make.core.proposal.indexed.{ProposalElasticsearchFieldNames, Sequence
 import org.make.core.question.QuestionId
 import org.make.core.reference.{LabelId, Language}
 import org.make.core.tag.TagId
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 
 /**
   * The class holding the entire search query
@@ -85,7 +85,7 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          operationKinds: Option[OperationKindsSearchFilter] = None,
                          questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
                          segment: Option[SegmentSearchFilter] = None,
-                         isOrganisation: Option[IsOrganisationSearchFilter] = None)
+                         userType: Option[UserTypeSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -114,7 +114,7 @@ object SearchFilters extends ElasticDsl {
             operationKinds: Option[OperationKindsSearchFilter] = None,
             questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
             segment: Option[SegmentSearchFilter] = None,
-            isOrganisation: Option[IsOrganisationSearchFilter] = None): Option[SearchFilters] = {
+            userType: Option[UserTypeSearchFilter] = None): Option[SearchFilters] = {
 
     Seq(
       proposals,
@@ -141,7 +141,7 @@ object SearchFilters extends ElasticDsl {
       operationKinds,
       questionIsOpen,
       segment,
-      isOrganisation
+      userType
     ).flatten match {
       case Seq() => None
       case _ =>
@@ -171,7 +171,7 @@ object SearchFilters extends ElasticDsl {
             operationKinds,
             questionIsOpen,
             segment,
-            isOrganisation
+            userType
           )
         )
     }
@@ -212,7 +212,7 @@ object SearchFilters extends ElasticDsl {
       buildOperationKindSearchFilter(searchQuery),
       buildQuestionIsOpenSearchFilter(searchQuery),
       buildSegmentSearchFilter(searchQuery),
-      buildIsOrganisationSearchFilter(searchQuery)
+      buildUserTypeSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -588,11 +588,11 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildIsOrganisationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildUserTypeSearchFilter(searchQuery: SearchQuery): Option[Query] = {
     searchQuery.filters.flatMap {
-      _.isOrganisation match {
-        case Some(IsOrganisationSearchFilter(isOrganisation)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorIsOrganisation, isOrganisation))
+      _.userType match {
+        case Some(UserTypeSearchFilter(userType)) =>
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorUserType, userType.shortName))
         case _ => None
       }
     }
@@ -647,4 +647,4 @@ final case class SequencePoolSearchFilter(sequencePool: SequencePool)
 final case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
 final case class QuestionIsOpenSearchFilter(isOpen: Boolean)
 final case class SegmentSearchFilter(segment: String)
-final case class IsOrganisationSearchFilter(isOrganisation: Boolean)
+final case class UserTypeSearchFilter(userType: UserType)

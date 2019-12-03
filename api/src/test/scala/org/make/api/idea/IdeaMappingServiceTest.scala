@@ -29,7 +29,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag._
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
@@ -150,7 +150,7 @@ class IdeaMappingServiceTest
             age = None,
             avatarUrl = None,
             anonymousParticipation = false,
-            isOrganisation = false
+            userType = UserType.UserTypeUser
           ),
           organisations = Seq.empty,
           country = Country("FR"),

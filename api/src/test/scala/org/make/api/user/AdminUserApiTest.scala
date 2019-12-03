@@ -28,12 +28,12 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase}
+import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
-import org.make.core.user.{CustomRole, Role, User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.make.core.user._
+import org.make.core.{RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -130,54 +130,21 @@ class AdminUserApiTest
       )
     )
 
-  private val newModerator = User(
-    userId = moderatorId,
+  private val newModerator = TestUtils.user(
+    id = moderatorId,
     email = "mod.erator@modo.com",
     firstName = Some("Mod"),
     lastName = Some("Erator"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
     emailVerified = false,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    lastMailingError = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(RoleModerator)
   )
 
-  private val newCitizen = User(
-    userId = citizenId,
+  private val newCitizen = TestUtils.user(
+    id = citizenId,
     email = "cit.izen@make.org",
     firstName = Some("Cit"),
     lastName = Some("Izen"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = false,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    lastMailingError = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    emailVerified = false
   )
 
   feature("get moderator") {
@@ -289,7 +256,15 @@ class AdminUserApiTest
     val listModerator = Seq(moderator1, moderator2, admin1)
 
     Mockito
-      .when(userService.adminCountUsers(None, None, Some(Role.RoleModerator)))
+      .when(
+        userService.adminCountUsers(
+          email = None,
+          firstName = None,
+          lastName = None,
+          role = Some(Role.RoleModerator),
+          userType = None
+        )
+      )
       .thenReturn(Future.successful(listModerator.size))
 
     scenario("unauthenticate user unauthorized to get moderator") {
@@ -314,8 +289,32 @@ class AdminUserApiTest
 
     scenario("get all moderators") {
       Mockito
-        .when(userService.adminFindUsers(0, None, None, None, None, None, Some(Role.RoleModerator)))
+        .when(
+          userService
+            .adminFindUsers(
+              start = 0,
+              end = None,
+              sort = None,
+              order = None,
+              email = None,
+              firstName = None,
+              lastName = None,
+              role = Some(Role.RoleModerator),
+              Some(UserType.UserTypeUser)
+            )
+        )
         .thenReturn(Future.successful(listModerator))
+      Mockito
+        .when(
+          userService.adminCountUsers(
+            email = None,
+            firstName = None,
+            lastName = None,
+            role = Some(Role.RoleModerator),
+            Some(UserType.UserTypeUser)
+          )
+        )
+        .thenReturn(Future.successful(listModerator.size))
       Get("/admin/moderators")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -769,17 +768,58 @@ class AdminUserApiTest
 
     scenario("get all users") {
       Mockito
-        .when(userService.adminCountUsers(None, None, Some(Role.RoleModerator)))
+        .when(
+          userService.adminCountUsers(
+            email = None,
+            firstName = None,
+            lastName = None,
+            role = Some(Role.RoleModerator),
+            userType = None
+          )
+        )
         .thenReturn(Future.successful(listUsers.size))
       Mockito
-        .when(userService.adminFindUsers(0, None, None, None, None, None, Some(Role.RoleModerator)))
+        .when(
+          userService
+            .adminFindUsers(
+              start = 0,
+              end = None,
+              sort = None,
+              order = None,
+              email = None,
+              firstName = None,
+              lastName = None,
+              role = Some(Role.RoleModerator),
+              userType = None
+            )
+        )
         .thenReturn(Future.successful(listUsers))
 
       Mockito
-        .when(userService.adminCountUsers(None, None, Some(CustomRole("some-custom-role"))))
+        .when(
+          userService.adminCountUsers(
+            email = None,
+            firstName = None,
+            lastName = None,
+            role = Some(CustomRole("some-custom-role")),
+            userType = None
+          )
+        )
         .thenReturn(Future.successful(1))
       Mockito
-        .when(userService.adminFindUsers(0, None, None, None, None, None, Some(CustomRole("some-custom-role"))))
+        .when(
+          userService.adminFindUsers(
+            start = 0,
+            end = None,
+            sort = None,
+            order = None,
+            email = None,
+            firstName = None,
+            lastName = None,
+            role = Some(CustomRole("some-custom-role")),
+            userType = None
+          )
+        )
         .thenReturn(Future.successful(Seq(tataUser)))
       Get("/admin/users")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
@@ -830,7 +870,7 @@ class AdminUserApiTest
           |  "email": "toto@user.com",
           |  "firstName": "New Us",
           |  "lastName": "New Er",
-          |  "isOrganisation": false,
+          |  "userType": "USER",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
           |  "language": "en",
@@ -867,6 +907,7 @@ class AdminUserApiTest
           |  "email": "toto@modo.com",
           |  "firstName": "New Mod",
           |  "lastName": "New Erator",
+          |  "userType": "USER",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
           |  "language": "en",
@@ -893,6 +934,7 @@ class AdminUserApiTest
           |  "email": "toto@modo",
           |  "firstName": "New Mod",
           |  "lastName": "New Erator",
+          |  "userType": "USER",
           |  "roles": ["ROLE_MODERATOR", "ROLE_POLITICAL", "ROLE_CITIZEN"],
           |  "country": "GB",
           |  "language": "en",
@@ -916,6 +958,7 @@ class AdminUserApiTest
           |  "email": "mod.erator@modo.com",
           |  "firstName": "New Mod",
           |  "lastName": "New Erator",
+          |  "userType": "USER",
           |  "roles": ["ROLE_MODERATOR", "ROLE_CITIZEN", "ROLE_POLITICAL", "ROLE_ADMIN"],
           |  "country": "GB",
           |  "language": "en",
@@ -935,6 +978,7 @@ class AdminUserApiTest
           |  "email": "mod.erator@modo.com",
           |  "firstName": "New Mod",
           |  "lastName": "New Erator",
+          |  "userType": "USER",
           |  "roles": "foo",
           |  "country": "GB",
           |  "language": "en",

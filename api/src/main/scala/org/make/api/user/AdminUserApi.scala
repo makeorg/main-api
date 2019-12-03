@@ -40,7 +40,7 @@ import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.{CustomRole, Role, User, UserId}
+import org.make.core.user.{CustomRole, Role, User, UserId, UserType}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -67,7 +67,8 @@ trait AdminUserApi extends Directives {
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "role", paramType = "query", dataType = "string", defaultValue = "ROLE_MODERATOR")
+      new ApiImplicitParam(name = "role", paramType = "query", dataType = "string", defaultValue = "ROLE_MODERATOR"),
+      new ApiImplicitParam(name = "userType", paramType = "query", dataType = "string", defaultValue = "USER")
     )
   )
   @ApiResponses(
@@ -315,34 +316,54 @@ trait DefaultAdminUserApiComponent
     override def getUsers: Route = get {
       path("admin" / "users") {
         makeOperation("AdminGetUsers") { _ =>
-          parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'email.?, 'role.as[String].?)) {
+          parameters(
+            (
+              '_start.as[Int].?,
+              '_end.as[Int].?,
+              '_sort.?,
+              '_order.?,
+              'email.?,
+              'role.as[String].?,
+              'userType.as[UserType].?
+            )
+          ) {
             (start: Option[Int],
              end: Option[Int],
              sort: Option[String],
              order: Option[String],
              email: Option[String],
-             maybeRole: Option[String]) =>
+             maybeRole: Option[String],
+             userType: Option[UserType]) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   val role: Role =
                     maybeRole.map(Role.matchRole).getOrElse(Role.RoleModerator)
-                  provideAsync(userService.adminCountUsers(email = email, firstName = None, role = Some(role))) {
-                    count =>
-                      provideAsync(
-                        userService.adminFindUsers(
-                          start.getOrElse(0),
-                          end,
-                          sort,
-                          order,
-                          email = email,
-                          firstName = None,
-                          role = Some(role)
-                        )
-                      ) { users =>
-                        complete(
-                          (StatusCodes.OK, List(`X-Total-Count`(count.toString)), users.map(AdminUserResponse.apply))
-                        )
-                      }
+                  provideAsync(
+                    userService.adminCountUsers(
+                      email = email,
+                      firstName = None,
+                      lastName = None,
+                      role = Some(role),
+                      userType = userType
+                    )
+                  ) { count =>
+                    provideAsync(
+                      userService.adminFindUsers(
+                        start.getOrElse(0),
+                        end,
+                        sort,
+                        order,
+                        email = email,
+                        firstName = None,
+                        lastName = None,
+                        role = Some(role),
+                        userType = userType
+                      )
+                    ) { users =>
+                      complete(
+                        (StatusCodes.OK, List(`X-Total-Count`(count.toString)), users.map(AdminUserResponse.apply))
+                      )
+                    }
                   }
                 }
               }
@@ -390,7 +411,7 @@ trait DefaultAdminUserApiComponent
                               country = request.country.getOrElse(user.country),
                               language = request.language.getOrElse(user.language),
                               organisationName = request.organisationName,
-                              isOrganisation = request.isOrganisation,
+                              userType = request.userType,
                               roles = request.roles.map(_.map(Role.matchRole)).getOrElse(user.roles),
                               availableQuestions = request.availableQuestions,
                               profile = profile
@@ -460,7 +481,13 @@ trait DefaultAdminUserApiComponent
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   provideAsync(
-                    userService.adminCountUsers(email = email, firstName = firstName, role = Some(Role.RoleModerator))
+                    userService.adminCountUsers(
+                      email = email,
+                      firstName = firstName,
+                      lastName = None,
+                      role = Some(Role.RoleModerator),
+                      userType = Some(UserType.UserTypeUser)
+                    )
                   ) { count =>
                     provideAsync(
                       userService.adminFindUsers(
@@ -469,8 +496,10 @@ trait DefaultAdminUserApiComponent
                         sort,
                         order,
                         email = email,
-                        firstName = None,
-                        role = Some(Role.RoleModerator)
+                        firstName = firstName,
+                        lastName = None,
+                        role = Some(Role.RoleModerator),
+                        userType = Some(UserType.UserTypeUser)
                       )
                     ) { users =>
                       complete(
@@ -618,6 +647,7 @@ trait DefaultAdminUserApiComponent
         }
       }
     }
+
   }
 }
 
@@ -731,7 +761,7 @@ case class AdminUserResponse(
   firstName: Option[String],
   lastName: Option[String],
   organisationName: Option[String],
-  @(ApiModelProperty @field)(dataType = "boolean") isOrganisation: Boolean,
+  @(ApiModelProperty @field)(dataType = "string") userType: UserType,
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
@@ -752,7 +782,7 @@ object AdminUserResponse extends CirceFormatters {
     email = user.email,
     firstName = user.firstName,
     organisationName = user.organisationName,
-    isOrganisation = user.isOrganisation,
+    userType = user.userType,
     lastName = user.lastName,
     roles = user.roles.map(role => CustomRole(role.shortName)),
     country = user.country,
@@ -768,7 +798,7 @@ final case class AdminUpdateUserRequest(
   firstName: Option[String],
   lastName: Option[String],
   organisationName: Option[String],
-  @(ApiModelProperty @field)(dataType = "boolean") isOrganisation: Boolean,
+  @(ApiModelProperty @field)(dataType = "string") userType: UserType,
   roles: Option[Seq[String]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
@@ -789,5 +819,5 @@ final case class AdminUpdateUserRequest(
 }
 
 object AdminUpdateUserRequest {
-  implicit val decoder: Decoder[AdminUpdateUserRequest] = deriveDecoder[AdminUpdateUserRequest]
+  implicit lazy val decoder: Decoder[AdminUpdateUserRequest] = deriveDecoder[AdminUpdateUserRequest]
 }

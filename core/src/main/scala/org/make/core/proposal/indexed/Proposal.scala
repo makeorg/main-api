@@ -31,7 +31,7 @@ import org.make.core.proposal._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 
 import scala.annotation.meta.field
 
@@ -41,7 +41,7 @@ object ProposalElasticsearchFieldNames {
   val authorAge: String = "author.age"
   val authorFirstName: String = "author.firstName"
   val authorPostalCode: String = "author.postalCode"
-  val authorIsOrganisation: String = "author.isOrganisation"
+  val authorUserType: String = "author.userType"
   val content: String = "content"
   val contentBg: String = "content.bg"
   val contentBgStemmed: String = "content.stemmed-bg"
@@ -223,7 +223,7 @@ final case class IndexedAuthor(firstName: Option[String],
                                age: Option[Int],
                                avatarUrl: Option[String],
                                anonymousParticipation: Boolean,
-                               isOrganisation: Boolean)
+                               userType: UserType)
 
 object IndexedAuthor {
   implicit val encoder: Encoder[IndexedAuthor] = deriveEncoder[IndexedAuthor]

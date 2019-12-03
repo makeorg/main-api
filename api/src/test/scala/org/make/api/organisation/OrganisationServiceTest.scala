@@ -21,7 +21,7 @@ package org.make.api.organisation
 
 import java.time.ZonedDateTime
 
-import org.make.api.MakeUnitTest
+import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.api.proposal.{
   ProposalResponse,
   ProposalSearchEngine,
@@ -100,52 +100,29 @@ class OrganisationServiceTest
       }
   }
 
-  val returnedOrganisation = User(
-    userId = UserId("AAA-BBB-CCC"),
+  val returnedOrganisation = TestUtils.user(
+    id = UserId("AAA-BBB-CCC"),
     email = "any@mail.com",
     firstName = None,
     lastName = None,
     organisationName = Some("John Doe Corp."),
     lastIp = None,
     hashedPassword = Some("passpass"),
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = Country("FR"),
-    language = Language("fr"),
     profile = Profile.parseProfile(avatarUrl = Some("avatarUrl")),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
-  val returnedOrganisation2 = User(
-    userId = UserId("AAA-BBB-CCC-DDD"),
+  val returnedOrganisation2 = TestUtils.user(
+    id = UserId("AAA-BBB-CCC-DDD"),
     email = "some@mail.com",
     firstName = None,
     lastName = None,
     organisationName = Some("Jeanne Done Corp."),
     lastIp = None,
     hashedPassword = Some("passpass"),
-    enabled = true,
-    emailVerified = true,
-    isOrganisation = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
   feature("Get organisation") {
@@ -504,7 +481,7 @@ class OrganisationServiceTest
             age = None,
             avatarUrl = None,
             anonymousParticipation = false,
-            isOrganisation = false
+            userType = UserType.UserTypeUser
           ),
           organisations = Seq.empty,
           country = Country("FR"),

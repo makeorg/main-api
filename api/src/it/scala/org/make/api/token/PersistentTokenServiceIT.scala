@@ -22,12 +22,11 @@ package org.make.api.token
 import java.sql.SQLException
 import java.time.ZonedDateTime
 
-import org.make.api.DatabaseTest
 import org.make.api.technical.auth.{DefaultPersistentClientServiceComponent, DefaultPersistentTokenServiceComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent
+import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
-import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -45,26 +44,17 @@ class PersistentTokenServiceIT
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val now: ZonedDateTime = DateHelper.now()
 
-  val exampleUser = User(
-    userId = UserId("1"),
+  val exampleUser = TestUtilsIT.user(
+    id = UserId("1"),
     email = "doe@example.com",
     firstName = Some("John"),
     lastName = Some("Doe"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(Role.RoleAdmin, Role.RoleCitizen)
   )
   val exampleClient = Client(
     clientId = ClientId("apiclient"),
