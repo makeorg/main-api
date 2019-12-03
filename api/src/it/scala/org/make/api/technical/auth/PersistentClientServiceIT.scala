@@ -52,7 +52,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         scope = None,
         redirectUri = None,
         defaultUserId = None,
-        roles = Seq.empty
+        roles = Seq.empty,
+        tokenExpirationSeconds = 20
       )
 
       When("I persist apiclient")
@@ -61,35 +62,29 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       val futureClient: Future[Client] = persistentClientService.persist(client)
 
       whenReady(futureClient, Timeout(3.seconds)) { client =>
-        Then("result should be an instance of Client")
-        client shouldBe a[Client]
-
         And("clientId should be apiclient")
         client.clientId shouldBe ClientId("apiclient")
-
-        And("allowedGrantTypes should be an instance of Seq")
-        client.allowedGrantTypes shouldBe a[Seq[_]]
 
         And("allowedGrantTypes should be first_grant_type and second_grant_type")
         client.allowedGrantTypes shouldBe Seq("first_grant_type", "second_grant_type")
 
-        And("secret should be an instance of Option")
-        client.secret shouldBe a[Option[_]]
-
         And("secret should be secret")
-        client.secret.get shouldBe "secret"
+        client.secret should contain("secret")
 
         And("scope should be an instance of Option[String]")
-        client.scope shouldBe a[Option[_]]
+        client.scope should be(None)
 
         And("scope should be secret")
-        client.scope shouldBe None
+        client.scope should be(None)
 
         And("redirectUrl should be an instance of Option[String]")
-        client.redirectUri shouldBe a[Option[_]]
+        client.redirectUri should be(None)
 
         And("redirectUri should be secret")
-        client.redirectUri shouldBe None
+        client.redirectUri should be(None)
+
+        And("tokenExpirationSeconds should be 20")
+        client.tokenExpirationSeconds should be(20)
       }
     }
 
@@ -110,7 +105,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         scope = None,
         redirectUri = None,
         defaultUserId = None,
-        roles = Seq.empty
+        roles = Seq.empty,
+        tokenExpirationSeconds = 300
       )
 
       When("I persist client with existing clientId")
@@ -133,7 +129,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       scope = None,
       redirectUri = None,
       defaultUserId = None,
-      roles = Seq.empty
+      roles = Seq.empty,
+      tokenExpirationSeconds = 300
     )
 
     scenario("Get a list of all oauth clients") {
@@ -184,7 +181,8 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       scope = None,
       redirectUri = None,
       defaultUserId = None,
-      roles = Seq.empty
+      roles = Seq.empty,
+      tokenExpirationSeconds = 300
     )
 
     scenario("Update client") {

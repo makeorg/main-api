@@ -38,7 +38,8 @@ trait ClientService {
                    scope: Option[String],
                    redirectUri: Option[String],
                    defaultUserId: Option[UserId],
-                   roles: Seq[CustomRole]): Future[Client]
+                   roles: Seq[CustomRole],
+                   tokenExpirationSeconds: Int): Future[Client]
   def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]]
   def updateClient(clientId: ClientId,
                    name: String,
@@ -47,7 +48,8 @@ trait ClientService {
                    scope: Option[String],
                    redirectUri: Option[String],
                    defaultUserId: Option[UserId],
-                   roles: Seq[CustomRole]): Future[Option[Client]]
+                   roles: Seq[CustomRole],
+                   tokenExpirationSeconds: Int): Future[Option[Client]]
   def count(name: Option[String]): Future[Int]
 }
 
@@ -68,7 +70,8 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
                               scope: Option[String],
                               redirectUri: Option[String],
                               defaultUserId: Option[UserId],
-                              roles: Seq[CustomRole]): Future[Client] = {
+                              roles: Seq[CustomRole],
+                              tokenExpirationSeconds: Int): Future[Client] = {
       persistentClientService.persist(
         Client(
           clientId = idGenerator.nextClientId(),
@@ -78,7 +81,8 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
           scope = scope,
           redirectUri = redirectUri,
           defaultUserId = defaultUserId,
-          roles = roles
+          roles = roles,
+          tokenExpirationSeconds = tokenExpirationSeconds
         )
       )
     }
@@ -94,7 +98,8 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
                               scope: Option[String],
                               redirectUri: Option[String],
                               defaultUserId: Option[UserId],
-                              roles: Seq[CustomRole]): Future[Option[Client]] = {
+                              roles: Seq[CustomRole],
+                              tokenExpirationSeconds: Int): Future[Option[Client]] = {
       getClient(clientId).flatMap {
         case Some(client) =>
           persistentClientService
@@ -106,7 +111,8 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
                 scope = scope,
                 redirectUri = redirectUri,
                 defaultUserId = defaultUserId,
-                roles = roles
+                roles = roles,
+                tokenExpirationSeconds = tokenExpirationSeconds
               )
             )
         case None => Future.successful(None)

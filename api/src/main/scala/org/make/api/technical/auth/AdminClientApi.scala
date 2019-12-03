@@ -169,7 +169,8 @@ trait DefaultAdminClientApiComponent
                         scope = request.scope,
                         redirectUri = request.redirectUri,
                         defaultUserId = request.defaultUserId,
-                        roles = request.roles.map(CustomRole.apply)
+                        roles = request.roles.map(CustomRole.apply),
+                        tokenExpirationSeconds = request.tokenExpirationSeconds
                       )
                     ) { client =>
                       complete(StatusCodes.Created -> ClientResponse(client))
@@ -213,7 +214,8 @@ trait DefaultAdminClientApiComponent
                       scope = request.scope,
                       redirectUri = request.redirectUri,
                       defaultUserId = request.defaultUserId,
-                      roles = request.roles.map(CustomRole.apply)
+                      roles = request.roles.map(CustomRole.apply),
+                      tokenExpirationSeconds = request.tokenExpirationSeconds
                     )
                   ) { client =>
                     complete(ClientResponse(client))
@@ -258,7 +260,9 @@ final case class ClientResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
   defaultUserId: Option[UserId],
   @(ApiModelProperty @field)(dataType = "list[string]")
-  roles: Seq[Role]
+  roles: Seq[Role],
+  @(ApiModelProperty @field)(dataType = "int", example = "300")
+  tokenExpirationSeconds: Int
 )
 
 object ClientResponse {
@@ -273,7 +277,8 @@ object ClientResponse {
       scope = client.scope,
       redirectUri = client.redirectUri,
       defaultUserId = client.defaultUserId,
-      roles = client.roles
+      roles = client.roles,
+      tokenExpirationSeconds = client.tokenExpirationSeconds
     )
 }
 
@@ -285,7 +290,9 @@ final case class AdminCreateClientRequest(
   redirectUri: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
   defaultUserId: Option[UserId],
-  roles: Seq[String]
+  roles: Seq[String],
+  @(ApiModelProperty @field)(dataType = "int", example = "300")
+  tokenExpirationSeconds: Int
 )
 
 object AdminCreateClientRequest {
