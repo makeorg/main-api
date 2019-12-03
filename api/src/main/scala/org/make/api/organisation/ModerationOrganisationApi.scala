@@ -23,7 +23,10 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.api.Refined
+import eu.timepit.refined.boolean.And
+import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.string.Url
+import eu.timepit.refined.W
 import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
@@ -34,7 +37,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.{ProfileRequest, ProfileResponse}
-import org.make.core.Validation.{maxLength, validateOptional, _}
+import org.make.core.Validation.{validateOptional, _}
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
@@ -145,11 +148,11 @@ trait DefaultModerationOrganisationApiComponent
                       organisationService
                         .register(
                           OrganisationRegisterData(
-                            name = request.organisationName,
+                            name = request.organisationName.value,
                             email = request.email,
                             password = request.password,
-                            avatar = request.avatarUrl,
-                            description = request.description,
+                            avatar = request.avatarUrl.map(_.value),
+                            description = request.description.map(_.value),
                             country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
                             language = request.language.orElse(requestContext.language).getOrElse(Language("fr")),
                             politicalParty = request.politicalParty,
@@ -187,7 +190,8 @@ trait DefaultModerationOrganisationApiComponent
                         organisationService
                           .update(
                             organisation.copy(
-                              organisationName = request.organisationName.orElse(organisation.organisationName),
+                              organisationName =
+                                request.organisationName.map(_.value).orElse(organisation.organisationName),
                               email = maybeEmail.getOrElse(organisation.email).toLowerCase,
                               profile = request.profile
                                 .flatMap(_.mergeProfile(organisation.profile))
@@ -265,14 +269,14 @@ trait DefaultModerationOrganisationApiComponent
 
 @ApiModel
 final case class ModerationCreateOrganisationRequest(
-  organisationName: String,
+  organisationName: String Refined MaxSize[W.`256`.T],
   email: String,
   @(ApiModelProperty @field)(dataType = "string", required = false)
   password: Option[String],
   @(ApiModelProperty @field)(dataType = "string", required = false)
-  description: Option[String],
+  description: Option[String Refined MaxSize[W.`450`.T]],
   @(ApiModelProperty @field)(dataType = "string", required = false)
-  avatarUrl: Option[String],
+  avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -281,7 +285,11 @@ final case class ModerationCreateOrganisationRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
   website: Option[String Refined Url]
 ) {
-  OrganisationValidation.validateCreate(organisationName = organisationName, email = email, description = description)
+  OrganisationValidation.validateCreate(
+    organisationName = organisationName.value,
+    email = email,
+    description = description.map(_.value)
+  )
 }
 
 object ModerationCreateOrganisationRequest {
@@ -290,14 +298,14 @@ object ModerationCreateOrganisationRequest {
 }
 
 final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     organisationName: Option[String] = None,
+                                                     organisationName: Option[String Refined MaxSize[W.`256`.T]] = None,
                                                      @(ApiModelProperty @field)(dataType = "string", required = false)
                                                      email: Option[String] = None,
                                                      profile: Option[ProfileRequest]) {
   OrganisationValidation.validateUpdate(
-    organisationName = organisationName,
+    organisationName = organisationName.map(_.value),
     email = email,
-    description = profile.flatMap(_.description),
+    description = profile.flatMap(_.description.map(_.value)),
     profile
   )
 }
@@ -308,15 +316,10 @@ object ModerationUpdateOrganisationRequest {
 }
 
 private object OrganisationValidation {
-  private val maxNameLength = 256
-  private val maxDescriptionLength = 450
-
   def validateCreate(organisationName: String, email: String, description: Option[String]): Unit = {
     validateOptional(
       Some(mandatoryField("email", email)),
       Some(mandatoryField("name", organisationName)),
-      Some(maxLength("name", maxNameLength, organisationName)),
-      description.map(value => maxLength("description", maxDescriptionLength, value)),
       Some(validateUserInput("organisationName", organisationName, None)),
       Some(validateUserInput("email", email, None)),
       Some(validateEmail("email", email, None)),
@@ -329,9 +332,7 @@ private object OrganisationValidation {
                      description: Option[String],
                      profileRequest: Option[ProfileRequest]): Unit = {
     validateOptional(
-      organisationName.map(value => maxLength("organisationName", maxNameLength, value)),
       organisationName.map(value => validateUserInput("organisationName", value, None)),
-      description.map(value      => maxLength("description", maxDescriptionLength, value)),
       description.map(value      => validateUserInput("description", value, None)),
       email.map(value            => validateUserInput("email", value, None))
     )

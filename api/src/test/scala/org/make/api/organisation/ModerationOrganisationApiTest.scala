@@ -198,6 +198,23 @@ class ModerationOrganisationApiTest
         status shouldBe StatusCodes.BadRequest
       }
     }
+
+    scenario("register organisation with avatarUrl too long") {
+      Given("a admin user")
+      When("I want to register an organisation with a too long avatarUrl")
+      Then("I should get a BadRequest status")
+      val longAvatarUrl = "http://example.com/" + "a" * 2048
+      Post("/moderation/organisations")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            s"""{"email": "bar@foo.com", "password": "azertyui", "organisationName":"azer","avatarUrl":"$longAvatarUrl"}""".stripMargin
+          )
+        )
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
   }
 
   feature("get organisation") {
