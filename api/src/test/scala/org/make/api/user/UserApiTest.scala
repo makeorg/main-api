@@ -1292,14 +1292,11 @@ class UserApiTest
               lastName = Some("tom"),
               country = Country("IT"),
               language = Language("it"),
-              profile = Some(
-                Profile.default
-                  .copy(
-                    dateOfBirth = Some(LocalDate.parse("1997-12-02")),
-                    optInNewsletter = false,
-                    gender = Some(Gender.Female),
-                    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
-                  )
+              profile = Profile.parseProfile(
+                dateOfBirth = Some(LocalDate.parse("1997-12-02")),
+                optInNewsletter = false,
+                gender = Some(Gender.Female),
+                socioProfessionalCategory = Some(SocioProfessionalCategory.Employee)
               )
             )
           ),
@@ -1335,9 +1332,11 @@ class UserApiTest
               lastName = Some("tom"),
               country = Country("IT"),
               language = Language("it"),
-              profile = Some(
-                Profile.default
-                  .copy(dateOfBirth = None, optInNewsletter = false, gender = None, socioProfessionalCategory = None)
+              profile = Profile.parseProfile(
+                dateOfBirth = None,
+                optInNewsletter = false,
+                gender = None,
+                socioProfessionalCategory = None
               )
             )
           ),

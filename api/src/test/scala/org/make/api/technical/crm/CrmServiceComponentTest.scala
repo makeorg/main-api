@@ -173,7 +173,7 @@ class CrmServiceComponentTest
     roles = Seq.empty,
     country = Country("FR"),
     language = Language("fr"),
-    profile = Some(Profile.default.copy(optInNewsletter = true)),
+    profile = Profile.parseProfile(optInNewsletter = true),
     createdAt = None,
     updatedAt = None,
     lastMailingError = None,

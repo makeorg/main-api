@@ -33,9 +33,9 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.user.{ProfileRequest, ProfileResponse}
 import org.make.core.Validation.{maxLength, validateOptional, _}
 import org.make.core.auth.UserRights
-import org.make.core.profile.Profile
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{CirceFormatters, HttpCodes, Validation}
@@ -182,24 +182,16 @@ trait DefaultModerationOrganisationApiComponent
                         case Some(email) if email.toLowerCase == organisation.email => None
                         case email                                                  => email
                       }
+
                       onSuccess(
                         organisationService
                           .update(
                             organisation.copy(
                               organisationName = request.organisationName.orElse(organisation.organisationName),
                               email = maybeEmail.getOrElse(organisation.email).toLowerCase,
-                              profile = organisation.profile.map(
-                                _.copy(
-                                  avatarUrl = request.profile
-                                    .flatMap(_.avatarUrl)
-                                    .orElse(organisation.profile.flatMap(_.avatarUrl)),
-                                  description = request.profile
-                                    .flatMap(_.description)
-                                    .orElse(organisation.profile.flatMap(_.description)),
-                                  politicalParty = request.politicalParty,
-                                  website = request.website.map(_.value)
-                                )
-                              )
+                              profile = request.profile
+                                .flatMap(_.mergeProfile(organisation.profile))
+                                .orElse(organisation.profile)
                             ),
                             maybeEmail,
                             requestContext
@@ -297,16 +289,11 @@ object ModerationCreateOrganisationRequest {
     deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
-final case class ModerationUpdateOrganisationRequest(
-  @(ApiModelProperty @field)(dataType = "string", required = false)
-  organisationName: Option[String] = None,
-  @(ApiModelProperty @field)(dataType = "string", required = false)
-  email: Option[String] = None,
-  profile: Option[Profile],
-  politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
-  website: Option[String Refined Url]
-) {
+final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
+                                                     organisationName: Option[String] = None,
+                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
+                                                     email: Option[String] = None,
+                                                     profile: Option[ProfileRequest]) {
   OrganisationValidation.validateUpdate(
     organisationName = organisationName,
     email = email,
@@ -340,7 +327,7 @@ private object OrganisationValidation {
   def validateUpdate(organisationName: Option[String],
                      email: Option[String],
                      description: Option[String],
-                     profile: Option[Profile]): Unit = {
+                     profileRequest: Option[ProfileRequest]): Unit = {
     validateOptional(
       organisationName.map(value => maxLength("organisationName", maxNameLength, value)),
       organisationName.map(value => validateUserInput("organisationName", value, None)),
@@ -350,7 +337,7 @@ private object OrganisationValidation {
     )
 
     validateOptional(email.map(value => validateEmail("email", value, None)))
-    profile.foreach(Profile.validateProfile)
+    profileRequest.foreach(ProfileRequest.validateProfileRequest)
   }
 }
 
@@ -359,13 +346,11 @@ case class OrganisationResponse(
   id: UserId,
   email: String,
   organisationName: Option[String],
-  profile: Option[Profile],
+  profile: Option[ProfileResponse],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
-  politicalParty: Option[String],
-  website: Option[String]
+  language: Language
 )
 
 object OrganisationResponse extends CirceFormatters {
@@ -376,11 +361,9 @@ object OrganisationResponse extends CirceFormatters {
     id = user.userId,
     email = user.email,
     organisationName = user.organisationName,
-    profile = user.profile,
+    profile = user.profile.map(ProfileResponse.fromProfile),
     country = user.country,
-    language = user.language,
-    politicalParty = user.profile.flatMap(_.politicalParty),
-    website = user.profile.flatMap(_.website)
+    language = user.language
   )
 }
 
