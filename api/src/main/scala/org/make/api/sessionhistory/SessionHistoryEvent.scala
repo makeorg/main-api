@@ -298,7 +298,8 @@ final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq
     extends SessionRelatedEvent
 
 final case class RequestSessionVotedProposals(sessionId: SessionId) extends SessionRelatedEvent
-final case class UserConnected(sessionId: SessionId, userId: UserId) extends SessionHistoryAction
+final case class UserConnected(sessionId: SessionId, userId: UserId, requestContext: RequestContext)
+    extends SessionHistoryAction
 
 final case class LogSessionStartSequenceEvent(sessionId: SessionId,
                                               requestContext: RequestContext,

@@ -27,6 +27,7 @@ import org.make.api.proposal.PublishedProposalEvent.{
   ProposalPostponed,
   ProposalRefused
 }
+import org.make.api.userhistory
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
@@ -367,6 +368,16 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
         UserAction(date = eventDate, actionType = UserUpdatedOptIn.actionType, arguments = UserUpdatedOptIn(false))
     )
 
+    val userUserConnectedEvent = LogUserConnectedEvent(
+      userId = userId,
+      requestContext = requestContext,
+      action = UserAction(
+        date = eventDate,
+        actionType = UserHasConnected.actionType,
+        arguments = userhistory.UserHasConnected()
+      )
+    )
+
     val defaultDate = ZonedDateTime.parse("2018-10-10T00:00:00Z")
 
     val userVotesAndQualifications = UserVotesAndQualifications(
@@ -443,6 +454,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       sample(userAnonymizedEvent),
       sample(userOptInNewsletterEvent),
       sample(userOptOutNewsletterEvent),
+      sample(userUserConnectedEvent),
       sample(
         UserHistory(
           List(

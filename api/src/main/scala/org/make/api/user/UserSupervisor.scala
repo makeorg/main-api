@@ -19,7 +19,7 @@
 
 package org.make.api.user
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.organisation.{
@@ -31,10 +31,11 @@ import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.technical.elasticsearch.ElasticsearchConfigurationComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.UserSupervisor.UserSupervisorDependencies
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 import org.make.core.AvroSerializers
 
-class UserSupervisor(userHistoryCoordinator: ActorRef, dependencies: UserSupervisorDependencies)
+class UserSupervisor(dependencies: UserSupervisorDependencies)
     extends Actor
     with ActorLogging
     with AvroSerializers
@@ -60,7 +61,9 @@ class UserSupervisor(userHistoryCoordinator: ActorRef, dependencies: UserSupervi
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
-          UserHistoryConsumerActor.props(userHistoryCoordinator).withDispatcher(kafkaDispatcher),
+          UserHistoryConsumerActor
+            .props(dependencies.userHistoryCoordinatorService, dependencies.userService)
+            .withDispatcher(kafkaDispatcher),
           UserHistoryConsumerActor.name
         )
       context.actorOf(props, name)
@@ -96,8 +99,10 @@ object UserSupervisor {
     with OrganisationSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with SendMailPublisherServiceComponent
+    with UserServiceComponent
+    with UserHistoryCoordinatorServiceComponent
 
   val name: String = "users"
-  def props(userHistoryCoordinator: ActorRef, dependencies: UserSupervisorDependencies): Props =
-    Props(new UserSupervisor(userHistoryCoordinator, dependencies))
+  def props(dependencies: UserSupervisorDependencies): Props =
+    Props(new UserSupervisor(dependencies))
 }

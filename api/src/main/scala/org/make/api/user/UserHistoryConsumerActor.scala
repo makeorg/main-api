@@ -19,7 +19,7 @@
 
 package org.make.api.user
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
@@ -27,8 +27,9 @@ import org.make.api.userhistory._
 import org.make.core.AvroSerializers
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
+class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinatorService, userService: UserService)
     extends KafkaConsumerActor[UserEventWrapper]
     with ActorEventBusServiceComponent
     with AvroSerializers {
@@ -43,7 +44,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     message.event match {
       case event: ResetPasswordEvent              => doNothing(event)
       case event: UserRegisteredEvent             => handleUserRegisteredEvent(event)
-      case event: UserConnectedEvent              => doNothing(event)
+      case event: UserConnectedEvent              => handleUserConnectedEvent(event)
       case event: UserUpdatedTagEvent             => doNothing(event)
       case event: ResendValidationEmailEvent      => doNothing(event)
       case event: UserValidatedAccountEvent       => doNothing(event)
@@ -58,21 +59,23 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
-    userHistoryCoordinator ! LogRegisterCitizenEvent(
-      userId = event.userId,
-      requestContext = event.requestContext,
-      action = UserAction(
-        date = event.eventDate,
-        actionType = LogRegisterCitizenEvent.action,
-        arguments = UserRegistered(
-          email = event.email,
-          dateOfBirth = event.dateOfBirth,
-          firstName = event.firstName,
-          lastName = event.lastName,
-          profession = event.profession,
-          postalCode = event.postalCode,
-          country = event.country,
-          language = event.language
+    userHistoryCoordinatorService.logHistory(
+      LogRegisterCitizenEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogRegisterCitizenEvent.action,
+          arguments = UserRegistered(
+            email = event.email,
+            dateOfBirth = event.dateOfBirth,
+            firstName = event.firstName,
+            lastName = event.lastName,
+            profession = event.profession,
+            postalCode = event.postalCode,
+            country = event.country,
+            language = event.language
+          )
         )
       )
     )
@@ -80,25 +83,50 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
     Future.successful {}
   }
 
+  def handleUserConnectedEvent(event: UserConnectedEvent): Future[Unit] = {
+    userService.getUser(event.userId).flatMap {
+      case Some(user) =>
+        userHistoryCoordinatorService.logHistory(
+          LogUserConnectedEvent(
+            userId = event.userId,
+            requestContext = event.requestContext,
+            action = UserAction(
+              date = event.eventDate,
+              actionType = LogUserConnectedEvent.action,
+              arguments = UserHasConnected()
+            )
+          )
+        )
+        userService.update(user.copy(lastConnection = event.eventDate), event.requestContext).map(_ => ())
+      case None =>
+        log.warning("User not found after UserConnectedEvent: ", event)
+        Future.successful {}
+    }
+  }
+
   def handleUserUpdatedOptInNewsletterEvent(event: UserUpdatedOptInNewsletterEvent): Future[Unit] = {
     if (event.optInNewsletter) {
-      userHistoryCoordinator ! LogUserOptInNewsletterEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(
-          date = event.eventDate,
-          actionType = LogUserOptInNewsletterEvent.action,
-          arguments = UserUpdatedOptIn(newOptIn = event.optInNewsletter)
+      userHistoryCoordinatorService.logHistory(
+        LogUserOptInNewsletterEvent(
+          userId = event.userId,
+          requestContext = event.requestContext,
+          action = UserAction(
+            date = event.eventDate,
+            actionType = LogUserOptInNewsletterEvent.action,
+            arguments = UserUpdatedOptIn(newOptIn = event.optInNewsletter)
+          )
         )
       )
     } else {
-      userHistoryCoordinator ! LogUserOptOutNewsletterEvent(
-        userId = event.userId,
-        requestContext = event.requestContext,
-        action = UserAction(
-          date = event.eventDate,
-          actionType = LogUserOptOutNewsletterEvent.action,
-          arguments = UserUpdatedOptIn(newOptIn = event.optInNewsletter)
+      userHistoryCoordinatorService.logHistory(
+        LogUserOptOutNewsletterEvent(
+          userId = event.userId,
+          requestContext = event.requestContext,
+          action = UserAction(
+            date = event.eventDate,
+            actionType = LogUserOptOutNewsletterEvent.action,
+            arguments = UserUpdatedOptIn(newOptIn = event.optInNewsletter)
+          )
         )
       )
     }
@@ -107,13 +135,15 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleUserAnonymizedEvent(event: UserAnonymizedEvent): Future[Unit] = {
-    userHistoryCoordinator ! LogUserAnonymizedEvent(
-      userId = event.userId,
-      requestContext = event.requestContext,
-      action = UserAction(
-        date = event.eventDate,
-        actionType = LogUserAnonymizedEvent.action,
-        arguments = UserAnonymized(userId = event.userId, adminId = event.adminId)
+    userHistoryCoordinatorService.logHistory(
+      LogUserAnonymizedEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogUserAnonymizedEvent.action,
+          arguments = UserAnonymized(userId = event.userId, adminId = event.adminId)
+        )
       )
     )
 
@@ -122,7 +152,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 }
 
 object UserHistoryConsumerActor {
-  def props(userHistoryCoordinator: ActorRef): Props =
-    Props(new UserHistoryConsumerActor(userHistoryCoordinator))
+  def props(userHistoryCoordinatorService: UserHistoryCoordinatorService, userService: UserService): Props =
+    Props(new UserHistoryConsumerActor(userHistoryCoordinatorService, userService))
   val name: String = "user-events-history-consumer"
 }

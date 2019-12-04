@@ -28,6 +28,7 @@ import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.core.RequestContext
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.UserId
@@ -110,7 +111,8 @@ trait MakeApiTestBase
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
 
   private val successful: Future[Unit] = Future.successful {}
-  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId])).thenReturn(successful)
+  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
+    .thenReturn(successful)
 
   when(oauth2DataHandler.refreshIfTokenIsExpired(any[String])).thenReturn(Future.successful(None))
 }

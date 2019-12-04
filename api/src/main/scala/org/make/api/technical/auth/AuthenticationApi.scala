@@ -216,7 +216,7 @@ trait DefaultAuthenticationApiComponent
 
     override def accessTokenRoute: Route = pathPrefix("oauth") {
       path("access_token") {
-        makeOperation("OauthAccessToken", EndpointType.Public) { _ =>
+        makeOperation("OauthAccessToken", EndpointType.Public) { requestContext =>
           post {
             formFieldMap { fields =>
               onComplete(
@@ -225,10 +225,19 @@ trait DefaultAuthenticationApiComponent
                     new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
                     oauth2DataHandler
                   )
+                  .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
+                    case Left(e) => Future.successful(Left(e))
+                    case Right(result) =>
+                      sessionHistoryCoordinatorService
+                        .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
+                        .map(_ => Right(result))
+                  }
               ) {
                 case Success(maybeGrantResponse) =>
                   maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
-                    complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                    setMakeSecure(grantResult.accessToken, grantResult.authInfo.user.userId) {
+                      complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                    }
                   })
                 case Failure(ex) => failWith(ex)
               }
@@ -257,7 +266,7 @@ trait DefaultAuthenticationApiComponent
                   case Left(e) => Future.successful(Left(e))
                   case Right(result) =>
                     sessionHistoryCoordinatorService
-                      .convertSession(requestContext.sessionId, result.authInfo.user.userId)
+                      .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
                       .map(_ => Right(result))
                 }
 
@@ -321,7 +330,7 @@ trait DefaultAuthenticationApiComponent
                   case Left(e) => Future.successful(Left(e))
                   case Right(result) =>
                     sessionHistoryCoordinatorService
-                      .convertSession(requestContext.sessionId, result.authInfo.user.userId)
+                      .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
                       .map(_ => Right(result))
                 }
 

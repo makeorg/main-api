@@ -236,8 +236,10 @@ trait MakeDirectives
       .increment()
   }
 
-  private def connectIfNecessary(sessionId: SessionId, maybeUserId: Option[UserId]): Unit = {
-    maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId))
+  private def connectIfNecessary(sessionId: SessionId,
+                                 maybeUserId: Option[UserId],
+                                 requestContext: RequestContext): Unit = {
+    maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId, requestContext))
   }
 
   def makeOperation(name: String, endpointType: EndpointType = EndpointType.Regular): Directive1[RequestContext] = {
@@ -333,7 +335,7 @@ trait MakeDirectives
           .getOrElse(Map.empty)
       )
       logRequest(name, requestContext, origin)
-      connectIfNecessary(SessionId(sessionId), maybeUser.map(_.user.userId))
+      connectIfNecessary(SessionId(sessionId), maybeUser.map(_.user.userId), requestContext)
       requestContext
     }
   }

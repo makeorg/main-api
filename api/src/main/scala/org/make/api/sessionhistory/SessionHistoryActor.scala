@@ -32,7 +32,7 @@ import org.make.api.userhistory.UserHistoryActor.{
   RequestUserVotedProposals,
   RequestVoteValues
 }
-import org.make.api.userhistory.UserHistoryEvent
+import org.make.api.userhistory.{UserConnectedEvent, UserHistoryEvent}
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session._
@@ -78,7 +78,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       }
     case RequestSessionVoteValues(_, proposalIds) => retrieveVoteValues(proposalIds)
     case RequestSessionVotedProposals(_)          => retrieveVotedProposals()
-    case UserConnected(_, userId)                 => transformSession(userId)
+    case UserConnected(_, userId, requestContext) => transformSession(userId, requestContext)
     case Snapshot                                 => saveSnapshot()
     case StopSession(_)                           => self ! PoisonPill
     case LockProposalForVote(_, proposalId)       => acquireLockForVotesIfPossible(proposalId)
@@ -148,7 +148,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     }
   }
 
-  private def transformSession(userId: UserId): Unit = {
+  private def transformSession(userId: UserId, requestContext: RequestContext): Unit = {
     val originalSender = sender()
     log.debug(
       "Transforming session {} to user {} with events {}",
@@ -170,12 +170,12 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
         self ! SessionClosed(originalSender)
     }
 
-    context.become(transforming(userId, Seq.empty))
+    context.become(transforming(userId, Seq.empty, requestContext))
   }
 
   def closed(userId: UserId): Receive = {
     case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
-    case UserConnected(_, newUserId) =>
+    case UserConnected(_, newUserId, _) =>
       if (newUserId != userId) {
         log.warning("Session {} has moved from user {} to user {}", persistenceId, userId.value, newUserId.value)
         context.become(closed(newUserId))
@@ -197,8 +197,16 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       releaseLockForQualification(proposalId, qualification)
   }
 
-  def transforming(userId: UserId, pendingEvents: Seq[(ActorRef, Any)]): Receive = {
+  def transforming(userId: UserId, pendingEvents: Seq[(ActorRef, Any)], requestContext: RequestContext): Receive = {
     case SessionClosed(originalSender) =>
+      context.system.eventStream.publish(
+        UserConnectedEvent(
+          connectedUserId = Some(userId),
+          eventDate = DateHelper.now(),
+          userId = userId,
+          requestContext = requestContext
+        )
+      )
       persistEvent(
         SessionTransformed(
           sessionId = sessionId,
@@ -221,7 +229,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case ReleaseProposalForVote(_, proposalId) => locks -= proposalId
     case ReleaseProposalForQualification(_, proposalId, qualification) =>
       releaseLockForQualification(proposalId, qualification)
-    case event => context.become(transforming(userId, pendingEvents :+ sender() -> event))
+    case event => context.become(transforming(userId, pendingEvents :+ sender() -> event, requestContext))
   }
 
   private def retrieveVotedProposals(): Unit = {
