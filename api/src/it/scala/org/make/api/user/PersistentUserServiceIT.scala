@@ -246,6 +246,14 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     profile = Some(profile)
   )
 
+  val personalityUser = TestUtilsIT.user(
+    id = UserId("personality"),
+    email = "personality@example.com",
+    firstName = Some("perso"),
+    lastName = Some("nality"),
+    userType = UserType.UserTypePersonality
+  )
+
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
 
   feature("The app can persist and retrieve users") {
@@ -449,6 +457,17 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           maybeUser should be(None)
         }
 
+      }
+    }
+  }
+
+  feature("find user by id and type") {
+    scenario("return a personality user") {
+      whenReady(persistentUserService.persist(personalityUser), Timeout(3.seconds)) { user =>
+        whenReady(persistentUserService.findByUserIdAndUserType(user.userId, UserType.UserTypePersonality)) {
+          maybeUser =>
+            maybeUser.map(_.userId) should contain(UserId("personality"))
+        }
       }
     }
   }

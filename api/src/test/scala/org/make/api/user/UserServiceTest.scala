@@ -170,6 +170,35 @@ class UserServiceTest
     profile = Some(johnDoeProfile)
   )
 
+  val returnedPersonality = TestUtils.user(
+    id = UserId("AAA-BBB-CCC"),
+    email = "personality@mail.com",
+    hashedPassword = Some("passpass"),
+    userType = UserType.UserTypePersonality
+  )
+
+  feature("Get personality") {
+    scenario("get personality") {
+      Mockito
+        .when(persistentUserService.findByUserIdAndUserType(any[UserId], any[UserType]))
+        .thenReturn(Future.successful(Some(returnedPersonality)))
+
+      whenReady(userService.getPersonality(UserId("AAA-BBB-CCC")), Timeout(2.seconds)) { user =>
+        user.isDefined shouldBe true
+      }
+    }
+
+    scenario("trying to get wrong personality") {
+      Mockito
+        .when(persistentUserService.findByUserIdAndUserType(any[UserId], any[UserType]))
+        .thenReturn(Future.successful(None))
+
+      whenReady(userService.getPersonality(UserId("AAA-BBB-CCC-DDD")), Timeout(2.seconds)) { user =>
+        user.isDefined shouldBe false
+      }
+    }
+  }
+
   feature("register user") {
     scenario("successful register user") {
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
