@@ -34,7 +34,7 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
-import org.make.api.userhistory.UserEvent._
+import org.make.api.userhistory._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female

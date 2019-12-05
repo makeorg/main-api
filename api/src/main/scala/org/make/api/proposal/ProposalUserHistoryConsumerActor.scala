@@ -40,7 +40,7 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
-    message.event.fold(ToProposalEvent) match {
+    message.event match {
       case event: ProposalProposed             => handleProposalProposed(event)
       case event: ProposalAccepted             => handleProposalAccepted(event)
       case event: ProposalRefused              => handleProposalRefused(event)

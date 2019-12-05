@@ -21,10 +21,8 @@ package org.make.api.semantic
 
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
-import org.make.api.semantic.PredictionsEventWrapper.AnyPredictionsEvent
 import org.make.api.technical.BasicProducerActor
 import org.make.core.{DateHelper, MakeSerializable}
-import shapeless.Coproduct
 
 class SemanticPredictionsProducerActor extends BasicProducerActor[PredictionsEventWrapper, PredictedTagsEvent] {
   override protected lazy val eventClass: Class[PredictedTagsEvent] = classOf[PredictedTagsEvent]
@@ -38,7 +36,7 @@ class SemanticPredictionsProducerActor extends BasicProducerActor[PredictionsEve
       id = trackingEvent.proposalId.value,
       date = DateHelper.now(),
       eventType = trackingEvent.getClass.getSimpleName,
-      event = Coproduct[AnyPredictionsEvent](trackingEvent)
+      event = trackingEvent
     )
 }
 object SemanticPredictionsProducerActor {

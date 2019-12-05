@@ -68,7 +68,7 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
-    message.event.fold(ToProposalEvent) match {
+    message.event match {
       case event: ProposalViewed               => doNothing(event)
       case event: ReindexProposal              => onCreateOrUpdate(event)
       case event: ProposalUpdated              => onCreateOrUpdate(event)

@@ -21,13 +21,11 @@ package org.make.core
 
 import java.time.ZonedDateTime
 
-import shapeless.Coproduct
-
-trait EventWrapper extends Sharded {
+trait EventWrapper[T] extends Sharded {
   def version: Int
   def date: ZonedDateTime
   def eventType: String
-  def event: Coproduct
+  def event: T
 }
 
 trait Sharded {

@@ -21,10 +21,9 @@ package org.make.api.idea
 
 import java.time.ZonedDateTime
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
+import com.sksamuel.avro4s._
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.{AvroSerializers, DateHelper, EventWrapper, MakeSerializable}
-import shapeless.{:+:, CNil, Coproduct}
 
 sealed trait IdeaEvent {
   def ideaId: IdeaId
@@ -33,54 +32,45 @@ sealed trait IdeaEvent {
 }
 
 object IdeaEvent {
+  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
+}
 
-  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
+final case class IdeaEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: IdeaEvent)
+    extends EventWrapper[IdeaEvent]
 
-  type AnyIdeaEvent =
-    IdeaCreatedEvent :+:
-      IdeaUpdatedEvent :+:
-      CNil
+object IdeaEventWrapper extends AvroSerializers {
+  lazy val schemaFor: SchemaFor[IdeaEventWrapper] = SchemaFor.gen[IdeaEventWrapper]
+  implicit lazy val avroDecoder: Decoder[IdeaEventWrapper] = Decoder.gen[IdeaEventWrapper]
+  implicit lazy val avroEncoder: Encoder[IdeaEventWrapper] = Encoder.gen[IdeaEventWrapper]
+  lazy val recordFormat: RecordFormat[IdeaEventWrapper] =
+    RecordFormat[IdeaEventWrapper](schemaFor.schema(DefaultFieldMapper))
+}
 
-  final case class IdeaEventWrapper(version: Int,
-                                    id: String,
-                                    date: ZonedDateTime,
-                                    eventType: String,
-                                    event: AnyIdeaEvent)
-      extends EventWrapper
+@AvroSortPriority(2)
+final case class IdeaCreatedEvent(override val ideaId: IdeaId,
+                                  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                    IdeaEvent.defaultDate)
+    extends IdeaEvent {
 
-  object IdeaEventWrapper extends AvroSerializers {
-    implicit lazy val schemaFor: SchemaFor[IdeaEventWrapper] = SchemaFor[IdeaEventWrapper]
-    implicit lazy val fromRecord: FromRecord[IdeaEventWrapper] = FromRecord[IdeaEventWrapper]
-    implicit lazy val toRecord: ToRecord[IdeaEventWrapper] = ToRecord[IdeaEventWrapper]
-    implicit lazy val recordFormat: RecordFormat[IdeaEventWrapper] = RecordFormat[IdeaEventWrapper]
+  def version(): Int = MakeSerializable.V1
+}
 
-    def wrapEvent(event: IdeaEvent): AnyIdeaEvent =
-      event match {
-        case e: IdeaCreatedEvent => Coproduct[AnyIdeaEvent](e)
-        case e: IdeaUpdatedEvent => Coproduct[AnyIdeaEvent](e)
-      }
+object IdeaCreatedEvent {
+  def apply(idea: Idea): IdeaCreatedEvent = {
+    IdeaCreatedEvent(ideaId = idea.ideaId, eventDate = DateHelper.now())
   }
+}
 
-  final case class IdeaCreatedEvent(override val ideaId: IdeaId, override val eventDate: ZonedDateTime = defaultDate)
-      extends IdeaEvent {
+@AvroSortPriority(1)
+final case class IdeaUpdatedEvent(override val ideaId: IdeaId,
+                                  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                    IdeaEvent.defaultDate)
+    extends IdeaEvent {
+  def version(): Int = MakeSerializable.V1
+}
 
-    def version(): Int = MakeSerializable.V1
-  }
-
-  object IdeaCreatedEvent {
-    def apply(idea: Idea): IdeaCreatedEvent = {
-      IdeaCreatedEvent(ideaId = idea.ideaId, eventDate = DateHelper.now())
-    }
-  }
-
-  final case class IdeaUpdatedEvent(override val ideaId: IdeaId, override val eventDate: ZonedDateTime = defaultDate)
-      extends IdeaEvent {
-    def version(): Int = MakeSerializable.V1
-  }
-
-  object IdeaUpdatedEvent {
-    def apply(idea: Idea): IdeaUpdatedEvent = {
-      IdeaUpdatedEvent(ideaId = idea.ideaId, eventDate = DateHelper.now())
-    }
+object IdeaUpdatedEvent {
+  def apply(idea: Idea): IdeaUpdatedEvent = {
+    IdeaUpdatedEvent(ideaId = idea.ideaId, eventDate = DateHelper.now())
   }
 }

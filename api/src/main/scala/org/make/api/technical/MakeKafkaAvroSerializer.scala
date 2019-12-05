@@ -21,7 +21,7 @@ package org.make.api.technical
 
 import java.util
 
-import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
 import com.typesafe.scalalogging.StrictLogging
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroSerializer
@@ -36,7 +36,7 @@ class MakeKafkaAvroSerializer[T](registryUrl: String, schema: SchemaFor[T], form
   private val identityMapCapacity = 1000
   private val delegate: Serializer[Object] = new KafkaAvroSerializer(
     new CachedSchemaRegistryClient(registryUrl, identityMapCapacity),
-    Map("value.schema" -> schema.toString, "schema.registry.url" -> registryUrl).asJava
+    Map("value.schema" -> schema.schema(DefaultFieldMapper).toString, "schema.registry.url" -> registryUrl).asJava
   )
 
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {

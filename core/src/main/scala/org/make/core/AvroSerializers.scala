@@ -23,7 +23,6 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import com.sksamuel.avro4s._
 import org.apache.avro.Schema
-import org.apache.avro.Schema.Field
 import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.proposal.{QualificationKey, VoteKey}
@@ -32,150 +31,151 @@ import org.make.core.sequence.SequenceStatus
 
 trait AvroSerializers {
 
-  implicit object LocalDateToSchema extends ToSchema[LocalDate] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object LocalDateSchemaFor extends SchemaFor[LocalDate] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object DateTimeToValue extends ToValue[LocalDate] {
-    override def apply(value: LocalDate): String = value.toString
+  implicit object DateTimeEncoder extends Encoder[LocalDate] {
+    override def encode(value: LocalDate, schema: Schema, fieldMapper: FieldMapper): String = value.toString
   }
 
-  implicit object DateTimeFromValue extends FromValue[LocalDate] {
-    override def apply(value: Any, field: Field): LocalDate =
+  implicit object DateTimeDecoder extends Decoder[LocalDate] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): LocalDate =
       LocalDate.parse(value.toString)
   }
 
-  implicit object ZonedDateTimeToSchema extends ToSchema[ZonedDateTime] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object ZonedDateTimeSchemaFor extends SchemaFor[ZonedDateTime] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object ZonedDateTimeToValue extends ToValue[ZonedDateTime] {
-    override def apply(value: ZonedDateTime): String = value.toString
+  implicit object ZonedDateTimeEncoder extends Encoder[ZonedDateTime] {
+    override def encode(value: ZonedDateTime, schema: Schema, fieldMapper: FieldMapper): String = value.toString
   }
 
-  implicit object ZonedDateTimeFromValue extends FromValue[ZonedDateTime] {
-    override def apply(value: Any, field: Field): ZonedDateTime =
+  implicit object ZonedDateTimeDecoder extends Decoder[ZonedDateTime] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): ZonedDateTime =
       ZonedDateTime.parse(value.toString)
   }
 
-  implicit object CountryToSchema extends ToSchema[Country] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object CountrySchemaFor extends SchemaFor[Country] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object CountryToValue extends ToValue[Country] {
-    override def apply(value: Country): String = value.value
+  implicit object CountryEncoder extends Encoder[Country] {
+    override def encode(value: Country, schema: Schema, fieldMapper: FieldMapper): String = value.value
   }
 
-  implicit object CountryFromValue extends FromValue[Country] {
-    override def apply(value: Any, field: Field): Country = Country(value.toString)
+  implicit object CountryDecoder extends Decoder[Country] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Country = Country(value.toString)
   }
 
-  implicit object LanguageToSchema extends ToSchema[Language] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object LanguageSchemaFor extends SchemaFor[Language] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object LanguageToValue extends ToValue[Language] {
-    override def apply(value: Language): String = value.value
+  implicit object LanguageEncoder extends Encoder[Language] {
+    override def encode(value: Language, schema: Schema, fieldMapper: FieldMapper): String = value.value
   }
 
-  implicit object LanguageFromValue extends FromValue[Language] {
-    override def apply(value: Any, field: Field): Language = Language(value.toString)
+  implicit object LanguageDecoder extends Decoder[Language] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Language = Language(value.toString)
   }
 
-  implicit object GenderToSchema extends ToSchema[Gender] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object GenderSchemaFor extends SchemaFor[Gender] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object GenderToValue extends ToValue[Gender] {
-    override def apply(value: Gender): String = value.shortName
+  implicit object GenderEncoder extends Encoder[Gender] {
+    override def encode(value: Gender, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
   }
 
-  implicit object GenderFromValue extends FromValue[Gender] {
-    override def apply(value: Any, field: Field): Gender =
+  implicit object GenderDecoder extends Decoder[Gender] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Gender =
       Gender.matchGender(value.toString).getOrElse(throw new IllegalArgumentException(s"$value is not a Gender"))
   }
 
-  implicit object SocioProfessionalCategoryToSchema extends ToSchema[SocioProfessionalCategory] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object SocioProfessionalCategorySchemaFor extends SchemaFor[SocioProfessionalCategory] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object SocioProfessionalCategoryToValue extends ToValue[SocioProfessionalCategory] {
-    override def apply(value: SocioProfessionalCategory): String = value.shortName
+  implicit object SocioProfessionalCategoryEncoder extends Encoder[SocioProfessionalCategory] {
+    override def encode(value: SocioProfessionalCategory, schema: Schema, fieldMapper: FieldMapper): String =
+      value.shortName
   }
 
-  implicit object SocioProfessionalCategoryFromValue extends FromValue[SocioProfessionalCategory] {
-    override def apply(value: Any, field: Field): SocioProfessionalCategory =
+  implicit object SocioProfessionalCategoryDecoder extends Decoder[SocioProfessionalCategory] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): SocioProfessionalCategory =
       SocioProfessionalCategory
         .matchSocioProfessionalCategory(value.toString)
         .getOrElse(throw new IllegalArgumentException(s"$value is not a SocioProfessionalCategory"))
   }
 
-  implicit object VoteKeyToSchema extends ToSchema[VoteKey] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object VoteKeySchemaFor extends SchemaFor[VoteKey] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object VoteKeyToValue extends ToValue[VoteKey] {
-    override def apply(value: VoteKey): String = value.shortName
+  implicit object VoteKeyEncoder extends Encoder[VoteKey] {
+    override def encode(value: VoteKey, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
   }
 
-  implicit object VoteKeyFromValue extends FromValue[VoteKey] {
-    override def apply(value: Any, field: Field): VoteKey =
+  implicit object VoteKeyDecoder extends Decoder[VoteKey] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): VoteKey =
       VoteKey.matchVoteKey(value.toString).getOrElse(throw new IllegalArgumentException(s"$value is not a VoteKey"))
   }
 
-  implicit object QualificationKeyToSchema extends ToSchema[QualificationKey] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object QualificationKeySchemaFor extends SchemaFor[QualificationKey] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object QualificationKeyToValue extends ToValue[QualificationKey] {
-    override def apply(value: QualificationKey): String = value.shortName
+  implicit object QualificationKeyEncoder extends Encoder[QualificationKey] {
+    override def encode(value: QualificationKey, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
   }
 
-  implicit object QualificationKeyFromValue extends FromValue[QualificationKey] {
-    override def apply(value: Any, field: Field): QualificationKey =
+  implicit object QualificationKeyDecoder extends Decoder[QualificationKey] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): QualificationKey =
       QualificationKey
         .matchQualificationKey(value.toString)
         .getOrElse(throw new IllegalArgumentException(s"$value is not a QualificationKey"))
   }
 
-  implicit object SequenceStatusToSchema extends ToSchema[SequenceStatus] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object SequenceStatusSchemaFor extends SchemaFor[SequenceStatus] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object SequenceStatusToValue extends ToValue[SequenceStatus] {
-    override def apply(value: SequenceStatus): String = value.shortName
+  implicit object SequenceStatusEncoder extends Encoder[SequenceStatus] {
+    override def encode(value: SequenceStatus, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
   }
 
-  implicit object SequenceStatusFromValue extends FromValue[SequenceStatus] {
-    override def apply(value: Any, field: Field): SequenceStatus =
+  implicit object SequenceStatusDecoder extends Decoder[SequenceStatus] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): SequenceStatus =
       SequenceStatus.statusMap
         .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a SequenceStatus"))
   }
 
-  implicit object ApplicationNameToSchema extends ToSchema[ApplicationName] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object ApplicationNameSchemaFor extends SchemaFor[ApplicationName] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object ApplicationNameToValue extends ToValue[ApplicationName] {
-    override def apply(value: ApplicationName): String = value.shortName
+  implicit object ApplicationNameEncoder extends Encoder[ApplicationName] {
+    override def encode(value: ApplicationName, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
   }
 
-  implicit object ApplicationNameFromValue extends FromValue[ApplicationName] {
-    override def apply(value: Any, field: Field): ApplicationName =
+  implicit object ApplicationNameDecoder extends Decoder[ApplicationName] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): ApplicationName =
       ApplicationName.applicationMap
         .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not an application name"))
   }
 
-  implicit object VoteTrustToSchema extends ToSchema[VoteTrust] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object VoteTrustSchemaFor extends SchemaFor[VoteTrust] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
-  implicit object VoteTrustToValue extends ToValue[VoteTrust] {
-    override def apply(value: VoteTrust): String = value.shortName
+  implicit object VoteTrustEncoder extends Encoder[VoteTrust] {
+    override def encode(value: VoteTrust, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
   }
 
-  implicit object VoteTrustFromValue extends FromValue[VoteTrust] {
-    override def apply(value: Any, field: Field): VoteTrust = {
+  implicit object VoteTrustDecoder extends Decoder[VoteTrust] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): VoteTrust = {
       Option(value)
         .map(
           v =>

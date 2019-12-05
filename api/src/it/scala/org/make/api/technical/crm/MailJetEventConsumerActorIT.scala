@@ -117,12 +117,8 @@ class MailJetEventConsumerActorIT
         hardBounce = true,
         error = Some(MailJetError.InvalidDomaine)
       )
-      val wrappedBounceEventBounce = MailJetEventWrapper(
-        version = MakeSerializable.V1,
-        id = "some-event",
-        date = now,
-        event = MailJetEventWrapper.wrapEvent(eventBounce)
-      )
+      val wrappedBounceEventBounce =
+        MailJetEventWrapper(version = MakeSerializable.V1, id = "some-event", date = now, event = eventBounce)
 
       When("I send bounce event")
       producer.send(new ProducerRecord[String, MailJetEventWrapper]("mailjet-events", wrappedBounceEventBounce))
@@ -147,7 +143,7 @@ class MailJetEventConsumerActorIT
         version = MakeSerializable.V1,
         id = "some-event",
         date = DateHelper.now(),
-        event = MailJetEventWrapper.wrapEvent(eventSpam)
+        event = eventSpam
       )
 
       When("I send spam event")
@@ -175,7 +171,7 @@ class MailJetEventConsumerActorIT
         version = MakeSerializable.V1,
         id = "some-event",
         date = DateHelper.now(),
-        event = MailJetEventWrapper.wrapEvent(eventUnsubscribe)
+        event = eventUnsubscribe
       )
 
       When("I send unsubscribe event")

@@ -40,7 +40,7 @@ class MailJetEventConsumerActor(userService: UserService)
   override def groupId: String = "mailJet-event-consumer"
 
   override def handleMessage(message: MailJetEventWrapper): Future[Unit] = {
-    message.event.fold(ToMailJetEvent) match {
+    message.event match {
       case event: MailJetBounceEvent      => handleBounceEvent(event, message.date).map(_ => {})
       case event: MailJetBlockedEvent     => doNothing(event)
       case event: MailJetSpamEvent        => handleSpamEvent(event).map(_ => {})

@@ -22,8 +22,7 @@ package org.make.api.user
 import akka.actor.Props
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import org.make.api.technical.{BasicProducerActor, ProducerActorCompanion}
-import org.make.api.userhistory.UserEvent
-import org.make.api.userhistory.UserEvent._
+import org.make.api.userhistory.{UserEvent, UserEventWrapper}
 
 class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] {
   override protected lazy val eventClass: Class[UserEvent] = classOf[UserEvent]
@@ -37,7 +36,7 @@ class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] 
       id = event.userId.value,
       date = event.eventDate,
       eventType = event.getClass.getSimpleName,
-      event = UserEventWrapper.wrapEvent(event)
+      event = event
     )
   }
 }

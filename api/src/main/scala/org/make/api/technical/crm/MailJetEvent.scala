@@ -21,15 +21,13 @@ package org.make.api.technical.crm
 
 import java.time.ZonedDateTime
 
+import com.sksamuel.avro4s
 import com.sksamuel.avro4s._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder._
 import io.circe.{Decoder, DecodingFailure, HCursor}
 import org.apache.avro.Schema
-import org.apache.avro.Schema.Field
-import org.make.api.technical.crm.MailJetEvent.AnyMailJetEvent
 import org.make.core.{AvroSerializers, CirceFormatters, Sharded}
-import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 sealed trait MailJetEvent {
   def email: String
@@ -46,9 +44,6 @@ sealed trait MailJetEvent {
   * see Mailjet documentation: https://dev.mailjet.com/guides/
   */
 object MailJetEvent {
-  type AnyMailJetEvent =
-    MailJetBaseEvent :+: MailJetUnsubscribeEvent :+: MailJetSpamEvent :+: MailJetBounceEvent :+: MailJetBlockedEvent :+: CNil
-
   val eventDecoderMap = Map(
     "simple" -> MailJetBaseEvent.decoder,
     "bounce" -> MailJetBounceEvent.decoder,
@@ -70,29 +65,14 @@ object MailJetEvent {
   }
 }
 
-final case class MailJetEventWrapper(version: Int, id: String, date: ZonedDateTime, event: AnyMailJetEvent)
-    extends Sharded
+final case class MailJetEventWrapper(version: Int, id: String, date: ZonedDateTime, event: MailJetEvent) extends Sharded
 
 object MailJetEventWrapper extends AvroSerializers {
-  implicit lazy val schemaFor: SchemaFor[MailJetEventWrapper] = SchemaFor[MailJetEventWrapper]
-  implicit lazy val fromRecord: FromRecord[MailJetEventWrapper] = FromRecord[MailJetEventWrapper]
-  implicit lazy val toRecord: ToRecord[MailJetEventWrapper] = ToRecord[MailJetEventWrapper]
-  implicit lazy val recordFormat: RecordFormat[MailJetEventWrapper] = RecordFormat[MailJetEventWrapper]
-
-  def wrapEvent(event: MailJetEvent): AnyMailJetEvent = event match {
-    case e: MailJetBaseEvent        => Coproduct[AnyMailJetEvent](e)
-    case e: MailJetUnsubscribeEvent => Coproduct[AnyMailJetEvent](e)
-    case e: MailJetSpamEvent        => Coproduct[AnyMailJetEvent](e)
-    case e: MailJetBounceEvent      => Coproduct[AnyMailJetEvent](e)
-    case e: MailJetBlockedEvent     => Coproduct[AnyMailJetEvent](e)
-  }
-}
-object ToMailJetEvent extends Poly1 {
-  implicit val atMailJetBaseEvent: Case.Aux[MailJetBaseEvent, MailJetBaseEvent] = at(identity)
-  implicit val atMailJetUnsubscribeEvent: Case.Aux[MailJetUnsubscribeEvent, MailJetUnsubscribeEvent] = at(identity)
-  implicit val atMailJetSpamEvent: Case.Aux[MailJetSpamEvent, MailJetSpamEvent] = at(identity)
-  implicit val atMailJetBounceEvent: Case.Aux[MailJetBounceEvent, MailJetBounceEvent] = at(identity)
-  implicit val atMailJetBlockedEvent: Case.Aux[MailJetBlockedEvent, MailJetBlockedEvent] = at(identity)
+  lazy val schemaFor: SchemaFor[MailJetEventWrapper] = SchemaFor.gen[MailJetEventWrapper]
+  implicit lazy val avroDecoder: avro4s.Decoder[MailJetEventWrapper] = avro4s.Decoder.gen[MailJetEventWrapper]
+  implicit lazy val avroEncoder: avro4s.Encoder[MailJetEventWrapper] = avro4s.Encoder.gen[MailJetEventWrapper]
+  lazy val recordFormat: RecordFormat[MailJetEventWrapper] =
+    RecordFormat[MailJetEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }
 
 sealed trait MailJetErrorRelatedTo {
@@ -125,18 +105,18 @@ sealed trait MailJetError {
 }
 object MailJetError extends StrictLogging {
 
-  implicit object MailJetErrorToValue extends ToValue[MailJetError] {
-    override def apply(value: MailJetError): String = value.name
+  implicit object MailJetErrorAvroEncoder extends Encoder[MailJetError] {
+    override def encode(value: MailJetError, schema: Schema, fieldMapper: FieldMapper): String = value.name
   }
 
-  implicit object MailJetErrorFromValue extends FromValue[MailJetError] {
-    override def apply(value: Any, field: Field): MailJetError =
+  implicit object MailJetErrorFromValue extends avro4s.Decoder[MailJetError] {
+    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): MailJetError =
       MailJetError.errorMap
         .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a MailJetError"))
   }
 
-  implicit object MailJetErrorToSchema extends ToSchema[MailJetError] {
-    override val schema: Schema = Schema.create(Schema.Type.STRING)
+  implicit object MailJetErrorToSchema extends SchemaFor[MailJetError] {
+    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
   }
 
   val errorMap: Map[String, MailJetError] = Map(
@@ -257,6 +237,7 @@ object MailJetError extends StrictLogging {
   }
 }
 
+@AvroSortPriority(5)
 case class MailJetBaseEvent(event: String,
                             override val email: String,
                             override val time: Option[Long],
@@ -308,6 +289,7 @@ object MailJetBaseEvent extends CirceFormatters {
   }
 }
 
+@AvroSortPriority(2)
 case class MailJetBounceEvent(override val email: String,
                               override val time: Option[Long] = None,
                               override val messageId: Option[Long] = None,
@@ -377,6 +359,7 @@ object MailJetBounceEvent extends CirceFormatters {
   }
 }
 
+@AvroSortPriority(1)
 case class MailJetBlockedEvent(override val email: String,
                                override val time: Option[Long] = None,
                                override val messageId: Option[Long] = None,
@@ -430,6 +413,7 @@ object MailJetBlockedEvent extends CirceFormatters {
   }
 }
 
+@AvroSortPriority(3)
 case class MailJetSpamEvent(override val email: String,
                             override val time: Option[Long] = None,
                             override val messageId: Option[Long] = None,
@@ -471,6 +455,7 @@ object MailJetSpamEvent extends CirceFormatters {
   }
 }
 
+@AvroSortPriority(4)
 case class MailJetUnsubscribeEvent(email: String,
                                    time: Option[Long] = None,
                                    messageId: Option[Long] = None,

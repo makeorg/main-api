@@ -36,7 +36,7 @@ import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailN
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
 import org.make.api.user.validation.UserRegistrationValidatorComponent
-import org.make.api.userhistory.UserEvent._
+import org.make.api.userhistory._
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}

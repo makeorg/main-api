@@ -25,11 +25,7 @@ import org.make.api.proposal._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.{PersistentUserServiceComponent, UserServiceComponent}
-import org.make.api.userhistory.UserEvent.{
-  OrganisationInitializationEvent,
-  OrganisationRegisteredEvent,
-  OrganisationUpdatedEvent
-}
+import org.make.api.userhistory.{OrganisationInitializationEvent, OrganisationRegisteredEvent, OrganisationUpdatedEvent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.common.indexed.Sort

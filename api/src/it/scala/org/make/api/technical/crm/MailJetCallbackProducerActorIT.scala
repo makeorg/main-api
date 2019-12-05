@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.sksamuel.avro4s.{FromRecord, RecordFormat}
+import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.config.ConfigFactory
 import org.make.api.{KafkaTest, KafkaTestConsumerActor}
 import org.make.core.AvroSerializers
@@ -45,7 +45,6 @@ class MailJetCallbackProducerActorIT
         actorSystem.actorOf(MailJetCallbackProducerActor.props, MailJetCallbackProducerActor.name)
 
       val probe = TestProbe()
-      implicit val fromRecord: FromRecord[MailJetEventWrapper] = FromRecord[MailJetEventWrapper]
       val consumer = {
         val (name: String, props: Props) =
           KafkaTestConsumerActor.propsAndName(
@@ -83,7 +82,7 @@ class MailJetCallbackProducerActorIT
       val wrapped = probe.expectMsgType[MailJetEventWrapper](2.minutes)
       wrapped.id shouldBe ("test@make.org")
       wrapped.version > 0 shouldBe (true)
-      wrapped.event.fold(ToMailJetEvent) shouldBe (bounceEvent)
+      wrapped.event shouldBe (bounceEvent)
       wrapped.date shouldBe (ZonedDateTime.parse("2015-05-05T07:49:55Z"))
 
       // Clean up stuff

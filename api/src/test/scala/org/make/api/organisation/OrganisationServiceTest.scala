@@ -34,11 +34,7 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
-import org.make.api.userhistory.UserEvent.{
-  OrganisationInitializationEvent,
-  OrganisationRegisteredEvent,
-  OrganisationUpdatedEvent
-}
+import org.make.api.userhistory.{OrganisationInitializationEvent, OrganisationRegisteredEvent, OrganisationUpdatedEvent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}

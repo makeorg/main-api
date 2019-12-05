@@ -21,14 +21,13 @@ package org.make.api.userhistory
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor}
+import com.sksamuel.avro4s
+import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
+import org.make.core._
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{AvroSerializers, DateHelper, EventWrapper, MakeSerializable, RequestContext}
-import shapeless.ops.product.ToRecord
-import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 trait UserRelatedEvent {
   def userId: UserId
@@ -45,268 +44,232 @@ sealed trait UserEvent extends UserRelatedEvent {
 
 object UserEvent {
 
-  type AnyUserEvent =
-    ResetPasswordEvent :+:
-      ResendValidationEmailEvent :+:
-      UserRegisteredEvent :+:
-      UserConnectedEvent :+:
-      UserUpdatedTagEvent :+:
-      UserValidatedAccountEvent :+:
-      OrganisationRegisteredEvent :+:
-      OrganisationUpdatedEvent :+:
-      OrganisationInitializationEvent :+:
-      UserUpdatedOptInNewsletterEvent :+:
-      UserAnonymizedEvent :+:
-      UserFollowEvent :+:
-      UserUnfollowEvent :+:
-      CNil
+  val defaultCountry: Country = Country("FR")
+  val defaultLanguage: Language = Language("fr")
 
-  final case class UserEventWrapper(version: Int,
-                                    id: String,
-                                    date: ZonedDateTime,
-                                    eventType: String,
-                                    event: AnyUserEvent)
-      extends EventWrapper
+  val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
+}
 
-  object UserEventWrapper extends AvroSerializers {
-    implicit lazy val schemaFor: SchemaFor[UserEventWrapper] = SchemaFor[UserEventWrapper]
-    implicit lazy val fromRecord: FromRecord[UserEventWrapper] = FromRecord[UserEventWrapper]
-    implicit lazy val toRecord: ToRecord[UserEventWrapper] = ToRecord[UserEventWrapper]
-    implicit lazy val recordFormat: RecordFormat[UserEventWrapper] = RecordFormat[UserEventWrapper]
+final case class UserEventWrapper(version: Int, id: String, date: ZonedDateTime, eventType: String, event: UserEvent)
+    extends EventWrapper[UserEvent]
 
-    def wrapEvent(event: UserEvent): AnyUserEvent =
-      event match {
-        case e: ResetPasswordEvent              => Coproduct[AnyUserEvent](e)
-        case e: ResendValidationEmailEvent      => Coproduct[AnyUserEvent](e)
-        case e: UserConnectedEvent              => Coproduct[AnyUserEvent](e)
-        case e: UserUpdatedTagEvent             => Coproduct[AnyUserEvent](e)
-        case e: UserRegisteredEvent             => Coproduct[AnyUserEvent](e)
-        case e: UserValidatedAccountEvent       => Coproduct[AnyUserEvent](e)
-        case e: OrganisationRegisteredEvent     => Coproduct[AnyUserEvent](e)
-        case e: OrganisationUpdatedEvent        => Coproduct[AnyUserEvent](e)
-        case e: OrganisationInitializationEvent => Coproduct[AnyUserEvent](e)
-        case e: UserUpdatedOptInNewsletterEvent => Coproduct[AnyUserEvent](e)
-        case e: UserAnonymizedEvent             => Coproduct[AnyUserEvent](e)
-        case e: UserFollowEvent                 => Coproduct[AnyUserEvent](e)
-        case e: UserUnfollowEvent               => Coproduct[AnyUserEvent](e)
-      }
-  }
+object UserEventWrapper extends AvroSerializers {
+  lazy val schemaFor: SchemaFor[UserEventWrapper] = SchemaFor.gen[UserEventWrapper]
+  implicit lazy val avroDecoder: avro4s.Decoder[UserEventWrapper] = avro4s.Decoder.gen[UserEventWrapper]
+  implicit lazy val avroEncoder: avro4s.Encoder[UserEventWrapper] = avro4s.Encoder.gen[UserEventWrapper]
+  lazy val recordFormat: RecordFormat[UserEventWrapper] =
+    RecordFormat[UserEventWrapper](schemaFor.schema(DefaultFieldMapper))
+}
 
-  /*
-   * Add an implicit for each event to manage
-   */
-  object HandledMessages extends Poly1 {
-    implicit val atResetPasswordEvent: Case.Aux[ResetPasswordEvent, ResetPasswordEvent] = at(identity)
-    implicit val atUserValidatedAccountEvent: Case.Aux[UserValidatedAccountEvent, UserValidatedAccountEvent] =
-      at(identity)
-    implicit val atUserRegisteredEvent: Case.Aux[UserRegisteredEvent, UserRegisteredEvent] = at(identity)
-    implicit val atUserConnectedEvent: Case.Aux[UserConnectedEvent, UserConnectedEvent] = at(identity)
-    implicit val atResendValidationEmail: Case.Aux[ResendValidationEmailEvent, ResendValidationEmailEvent] =
-      at(identity)
-    implicit val atUserUpdatedTagEvent: Case.Aux[UserUpdatedTagEvent, UserUpdatedTagEvent] = at(identity)
-    implicit val atOrganisationRegisteredEvent: Case.Aux[OrganisationRegisteredEvent, OrganisationRegisteredEvent] = at(
-      identity
+@AvroSortPriority(15)
+final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
+                                    @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                      UserEvent.defaultDate,
+                                    override val userId: UserId,
+                                    @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                                    @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                                    override val requestContext: RequestContext)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+object ResetPasswordEvent {
+  def apply(connectedUserId: Option[UserId],
+            user: User,
+            country: Country,
+            language: Language,
+            requestContext: RequestContext): ResetPasswordEvent = {
+    ResetPasswordEvent(
+      userId = user.userId,
+      connectedUserId = connectedUserId,
+      country = country,
+      language = language,
+      requestContext = requestContext,
+      eventDate = DateHelper.now()
     )
-    implicit val atOrganisationUpdatedEvent: Case.Aux[OrganisationUpdatedEvent, OrganisationUpdatedEvent] = at(identity)
-    implicit val atOrganisationAskPasswordEvent
-      : Case.Aux[OrganisationInitializationEvent, OrganisationInitializationEvent] =
-      at(identity)
-    implicit val atUserUpdatedOptInNewsletterEvent
-      : Case.Aux[UserUpdatedOptInNewsletterEvent, UserUpdatedOptInNewsletterEvent] = at(identity)
-    implicit val atUserAnonymizedEvent: Case.Aux[UserAnonymizedEvent, UserAnonymizedEvent] = at(identity)
-    implicit val atUserFollowEvent: Case.Aux[UserFollowEvent, UserFollowEvent] = at(identity)
-    implicit val atUserUnfollowEvent: Case.Aux[UserUnfollowEvent, UserUnfollowEvent] = at(identity)
   }
+}
 
-  private val defaultCountry = Country("FR")
-  private val defaultLanguage = Language("fr")
+@AvroSortPriority(14)
+final case class ResendValidationEmailEvent(
+  override val connectedUserId: Option[UserId] = None,
+  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
+  override val userId: UserId,
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+  override val requestContext: RequestContext
+) extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
 
-  private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
-
-  final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
-                                      override val eventDate: ZonedDateTime = defaultDate,
-                                      override val userId: UserId,
-                                      override val country: Country = defaultCountry,
-                                      override val language: Language = defaultLanguage,
-                                      override val requestContext: RequestContext)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
+object ResendValidationEmailEvent {
+  def apply(connectedUserId: UserId,
+            userId: UserId,
+            country: Country,
+            language: Language,
+            requestContext: RequestContext): ResendValidationEmailEvent = {
+    ResendValidationEmailEvent(
+      connectedUserId = Some(connectedUserId),
+      eventDate = DateHelper.now(),
+      userId = userId,
+      country = country,
+      language = language,
+      requestContext = requestContext
+    )
   }
+}
 
-  object ResetPasswordEvent {
-    def apply(connectedUserId: Option[UserId],
-              user: User,
-              country: Country,
-              language: Language,
-              requestContext: RequestContext): ResetPasswordEvent = {
-      ResetPasswordEvent(
-        userId = user.userId,
-        connectedUserId = connectedUserId,
-        country = country,
-        language = language,
-        requestContext = requestContext,
-        eventDate = DateHelper.now()
-      )
-    }
-  }
-
-  final case class ResendValidationEmailEvent(override val connectedUserId: Option[UserId] = None,
-                                              override val eventDate: ZonedDateTime = defaultDate,
-                                              override val userId: UserId,
-                                              override val country: Country = defaultCountry,
-                                              override val language: Language = defaultLanguage,
-                                              override val requestContext: RequestContext)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  object ResendValidationEmailEvent {
-    def apply(connectedUserId: UserId,
-              userId: UserId,
-              country: Country,
-              language: Language,
-              requestContext: RequestContext): ResendValidationEmailEvent = {
-      ResendValidationEmailEvent(
-        connectedUserId = Some(connectedUserId),
-        eventDate = DateHelper.now(),
-        userId = userId,
-        country = country,
-        language = language,
-        requestContext = requestContext
-      )
-    }
-  }
-
-  case class UserRegisteredEvent(override val connectedUserId: Option[UserId] = None,
-                                 override val eventDate: ZonedDateTime = defaultDate,
-                                 override val userId: UserId,
-                                 override val requestContext: RequestContext,
-                                 email: String,
-                                 firstName: Option[String],
-                                 lastName: Option[String],
-                                 profession: Option[String],
-                                 dateOfBirth: Option[LocalDate],
-                                 postalCode: Option[String],
-                                 gender: Option[Gender] = None,
-                                 socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
-                                 override val country: Country = defaultCountry,
-                                 override val language: Language = defaultLanguage,
-                                 isSocialLogin: Boolean = false,
-                                 registerQuestionId: Option[QuestionId] = None,
-                                 optInPartner: Option[Boolean] = None)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V3
-  }
-
-  final case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,
-                                      override val eventDate: ZonedDateTime = defaultDate,
-                                      override val userId: UserId,
-                                      override val country: Country = defaultCountry,
-                                      override val language: Language = defaultLanguage,
-                                      override val requestContext: RequestContext)
-      extends UserEvent {
-
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  final case class UserValidatedAccountEvent(override val connectedUserId: Option[UserId] = None,
-                                             override val eventDate: ZonedDateTime = defaultDate,
-                                             override val userId: UserId = UserId(value = ""),
-                                             override val country: Country = defaultCountry,
-                                             override val language: Language = defaultLanguage,
-                                             override val requestContext: RequestContext = RequestContext.empty,
-                                             isSocialLogin: Boolean = false)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  final case class UserUpdatedTagEvent(override val connectedUserId: Option[UserId] = None,
-                                       override val eventDate: ZonedDateTime = defaultDate,
-                                       override val userId: UserId = UserId(value = ""),
-                                       override val country: Country = defaultCountry,
-                                       override val language: Language = defaultLanguage,
-                                       override val requestContext: RequestContext = RequestContext.empty,
-                                       oldTag: String,
-                                       newTag: String)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  case class OrganisationRegisteredEvent(override val connectedUserId: Option[UserId] = None,
-                                         override val eventDate: ZonedDateTime = defaultDate,
-                                         override val userId: UserId,
-                                         override val requestContext: RequestContext,
-                                         email: String,
-                                         override val country: Country = defaultCountry,
-                                         override val language: Language = defaultLanguage)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  case class OrganisationUpdatedEvent(override val connectedUserId: Option[UserId] = None,
-                                      override val eventDate: ZonedDateTime = defaultDate,
-                                      override val userId: UserId,
-                                      override val requestContext: RequestContext,
-                                      override val country: Country = defaultCountry,
-                                      override val language: Language = defaultLanguage)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  case class OrganisationInitializationEvent(override val connectedUserId: Option[UserId] = None,
-                                             override val eventDate: ZonedDateTime = defaultDate,
-                                             override val userId: UserId,
-                                             override val requestContext: RequestContext,
-                                             override val country: Country = defaultCountry,
-                                             override val language: Language = defaultLanguage)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  //TODO: remove
-  case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
-
-  case class UserUpdatedOptInNewsletterEvent(override val connectedUserId: Option[UserId] = None,
-                                             override val eventDate: ZonedDateTime = defaultDate,
-                                             override val userId: UserId,
-                                             override val requestContext: RequestContext,
-                                             override val country: Country = defaultCountry,
-                                             override val language: Language = defaultLanguage,
-                                             optInNewsletter: Boolean)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  case class UserAnonymizedEvent(override val connectedUserId: Option[UserId] = None,
-                                 override val eventDate: ZonedDateTime = defaultDate,
-                                 override val userId: UserId,
-                                 override val requestContext: RequestContext,
-                                 override val country: Country = defaultCountry,
-                                 override val language: Language = defaultLanguage,
-                                 adminId: UserId)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  case class UserFollowEvent(override val connectedUserId: Option[UserId] = None,
-                             override val eventDate: ZonedDateTime = defaultDate,
-                             override val userId: UserId,
-                             override val requestContext: RequestContext,
-                             override val country: Country = defaultCountry,
-                             override val language: Language = defaultLanguage,
-                             followedUserId: UserId)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
-
-  case class UserUnfollowEvent(override val connectedUserId: Option[UserId] = None,
-                               override val eventDate: ZonedDateTime = defaultDate,
+@AvroSortPriority(13)
+case class UserRegisteredEvent(override val connectedUserId: Option[UserId] = None,
+                               @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                 UserEvent.defaultDate,
                                override val userId: UserId,
                                override val requestContext: RequestContext,
-                               override val country: Country = defaultCountry,
-                               override val language: Language = defaultLanguage,
-                               unfollowedUserId: UserId)
-      extends UserEvent {
-    override def version(): Int = MakeSerializable.V1
-  }
+                               email: String,
+                               firstName: Option[String],
+                               lastName: Option[String],
+                               profession: Option[String],
+                               dateOfBirth: Option[LocalDate],
+                               postalCode: Option[String],
+                               gender: Option[Gender] = None,
+                               socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+                               @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                               @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                               isSocialLogin: Boolean = false,
+                               registerQuestionId: Option[QuestionId] = None,
+                               optInPartner: Option[Boolean] = None)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V3
+}
+
+@AvroSortPriority(12)
+final case class UserConnectedEvent(override val connectedUserId: Option[UserId] = None,
+                                    @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                      UserEvent.defaultDate,
+                                    override val userId: UserId,
+                                    @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                                    @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                                    override val requestContext: RequestContext)
+    extends UserEvent {
+
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(10)
+final case class UserValidatedAccountEvent(
+  override val connectedUserId: Option[UserId] = None,
+  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
+  override val userId: UserId = UserId(value = ""),
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+  override val requestContext: RequestContext = RequestContext.empty,
+  isSocialLogin: Boolean = false
+) extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(11)
+final case class UserUpdatedTagEvent(override val connectedUserId: Option[UserId] = None,
+                                     @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                       UserEvent.defaultDate,
+                                     override val userId: UserId = UserId(value = ""),
+                                     @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                                     @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                                     override val requestContext: RequestContext = RequestContext.empty,
+                                     oldTag: String,
+                                     newTag: String)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(9)
+case class OrganisationRegisteredEvent(override val connectedUserId: Option[UserId] = None,
+                                       @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                         UserEvent.defaultDate,
+                                       override val userId: UserId,
+                                       override val requestContext: RequestContext,
+                                       email: String,
+                                       @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                                       @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(8)
+case class OrganisationUpdatedEvent(override val connectedUserId: Option[UserId] = None,
+                                    @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                      UserEvent.defaultDate,
+                                    override val userId: UserId,
+                                    override val requestContext: RequestContext,
+                                    @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                                    @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(7)
+case class OrganisationInitializationEvent(
+  override val connectedUserId: Option[UserId] = None,
+  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
+  override val userId: UserId,
+  override val requestContext: RequestContext,
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage
+) extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+//TODO: remove
+case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
+
+@AvroSortPriority(6)
+case class UserUpdatedOptInNewsletterEvent(
+  override val connectedUserId: Option[UserId] = None,
+  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
+  override val userId: UserId,
+  override val requestContext: RequestContext,
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+  optInNewsletter: Boolean
+) extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(5)
+case class UserAnonymizedEvent(override val connectedUserId: Option[UserId] = None,
+                               @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                 UserEvent.defaultDate,
+                               override val userId: UserId,
+                               override val requestContext: RequestContext,
+                               @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                               @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                               adminId: UserId)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(4)
+case class UserFollowEvent(override val connectedUserId: Option[UserId] = None,
+                           @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                             UserEvent.defaultDate,
+                           override val userId: UserId,
+                           override val requestContext: RequestContext,
+                           @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                           @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                           followedUserId: UserId)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
+@AvroSortPriority(3)
+case class UserUnfollowEvent(override val connectedUserId: Option[UserId] = None,
+                             @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                               UserEvent.defaultDate,
+                             override val userId: UserId,
+                             override val requestContext: RequestContext,
+                             @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                             @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                             unfollowedUserId: UserId)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
 }

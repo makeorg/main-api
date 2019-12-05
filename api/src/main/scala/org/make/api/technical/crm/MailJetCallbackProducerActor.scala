@@ -36,7 +36,7 @@ class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrappe
     logger.debug(s"Produce MailJetEvent: ${event.toString}")
     MailJetEventWrapper(version = MakeSerializable.V1, id = event.email, date = event.time.map { timestamp =>
       ZonedDateTime.from(Instant.ofEpochMilli(timestamp * 1000).atZone(ZoneOffset.UTC))
-    }.getOrElse(DateHelper.now()), event = MailJetEventWrapper.wrapEvent(event))
+    }.getOrElse(DateHelper.now()), event = event)
   }
 }
 

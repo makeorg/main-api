@@ -21,7 +21,8 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
+import com.sksamuel.avro4s
+import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
 import org.make.api.proposal.ProposalEvent.DeprecatedEvent
 import org.make.core.SprayJsonFormatters._
 import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
@@ -33,7 +34,6 @@ import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{AvroSerializers, EventWrapper, MakeSerializable, RequestContext}
-import shapeless.{:+:, CNil, Coproduct, Poly1}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
@@ -49,10 +49,9 @@ object ProposalEvent {
 
   private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
-  // This event isn't published and so doesn't need to be in the coproduct
   final case class SimilarProposalsCleared(id: ProposalId,
                                            eventDate: ZonedDateTime = defaultDate,
-                                           requestContext: RequestContext = RequestContext.empty)
+                                           requestContext: RequestContext)
       extends ProposalEvent
       with DeprecatedEvent
 
@@ -66,7 +65,7 @@ object ProposalEvent {
   final case class SimilarProposalRemoved(id: ProposalId,
                                           proposalToRemove: ProposalId,
                                           eventDate: ZonedDateTime = defaultDate,
-                                          requestContext: RequestContext = RequestContext.empty)
+                                          requestContext: RequestContext)
       extends ProposalEvent
       with DeprecatedEvent
 
@@ -86,75 +85,25 @@ object PublishedProposalEvent {
 
   private val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 
-  type AnyProposalEvent =
-    ProposalProposed :+: ProposalAccepted :+: ProposalRefused :+: ProposalPostponed :+: ProposalViewed :+:
-      ProposalUpdated :+: ProposalVotesVerifiedUpdated :+: ReindexProposal :+: ProposalVoted :+: ProposalUnvoted :+:
-      ProposalQualified :+: ProposalUnqualified :+: SimilarProposalsAdded :+: ProposalLocked :+: ProposalPatched :+:
-      ProposalAddedToOperation :+: ProposalRemovedFromOperation :+: ProposalAnonymized :+: ProposalVotesUpdated :+: CNil
-
   final case class ProposalEventWrapper(version: Int,
                                         id: String,
                                         date: ZonedDateTime,
                                         eventType: String,
-                                        event: AnyProposalEvent)
-      extends EventWrapper
+                                        event: PublishedProposalEvent)
+      extends EventWrapper[PublishedProposalEvent]
 
   object ProposalEventWrapper extends AvroSerializers {
-    implicit lazy val schemaFor: SchemaFor[ProposalEventWrapper] = SchemaFor[ProposalEventWrapper]
-    implicit lazy val fromRecord: FromRecord[ProposalEventWrapper] = FromRecord[ProposalEventWrapper]
-    implicit lazy val toRecord: ToRecord[ProposalEventWrapper] = ToRecord[ProposalEventWrapper]
-    implicit lazy val recordFormat: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
-
-    def wrapEvent(event: PublishedProposalEvent): AnyProposalEvent = event match {
-      case e: ProposalProposed             => Coproduct[AnyProposalEvent](e)
-      case e: ProposalAccepted             => Coproduct[AnyProposalEvent](e)
-      case e: ProposalRefused              => Coproduct[AnyProposalEvent](e)
-      case e: ProposalPostponed            => Coproduct[AnyProposalEvent](e)
-      case e: ProposalViewed               => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUpdated              => Coproduct[AnyProposalEvent](e)
-      case e: ProposalVotesVerifiedUpdated => Coproduct[AnyProposalEvent](e)
-      case e: ProposalVotesUpdated         => Coproduct[AnyProposalEvent](e)
-      case e: ReindexProposal              => Coproduct[AnyProposalEvent](e)
-      case e: ProposalVoted                => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUnvoted              => Coproduct[AnyProposalEvent](e)
-      case e: ProposalQualified            => Coproduct[AnyProposalEvent](e)
-      case e: ProposalUnqualified          => Coproduct[AnyProposalEvent](e)
-      case e: SimilarProposalsAdded        => Coproduct[AnyProposalEvent](e)
-      case e: ProposalLocked               => Coproduct[AnyProposalEvent](e)
-      case e: ProposalPatched              => Coproduct[AnyProposalEvent](e)
-      case e: ProposalAddedToOperation     => Coproduct[AnyProposalEvent](e)
-      case e: ProposalRemovedFromOperation => Coproduct[AnyProposalEvent](e)
-      case e: ProposalAnonymized           => Coproduct[AnyProposalEvent](e)
-    }
+    lazy val schemaFor: SchemaFor[ProposalEventWrapper] = SchemaFor.gen[ProposalEventWrapper]
+    implicit lazy val avroDecoder: avro4s.Decoder[ProposalEventWrapper] = avro4s.Decoder.gen[ProposalEventWrapper]
+    implicit lazy val avroEncoder: avro4s.Encoder[ProposalEventWrapper] = avro4s.Encoder.gen[ProposalEventWrapper]
+    lazy val recordFormat: RecordFormat[ProposalEventWrapper] =
+      RecordFormat[ProposalEventWrapper](schemaFor.schema(DefaultFieldMapper))(avroEncoder, avroDecoder)
   }
 
-  object ToProposalEvent extends Poly1 {
-    implicit val atProposalViewed: Case.Aux[ProposalViewed, ProposalViewed] = at(identity)
-    implicit val atProposalUpdated: Case.Aux[ProposalUpdated, ProposalUpdated] = at(identity)
-    implicit val atProposalVotesVerifiedUpdated: Case.Aux[ProposalVotesVerifiedUpdated, ProposalVotesVerifiedUpdated] =
-      at(identity)
-    implicit val atProposalVotesUpdated: Case.Aux[ProposalVotesUpdated, ProposalVotesUpdated] = at(identity)
-    implicit val atProposalTagsUpdated: Case.Aux[ReindexProposal, ReindexProposal] = at(identity)
-    implicit val atProposalProposed: Case.Aux[ProposalProposed, ProposalProposed] = at(identity)
-    implicit val atProposalAccepted: Case.Aux[ProposalAccepted, ProposalAccepted] = at(identity)
-    implicit val atProposalRefused: Case.Aux[ProposalRefused, ProposalRefused] = at(identity)
-    implicit val atProposalPostponed: Case.Aux[ProposalPostponed, ProposalPostponed] = at(identity)
-    implicit val atProposalVoted: Case.Aux[ProposalVoted, ProposalVoted] = at(identity)
-    implicit val atProposalUnvoted: Case.Aux[ProposalUnvoted, ProposalUnvoted] = at(identity)
-    implicit val atProposalQualified: Case.Aux[ProposalQualified, ProposalQualified] = at(identity)
-    implicit val atProposalUnqualified: Case.Aux[ProposalUnqualified, ProposalUnqualified] = at(identity)
-    implicit val atSimilarProposalsAdded: Case.Aux[SimilarProposalsAdded, SimilarProposalsAdded] = at(identity)
-    implicit val atProposalLocked: Case.Aux[ProposalLocked, ProposalLocked] = at(identity)
-    implicit val atProposalPatched: Case.Aux[ProposalPatched, ProposalPatched] = at(identity)
-    implicit val atProposalAddedToOperation: Case.Aux[ProposalAddedToOperation, ProposalAddedToOperation] = at(identity)
-    implicit val atProposalRemovedFromOperation: Case.Aux[ProposalRemovedFromOperation, ProposalRemovedFromOperation] =
-      at(identity)
-    implicit val atProposalAnonymized: Case.Aux[ProposalAnonymized, ProposalAnonymized] = at(identity)
-  }
-
+  @AvroSortPriority(6)
   final case class ProposalPatched(id: ProposalId,
-                                   eventDate: ZonedDateTime = defaultDate,
-                                   requestContext: RequestContext = RequestContext.empty,
+                                   @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
+                                   requestContext: RequestContext,
                                    proposal: Proposal)
       extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V4
@@ -166,6 +115,7 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat4(ProposalPatched.apply)
   }
 
+  @AvroSortPriority(20)
   final case class ProposalProposed(id: ProposalId,
                                     slug: String,
                                     requestContext: RequestContext,
@@ -204,6 +154,7 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(16)
   final case class ProposalViewed(id: ProposalId, eventDate: ZonedDateTime, requestContext: RequestContext)
       extends PublishedProposalEvent {
 
@@ -217,12 +168,14 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(15)
   final case class ProposalUpdated(id: ProposalId,
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
                                    updatedAt: ZonedDateTime,
                                    moderator: Option[UserId] = None,
-                                   @Deprecated content: String = "",
+// @deprecated "Use the edition field instead"
+                                   content: String = "",
                                    edition: Option[ProposalEdition] = None,
                                    theme: Option[ThemeId] = None,
                                    labels: Seq[LabelId] = Seq.empty,
@@ -245,6 +198,7 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(14)
   final case class ProposalVotesVerifiedUpdated(id: ProposalId,
                                                 eventDate: ZonedDateTime,
                                                 requestContext: RequestContext,
@@ -266,6 +220,7 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(2)
   final case class ProposalVotesUpdated(id: ProposalId,
                                         eventDate: ZonedDateTime,
                                         requestContext: RequestContext,
@@ -285,6 +240,7 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat6(ProposalVotesUpdated.apply)
   }
 
+  @AvroSortPriority(13)
   final case class ReindexProposal(id: ProposalId, eventDate: ZonedDateTime, requestContext: RequestContext)
       extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V1
@@ -298,6 +254,7 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat3(ReindexProposal.apply)
   }
 
+  @AvroSortPriority(19)
   final case class ProposalAccepted(id: ProposalId,
                                     eventDate: ZonedDateTime,
                                     requestContext: RequestContext,
@@ -325,6 +282,7 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(18)
   final case class ProposalRefused(id: ProposalId,
                                    eventDate: ZonedDateTime,
                                    requestContext: RequestContext,
@@ -346,9 +304,10 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(17)
   final case class ProposalPostponed(id: ProposalId,
-                                     eventDate: ZonedDateTime = defaultDate,
-                                     requestContext: RequestContext = RequestContext.empty,
+                                     @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
+                                     requestContext: RequestContext,
                                      moderator: UserId)
       extends PublishedProposalEvent {
 
@@ -364,14 +323,16 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(12)
   final case class ProposalVoted(id: ProposalId,
                                  maybeUserId: Option[UserId],
                                  eventDate: ZonedDateTime,
-                                 @Deprecated organisationInfo: Option[OrganisationInfo] = None,
+// @deprecated "Use the maybeOrganisationId field instead"
+                                 organisationInfo: Option[OrganisationInfo] = None,
                                  maybeOrganisationId: Option[UserId],
                                  requestContext: RequestContext,
                                  voteKey: VoteKey,
-                                 voteTrust: VoteTrust = Trusted)
+                                 @AvroDefault("trusted") voteTrust: VoteTrust = Trusted)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V4
@@ -384,15 +345,17 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(11)
   final case class ProposalUnvoted(id: ProposalId,
                                    maybeUserId: Option[UserId],
                                    eventDate: ZonedDateTime,
-                                   @Deprecated organisationInfo: Option[OrganisationInfo] = None,
+// @deprecated "Use the maybeOrganisationId field instead"
+                                   organisationInfo: Option[OrganisationInfo] = None,
                                    maybeOrganisationId: Option[UserId],
                                    requestContext: RequestContext,
                                    voteKey: VoteKey,
                                    selectedQualifications: Seq[QualificationKey],
-                                   voteTrust: VoteTrust = Trusted)
+                                   @AvroDefault("trusted") voteTrust: VoteTrust = Trusted)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V4
@@ -404,13 +367,14 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat9(ProposalUnvoted.apply)
   }
 
+  @AvroSortPriority(10)
   final case class ProposalQualified(id: ProposalId,
                                      maybeUserId: Option[UserId],
                                      eventDate: ZonedDateTime,
                                      requestContext: RequestContext,
                                      voteKey: VoteKey,
                                      qualificationKey: QualificationKey,
-                                     voteTrust: VoteTrust = Trusted)
+                                     @AvroDefault("trusted") voteTrust: VoteTrust = Trusted)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2
@@ -423,13 +387,14 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(9)
   final case class ProposalUnqualified(id: ProposalId,
                                        maybeUserId: Option[UserId],
                                        eventDate: ZonedDateTime,
                                        requestContext: RequestContext,
                                        voteKey: VoteKey,
                                        qualificationKey: QualificationKey,
-                                       voteTrust: VoteTrust = Trusted)
+                                       @AvroDefault("trusted") voteTrust: VoteTrust = Trusted)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V2
@@ -450,6 +415,7 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(8)
   final case class SimilarProposalsAdded(id: ProposalId,
                                          similarProposals: Set[ProposalId],
                                          requestContext: RequestContext,
@@ -466,11 +432,12 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat4(SimilarProposalsAdded.apply)
   }
 
+  @AvroSortPriority(7)
   final case class ProposalLocked(id: ProposalId,
                                   moderatorId: UserId,
                                   moderatorName: Option[String] = None,
-                                  eventDate: ZonedDateTime = defaultDate,
-                                  requestContext: RequestContext = RequestContext.empty)
+                                  @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
+                                  requestContext: RequestContext)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -485,11 +452,12 @@ object PublishedProposalEvent {
 
   }
 
+  @AvroSortPriority(5)
   final case class ProposalAddedToOperation(id: ProposalId,
                                             operationId: OperationId,
                                             moderatorId: UserId,
-                                            eventDate: ZonedDateTime = defaultDate,
-                                            requestContext: RequestContext = RequestContext.empty)
+                                            @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
+                                            requestContext: RequestContext)
       extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
@@ -501,12 +469,14 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat5(ProposalAddedToOperation.apply)
   }
 
-  final case class ProposalRemovedFromOperation(id: ProposalId,
-                                                operationId: OperationId,
-                                                moderatorId: UserId,
-                                                eventDate: ZonedDateTime = defaultDate,
-                                                requestContext: RequestContext = RequestContext.empty)
-      extends PublishedProposalEvent {
+  @AvroSortPriority(4)
+  final case class ProposalRemovedFromOperation(
+    id: ProposalId,
+    operationId: OperationId,
+    moderatorId: UserId,
+    @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
+    requestContext: RequestContext
+  ) extends PublishedProposalEvent {
 
     override def version(): Int = MakeSerializable.V1
   }
@@ -516,9 +486,10 @@ object PublishedProposalEvent {
       DefaultJsonProtocol.jsonFormat5(ProposalRemovedFromOperation.apply)
   }
 
+  @AvroSortPriority(3)
   final case class ProposalAnonymized(id: ProposalId,
-                                      eventDate: ZonedDateTime = defaultDate,
-                                      requestContext: RequestContext = RequestContext.empty)
+                                      @AvroDefault("2017-11-01T09:00Z") eventDate: ZonedDateTime = defaultDate,
+                                      requestContext: RequestContext)
       extends PublishedProposalEvent {
     override def version(): Int = MakeSerializable.V1
   }

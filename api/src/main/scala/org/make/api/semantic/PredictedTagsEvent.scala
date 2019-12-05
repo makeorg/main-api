@@ -20,30 +20,31 @@
 package org.make.api.semantic
 import java.time.ZonedDateTime
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
-import org.make.api.semantic.PredictionsEventWrapper.AnyPredictionsEvent
-import org.make.core.{AvroSerializers, EventWrapper}
+import com.sksamuel.avro4s._
 import org.make.core.proposal.ProposalId
 import org.make.core.tag.TagId
-import shapeless.{:+:, CNil}
+import org.make.core.{AvroSerializers, EventWrapper}
+
+sealed trait PredictedTagsEvents
 
 final case class PredictedTagsEvent(proposalId: ProposalId,
                                     predictedTags: Seq[TagId],
                                     selectedTags: Seq[TagId],
                                     modelName: String)
+    extends PredictedTagsEvents
 
 final case class PredictionsEventWrapper(version: Int,
                                          id: String,
                                          date: ZonedDateTime,
                                          eventType: String,
-                                         event: AnyPredictionsEvent)
-    extends EventWrapper
+                                         event: PredictedTagsEvents)
+    extends EventWrapper[PredictedTagsEvents]
 
 object PredictionsEventWrapper extends AvroSerializers {
-  implicit lazy val schemaFor: SchemaFor[PredictionsEventWrapper] = SchemaFor[PredictionsEventWrapper]
-  implicit lazy val fromRecord: FromRecord[PredictionsEventWrapper] = FromRecord[PredictionsEventWrapper]
-  implicit lazy val toRecord: ToRecord[PredictionsEventWrapper] = ToRecord[PredictionsEventWrapper]
-  implicit lazy val recordFormat: RecordFormat[PredictionsEventWrapper] = RecordFormat[PredictionsEventWrapper]
+  lazy val schemaFor: SchemaFor[PredictionsEventWrapper] = SchemaFor.gen[PredictionsEventWrapper]
+  implicit lazy val avroDecoder: Decoder[PredictionsEventWrapper] = Decoder.gen[PredictionsEventWrapper]
+  implicit lazy val avroEncoder: Encoder[PredictionsEventWrapper] = Encoder.gen[PredictionsEventWrapper]
+  lazy val recordFormat: RecordFormat[PredictionsEventWrapper] =
+    RecordFormat[PredictionsEventWrapper](schemaFor.schema(DefaultFieldMapper))
 
-  type AnyPredictionsEvent = PredictedTagsEvent :+: CNil
 }

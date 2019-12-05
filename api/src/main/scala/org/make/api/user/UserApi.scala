@@ -37,16 +37,9 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.storage.{
-  Content,
-  FileType,
-  StorageConfigurationComponent,
-  StorageServiceComponent,
-  UploadResponse
-}
+import org.make.api.technical.storage._
 import org.make.api.user.social.SocialServiceComponent
-import org.make.api.userhistory.UserEvent._
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
 import org.make.core._
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort

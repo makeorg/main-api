@@ -800,7 +800,9 @@ class ProposalActor(sessionHistoryActor: ActorRef)
   }
 
   def onAnonymizeProposalCommand(command: AnonymizeProposalCommand): Unit = {
-    persistAndPublishEvent(ProposalAnonymized(command.proposalId, eventDate = DateHelper.now()))(_ => ())
+    persistAndPublishEvent(
+      ProposalAnonymized(command.proposalId, eventDate = DateHelper.now(), requestContext = command.requestContext)
+    )(_ => ())
   }
 
   override def persistenceId: String = proposalId.value

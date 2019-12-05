@@ -23,7 +23,6 @@ import akka.actor.{ActorRef, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
-import org.make.api.userhistory.UserEvent._
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
 
@@ -41,7 +40,7 @@ class UserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: UserEventWrapper): Future[Unit] = {
-    message.event.fold(HandledMessages) match {
+    message.event match {
       case event: ResetPasswordEvent              => doNothing(event)
       case event: UserRegisteredEvent             => handleUserRegisteredEvent(event)
       case event: UserConnectedEvent              => doNothing(event)

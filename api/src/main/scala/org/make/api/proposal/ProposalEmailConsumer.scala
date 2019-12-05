@@ -37,7 +37,7 @@ class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
   override def handleMessage(message: ProposalEventWrapper): Future[Unit] = {
-    message.event.fold(ToProposalEvent) match {
+    message.event match {
       case event: ProposalAccepted             => handleProposalAccepted(event)
       case event: ProposalRefused              => handleProposalRefused(event)
       case event: ProposalPostponed            => doNothing(event)

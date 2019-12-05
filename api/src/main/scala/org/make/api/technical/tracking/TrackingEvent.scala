@@ -21,10 +21,9 @@ package org.make.api.technical.tracking
 
 import java.time.ZonedDateTime
 
-import com.sksamuel.avro4s.{FromRecord, RecordFormat, SchemaFor, ToRecord}
-import org.make.api.technical.tracking.TrackingEvent.AnyTrackingEvent
+import com.sksamuel.avro4s
+import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
 import org.make.core.{AvroSerializers, DateHelper, EventWrapper, RequestContext}
-import shapeless.{:+:, CNil}
 
 final case class TrackingEvent(eventProvider: String,
                                eventType: Option[String],
@@ -37,18 +36,18 @@ final case class TrackingEventWrapper(version: Int,
                                       id: String,
                                       date: ZonedDateTime,
                                       eventType: String,
-                                      event: AnyTrackingEvent)
-    extends EventWrapper
+                                      event: TrackingEvent)
+    extends EventWrapper[TrackingEvent]
 
 object TrackingEventWrapper extends AvroSerializers {
-  implicit lazy val schemaFor: SchemaFor[TrackingEventWrapper] = SchemaFor[TrackingEventWrapper]
-  implicit lazy val fromRecord: FromRecord[TrackingEventWrapper] = FromRecord[TrackingEventWrapper]
-  implicit lazy val toRecord: ToRecord[TrackingEventWrapper] = ToRecord[TrackingEventWrapper]
-  implicit lazy val recordFormat: RecordFormat[TrackingEventWrapper] = RecordFormat[TrackingEventWrapper]
+  lazy val schemaFor: SchemaFor[TrackingEventWrapper] = SchemaFor.gen[TrackingEventWrapper]
+  implicit lazy val avroDecoder: avro4s.Decoder[TrackingEventWrapper] = avro4s.Decoder.gen[TrackingEventWrapper]
+  implicit lazy val avroEncoder: avro4s.Encoder[TrackingEventWrapper] = avro4s.Encoder.gen[TrackingEventWrapper]
+  lazy val recordFormat: RecordFormat[TrackingEventWrapper] =
+    RecordFormat[TrackingEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }
 
 object TrackingEvent {
-  type AnyTrackingEvent = TrackingEvent :+: CNil
 
   def eventfromFront(frontRequest: FrontTrackingRequest, requestContext: RequestContext): TrackingEvent = {
     TrackingEvent(
