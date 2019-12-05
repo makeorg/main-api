@@ -31,9 +31,9 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 
-class PersistentPersonalityServiceIT
+class PersistentQuestionPersonalityServiceIT
     extends DatabaseTest
-    with DefaultPersistentPersonalityServiceComponent
+    with DefaultPersistentQuestionPersonalityServiceComponent
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentUserServiceComponent {
 
@@ -63,8 +63,8 @@ class PersistentPersonalityServiceIT
       val futurePersonality = for {
         _           <- persistentQuestionService.persist(question)
         _           <- persistentUserService.persist(user)
-        _           <- persistentPersonalityService.persist(personality)
-        personality <- persistentPersonalityService.getById(PersonalityId("personality"))
+        _           <- persistentQuestionPersonalityService.persist(personality)
+        personality <- persistentQuestionPersonalityService.getById(PersonalityId("personality"))
       } yield personality
 
       whenReady(futurePersonality, Timeout(2.seconds)) { personality =>
@@ -73,8 +73,9 @@ class PersistentPersonalityServiceIT
     }
 
     scenario("get non existing personality") {
-      whenReady(persistentPersonalityService.getById(PersonalityId("not-found")), Timeout(2.seconds)) { personality =>
-        personality should be(None)
+      whenReady(persistentQuestionPersonalityService.getById(PersonalityId("not-found")), Timeout(2.seconds)) {
+        personality =>
+          personality should be(None)
       }
     }
   }
@@ -82,9 +83,13 @@ class PersistentPersonalityServiceIT
   feature("search personalities") {
     scenario("search all") {
       val futurePersonality = for {
-        _ <- persistentPersonalityService.persist(personality.copy(personalityId = PersonalityId("personality2")))
-        _ <- persistentPersonalityService.persist(personality.copy(personalityId = PersonalityId("personality3")))
-        personalities <- persistentPersonalityService.find(
+        _ <- persistentQuestionPersonalityService.persist(
+          personality.copy(personalityId = PersonalityId("personality2"))
+        )
+        _ <- persistentQuestionPersonalityService.persist(
+          personality.copy(personalityId = PersonalityId("personality3"))
+        )
+        personalities <- persistentQuestionPersonalityService.find(
           start = 0,
           end = None,
           sort = None,
@@ -103,13 +108,13 @@ class PersistentPersonalityServiceIT
     scenario("search by questionId") {
       val futurePersonality = for {
         _ <- persistentQuestionService.persist(question.copy(questionId = QuestionId("question2"), slug = "question-2"))
-        _ <- persistentPersonalityService.persist(
+        _ <- persistentQuestionPersonalityService.persist(
           personality.copy(personalityId = PersonalityId("personality4"), questionId = QuestionId("question2"))
         )
-        _ <- persistentPersonalityService.persist(
+        _ <- persistentQuestionPersonalityService.persist(
           personality.copy(personalityId = PersonalityId("personality5"), questionId = QuestionId("question2"))
         )
-        personalities <- persistentPersonalityService.find(
+        personalities <- persistentQuestionPersonalityService.find(
           start = 0,
           end = None,
           sort = None,
@@ -137,19 +142,19 @@ class PersistentPersonalityServiceIT
             slug = "question-count-personality"
           )
         )
-        _ <- persistentPersonalityService.persist(
+        _ <- persistentQuestionPersonalityService.persist(
           personality.copy(
             personalityId = PersonalityId("personality-count-1"),
             questionId = QuestionId("question-for-count-personality-scenario")
           )
         )
-        _ <- persistentPersonalityService.persist(
+        _ <- persistentQuestionPersonalityService.persist(
           personality.copy(
             personalityId = PersonalityId("personality-count-2"),
             questionId = QuestionId("question-for-count-personality-scenario")
           )
         )
-        count <- persistentPersonalityService.count(
+        count <- persistentQuestionPersonalityService.count(
           userId = None,
           questionId = Some(QuestionId("question-for-count-personality-scenario")),
           personalityRole = None
@@ -172,7 +177,7 @@ class PersistentPersonalityServiceIT
 
       val futureUpdatedPersonality = for {
         _           <- persistentUserService.persist(updatedUser)
-        personality <- persistentPersonalityService.modify(updatedPersonality)
+        personality <- persistentQuestionPersonalityService.modify(updatedPersonality)
       } yield personality
 
       whenReady(futureUpdatedPersonality, Timeout(2.seconds)) { personality =>

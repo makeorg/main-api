@@ -48,9 +48,11 @@ import org.make.api.partner.{
 }
 import org.make.api.personality.{
   AdminPersonalityApi,
+  AdminQuestionPersonalityApi,
   DefaultAdminPersonalityApiComponent,
-  DefaultPersistentPersonalityServiceComponent,
-  DefaultPersonalityServiceComponent
+  DefaultAdminQuestionPersonalityApiComponent,
+  DefaultPersistentQuestionPersonalityServiceComponent,
+  DefaultQuestionPersonalityServiceComponent
 }
 import org.make.api.proposal._
 import org.make.api.question._
@@ -119,6 +121,7 @@ trait MakeApi
     with DefaultAdminPartnerApiComponent
     with DefaultAdminPersonalityApiComponent
     with DefaultAdminProposalApiComponent
+    with DefaultAdminQuestionPersonalityApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAdminViewApiComponent
     with DefaultAuthenticationApiComponent
@@ -183,7 +186,7 @@ trait MakeApi
     with DefaultPersistentOperationOfQuestionServiceComponent
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentPartnerServiceComponent
-    with DefaultPersistentPersonalityServiceComponent
+    with DefaultPersistentQuestionPersonalityServiceComponent
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentSequenceConfigurationServiceComponent
     with DefaultPersistentTagServiceComponent
@@ -192,7 +195,7 @@ trait MakeApi
     with DefaultPersistentTokenServiceComponent
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentUserToAnonymizeServiceComponent
-    with DefaultPersonalityServiceComponent
+    with DefaultQuestionPersonalityServiceComponent
     with DefaultProposalApiComponent
     with DefaultProposalCoordinatorServiceComponent
     with DefaultProposalIndexerServiceComponent
@@ -315,6 +318,7 @@ trait MakeApi
       classOf[AdminIdeaMappingApi],
       classOf[AdminPartnerApi],
       classOf[AdminPersonalityApi],
+      classOf[AdminQuestionPersonalityApi],
       classOf[AdminProposalApi],
       classOf[AdminUserApi],
       classOf[AdminViewApi],
@@ -377,6 +381,7 @@ trait MakeApi
       adminPartnerApi.routes ~
       adminPersonalityApi.routes ~
       adminProposalApi.routes ~
+      adminQuestionPersonalityApi.routes ~
       adminUserApi.routes ~
       adminViewApi.routes ~
       authenticationApi.routes ~

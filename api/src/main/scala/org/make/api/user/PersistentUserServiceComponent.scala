@@ -57,7 +57,7 @@ object PersistentUserServiceComponent {
                             hashedPassword: String,
                             enabled: Boolean,
                             emailVerified: Boolean,
-                            isOrganisation: Boolean,
+                            userType: String,
                             lastConnection: ZonedDateTime,
                             verificationToken: Option[String],
                             verificationTokenExpiresAt: Option[ZonedDateTime],
@@ -106,7 +106,7 @@ object PersistentUserServiceComponent {
         hashedPassword = Option(hashedPassword),
         enabled = enabled,
         emailVerified = emailVerified,
-        isOrganisation = isOrganisation,
+        userType = UserType.matchUserType(userType),
         lastConnection = lastConnection,
         verificationToken = verificationToken,
         verificationTokenExpiresAt = verificationTokenExpiresAt,
@@ -202,7 +202,7 @@ object PersistentUserServiceComponent {
       "hashed_password",
       "enabled",
       "email_verified",
-      "is_organisation",
+      "user_type",
       "last_connection",
       "verification_token",
       "verification_token_expires_at",
@@ -242,7 +242,7 @@ object PersistentUserServiceComponent {
         hashedPassword = resultSet.string(userResultName.hashedPassword),
         enabled = resultSet.boolean(userResultName.enabled),
         emailVerified = resultSet.boolean(userResultName.emailVerified),
-        isOrganisation = resultSet.boolean(userResultName.isOrganisation),
+        userType = resultSet.string(userResultName.userType),
         lastConnection = resultSet.zonedDateTime(userResultName.lastConnection),
         verificationToken = resultSet.stringOpt(userResultName.verificationToken),
         verificationTokenExpiresAt = resultSet.zonedDateTimeOpt(userResultName.verificationTokenExpiresAt),
@@ -323,7 +323,9 @@ trait PersistentUserService {
                      order: Option[String],
                      email: Option[String],
                      firstName: Option[String],
-                     maybeRole: Option[Role]): Future[Seq[User]]
+                     lastName: Option[String],
+                     maybeRole: Option[Role],
+                     maybeUserType: Option[UserType]): Future[Seq[User]]
   def findAllOrganisations(): Future[Seq[User]]
   def findOrganisations(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
@@ -360,7 +362,11 @@ trait PersistentUserService {
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def countOrganisations(): Future[Int]
-  def adminCountUsers(email: Option[String], firstName: Option[String], maybeRole: Option[Role]): Future[Int]
+  def adminCountUsers(email: Option[String],
+                      firstName: Option[String],
+                      lastName: Option[String],
+                      maybeRole: Option[Role],
+                      maybeUserType: Option[UserType]): Future[Int]
   def findAllByEmail(emails: Seq[String]): Future[Seq[User]]
   def updateReconnectToken(userId: UserId,
                            reconnectToken: String,
@@ -492,7 +498,9 @@ trait DefaultPersistentUserServiceComponent
                                 order: Option[String],
                                 email: Option[String],
                                 firstName: Option[String],
-                                maybeRole: Option[Role]): Future[Seq[User]] = {
+                                lastName: Option[String],
+                                maybeRole: Option[Role],
+                                maybeUserType: Option[UserType]): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
@@ -500,9 +508,11 @@ trait DefaultPersistentUserServiceComponent
             .from(PersistentUser.as(userAlias))
             .where(
               sqls.toAndConditionOpt(
-                email.map(email         => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
-                firstName.map(firstName => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
-                maybeRole.map(role      => sqls.like(userAlias.roles, s"%${role.shortName}%"))
+                email.map(email            => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
+                firstName.map(firstName    => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
+                lastName.map(lastName      => sqls.like(userAlias.lastName, s"%${lastName.replace("%", "\\%")}%")),
+                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.shortName}%")),
+                maybeUserType.map(userType => sqls.eq(userAlias.userType, userType.shortName))
               )
             )
 
@@ -532,7 +542,7 @@ trait DefaultPersistentUserServiceComponent
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.isOrganisation, true))
+            .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
         }.map(PersistentUser.apply()).list.apply
       })
 
@@ -550,7 +560,7 @@ trait DefaultPersistentUserServiceComponent
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
             select
               .from(PersistentUser.as(userAlias))
-              .where(sqls.eq(userAlias.isOrganisation, true))
+              .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
 
           val queryOrdered = (sort, order) match {
             case (Some(field), Some("DESC")) if PersistentUser.columnNames.contains(field) =>
@@ -702,7 +712,7 @@ trait DefaultPersistentUserServiceComponent
               column.hashedPassword -> user.hashedPassword,
               column.enabled -> user.enabled,
               column.emailVerified -> user.emailVerified,
-              column.isOrganisation -> user.isOrganisation,
+              column.userType -> user.userType.shortName,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
@@ -787,7 +797,7 @@ trait DefaultPersistentUserServiceComponent
               column.lastIp -> user.lastIp,
               column.enabled -> user.enabled,
               column.emailVerified -> user.emailVerified,
-              column.isOrganisation -> user.isOrganisation,
+              column.userType -> user.userType.shortName,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
@@ -1071,14 +1081,18 @@ trait DefaultPersistentUserServiceComponent
       implicit val ctx: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
-          select(sqls.count).from(PersistentUser.as(userAlias)).where(sqls.eq(userAlias.isOrganisation, true))
+          select(sqls.count)
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
         }.map(_.int(1)).single.apply().getOrElse(0)
       })
     }
 
     override def adminCountUsers(email: Option[String],
                                  firstName: Option[String],
-                                 maybeRole: Option[Role]): Future[Int] = {
+                                 lastName: Option[String],
+                                 maybeRole: Option[Role],
+                                 maybeUserType: Option[UserType]): Future[Int] = {
       implicit val ctx: EC = readExecutionContext
       Future(NamedDB('READ).retryableTx { implicit session =>
         withSQL {
@@ -1086,9 +1100,11 @@ trait DefaultPersistentUserServiceComponent
             .from(PersistentUser.as(userAlias))
             .where(
               sqls.toAndConditionOpt(
-                email.map(email         => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
-                firstName.map(firstName => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
-                maybeRole.map(role      => sqls.like(userAlias.roles, s"%${role.shortName}%"))
+                email.map(email            => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
+                firstName.map(firstName    => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
+                lastName.map(lastName      => sqls.like(userAlias.lastName, s"%${lastName.replace("%", "\\%")}%")),
+                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.shortName}%")),
+                maybeUserType.map(userType => sqls.eq(userAlias.userType, userType.shortName))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)

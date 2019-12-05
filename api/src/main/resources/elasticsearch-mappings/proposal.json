@@ -1143,8 +1143,8 @@
               "type": "boolean",
               "index": false
             },
-            "isOrganisation": {
-              "type": "boolean",
+            "userType": {
+              "type": "keyword",
               "index": true
             }
           }

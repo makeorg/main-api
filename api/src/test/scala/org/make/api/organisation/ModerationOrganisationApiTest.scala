@@ -24,15 +24,14 @@ import java.util.Date
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.{MakeApiTestBase, TestUtils}
+import org.make.core.RequestContext
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.user.{User, UserId, UserType}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo}
@@ -51,8 +50,8 @@ class ModerationOrganisationApiTest
 
   val routes: Route = sealRoute(moderationOrganisationApi.routes)
 
-  val fakeOrganisation = User(
-    userId = UserId("ABCD"),
+  val fakeOrganisation = TestUtils.user(
+    id = UserId("ABCD"),
     email = "foo@bar.com",
     firstName = None,
     lastName = None,
@@ -61,18 +60,8 @@ class ModerationOrganisationApiTest
     hashedPassword = Some("passpass"),
     enabled = true,
     emailVerified = true,
-    isOrganisation = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(RoleActor),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    userType = UserType.UserTypeOrganisation
   )
 
   val validAccessToken = "my-valid-access-token"

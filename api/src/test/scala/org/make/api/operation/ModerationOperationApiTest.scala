@@ -25,18 +25,17 @@ import java.util.{Date, UUID}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
-import org.make.api.MakeApiTestBase
 import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{Role, UserId}
 import org.make.core.{DateHelper, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -65,74 +64,25 @@ class ModerationOperationApiTest
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
 
-  private val john = User(
-    userId = UserId("my-user-id"),
+  private val john = TestUtils.user(
+    id = UserId("my-user-id"),
     email = "john.snow@night-watch.com",
     firstName = Some("John"),
-    lastName = Some("Snoww"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    lastName = Some("Snoww")
   )
-  val daenerys = User(
-    userId = UserId("the-mother-of-dragons"),
+  val daenerys = TestUtils.user(
+    id = UserId("the-mother-of-dragons"),
     email = "d.narys@tergarian.com",
     firstName = Some("Daenerys"),
     lastName = Some("Tergarian"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleAdmin),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(Role.RoleAdmin)
   )
-  val tyrion = User(
-    userId = UserId("the-dwarf"),
+  val tyrion = TestUtils.user(
+    id = UserId("the-dwarf"),
     email = "tyrion@pays-his-debts.com",
     firstName = Some("Tyrion"),
     lastName = Some("Lannister"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(Role.RoleModerator)
   )
 
   val firstOperation: SimpleOperation = SimpleOperation(

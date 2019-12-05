@@ -38,7 +38,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -157,7 +157,7 @@ class SortAlgorithmIT
       age = None,
       avatarUrl = None,
       anonymousParticipation = false,
-      isOrganisation = false
+      userType = UserType.UserTypeUser
     ),
     organisations = Seq.empty,
     themeId = None,

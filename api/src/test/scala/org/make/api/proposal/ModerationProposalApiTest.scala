@@ -26,13 +26,13 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.syntax._
-import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.SimilarIdea
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
@@ -42,8 +42,8 @@ import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.{TagId, TagTypeId}
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.Role.{RoleAdmin, RoleModerator}
+import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
@@ -99,107 +99,41 @@ class ModerationProposalApiTest
   when(proposalCoordinatorService.getProposal(any[ProposalId]))
     .thenAnswer(invocation => Future.successful(Some(proposal(invocation.getArgument[ProposalId](0)))))
 
-  private val john = User(
-    userId = UserId("my-user-id"),
+  private val john = TestUtils.user(
+    id = UserId("my-user-id"),
     email = "john.snow@night-watch.com",
     firstName = Some("John"),
-    lastName = Some("Snoww"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    lastMailingError = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    lastName = Some("Snoww")
   )
 
-  val daenerys = User(
-    userId = UserId("the-mother-of-dragons"),
+  val daenerys = TestUtils.user(
+    id = UserId("the-mother-of-dragons"),
     email = "d.narys@tergarian.com",
     firstName = Some("Daenerys"),
     lastName = Some("Tergarian"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleAdmin),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(RoleAdmin)
   )
 
-  val tyrion = User(
-    userId = UserId("the-dwarf"),
+  val tyrion = TestUtils.user(
+    id = UserId("the-dwarf"),
     email = "tyrion@pays-his-debts.com",
     firstName = Some("Tyrion"),
     lastName = Some("Lannister"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
     availableQuestions = Seq(
       QuestionId("question"),
       QuestionId("question-fire-and-ice"),
       QuestionId("some-question"),
       QuestionId("question-mieux-vivre-ensemble"),
       QuestionId("question-vff")
-    ),
-    anonymousParticipation = false
+    )
   )
 
-  val arya = User(
-    userId = UserId("the-faceless"),
+  val arya = TestUtils.user(
+    id = UserId("the-faceless"),
     email = "arya@kills-the-bad-guys.com",
     firstName = Some("Arya"),
-    lastName = Some("Stark"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    lastName = Some("Stark")
   )
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
@@ -588,7 +522,8 @@ class ModerationProposalApiTest
       organisationSlug = None,
       postalCode = None,
       age = None,
-      avatarUrl = None
+      avatarUrl = None,
+      userType = None
     ),
     organisations = Seq.empty,
     country = Country("TN"),

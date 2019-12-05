@@ -25,7 +25,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.crm.SendMailPublisherService
 import org.make.api.technical.{KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
-import org.make.core.user.{User, UserId}
+import org.make.core.user.{User, UserId, UserType}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -75,7 +75,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
 
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(user) if !event.isSocialLogin =>
+      case Some(user) if user.userType == UserType.UserTypeUser && !event.isSocialLogin =>
         sendMailPublisherService.publishRegistration(user, event.country, event.language, event.requestContext)
       case _ => Future.successful {}
     }
@@ -83,7 +83,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
 
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(organisation) if organisation.isOrganisation =>
+      case Some(organisation) if organisation.userType == UserType.UserTypeOrganisation =>
         sendMailPublisherService.publishForgottenPasswordOrganisation(
           organisation,
           event.country,

@@ -34,7 +34,7 @@ import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, Vot
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.{TagId, TagTypeId}
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -179,7 +179,7 @@ trait ParameterExtractors {
       )
     }
 
-  implicit val personalityRoleFronStringUnmarshaller: Unmarshaller[String, PersonalityRole] = {
+  implicit val personalityRoleFromStringUnmarshaller: Unmarshaller[String, PersonalityRole] = {
     Unmarshaller.strict[String, PersonalityRole] { value =>
       roleMap.getOrElse(
         value,
@@ -189,4 +189,16 @@ trait ParameterExtractors {
       )
     }
   }
+
+  implicit val userTypeFromStringUnmarshaller: Unmarshaller[String, UserType] = {
+    Unmarshaller.strict[String, UserType] { value =>
+      UserType.userTypes.getOrElse(
+        value,
+        throw ValidationFailedError(
+          Seq(ValidationError("userType", "invalid_value", Some(s"$value is not a valid user type")))
+        )
+      )
+    }
+  }
+
 }

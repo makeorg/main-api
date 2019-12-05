@@ -67,8 +67,11 @@ trait UserService extends ShortenedNames {
                      order: Option[String],
                      email: Option[String],
                      firstName: Option[String],
-                     role: Option[Role]): Future[Seq[User]]
+                     lastName: Option[String],
+                     role: Option[Role],
+                     userType: Option[UserType]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
+  def registerPersonality(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
   def update(user: User, requestContext: RequestContext): Future[User]
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                    clientIp: Option[String],
@@ -93,7 +96,11 @@ trait UserService extends ShortenedNames {
   def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
-  def adminCountUsers(email: Option[String], firstName: Option[String], role: Option[Role]): Future[Int]
+  def adminCountUsers(email: Option[String],
+                      firstName: Option[String],
+                      lastName: Option[String],
+                      role: Option[Role],
+                      userType: Option[UserType]): Future[Int]
   def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]]
   def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]]
 }
@@ -116,7 +123,8 @@ case class UserRegisterData(email: String,
                             roles: Seq[Role] = Seq(Role.RoleCitizen),
                             availableQuestions: Seq[QuestionId] = Seq.empty,
                             politicalParty: Option[String] = None,
-                            website: Option[String] = None)
+                            website: Option[String] = None,
+                            publicProfile: Boolean = false)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -160,8 +168,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                                 order: Option[String],
                                 email: Option[String],
                                 firstName: Option[String],
-                                role: Option[Role]): Future[Seq[User]] = {
-      persistentUserService.adminFindUsers(start, end, sort, order, email, firstName, role)
+                                lastName: Option[String],
+                                role: Option[Role],
+                                userType: Option[UserType]): Future[Seq[User]] = {
+      persistentUserService.adminFindUsers(start, end, sort, order, email, firstName, lastName, role, userType)
     }
 
     private def registerUser(userRegisterData: UserRegisterData,
@@ -190,7 +200,42 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         language = language,
         profile = profile,
         availableQuestions = userRegisterData.availableQuestions,
-        anonymousParticipation = makeSettings.defaultUserAnonymousParticipation
+        anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
+        userType = UserType.UserTypeUser,
+        publicProfile = userRegisterData.publicProfile
+      )
+
+      persistentUserService.persist(user)
+    }
+
+    private def registerPersonality(userRegisterData: UserRegisterData,
+                                    lowerCasedEmail: String,
+                                    country: Country,
+                                    language: Language,
+                                    profile: Option[Profile]): Future[User] = {
+
+      val user = User(
+        userId = idGenerator.nextUserId(),
+        email = lowerCasedEmail,
+        firstName = userRegisterData.firstName,
+        lastName = userRegisterData.lastName,
+        lastIp = userRegisterData.lastIp,
+        hashedPassword = userRegisterData.password.map(_.bcrypt),
+        enabled = true,
+        emailVerified = true,
+        lastConnection = DateHelper.now(),
+        verificationToken = None,
+        verificationTokenExpiresAt = None,
+        resetToken = None,
+        resetTokenExpiresAt = None,
+        roles = userRegisterData.roles,
+        country = country,
+        language = language,
+        profile = profile,
+        availableQuestions = userRegisterData.availableQuestions,
+        anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
+        userType = UserType.UserTypePersonality,
+        publicProfile = userRegisterData.publicProfile
       )
 
       persistentUserService.persist(user)
@@ -279,6 +324,59 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
+    override def registerPersonality(userRegisterData: UserRegisterData,
+                                     requestContext: RequestContext): Future[User] = {
+
+      val country = BusinessConfig.validateCountry(userRegisterData.country)
+      val language = BusinessConfig.validateLanguage(userRegisterData.country, userRegisterData.language)
+
+      val lowerCasedEmail: String = userRegisterData.email.toLowerCase()
+      val profile: Option[Profile] =
+        Profile.parseProfile(
+          dateOfBirth = userRegisterData.dateOfBirth,
+          profession = userRegisterData.profession,
+          postalCode = userRegisterData.postalCode,
+          gender = userRegisterData.gender,
+          socioProfessionalCategory = userRegisterData.socioProfessionalCategory,
+          registerQuestionId = userRegisterData.questionId,
+          optInNewsletter = userRegisterData.optIn.getOrElse(true),
+          optInPartner = userRegisterData.optInPartner,
+          politicalParty = userRegisterData.politicalParty,
+          website = userRegisterData.website
+        )
+
+      val result = for {
+        emailExists <- persistentUserService.emailExists(lowerCasedEmail)
+        canRegister <- userRegistrationValidator.canRegister(userRegisterData)
+        _           <- validateAccountCreation(emailExists, canRegister, lowerCasedEmail)
+        user        <- registerPersonality(userRegisterData, lowerCasedEmail, country, language, profile)
+      } yield user
+
+      result.map { user =>
+        eventBusService.publish(
+          UserRegisteredEvent(
+            connectedUserId = Some(user.userId),
+            userId = user.userId,
+            requestContext = requestContext,
+            email = user.email,
+            firstName = user.firstName,
+            lastName = user.lastName,
+            profession = user.profile.flatMap(_.profession),
+            dateOfBirth = user.profile.flatMap(_.dateOfBirth),
+            postalCode = user.profile.flatMap(_.postalCode),
+            country = user.country,
+            language = user.language,
+            gender = user.profile.flatMap(_.gender),
+            socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
+            optInPartner = user.profile.flatMap(_.optInPartner),
+            registerQuestionId = user.profile.flatMap(_.registerQuestionId),
+            eventDate = DateHelper.now()
+          )
+        )
+        user
+      }
+    }
+
     override def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                               clientIp: Option[String],
                                               questionId: Option[QuestionId],
@@ -333,7 +431,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         language = language,
         profile = profile,
         availableQuestions = Seq.empty,
-        anonymousParticipation = makeSettings.defaultUserAnonymousParticipation
+        anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
+        userType = UserType.UserTypeUser
       )
 
       persistentUserService.persist(user).map { user =>
@@ -535,7 +634,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     private def updateProposalVotedByOrganisation(user: User): Future[Unit] = {
-      if (user.isOrganisation) {
+      if (user.userType == UserType.UserTypeOrganisation) {
         proposalService
           .searchProposalsVotedByUser(
             userId = user.userId,
@@ -602,7 +701,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         hashedPassword = None,
         enabled = false,
         emailVerified = false,
-        isOrganisation = false,
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
@@ -704,8 +802,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def adminCountUsers(email: Option[String], firstName: Option[String], role: Option[Role]): Future[Int] = {
-      persistentUserService.adminCountUsers(email, firstName, role)
+    override def adminCountUsers(email: Option[String],
+                                 firstName: Option[String],
+                                 lastName: Option[String],
+                                 role: Option[Role],
+                                 userType: Option[UserType]): Future[Int] = {
+      persistentUserService.adminCountUsers(email, firstName, lastName, role, userType)
     }
 
     private def getConnectionModes(user: User): Seq[ConnectionMode] = {

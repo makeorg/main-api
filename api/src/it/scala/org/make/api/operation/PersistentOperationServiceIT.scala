@@ -21,11 +21,11 @@ package org.make.api.operation
 
 import java.time.{LocalDate, ZonedDateTime}
 
-import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
+import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
@@ -33,7 +33,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{Role, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -70,26 +70,18 @@ class PersistentOperationServiceIT
     website = None
   )
   val userId: UserId = idGenerator.nextUserId()
-  val johnDoe = User(
-    userId = userId,
+  val johnDoe = TestUtilsIT.user(
+    id = userId,
     email = "doe@example.com",
     firstName = Some("John"),
     lastName = Some("Doe"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = ZonedDateTime.parse("2017-06-01T12:30:40Z"),
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z")),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = Some(profile),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    profile = Some(profile)
   )
 
   def newTag(label: String): Tag = Tag(

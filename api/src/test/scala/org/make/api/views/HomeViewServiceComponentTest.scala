@@ -33,7 +33,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedAuthor, IndexedProposal, IndexedScores, SequencePool}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{operation, DateHelper, RequestContext}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -238,7 +238,7 @@ class HomeViewServiceComponentTest
             age = None,
             avatarUrl = None,
             anonymousParticipation = false,
-            isOrganisation = false
+            userType = UserType.UserTypeUser
           ),
           organisations = Seq.empty,
           country = Country("FR"),

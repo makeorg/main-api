@@ -35,7 +35,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.User
+import org.make.core.user.{User, UserType}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -140,8 +140,8 @@ trait DefaultSendMailPublisherServiceComponent
 
   private def sendModerationMail(proposalId: ProposalId,
                                  questionId: Option[QuestionId],
-                                 templateId: (CrmTemplates, Boolean) => TemplateId,
-                                 variables: (User, Proposal)         => Map[String, String]): Future[Unit] = {
+                                 templateId: (CrmTemplates, UserType) => TemplateId,
+                                 variables: (User, Proposal)          => Map[String, String]): Future[Unit] = {
     val maybePublish: OptionT[Future, Unit] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
@@ -151,7 +151,7 @@ trait DefaultSendMailPublisherServiceComponent
       if (user.emailVerified) {
         eventBusService.publish(
           SendEmail.create(
-            templateId = Some(templateId(crmTemplates, user.isOrganisation).value.toInt),
+            templateId = Some(templateId(crmTemplates, user.userType).value.toInt),
             recipients = Seq(Recipient(email = user.email, name = user.fullName)),
             from = Some(
               Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
@@ -357,7 +357,7 @@ trait DefaultSendMailPublisherServiceComponent
             ),
             variables = Some(
               Map(
-                "firstname" -> organisation.firstName.getOrElse(""),
+                "firstname" -> organisation.organisationName.orElse(organisation.firstName).getOrElse(""),
                 "forgotten_password_url" -> getForgottenPasswordUrl(organisation, resetToken, requestContext),
                 "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
                 "question" -> requestContext.question.getOrElse(""),
@@ -403,8 +403,8 @@ trait DefaultSendMailPublisherServiceComponent
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse("")
           )
-        def template(crmTemplates: CrmTemplates, isOrga: Boolean): TemplateId =
-          if (isOrga)
+        def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
+          if (userType == UserType.UserTypeOrganisation)
             crmTemplates.proposalAcceptedOrganisation
           else
             crmTemplates.proposalAccepted
@@ -439,8 +439,8 @@ trait DefaultSendMailPublisherServiceComponent
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse("")
           )
-        def template(crmTemplates: CrmTemplates, isOrga: Boolean): TemplateId =
-          if (isOrga)
+        def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
+          if (userType == UserType.UserTypeOrganisation)
             crmTemplates.proposalRefusedOrganisation
           else
             crmTemplates.proposalRefused

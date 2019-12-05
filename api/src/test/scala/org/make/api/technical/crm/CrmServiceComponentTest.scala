@@ -50,7 +50,7 @@ import org.make.api.user.{
   UserServiceComponent
 }
 import org.make.api.userhistory._
-import org.make.api.{ActorSystemComponent, MakeUnitTest, StaminaTestUtils}
+import org.make.api.{ActorSystemComponent, MakeUnitTest, StaminaTestUtils, TestUtils}
 import org.make.core.history.HistoryActions.Trusted
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
@@ -59,7 +59,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
-import org.make.core.user.{Role, User, UserId}
+import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.{never, verify, when}
@@ -156,30 +156,12 @@ class CrmServiceComponentTest
     )
   }
 
-  val user = User(
-    userId = UserId("50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74"),
+  val user = TestUtils.user(
+    id = UserId("50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74"),
     email = "alex.terrieur@gmail.com",
     firstName = Some("Alex"),
     lastName = Some("Terrieur"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq.empty,
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = Profile.parseProfile(optInNewsletter = true),
-    createdAt = None,
-    updatedAt = None,
-    lastMailingError = None,
-    organisationName = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    profile = Profile.parseProfile(optInNewsletter = true)
   )
 
   def readEvents(resource: String): Source[EventEnvelope, NotUsed] = {
@@ -305,27 +287,19 @@ class CrmServiceComponentTest
     politicalParty = Some("PP")
   )
 
-  val fooUser = User(
-    userId = UserId("1"),
+  val fooUser = TestUtils.user(
+    id = UserId("1"),
     email = "foo@example.com",
     firstName = Some("Foo"),
     lastName = Some("John"),
     lastIp = Some("0.0.0.0"),
     hashedPassword = Some("ZAEAZE232323SFSSDF"),
-    enabled = true,
-    emailVerified = true,
     lastConnection = zonedDateTimeInThePast,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(zonedDateTimeInThePast),
-    resetToken = None,
-    resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
     profile = Some(fooProfile),
-    createdAt = Some(zonedDateTimeInThePast),
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    createdAt = Some(zonedDateTimeInThePast)
   )
 
   val fooCrmUser = PersistentCrmUser(
@@ -854,7 +828,7 @@ class CrmServiceComponentTest
             age = None,
             avatarUrl = None,
             anonymousParticipation = false,
-            isOrganisation = false
+            userType = UserType.UserTypeUser
           ),
           organisations = Seq.empty,
           country = Country("FR"),
@@ -898,7 +872,7 @@ class CrmServiceComponentTest
             age = None,
             avatarUrl = None,
             anonymousParticipation = false,
-            isOrganisation = false
+            userType = UserType.UserTypeUser
           ),
           organisations = Seq.empty,
           country = Country("FR"),

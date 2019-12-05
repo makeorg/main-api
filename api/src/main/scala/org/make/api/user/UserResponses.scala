@@ -28,7 +28,7 @@ import org.make.core.CirceFormatters
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{MailingErrorLog, Role, User, UserId}
+import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
 
 import scala.annotation.meta.field
 
@@ -52,7 +52,8 @@ case class UserResponse(
   @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse")
   lastMailingError: Option[MailingErrorLogResponse],
   hasPassword: Boolean,
-  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty
+  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty,
+  userType: UserType
 )
 
 object UserResponse extends CirceFormatters {
@@ -69,7 +70,7 @@ object UserResponse extends CirceFormatters {
     organisationName = user.organisationName,
     enabled = user.enabled,
     emailVerified = user.emailVerified,
-    isOrganisation = user.isOrganisation,
+    isOrganisation = user.userType == UserType.UserTypeOrganisation,
     lastConnection = user.lastConnection,
     roles = user.roles,
     profile = user.profile.map(ProfileResponse.fromProfile),
@@ -78,7 +79,8 @@ object UserResponse extends CirceFormatters {
     isHardBounce = user.isHardBounce,
     lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
     hasPassword = user.hashedPassword.isDefined,
-    followedUsers = followedUsers
+    followedUsers = followedUsers,
+    userType = user.userType
   )
 }
 

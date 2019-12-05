@@ -42,7 +42,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{MailingErrorLog, Role, User, UserId}
+import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
 import org.make.core.{RequestContext, SlugHelper}
 
 trait TestUtils {
@@ -137,7 +137,7 @@ trait TestUtils {
            hashedPassword: Option[String] = None,
            enabled: Boolean = true,
            emailVerified: Boolean = true,
-           lastConnexion: ZonedDateTime = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
+           lastConnection: ZonedDateTime = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
            verificationToken: Option[String] = None,
            verificationTokenExpiresAt: Option[ZonedDateTime] = None,
            resetToken: Option[String] = None,
@@ -150,7 +150,8 @@ trait TestUtils {
            updatedAt: Option[ZonedDateTime] = None,
            lastMailingError: Option[MailingErrorLog] = None,
            organisationName: Option[String] = None,
-           availableQuestions: Seq[QuestionId] = Seq.empty): User = {
+           availableQuestions: Seq[QuestionId] = Seq.empty,
+           userType: UserType = UserType.UserTypeUser): User = {
     User(
       userId = id,
       email = email,
@@ -160,7 +161,7 @@ trait TestUtils {
       hashedPassword = hashedPassword,
       enabled = enabled,
       emailVerified = emailVerified,
-      lastConnection = lastConnexion,
+      lastConnection = lastConnection,
       verificationToken = verificationToken,
       verificationTokenExpiresAt = verificationTokenExpiresAt,
       resetToken = resetToken,
@@ -174,7 +175,8 @@ trait TestUtils {
       lastMailingError = lastMailingError,
       organisationName = organisationName,
       availableQuestions = availableQuestions,
-      anonymousParticipation = anonymousParticipation
+      anonymousParticipation = anonymousParticipation,
+      userType = userType
     )
   }
 }

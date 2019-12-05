@@ -26,7 +26,6 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import io.circe.syntax._
-import org.make.api.MakeApiTestBase
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
@@ -34,13 +33,14 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
+import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
@@ -113,77 +113,27 @@ class ProposalApiTest
     )
   )
 
-  private val john = User(
-    userId = UserId("my-user-id"),
+  private val john = TestUtils.user(
+    id = UserId("my-user-id"),
     email = "john.snow@night-watch.com",
     firstName = Some("John"),
-    lastName = Some("Snoww"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleCitizen),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    lastMailingError = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    lastName = Some("Snoww")
   )
 
-  val daenerys = User(
-    userId = UserId("the-mother-of-dragons"),
+  val daenerys = TestUtils.user(
+    id = UserId("the-mother-of-dragons"),
     email = "d.narys@tergarian.com",
     firstName = Some("Daenerys"),
     lastName = Some("Tergarian"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleAdmin),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(RoleAdmin)
   )
 
-  val tyrion = User(
-    userId = UserId("the-dwarf"),
+  val tyrion = TestUtils.user(
+    id = UserId("the-dwarf"),
     email = "tyrion@pays-his-debts.com",
     firstName = Some("Tyrion"),
     lastName = Some("Lannister"),
-    lastIp = None,
-    hashedPassword = None,
-    enabled = true,
-    emailVerified = true,
-    lastConnection = DateHelper.now(),
-    verificationToken = None,
-    verificationTokenExpiresAt = None,
-    resetToken = None,
-    resetTokenExpiresAt = None,
-    roles = Seq(RoleModerator),
-    country = Country("FR"),
-    language = Language("fr"),
-    profile = None,
-    createdAt = None,
-    updatedAt = None,
-    availableQuestions = Seq.empty,
-    anonymousParticipation = false
+    roles = Seq(RoleModerator)
   )
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
@@ -299,6 +249,7 @@ class ProposalApiTest
       postalCode = None,
       age = None,
       avatarUrl = None,
+      userType = None
     ),
     organisations = Seq.empty,
     country = Country("TN"),
