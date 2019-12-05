@@ -106,7 +106,7 @@ class PersistentTokenServiceIT
         _     <- futureUser
         _     <- futureClient
         _     <- futureTokenPersister
-        token <- persistentTokenService.get(exampleToken)
+        token <- persistentTokenService.get(exampleToken.accessToken)
       } yield token
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
@@ -173,7 +173,7 @@ class PersistentTokenServiceIT
       When("I get a Token from access token")
       val futureFoundToken: Future[Option[Token]] = for {
         _     <- persistentTokenService.persist(accessToken)
-        token <- persistentTokenService.findByAccessToken("VALID_TOKEN")
+        token <- persistentTokenService.get("VALID_TOKEN")
       } yield token
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
@@ -189,7 +189,7 @@ class PersistentTokenServiceIT
     scenario("Find a Token from an nonexistent access token") {
       Given("an nonexistent access token")
       When("I get a Token from access token")
-      val futureNotFoundToken = persistentTokenService.findByAccessToken("NON_TOKEN")
+      val futureNotFoundToken = persistentTokenService.get("NON_TOKEN")
 
       whenReady(futureNotFoundToken, Timeout(3.seconds)) { token =>
         Then("an empty result is returned")

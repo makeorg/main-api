@@ -19,8 +19,8 @@
 
 package org.make.api.technical.auth
 
+import java.util.Date
 import java.util.concurrent.TimeUnit
-import java.util.{Date, NoSuchElementException}
 
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.typesafe.scalalogging.StrictLogging
@@ -101,6 +101,52 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       // TODO: handle scope validation
     }
 
+    private def findUser(client: Client, request: AuthorizationRequest): Future[Option[User]] =
+      request match {
+        case passwordRequest: PasswordRequest   => findUserForPasswordFlow(client, passwordRequest)
+        case reconnectRequest: ReconnectRequest => findUserForReconnectFlow(client, reconnectRequest)
+        case _: ClientCredentialsRequest        => findUserForClientCredentialsFlow(client)
+        case _                                  => Future.successful(None)
+      }
+
+    private def findUserForClientCredentialsFlow(client: Client): Future[Option[User]] = {
+      client.defaultUserId match {
+        case Some(userId) =>
+          persistentUserService
+            .get(userId)
+            .flatMap {
+              case Some(user) if !userIsRelatedToClient(client)(user) =>
+                Future.failed(ClientAccessUnauthorizedException(user, client))
+              case other => Future.successful(other)
+            }
+        case None => Future.successful(None)
+      }
+    }
+
+    private def findUserForReconnectFlow(client: Client, reconnectRequest: ReconnectRequest): Future[Option[User]] = {
+      persistentUserService
+        .findByReconnectTokenAndPassword(
+          reconnectRequest.reconnectToken,
+          reconnectRequest.password,
+          validityDurationReconnectTokenSeconds
+        )
+        .flatMap {
+          case Some(user) if !userIsRelatedToClient(client)(user) =>
+            Future.failed(ClientAccessUnauthorizedException(user, client))
+          case other => Future.successful(other)
+        }
+    }
+
+    private def findUserForPasswordFlow(client: Client, passwordRequest: PasswordRequest): Future[Option[User]] = {
+      persistentUserService
+        .findByEmailAndPassword(passwordRequest.username.toLowerCase(), passwordRequest.password)
+        .flatMap {
+          case Some(user) if !userIsRelatedToClient(client)(user) =>
+            Future.failed(ClientAccessUnauthorizedException(user, client))
+          case other => Future.successful(other)
+        }
+    }
+
     override def findUser(maybeCredential: Option[ClientCredential],
                           request: AuthorizationRequest): Future[Option[UserRights]] = {
 
@@ -129,51 +175,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
             case None => Future.successful(None)
           }
       }
-      def findUser(client: Client): Future[Option[User]] =
-        request match {
-          case passwordRequest: PasswordRequest =>
-            persistentUserService
-              .findByEmailAndPassword(passwordRequest.username.toLowerCase(), passwordRequest.password)
-              .flatMap {
-                case Some(user) if !userIsRelatedToClient(client)(user) =>
-                  Future.failed(ClientAccessUnauthorizedException(user, client))
-                case other => Future.successful(other)
-              }
-          case reconnectRequest: ReconnectRequest =>
-            persistentUserService
-              .findByReconnectTokenAndPassword(
-                reconnectRequest.reconnectToken,
-                reconnectRequest.password,
-                validityDurationReconnectTokenSeconds
-              )
-              .flatMap {
-                case Some(user) if !userIsRelatedToClient(client)(user) =>
-                  Future.failed(ClientAccessUnauthorizedException(user, client))
-                case other => Future.successful(other)
-              }
-          case _: ClientCredentialsRequest =>
-            client.defaultUserId match {
-              case Some(userId) =>
-                persistentUserService
-                  .get(userId)
-                  .flatMap {
-                    case Some(user) if !userIsRelatedToClient(client)(user) =>
-                      Future.failed(ClientAccessUnauthorizedException(user, client))
-                    case other => Future.successful(other)
-                  }
-              case None => Future.successful(None)
-            }
-          case _: ImplicitRequest =>
-            // TODO: implement.me when needed
-            Future.successful(None)
-          case _ =>
-            // Other flows don't call this method
-            Future.successful(None)
-        }
 
       findClient.flatMap {
         case Some(client) =>
-          findUser(client).map(
+          findUser(client, request).map(
             _.map(user => UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified))
           )
         case _ => Future.successful(None)
@@ -216,14 +221,16 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
 
     override def getStoredAccessToken(authInfo: AuthInfo[UserRights]): Future[Option[AccessToken]] = {
-      persistentTokenService.findByUserId(authInfo.user.userId).map(_.map(toAccessToken))
+      // Force to issue a fresh token every time a user connects.
+      // This way, authentication will not be shared across devices
+      Future.successful(None)
     }
 
     override def refreshAccessToken(authInfo: AuthInfo[UserRights], refreshToken: String): Future[AccessToken] = {
       def findByRefreshTokenOrFail(refreshToken: String): Future[Token] =
         persistentTokenService.findByRefreshToken(refreshToken).flatMap {
           case Some(token) => Future.successful(token)
-          case None        => Future.failed(new NoSuchElementException(s"Refresh token $refreshToken not found"))
+          case None        => Future.failed(TokenAlreadyRefreshed(refreshToken))
         }
 
       for {
@@ -289,7 +296,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       Option(authInfoByAccessTokenCache.getIfPresent(accessToken.token))
         .map(authInfo => Future.successful(Some(authInfo)))
         .getOrElse {
-          persistentTokenService.findByAccessToken(accessToken.token).flatMap[Option[AuthInfo[UserRights]]] {
+          persistentTokenService.get(accessToken.token).flatMap[Option[AuthInfo[UserRights]]] {
             case Some(token) =>
               val authInfo = AuthInfo(
                 user = token.user,
@@ -309,7 +316,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         .filter(!_.isExpired)
         .map(token => Future.successful(Some(token)))
         .getOrElse {
-          val future = persistentTokenService.findByAccessToken(token).map(_.map(toAccessToken).filter(!_.isExpired))
+          val future = persistentTokenService.get(token).map(_.map(toAccessToken).filter(!_.isExpired))
           future.onComplete {
             case Success(Some(userToken)) => accessTokenCache.put(token, userToken)
             case _                        =>
@@ -355,15 +362,16 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       Option(accessTokenCache.getIfPresent(tokenValue))
         .map(token => Future.successful(Some(token)))
         .getOrElse {
-          persistentTokenService.findByAccessToken(tokenValue).map(_.map(toAccessToken))
+          persistentTokenService.get(tokenValue).map(_.map(toAccessToken))
         }
         .flatMap {
-          case Some(token)
-              if token.isExpired && token.refreshToken.isDefined && !token
-                .copy(lifeSeconds = Some(validityDurationRefreshTokenSeconds.toLong))
-                .isExpired =>
+          case Some(token @ AccessToken(_, Some(refreshToken), _, _, _, _))
+              if token.isExpired &&
+                !token
+                  .copy(lifeSeconds = Some(validityDurationRefreshTokenSeconds.toLong))
+                  .isExpired =>
             findAuthInfoByAccessToken(token).flatMap {
-              case Some(authInfo) => refreshAccessToken(authInfo, token.refreshToken.get).map(Some(_))
+              case Some(authInfo) => refreshAccessToken(authInfo, refreshToken).map(Some(_))
               case _              => Future.successful(None)
             }
           case _ => Future.successful(None)
@@ -371,6 +379,9 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     }
   }
 }
+
+case class TokenAlreadyRefreshed(refreshToken: String)
+    extends Exception(s"Refresh token $refreshToken has already been refreshed")
 
 case class ClientAccessUnauthorizedException(user: User, client: Client)
     extends Exception(

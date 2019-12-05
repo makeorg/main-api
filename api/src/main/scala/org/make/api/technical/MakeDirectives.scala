@@ -416,8 +416,7 @@ trait MakeDirectives
     optionalCookie(makeSettings.SecureCookie.name).flatMap {
       case Some(secureCookie) =>
         provideAsync[Option[AccessToken]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie.value))
-      case None =>
-        provide[Option[AccessToken]](None)
+      case None => provide[Option[AccessToken]](None)
     }
 
   def corsHeaders(): Directive0 =
