@@ -1061,6 +1061,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def resetVotes(adminUserId: UserId, requestContext: RequestContext): Future[Done] = {
       implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+      val start = System.currentTimeMillis()
 
       proposalJournal
         .currentPersistenceIds()
@@ -1076,6 +1077,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           )
         }
         .runWith(Sink.ignore)
+        .map { res =>
+          logger.info("ResetVotes ended in {} ms", System.currentTimeMillis() - start)
+          res
+        }
     }
   }
 }

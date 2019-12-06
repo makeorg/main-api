@@ -196,9 +196,8 @@ trait DefaultAdminProposalApiComponent
           makeOperation("ResetVotes") { requestContext =>
             makeOAuth2 { userAuth =>
               requireAdminRole(userAuth.user) {
-                provideAsync(proposalService.resetVotes(userAuth.user.userId, requestContext)) { _ =>
-                  complete(StatusCodes.Accepted)
-                }
+                proposalService.resetVotes(userAuth.user.userId, requestContext)
+                complete(StatusCodes.Accepted)
               }
             }
           }
