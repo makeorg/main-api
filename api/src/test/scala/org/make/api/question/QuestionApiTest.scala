@@ -538,4 +538,27 @@ class QuestionApiTest
     }
   }
 
+  feature("get question personalities") {
+    scenario("bad request") {
+      Get("/questions/question-id/personalities?personalityRole=WRONG") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("ok response") {
+      when(
+        questionService.getQuestionPersonalities(
+          start = 0,
+          end = None,
+          questionId = QuestionId("question-id"),
+          personalityRole = None
+        )
+      ).thenReturn(Future.successful(Seq.empty))
+
+      Get("/questions/question-id/personalities") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
+
 }
