@@ -56,7 +56,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 class DefaultAdminProposalApiComponentTest
     extends MakeApiTestBase
@@ -389,6 +389,15 @@ class DefaultAdminProposalApiComponentTest
     scenario("allowed admin") {
       when(proposalService.resetVotes(any[UserId], any[RequestContext]))
         .thenReturn(Future.successful(Done))
+      Post("/admin/proposals/reset-votes")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.Accepted)
+      }
+    }
+
+    scenario("allowed admin with a lot of proposals") {
+      when(proposalService.resetVotes(any[UserId], any[RequestContext]))
+        .thenReturn(Promise[Done]().future)
       Post("/admin/proposals/reset-votes")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.Accepted)
