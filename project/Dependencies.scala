@@ -36,7 +36,7 @@ object Dependencies {
   private val kamonSystemMetricsVersion = "2.0.0"
   private val kamonPrometheusVersion = "2.0.0"
   private val circeVersion = "0.12.3"
-  val kanelaVersion: String = "1.0.1"
+  val kanelaVersion: String = "1.0.4"
   val swaggerUiVersion: String = "3.20.9"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
