@@ -25,7 +25,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.user.{UserRegisterData, UserService, UserServiceComponent}
+import org.make.api.user.{PersonalityRegisterData, UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
 import org.make.core.auth.UserRights
@@ -142,7 +142,7 @@ class AdminPersonalityApiTest
 
     scenario("post personality with admin rights") {
 
-      when(userService.registerPersonality(any[UserRegisterData], any[RequestContext]))
+      when(userService.registerPersonality(any[PersonalityRegisterData], any[RequestContext]))
         .thenReturn(Future.successful(personality))
 
       Post("/admin/personalities")

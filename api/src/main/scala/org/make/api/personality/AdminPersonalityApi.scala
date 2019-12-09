@@ -10,13 +10,13 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.api.user.{UserRegisterData, UserServiceComponent}
+import org.make.api.user.{PersonalityRegisterData, UserServiceComponent}
 import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{Role, User, UserId, UserType}
+import org.make.core.user.{User, UserId, UserType}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -201,18 +201,16 @@ trait DefaultAdminPersonalityApiComponent
                   provideAsync(
                     userService
                       .registerPersonality(
-                        UserRegisterData(
+                        PersonalityRegisterData(
                           email = request.email,
                           firstName = request.firstName,
                           lastName = request.lastName,
-                          password = None,
-                          lastIp = None,
                           country = request.country,
                           language = request.language,
-                          optIn = Some(false),
-                          optInPartner = Some(false),
-                          roles = Seq(Role.RoleCitizen),
-                          publicProfile = true
+                          gender = request.gender,
+                          genderName = request.genderName,
+                          description = request.description,
+                          avatarUrl = request.avatarUrl
                         ),
                         requestContext
                       )

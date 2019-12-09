@@ -71,7 +71,8 @@ trait UserService extends ShortenedNames {
                      role: Option[Role],
                      userType: Option[UserType]): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
-  def registerPersonality(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
+  def registerPersonality(personalityRegisterData: PersonalityRegisterData,
+                          requestContext: RequestContext): Future[User]
   def update(user: User, requestContext: RequestContext): Future[User]
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                    clientIp: Option[String],
@@ -125,6 +126,16 @@ case class UserRegisterData(email: String,
                             politicalParty: Option[String] = None,
                             website: Option[String] = None,
                             publicProfile: Boolean = false)
+
+case class PersonalityRegisterData(email: String,
+                                   firstName: Option[String],
+                                   lastName: Option[String],
+                                   gender: Option[Gender],
+                                   genderName: Option[String],
+                                   country: Country,
+                                   language: Language,
+                                   description: Option[String],
+                                   avatarUrl: Option[String])
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -208,19 +219,19 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.persist(user)
     }
 
-    private def registerPersonality(userRegisterData: UserRegisterData,
-                                    lowerCasedEmail: String,
-                                    country: Country,
-                                    language: Language,
-                                    profile: Option[Profile]): Future[User] = {
+    private def persistPersonality(personalityRegisterData: PersonalityRegisterData,
+                                   lowerCasedEmail: String,
+                                   country: Country,
+                                   language: Language,
+                                   profile: Option[Profile]): Future[User] = {
 
       val user = User(
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,
-        firstName = userRegisterData.firstName,
-        lastName = userRegisterData.lastName,
-        lastIp = userRegisterData.lastIp,
-        hashedPassword = userRegisterData.password.map(_.bcrypt),
+        firstName = personalityRegisterData.firstName,
+        lastName = personalityRegisterData.lastName,
+        lastIp = None,
+        hashedPassword = None,
         enabled = true,
         emailVerified = true,
         lastConnection = DateHelper.now(),
@@ -228,14 +239,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         verificationTokenExpiresAt = None,
         resetToken = None,
         resetTokenExpiresAt = None,
-        roles = userRegisterData.roles,
+        roles = Seq(Role.RoleCitizen),
         country = country,
         language = language,
         profile = profile,
-        availableQuestions = userRegisterData.availableQuestions,
+        availableQuestions = Seq.empty,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
         userType = UserType.UserTypePersonality,
-        publicProfile = userRegisterData.publicProfile
+        publicProfile = true
       )
 
       persistentUserService.persist(user)
@@ -324,32 +335,27 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def registerPersonality(userRegisterData: UserRegisterData,
+    override def registerPersonality(personalityRegisterData: PersonalityRegisterData,
                                      requestContext: RequestContext): Future[User] = {
 
-      val country = BusinessConfig.validateCountry(userRegisterData.country)
-      val language = BusinessConfig.validateLanguage(userRegisterData.country, userRegisterData.language)
+      val country = BusinessConfig.validateCountry(personalityRegisterData.country)
+      val language = BusinessConfig.validateLanguage(personalityRegisterData.country, personalityRegisterData.language)
 
-      val lowerCasedEmail: String = userRegisterData.email.toLowerCase()
+      val lowerCasedEmail: String = personalityRegisterData.email.toLowerCase()
       val profile: Option[Profile] =
         Profile.parseProfile(
-          dateOfBirth = userRegisterData.dateOfBirth,
-          profession = userRegisterData.profession,
-          postalCode = userRegisterData.postalCode,
-          gender = userRegisterData.gender,
-          socioProfessionalCategory = userRegisterData.socioProfessionalCategory,
-          registerQuestionId = userRegisterData.questionId,
-          optInNewsletter = userRegisterData.optIn.getOrElse(true),
-          optInPartner = userRegisterData.optInPartner,
-          politicalParty = userRegisterData.politicalParty,
-          website = userRegisterData.website
+          gender = personalityRegisterData.gender,
+          genderName = personalityRegisterData.genderName,
+          description = personalityRegisterData.description,
+          avatarUrl = personalityRegisterData.avatarUrl,
+          optInNewsletter = false,
+          optInPartner = Some(false)
         )
 
       val result = for {
         emailExists <- persistentUserService.emailExists(lowerCasedEmail)
-        canRegister <- userRegistrationValidator.canRegister(userRegisterData)
-        _           <- validateAccountCreation(emailExists, canRegister, lowerCasedEmail)
-        user        <- registerPersonality(userRegisterData, lowerCasedEmail, country, language, profile)
+        _           <- validateAccountCreation(emailExists, canRegister = true, lowerCasedEmail)
+        user        <- persistPersonality(personalityRegisterData, lowerCasedEmail, country, language, profile)
       } yield user
 
       result.map { user =>
