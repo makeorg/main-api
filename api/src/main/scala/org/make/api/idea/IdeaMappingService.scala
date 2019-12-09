@@ -37,7 +37,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag.{Tag, TagId, TagTypeId}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
-
+import Ordering.Float.TotalOrdering
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -160,7 +160,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
                       PatchProposalRequest(ideaId = Some(newIdea))
                     )
                   }(
-                    cbf = implicitly,
+                    bf = implicitly,
                     executor =
                       implicitly[ExecutionContext](ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1)))
                   )

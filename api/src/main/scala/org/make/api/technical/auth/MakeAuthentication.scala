@@ -50,8 +50,8 @@ trait MakeAuthentication extends ShortenedNames with MakeDirectives {
 
   def optionalMakeOAuth2: Directive1[Option[AuthInfo[UserRights]]] = {
     defaultMakeOAuth2.map(Some(_): Option[AuthInfo[UserRights]]).recover {
-      case AuthenticationFailedRejection(_, _) +: _ ⇒ provide(None)
-      case rejs ⇒ reject(rejs: _*)
+      case AuthenticationFailedRejection(_, _) +: _ => provide(None)
+      case rejs                                     => reject(rejs: _*)
     }
   }
 

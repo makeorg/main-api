@@ -30,7 +30,7 @@ import kamon.Kamon
 import kamon.metric.Gauge
 import org.make.api.technical.ClusterShardingMonitor.{Monitor, ShardingGauges}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,7 +51,7 @@ class ClusterShardingMonitor extends Actor with ActorLogging {
       scala.concurrent.duration.MILLISECONDS
     )
 
-  val shardedRegions: Seq[String] = config.getStringList("kamon.cluster-sharding.regions").asScala
+  val shardedRegions: Seq[String] = config.getStringList("kamon.cluster-sharding.regions").asScala.toSeq
 
   val gauges: Map[String, ShardingGauges] = shardedRegions.map { region =>
     region -> new ShardingGauges(region)

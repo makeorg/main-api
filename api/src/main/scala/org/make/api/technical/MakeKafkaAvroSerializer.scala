@@ -27,7 +27,7 @@ import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.kafka.common.serialization.Serializer
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class MakeKafkaAvroSerializer[T](registryUrl: String, schema: SchemaFor[T], format: RecordFormat[T])
     extends Serializer[T]

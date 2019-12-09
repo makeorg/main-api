@@ -58,7 +58,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
 
     override def findAll(): Future[Seq[Theme]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentThemes: Future[List[PersistentTheme]] = Future(NamedDB('READ).retryableTx {
+      val futurePersistentThemes: Future[List[PersistentTheme]] = Future(NamedDB(Symbol("READ")).retryableTx {
         implicit session =>
           withSQL {
             select
@@ -68,7 +68,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
           }.one(PersistentTheme.apply())
             .toMany(PersistentThemeTranslation.opt(themeTranslationAlias))
             .map { (theme, translations) =>
-              theme.copy(themeTranslations = translations)
+              theme.copy(themeTranslations = translations.toVector)
             }
             .list
             .apply()
@@ -85,7 +85,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
       implicit val context: EC = writeExecutionContext
       val tagsIds: String =
         theme.tags.map(_.tagId.value).mkString(DefaultPersistentThemeServiceComponent.TAG_SEPARATOR.toString)
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentTheme)
@@ -108,7 +108,7 @@ trait DefaultPersistentThemeServiceComponent extends PersistentThemeServiceCompo
 
     override def addTranslationToTheme(translation: ThemeTranslation, theme: Theme): Future[Theme] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentThemeTranslation)
@@ -146,7 +146,7 @@ object DefaultPersistentThemeServiceComponent {
                              createdAt: ZonedDateTime,
                              updatedAt: ZonedDateTime) {
 
-    def tagsIdsFromSlug: Seq[TagId] = tagsIds.getOrElse("").split(TAG_SEPARATOR).map(toTagId)
+    def tagsIdsFromSlug: Seq[TagId] = tagsIds.getOrElse("").split(TAG_SEPARATOR).toIndexedSeq.map(toTagId)
 
     def toTheme(allTags: Seq[Tag]): Theme = {
       val tags: Seq[Tag] = tagsIdsFromSlug.flatMap(tagId => allTags.find(_.tagId == tagId))

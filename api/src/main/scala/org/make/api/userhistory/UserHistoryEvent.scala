@@ -615,5 +615,5 @@ case object UserHasConnected {
   val actionType: String = "user-connected"
 
   implicit val userAnonymized: RootJsonFormat[UserHasConnected] =
-    DefaultJsonProtocol.jsonFormat0(UserHasConnected.apply)
+    DefaultJsonProtocol.jsonFormat0(UserHasConnected.apply _)
 }

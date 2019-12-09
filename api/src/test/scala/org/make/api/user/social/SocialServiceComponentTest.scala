@@ -57,7 +57,10 @@ class SocialServiceComponentTest
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(userService, oauth2DataHandler, googleApi, facebookApi)
+    Mockito.reset(userService)
+    Mockito.reset(oauth2DataHandler)
+    Mockito.reset(googleApi)
+    Mockito.reset(facebookApi)
   }
 
   val expireInSeconds = 123000

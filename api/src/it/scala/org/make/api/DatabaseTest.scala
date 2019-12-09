@@ -28,7 +28,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration.DurationInt
@@ -56,7 +56,7 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
       enabled = true,
       warningEnabled = false,
       printUnprocessedStackTrace = true,
-      logLevel = 'info
+      logLevel = Symbol("info")
     )
 
     val dataSource: DataSource = createDataSource
@@ -67,8 +67,8 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
     connection.prepareStatement(s"CREATE DATABASE $databaseName").execute()
     connection.close()
 
-    ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource))
-    ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource))
+    ConnectionPool.add(Symbol("WRITE"), new DataSourceConnectionPool(dataSource))
+    ConnectionPool.add(Symbol("READ"), new DataSourceConnectionPool(dataSource))
 
     Thread.sleep(1.second.toMillis)
 

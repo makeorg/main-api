@@ -25,7 +25,7 @@ import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.common.Cluster
 import org.make.core.Sharded
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class MakePartitioner extends Partitioner {
 

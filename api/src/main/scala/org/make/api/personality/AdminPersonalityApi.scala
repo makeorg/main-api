@@ -147,7 +147,17 @@ trait DefaultAdminPersonalityApiComponent
     override def getPersonalities: Route = get {
       path("admin" / "personalities") {
         makeOperation("GetPersonalities") { _ =>
-          parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?, 'email.?, 'firstName.?, 'lastName.?)) {
+          parameters(
+            (
+              Symbol("_start").as[Int].?,
+              Symbol("_end").as[Int].?,
+              Symbol("_sort").?,
+              Symbol("_order").?,
+              Symbol("email").?,
+              Symbol("firstName").?,
+              Symbol("lastName").?
+            )
+          ) {
             (start: Option[Int],
              end: Option[Int],
              sort: Option[String],

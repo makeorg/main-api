@@ -352,7 +352,14 @@ trait DefaultAdminCrmTemplatesApiComponent
       get {
         path("admin" / "crm" / "templates") {
           makeOperation("AdminSearchCrmTemplates") { _ =>
-            parameters(('_start.as[Int].?, '_end.as[Int].?, 'locale.?, 'questionId.as[QuestionId].?)) {
+            parameters(
+              (
+                Symbol("_start").as[Int].?,
+                Symbol("_end").as[Int].?,
+                Symbol("locale").?,
+                Symbol("questionId").as[QuestionId].?
+              )
+            ) {
               (start: Option[Int],
                end: Option[Int],
                maybeLocale: Option[String],

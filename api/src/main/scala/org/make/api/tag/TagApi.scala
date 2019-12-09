@@ -88,7 +88,7 @@ trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDire
     override def listTags: Route = get {
       path("tags") {
         makeOperation("Search") { _ =>
-          parameters(('start.as[Int].?, 'end.as[Int].?, 'questionId.as[QuestionId].?)) {
+          parameters((Symbol("start").as[Int].?, Symbol("end").as[Int].?, Symbol("questionId").as[QuestionId].?)) {
             (start, end, maybeQuestionId) =>
               onSuccess(
                 tagService.find(

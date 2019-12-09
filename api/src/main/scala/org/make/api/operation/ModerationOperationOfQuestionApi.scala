@@ -230,14 +230,14 @@ trait DefaultModerationOperationOfQuestionApiComponent
             requireModerationRole(auth.user) {
               parameters(
                 (
-                  '_start.as[Int].?,
-                  '_end.as[Int].?,
-                  '_sort.?,
-                  '_order.?,
-                  'questionId.as[immutable.Seq[QuestionId]].?,
-                  'operationId.as[OperationId].?,
-                  'operationKind.as[immutable.Seq[OperationKind]].?,
-                  'openAt.as[ZonedDateTime].?
+                  Symbol("_start").as[Int].?,
+                  Symbol("_end").as[Int].?,
+                  Symbol("_sort").?,
+                  Symbol("_order").?,
+                  Symbol("questionId").as[immutable.Seq[QuestionId]].?,
+                  Symbol("operationId").as[OperationId].?,
+                  Symbol("operationKind").as[immutable.Seq[OperationKind]].?,
+                  Symbol("openAt").as[ZonedDateTime].?
                 )
               ) {
                 (start: Option[Int],
