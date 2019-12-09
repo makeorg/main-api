@@ -22,6 +22,7 @@ import java.time.LocalDate
 import Tasks._
 import org.make.GitHooks
 import sbt.Keys.scalacOptions
+import kamon.instrumentation.sbt.SbtKanelaRunner.Keys.kanelaVersion
 
 lazy val commonSettings = Seq(
   organization := "org.make",
@@ -136,3 +137,4 @@ swiftReportsToSendPath := {
   (Compile / crossTarget).value / "scoverage-report"
 }
 
+ThisBuild / kanelaVersion := Dependencies.kanelaVersion
