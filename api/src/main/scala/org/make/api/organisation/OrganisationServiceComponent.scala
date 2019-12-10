@@ -99,7 +99,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
 
   class DefaultOrganisationService extends OrganisationService {
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
-      persistentUserService.get(userId).map(_.filter(_.userType == UserType.UserTypeOrganisation))
+      persistentUserService.findByUserIdAndUserType(userId, UserType.UserTypeOrganisation)
     }
 
     override def getOrganisations: Future[Seq[User]] = {

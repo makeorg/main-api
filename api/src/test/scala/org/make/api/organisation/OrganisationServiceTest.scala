@@ -127,7 +127,9 @@ class OrganisationServiceTest
 
   feature("Get organisation") {
     scenario("get organisation") {
-      Mockito.when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(returnedOrganisation)))
+      Mockito
+        .when(persistentUserService.findByUserIdAndUserType(any[UserId], any[UserType]))
+        .thenReturn(Future.successful(Some(returnedOrganisation)))
 
       whenReady(organisationService.getOrganisation(UserId("AAA-BBB-CCC")), Timeout(2.seconds)) { user =>
         user shouldBe a[Option[_]]
