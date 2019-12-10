@@ -52,7 +52,9 @@ import org.make.api.personality.{
   DefaultAdminPersonalityApiComponent,
   DefaultAdminQuestionPersonalityApiComponent,
   DefaultPersistentQuestionPersonalityServiceComponent,
-  DefaultQuestionPersonalityServiceComponent
+  DefaultPersonalityApiComponent,
+  DefaultQuestionPersonalityServiceComponent,
+  PersonalityApi
 }
 import org.make.api.proposal._
 import org.make.api.question._
@@ -196,6 +198,7 @@ trait MakeApi
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentUserToAnonymizeServiceComponent
     with DefaultQuestionPersonalityServiceComponent
+    with DefaultPersonalityApiComponent
     with DefaultProposalApiComponent
     with DefaultProposalCoordinatorServiceComponent
     with DefaultProposalIndexerServiceComponent
@@ -339,6 +342,7 @@ trait MakeApi
       classOf[ModerationTagTypeApi],
       classOf[OperationApi],
       classOf[OrganisationApi],
+      classOf[PersonalityApi],
       classOf[ProposalApi],
       classOf[QuestionApi],
       classOf[SecurityApi],
@@ -401,6 +405,7 @@ trait MakeApi
       moderationTagTypeApi.routes ~
       operationApi.routes ~
       organisationApi.routes ~
+      personalityApi.routes ~
       proposalApi.routes ~
       questionApi.routes ~
       securityApi.routes ~
