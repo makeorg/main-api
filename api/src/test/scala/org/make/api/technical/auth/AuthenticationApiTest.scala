@@ -27,6 +27,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical._
+import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
@@ -44,7 +45,7 @@ class AuthenticationApiTest
 
   override val tokenEndpoint: TokenEndpoint = mock[TokenEndpoint]
 
-  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId]))
+  when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful {})
 
   val routes: Route = sealRoute(authenticationApi.routes)

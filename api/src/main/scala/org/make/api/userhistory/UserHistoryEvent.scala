@@ -88,6 +88,7 @@ object UserHistoryEvent {
           case Seq(JsString("LogUserAnonymizedEvent"))       => json.convertTo[LogUserAnonymizedEvent]
           case Seq(JsString("LogUserOptInNewsletterEvent"))  => json.convertTo[LogUserOptInNewsletterEvent]
           case Seq(JsString("LogUserOptOutNewsletterEvent")) => json.convertTo[LogUserOptOutNewsletterEvent]
+          case Seq(JsString("LogUserConnectedEvent"))        => json.convertTo[LogUserConnectedEvent]
         }
       }
 
@@ -114,6 +115,7 @@ object UserHistoryEvent {
           case event: LogUserAnonymizedEvent              => event.toJson
           case event: LogUserOptInNewsletterEvent         => event.toJson
           case event: LogUserOptOutNewsletterEvent        => event.toJson
+          case event: LogUserConnectedEvent               => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -588,4 +590,30 @@ object UserUpdatedOptIn {
 
   implicit val userAnonymized: RootJsonFormat[UserUpdatedOptIn] =
     DefaultJsonProtocol.jsonFormat1(UserUpdatedOptIn.apply)
+}
+
+final case class LogUserConnectedEvent(userId: UserId,
+                                       requestContext: RequestContext,
+                                       action: UserAction[UserHasConnected])
+    extends UserHistoryEvent[UserHasConnected] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserConnectedEvent {
+  val action: String = "connect-user"
+
+  implicit val logUserConnectedEventFormatted: RootJsonFormat[LogUserConnectedEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserConnectedEvent.apply, "userId", "context", "action")
+
+}
+
+final case class UserHasConnected() {
+  def version(): Int = MakeSerializable.V1
+}
+
+case object UserHasConnected {
+  val actionType: String = "user-connected"
+
+  implicit val userAnonymized: RootJsonFormat[UserHasConnected] =
+    DefaultJsonProtocol.jsonFormat0(UserHasConnected.apply)
 }

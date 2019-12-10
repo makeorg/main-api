@@ -24,6 +24,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.technical.TimeSettings
+import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session.SessionId
@@ -40,7 +41,7 @@ trait SessionHistoryCoordinatorService {
   def sessionHistory(sessionId: SessionId): Future[SessionHistory]
   def logHistory(command: SessionHistoryEvent[_]): Unit
   def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit]
-  def convertSession(sessionId: SessionId, userId: UserId): Future[Unit]
+  def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit]
   def retrieveVoteAndQualifications(request: RequestSessionVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
   def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]]
   def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit]
@@ -83,8 +84,8 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       (sessionHistoryCoordinator ? request).mapTo[Map[ProposalId, VoteAndQualifications]]
     }
 
-    override def convertSession(sessionId: SessionId, userId: UserId): Future[Unit] = {
-      (sessionHistoryCoordinator ? UserConnected(sessionId, userId)).map(_ => {})
+    override def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit] = {
+      (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).map(_ => {})
     }
 
     override def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]] = {

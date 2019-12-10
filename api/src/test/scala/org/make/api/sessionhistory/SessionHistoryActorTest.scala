@@ -520,7 +520,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       )
 
       coordinator ! event1
-      coordinator ! UserConnected(sessionId, userId)
+      coordinator ! UserConnected(sessionId, userId, RequestContext.empty)
 
       // This event should be forwarded to user history
       coordinator ! event2

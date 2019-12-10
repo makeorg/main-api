@@ -578,7 +578,7 @@ trait DefaultUserApiComponent
                       )
                       .flatMap { social =>
                         sessionHistoryCoordinatorService
-                          .convertSession(requestContext.sessionId, social.userId)
+                          .convertSession(requestContext.sessionId, social.userId, requestContext)
                           .map(_ => social)
                       }
                   ) { social =>
@@ -683,7 +683,7 @@ trait DefaultUserApiComponent
                     )
                     .flatMap { user =>
                       sessionHistoryCoordinatorService
-                        .convertSession(requestContext.sessionId, user.userId)
+                        .convertSession(requestContext.sessionId, user.userId, requestContext)
                         .map(_ => user)
                     }
                 ) { result =>
