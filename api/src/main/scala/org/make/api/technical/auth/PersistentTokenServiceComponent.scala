@@ -40,11 +40,9 @@ trait PersistentTokenServiceComponent {
 }
 
 trait PersistentTokenService {
-  def get(token: Token): Future[Option[Token]]
   def accessTokenExists(token: String): Future[Boolean]
   def refreshTokenExists(token: String): Future[Boolean]
   def findByRefreshToken(token: String): Future[Option[Token]]
-  def findByAccessToken(token: String): Future[Option[Token]]
   def get(accessToken: String): Future[Option[Token]]
   def findByUserId(userId: UserId): Future[Option[Token]]
   def persist(token: Token): Future[Token]
@@ -123,10 +121,6 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
     private val tokenAlias = PersistentToken.tokenAlias
     private val column = PersistentToken.column
 
-    override def get(token: Token): Future[Option[Token]] = {
-      get(token.accessToken)
-    }
-
     override def accessTokenExists(token: String): Future[Boolean] = {
       get(token).map(_.isDefined)(ECGlobal)
     }
@@ -164,10 +158,6 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
       futurePersistentToken.map(_.map(_.toToken))
     }
 
-    override def findByAccessToken(token: String): Future[Option[Token]] = {
-      get(token)
-    }
-
     override def get(accessToken: String): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB('READ).retryableTx {
@@ -175,14 +165,13 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
           val userAlias = PersistentUser.userAlias
           val clientAlias = PersistentClient.clientAlias
           withSQL {
-            val req: scalikejdbc.SQLBuilder[PersistentUser] = select
+            select
               .from(PersistentToken.as(tokenAlias))
               .innerJoin(PersistentUser.as(userAlias))
               .on(userAlias.uuid, tokenAlias.makeUserUuid)
               .innerJoin(PersistentClient.as(clientAlias))
               .on(clientAlias.uuid, tokenAlias.clientUuid)
               .where(sqls.eq(tokenAlias.accessToken, accessToken))
-            req
           }.map(PersistentToken.apply(tokenAlias.resultName, userAlias.resultName, clientAlias.resultName)).single.apply
       })
 

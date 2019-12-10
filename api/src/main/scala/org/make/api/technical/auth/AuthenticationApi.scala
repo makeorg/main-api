@@ -40,6 +40,7 @@ import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import akka.http.scaladsl.model.headers.{Authorization => AkkaAuthorization}
 
 @Api(value = "Authentication")
 @Path(value = "/")
@@ -285,16 +286,25 @@ trait DefaultAuthenticationApiComponent
       get {
         path("access_token") {
           makeOperation("OauthGetAccessToken") { _ =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              provideAsyncOrNotFound(oauth2DataHandler.getStoredAccessToken(userAuth)) { tokenResult =>
-                complete(
-                  TokenResponse(
-                    "Bearer",
-                    tokenResult.token,
-                    tokenResult.expiresIn.getOrElse(1L),
-                    tokenResult.refreshToken.getOrElse("")
-                  )
-                )
+            makeOAuth2 { _: AuthInfo[UserRights] =>
+              optionalCookie(makeSettings.SecureCookie.name) { maybeCookie =>
+                optionalHeaderValueByType[AkkaAuthorization](()) { maybeAuthorization: Option[AkkaAuthorization] =>
+                  provideAsyncOrNotFound(
+                    oauth2DataHandler
+                      .findAccessToken(
+                        maybeCookie.map(_.value).orElse(maybeAuthorization.map(_.credentials.token())).getOrElse("")
+                      )
+                  ) { tokenResult =>
+                    complete(
+                      TokenResponse(
+                        "Bearer",
+                        tokenResult.token,
+                        tokenResult.expiresIn.getOrElse(1L),
+                        tokenResult.refreshToken.getOrElse("")
+                      )
+                    )
+                  }
+                }
               }
             }
           }

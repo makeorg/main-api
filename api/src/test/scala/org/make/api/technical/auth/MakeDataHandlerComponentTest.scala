@@ -22,7 +22,6 @@ package org.make.api.technical.auth
 import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Date
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
@@ -434,19 +433,8 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(Option(token)))
       val futureAccessToken = oauth2DataHandler.getStoredAccessToken(authInfo)
 
-      whenReady(futureAccessToken, Timeout(3.seconds)) { maybeAccessToken =>
-        Then("I should get an Option")
-        maybeAccessToken shouldBe a[Option[_]]
-        And("I should get an AccessToken with a token value equal to \"AF8\"")
-        maybeAccessToken.get.token shouldBe "AF8"
-        And("I should get an AccessToken with a refresh token value equal to \"KKJ\"")
-        maybeAccessToken.get.refreshToken.get shouldBe "KKJ"
-        And("I should get an AccessToken with a expiresIn value equal to 1800")
-        maybeAccessToken.get.lifeSeconds shouldBe Some(expiresIn)
-        And("I should get an AccessToken with an empty scope")
-        maybeAccessToken.get.scope shouldBe empty
-        And("I should get an AccessToken with an createdAt equal to 2017-08-16")
-        maybeAccessToken.get.createdAt shouldBe Date.from(exampleDate.toInstant)
+      whenReady(futureAccessToken, Timeout(3.seconds)) {
+        _ should be(None)
       }
     }
   }
@@ -544,7 +532,7 @@ class MakeDataHandlerComponentTest
 
       val futureAccessToken = spyOndataHandler.refreshAccessToken(authInfo, refreshToken)
       Then("a NoSuchElementException should be thrown")
-      intercept[NoSuchElementException] {
+      intercept[TokenAlreadyRefreshed] {
         Await.result(futureAccessToken, 5.seconds)
       }
     }
@@ -609,7 +597,7 @@ class MakeDataHandlerComponentTest
       val accessTokenObj = accessTokenExample.copy(token = accessToken, refreshToken = Some(refreshToken))
 
       When("I call method findAuthInfoByAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessTokenObj.token)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(accessTokenObj.token)))
         .thenReturn(Future.successful(Some(exampleToken)))
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(accessTokenObj)
 
@@ -624,7 +612,7 @@ class MakeDataHandlerComponentTest
       val unexisting = accessTokenExample.copy(token = "some-inexisting-token")
 
       When("I call method findAuthInfoByAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(unexisting.token)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(unexisting.token)))
         .thenReturn(Future.successful(None))
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(unexisting)
 
@@ -645,7 +633,7 @@ class MakeDataHandlerComponentTest
       val accessToken = "TOKENTOKEN"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken)))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
@@ -660,7 +648,7 @@ class MakeDataHandlerComponentTest
       val accessToken = "NONEXISTENT"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(None))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
@@ -675,7 +663,7 @@ class MakeDataHandlerComponentTest
       val accessToken = "TOKENEXPIRED"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken.copy(accessToken = accessToken, expiresIn = -1))))
 
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
@@ -693,7 +681,7 @@ class MakeDataHandlerComponentTest
     info("I want to refresh an access token if it's not expired and the refresh token is not expired")
 
     scenario("access token not found") {
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq("not-found")))
+      when(persistentTokenService.get(ArgumentMatchers.eq("not-found")))
         .thenReturn(Future.successful(None))
       val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired("not-found")
       whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>
@@ -703,7 +691,7 @@ class MakeDataHandlerComponentTest
 
     scenario("access token not expired") {
       val accessToken = "TOKENNOTEXPIRED"
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken.copy(accessToken = accessToken))))
 
       val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)
@@ -714,7 +702,7 @@ class MakeDataHandlerComponentTest
 
     scenario("access token expired and refresh token expired") {
       val accessToken = "TOKENREFRESHNOTEXPIRED"
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
         .thenReturn(
           Future.successful(
             Some(exampleToken.copy(accessToken = accessToken, createdAt = Some(DateHelper.now().minusDays(1L))))
@@ -731,7 +719,7 @@ class MakeDataHandlerComponentTest
       val accessToken = "TOKENREFRESHNOTEXPIRED"
       val newAccessToken = "new-access-token"
 
-      when(persistentTokenService.findByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
         .thenReturn(
           Future.successful(
             Some(exampleToken.copy(accessToken = accessToken, createdAt = Some(DateHelper.now().minusHours(1L))))
