@@ -21,7 +21,10 @@ package org.make.api.user
 
 import java.time.LocalDate
 
+import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
+import eu.timepit.refined.boolean.And
+import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.string.Url
 import io.circe.refined._
 import io.circe.{Decoder, Encoder}
@@ -52,10 +55,11 @@ import scala.util.{Success, Try}
 
 case class ProfileRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") avatarUrl: Option[String Refined Url],
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01")
+  avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]],
   profession: Option[String],
   phoneNumber: Option[String],
-  description: Option[String],
+  description: Option[String Refined MaxSize[W.`450`.T]],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
   genderName: Option[String],
   postalCode: Option[String],
@@ -77,7 +81,7 @@ case class ProfileRequest(
           avatarUrl = RequestHelper.updateValue(profile.avatarUrl, avatarUrl.map(_.value)),
           profession = RequestHelper.updateValue(profile.profession, profession),
           phoneNumber = RequestHelper.updateValue(profile.phoneNumber, phoneNumber),
-          description = RequestHelper.updateValue(profile.description, description),
+          description = RequestHelper.updateValue(profile.description, description.map(_.value)),
           gender = gender.collect { case g if !g.shortName.isEmpty => g }.orElse(profile.gender),
           genderName = RequestHelper.updateValue(profile.genderName, genderName),
           postalCode = RequestHelper.updateValue(profile.postalCode, postalCode),
@@ -97,7 +101,7 @@ case class ProfileRequest(
     avatarUrl = avatarUrl.map(_.value),
     profession = profession,
     phoneNumber = phoneNumber,
-    description = description,
+    description = description.map(_.value),
     gender = gender,
     genderName = genderName,
     postalCode = postalCode,
@@ -117,7 +121,7 @@ object ProfileRequest extends CirceFormatters {
   def validateProfileRequest(profileRequest: ProfileRequest): Unit = {
     Validation.validateOptional(
       profileRequest.avatarUrl.map(value      => validateUserInput("avatarUrl", value.value, None)),
-      profileRequest.description.map(value    => validateUserInput("description", value, None)),
+      profileRequest.description.map(value    => validateUserInput("description", value.value, None)),
       profileRequest.genderName.map(value     => validateUserInput("genderName", value, None)),
       profileRequest.locale.map(value         => validateUserInput("locale", value, None)),
       profileRequest.phoneNumber.map(value    => validateUserInput("phoneNumber", value, None)),
@@ -129,10 +133,10 @@ object ProfileRequest extends CirceFormatters {
   }
 
   def parseProfileRequest(dateOfBirth: Option[LocalDate] = None,
-                          avatarUrl: Option[String Refined Url] = None,
+                          avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]] = None,
                           profession: Option[String] = None,
                           phoneNumber: Option[String] = None,
-                          description: Option[String] = None,
+                          description: Option[String Refined MaxSize[W.`450`.T]] = None,
                           gender: Option[Gender] = None,
                           genderName: Option[String] = None,
                           postalCode: Option[String] = None,
