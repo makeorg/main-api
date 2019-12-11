@@ -19,6 +19,8 @@
 
 package org.make.api.technical.auth
 
+import akka.http.scaladsl.model.headers.{Authorization, HttpChallenges}
+import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsMissing
 import akka.http.scaladsl.server.directives.{AuthenticationDirective, Credentials}
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, Directive1}
 import org.make.api.extensions.MakeSettingsComponent
@@ -64,4 +66,21 @@ trait MakeAuthentication extends ShortenedNames with MakeDirectives {
         }
       case _ => Future.successful(None)
     }
+
+  def extractToken: Directive1[Option[String]] = {
+    for {
+      maybeCookie        <- optionalCookie(makeSettings.SecureCookie.name)
+      maybeAuthorization <- optionalHeaderValueByType[Authorization](())
+    } yield maybeCookie.map(_.value).orElse(maybeAuthorization.map(_.credentials.token()))
+  }
+
+  def requireToken: Directive1[String] = {
+    extractToken.flatMap {
+      case Some(token) => provide(token)
+      case None =>
+        mapInnerRoute { _ =>
+          reject(AuthenticationFailedRejection(cause = CredentialsMissing, challenge = HttpChallenges.oAuth2(realm)))
+        }.tmap(_ => "")
+    }
+  }
 }

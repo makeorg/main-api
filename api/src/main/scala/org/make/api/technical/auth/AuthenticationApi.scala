@@ -40,7 +40,6 @@ import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import akka.http.scaladsl.model.headers.{Authorization => AkkaAuthorization}
 
 @Api(value = "Authentication")
 @Path(value = "/")
@@ -286,24 +285,17 @@ trait DefaultAuthenticationApiComponent
       get {
         path("access_token") {
           makeOperation("OauthGetAccessToken") { _ =>
-            makeOAuth2 { _: AuthInfo[UserRights] =>
-              optionalCookie(makeSettings.SecureCookie.name) { maybeCookie =>
-                optionalHeaderValueByType[AkkaAuthorization](()) { maybeAuthorization: Option[AkkaAuthorization] =>
-                  provideAsyncOrNotFound(
-                    oauth2DataHandler
-                      .findAccessToken(
-                        maybeCookie.map(_.value).orElse(maybeAuthorization.map(_.credentials.token())).getOrElse("")
-                      )
-                  ) { tokenResult =>
-                    complete(
-                      TokenResponse(
-                        "Bearer",
-                        tokenResult.token,
-                        tokenResult.expiresIn.getOrElse(1L),
-                        tokenResult.refreshToken.getOrElse("")
-                      )
+            makeOAuth2 { _ =>
+              requireToken { token =>
+                provideAsyncOrNotFound(oauth2DataHandler.findAccessToken(token)) { tokenResult =>
+                  complete(
+                    TokenResponse(
+                      "Bearer",
+                      tokenResult.token,
+                      tokenResult.expiresIn.getOrElse(1L),
+                      tokenResult.refreshToken.getOrElse("")
                     )
-                  }
+                  )
                 }
               }
             }
@@ -366,62 +358,63 @@ trait DefaultAuthenticationApiComponent
     override def logoutRoute: Route = post {
       path("logout") {
         makeOperation("OauthLogout") { _ =>
-          makeOAuth2 { userAuth =>
-            val futureRowsDeletedCount: Future[Int] = oauth2DataHandler.removeTokenByUserId(userAuth.user.userId)
-            onComplete(futureRowsDeletedCount) {
-              case Success(_) =>
-                mapResponseHeaders(
-                  _ ++ Seq(
-                    `Set-Cookie`(
-                      HttpCookie(
-                        name = makeSettings.SessionCookie.name,
-                        value = idGenerator.nextId(),
-                        secure = makeSettings.SessionCookie.isSecure,
-                        httpOnly = true,
-                        maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                        path = Some("/"),
-                        domain = Some(makeSettings.SessionCookie.domain)
-                      )
-                    ),
-                    `Set-Cookie`(
-                      HttpCookie(
-                        name = makeSettings.SessionCookie.expirationName,
-                        value = DateHelper
-                          .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
-                        secure = makeSettings.SessionCookie.isSecure,
-                        httpOnly = false,
-                        maxAge = None,
-                        path = Some("/"),
-                        domain = Some(makeSettings.SessionCookie.domain)
-                      )
-                    ),
-                    `Set-Cookie`(
-                      HttpCookie(
-                        name = makeSettings.SecureCookie.name,
-                        value = "",
-                        secure = makeSettings.SecureCookie.isSecure,
-                        httpOnly = true,
-                        maxAge = Some(0),
-                        path = Some("/"),
-                        domain = Some(makeSettings.SecureCookie.domain)
-                      )
-                    ),
-                    `Set-Cookie`(
-                      HttpCookie(
-                        name = makeSettings.SecureCookie.expirationName,
-                        value = "",
-                        secure = makeSettings.SecureCookie.isSecure,
-                        httpOnly = false,
-                        maxAge = Some(0),
-                        path = Some("/"),
-                        domain = Some(makeSettings.SecureCookie.domain)
+          makeOAuth2 { _ =>
+            requireToken { token =>
+              onComplete(oauth2DataHandler.removeToken(token)) {
+                case Success(_) =>
+                  mapResponseHeaders(
+                    _ ++ Seq(
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.SessionCookie.name,
+                          value = idGenerator.nextId(),
+                          secure = makeSettings.SessionCookie.isSecure,
+                          httpOnly = true,
+                          maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+                          path = Some("/"),
+                          domain = Some(makeSettings.SessionCookie.domain)
+                        )
+                      ),
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.SessionCookie.expirationName,
+                          value = DateHelper
+                            .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
+                          secure = makeSettings.SessionCookie.isSecure,
+                          httpOnly = false,
+                          maxAge = None,
+                          path = Some("/"),
+                          domain = Some(makeSettings.SessionCookie.domain)
+                        )
+                      ),
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.SecureCookie.name,
+                          value = "",
+                          secure = makeSettings.SecureCookie.isSecure,
+                          httpOnly = true,
+                          maxAge = Some(0),
+                          path = Some("/"),
+                          domain = Some(makeSettings.SecureCookie.domain)
+                        )
+                      ),
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.SecureCookie.expirationName,
+                          value = "",
+                          secure = makeSettings.SecureCookie.isSecure,
+                          httpOnly = false,
+                          maxAge = Some(0),
+                          path = Some("/"),
+                          domain = Some(makeSettings.SecureCookie.domain)
+                        )
                       )
                     )
-                  )
-                ) {
-                  complete(StatusCodes.NoContent)
-                }
-              case Failure(ex) => failWith(ex)
+                  ) {
+                    complete(StatusCodes.NoContent)
+                  }
+                case Failure(ex) => failWith(ex)
+              }
             }
           }
         }
