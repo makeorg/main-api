@@ -253,7 +253,6 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          operationId: Option[OperationId] = None,
                                          questionIds: Option[Seq[QuestionId]] = None,
                                          ideaId: Option[IdeaId] = None,
-                                         trending: Option[String] = None,
                                          content: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
                                          status: Option[Seq[ProposalStatus]] = None,
@@ -265,7 +264,8 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          sort: Option[SortRequest] = None,
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None,
-                                         createdBefore: Option[ZonedDateTime] = None) {
+                                         createdBefore: Option[ZonedDateTime] = None,
+                                         userType: Option[UserType] = None) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
@@ -276,7 +276,6 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         operation = operationId.map(opId => OperationSearchFilter(Seq(opId))),
         question = questionIds.map(QuestionSearchFilter.apply),
         idea = ideaId.map(IdeaSearchFilter.apply),
-        trending = trending.map(TrendingSearchFilter.apply),
         content = content.map(ContentSearchFilter.apply),
         context = context.map(_.toContext),
         status = status.map(StatusSearchFilter.apply),
@@ -285,7 +284,8 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         minScore = minScore.map(MinScoreSearchFilter.apply),
         language = language.map(LanguageSearchFilter.apply),
         country = country.map(CountrySearchFilter.apply),
-        createdAt = createdBefore.map(createdBeforeDate => CreatedAtSearchFilter(Some(createdBeforeDate), None))
+        createdAt = createdBefore.map(createdBeforeDate => CreatedAtSearchFilter(Some(createdBeforeDate), None)),
+        userType = userType.map(UserTypeSearchFilter.apply)
       )
 
     SearchQuery(

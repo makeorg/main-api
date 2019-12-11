@@ -950,7 +950,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             filters = Some(getSearchFilters(questionId, toEnrich, minVotesCount, minScore)),
             sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC))),
             limit = Some(defaultNumberOfProposals),
-            language = None
+            language = None,
+            sortAlgorithm = Some(B2BFirstAlgorithm)
           )
         ).flatMap { results =>
           def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ModerationProposalResponse]] = {

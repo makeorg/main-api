@@ -26,6 +26,7 @@ import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, WeightScore}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.user.UserType
 
 sealed trait SortAlgorithm {
   def sortDefinition(request: SearchRequest): SearchRequest
@@ -166,6 +167,24 @@ case class RealisticAlgorithm(treshold: Double = 0.2) extends SortAlgorithm {
 }
 case object RealisticAlgorithm { val shortName: String = "realistic" }
 
+case object B2BFirstAlgorithm extends SortAlgorithm {
+  override def sortDefinition(request: SearchRequest): SearchRequest = {
+    val userTypeScript =
+      s"""doc['${ProposalElasticsearchFieldNames.authorUserType}'].value == \"${UserType.UserTypeUser.shortName}\" ? 1 : 100"""
+    request.query.map { query =>
+      request
+        .query(
+          functionScoreQuery()
+            .query(query)
+            .functions(scriptScore(Script(script = userTypeScript)))
+            .boostMode(CombineFunction.Replace)
+        )
+    }.getOrElse(request)
+  }
+
+  val shortName: String = "B2BFirst"
+}
+
 case object AlgorithmSelector {
   val sortAlgorithmsName: Seq[String] = Seq(
     RandomAlgorithm.shortName,
@@ -174,7 +193,8 @@ case object AlgorithmSelector {
     PopularAlgorithm.shortName,
     TaggedFirstLegacyAlgorithm.shortName,
     TaggedFirstAlgorithm.shortName,
-    RealisticAlgorithm.shortName
+    RealisticAlgorithm.shortName,
+    B2BFirstAlgorithm.shortName
   )
 
   def select(sortAlgorithm: Option[String], randomSeed: Int): Option[SortAlgorithm] = sortAlgorithm match {
@@ -185,6 +205,7 @@ case object AlgorithmSelector {
     case Some(TaggedFirstLegacyAlgorithm.shortName) => Some(TaggedFirstLegacyAlgorithm(randomSeed))
     case Some(TaggedFirstAlgorithm.shortName)       => Some(TaggedFirstAlgorithm(randomSeed))
     case Some(RealisticAlgorithm.shortName)         => Some(RealisticAlgorithm())
+    case Some(B2BFirstAlgorithm.shortName)          => Some(B2BFirstAlgorithm)
     case _                                          => None
   }
 

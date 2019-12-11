@@ -48,6 +48,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
+import org.make.core.user.UserType
 import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -421,7 +422,6 @@ trait DefaultModerationProposalApiComponent
                     Symbol("operationId").as[OperationId].?,
                     Symbol("questionId").as[immutable.Seq[QuestionId]].?,
                     Symbol("ideaId").as[IdeaId].?,
-                    Symbol("trending").?,
                     Symbol("content").?,
                     Symbol("source").?,
                     Symbol("location").?,
@@ -435,7 +435,8 @@ trait DefaultModerationProposalApiComponent
                     Symbol("limit").as[Int].?,
                     Symbol("skip").as[Int].?,
                     Symbol("sort").?,
-                    Symbol("order").?
+                    Symbol("order").?,
+                    Symbol("userType").as[UserType].?
                   )
                 ) {
                   (proposalIds: Option[Seq[ProposalId]],
@@ -445,7 +446,6 @@ trait DefaultModerationProposalApiComponent
                    operationId: Option[OperationId],
                    questionIds: Option[Seq[QuestionId]],
                    ideaId: Option[IdeaId],
-                   trending: Option[String],
                    content: Option[String],
                    source: Option[String],
                    location: Option[String],
@@ -459,7 +459,8 @@ trait DefaultModerationProposalApiComponent
                    limit: Option[Int],
                    skip: Option[Int],
                    sort: Option[String],
-                   order: Option[String]) =>
+                   order: Option[String],
+                   userType: Option[UserType]) =>
                     Validation.validate(Seq(country.map { countryValue =>
                       Validation.validChoices(
                         fieldName = "country",
@@ -524,7 +525,6 @@ trait DefaultModerationProposalApiComponent
                       operationId = operationId,
                       questionIds = resolvedQuestions,
                       ideaId = ideaId,
-                      trending = trending,
                       content = content,
                       context = contextFilterRequest,
                       status = status,
@@ -536,7 +536,8 @@ trait DefaultModerationProposalApiComponent
                       sort = sortRequest,
                       limit = limit,
                       skip = skip,
-                      createdBefore = createdBefore
+                      createdBefore = createdBefore,
+                      userType = userType
                     )
                     val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
                     provideAsync(
