@@ -178,6 +178,16 @@ class SortAlgorithmIT
     segment = None
   )
 
+  private def newEmptyOrganisationProposal(proposalId: String): IndexedProposal = {
+    val indexedProposal = newEmptyProposal(proposalId)
+    indexedProposal.copy(author = indexedProposal.author.copy(userType = UserType.UserTypeOrganisation))
+  }
+
+  private def newEmptyPersonalityProposal(proposalId: String): IndexedProposal = {
+    val indexedProposal = newEmptyProposal(proposalId)
+    indexedProposal.copy(author = indexedProposal.author.copy(userType = UserType.UserTypePersonality))
+  }
+
   private val proposals: Seq[IndexedProposal] = Seq(
     newEmptyProposal("random-1"),
     newEmptyProposal("random-2"),
@@ -225,7 +235,10 @@ class SortAlgorithmIT
     newEmptyProposal("popular-1").copy(scores = IndexedScores.empty.copy(topScore = 42)),
     newEmptyProposal("popular-2").copy(scores = IndexedScores.empty.copy(topScore = 21)),
     newEmptyProposal("popular-3")
-      .copy(scores = IndexedScores.empty.copy(topScore = 456), operationId = Some(OperationId("ope-popular")))
+      .copy(scores = IndexedScores.empty.copy(topScore = 456), operationId = Some(OperationId("ope-popular"))),
+    newEmptyOrganisationProposal("b2b-1"),
+    newEmptyOrganisationProposal("b2b-2"),
+    newEmptyPersonalityProposal("b2b-3")
   )
 
   feature("random algorithm") {
@@ -371,6 +384,20 @@ class SortAlgorithmIT
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 4L
         result.results.take(4).map(_.id.value) should be(Seq("actor-4", "actor-2", "actor-3", "actor-1"))
+      }
+    }
+  }
+
+  feature("B2B first algorithm") {
+    scenario("B2B first algorithm") {
+      val query = SearchQuery(sortAlgorithm = Some(B2BFirstAlgorithm))
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+        result.total should be(proposals.size)
+        val resultB2B = result.results.take(3)
+        resultB2B.map(_.id.value) should contain("b2b-1")
+        resultB2B.map(_.id.value) should contain("b2b-2")
+        resultB2B.map(_.id.value) should contain("b2b-3")
       }
     }
   }

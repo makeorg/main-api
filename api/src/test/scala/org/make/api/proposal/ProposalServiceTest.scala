@@ -249,7 +249,8 @@ class ProposalServiceTest
         )
       ),
       sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC))),
-      limit = Some(50)
+      limit = Some(50),
+      sortAlgorithm = Some(B2BFirstAlgorithm)
     )
 
     scenario("no proposal matching criteria") {
