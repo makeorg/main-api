@@ -262,7 +262,7 @@ trait DefaultIndexationComponent
         .findAll(IdeaFiltersRequest.empty)
         .flatMap { ideas =>
           logger.info(s"Ideas to index: ${ideas.size}")
-          Source[Idea](ideas.toVector)
+          Source[Idea](ideas)
             .via(IdeaStream.flowIndexIdeas(indexName))
             .runWith(Sink.ignore)
         }
@@ -282,7 +282,7 @@ trait DefaultIndexationComponent
         .findAllOrganisations()
         .flatMap { organisations =>
           logger.info(s"Organisations to index: ${organisations.size}")
-          Source[User](organisations.toVector)
+          Source[User](organisations)
             .via(OrganisationStream.flowIndexOrganisations(indexName))
             .runWith(Sink.ignore)
         }
@@ -303,7 +303,7 @@ trait DefaultIndexationComponent
         .find()
         .flatMap { operationOfQuestions =>
           logger.info(s"Operation of questions to index: ${operationOfQuestions.size}")
-          Source[OperationOfQuestion](operationOfQuestions.toVector)
+          Source[OperationOfQuestion](operationOfQuestions)
             .via(OperationOfQuestionStream.flowIndexOrganisations(indexName))
             .runWith(Sink.ignore)
         }

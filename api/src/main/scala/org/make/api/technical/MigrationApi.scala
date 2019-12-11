@@ -182,7 +182,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                           None
                       )
                     )
-                    .mapConcat(_.toVector)
+                    .mapConcat(identity)
                     .filterNot(user => user.email.startsWith("yopmail"))
                     .mapAsync(1) { user =>
                       val registerQuestion: Option[OperationOfQuestion] = questions
@@ -229,7 +229,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                           None
                       )
                     )
-                    .mapConcat(_.toVector)
+                    .mapConcat(identity)
                     .filterNot(user => user.email.startsWith("yopmail"))
                     .mapAsync(1) { user =>
                       val registerQuestion: Option[OperationOfQuestion] = questions

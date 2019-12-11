@@ -195,7 +195,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           deleteEmptyProperties && contacts.properties.isEmpty ||
           contacts.properties.find(_.name == "updated_at").exists(updatedAt => isBefore(updatedAt.value))
         }.map(_.contactId.toString))
-        .mapConcat(_.toVector)
+        .mapConcat(identity)
         .throttle(1, 1.second)
         .mapAsync(1) { obsoleteContactId =>
           crmClient
@@ -292,7 +292,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     def createCsv(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Seq[Path]] = {
       StreamUtils
         .asyncPageToPageSource(persistentCrmUserService.list(list.unsubscribed, list.hardBounced, _, batchSize))
-        .mapConcat(_.toVector)
+        .mapConcat(identity)
         .map { crmUser =>
           Contact(
             email = crmUser.email,
@@ -356,7 +356,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     override def synchronizeList(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Done] = {
       Source
         .fromFuture(createCsv(formattedDate, list, csvDirectory))
-        .mapConcat(_.toVector)
+        .mapConcat(identity)
         .filter(Files.size(_) > 0)
         .mapAsync(1) { csv =>
           for {
@@ -382,7 +382,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       val start = System.currentTimeMillis()
       StreamUtils
         .asyncPageToPageSource(userService.findUsersForCrmSynchro(None, None, _, batchSize))
-        .mapConcat(_.toVector)
+        .mapConcat(identity)
         .mapAsync(retrievePropertiesParallelism) { user =>
           getPropertiesFromUser(user, questionResolver).map { properties =>
             (user.email, user.fullName.getOrElse(user.email), properties)
@@ -437,7 +437,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       if (emails.isEmpty) {
         Future.successful {}
       } else {
-        Source(emails.toVector)
+        Source(emails)
           .map(email => Contact(email = email))
           .groupedWithin(batchSize, 10.seconds)
           .throttle(200, 1.hour)
