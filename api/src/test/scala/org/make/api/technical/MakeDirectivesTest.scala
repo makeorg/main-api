@@ -92,6 +92,19 @@ class MakeDirectivesTest
     }
   })
 
+  val tokenRoute: Route = sealRoute(path("test") {
+    requireToken { token =>
+      complete(token)
+    }
+  })
+
+  val optionalTokenRoute: Route = sealRoute(path("test") {
+    extractToken {
+      case Some(token) => complete(token)
+      case None        => complete(StatusCodes.NotFound)
+    }
+  })
+
   feature("session id management") {
 
     scenario("new session id if no cookie is sent") {
@@ -537,6 +550,50 @@ class MakeDirectivesTest
       }
       Get("/") ~> routeLoggedVerified ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("extract token") {
+    scenario("no token") {
+      Get("/test") ~> tokenRoute ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("token from cookie") {
+      Get("/test").withHeaders(Cookie(makeSettings.SecureCookie.name, "token")) ~> tokenRoute ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[String] should be("token")
+      }
+    }
+
+    scenario("Token from headers") {
+      Get("/test").withHeaders(Authorization(OAuth2BearerToken("token"))) ~> tokenRoute ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[String] should be("token")
+      }
+    }
+  }
+
+  feature("optional token extraction") {
+    scenario("no token") {
+      Get("/test") ~> optionalTokenRoute ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("token from cookie") {
+      Get("/test").withHeaders(Cookie(makeSettings.SecureCookie.name, "token")) ~> optionalTokenRoute ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[String] should be("token")
+      }
+    }
+
+    scenario("Token from headers") {
+      Get("/test").withHeaders(Authorization(OAuth2BearerToken("token"))) ~> optionalTokenRoute ~> check {
+        status should be(StatusCodes.OK)
+        responseAs[String] should be("token")
       }
     }
   }

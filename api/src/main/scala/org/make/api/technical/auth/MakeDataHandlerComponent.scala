@@ -46,6 +46,7 @@ trait MakeDataHandler extends DataHandler[UserRights] {
                               scope: Option[String],
                               redirectUri: Option[String]): Future[Option[AuthCode]]
   def removeTokenByUserId(userId: UserId): Future[Int]
+  def removeToken(token: String): Future[Unit]
   def refreshIfTokenIsExpired(token: String): Future[Option[AccessToken]]
 }
 
@@ -376,6 +377,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
             }
           case _ => Future.successful(None)
         }
+    }
+
+    override def removeToken(token: String): Future[Unit] = {
+      persistentTokenService.deleteByAccessToken(token).map(_ => accessTokenCache.invalidate(token))
     }
   }
 }
