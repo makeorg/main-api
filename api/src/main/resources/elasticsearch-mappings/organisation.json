@@ -644,6 +644,10 @@
         "country": {
           "type": "keyword",
           "index": true
+        },
+        "website": {
+          "type": "text",
+          "index": false
         }
       }
     }

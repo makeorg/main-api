@@ -69,7 +69,8 @@ case class IndexedOrganisation(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country
+  country: Country,
+  website: Option[String]
 )
 
 object IndexedOrganisation extends CirceFormatters {
@@ -89,7 +90,8 @@ object IndexedOrganisation extends CirceFormatters {
       proposalsCount = proposalsCount,
       votesCount = votesCount,
       language = organisation.language,
-      country = organisation.country
+      country = organisation.country,
+      website = organisation.profile.flatMap(_.website)
     )
   }
 }

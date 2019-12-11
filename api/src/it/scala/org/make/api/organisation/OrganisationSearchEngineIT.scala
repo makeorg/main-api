@@ -91,7 +91,8 @@ class OrganisationSearchEngineIT
       proposalsCount = Some(42),
       votesCount = Some(70),
       language = Language("fr"),
-      country = Country("FR")
+      country = Country("FR"),
+      website = Some("http://example.com")
     ),
     IndexedOrganisation(
       organisationId = UserId("orga-b"),
@@ -103,7 +104,8 @@ class OrganisationSearchEngineIT
       proposalsCount = None,
       votesCount = None,
       language = Language("fr"),
-      country = Country("FR")
+      country = Country("FR"),
+      website = Some("http://example.com")
     ),
     IndexedOrganisation(
       organisationId = UserId("orga-c"),
@@ -115,7 +117,8 @@ class OrganisationSearchEngineIT
       proposalsCount = Some(4321),
       votesCount = Some(420123),
       language = Language("fr"),
-      country = Country("FR")
+      country = Country("FR"),
+      website = Some("http://example.com")
     ),
     IndexedOrganisation(
       organisationId = UserId("orga-accent"),
@@ -127,7 +130,8 @@ class OrganisationSearchEngineIT
       proposalsCount = Some(228),
       votesCount = Some(1000),
       language = Language("fr"),
-      country = Country("FR")
+      country = Country("FR"),
+      website = Some("http://example.com")
     )
   )
 
