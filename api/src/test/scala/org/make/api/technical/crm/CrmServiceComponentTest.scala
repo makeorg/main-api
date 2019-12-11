@@ -174,8 +174,9 @@ class CrmServiceComponentTest
         StaminaTestUtils.deserializeEventFromJson[Object](splitted(0), splitted(2), splitted(1).toInt)
       }
       .toArray
+      .toIndexedSeq
 
-    Source(events.map(EventEnvelope(Offset.noOffset, user.userId.value, 0L, _)).toVector)
+    Source(events.map(EventEnvelope(Offset.noOffset, user.userId.value, 0L, _)))
   }
 
   when(mailJetConfiguration.url).thenReturn("http://localhost:1234")
