@@ -512,7 +512,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       ) { organisationFailUpdate =>
         organisationFailUpdate shouldBe a[Either[UpdateFailed, _]]
         organisationFailUpdate.isLeft shouldBe true
-        organisationFailUpdate.left.get shouldBe UpdateFailed()
+        organisationFailUpdate.left.getOrElse(throw new IllegalStateException("unexpected state")) shouldBe UpdateFailed()
       }
     }
   }

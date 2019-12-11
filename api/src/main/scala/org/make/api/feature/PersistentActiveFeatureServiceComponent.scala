@@ -63,7 +63,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
 
     override def get(activeFeatureId: ActiveFeatureId): Future[Option[ActiveFeature]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentActiveFeature = Future(NamedDB('READ).retryableTx { implicit session =>
+      val futurePersistentActiveFeature = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentActiveFeature.as(activeFeatureAlias))
@@ -76,7 +76,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
 
     override def persist(activeFeature: ActiveFeature): Future[ActiveFeature] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentActiveFeature)
@@ -91,7 +91,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
 
     override def remove(activeFeatureId: ActiveFeatureId): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentActiveFeature.as(activeFeatureAlias))
@@ -107,8 +107,8 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
                       maybeQuestionId: Option[QuestionId]): Future[Seq[ActiveFeature]] = {
       implicit val context: EC = readExecutionContext
 
-      val futurePersistentActiveFeatures: Future[List[PersistentActiveFeature]] = Future(NamedDB('READ).retryableTx {
-        implicit session =>
+      val futurePersistentActiveFeatures: Future[List[PersistentActiveFeature]] = Future(
+        NamedDB(Symbol("READ")).retryableTx { implicit session =>
           withSQL {
             val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
               select
@@ -134,7 +134,8 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
               case None        => queryOrdered
             }
           }.map(PersistentActiveFeature.apply()).list.apply
-      })
+        }
+      )
 
       futurePersistentActiveFeatures.map(_.map(_.toActiveFeature))
     }
@@ -142,7 +143,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
     override def count(maybeQuestionId: Option[QuestionId]): Future[Int] = {
       implicit val context: EC = readExecutionContext
 
-      Future(NamedDB('READ).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentActiveFeature.as(activeFeatureAlias))

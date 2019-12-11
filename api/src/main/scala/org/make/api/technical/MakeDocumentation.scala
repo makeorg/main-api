@@ -24,7 +24,7 @@ import com.github.swagger.akka.SwaggerHttpService
 import io.swagger.models.Scheme
 import io.swagger.models.auth.{OAuth2Definition, SecuritySchemeDefinition}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scalaoauth2.provider.OAuthGrantType
 
 class MakeDocumentation(override val apiClasses: Set[Class[_]], ssl: Boolean)

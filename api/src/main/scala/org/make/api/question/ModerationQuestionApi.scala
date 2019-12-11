@@ -355,15 +355,15 @@ trait DefaultModerationQuestionComponent
         makeOperation("ModerationSearchQuestion") { _ =>
           parameters(
             (
-              'slug.?,
-              'operationId.as[OperationId].?,
-              'themeId.as[ThemeId].?,
-              'country.as[Country].?,
-              'language.as[Language].?,
-              '_start.as[Int].?,
-              '_end.as[Int].?,
-              '_sort.?,
-              '_order.?
+              Symbol("slug").?,
+              Symbol("operationId").as[OperationId].?,
+              Symbol("themeId").as[ThemeId].?,
+              Symbol("country").as[Country].?,
+              Symbol("language").as[Language].?,
+              Symbol("_start").as[Int].?,
+              Symbol("_end").as[Int].?,
+              Symbol("_sort").?,
+              Symbol("_order").?
             )
           ) { (maybeSlug, operationId, themeId, country, language, start, end, sort, order) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>

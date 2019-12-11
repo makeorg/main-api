@@ -194,13 +194,13 @@ trait DefaultAdminQuestionPersonalityApiComponent
           makeOperation("ModerationGetQuestionPersonalities") { _ =>
             parameters(
               (
-                '_start.as[Int].?,
-                '_end.as[Int].?,
-                '_sort.?,
-                '_order.?,
-                'userId.as[UserId].?,
-                'questionId.as[QuestionId].?,
-                'personalityRole.as[PersonalityRole].?
+                Symbol("_start").as[Int].?,
+                Symbol("_end").as[Int].?,
+                Symbol("_sort").?,
+                Symbol("_order").?,
+                Symbol("userId").as[UserId].?,
+                Symbol("questionId").as[QuestionId].?,
+                Symbol("personalityRole").as[PersonalityRole].?
               )
             ) {
               (start: Option[Int],

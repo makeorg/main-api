@@ -58,7 +58,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
 
     override def get(tagTypeId: TagTypeId): Future[Option[TagType]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTagType = Future(NamedDB('READ).retryableTx { implicit session =>
+      val futurePersistentTagType = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTagType.as(tagTypeAlias))
@@ -71,7 +71,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
 
     override def findAll(): Future[Seq[TagType]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTagTypes: Future[List[PersistentTagType]] = Future(NamedDB('READ).retryableTx {
+      val futurePersistentTagTypes: Future[List[PersistentTagType]] = Future(NamedDB(Symbol("READ")).retryableTx {
         implicit session =>
           withSQL {
             select
@@ -87,7 +87,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
     override def findAllFromIds(tagTypesIds: Seq[TagTypeId]): Future[Seq[TagType]] = {
       implicit val context: EC = readExecutionContext
       val uniqueTagTypesIds: Seq[String] = tagTypesIds.distinct.map(_.value)
-      val futurePersistentTagTypes: Future[List[PersistentTagType]] = Future(NamedDB('READ).retryableTx {
+      val futurePersistentTagTypes: Future[List[PersistentTagType]] = Future(NamedDB(Symbol("READ")).retryableTx {
         implicit session =>
           withSQL {
             select
@@ -103,7 +103,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
 
     override def persist(tagType: TagType): Future[TagType] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentTagType)
@@ -121,7 +121,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
 
     override def update(tagType: TagType): Future[Option[TagType]] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           scalikejdbc
             .update(PersistentTagType)
@@ -146,7 +146,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
 
     override def remove(tagTypeId: TagTypeId): Future[Int] = {
       implicit val context: EC = writeExecutionContext
-      val result: Future[Int] = Future(NamedDB('WRITE).retryableTx { implicit session =>
+      val result: Future[Int] = Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentTagType.as(tagTypeAlias))

@@ -23,7 +23,7 @@ import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, Extension
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
 
 class MakeSettings(config: Config) extends Extension {
@@ -75,7 +75,7 @@ class MakeSettings(config: Config) extends Extension {
 
   val newsletterUrl: String = config.getString("newsletter-url")
   val authorizedCorsUri: Seq[String] =
-    config.getStringList("authorized-cors-uri").asScala
+    config.getStringList("authorized-cors-uri").asScala.toSeq
 
   object Authentication {
     val defaultClientId: String = config.getString("authentication.default-client-id")

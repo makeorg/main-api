@@ -64,7 +64,7 @@ class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
     if (event.sendValidationEmail) {
       sendMailPublisherService.publishAcceptProposal(event.id, event.question, event.operation, event.requestContext)
     } else {
-      Future.successful(Unit)
+      Future.successful {}
     }
   }
 
@@ -72,7 +72,7 @@ class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
     if (event.sendRefuseEmail) {
       sendMailPublisherService.publishRefuseProposal(event.id, event.operation, event.requestContext)
     } else {
-      Future.successful(Unit)
+      Future.successful {}
     }
   }
 }

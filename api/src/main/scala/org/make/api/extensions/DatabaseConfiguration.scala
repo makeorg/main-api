@@ -34,7 +34,7 @@ import org.flywaydb.core.api.configuration.FluentConfiguration
 import org.make.api.technical.MonitorableExecutionContext
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 class DatabaseConfiguration(override protected val configuration: Config)
@@ -81,17 +81,17 @@ class DatabaseConfiguration(override protected val configuration: Config)
 
   ExecutorInstrumentation.instrument(writeExecutor, "db-write-executor")
 
-  ConnectionPool.add('READ, new DataSourceConnectionPool(dataSource = readDatasource))
-  ConnectionPool.add('WRITE, new DataSourceConnectionPool(dataSource = writeDatasource))
+  ConnectionPool.add(Symbol("READ"), new DataSourceConnectionPool(dataSource = readDatasource))
+  ConnectionPool.add(Symbol("WRITE"), new DataSourceConnectionPool(dataSource = writeDatasource))
 
   GlobalSettings.loggingSQLErrors = true
   GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
     enabled = true,
     warningEnabled = true,
     warningThresholdMillis = 500,
-    warningLogLevel = 'warn,
+    warningLogLevel = Symbol("warn"),
     printUnprocessedStackTrace = false,
-    logLevel = 'debug
+    logLevel = Symbol("debug")
   )
 
   private val databaseName = writeDatasource.getConnection.getCatalog

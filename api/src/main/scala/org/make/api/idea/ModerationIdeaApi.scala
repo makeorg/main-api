@@ -175,68 +175,76 @@ trait DefaultModerationIdeaApiComponent
     override def listIdeas: Route = {
       get {
         path("moderation" / "ideas") {
-          parameters(('name.?, 'questionId.as[QuestionId].?, '_end.as[Int].?, '_start.as[Int].?, '_sort.?, '_order.?)) {
-            (name, questionId, limit, skip, sort, order) =>
-              makeOperation("GetAllIdeas") { requestContext =>
-                makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-                  requireModerationRole(userAuth.user) {
-                    Validation.validate(
-                      Seq(
-                        sort.map { sortValue =>
-                          val choices =
-                            Seq(
-                              "ideaId",
-                              "name",
-                              "status",
-                              "createdAt",
-                              "updatedAt",
-                              "operationId",
-                              "questionId",
-                              "themeId",
-                              "question",
-                              "language",
-                              "country"
-                            )
-                          Validation.validChoices(
-                            fieldName = "_sort",
-                            message = Some(
-                              s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                            ),
-                            Seq(sortValue),
-                            choices
+          parameters(
+            (
+              Symbol("name").?,
+              Symbol("questionId").as[QuestionId].?,
+              Symbol("_end").as[Int].?,
+              Symbol("_start").as[Int].?,
+              Symbol("_sort").?,
+              Symbol("_order").?
+            )
+          ) { (name, questionId, limit, skip, sort, order) =>
+            makeOperation("GetAllIdeas") { requestContext =>
+              makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+                requireModerationRole(userAuth.user) {
+                  Validation.validate(
+                    Seq(
+                      sort.map { sortValue =>
+                        val choices =
+                          Seq(
+                            "ideaId",
+                            "name",
+                            "status",
+                            "createdAt",
+                            "updatedAt",
+                            "operationId",
+                            "questionId",
+                            "themeId",
+                            "question",
+                            "language",
+                            "country"
                           )
-                        },
-                        order.map { orderValue =>
-                          Validation.validChoices(
-                            fieldName = "order",
-                            message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
-                            Seq(orderValue),
-                            Order.orders.keys.toSeq
-                          )
-                        }
-                      ).flatten: _*
-                    )
-                    val filters: IdeaFiltersRequest =
-                      IdeaFiltersRequest(
-                        name = name,
-                        questionId = questionId,
-                        limit = limit,
-                        skip = skip,
-                        sort = sort,
-                        order = order
-                      )
-                    provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
-                      complete(
-                        (
-                          StatusCodes.OK,
-                          List(`X-Total-Count`(ideas.total.toString)),
-                          ideas.results.map(IdeaResponse.apply)
+                        Validation.validChoices(
+                          fieldName = "_sort",
+                          message = Some(
+                            s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                          ),
+                          Seq(sortValue),
+                          choices
                         )
+                      },
+                      order.map { orderValue =>
+                        Validation.validChoices(
+                          fieldName = "order",
+                          message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                          Seq(orderValue),
+                          Order.orders.keys.toSeq
+                        )
+                      }
+                    ).flatten: _*
+                  )
+                  val filters: IdeaFiltersRequest =
+                    IdeaFiltersRequest(
+                      name = name,
+                      questionId = questionId,
+                      limit = limit,
+                      skip = skip,
+                      sort = sort,
+                      order = order
+                    )
+                  provideAsync(ideaService.fetchAll(filters.toSearchQuery(requestContext))) { ideas =>
+                    complete(
+                      (
+                        StatusCodes.OK,
+                        List(`X-Total-Count`(ideas.total.toString)),
+                        ideas.results.map(IdeaResponse.apply)
                       )
-                    }
+                    )
                   }
                 }
               }
+            }
           }
         }
       }

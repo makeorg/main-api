@@ -36,12 +36,13 @@ import org.make.core.sequence.SequenceId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.DateHelper
 
+import Ordering.Double.TotalOrdering
 import scala.collection.mutable
 import scala.util.Random
 
 class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithmComponent {
 
-  val banditSequenceConfiguration = SequenceConfiguration(
+  val banditSequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("test-sequence"),
     questionId = QuestionId("test-question"),
     newProposalsRatio = 0.5,
@@ -49,14 +50,13 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     testedProposalsEngagementThreshold = Some(0.8),
     testedProposalsScoreThreshold = Some(0.0),
     testedProposalsControversyThreshold = Some(0.0),
-    intraIdeaEnabled = true,
     intraIdeaMinCount = 3,
     intraIdeaProposalsRatio = 1.0 / 3.0,
     interIdeaCompetitionEnabled = false,
     selectionAlgorithmName = SelectionAlgorithmName.Bandit
   )
 
-  val roundRobinSequenceConfiguration = SequenceConfiguration(
+  val roundRobinSequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
     sequenceId = SequenceId("test-sequence-round-robin"),
     questionId = QuestionId("test-question-round-robin"),
     sequenceSize = 20,
@@ -67,7 +67,6 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     testedProposalsControversyThreshold = Some(0.0),
     intraIdeaEnabled = false,
     intraIdeaMinCount = 0,
-    intraIdeaProposalsRatio = 0,
     interIdeaCompetitionEnabled = false,
     selectionAlgorithmName = SelectionAlgorithmName.RoundRobin
   )
@@ -167,7 +166,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         case (k, (amount, qualifs)) =>
           IndexedVote(
             key = k,
-            count = 0,
+            count = amount,
             countVerified = amount,
             countSequence = amount,
             countSegment = 0,
@@ -175,7 +174,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
               case (qualifKey, count) =>
                 IndexedQualification(
                   key = qualifKey,
-                  count = 0,
+                  count = count,
                   countVerified = count,
                   countSequence = count,
                   countSegment = 0
@@ -751,7 +750,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         )
       }
 
-      val counts = new mutable.HashMap[ProposalId, Int]() { override def default(key: ProposalId) = 0 }
+      val counts = new mutable.HashMap[ProposalId, Int]().withDefault(_ => 0)
 
       SoftMinRandom.random = new Random(0)
 
@@ -854,11 +853,22 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
             _ =>
               banditSelectionAlgorithm.chooseProposalBandit(banditSequenceConfiguration, testedProposals, None).id -> 1
           )
-          .groupBy(_._1)
-          .mapValues(_.map(_._2).sum)
+          .groupBy {
+            case (proposalId, _) => proposalId
+          }
+          .map {
+            case (proposalId, scores) =>
+              proposalId -> scores.foldLeft(0) {
+                case (current, (_, next)) => current + next
+              }
+          }
           .toSeq
-          .sortWith(_._2 > _._2)
-          .map(_._1)
+          .sortWith {
+            case ((_, order1), (_, order2)) => order1 > order2
+          }
+          .map {
+            case (proposal, _) => proposal
+          }
 
       chosenCounts.slice(0, 2).contains(sortedProposals.head) should be(true)
       chosenCounts.slice(0, 10).contains(sortedProposals(1)) should be(true)
@@ -1060,9 +1070,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ideas.length should be(5)
 
       ProposalScorerHelper.random = new MersenneTwister(0)
-      val counts = new mutable.HashMap[IdeaId, Int]() {
-        override def default(key: IdeaId) = 0
-      }
+      val counts = new mutable.HashMap[IdeaId, Int]().withDefault(_ => 0)
 
       val samples = 1000
       for (_ <- 1 to samples) {
@@ -1105,9 +1113,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       ideas.length should be(5)
 
       ProposalScorerHelper.random = new MersenneTwister(0)
-      val counts = new mutable.HashMap[IdeaId, Int]() {
-        override def default(key: IdeaId) = 0
-      }
+      val counts = new mutable.HashMap[IdeaId, Int]().withDefault(_ => 0)
 
       val samples = 1000
       for (_ <- 1 to samples) {
@@ -1144,22 +1150,23 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       )
 
       val testedProposals: Map[IdeaId, Seq[IndexedProposal]] = (1 to 100).map { i =>
-        val a = 600
-        val d = 200
-        val n = 200
+        val agreeCount = 600
+        val disagreeCount = 200
+        val neutralCount = 200
+
         val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
           VoteKey.Agree -> (
-            a ->
+            agreeCount ->
               Map(QualificationKey.LikeIt -> 3 * i)
           ),
           VoteKey.Disagree -> (
-            d ->
+            disagreeCount ->
               Map(QualificationKey.NoWay -> 3 * (101 - i))
           ),
-          VoteKey.Neutral -> (n -> Map(QualificationKey.DoNotCare -> 0))
+          VoteKey.Neutral -> (neutralCount -> Map(QualificationKey.DoNotCare -> 0))
         )
         fakeProposalQualif(ProposalId(s"testedProposal$i"), votes, SequencePool.Tested, None)
-      }.groupBy(p => p.ideaId.getOrElse(IdeaId(p.id.value)))
+      }.groupBy(proposal => proposal.ideaId.getOrElse(IdeaId(proposal.id.value)))
 
       UniformRandom.random = new Random(0)
       ProposalScorerHelper.random = new MersenneTwister(0)
@@ -1169,24 +1176,21 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         banditSelectionAlgorithm.chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10, None)
       chosen.length should be(10)
 
-      val counts = new mutable.HashMap[ProposalId, Int]() {
-        override def default(key: ProposalId) = 0
-      }
-
       val samples = 1000
-      for (_ <- 1 to samples) {
+      val counts: Map[ProposalId, Int] = (1 to samples).flatMap { _ =>
         banditSelectionAlgorithm
           .chooseTestedProposals(ideaCompetitionConfiguration, testedProposals, 10, None)
-          .foreach(p => counts(p.id) += 1)
+      }.groupBy(_.id).map {
+        case (proposalId, count) => proposalId -> count.size
       }
 
-      val proportions: mutable.Map[ProposalId, Double] = counts.map {
+      val proportions: Map[ProposalId, Double] = counts.map {
         case (i, p) => (i, p.toDouble / samples)
       }
 
       val confidenceInterval: Double = 0.03
-      proportions(ProposalId("testedProposal100")) should equal(1.0 +- confidenceInterval)
-      proportions(ProposalId("testedProposal51")) should equal(0.347 +- confidenceInterval)
+      proportions(ProposalId("testedProposal100")) should equal(0.445 +- confidenceInterval)
+      proportions(ProposalId("testedProposal51")) should equal(0.144 +- confidenceInterval)
     }
   }
 

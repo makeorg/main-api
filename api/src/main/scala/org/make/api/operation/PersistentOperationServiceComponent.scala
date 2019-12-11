@@ -114,7 +114,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
                       country: Option[Country] = None,
                       openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
+      val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB(Symbol("READ")).retryableTx {
         implicit session =>
           withSQL[PersistentOperation] {
             selectOperation.where(operationWhereOpts(slug, None, country, openAt))
@@ -123,11 +123,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               PersistentOperationAction.opt(operationActionAlias),
               PersistentOperationOfQuestion.withQuestion(questionAlias.resultName, operationOfQuestionAlias.resultName)
             )
-            .map {
-              (operation: PersistentOperation,
-               actions: Seq[PersistentOperationAction],
-               questions: Seq[FlatQuestionWithDetails]) =>
-                operation.copy(operationActions = actions, questions = questions)
+            .map { (operation, actions, questions) =>
+              operation.copy(operationActions = actions.toVector, questions = questions.toVector)
             }
             .list
             .apply()
@@ -143,7 +140,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
                             slug: Option[String] = None,
                             operationKinds: Option[Seq[OperationKind]]): Future[Seq[SimpleOperation]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
+      val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB(Symbol("READ")).retryableTx {
         implicit session =>
           withSQL {
             val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
@@ -175,7 +172,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     override def persist(operation: SimpleOperation): Future[SimpleOperation] = {
       implicit val context: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentOperation)
@@ -196,8 +193,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
     override def getById(operationId: OperationId): Future[Option[Operation]] = {
       implicit val context: EC = readExecutionContext
-      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
-        implicit session =>
+      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(
+        NamedDB(Symbol("READ")).retryableTx { implicit session =>
           withSQL[PersistentOperation] {
             selectOperation
               .where(sqls.eq(operationAlias.uuid, operationId.value))
@@ -206,37 +203,36 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               PersistentOperationAction.opt(operationActionAlias),
               PersistentOperationOfQuestion.withQuestion(questionAlias.resultName, operationOfQuestionAlias.resultName)
             )
-            .map {
-              (operation: PersistentOperation,
-               actions: Seq[PersistentOperationAction],
-               questions: Seq[FlatQuestionWithDetails]) =>
-                operation.copy(operationActions = actions, questions = questions)
+            .map { (operation, actions, questions) =>
+              operation.copy(operationActions = actions.toVector, questions = questions.toVector)
             }
             .single
             .apply()
-      })
+        }
+      )
 
       futureMaybePersistentOperation.map(_.map(_.toOperation))
     }
 
     override def getSimpleById(operationId: OperationId): Future[Option[SimpleOperation]] = {
       implicit val context: EC = readExecutionContext
-      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
-        implicit session =>
+      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(
+        NamedDB(Symbol("READ")).retryableTx { implicit session =>
           withSQL[PersistentOperation] {
             select
               .from(PersistentOperation.as(operationAlias))
               .where(sqls.eq(operationAlias.uuid, operationId.value))
           }.map(PersistentOperation.apply()).single.apply()
-      })
+        }
+      )
 
       futureMaybePersistentOperation.map(_.map(_.toSimpleOperation))
     }
 
     override def getBySlug(slug: String): Future[Option[Operation]] = {
       implicit val context: EC = readExecutionContext
-      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(NamedDB('READ).retryableTx {
-        implicit session =>
+      val futureMaybePersistentOperation: Future[Option[PersistentOperation]] = Future(
+        NamedDB(Symbol("READ")).retryableTx { implicit session =>
           withSQL[PersistentOperation] {
             selectOperation
               .where(sqls.eq(operationAlias.slug, slug))
@@ -245,15 +241,13 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               PersistentOperationAction.opt(operationActionAlias),
               PersistentOperationOfQuestion.withQuestion(questionAlias.resultName, operationOfQuestionAlias.resultName)
             )
-            .map {
-              (operation: PersistentOperation,
-               actions: Seq[PersistentOperationAction],
-               questions: Seq[FlatQuestionWithDetails]) =>
-                operation.copy(operationActions = actions, questions = questions)
+            .map { (operation, actions, questions) =>
+              operation.copy(operationActions = actions.toVector, questions = questions.toVector)
             }
             .single
             .apply()
-      })
+        }
+      )
 
       futureMaybePersistentOperation.map(_.map(_.toOperation))
     }
@@ -261,7 +255,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     override def modify(operation: SimpleOperation): Future[SimpleOperation] = {
       implicit val ctx: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           update(PersistentOperation)
             .set(
@@ -282,7 +276,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
     override def addActionToOperation(action: OperationAction, operationId: OperationId): Future[Boolean] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentOperationAction)
@@ -299,7 +293,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
     override def count(slug: Option[String] = None, operationKinds: Option[Seq[OperationKind]]): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB('READ).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL[PersistentOperation] {
           select(sqls.count)
             .from(PersistentOperation.as(operationAlias))

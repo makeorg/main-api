@@ -117,6 +117,4 @@ javaOptions in run ++= Seq(
   "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
 ) ++ SbtKanelaRunner.jvmForkOptions.value
 
-addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
-
 enablePlugins(BuildInfoPlugin)

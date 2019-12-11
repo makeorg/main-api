@@ -28,7 +28,7 @@ import org.make.core.DateHelper._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedProposal
-
+import Ordering.Double.IeeeOrdering
 import scala.annotation.tailrec
 import scala.math.ceil
 import scala.util.Random
@@ -75,7 +75,7 @@ trait RandomProposalChooser extends ProposalChooser {
 
 object SoftMinRandom extends RandomProposalChooser {
   override def proposalWeight(proposal: IndexedProposal): Double = {
-    Math.exp(-1 * proposal.votes.map(_.countSequence).sum)
+    Math.exp(-1 * proposal.votes.map(_.countSequence).iterator.sum)
   }
 }
 
@@ -173,8 +173,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
                          ideaIds: Set[IdeaId] = distinctIdeas): Map[IdeaId, Seq[IndexedProposal]] =
         proposals
           .groupBy(p => p.ideaId.getOrElse(uniqueIdeaIdForProposal(p)))
-          .filterKeys(ideaId => !ideaIds.contains(ideaId))
-          .mapValues(_.filterNot(p => proposalIds.contains(p.id)))
+          .filter { case (ideaId, _) => !ideaIds.contains(ideaId) }
+          .map { case (ideaId, value) => ideaId -> value.filterNot(p => proposalIds.contains(p.id)) }
           .filterNot {
             case (_, proposalsList) => proposalsList.isEmpty
           }
@@ -261,7 +261,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       if (proposals.isEmpty || count <= 0) {
         aggregator
       } else {
-        val chosen: IndexedProposal = algorithm.choose(proposals)
+        val chosen: IndexedProposal = algorithm.choose(random.shuffle(proposals))
         chooseProposals(
           proposals = proposals.filter(p => p.id != chosen.id),
           count = count - 1,
@@ -360,18 +360,16 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }
 
       // pick one proposal for each idea
-      val selectedProposals: Seq[IndexedProposal] = testedProposalsByIdea
-        .filterKeys(selectedIdeas.contains)
-        .mapValues(
-          proposals =>
-            if (sequenceConfiguration.intraIdeaEnabled) {
-              chooseProposalBandit(sequenceConfiguration, proposals, maybeUserSegment)
-            } else {
-              chooseProposals(proposals, 1, SoftMinRandom).head
+      val selectedProposals: Seq[IndexedProposal] = testedProposalsByIdea.filter {
+        case (key, _) => selectedIdeas.contains(key)
+      }.map {
+        case (key, proposals) =>
+          if (sequenceConfiguration.intraIdeaEnabled) {
+            key -> chooseProposalBandit(sequenceConfiguration, proposals, maybeUserSegment)
+          } else {
+            key -> chooseProposals(proposals, 1, SoftMinRandom).head
           }
-        )
-        .values
-        .toSeq
+      }.values.toSeq
 
       // and finally pick the requested number of proposals
       chooseProposals(selectedProposals, testedProposalCount, SoftMinRandom)

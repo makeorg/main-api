@@ -86,11 +86,11 @@ object ProposalScorerHelper extends StrictLogging {
       *
       * */
     val topScoreFunctions: Map[String, () => Double] = Map(
-      "engagement" -> engagement,
-      "agreement" -> agreement,
-      "adhesion" -> adhesion,
-      "realistic" -> realistic,
-      "platitude" -> platitude
+      "engagement" -> engagement _,
+      "agreement" -> agreement _,
+      "adhesion" -> adhesion _,
+      "realistic" -> realistic _,
+      "platitude" -> platitude _
     )
 
     def topScore(): Double = {
@@ -135,11 +135,11 @@ object ProposalScorerHelper extends StrictLogging {
     }
 
     val topScoreSampleFunctions: Map[String, () => Double] = Map(
-      "engagement" -> sampleEngagement,
-      "agreement" -> sampleAgreement,
-      "adhesion" -> sampleAdhesion,
-      "realistic" -> sampleRealistic,
-      "platitude" -> samplePlatitude
+      "engagement" -> sampleEngagement _,
+      "agreement" -> sampleAgreement _,
+      "adhesion" -> sampleAdhesion _,
+      "realistic" -> sampleRealistic _,
+      "platitude" -> samplePlatitude _
     )
 
     def sampleTopScore(): Double = {
@@ -185,11 +185,11 @@ object ProposalScorerHelper extends StrictLogging {
     }
 
     val topScoreConfidenceIntervalFunctions: Map[String, () => Double] = Map(
-      "engagement" -> engagementConfidenceInterval,
-      "agreement" -> agreementConfidenceInterval,
-      "adhesion" -> adhesionCondidenceInterval,
-      "realistic" -> realisticConfidenceInterval,
-      "platitude" -> platitudeConfidenceInterval
+      "engagement" -> engagementConfidenceInterval _,
+      "agreement" -> agreementConfidenceInterval _,
+      "adhesion" -> adhesionCondidenceInterval _,
+      "realistic" -> realisticConfidenceInterval _,
+      "platitude" -> platitudeConfidenceInterval _
     )
 
     def topScoreConfidenceInterval(): Double = {

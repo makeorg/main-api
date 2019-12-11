@@ -112,7 +112,7 @@ class UserApiTest
 
   val expiresInSecond = 1000
 
-  val fakeUser = TestUtils.user(
+  val fakeUser: User = TestUtils.user(
     id = UserId("ABCD"),
     email = "foo@bar.com",
     firstName = Some("olive"),
@@ -1122,16 +1122,9 @@ class UserApiTest
                   filters = Some(
                     SearchFilters(
                       user = Some(UserSearchFilter(userId = sylvain.userId)),
-                      status = Some(
-                        StatusSearchFilter(
-                          status = Seq(
-                            ProposalStatus.Pending,
-                            ProposalStatus.Postponed,
-                            ProposalStatus.Accepted,
-                            ProposalStatus.Refused
-                          )
-                        )
-                      )
+                      status = Some(StatusSearchFilter(status = ProposalStatus.statusMap.values.filter { status =>
+                        status != ProposalStatus.Archived
+                      }.toSeq))
                     )
                   ),
                   sort = Some(Sort(field = Some("createdAt"), mode = Some(Desc)))

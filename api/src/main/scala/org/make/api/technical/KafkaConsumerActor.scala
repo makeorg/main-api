@@ -30,7 +30,7 @@ import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.technical.KafkaConsumerActor.{CheckState, Consume, Ready, Waiting}
 import org.make.core.AvroSerializers
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}

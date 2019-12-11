@@ -232,7 +232,7 @@ trait DefaultModerationOrganisationApiComponent
       get {
         path("moderation" / "organisations") {
           makeOperation("ModerationGetOrganisations") { _ =>
-            parameters(('_start.as[Int].?, '_end.as[Int].?, '_sort.?, '_order.?)) {
+            parameters((Symbol("_start").as[Int].?, Symbol("_end").as[Int].?, Symbol("_sort").?, Symbol("_order").?)) {
               (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[String]) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {

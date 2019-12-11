@@ -254,7 +254,7 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "start-sequence") { questionId =>
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters('include.*) { includes =>
+            parameters(Symbol("include").*) { includes =>
               provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(questionId)) { operationOfQuestion =>
                 provideAsyncOrNotFound(
                   sequenceService
@@ -280,18 +280,18 @@ trait DefaultQuestionApiComponent
         makeOperation("GetQuestionDetails") { _ =>
           parameters(
             (
-              'questionIds.as[immutable.Seq[QuestionId]].?,
-              'questionContent.?,
-              'description.?,
-              'startDate.as[ZonedDateTime].?,
-              'endDate.as[ZonedDateTime].?,
-              'operationKinds.as[immutable.Seq[OperationKind]].?,
-              'language.as[Language].?,
-              'country.as[Country].?,
-              'limit.as[Int].?,
-              'skip.as[Int].?,
-              'sort.?,
-              'order.?
+              Symbol("questionIds").as[immutable.Seq[QuestionId]].?,
+              Symbol("questionContent").?,
+              Symbol("description").?,
+              Symbol("startDate").as[ZonedDateTime].?,
+              Symbol("endDate").as[ZonedDateTime].?,
+              Symbol("operationKinds").as[immutable.Seq[OperationKind]].?,
+              Symbol("language").as[Language].?,
+              Symbol("country").as[Country].?,
+              Symbol("limit").as[Int].?,
+              Symbol("skip").as[Int].?,
+              Symbol("sort").?,
+              Symbol("order").?
             )
           ) {
             (questionIds: Option[Seq[QuestionId]],
@@ -370,7 +370,7 @@ trait DefaultQuestionApiComponent
     override def getPopularTags: Route = get {
       path("questions" / questionId / "popular-tags") { questionId =>
         makeOperation("GetQuestionPopularTags") { _ =>
-          parameters(('limit.as[Int].?, 'skip.as[Int].?)) { (limit: Option[Int], skip: Option[Int]) =>
+          parameters((Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)) { (limit: Option[Int], skip: Option[Int]) =>
             provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
               val size = limit.getOrElse(10) + skip.getOrElse(0)
 
@@ -387,7 +387,14 @@ trait DefaultQuestionApiComponent
     override def getPartners: Route = get {
       path("questions" / questionId / "partners") { questionId =>
         makeOperation("GetQuestionPartners") { _ =>
-          parameters(('sortAlgorithm.as[String].?, 'partnerKind.as[PartnerKind].?, 'limit.as[Int].?, 'skip.as[Int].?)) {
+          parameters(
+            (
+              Symbol("sortAlgorithm").as[String].?,
+              Symbol("partnerKind").as[PartnerKind].?,
+              Symbol("limit").as[Int].?,
+              Symbol("skip").as[Int].?
+            )
+          ) {
             (sortAlgorithm: Option[String], partnerKind: Option[PartnerKind], limit: Option[Int], skip: Option[Int]) =>
               provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
                 Validation.validate(Seq(sortAlgorithm.map { sortAlgo =>

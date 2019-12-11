@@ -54,7 +54,7 @@ trait ParameterExtractors {
   }
 
   implicit val localDateFromStringUnmarshaller: Unmarshaller[String, LocalDate] =
-    Unmarshaller.strict[String, LocalDate] { string ⇒
+    Unmarshaller.strict[String, LocalDate] { string =>
       LocalDate.parse(string)
     }
 
@@ -65,47 +65,47 @@ trait ParameterExtractors {
     }
 
   implicit val languageFromStringUnmarshaller: Unmarshaller[String, Language] =
-    Unmarshaller.strict[String, Language] { string ⇒
+    Unmarshaller.strict[String, Language] { string =>
       Language(string.toLowerCase())
     }
 
   implicit val countryFromStringUnmarshaller: Unmarshaller[String, Country] =
-    Unmarshaller.strict[String, Country] { string ⇒
+    Unmarshaller.strict[String, Country] { string =>
       Country(string.toUpperCase())
     }
 
   implicit val proposalIdFromStringUnmarshaller: Unmarshaller[String, ProposalId] =
-    Unmarshaller.strict[String, ProposalId] { string ⇒
+    Unmarshaller.strict[String, ProposalId] { string =>
       ProposalId(string)
     }
 
   implicit val userIdFromStringUnmarshaller: Unmarshaller[String, UserId] =
-    Unmarshaller.strict[String, UserId] { string ⇒
+    Unmarshaller.strict[String, UserId] { string =>
       UserId(string)
     }
 
   implicit val themeIdFromStringUnmarshaller: Unmarshaller[String, ThemeId] =
-    Unmarshaller.strict[String, ThemeId] { string ⇒
+    Unmarshaller.strict[String, ThemeId] { string =>
       ThemeId(string)
     }
 
   implicit val labelIdFromStringUnmarshaller: Unmarshaller[String, LabelId] =
-    Unmarshaller.strict[String, LabelId] { string ⇒
+    Unmarshaller.strict[String, LabelId] { string =>
       LabelId(string)
     }
 
   implicit val tagIdFromStringUnmarshaller: Unmarshaller[String, TagId] =
-    Unmarshaller.strict[String, TagId] { string ⇒
+    Unmarshaller.strict[String, TagId] { string =>
       TagId(string)
     }
 
   implicit val tagTypeIdFromStringUnmarshaller: Unmarshaller[String, TagTypeId] =
-    Unmarshaller.strict[String, TagTypeId] { string ⇒
+    Unmarshaller.strict[String, TagTypeId] { string =>
       TagTypeId(string)
     }
 
   implicit val operationIdFromStringUnmarshaller: Unmarshaller[String, OperationId] =
-    Unmarshaller.strict[String, OperationId] { string ⇒
+    Unmarshaller.strict[String, OperationId] { string =>
       OperationId(string)
     }
 
@@ -120,17 +120,17 @@ trait ParameterExtractors {
     }
 
   implicit val questionIdFromStringUnmarshaller: Unmarshaller[String, QuestionId] =
-    Unmarshaller.strict[String, QuestionId] { string ⇒
+    Unmarshaller.strict[String, QuestionId] { string =>
       QuestionId(string)
     }
 
   implicit val ideaIdFromStringUnmarshaller: Unmarshaller[String, IdeaId] =
-    Unmarshaller.strict[String, IdeaId] { string ⇒
+    Unmarshaller.strict[String, IdeaId] { string =>
       IdeaId(string)
     }
 
   implicit val proposalStatusFromStringUnmarshaller: Unmarshaller[String, ProposalStatus] =
-    Unmarshaller.strict[String, ProposalStatus] { string ⇒
+    Unmarshaller.strict[String, ProposalStatus] { string =>
       ProposalStatus.statusMap.getOrElse(
         string,
         throw ValidationFailedError(
@@ -140,7 +140,7 @@ trait ParameterExtractors {
     }
 
   implicit val voteKeyFromStringUnmarshaller: Unmarshaller[String, VoteKey] =
-    Unmarshaller.strict[String, VoteKey] { string ⇒
+    Unmarshaller.strict[String, VoteKey] { string =>
       VoteKey.voteKeys.getOrElse(
         string,
         throw ValidationFailedError(
@@ -150,7 +150,7 @@ trait ParameterExtractors {
     }
 
   implicit val qualificationKeyFromStringUnmarshaller: Unmarshaller[String, QualificationKey] =
-    Unmarshaller.strict[String, QualificationKey] { string ⇒
+    Unmarshaller.strict[String, QualificationKey] { string =>
       QualificationKey.qualificationKeys.getOrElse(
         string,
         throw ValidationFailedError(
@@ -170,7 +170,7 @@ trait ParameterExtractors {
     }
 
   implicit val partnerKindFromStringUnmarshaller: Unmarshaller[String, PartnerKind] =
-    Unmarshaller.strict[String, PartnerKind] { string ⇒
+    Unmarshaller.strict[String, PartnerKind] { string =>
       PartnerKind.kindMap.getOrElse(
         string,
         throw ValidationFailedError(

@@ -59,7 +59,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
 
     override def create(email: String): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB('WRITE).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentUserToAnonymize)
@@ -70,7 +70,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
 
     override def findAll(): Future[Seq[String]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB('READ).retryableTx { implicit session =>
+      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUserToAnonymize.as(userToAnonymizeAlias))
@@ -82,7 +82,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
 
     override def removeAll(): Future[Int] = {
       implicit val context: EC = writeExecutionContext
-      val result: Future[Int] = Future(NamedDB('WRITE).retryableTx { implicit session =>
+      val result: Future[Int] = Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentUserToAnonymize.as(userToAnonymizeAlias))
@@ -100,7 +100,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
 
     override def removeAllByEmails(emails: Seq[String]): Future[Int] = {
       implicit val context: EC = writeExecutionContext
-      val result: Future[Int] = Future(NamedDB('WRITE).retryableTx { implicit session =>
+      val result: Future[Int] = Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentUserToAnonymize.as(userToAnonymizeAlias))

@@ -38,7 +38,7 @@ class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Un
   private val pendingCalls: mutable.Set[String] = mutable.Set[String]()
 
   override def preStart(): Unit = {
-    queue.enqueue(jobs: _*)
+    jobs.foreach(queue.enqueue)
     context.system.scheduler.schedule(1.second, 1.second, self, Tick)
   }
 

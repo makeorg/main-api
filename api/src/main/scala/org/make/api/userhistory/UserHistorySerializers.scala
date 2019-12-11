@@ -37,56 +37,61 @@ object UserHistorySerializers extends SprayJsonFormatters {
       "user-history-registered",
       from[V1]
         .to[V2](
-          _.update('action / 'arguments / 'country ! set[String]("FR"))
-            .update('action / 'arguments / 'language ! set[String]("fr"))
+          _.update(Symbol("action") / Symbol("arguments") / Symbol("country") ! set[String]("FR"))
+            .update(Symbol("action") / Symbol("arguments") / Symbol("language") ! set[String]("fr"))
         )
         .to[V3](identity)
         .to[V4] { json =>
-          val actionDate: ZonedDateTime = ZonedDateTime.parse(json.extract[String]('action / 'date))
+          val actionDate: ZonedDateTime = ZonedDateTime.parse(json.extract[String](Symbol("action") / Symbol("date")))
 
           if (actionDate.isBefore(countryFixDate)) {
 
-            json.extract[JsObject]('context).getFields("language") match {
+            json.extract[JsObject](Symbol("context")).getFields("language") match {
 
               case Seq(JsString("fr")) =>
                 json
-                  .update('context / 'source ! set[String]("core"))
-                  .update('context / 'country ! set[String]("FR"))
+                  .update(Symbol("context") / Symbol("source") ! set[String]("core"))
+                  .update(Symbol("context") / Symbol("country") ! set[String]("FR"))
               case Seq(JsString("it")) =>
                 json
-                  .update('context / 'source ! set[String]("core"))
-                  .update('context / 'country ! set[String]("IT"))
+                  .update(Symbol("context") / Symbol("source") ! set[String]("core"))
+                  .update(Symbol("context") / Symbol("country") ! set[String]("IT"))
               case Seq(JsString("en")) =>
                 json
-                  .update('context / 'source ! set[String]("core"))
-                  .update('context / 'country ! set[String]("GB"))
+                  .update(Symbol("context") / Symbol("source") ! set[String]("core"))
+                  .update(Symbol("context") / Symbol("country") ! set[String]("GB"))
               case _ =>
                 json
-                  .update('context / 'source ! set[String]("core"))
-                  .update('context / 'country ! set[String]("FR"))
-                  .update('context / 'language ! set[String]("fr"))
+                  .update(Symbol("context") / Symbol("source") ! set[String]("core"))
+                  .update(Symbol("context") / Symbol("country") ! set[String]("FR"))
+                  .update(Symbol("context") / Symbol("language") ! set[String]("fr"))
             }
           } else {
             json
           }
         }
         .to[V5] {
-          _.update('context / 'customData ! set[Map[String, String]](Map.empty))
+          _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
         }
     )
 
   private val logSearchProposalsEventSerializer: JsonPersister[LogUserSearchProposalsEvent, V2] =
     json.persister[LogUserSearchProposalsEvent, V2](
       "user-history-searched",
-      from[V1].to[V2](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+      from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logAcceptProposalEventSerializer: JsonPersister[LogAcceptProposalEvent, V2] =
     json.persister[LogAcceptProposalEvent, V2](
       "user-history-accepted-proposal",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
@@ -94,8 +99,13 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogRefuseProposalEvent, V2](
       "user-history-refused-proposal",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
@@ -103,8 +113,13 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogPostponeProposalEvent, V2](
       "user-history-postponed-proposal",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
@@ -112,47 +127,52 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogLockProposalEvent, V2](
       "user-history-lock-proposal",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
   private val logUserProposalEventSerializer: JsonPersister[LogUserProposalEvent, V2] =
     json.persister[LogUserProposalEvent, V2](
       "user-history-sent-proposal",
-      from[V1].to[V2](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+      from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserVoteEventSerializer: JsonPersister[LogUserVoteEvent, V3] =
     json.persister[LogUserVoteEvent, V3](
       "user-history-vote-proposal",
       from[V1]
-        .to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
-        .to[V3](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+        .to[V2](_.update(Symbol("action") / Symbol("arguments") / Symbol("trust") ! set[String]("trusted")))
+        .to[V3](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserUnvoteEventSerializer: JsonPersister[LogUserUnvoteEvent, V3] =
     json.persister[LogUserUnvoteEvent, V3](
       "user-history-unvote-proposal",
       from[V1]
-        .to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
-        .to[V3](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+        .to[V2](_.update(Symbol("action") / Symbol("arguments") / Symbol("trust") ! set[String]("trusted")))
+        .to[V3](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserQualificationEventSerializer: JsonPersister[LogUserQualificationEvent, V3] =
     json.persister[LogUserQualificationEvent, V3](
       "user-history-qualification-vote",
       from[V1]
-        .to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
-        .to[V3](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+        .to[V2](_.update(Symbol("action") / Symbol("arguments") / Symbol("trust") ! set[String]("trusted")))
+        .to[V3](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserUnqualificationEventSerializer: JsonPersister[LogUserUnqualificationEvent, V3] =
     json.persister[LogUserUnqualificationEvent, V3](
       "user-history-unqualification-vote",
       from[V1]
-        .to[V2](_.update('action / 'arguments / 'trust ! set[String]("trusted")))
-        .to[V3](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+        .to[V2](_.update(Symbol("action") / Symbol("arguments") / Symbol("trust") ! set[String]("trusted")))
+        .to[V3](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val userHistorySerializer: JsonPersister[UserHistory, V6] =
@@ -161,40 +181,46 @@ object UserHistorySerializers extends SprayJsonFormatters {
       from[V1]
         .to[V2](
           _.update(
-            'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'language !
+            Symbol("events") / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / Symbol("action") / Symbol(
+              "arguments"
+            ) / Symbol("language") !
               set[String]("fr")
           ).update(
-            'events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / 'action / 'arguments / 'country !
+            Symbol("events") / filter("type".is[String](_ == "LogRegisterCitizenEvent")) / Symbol("action") / Symbol(
+              "arguments"
+            ) / Symbol("country") !
               set[String]("FR")
           )
         )
         .to[V3](
           _.update(
-            'events / filter("type".is[String](_ == "LogUserStartSequenceEvent")) / 'action / 'arguments / 'includedProposals !
+            Symbol("events") / filter("type".is[String](_ == "LogUserStartSequenceEvent")) / Symbol("action") / Symbol(
+              "arguments"
+            ) / Symbol("includedProposals") !
               set[Seq[String]](Seq.empty)
           )
         )
         .to[V4] { json =>
-          json.update('events / filter("type".is[String](_ == "LogRegisterCitizenEvent")) ! modify[JsValue] {
+          json.update(Symbol("events") / filter("type".is[String](_ == "LogRegisterCitizenEvent")) ! modify[JsValue] {
             event =>
               val isBeforeDateFix: Boolean =
-                ZonedDateTime.parse(event.extract[String]('action / 'date)).isBefore(countryFixDate)
+                ZonedDateTime.parse(event.extract[String](Symbol("action") / Symbol("date"))).isBefore(countryFixDate)
 
               if (isBeforeDateFix) {
-                event.extract[String]('context / 'language.?).getOrElse("fr") match {
+                event.extract[String](Symbol("context") / Symbol("language").?).getOrElse("fr") match {
                   case "it" =>
                     event
-                      .update('context / 'country ! set[String]("IT"))
-                      .update('context / 'source ! set[String]("core"))
+                      .update(Symbol("context") / Symbol("country") ! set[String]("IT"))
+                      .update(Symbol("context") / Symbol("source") ! set[String]("core"))
                   case "en" =>
                     event
-                      .update('context / 'country ! set[String]("GB"))
-                      .update('context / 'source ! set[String]("core"))
+                      .update(Symbol("context") / Symbol("country") ! set[String]("GB"))
+                      .update(Symbol("context") / Symbol("source") ! set[String]("core"))
                   case _ =>
                     event
-                      .update('context / 'language ! set[String]("fr"))
-                      .update('context / 'country ! set[String]("FR"))
-                      .update('context / 'source ! set[String]("core"))
+                      .update(Symbol("context") / Symbol("language") ! set[String]("fr"))
+                      .update(Symbol("context") / Symbol("country") ! set[String]("FR"))
+                      .update(Symbol("context") / Symbol("source") ! set[String]("core"))
                 }
               } else {
                 event
@@ -205,33 +231,36 @@ object UserHistorySerializers extends SprayJsonFormatters {
           val migratedEvents =
             Set("LogUserVoteEvent", "LogUserUnvoteEvent", "LogUserQualificationEvent", "LogUserUnqualificationEvent")
           json.update(
-            'events /
+            Symbol("events") /
               filter("type".is[String](event => migratedEvents.contains(event))) /
-              'action /
-              'arguments /
-              'trust !
+              Symbol("action") /
+              Symbol("arguments") /
+              Symbol("trust") !
               set[String]("trusted")
           )
         }
         .to[V6](
-          _.update('events / * / 'context / 'customData ! set[Map[String, String]](Map.empty))
-            .update(
-              'events / filter(
-                "type".is[String](
-                  eventType =>
-                    Seq(
-                      "LogUserCreateSequenceEvent",
-                      "LogUserAddProposalsSequenceEvent",
-                      "LogUserRemoveProposalsSequenceEvent",
-                      "LogUserUpdateSequenceEvent",
-                      "LogLockProposalEvent",
-                      "LogPostponeProposalEvent",
-                      "LogRefuseProposalEvent",
-                      "LogAcceptProposalEvent"
-                    ).contains(eventType)
-                )
-              ) / 'action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty)
-            )
+          _.update(
+            Symbol("events") / * / Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)
+          ).update(
+            Symbol("events") / filter(
+              "type".is[String](
+                eventType =>
+                  Seq(
+                    "LogUserCreateSequenceEvent",
+                    "LogUserAddProposalsSequenceEvent",
+                    "LogUserRemoveProposalsSequenceEvent",
+                    "LogUserUpdateSequenceEvent",
+                    "LogLockProposalEvent",
+                    "LogPostponeProposalEvent",
+                    "LogRefuseProposalEvent",
+                    "LogAcceptProposalEvent"
+                  ).contains(eventType)
+              )
+            ) / Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[
+              Map[String, String]
+            ](Map.empty)
+          )
         )
     )
 
@@ -239,8 +268,13 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogUserCreateSequenceEvent, V2](
       "user-history-create-sequence",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
@@ -248,8 +282,13 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogUserAddProposalsSequenceEvent, V2](
       "user-history-add-proposals-sequence",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
@@ -257,56 +296,68 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[LogUserRemoveProposalsSequenceEvent, V2](
       "user-history-remove-proposals-sequence",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
   private val logGetProposalDuplicatesEventSerializer: JsonPersister[LogGetProposalDuplicatesEvent, V2] =
     json.persister[LogGetProposalDuplicatesEvent, V2](
       "user-history-get-proposals-duplicate",
-      from[V1].to[V2](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+      from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserUpdateSequenceEventSerializer: JsonPersister[LogUserUpdateSequenceEvent, V2] =
     json.persister[LogUserUpdateSequenceEvent, V2](
       "user-history-update-sequence",
       from[V1].to[V2](
-        _.update('context / 'customData ! set[Map[String, String]](Map.empty))
-          .update('action / 'arguments / 'requestContext / 'customData ! set[Map[String, String]](Map.empty))
+        _.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty))
+          .update(
+            Symbol("action") / Symbol("arguments") / Symbol("requestContext") / Symbol("customData") ! set[Map[String,
+                                                                                                               String]](
+              Map.empty
+            )
+          )
       )
     )
 
   private val logUserSearchSequencesEventSerializer: JsonPersister[LogUserSearchSequencesEvent, V2] =
     json.persister[LogUserSearchSequencesEvent, V2](
       "user-history-search-sequence",
-      from[V1].to[V2](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+      from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserStartSequenceEventSerializer: JsonPersister[LogUserStartSequenceEvent, V3] =
     json.persister[LogUserStartSequenceEvent, V3](
       "user-history-start-sequence",
       from[V1]
-        .to[V2](_.update('action / 'arguments / 'includedProposals ! set[Seq[String]](Seq.empty)))
-        .to[V3](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+        .to[V2](
+          _.update(Symbol("action") / Symbol("arguments") / Symbol("includedProposals") ! set[Seq[String]](Seq.empty))
+        )
+        .to[V3](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserAnonymizedEventSerializer: JsonPersister[LogUserAnonymizedEvent, V2] =
     json.persister[LogUserAnonymizedEvent, V2](
       "user-anonymized",
-      from[V1].to[V2](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+      from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserOptInNewsletterEventSerializer: JsonPersister[LogUserOptInNewsletterEvent, V2] =
     json.persister[LogUserOptInNewsletterEvent, V2](
       "user-opt-in-newsletter",
-      from[V1].to[V2](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+      from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserOptOutNewsletterEventSerializer: JsonPersister[LogUserOptOutNewsletterEvent, V2] =
     json.persister[LogUserOptOutNewsletterEvent, V2](
       "user-opt-out-newsletter",
-      from[V1].to[V2](_.update('context / 'customData ! set[Map[String, String]](Map.empty)))
+      from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
   private val logUserConnectedEventSerializer: JsonPersister[LogUserConnectedEvent, V1] =
@@ -317,16 +368,17 @@ object UserHistorySerializers extends SprayJsonFormatters {
     json.persister[UserVotesAndQualifications, V3](
       "user-votes-and-qualifications",
       from[V1]
-        .to[V2](_.update('votesAndQualifications ! modify[Map[String, JsValue]] { voteAndQualifications =>
-          voteAndQualifications.mapValues {
-            _.update('date ! set[ZonedDateTime](defaultVoteDate))
+        .to[V2](_.update(Symbol("votesAndQualifications") ! modify[Map[String, JsValue]] { voteAndQualifications =>
+          voteAndQualifications.map {
+            case (key, value) =>
+              key -> value.update(Symbol("date") ! set[ZonedDateTime](defaultVoteDate))
           }
         }))
-        .to[V3](_.update('votesAndQualifications ! modify[Map[String, JsObject]] {
-          voteAndQualifications =>
-            voteAndQualifications
-              .mapValues[JsObject] {
-                proposalVotes =>
+        .to[V3](
+          _.update(Symbol("votesAndQualifications") ! modify[Map[String, JsObject]] {
+            voteAndQualifications =>
+              voteAndQualifications.map {
+                case (key, proposalVotes) =>
                   val fields: Map[String, JsValue] = proposalVotes.fields
                   val qualifications =
                     fields("qualificationKeys").asInstanceOf[JsArray].elements.map(_.asInstanceOf[JsString])
@@ -334,9 +386,10 @@ object UserHistorySerializers extends SprayJsonFormatters {
                   val modifiedFields: Map[String, JsValue] = fields + ("qualificationKeys" -> JsObject(
                     newQualifications
                   )) + ("trust" -> JsString("trusted"))
-                  JsObject(modifiedFields)
+                  key -> JsObject(modifiedFields)
               }
-        }))
+          })
+        )
     )
 
   val serializers: Seq[JsonPersister[_, _]] =

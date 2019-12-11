@@ -40,7 +40,7 @@ class CrmSynchroCsvMonitor(crmClient: CrmClient,
   private val pendingCalls: mutable.Set[Long] = mutable.Set[Long]()
 
   override def preStart(): Unit = {
-    queue.enqueue(jobIds: _*)
+    jobIds.foreach(queue.enqueue)
     context.system.scheduler.schedule(0.seconds, tickInterval, self, Tick)
   }
 

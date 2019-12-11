@@ -71,7 +71,7 @@ trait DefaultSequenceApiComponent extends SequenceApiComponent with MakeAuthenti
     def startSequenceById: Route = {
       get {
         path("sequences" / "start" / sequenceId) { sequenceId =>
-          parameters('include.*) { includes =>
+          parameters(Symbol("include").*) { includes =>
             makeOperation("StartSequenceById") { requestContext =>
               optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
                 decodeRequest {

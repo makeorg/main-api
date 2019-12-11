@@ -26,7 +26,7 @@ import kamon.instrumentation.sbt.SbtKanelaRunner.Keys.kanelaVersion
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.13.1",
   licenses += "AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl.html"),
   credentials ++= {
     if (System.getenv().containsKey("CI_BUILD")) {
@@ -67,10 +67,8 @@ lazy val commonSettings = Seq(
     "-encoding",
     "UTF-8",
     "-unchecked",
-    "-Yno-adapted-args",
     "-Ywarn-dead-code",
-    "-Xfuture",
-    "-Ywarn-unused-import",
+    "-Wunused:imports",
     "-Ywarn-unused",
     "-language:_",
     "-Ycache-plugin-class-loader:last-modified",
@@ -79,8 +77,6 @@ lazy val commonSettings = Seq(
     "5"
   )
 )
-
-addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 
 lazy val phantom = project
   .in(file("."))

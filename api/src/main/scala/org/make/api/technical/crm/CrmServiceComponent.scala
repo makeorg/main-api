@@ -57,7 +57,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -302,7 +302,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         }
         .map(ByteString.apply(_, StandardCharsets.UTF_8))
         .runWith(LogRotatorSink(fileSizeTriggerCreator(csvDirectory)))
-        .map(_ => Files.list(csvDirectory).collect(Collectors.toList[Path]).asScala)
+        .map(_ => Files.list(csvDirectory).collect(Collectors.toList[Path]).asScala.toSeq)
     }
 
     private def sendCsvToHardBounceList(csv: Path, list: CrmList): Future[Long] = {
@@ -402,8 +402,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     }
 
     final def deleteAnonymizedContacts(emails: Seq[String]): Future[Unit] = {
-      Source
-        .fromIterator(() => emails.toIterator)
+      Source(emails)
         .mapAsync(3) { email =>
           if (email.matches(emailRegex.regex)) {
             crmClient.deleteContactByEmail(email).map(res => email -> res).withoutFailure

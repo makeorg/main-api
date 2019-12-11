@@ -340,20 +340,20 @@ trait MakeDirectives
     }
   }
 
-  def provideAsync[T](provider: ⇒ Future[T]): Directive1[T] =
-    extract(_ => provider).flatMap { fa ⇒
+  def provideAsync[T](provider: => Future[T]): Directive1[T] =
+    extract(_ => provider).flatMap { fa =>
       onComplete(fa).flatMap {
-        case Success(value) ⇒ provide(value)
-        case Failure(e) ⇒ failWith(e)
+        case Success(value) => provide(value)
+        case Failure(e)     => failWith(e)
       }
     }
 
-  def provideAsyncOrNotFound[T](provider: ⇒ Future[Option[T]]): Directive1[T] =
-    extract(_ => provider).flatMap { fa ⇒
+  def provideAsyncOrNotFound[T](provider: => Future[Option[T]]): Directive1[T] =
+    extract(_ => provider).flatMap { fa =>
       onComplete(fa).flatMap {
-        case Success(Some(value)) ⇒ provide(value)
-        case Success(None) ⇒ complete(StatusCodes.NotFound)
-        case Failure(e) ⇒ failWith(e)
+        case Success(Some(value)) => provide(value)
+        case Success(None)        => complete(StatusCodes.NotFound)
+        case Failure(e)           => failWith(e)
       }
     }
 

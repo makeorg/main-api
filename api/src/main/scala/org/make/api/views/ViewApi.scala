@@ -144,12 +144,12 @@ trait DefaultViewApiComponent
             optionalMakeOAuth2 { auth: Option[AuthInfo[UserRights]] =>
               parameters(
                 (
-                  'content,
-                  'proposalLimit.as[Int].?,
-                  'questionLimit.as[Int].?,
-                  'organisationLimit.as[Int].?,
-                  'country.as[Country].?,
-                  'language.as[Language].?
+                  Symbol("content"),
+                  Symbol("proposalLimit").as[Int].?,
+                  Symbol("questionLimit").as[Int].?,
+                  Symbol("organisationLimit").as[Int].?,
+                  Symbol("country").as[Country].?,
+                  Symbol("language").as[Language].?
                 )
               ) { (content, proposalLimit, questionLimit, organisationLimit, country, language) =>
                 val proposalQuery = SearchQuery(
