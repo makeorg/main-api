@@ -26,7 +26,7 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation._
-import org.make.api.organisation.OrganisationServiceComponent
+import org.make.api.organisation.{OrganisationServiceComponent, OrganisationsSearchResultResponse}
 import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent}
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
@@ -206,7 +206,8 @@ trait DefaultViewApiComponent
                     .searchForUser(auth.map(_.user.userId), proposalQuery, requestContext)
                   questions     <- operationOfQuestionService.search(questionQuery)
                   organisations <- organisationService.searchWithQuery(organisationQuery)
-                } yield (proposals, questions, organisations)
+                } yield
+                  (proposals, questions, OrganisationsSearchResultResponse.fromOrganisationSearchResult(organisations))
                 provideAsync(futureResults) {
                   case (proposals, questions, organisations) =>
                     complete(

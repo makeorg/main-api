@@ -35,7 +35,7 @@ import org.make.api.operation.{
   OperationService,
   OperationServiceComponent
 }
-import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
+import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent, OrganisationsSearchResultResponse}
 import org.make.api.proposal.{
   ProposalSearchEngine,
   ProposalSearchEngineComponent,
@@ -258,7 +258,7 @@ class ViewApiTest
         search.proposals.total shouldBe 0
         search.questions.total shouldBe 0
 //  Edit this following part when further implemented
-        search.organisations shouldBe OrganisationSearchResult.empty
+        search.organisations shouldBe OrganisationsSearchResultResponse.empty
       }
     }
   }

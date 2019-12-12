@@ -42,7 +42,6 @@ import org.make.core.operation.OperationKind
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.make.core.user.indexed.OrganisationSearchResult
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
@@ -71,7 +70,8 @@ trait OrganisationApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationSearchResult]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationsSearchResultResponse]))
   )
   def getOrganisations: Route
 
@@ -173,7 +173,7 @@ trait DefaultOrganisationApiComponent
                language: Option[Language]) =>
                 provideAsync(organisationService.search(organisationName, slug, organisationIds, country, language)) {
                   results =>
-                    complete(results)
+                    complete(OrganisationsSearchResultResponse.fromOrganisationSearchResult(results))
                 }
             }
           }

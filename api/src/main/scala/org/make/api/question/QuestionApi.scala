@@ -36,7 +36,7 @@ import org.make.api.operation.{
   OperationServiceComponent,
   PersistentOperationOfQuestionServiceComponent
 }
-import org.make.api.organisation.OrganisationSearchEngineComponent
+import org.make.api.organisation.{OrganisationSearchEngineComponent, OrganisationsSearchResultResponse}
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
@@ -431,7 +431,7 @@ trait DefaultQuestionApiComponent
                   )
 
                   provideAsync(elasticsearchOrganisationAPI.searchOrganisations(query)) { organisationSearchResult =>
-                    complete(organisationSearchResult)
+                    complete(OrganisationsSearchResultResponse.fromOrganisationSearchResult(organisationSearchResult))
                   }
                 }
               }
