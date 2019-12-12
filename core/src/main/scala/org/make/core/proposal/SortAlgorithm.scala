@@ -25,6 +25,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl.{functionScoreQuery, scriptScore}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, WeightScore}
+import com.sksamuel.elastic4s.searches.sort.{ScoreSort, SortOrder}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.user.UserType
 
@@ -179,6 +180,7 @@ case object B2BFirstAlgorithm extends SortAlgorithm {
             .functions(scriptScore(Script(script = userTypeScript)))
             .boostMode(CombineFunction.Replace)
         )
+        .sortBy(ScoreSort(SortOrder.DESC) +: request.sorts)
     }.getOrElse(request)
   }
 
