@@ -23,8 +23,8 @@ import java.time.LocalDate
 
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.boolean.And
-import eu.timepit.refined.collection.MaxSize
+import eu.timepit.refined.boolean.{And, Or}
+import eu.timepit.refined.collection.{Empty, MaxSize}
 import eu.timepit.refined.string.Url
 import io.circe.refined._
 import io.circe.{Decoder, Encoder}
@@ -233,7 +233,9 @@ case class UpdateUserRequest(
   @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
   socioProfessionalCategory: Option[String],
   politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url]
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[
+    String Refined Or[Url, Empty]
+  ]
 ) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3

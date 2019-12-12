@@ -1240,7 +1240,7 @@ class UserApiTest
       }
     }
 
-    scenario("user remove age, gender, csp from the front") {
+    scenario("user remove age, gender, csp, website from the front") {
       val request =
         """
           |{
@@ -1250,7 +1250,8 @@ class UserApiTest
           | "country": "IT",
           | "language": "it",
           | "gender": "",
-          | "socioProfessionalCategory": ""
+          | "socioProfessionalCategory": "",
+          | "website": ""
           |}
         """.stripMargin
 
@@ -1271,7 +1272,8 @@ class UserApiTest
                 dateOfBirth = None,
                 optInNewsletter = false,
                 gender = None,
-                socioProfessionalCategory = None
+                socioProfessionalCategory = None,
+                website = None
               )
             )
           ),
