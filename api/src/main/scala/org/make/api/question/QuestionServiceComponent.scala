@@ -19,8 +19,14 @@
 
 package org.make.api.question
 
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
+import org.make.api.ActorSystemComponent
+import org.make.api.personality.QuestionPersonalityServiceComponent
 import org.make.api.technical.IdGeneratorComponent
+import org.make.api.user.UserServiceComponent
 import org.make.core.operation.OperationId
+import org.make.core.personality.PersonalityRole
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{ValidationError, ValidationFailedError}
@@ -44,6 +50,10 @@ trait QuestionService {
                                                  country: Country,
                                                  language: Language): Future[Option[Question]]
   def createQuestion(country: Country, language: Language, question: String, slug: String): Future[Question]
+  def getQuestionPersonalities(start: Int,
+                               end: Option[Int],
+                               questionId: QuestionId,
+                               personalityRole: Option[PersonalityRole]): Future[Seq[QuestionPersonalityResponse]]
 }
 
 case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
@@ -62,7 +72,11 @@ trait QuestionServiceComponent {
 }
 
 trait DefaultQuestionService extends QuestionServiceComponent {
-  this: PersistentQuestionServiceComponent with IdGeneratorComponent =>
+  this: PersistentQuestionServiceComponent
+    with ActorSystemComponent
+    with IdGeneratorComponent
+    with QuestionPersonalityServiceComponent
+    with UserServiceComponent =>
 
   override lazy val questionService: QuestionService = new DefaultQuestionService
 
@@ -164,5 +178,44 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         )
       )
     }
+
+    implicit private val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+
+    override def getQuestionPersonalities(
+      start: Int,
+      end: Option[Int],
+      questionId: QuestionId,
+      personalityRole: Option[PersonalityRole]
+    ): Future[Seq[QuestionPersonalityResponse]] = {
+      Source
+        .fromFuture(
+          questionPersonalityService.find(
+            start = start,
+            end = end,
+            sort = None,
+            order = None,
+            userId = None,
+            questionId = Some(questionId),
+            personalityRole = personalityRole
+          )
+        )
+        .mapConcat(identity)
+        .mapAsync(1) { personality =>
+          userService.getPersonality(personality.userId)
+        }
+        .collect {
+          case Some(user) =>
+            QuestionPersonalityResponse(
+              userId = user.userId,
+              firstName = user.firstName,
+              lastName = user.lastName,
+              politicalParty = user.profile.flatMap(_.politicalParty),
+              avatarUrl = user.profile.flatMap(_.avatarUrl),
+              gender = user.profile.flatMap(_.gender.map(_.shortName))
+            )
+        }
+        .runWith(Sink.seq[QuestionPersonalityResponse])
+    }
+
   }
 }

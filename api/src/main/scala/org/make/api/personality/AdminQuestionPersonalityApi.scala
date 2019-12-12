@@ -98,7 +98,13 @@ trait AdminQuestionPersonalityApi extends Directives {
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "userId", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "personalityRole", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(
+        name = "personalityRole",
+        paramType = "query",
+        required = false,
+        dataType = "string",
+        allowableValues = "CANDIDATE"
+      )
     )
   )
   @Path(value = "/")

@@ -49,6 +49,7 @@ import org.make.core.common.indexed.Order
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
+import org.make.core.personality.PersonalityRole
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -145,7 +146,30 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/partners")
   def getPartners: Route
 
-  def routes: Route = questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getPartners
+  @ApiOperation(value = "get-question-personalities", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        name = "personalityRole",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "CANDIDATE"
+      ),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionPersonalityResponseWithTotal])
+    )
+  )
+  @Path(value = "/{questionId}/personalities")
+  def getPersonalities: Route
+
+  def routes: Route =
+    questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getPartners ~ getPersonalities
 }
 
 trait DefaultQuestionApiComponent
@@ -440,6 +464,33 @@ trait DefaultQuestionApiComponent
       }
     }
 
+    override def getPersonalities: Route = {
+      get {
+        path("questions" / questionId / "personalities") { questionId =>
+          makeOperation("GetQuestionPersonalities") { _ =>
+            parameters(
+              (Symbol("personalityRole").as[PersonalityRole].?, Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)
+            ) { (personalityRole: Option[PersonalityRole], limit: Option[Int], skip: Option[Int]) =>
+              provideAsync(
+                questionService.getQuestionPersonalities(
+                  start = skip.getOrElse(0),
+                  end = limit,
+                  questionId = questionId,
+                  personalityRole = personalityRole
+                )
+              ) { questionPersonalities =>
+                val response = QuestionPersonalityResponseWithTotal(
+                  total = questionPersonalities.size,
+                  results = questionPersonalities.sortBy(_.lastName)
+                )
+                complete(response)
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }
 
@@ -458,4 +509,25 @@ final case class PopularTagResponse(
 object PopularTagResponse {
   implicit val decoder: Decoder[PopularTagResponse] = deriveDecoder[PopularTagResponse]
   implicit val encoder: Encoder[PopularTagResponse] = deriveEncoder[PopularTagResponse]
+}
+
+final case class QuestionPersonalityResponseWithTotal(total: Int, results: Seq[QuestionPersonalityResponse])
+
+object QuestionPersonalityResponseWithTotal {
+  implicit val decoder: Decoder[QuestionPersonalityResponseWithTotal] =
+    deriveDecoder[QuestionPersonalityResponseWithTotal]
+  implicit val encoder: Encoder[QuestionPersonalityResponseWithTotal] =
+    deriveEncoder[QuestionPersonalityResponseWithTotal]
+}
+
+final case class QuestionPersonalityResponse(userId: UserId,
+                                             firstName: Option[String],
+                                             lastName: Option[String],
+                                             politicalParty: Option[String],
+                                             avatarUrl: Option[String],
+                                             gender: Option[String])
+
+object QuestionPersonalityResponse {
+  implicit val decoder: Decoder[QuestionPersonalityResponse] = deriveDecoder[QuestionPersonalityResponse]
+  implicit val encoder: Encoder[QuestionPersonalityResponse] = deriveEncoder[QuestionPersonalityResponse]
 }
