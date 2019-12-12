@@ -524,7 +524,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastLanguageActivity = Some(user.language.value),
         lastCountryActivity = Some(user.country.value),
         countriesActivity = Seq(user.country.value),
-        accountCreationSlug = question.map(_.slug)
+        accountCreationSlug = question.map(_.slug),
+        accountType = Some(user.userType.shortName)
       )
     }
 
@@ -559,6 +560,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         } else {
           Some("B2C")
         },
+        accountType = userProperty.accountType,
         updatedAt = userProperty.updatedAt.map(_.format(dateFormatter))
       )
     }
@@ -846,7 +848,7 @@ final case class UserProperties(userId: UserId,
                                 activeCore: Option[Boolean] = None,
                                 daysOfActivity: Seq[String] = Seq.empty,
                                 daysOfActivity30d: Seq[String] = Seq.empty,
-                                userType: Option[String] = None,
+                                accountType: Option[String] = None,
                                 updatedAt: Option[ZonedDateTime]) {
 
   def normalize(): UserProperties = {
