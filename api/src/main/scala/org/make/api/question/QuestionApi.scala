@@ -141,7 +141,8 @@ trait QuestionApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[PopularTagResponse]]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationsSearchResultResponse]))
   )
   @Path(value = "/{questionId}/partners")
   def getPartners: Route

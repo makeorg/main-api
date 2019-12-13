@@ -40,6 +40,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
+import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -54,8 +55,9 @@ trait ProposalSearchEngine {
   def findProposalsByIds(proposalIds: Seq[ProposalId], size: Int, random: Boolean = true): Future[Seq[IndexedProposal]]
   def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
   def countProposals(searchQuery: SearchQuery): Future[Long]
-  def countProposalsByQuestion(maybeQuestionIds: Seq[QuestionId],
-                               status: Option[Seq[ProposalStatus]]): Future[Map[QuestionId, Long]]
+  def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]],
+                               status: Option[Seq[ProposalStatus]],
+                               maybeUserId: Option[UserId]): Future[Map[QuestionId, Long]]
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
   def indexProposals(records: Seq[IndexedProposal],
@@ -139,25 +141,26 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def countProposalsByQuestion(questionIds: Seq[QuestionId],
-                                          status: Option[Seq[ProposalStatus]]): Future[Map[QuestionId, Long]] = {
-      // parse json string to build search query
+    override def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]],
+                                          status: Option[Seq[ProposalStatus]],
+                                          maybeUserId: Option[UserId]): Future[Map[QuestionId, Long]] = {
       val searchQuery: SearchQuery = SearchQuery(
         filters = Some(
           SearchFilters(
-            question = Some(QuestionSearchFilter(questionIds)),
-            status = status.map(StatusSearchFilter.apply)
+            question = maybeQuestionIds.map(QuestionSearchFilter.apply),
+            status = status.map(StatusSearchFilter.apply),
+            user = maybeUserId.map(UserSearchFilter.apply)
           )
         )
       )
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
       val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
-      val questionAggrSize: Int = questionIds.length
+      val questionAggrSize: Int = maybeQuestionIds.map(_.length + 1).getOrElse(10000)
 
       val finalRequest: ElasticSearchRequest = request
         .aggregations(
           termsAgg(name = "questions", field = ProposalElasticsearchFieldNames.questionId)
-            .size(size = questionAggrSize + 1)
+            .size(size = questionAggrSize)
             .minDocCount(min = 1)
         )
         .limit(0)

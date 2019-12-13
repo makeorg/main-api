@@ -33,7 +33,7 @@ There are two methods here:
     - 'Edit configurations' -> 'Add new configuration' -> 'SBT Task'
     - Define the task as `api/run`
 - Run MakeMain in Debug mode from idea. This method requires two VM options to be defined:
-    - Set the javaagent: type `sbt "show aspectj:aspectjWeaverOptions"` and copy the javaagent in vm parameters.
+    - Set the javaagent: type `sbt "show api/kanelaRunnerOptions"` and copy the javaagent in vm parameters.
 
 ### Run tests
 

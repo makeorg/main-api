@@ -21,12 +21,10 @@ package org.make.core.user.indexed
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
-import io.swagger.annotations.ApiModelProperty
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 import org.make.core.{BusinessConfig, CirceFormatters, SlugHelper}
-
-import scala.annotation.meta.field
 
 object OrganisationElasticsearchFieldNames {
   val organisationId = "organisationId"
@@ -54,32 +52,27 @@ object OrganisationElasticsearchFieldNames {
   }
 }
 
-case class IndexedOrganisation(
-  @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
-  organisationId: UserId,
-  organisationName: Option[String],
-  slug: Option[String],
-  avatarUrl: Option[String],
-  description: Option[String],
-  publicProfile: Boolean,
-  @(ApiModelProperty @field)(dataType = "int", example = "42")
-  proposalsCount: Option[Int],
-  @(ApiModelProperty @field)(dataType = "int", example = "42")
-  votesCount: Option[Int],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
-  website: Option[String]
-)
+case class IndexedOrganisation(organisationId: UserId,
+                               organisationName: Option[String],
+                               slug: Option[String],
+                               avatarUrl: Option[String],
+                               description: Option[String],
+                               publicProfile: Boolean,
+                               proposalsCount: Int,
+                               votesCount: Int,
+                               language: Language,
+                               country: Country,
+                               website: Option[String],
+                               countsByQuestion: Seq[ProposalsAndVotesCountsByQuestion])
 
 object IndexedOrganisation extends CirceFormatters {
   implicit val encoder: Encoder[IndexedOrganisation] = deriveEncoder[IndexedOrganisation]
   implicit val decoder: Decoder[IndexedOrganisation] = deriveDecoder[IndexedOrganisation]
 
-  def createFromOrganisation(organisation: User,
-                             proposalsCount: Option[Int] = None,
-                             votesCount: Option[Int] = None): IndexedOrganisation = {
+  def createFromOrganisation(
+    organisation: User,
+    countsByQuestion: Seq[ProposalsAndVotesCountsByQuestion] = Seq.empty
+  ): IndexedOrganisation = {
     IndexedOrganisation(
       organisationId = organisation.userId,
       organisationName = organisation.organisationName,
@@ -87,11 +80,12 @@ object IndexedOrganisation extends CirceFormatters {
       avatarUrl = organisation.profile.flatMap(_.avatarUrl),
       description = organisation.profile.flatMap(_.description),
       publicProfile = organisation.publicProfile,
-      proposalsCount = proposalsCount,
-      votesCount = votesCount,
+      proposalsCount = countsByQuestion.map(_.proposalsCount).sum,
+      votesCount = countsByQuestion.map(_.votesCount).sum,
       language = organisation.language,
       country = organisation.country,
-      website = organisation.profile.flatMap(_.website)
+      website = organisation.profile.flatMap(_.website),
+      countsByQuestion = countsByQuestion
     )
   }
 }
@@ -103,4 +97,11 @@ object OrganisationSearchResult {
   implicit val decoder: Decoder[OrganisationSearchResult] = deriveDecoder[OrganisationSearchResult]
 
   def empty: OrganisationSearchResult = OrganisationSearchResult(0, Seq.empty)
+}
+
+final case class ProposalsAndVotesCountsByQuestion(questionId: QuestionId, proposalsCount: Int, votesCount: Int)
+
+object ProposalsAndVotesCountsByQuestion {
+  implicit val encoder: Encoder[ProposalsAndVotesCountsByQuestion] = deriveEncoder[ProposalsAndVotesCountsByQuestion]
+  implicit val decoder: Decoder[ProposalsAndVotesCountsByQuestion] = deriveDecoder[ProposalsAndVotesCountsByQuestion]
 }

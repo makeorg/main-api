@@ -295,8 +295,9 @@ class HomeViewServiceComponentTest
       Mockito
         .when(
           elasticsearchProposalAPI.countProposalsByQuestion(
-            ArgumentMatchers.eq(questions.map(_.questionId)),
-            ArgumentMatchers.eq(Some(ProposalStatus.statusMap.values.toSeq))
+            ArgumentMatchers.eq(Some(questions.map(_.questionId))),
+            ArgumentMatchers.eq(Some(ProposalStatus.statusMap.values.toSeq)),
+            ArgumentMatchers.eq(None)
           )
         )
         .thenReturn(

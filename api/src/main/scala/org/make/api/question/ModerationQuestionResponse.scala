@@ -185,9 +185,9 @@ case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   allowedSources: Seq[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00Z")
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00:00.000Z")
   startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00Z")
+  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00:00.000Z")
   endDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,

@@ -366,7 +366,7 @@ class OrganisationApiTest
     scenario("search by organisation name") {
       Get("/organisations?organisationName=Make.org") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
         organisationResults.total should be(1)
         organisationResults.results.head.organisationId should be(UserId("make-org"))
       }
@@ -375,7 +375,7 @@ class OrganisationApiTest
     scenario("search by slug") {
       Get("/organisations?slug=make-org") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
         organisationResults.total should be(1)
         organisationResults.results.head.organisationId should be(UserId("make-org"))
       }
@@ -383,7 +383,7 @@ class OrganisationApiTest
     scenario("search by organisationIds") {
       Get("/organisations?organisationIds=make-org,toto") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
         organisationResults.total should be(1)
         organisationResults.results.head.organisationId should be(UserId("make-org"))
       }
@@ -391,7 +391,7 @@ class OrganisationApiTest
     scenario("search by organisation country") {
       Get("/organisations?country=FR&language=fr") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val organisationResults: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
         organisationResults.total should be(1)
         organisationResults.results.head.organisationId should be(UserId("make-org"))
       }

@@ -23,8 +23,9 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
+import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult, ProposalsAndVotesCountsByQuestion}
 import org.make.core.user.UserId
 
 import scala.annotation.meta.field
@@ -38,14 +39,16 @@ case class OrganisationSearchResponse(
   description: Option[String],
   publicProfile: Boolean,
   @(ApiModelProperty @field)(dataType = "int", example = "42")
-  proposalsCount: Option[Int],
+  proposalsCount: Int,
   @(ApiModelProperty @field)(dataType = "int", example = "42")
-  votesCount: Option[Int],
+  votesCount: Int,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
-  website: Option[String]
+  website: Option[String],
+  @(ApiModelProperty @field)(dataType = "Map[string,org.make.api.organisation.ProposalsAndVotesCountsResponse]")
+  countsByQuestion: Map[QuestionId, ProposalsAndVotesCountsResponse]
 )
 
 object OrganisationSearchResponse extends CirceFormatters {
@@ -64,7 +67,8 @@ object OrganisationSearchResponse extends CirceFormatters {
       votesCount = organisation.votesCount,
       language = organisation.language,
       country = organisation.country,
-      website = organisation.website
+      website = organisation.website,
+      countsByQuestion = organisation.countsByQuestion.map(ProposalsAndVotesCountsResponse.fromCounts).toMap
     )
   }
 }
@@ -82,4 +86,14 @@ object OrganisationsSearchResultResponse {
       total = results.total,
       results = results.results.map(OrganisationSearchResponse.fromIndexedOrganisation)
     )
+}
+
+final case class ProposalsAndVotesCountsResponse(proposalsCount: Int, votesCount: Int)
+
+object ProposalsAndVotesCountsResponse {
+  implicit val encoder: Encoder[ProposalsAndVotesCountsResponse] = deriveEncoder[ProposalsAndVotesCountsResponse]
+  implicit val decoder: Decoder[ProposalsAndVotesCountsResponse] = deriveDecoder[ProposalsAndVotesCountsResponse]
+
+  def fromCounts(counts: ProposalsAndVotesCountsByQuestion): (QuestionId, ProposalsAndVotesCountsResponse) =
+    counts.questionId -> ProposalsAndVotesCountsResponse(counts.proposalsCount, counts.votesCount)
 }

@@ -19,7 +19,7 @@
 
 package org.make.core.question
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json, KeyDecoder, KeyEncoder}
 import org.make.core.StringValue
 import org.make.core.operation.OperationId
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -52,5 +52,12 @@ object QuestionId {
     override def write(obj: QuestionId): JsValue = {
       JsString(obj.value)
     }
+  }
+
+  implicit val questionIdKeyEncoder: KeyEncoder[QuestionId] = new KeyEncoder[QuestionId] {
+    override def apply(questionId: QuestionId): String = questionId.value
+  }
+  implicit val questionIdKeyDecoder: KeyDecoder[QuestionId] = new KeyDecoder[QuestionId] {
+    override def apply(key: String): Option[QuestionId] = Some(QuestionId(key))
   }
 }
