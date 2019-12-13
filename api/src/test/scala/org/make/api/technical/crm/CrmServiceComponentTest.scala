@@ -152,7 +152,8 @@ class CrmServiceComponentTest
       activeCore = None,
       daysOfActivity = None,
       daysOfActivity30d = None,
-      userType = None
+      userType = None,
+      accountType = None
     )
   }
 
@@ -330,7 +331,8 @@ class CrmServiceComponentTest
     activeCore = None,
     daysOfActivity = None,
     daysOfActivity30d = None,
-    userType = None
+    userType = None,
+    accountType = None
   )
 
   val registerCitizenEventEnvelope = EventEnvelope(
@@ -535,6 +537,7 @@ class CrmServiceComponentTest
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
+        maybeProperties.accountType shouldBe Some("USER")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(
           maybeProperties.updatedAt.getOrElse(""),
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
@@ -579,6 +582,7 @@ class CrmServiceComponentTest
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
+        maybeProperties.accountType shouldBe Some("USER")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(
           maybeProperties.updatedAt.getOrElse(""),
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
@@ -693,6 +697,7 @@ class CrmServiceComponentTest
         maybeProperties.daysOfActivity shouldBe Some(3)
         maybeProperties.daysOfActivity30 shouldBe Some(1)
         maybeProperties.userType shouldBe Some("B2C")
+        maybeProperties.accountType shouldBe Some("USER")
         val updatedAt: ZonedDateTime = ZonedDateTime.parse(
           maybeProperties.updatedAt.getOrElse(""),
           DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
@@ -1298,13 +1303,14 @@ class CrmServiceComponentTest
             daysOfActivity = None,
             daysOfActivity30 = None,
             userType = None,
+            accountType = None,
             updatedAt = Some("2019-10-06 02:00:00")
           )
         )
       )
 
       contact.toStringCsv should be(
-        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
+        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,,"2019-10-06 02:00:00"${String
           .format("%n")}"""
       )
     }
@@ -1350,7 +1356,7 @@ class CrmServiceComponentTest
         val firstLine = fileToSeq.head
         lineCount should be(2)
         firstLine should be(
-          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
+          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,,"$formattedDate""""
         )
         bufferedFile.close()
       }

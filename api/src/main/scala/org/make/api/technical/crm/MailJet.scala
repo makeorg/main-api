@@ -389,6 +389,7 @@ case class ContactProperties(userId: Option[UserId],
                              daysOfActivity: Option[Int],
                              daysOfActivity30: Option[Int],
                              userType: Option[String],
+                             accountType: Option[String],
                              updatedAt: Option[String]) {
   def toContactPropertySeq: Seq[ContactProperty[_]] = {
     Seq(
@@ -417,6 +418,7 @@ case class ContactProperties(userId: Option[UserId],
       ContactProperty("Days_of_Activity", daysOfActivity),
       ContactProperty("Days_of_Activity_30d", daysOfActivity30),
       ContactProperty("User_type", userType),
+      ContactProperty("Account_type", accountType),
       ContactProperty("Updated_at", updatedAt)
     )
   }
@@ -460,6 +462,7 @@ object ContactProperties {
         ("Days_of_Activity", contactProperties.daysOfActivity.asJson),
         ("Days_of_Activity_30d", contactProperties.daysOfActivity30.asJson),
         ("User_type", contactProperties.userType.asJson),
+        ("Account_type", contactProperties.accountType.asJson),
         ("Updated_at", contactProperties.updatedAt.asJson)
       )
     }
@@ -492,6 +495,7 @@ object ContactProperties {
       "Days_of_Activity",
       "Days_of_Activity_30d",
       "User_type",
+      "Account_type",
       "Updated_at"
     ).map(name => s"""\"$name\"""").mkString("[", ",", "]")
   }

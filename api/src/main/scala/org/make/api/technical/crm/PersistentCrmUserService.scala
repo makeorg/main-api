@@ -85,6 +85,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
                   PersistentCrmUser.column.totalNumberVotes -> user.totalNumberVotes,
                   PersistentCrmUser.column.unsubscribeStatus -> user.unsubscribeStatus,
                   PersistentCrmUser.column.userType -> user.userType,
+                  PersistentCrmUser.column.accountType -> user.accountType,
                   PersistentCrmUser.column.zipcode -> user.zipcode
                 )
             }.execute().apply()
@@ -155,7 +156,8 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
       "active_core",
       "days_of_activity",
       "days_of_activity30d",
-      "user_type"
+      "user_type",
+      "account_type"
     )
 
   override val tableName: String = "crm_user"
@@ -192,7 +194,8 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
       activeCore = resultSet.booleanOpt(resultName.activeCore),
       daysOfActivity = resultSet.intOpt(resultName.daysOfActivity),
       daysOfActivity30d = resultSet.intOpt(resultName.daysOfActivity30d),
-      userType = resultSet.stringOpt(resultName.userType)
+      userType = resultSet.stringOpt(resultName.userType),
+      accountType = resultSet.stringOpt(resultName.accountType)
     )
   }
 
@@ -224,7 +227,8 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
       activeCore = contactProperties.activeCore,
       daysOfActivity = contactProperties.daysOfActivity,
       daysOfActivity30d = contactProperties.daysOfActivity30,
-      userType = contactProperties.userType
+      userType = contactProperties.userType,
+      accountType = contactProperties.accountType
     )
   }
 }
@@ -255,7 +259,8 @@ case class PersistentCrmUser(userId: String,
                              activeCore: Option[Boolean],
                              daysOfActivity: Option[Int],
                              daysOfActivity30d: Option[Int],
-                             userType: Option[String]) {
+                             userType: Option[String],
+                             accountType: Option[String]) {
 
   def toContactProperties(updatedAt: Option[String]): ContactProperties = {
     ContactProperties(
@@ -284,6 +289,7 @@ case class PersistentCrmUser(userId: String,
       daysOfActivity = this.daysOfActivity,
       daysOfActivity30 = this.daysOfActivity30d,
       userType = this.userType,
+      accountType = this.accountType,
       updatedAt = updatedAt
     )
   }
