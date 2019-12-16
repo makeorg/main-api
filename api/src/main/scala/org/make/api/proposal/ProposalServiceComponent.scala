@@ -345,11 +345,16 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                                requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
 
       search(maybeUserId, query, requestContext).flatMap { searchResult =>
-        sessionHistoryCoordinatorService
-          .retrieveVoteAndQualifications(
-            RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
+        maybeUserId.map { userId =>
+          userHistoryCoordinatorService.retrieveVoteAndQualifications(
+            RequestVoteValues(userId = userId, searchResult.results.map(_.id))
           )
-          .map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
+        }.getOrElse {
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
+            )
+        }.map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
       }.map { proposalResultResponse =>
         ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)
       }

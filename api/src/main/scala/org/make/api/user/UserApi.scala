@@ -306,7 +306,7 @@ trait UserApi extends Directives {
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateUserRequest"))
   )
   @Path(value = "/")
-  def patchUser: Route
+  def patchCurrentUser: Route
 
   @ApiOperation(
     value = "change-password",
@@ -472,7 +472,7 @@ trait UserApi extends Directives {
       validateAccountRoute ~
       getVotedProposalsByUser ~
       getProposalsByUser ~
-      patchUser ~
+      patchCurrentUser ~
       changePassword ~
       deleteUser ~
       followUser ~
@@ -885,10 +885,10 @@ trait DefaultUserApiComponent
       }
     }
 
-    override def patchUser: Route =
+    override def patchCurrentUser: Route =
       patch {
         path("user") {
-          makeOperation("PatchUser") { requestContext =>
+          makeOperation("PatchCurrentUser") { requestContext =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               decodeRequest {
                 entity(as[UpdateUserRequest]) { request: UpdateUserRequest =>
