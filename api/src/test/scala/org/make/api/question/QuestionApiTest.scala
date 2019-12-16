@@ -32,11 +32,7 @@ import org.make.api.feature.{
   FeatureServiceComponent
 }
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
-import org.make.api.organisation.{
-  OrganisationSearchEngine,
-  OrganisationSearchEngineComponent,
-  OrganisationsSearchResultResponse
-}
+import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
@@ -78,8 +74,7 @@ class QuestionApiTest
     with FeatureServiceComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
-    with TagServiceComponent
-    with OrganisationSearchEngineComponent {
+    with TagServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -92,7 +87,6 @@ class QuestionApiTest
   override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val tagService: TagService = mock[TagService]
-  override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -454,15 +448,12 @@ class QuestionApiTest
         )
       )
       when(
-        elasticsearchOrganisationAPI.searchOrganisations(
-          ArgumentMatchers.eq(
-            OrganisationSearchQuery(
-              filters = Some(OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(Seq.empty)))),
-              sortAlgorithm = None,
-              limit = None,
-              skip = None
-            )
-          )
+        questionService.getPartners(
+          ArgumentMatchers.eq(QuestionId("question-id")),
+          ArgumentMatchers.eq(Seq.empty),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None)
         )
       ).thenReturn(Future.successful(OrganisationSearchResult(0L, Seq.empty)))
 
@@ -509,20 +500,12 @@ class QuestionApiTest
         )
       )
       when(
-        elasticsearchOrganisationAPI.searchOrganisations(
-          ArgumentMatchers.eq(
-            OrganisationSearchQuery(
-              filters = Some(
-                OrganisationSearchFilters(
-                  organisationIds =
-                    Some(OrganisationIdsSearchFilter(Seq(UserId("organisation-1"), UserId("organisation-2"))))
-                )
-              ),
-              sortAlgorithm = Some(ParticipationAlgorithm),
-              limit = Some(42),
-              skip = Some(14)
-            )
-          )
+        questionService.getPartners(
+          ArgumentMatchers.eq(QuestionId("question-id")),
+          ArgumentMatchers.eq(Seq(UserId("organisation-1"), UserId("organisation-2"))),
+          ArgumentMatchers.eq(Some(ParticipationAlgorithm(QuestionId("question-id")))),
+          ArgumentMatchers.eq(Some(42)),
+          ArgumentMatchers.eq(Some(14))
         )
       ).thenReturn(
         Future.successful(

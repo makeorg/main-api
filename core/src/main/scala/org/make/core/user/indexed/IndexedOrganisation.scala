@@ -39,6 +39,8 @@ object OrganisationElasticsearchFieldNames {
   val votesCount = "votesCount"
   val language = "language"
   val country = "country"
+  val countsByQuestion = "countsByQuestion"
+  val countsByQuestionQuestionId = "countsByQuestion.questionId"
 
   def organisationNameLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
     BusinessConfig.supportedCountries
