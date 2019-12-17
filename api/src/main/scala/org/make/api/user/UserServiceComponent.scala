@@ -722,6 +722,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         isHardBounce = true,
         lastMailingError = None,
         organisationName = None,
+        userType = UserType.UserTypeUser,
         createdAt = Some(DateHelper.now()),
         publicProfile = false
       )
