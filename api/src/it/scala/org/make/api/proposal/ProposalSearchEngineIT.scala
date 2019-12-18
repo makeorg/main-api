@@ -276,7 +276,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 287,
       votesSegmentCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 84),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 0, 0, 84),
       segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
@@ -353,7 +353,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 310,
       votesSegmentCount = 310,
       toEnrich = true,
-      scores = IndexedScores.empty,
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 21, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
@@ -430,10 +430,10 @@ class ProposalSearchEngineIT
       votesSequenceCount = 127,
       votesSegmentCount = 127,
       toEnrich = true,
-      scores = IndexedScores.empty,
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
-      ideaId = Some(IdeaId("idea-id")),
+      ideaId = Some(IdeaId("idea-id-2")),
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -509,7 +509,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 353,
       votesSegmentCount = 353,
       toEnrich = false,
-      scores = IndexedScores.empty,
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
@@ -530,7 +530,7 @@ class ProposalSearchEngineIT
       themeId = None,
       tags = Seq(tagBeta),
       status = ProposalStatus.Accepted,
-      ideaId = None,
+      ideaId = Some(IdeaId("idea-id-3")),
       operationId = None,
       question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
@@ -1683,6 +1683,16 @@ class ProposalSearchEngineIT
       whenReady(elasticsearchProposalAPI.getPopularTagsByProposal(QuestionId("fake"), 10), Timeout(10.seconds)) {
         results =>
           results.size should be(0)
+      }
+    }
+  }
+
+  feature("get top proposals by idea") {
+    scenario("get top proposals by idea for base question") {
+      whenReady(elasticsearchProposalAPI.getTopProposalsByIdea(baseQuestion.questionId, 10), Timeout(10.seconds)) {
+        results =>
+          results.take(3).map(_.scores.topScore) should be(Seq(42.0, 35.0, 16.0))
+          results.take(3).flatMap(_.ideaId).map(_.value) should be(Seq("idea-id", "idea-id-2", "idea-id-3"))
       }
     }
   }
