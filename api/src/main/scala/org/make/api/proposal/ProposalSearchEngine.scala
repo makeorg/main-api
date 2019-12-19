@@ -23,9 +23,11 @@ import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.TermBucket
 import com.sksamuel.elastic4s.script.Script
-import com.sksamuel.elastic4s.searches.aggs.TermsAggregation
+import com.sksamuel.elastic4s.searches.aggs.pipeline.BucketSortPipelineAgg
+import com.sksamuel.elastic4s.searches.aggs.{MaxAggregation, TermsAggregation, TopHitsAggregation}
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
 import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery, Query}
+import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.{SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
@@ -61,6 +63,7 @@ trait ProposalSearchEngine {
   def updateProposals(records: Seq[IndexedProposal],
                       mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
+  def getTopProposalsByIdea(questionId: QuestionId, size: Int): Future[Seq[IndexedProposal]]
 }
 
 object ProposalSearchEngine {
@@ -267,6 +270,45 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           .map(popularTagResponseFrombucket)
       }
 
+    }
+
+    override def getTopProposalsByIdea(questionId: QuestionId, size: Int): Future[Seq[IndexedProposal]] = {
+      val searchQuery: SearchQuery = SearchQuery(
+        filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId)))))
+      )
+      val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
+      val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
+
+      // This aggregation create a field "maxTopScore" with the max value of indexedProposal.scores.topScore
+      val maxAggregation = MaxAggregation(name = "maxTopScore", field = Some(ProposalElasticsearchFieldNames.topScore))
+
+      // This aggregation sort each bucket from the field "maxTopScore"
+      val bucketSortAggregation = BucketSortPipelineAgg(
+        name = "topScoreBucketSort",
+        sort = Seq(FieldSort(field = "maxTopScore", order = SortOrder.DESC))
+      )
+
+      // This aggregation take the proposal with the highest indexedProposal.scores.topScore on each bucket
+      val topHitsAggregation = TopHitsAggregation(
+        name = "topHits",
+        sorts = Seq(FieldSort(field = ProposalElasticsearchFieldNames.topScore, order = SortOrder.DESC)),
+        size = Some(1)
+      )
+
+      val finalRequest: ElasticSearchRequest = request
+        .aggregations(
+          TermsAggregation(name = "byIdea", field = Some(ProposalElasticsearchFieldNames.ideaId), size = Some(size))
+            .subAggregations(Seq(maxAggregation, bucketSortAggregation, topHitsAggregation)) // Those 3 subAggregation are execute on each bucket created by the parent aggregation
+            .minDocCount(min = 1)
+        )
+        .size(0)
+
+      client.executeAsFuture(finalRequest).map { response =>
+        response.aggregations
+          .terms("byIdea")
+          .buckets
+          .flatMap(_.tophits("topHits").hits.map(_.to[IndexedProposal]))
+      }
     }
 
   }
