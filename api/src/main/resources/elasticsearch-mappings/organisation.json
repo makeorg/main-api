@@ -648,6 +648,23 @@
         "website": {
           "type": "text",
           "index": false
+        },
+        "countsByQuestion": {
+          "type": "nested",
+          "properties": {
+            "questionId": {
+              "type": "keyword",
+              "index": true
+            },
+            "proposalsCount": {
+              "type": "integer",
+              "index": true
+            },
+            "votesCount": {
+              "type": "integer",
+              "index": true
+            }
+          }
         }
       }
     }

@@ -34,8 +34,9 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfigurationComponent
 }
 import org.make.core.CirceFormatters
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.indexed.IndexedOrganisation
+import org.make.core.user.indexed.{IndexedOrganisation, ProposalsAndVotesCountsByQuestion}
 import org.make.core.user._
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -88,11 +89,12 @@ class OrganisationSearchEngineIT
       avatarUrl = Some("http://image-corp-a.net"),
       description = Some("long text for corp A"),
       publicProfile = true,
-      proposalsCount = Some(42),
-      votesCount = Some(70),
+      proposalsCount = 42,
+      votesCount = 70,
       language = Language("fr"),
       country = Country("FR"),
-      website = Some("http://example.com")
+      website = Some("http://example.com"),
+      countsByQuestion = Seq(ProposalsAndVotesCountsByQuestion(QuestionId("question-id-1"), 42, 70))
     ),
     IndexedOrganisation(
       organisationId = UserId("orga-b"),
@@ -101,11 +103,12 @@ class OrganisationSearchEngineIT
       avatarUrl = Some("http://image-corp-b.net"),
       description = Some("long text for corp B"),
       publicProfile = true,
-      proposalsCount = None,
-      votesCount = None,
+      proposalsCount = 0,
+      votesCount = 0,
       language = Language("fr"),
       country = Country("FR"),
-      website = Some("http://example.com")
+      website = Some("http://example.com"),
+      countsByQuestion = Seq.empty
     ),
     IndexedOrganisation(
       organisationId = UserId("orga-c"),
@@ -114,11 +117,15 @@ class OrganisationSearchEngineIT
       avatarUrl = Some("http://image-corp-c.net"),
       description = Some("long text for corp C"),
       publicProfile = true,
-      proposalsCount = Some(4321),
-      votesCount = Some(420123),
+      proposalsCount = 4321,
+      votesCount = 420123,
       language = Language("fr"),
       country = Country("FR"),
-      website = Some("http://example.com")
+      website = Some("http://example.com"),
+      countsByQuestion = Seq(
+        ProposalsAndVotesCountsByQuestion(QuestionId("question-id-1"), 121, 123),
+        ProposalsAndVotesCountsByQuestion(QuestionId("question-id-2"), 4200, 420000)
+      )
     ),
     IndexedOrganisation(
       organisationId = UserId("orga-accent"),
@@ -127,11 +134,16 @@ class OrganisationSearchEngineIT
       avatarUrl = Some("http://image-corp-french.net"),
       description = Some("long text for corp french"),
       publicProfile = true,
-      proposalsCount = Some(228),
-      votesCount = Some(1000),
+      proposalsCount = 228,
+      votesCount = 1000,
       language = Language("fr"),
       country = Country("FR"),
-      website = Some("http://example.com")
+      website = Some("http://example.com"),
+      countsByQuestion = Seq(
+        ProposalsAndVotesCountsByQuestion(QuestionId("question-id-1"), 100, 500),
+        ProposalsAndVotesCountsByQuestion(QuestionId("question-id-2"), 100, 499),
+        ProposalsAndVotesCountsByQuestion(QuestionId("question-id-3"), 28, 1)
+      )
     )
   )
 

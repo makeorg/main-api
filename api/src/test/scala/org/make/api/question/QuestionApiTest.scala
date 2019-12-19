@@ -32,7 +32,11 @@ import org.make.api.feature.{
   FeatureServiceComponent
 }
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
-import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEngineComponent}
+import org.make.api.organisation.{
+  OrganisationSearchEngine,
+  OrganisationSearchEngineComponent,
+  OrganisationsSearchResultResponse
+}
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.sequence.{SequenceResult, SequenceService}
@@ -478,11 +482,12 @@ class QuestionApiTest
           None,
           None,
           publicProfile = true,
-          None,
-          None,
+          0,
+          0,
           Language("fr"),
           Country("FR"),
-          website = None
+          None,
+          Seq.empty
         )
       when(
         partnerService.find(
@@ -530,7 +535,7 @@ class QuestionApiTest
 
       Get("/questions/question-id/partners?sortAlgorithm=participation&partnerKind=ACTOR&limit=42&skip=14") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val res: OrganisationSearchResult = entityAs[OrganisationSearchResult]
+        val res: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
         res.total shouldBe 2L
         res.results.exists(_.organisationId.value == "organisation-1") shouldBe true
         res.results.exists(_.organisationId.value == "organisation-2") shouldBe true

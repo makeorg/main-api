@@ -147,20 +147,27 @@ trait DefaultIndexationComponent
                              forceProposals: Boolean,
                              forceOperationOfQuestions: Boolean): Future[Done] = {
       logger.info(s"Elasticsearch Reindexation")
-      indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceOperationOfQuestions).map {
+      indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceOperationOfQuestions).flatMap {
         indicesNotUpToDate =>
-          val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
-          val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
-          val futureOperationOfQuestionsIndexation =
-            reindexOperationOfQuestionsIfNeeded(indicesNotUpToDate.contains(IndexOperationOfQuestions))
+          // !mandatory: run organisation indexation before proposals and not in parallel
+          reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
+            .map(_ => indicesNotUpToDate)
+            .recoverWith {
+              case e =>
+                logger.error("Organisations indexation failed", e)
+                Future.successful(indicesNotUpToDate)
+            }
+      }.flatMap { indicesNotUpToDate =>
+        val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
+        val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
+        val futureOperationOfQuestionsIndexation =
+          reindexOperationOfQuestionsIfNeeded(indicesNotUpToDate.contains(IndexOperationOfQuestions))
 
-          for {
-            _ <- futureIdeasIndexation
-            _ <- futureProposalsIndexation
-            _ <- futureOperationOfQuestionsIndexation
-            // !mandatory: run organisation indexation after proposals and not in parallel
-            _ <- reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
-          } yield Done
+        for {
+          _ <- futureIdeasIndexation
+          _ <- futureProposalsIndexation
+          _ <- futureOperationOfQuestionsIndexation
+        } yield Done
       }.flatMap { _ =>
         Future.successful(Done)
       }
@@ -283,7 +290,7 @@ trait DefaultIndexationComponent
         .flatMap { organisations =>
           logger.info(s"Organisations to index: ${organisations.size}")
           Source[User](organisations)
-            .via(OrganisationStream.flowIndexOrganisations(indexName))
+            .via(OrganisationStream.flowIndexOrganisations(indexName)(mat))
             .runWith(Sink.ignore)
         }
 
