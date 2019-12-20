@@ -122,17 +122,56 @@ trait MakeDirectives
     }
   }
 
+  def addMaybeRefreshedSecureCookie(tokenRefreshed: Option[AccessToken]): Directive0 = {
+    respondWithDefaultHeaders {
+      Seq(
+        tokenRefreshed.map(
+          token =>
+            `Set-Cookie`(
+              HttpCookie(
+                name = makeSettings.SecureCookie.name,
+                value = token.token,
+                secure = makeSettings.SecureCookie.isSecure,
+                httpOnly = true,
+                maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
+                path = Some("/"),
+                domain = Some(makeSettings.SecureCookie.domain)
+              )
+          )
+        ),
+        tokenRefreshed.map(
+          _ =>
+            `Set-Cookie`(
+              HttpCookie(
+                name = makeSettings.SecureCookie.expirationName,
+                value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.Oauth.refreshTokenLifetime)),
+                secure = makeSettings.SecureCookie.isSecure,
+                httpOnly = false,
+                maxAge = Some(365.days.toSeconds),
+                path = Some("/"),
+                domain = Some(makeSettings.SecureCookie.domain)
+              )
+          )
+        )
+      ).collect { case Some(setCookie) => setCookie }
+    }
+  }
+
+  def addCorsHeaders(origin: Option[String]): Directive0 = {
+    respondWithDefaultHeaders {
+      defaultCorsHeaders(origin)
+    }
+  }
+
   def addMakeHeaders(requestId: String,
                      routeName: String,
                      sessionId: String,
                      visitorId: String,
                      visitorCreatedAt: ZonedDateTime,
                      startTime: Long,
-                     externalId: String,
-                     origin: Option[String],
-                     tokenRefreshed: Option[AccessToken]): Directive0 = {
+                     externalId: String): Directive0 = {
     respondWithDefaultHeaders {
-      immutable.Seq(
+      Seq(
         `X-Route-Time`(startTime),
         `X-Request-Id`(requestId),
         `X-Route-Name`(routeName),
@@ -182,38 +221,7 @@ trait MakeDirectives
             domain = Some(makeSettings.VisitorCookie.domain)
           )
         )
-      ) ++ defaultCorsHeaders(origin) ++ immutable
-        .Seq(
-          tokenRefreshed.map(
-            token =>
-              `Set-Cookie`(
-                HttpCookie(
-                  name = makeSettings.SecureCookie.name,
-                  value = token.token,
-                  secure = makeSettings.SecureCookie.isSecure,
-                  httpOnly = true,
-                  maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
-                  path = Some("/"),
-                  domain = Some(makeSettings.SecureCookie.domain)
-                )
-            )
-          ),
-          tokenRefreshed.map(
-            _ =>
-              `Set-Cookie`(
-                HttpCookie(
-                  name = makeSettings.SecureCookie.expirationName,
-                  value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.Oauth.refreshTokenLifetime)),
-                  secure = makeSettings.SecureCookie.isSecure,
-                  httpOnly = false,
-                  maxAge = Some(365.days.toSeconds),
-                  path = Some("/"),
-                  domain = Some(makeSettings.SecureCookie.domain)
-                )
-            )
-          )
-        )
-        .collect { case Some(setCookie) => setCookie }
+      )
     }
   }
 
@@ -246,30 +254,23 @@ trait MakeDirectives
     val slugifiedName: String = SlugHelper(name)
 
     for {
-      _                   <- encodeResponse
-      _                   <- operationName(slugifiedName)
-      requestId           <- requestId
-      startTime           <- startTime
-      sessionId           <- sessionId
-      visitorId           <- visitorId
-      visitorCreatedAt    <- visitorCreatedAt
-      externalId          <- optionalHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
-      origin              <- optionalHeaderValueByName(Origin.name)
-      maybeTokenRefreshed <- makeTriggerAuthRefreshFromCookie()
-      _                   <- makeAuthCookieHandlers(maybeTokenRefreshed)
-      _ <- addMakeHeaders(
-        requestId,
-        slugifiedName,
-        sessionId,
-        visitorId,
-        visitorCreatedAt,
-        startTime,
-        externalId,
-        origin,
-        maybeTokenRefreshed
-      )
+
+      requestId            <- requestId
+      _                    <- operationName(slugifiedName)
+      origin               <- optionalHeaderValueByName(Origin.name)
+      _                    <- addCorsHeaders(origin)
+      _                    <- encodeResponse
+      startTime            <- startTime
+      sessionId            <- sessionId
+      visitorId            <- visitorId
+      visitorCreatedAt     <- visitorCreatedAt
+      externalId           <- optionalHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
+      _                    <- addMakeHeaders(requestId, slugifiedName, sessionId, visitorId, visitorCreatedAt, startTime, externalId)
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
+      maybeTokenRefreshed  <- makeTriggerAuthRefreshFromCookie()
+      _                    <- addMaybeRefreshedSecureCookie(maybeTokenRefreshed)
+      _                    <- makeAuthCookieHandlers(maybeTokenRefreshed)
       maybeIpAddress       <- extractClientIP
       maybeUser            <- optionalMakeOAuth2
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
