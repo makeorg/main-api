@@ -35,6 +35,7 @@ import org.make.api.question.PopularTagResponse
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.DateHelper
 import org.make.core.DateHelper._
+import org.make.core.idea.IdeaId
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
@@ -66,6 +67,7 @@ trait ProposalSearchEngine {
                       mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
   def getTopProposalsByIdea(questionId: QuestionId, size: Int): Future[Seq[IndexedProposal]]
+  def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]]
 }
 
 object ProposalSearchEngine {
@@ -314,6 +316,25 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
     }
 
+    override def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]] = {
+      val searchFilters = SearchFilters.getSearchFilters(
+        SearchQuery(filters = Some(SearchFilters(idea = Some(IdeaSearchFilter(ideaIds)))))
+      )
+
+      val request = searchWithType(proposalAlias)
+        .bool(BoolQuery(must = searchFilters))
+        .aggregations(termsAgg("by_idea", ProposalElasticsearchFieldNames.ideaId))
+        .size(0)
+
+      client.executeAsFuture(request).map { response =>
+        response.aggregations
+          .terms("by_idea")
+          .buckets
+          .map(termBucket => IdeaId(termBucket.key) -> termBucket.docCount)
+          .toMap
+      }
+
+    }
   }
 
 }

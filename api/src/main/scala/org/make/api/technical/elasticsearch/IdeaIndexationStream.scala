@@ -19,21 +19,23 @@
 
 package org.make.api.technical.elasticsearch
 
-import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Flow
+import akka.{Done, NotUsed}
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.idea.{IdeaSearchEngine, IdeaSearchEngineComponent, PersistentIdeaServiceComponent}
+import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.tagtype.PersistentTagTypeServiceComponent
-import org.make.core.idea.Idea
 import org.make.core.idea.indexed.IndexedIdea
-import scala.concurrent.ExecutionContext.Implicits.global
+import org.make.core.idea.{Idea, IdeaId}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait IdeaIndexationStream
     extends IndexationStream
     with IdeaSearchEngineComponent
+    with ProposalSearchEngineComponent
     with PersistentIdeaServiceComponent
     with PersistentTagTypeServiceComponent
     with StrictLogging {
@@ -47,11 +49,16 @@ trait IdeaIndexationStream
   }
 
   private def executeIndexIdeas(ideas: Seq[Idea], ideaIndexName: String): Future[Done] = {
-    elasticsearchIdeaAPI
-      .indexIdeas(
-        ideas.map(IndexedIdea.createFromIdea),
-        Some(IndexAndType(ideaIndexName, IdeaSearchEngine.ideaIndexName))
-      )
+    elasticsearchProposalAPI
+      .countProposalsByIdea(ideas.map(_.ideaId))
+      .flatMap { countProposalsByIdea =>
+        def proposalsCount(ideaId: IdeaId): Int = countProposalsByIdea.getOrElse(ideaId, 0L).toInt
+        elasticsearchIdeaAPI
+          .indexIdeas(
+            ideas.map(idea => IndexedIdea.createFromIdea(idea, proposalsCount(idea.ideaId))),
+            Some(IndexAndType(ideaIndexName, IdeaSearchEngine.ideaIndexName))
+          )
+      }
       .recoverWith {
         case e =>
           logger.error("Indexing ideas failed", e)

@@ -136,7 +136,10 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
 
       val searchQuery = SearchQuery(
         filters = Some(
-          SearchFilters(idea = Some(IdeaSearchFilter(mapping.ideaId)), tags = Some(TagsSearchFilter(tagsFromMapping)))
+          SearchFilters(
+            idea = Some(IdeaSearchFilter(Seq(mapping.ideaId))),
+            tags = Some(TagsSearchFilter(tagsFromMapping))
+          )
         )
       )
 

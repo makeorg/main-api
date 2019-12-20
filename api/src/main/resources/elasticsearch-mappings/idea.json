@@ -231,6 +231,10 @@
         "status": {
           "type": "keyword",
           "index": true
+        },
+        "proposalsCount": {
+          "type": "integer",
+          "index": false
         }
       }
     }

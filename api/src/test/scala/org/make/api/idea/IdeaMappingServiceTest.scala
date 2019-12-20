@@ -213,7 +213,7 @@ class IdeaMappingServiceTest
           SearchQuery(
             filters = Some(
               SearchFilters(
-                idea = Some(IdeaSearchFilter(IdeaId("original-idea"))),
+                idea = Some(IdeaSearchFilter(Seq(IdeaId("original-idea")))),
                 tags = Some(TagsSearchFilter(Seq(TagId("stake-id"), TagId("solution-id"))))
               )
             )
