@@ -38,7 +38,7 @@ import org.make.api.operation.{
 }
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
-import org.make.api.proposal.ProposalSearchEngineComponent
+import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent, ProposalsResultResponse}
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
@@ -130,6 +130,19 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/popular-tags")
   def getPopularTags: Route
 
+  @ApiOperation(value = "get-top-proposals", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
+  )
+  @Path(value = "/{questionId}/popular-tags")
+  def getTopProposals: Route
+
   @ApiOperation(value = "get-question-partners", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
@@ -170,7 +183,7 @@ trait QuestionApi extends Directives {
   def getPersonalities: Route
 
   def routes: Route =
-    questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getPartners ~ getPersonalities
+    questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~ getPersonalities
 }
 
 trait DefaultQuestionApiComponent
@@ -192,7 +205,8 @@ trait DefaultQuestionApiComponent
     with FeatureServiceComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
-    with TagServiceComponent =>
+    with TagServiceComponent
+    with ProposalServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -401,6 +415,29 @@ trait DefaultQuestionApiComponent
               provideAsync(elasticsearchProposalAPI.getPopularTagsByProposal(questionId, size)) { popularTagsResponse =>
                 val popularTags = popularTagsResponse.sortBy(_.proposalCount * -1).drop(skip.getOrElse(0))
                 complete(popularTags)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def getTopProposals: Route = get {
+      path("questions" / questionId / "top-proposals") { questionId =>
+        makeOperation("GetTopProposals") { requestContext =>
+          parameters((Symbol("limit").as[Int].?)) { (limit: Option[Int]) =>
+            optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                provideAsync(
+                  proposalService.getTopProposals(
+                    maybeUserId = userAuth.map(_.user.userId),
+                    questionId = questionId,
+                    size = limit.getOrElse(10),
+                    requestContext = requestContext
+                  )
+                ) { proposalsResponse =>
+                  complete(proposalsResponse)
+                }
               }
             }
           }

@@ -34,7 +34,13 @@ import org.make.api.feature.{
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
-import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.proposal.{
+  ProposalSearchEngine,
+  ProposalSearchEngineComponent,
+  ProposalService,
+  ProposalServiceComponent,
+  ProposalsResultResponse
+}
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
@@ -74,7 +80,8 @@ class QuestionApiTest
     with FeatureServiceComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
-    with TagServiceComponent {
+    with TagServiceComponent
+    with ProposalServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -87,6 +94,7 @@ class QuestionApiTest
   override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val tagService: TagService = mock[TagService]
+  override val proposalService: ProposalService = mock[ProposalService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -402,6 +410,28 @@ class QuestionApiTest
         res.head.tagId shouldBe TagId("tag3")
         res(1).tagId shouldBe TagId("tag1")
       }
+    }
+  }
+
+  feature("get top proposals") {
+    scenario("fake question") {
+      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("fake")))).thenReturn(Future.successful(None))
+      Get("/questions/fake/top-proposals") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("get top proposals") {
+      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("question-id"))))
+        .thenReturn(Future.successful(Some(baseQuestion)))
+
+      when(proposalService.getTopProposals(any[Option[UserId]], any[QuestionId], any[Int], any[RequestContext]))
+        .thenReturn(Future.successful(ProposalsResultResponse(total = 0, results = Seq.empty)))
+
+      Get("/questions/question-id/top-proposals") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+
     }
   }
 
