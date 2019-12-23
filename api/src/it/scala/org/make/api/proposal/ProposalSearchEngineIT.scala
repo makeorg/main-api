@@ -276,8 +276,8 @@ class ProposalSearchEngineIT
       votesSequenceCount = 287,
       votesSegmentCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 0, 0, 84),
-      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84),
+      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10),
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -353,7 +353,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 310,
       votesSegmentCount = 310,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 21, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
@@ -430,7 +430,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 127,
       votesSegmentCount = 127,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-2")),
@@ -509,7 +509,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 353,
       votesSegmentCount = 353,
       toEnrich = false,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)

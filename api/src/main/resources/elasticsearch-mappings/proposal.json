@@ -1007,6 +1007,10 @@
               "type": "double",
               "index": true
             },
+            "topScoreAjustedWithVotes": {
+              "type": "double",
+              "index": true
+            },
             "controversy": {
               "type": "double",
               "index": true
@@ -1049,6 +1053,10 @@
               "index": true
             },
             "topScore": {
+              "type": "double",
+              "index": true
+            },
+            "topScoreAjustedWithVotes": {
               "type": "double",
               "index": true
             },

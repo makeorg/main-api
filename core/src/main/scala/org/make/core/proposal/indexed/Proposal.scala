@@ -117,6 +117,7 @@ object ProposalElasticsearchFieldNames {
   val themeId: String = "themeId"
   val toEnrich: String = "toEnrich"
   val topScore: String = "scores.topScore"
+  val topScoreAjustedWithVotes: String = "scores.topScoreAjustedWithVotes"
   val trending: String = "trending"
   val updatedAt: String = "updatedAt"
   val userId: String = "userId"
@@ -300,6 +301,7 @@ final case class IndexedScores(boost: Double = 0,
                                realistic: Double,
                                platitude: Double,
                                topScore: Double,
+                               topScoreAjustedWithVotes: Double,
                                controversy: Double,
                                rejection: Double,
                                scoreUpperBound: Double)
@@ -308,7 +310,7 @@ object IndexedScores {
   implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]
   implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
 
-  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 }
 
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])
