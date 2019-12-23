@@ -22,8 +22,7 @@ package org.make.api.proposal
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
-import akka.actor.{ActorLogging, ActorRef, PoisonPill}
-import akka.pattern.ask
+import akka.actor.{ActorLogging, PoisonPill}
 import akka.persistence.SnapshotOffer
 import akka.util.Timeout
 import org.make.api.proposal.ProposalActor.Lock._
@@ -49,7 +48,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class ProposalActor(sessionHistoryActor: ActorRef)
+class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService)
     extends MakePersistentActor(classOf[ProposalState], classOf[ProposalEvent])
     with ActorLogging {
 
@@ -195,52 +194,64 @@ class ProposalActor(sessionHistoryActor: ActorRef)
   }
 
   private def logVoteEvent(event: ProposalVoted): Future[_] = {
-    sessionHistoryActor ? LogSessionVoteEvent(
-      sessionId = event.requestContext.sessionId,
-      requestContext = event.requestContext,
-      action = SessionAction(
-        date = event.eventDate,
-        actionType = ProposalVoteAction.name,
-        SessionVote(proposalId = event.id, voteKey = event.voteKey, trust = event.voteTrust)
+    sessionHistoryCoordinatorService.logTransactionalHistory(
+      LogSessionVoteEvent(
+        sessionId = event.requestContext.sessionId,
+        requestContext = event.requestContext,
+        action = SessionAction(
+          date = event.eventDate,
+          actionType = ProposalVoteAction.name,
+          SessionVote(proposalId = event.id, voteKey = event.voteKey, trust = event.voteTrust)
+        )
       )
     )
   }
 
   private def logUnvoteEvent(event: ProposalUnvoted): Future[_] = {
-    sessionHistoryActor ? LogSessionUnvoteEvent(
-      sessionId = event.requestContext.sessionId,
-      requestContext = event.requestContext,
-      action = SessionAction(
-        date = event.eventDate,
-        actionType = ProposalUnvoteAction.name,
-        SessionUnvote(proposalId = event.id, voteKey = event.voteKey, trust = event.voteTrust)
+    sessionHistoryCoordinatorService.logTransactionalHistory(
+      LogSessionUnvoteEvent(
+        sessionId = event.requestContext.sessionId,
+        requestContext = event.requestContext,
+        action = SessionAction(
+          date = event.eventDate,
+          actionType = ProposalUnvoteAction.name,
+          SessionUnvote(proposalId = event.id, voteKey = event.voteKey, trust = event.voteTrust)
+        )
       )
     )
   }
 
   private def logQualifyVoteEvent(event: ProposalQualified): Future[_] = {
-    sessionHistoryActor ? LogSessionQualificationEvent(
-      sessionId = event.requestContext.sessionId,
-      requestContext = event.requestContext,
-      action = SessionAction(
-        date = event.eventDate,
-        actionType = ProposalQualifyAction.name,
-        SessionQualification(proposalId = event.id, qualificationKey = event.qualificationKey, trust = event.voteTrust)
+    sessionHistoryCoordinatorService.logTransactionalHistory(
+      LogSessionQualificationEvent(
+        sessionId = event.requestContext.sessionId,
+        requestContext = event.requestContext,
+        action = SessionAction(
+          date = event.eventDate,
+          actionType = ProposalQualifyAction.name,
+          SessionQualification(
+            proposalId = event.id,
+            qualificationKey = event.qualificationKey,
+            trust = event.voteTrust
+          )
+        )
       )
     )
   }
 
   private def logRemoveVoteQualificationEvent(event: ProposalUnqualified): Future[_] = {
-    sessionHistoryActor ? LogSessionUnqualificationEvent(
-      sessionId = event.requestContext.sessionId,
-      requestContext = event.requestContext,
-      action = SessionAction(
-        date = event.eventDate,
-        actionType = ProposalUnqualifyAction.name,
-        SessionUnqualification(
-          proposalId = event.id,
-          qualificationKey = event.qualificationKey,
-          trust = event.voteTrust
+    sessionHistoryCoordinatorService.logTransactionalHistory(
+      LogSessionUnqualificationEvent(
+        sessionId = event.requestContext.sessionId,
+        requestContext = event.requestContext,
+        action = SessionAction(
+          date = event.eventDate,
+          actionType = ProposalUnqualifyAction.name,
+          SessionUnqualification(
+            proposalId = event.id,
+            qualificationKey = event.qualificationKey,
+            trust = event.voteTrust
+          )
         )
       )
     )

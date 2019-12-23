@@ -1135,16 +1135,8 @@ trait DefaultUserApiComponent
           makeOperation("UserUploadAvatar") { requestContext =>
             makeOAuth2 { user =>
               authorize(user.user.userId == userId || user.user.roles.contains(RoleAdmin)) {
-                val date = DateHelper.now()
-                def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] = {
-                  storageService
-                    .uploadFile(
-                      FileType.Avatar,
-                      s"${date.getYear}/${date.getMonthValue}/${userId.value}/${idGenerator.nextId()}$extension",
-                      contentType,
-                      fileContent
-                    )
-                }
+                def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] =
+                  storageService.uploadUserAvatar(userId, extension, contentType, fileContent)
                 uploadImageAsync("data", uploadFile, sizeLimit = Some(storageConfiguration.maxFileSize)) {
                   (path, file) =>
                     file.delete()

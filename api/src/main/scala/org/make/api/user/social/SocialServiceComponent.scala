@@ -83,7 +83,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               country = country.value,
               language = language.value,
               googleId = googleUserInfo.iat,
-              picture = Option(googleUserInfo.picture),
+              picture = Option(googleUserInfo.pictureUrl),
               domain = googleUserInfo.hd
             )
         case FACEBOOK_PROVIDER =>

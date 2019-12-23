@@ -28,15 +28,15 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.segment.SegmentServiceComponent
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceComponent}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.crm.SendMailPublisherServiceComponent
 import org.make.api.user.UserServiceComponent
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
-class ProposalSupervisor(userHistoryCoordinator: ActorRef,
-                         sessionHistoryCoordinator: ActorRef,
-                         dependencies: ProposalSupervisorDependencies)
+class ProposalSupervisor(dependencies: ProposalSupervisorDependencies)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -47,7 +47,7 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
     context.watch(
       context.actorOf(
         ProposalCoordinator
-          .props(sessionHistoryActor = sessionHistoryCoordinator),
+          .props(sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService),
         ProposalCoordinator.name
       )
     )
@@ -60,7 +60,9 @@ class ProposalSupervisor(userHistoryCoordinator: ActorRef,
 
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
-        ProposalUserHistoryConsumerActor.props(userHistoryCoordinator).withDispatcher(kafkaDispatcher),
+        ProposalUserHistoryConsumerActor
+          .props(dependencies.userHistoryCoordinatorService)
+          .withDispatcher(kafkaDispatcher),
         ProposalUserHistoryConsumerActor.name
       )
       context.actorOf(props, name)
@@ -109,10 +111,10 @@ object ProposalSupervisor {
     with SequenceServiceComponent
     with TagServiceComponent
     with SegmentServiceComponent
+    with UserHistoryCoordinatorServiceComponent
+    with SessionHistoryCoordinatorServiceComponent
 
   val name: String = "proposal"
-  def props(userHistoryCoordinator: ActorRef,
-            sessionHistoryCoordinator: ActorRef,
-            dependencies: ProposalSupervisorDependencies): Props =
-    Props(new ProposalSupervisor(userHistoryCoordinator, sessionHistoryCoordinator, dependencies))
+  def props(dependencies: ProposalSupervisorDependencies): Props =
+    Props(new ProposalSupervisor(dependencies))
 }

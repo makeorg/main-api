@@ -19,8 +19,11 @@
 
 package org.make.api.user
 
+import java.io.File
+import java.nio.file.Files
 import java.time.LocalDate
 
+import akka.http.scaladsl.model.ContentType
 import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
@@ -31,7 +34,9 @@ import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenGeneratorComponent, UserTokenGeneratorComponent}
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.security.SecurityHelper
-import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
+import org.make.api.technical.storage.Content.FileContent
+import org.make.api.technical.storage.StorageServiceComponent
+import org.make.api.technical.{DownloadServiceComponent, EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
@@ -105,6 +110,7 @@ trait UserService extends ShortenedNames {
                       userType: Option[UserType]): Future[Int]
   def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]]
   def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]]
+  def changeAvatarForUser(userId: UserId, avatarUrl: String): Future[String]
 }
 
 case class UserRegisterData(email: String,
@@ -151,7 +157,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with EventBusServiceComponent
     with TokenGeneratorComponent
     with MakeSettingsComponent
-    with UserRegistrationValidatorComponent =>
+    with UserRegistrationValidatorComponent
+    with StorageServiceComponent
+    with DownloadServiceComponent =>
 
   override lazy val userService: UserService = new DefaultUserService
 
@@ -545,6 +553,19 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           eventDate = DateHelper.now()
         )
       )
+      user.profile.flatMap(_.avatarUrl).foreach { avatarUrl =>
+        eventBusService.publish(
+          UserUploadAvatarEvent(
+            connectedUserId = Some(user.userId),
+            userId = user.userId,
+            country = user.country,
+            language = user.language,
+            requestContext = requestContext,
+            avatarUrl = avatarUrl,
+            eventDate = DateHelper.now()
+          )
+        )
+      }
     }
 
     override def requestPasswordReset(userId: UserId): Future[Boolean] = {
@@ -879,5 +900,18 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         case _ => Future.successful(None)
       }
     }
+
+    def changeAvatarForUser(userId: UserId, avatarUrl: String): Future[String] = {
+      def extension(contentType: ContentType) = s".${contentType.mediaType.subType}"
+      def destFn(contentType: ContentType): File =
+        Files.createTempFile("user-upload-avatar", extension(contentType)).toFile
+
+      downloadService.downloadImage(avatarUrl, destFn).flatMap {
+        case (contentType, tempFile) =>
+          tempFile.deleteOnExit()
+          storageService.uploadUserAvatar(userId, extension(contentType), contentType.value, FileContent(tempFile))
+      }
+    }
+
   }
 }

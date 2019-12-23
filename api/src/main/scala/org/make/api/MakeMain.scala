@@ -111,7 +111,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
   }
 
   // Initialize journals
-  actorSystem.actorOf(ShardedProposal.props(sessionHistoryCoordinator), "fake-proposal") ! PoisonPill
+  actorSystem.actorOf(ShardedProposal.props(sessionHistoryCoordinatorService), "fake-proposal") ! PoisonPill
   actorSystem.actorOf(ShardedUserHistory.props, "fake-user") ! PoisonPill
   actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator, 1.second), "fake-session") ! PoisonPill
 

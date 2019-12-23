@@ -37,7 +37,16 @@ final case class UserInfo(azp: Option[String],
                           familyName: Option[String],
                           local: Option[String],
                           alg: Option[String],
-                          kid: Option[String])
+                          kid: Option[String]) {
+  def pictureUrl: String = {
+    val end = "/photo.jpg"
+    if (picture.endsWith(end)) {
+      s"${picture.dropRight(end.length)}-s512$end"
+    } else {
+      s"$picture-s512"
+    }
+  }
+}
 
 object UserInfo {
 

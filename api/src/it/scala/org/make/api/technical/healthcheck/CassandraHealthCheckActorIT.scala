@@ -20,11 +20,12 @@
 package org.make.api.technical.healthcheck
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.make.api.docker.DockerCassandraService
 import org.make.api.proposal.{ProposalCoordinator, ProposeCommand}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 import org.make.api.technical.TimeSettings
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
 import org.make.api.{ItMakeTest, TestUtilsIT}
@@ -57,10 +58,10 @@ class CassandraHealthCheckActorIT
   override val cassandraExposedPort: Int = CassandraHealthCheckActorIT.cassandraExposedPort
   implicit val timeout: Timeout = TimeSettings.defaultTimeout.duration * 3
 
-  val sessionHistoryActor: TestProbe = TestProbe()
-  val sessionHistoryCoordinator: TestProbe = TestProbe()
+  val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
+
   val coordinator: ActorRef =
-    system.actorOf(ProposalCoordinator.props(sessionHistoryActor = sessionHistoryActor.ref), ProposalCoordinator.name)
+    system.actorOf(ProposalCoordinator.props(sessionHistoryCoordinatorService), ProposalCoordinator.name)
 
   feature("Check Cassandra status") {
     scenario("query proposal journal") {

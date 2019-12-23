@@ -89,6 +89,7 @@ object UserHistoryEvent {
           case Seq(JsString("LogUserOptInNewsletterEvent"))  => json.convertTo[LogUserOptInNewsletterEvent]
           case Seq(JsString("LogUserOptOutNewsletterEvent")) => json.convertTo[LogUserOptOutNewsletterEvent]
           case Seq(JsString("LogUserConnectedEvent"))        => json.convertTo[LogUserConnectedEvent]
+          case Seq(JsString("LogUserUploadedAvatarEvent"))   => json.convertTo[LogUserUploadedAvatarEvent]
         }
       }
 
@@ -116,6 +117,7 @@ object UserHistoryEvent {
           case event: LogUserOptInNewsletterEvent         => event.toJson
           case event: LogUserOptOutNewsletterEvent        => event.toJson
           case event: LogUserConnectedEvent               => event.toJson
+          case event: LogUserUploadedAvatarEvent          => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -616,4 +618,30 @@ case object UserHasConnected {
 
   implicit val userAnonymized: RootJsonFormat[UserHasConnected] =
     DefaultJsonProtocol.jsonFormat0(UserHasConnected.apply _)
+}
+
+final case class LogUserUploadedAvatarEvent(userId: UserId,
+                                            requestContext: RequestContext,
+                                            action: UserAction[UploadedAvatar])
+    extends UserHistoryEvent[UploadedAvatar] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogUserUploadedAvatarEvent {
+  val action: String = "user-upload-avatar"
+
+  implicit val logUserUploadedAvatarEventFormatted: RootJsonFormat[LogUserUploadedAvatarEvent] =
+    DefaultJsonProtocol.jsonFormat(LogUserUploadedAvatarEvent.apply, "userId", "context", "action")
+
+}
+
+final case class UploadedAvatar(avatarUrl: String) {
+  def version(): Int = MakeSerializable.V1
+}
+
+case object UploadedAvatar {
+  val actionType: String = "uploaded-avatar"
+
+  implicit val userAnonymized: RootJsonFormat[UploadedAvatar] =
+    DefaultJsonProtocol.jsonFormat1(UploadedAvatar.apply)
 }
