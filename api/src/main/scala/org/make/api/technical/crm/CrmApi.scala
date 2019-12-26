@@ -205,13 +205,15 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
 
     override def syncCrmData: Route = post {
       path("technical" / "crm" / "synchronize") {
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireAdminRole(auth.user) {
-            makeOperation("SyncCrmData") { _ =>
-              // The future will take a lot of time to complete,
-              // so it's better to leave it in the background
-              crmService.synchronizeContactsWithCrm()
-              complete(StatusCodes.Accepted)
+        makeOperation("CrmSynchro") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              makeOperation("SyncCrmData") { _ =>
+                // The future will take a lot of time to complete,
+                // so it's better to leave it in the background
+                crmService.synchronizeContactsWithCrm()
+                complete(StatusCodes.Accepted)
+              }
             }
           }
         }
@@ -220,19 +222,21 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
 
     override def anonymizeUsers: Route = post {
       path("technical" / "crm" / "anonymize") {
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireAdminRole(auth.user) {
-            makeOperation("AnonymizeUsers") { _ =>
-              val startTime = System.currentTimeMillis()
-              crmService.anonymize().onComplete {
-                case Success(_) =>
-                  logger
-                    .info(s"anonymizing contacts succeeded in ${System.currentTimeMillis() - startTime}ms")
-                case Failure(e) =>
-                  logger
-                    .error(s"anonymizing contacts failed in ${System.currentTimeMillis() - startTime}ms", e)
+        makeOperation("CrmAnonymize") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              makeOperation("AnonymizeUsers") { _ =>
+                val startTime = System.currentTimeMillis()
+                crmService.anonymize().onComplete {
+                  case Success(_) =>
+                    logger
+                      .info(s"anonymizing contacts succeeded in ${System.currentTimeMillis() - startTime}ms")
+                  case Failure(e) =>
+                    logger
+                      .error(s"anonymizing contacts failed in ${System.currentTimeMillis() - startTime}ms", e)
+                }
+                complete(StatusCodes.Accepted)
               }
-              complete(StatusCodes.Accepted)
             }
           }
         }
@@ -241,28 +245,32 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
 
     override def sendListToCrm: Route = post {
       path("technical" / "crm" / crmList / "synchronize") { list =>
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireAdminRole(auth.user) {
-            makeOperation("SynchronizeList") { _ =>
-              val startTime = System.currentTimeMillis()
-              crmService
-                .synchronizeList(
-                  DateHelper.now().toString,
-                  list,
-                  list.targetDirectory(mailJetConfiguration.csvDirectory)
-                )
-                .onComplete {
-                  case Success(_) =>
-                    logger
-                      .info(s"Synchronizing list ${list.name} succeeded in ${System.currentTimeMillis() - startTime}ms")
-                  case Failure(e) =>
-                    logger
-                      .error(
-                        s"Synchronizing list ${list.name} failed in ${System.currentTimeMillis() - startTime}ms",
-                        e
-                      )
-                }
-              complete(StatusCodes.Accepted)
+        makeOperation("CrmSendList") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              makeOperation("SynchronizeList") { _ =>
+                val startTime = System.currentTimeMillis()
+                crmService
+                  .synchronizeList(
+                    DateHelper.now().toString,
+                    list,
+                    list.targetDirectory(mailJetConfiguration.csvDirectory)
+                  )
+                  .onComplete {
+                    case Success(_) =>
+                      logger
+                        .info(
+                          s"Synchronizing list ${list.name} succeeded in ${System.currentTimeMillis() - startTime}ms"
+                        )
+                    case Failure(e) =>
+                      logger
+                        .error(
+                          s"Synchronizing list ${list.name} failed in ${System.currentTimeMillis() - startTime}ms",
+                          e
+                        )
+                  }
+                complete(StatusCodes.Accepted)
+              }
             }
           }
         }

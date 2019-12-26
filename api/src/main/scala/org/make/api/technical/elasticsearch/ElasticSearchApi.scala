@@ -81,20 +81,22 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
   class DefaultElasticSearchApi extends ElasticSearchApi {
     def reindex: Route = post {
       path("technical" / "elasticsearch" / "reindex") {
-        makeOAuth2 { auth: AuthInfo[UserRights] =>
-          requireAdminRole(auth.user) {
-            decodeRequest {
-              entity(as[ReindexRequest]) { request: ReindexRequest =>
-                makeOperation("ReindexingData") { _ =>
-                  provideAsync(
-                    indexationService.reindexData(
-                      Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
-                      Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
-                      Seq(request.forceAll, request.forceProposals).flatten.contains(true),
-                      Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
-                    )
-                  ) { _ =>
-                    complete(StatusCodes.NoContent)
+        makeOperation("Reindex") { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              decodeRequest {
+                entity(as[ReindexRequest]) { request: ReindexRequest =>
+                  makeOperation("ReindexingData") { _ =>
+                    provideAsync(
+                      indexationService.reindexData(
+                        Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
+                        Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
+                        Seq(request.forceAll, request.forceProposals).flatten.contains(true),
+                        Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
+                      )
+                    ) { _ =>
+                      complete(StatusCodes.NoContent)
+                    }
                   }
                 }
               }

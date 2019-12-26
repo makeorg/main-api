@@ -324,6 +324,21 @@ class MakeDirectivesTest
         header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("http://make.org")
       }
     }
+
+    scenario("exception in oauth returns header allow all origins") {
+      when(oauth2DataHandler.findAccessToken("invalid"))
+        .thenReturn(Future.failed(TokenAlreadyRefreshed("invalid")))
+
+      Get("/test")
+        .addHeader(Origin.create(HttpOrigin("http://make.org")))
+        .addHeader(Cookie(makeSettings.SecureCookie.name, "invalid")) ~> routeException ~> check {
+
+        status should be(StatusCodes.PreconditionFailed)
+        info(headers.mkString("\n"))
+        header[`Access-Control-Allow-Origin`] shouldBe defined
+        header[`Access-Control-Allow-Origin`].map(_.value) shouldBe Some("http://make.org")
+      }
+    }
   }
 
   feature("get parameters management") {
