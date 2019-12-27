@@ -36,7 +36,7 @@ import org.make.api.operation.{
   OperationServiceComponent,
   PersistentOperationOfQuestionServiceComponent
 }
-import org.make.api.organisation.{OrganisationSearchEngineComponent, OrganisationsSearchResultResponse}
+import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.proposal.ProposalSearchEngineComponent
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
@@ -192,8 +192,7 @@ trait DefaultQuestionApiComponent
     with FeatureServiceComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
-    with TagServiceComponent
-    with OrganisationSearchEngineComponent =>
+    with TagServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -444,19 +443,11 @@ trait DefaultQuestionApiComponent
                       partnerKind = partnerKind
                     )
                 ) { partners =>
-                  val query = OrganisationSearchQuery(
-                    filters = Some(
-                      OrganisationSearchFilters(
-                        organisationIds = Some(OrganisationIdsSearchFilter(partners.flatMap(_.organisationId)))
-                      )
-                    ),
-                    sortAlgorithm = OrganisationAlgorithmSelector.select(sortAlgorithm),
-                    limit = limit,
-                    skip = skip
-                  )
-
-                  provideAsync(elasticsearchOrganisationAPI.searchOrganisations(query)) { organisationSearchResult =>
-                    complete(OrganisationsSearchResultResponse.fromOrganisationSearchResult(organisationSearchResult))
+                  val organisationsIds = partners.flatMap(_.organisationId)
+                  val sortAlgo = OrganisationAlgorithmSelector.select(sortAlgorithm, Some(questionId))
+                  provideAsync(questionService.getPartners(questionId, organisationsIds, sortAlgo, limit, skip)) {
+                    results =>
+                      complete(OrganisationsSearchResultResponse.fromOrganisationSearchResult(results))
                   }
                 }
               }

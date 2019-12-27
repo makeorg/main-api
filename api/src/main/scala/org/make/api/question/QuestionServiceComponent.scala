@@ -22,6 +22,7 @@ package org.make.api.question
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import org.make.api.ActorSystemComponent
+import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.personality.QuestionPersonalityServiceComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.user.UserServiceComponent
@@ -29,6 +30,8 @@ import org.make.core.operation.OperationId
 import org.make.core.personality.PersonalityRole
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.user._
+import org.make.core.user.indexed.OrganisationSearchResult
 import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -54,6 +57,11 @@ trait QuestionService {
                                end: Option[Int],
                                questionId: QuestionId,
                                personalityRole: Option[PersonalityRole]): Future[Seq[QuestionPersonalityResponse]]
+  def getPartners(questionId: QuestionId,
+                  organisationIds: Seq[UserId],
+                  sortAlgorithm: Option[OrganisationSortAlgorithm],
+                  limit: Option[Int],
+                  skip: Option[Int]): Future[OrganisationSearchResult]
 }
 
 case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
@@ -76,7 +84,8 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     with ActorSystemComponent
     with IdGeneratorComponent
     with QuestionPersonalityServiceComponent
-    with UserServiceComponent =>
+    with UserServiceComponent
+    with OrganisationSearchEngineComponent =>
 
   override lazy val questionService: QuestionService = new DefaultQuestionService
 
@@ -217,5 +226,30 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         .runWith(Sink.seq[QuestionPersonalityResponse])
     }
 
+    override def getPartners(questionId: QuestionId,
+                             organisationIds: Seq[UserId],
+                             sortAlgorithm: Option[OrganisationSortAlgorithm],
+                             limit: Option[Int],
+                             skip: Option[Int]): Future[OrganisationSearchResult] = {
+      val query = OrganisationSearchQuery(
+        filters = Some(OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(organisationIds)))),
+        sortAlgorithm = sortAlgorithm,
+        limit = sortAlgorithm.map(_ => 1000).orElse(limit),
+        skip = sortAlgorithm.map(_  => 0).orElse(skip)
+      )
+
+      elasticsearchOrganisationAPI.searchOrganisations(query).map { organisationSearchResult =>
+        sortAlgorithm.collect {
+          case ParticipationAlgorithm(_) =>
+            organisationSearchResult.copy(results = organisationSearchResult.results.sortBy { orga =>
+              orga.countsByQuestion.collect {
+                case counts if counts.questionId == questionId =>
+                  counts.proposalsCount + counts.votesCount
+              }.sum * -1
+            }.slice(skip.getOrElse(0), skip.getOrElse(0) + limit.getOrElse(organisationSearchResult.total.toInt)))
+        }.getOrElse(organisationSearchResult)
+      }
+
+    }
   }
 }

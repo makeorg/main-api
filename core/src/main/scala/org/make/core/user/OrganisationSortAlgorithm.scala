@@ -22,7 +22,10 @@ package org.make.core.user
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{ScriptSort, ScriptSortType, SortOrder}
+import org.make.core.question.QuestionId
+import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
 
 sealed trait OrganisationSortAlgorithm {
   def sortDefinition(request: SearchRequest): SearchRequest
@@ -33,29 +36,61 @@ sealed trait OrganisationSortAlgorithm {
  * - +1 point per proposal
  * - +1 point per vote
  */
-case object ParticipationAlgorithm extends OrganisationSortAlgorithm {
+case class ParticipationAlgorithm(questionId: QuestionId) extends OrganisationSortAlgorithm {
 
   override def sortDefinition(request: SearchRequest): SearchRequest = {
+    val query: Query = request.query.getOrElse(ElasticApi.boolQuery())
     request
+      .query(
+        ElasticApi
+          .must(
+            query,
+            ElasticApi
+              .nestedQuery(
+                path = OrganisationElasticsearchFieldNames.countsByQuestion,
+                query = ElasticApi.must(
+                  ElasticApi
+                    .termQuery(OrganisationElasticsearchFieldNames.countsByQuestionQuestionId, questionId.value),
+                  ElasticApi.scriptQuery(
+                    Script(
+                      "doc['countsByQuestion.proposalsCount'].value + doc['countsByQuestion.votesCount'].value > 0"
+                    )
+                  )
+                )
+              )
+          )
+      )
       .sortBy(
         ScriptSort(
-          Script("doc['proposalsCount'].value + doc['votesCount'].value"),
-          ScriptSortType.NUMBER,
-          order = Some(SortOrder.DESC)
+          script = Script("doc['proposalsCount'].value + doc['votesCount'].value"),
+          scriptSortType = ScriptSortType.NUMBER,
+          order = Some(SortOrder.DESC),
+          nestedFilter = Some(
+            ElasticApi
+              .nestedQuery(
+                path = OrganisationElasticsearchFieldNames.countsByQuestion,
+                query =
+                  ElasticApi.termQuery(OrganisationElasticsearchFieldNames.countsByQuestionQuestionId, questionId.value)
+              )
+          )
         )
       )
-      .postFilter(ElasticApi.scriptQuery(Script("doc['proposalsCount'].value + doc['votesCount'].value > 0")))
-  }
 
+  }
+}
+
+object ParticipationAlgorithm {
   val shortName: String = "participation"
 }
 
 case object OrganisationAlgorithmSelector {
   val sortAlgorithmsName: Seq[String] = Seq(ParticipationAlgorithm.shortName)
 
-  def select(sortAlgorithm: Option[String]): Option[OrganisationSortAlgorithm] = sortAlgorithm match {
-    case Some(ParticipationAlgorithm.shortName) => Some(ParticipationAlgorithm)
-    case _                                      => None
-  }
+  def select(sortAlgorithm: Option[String], questionId: Option[QuestionId]): Option[OrganisationSortAlgorithm] =
+    sortAlgorithm match {
+      case Some(ParticipationAlgorithm.shortName) if questionId.isDefined =>
+        Some(ParticipationAlgorithm(questionId.get))
+      case _ => None
+    }
 
 }

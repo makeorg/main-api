@@ -249,7 +249,7 @@ class OrganisationSearchEngineIT
     scenario("participation algorithm") {
       whenReady(
         elasticsearchOrganisationAPI.searchOrganisations(
-          OrganisationSearchQuery(sortAlgorithm = Some(ParticipationAlgorithm))
+          OrganisationSearchQuery(sortAlgorithm = Some(ParticipationAlgorithm(QuestionId("question-id-1"))))
         ),
         Timeout(5.seconds)
       ) { result =>
