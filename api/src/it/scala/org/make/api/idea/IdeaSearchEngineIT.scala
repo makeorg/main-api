@@ -95,7 +95,8 @@ class IdeaSearchEngineIT
       language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
-      updatedAt = Some(DateHelper.now())
+      updatedAt = Some(DateHelper.now()),
+      proposalsCount = 0
     ),
     IndexedIdea(
       ideaId = IdeaId("02"),
@@ -108,7 +109,8 @@ class IdeaSearchEngineIT
       language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
-      updatedAt = Some(DateHelper.now())
+      updatedAt = Some(DateHelper.now()),
+      proposalsCount = 42
     ),
     IndexedIdea(
       ideaId = IdeaId("03"),
@@ -121,7 +123,8 @@ class IdeaSearchEngineIT
       language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
-      updatedAt = Some(DateHelper.now())
+      updatedAt = Some(DateHelper.now()),
+      proposalsCount = 0
     )
   )
 
@@ -191,6 +194,7 @@ class IdeaSearchEngineIT
       whenReady(elasticsearchIdeaAPI.searchIdeas(ideaSearchQuery), Timeout(5.seconds)) { result =>
         result.total should be(3)
         result.results(0).name should be("a-idea02")
+        result.results(0).proposalsCount should be(42)
         result.results(1).name should be("b-idea03")
         result.results(2).name should be("c-idea01")
       }

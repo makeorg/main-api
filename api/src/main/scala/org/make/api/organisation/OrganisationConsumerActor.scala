@@ -68,8 +68,9 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
     elasticsearchOrganisationAPI
       .findOrganisationById(organisation.organisationId)
       .flatMap {
-        case None    => elasticsearchOrganisationAPI.indexOrganisation(organisation)
-        case Some(_) => elasticsearchOrganisationAPI.updateOrganisation(organisation)
+        case None => elasticsearchOrganisationAPI.indexOrganisation(organisation)
+        case Some(found) =>
+          elasticsearchOrganisationAPI.updateOrganisation(organisation.copy(countsByQuestion = found.countsByQuestion))
       }
       .map { _ =>
         }

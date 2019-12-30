@@ -68,8 +68,8 @@ class IdeaConsumerActor(ideaService: IdeaService,
     elasticsearchIdeaAPI
       .findIdeaById(idea.ideaId)
       .flatMap {
-        case None    => elasticsearchIdeaAPI.indexIdea(idea)
-        case Some(_) => elasticsearchIdeaAPI.updateIdea(idea)
+        case None        => elasticsearchIdeaAPI.indexIdea(idea)
+        case Some(found) => elasticsearchIdeaAPI.updateIdea(idea.copy(proposalsCount = found.proposalsCount))
       }
       .map { _ =>
         }
@@ -78,7 +78,7 @@ class IdeaConsumerActor(ideaService: IdeaService,
   private def retrieveAndShapeIdea(id: IdeaId): Future[IndexedIdea] = {
     ideaService.fetchOne(id).flatMap {
       case None       => Future.failed(new IllegalArgumentException(s"Idea ${id.value} doesn't exist"))
-      case Some(idea) => Future.successful(IndexedIdea.createFromIdea(idea))
+      case Some(idea) => Future.successful(IndexedIdea.createFromIdea(idea, proposalsCount = 0))
     }
   }
 

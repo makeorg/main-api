@@ -1697,6 +1697,26 @@ class ProposalSearchEngineIT
     }
   }
 
+  feature("count proposals by idea") {
+    scenario("no ideas") {
+      whenReady(elasticsearchProposalAPI.countProposalsByIdea(Seq.empty), Timeout(3.seconds)) { results =>
+        results.size shouldBe 0
+      }
+    }
+
+    scenario("some ideas") {
+      val ideaIdOne = IdeaId("idea-id")
+      val ideaIdTwo = IdeaId("idea-id-2")
+      whenReady(elasticsearchProposalAPI.countProposalsByIdea(Seq(ideaIdOne, ideaIdTwo)), Timeout(3.seconds)) {
+        results =>
+          results.get(ideaIdOne).isDefined shouldBe true
+          results(ideaIdOne) shouldBe 2
+          results.get(ideaIdTwo).isDefined shouldBe true
+          results.get(IdeaId("idea-id-3")).isDefined shouldBe false
+      }
+    }
+  }
+
   override protected def afterAll(): Unit = {
     super.afterAll()
     stopAllQuietly()

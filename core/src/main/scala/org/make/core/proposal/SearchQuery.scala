@@ -457,8 +457,10 @@ object SearchFilters extends ElasticDsl {
   def buildIdeaSearchFilter(searchQuery: SearchQuery): Option[Query] = {
     searchQuery.filters.flatMap {
       _.idea match {
-        case Some(IdeaSearchFilter(idea)) =>
+        case Some(IdeaSearchFilter(Seq(idea))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.ideaId, idea.value))
+        case Some(IdeaSearchFilter(ideas)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.ideaId, ideas.map(_.value)))
         case _ => None
       }
     }
@@ -634,7 +636,7 @@ final case class ContextSearchFilter(operation: Option[OperationId] = None,
 
 final case class SlugSearchFilter(slug: String)
 
-final case class IdeaSearchFilter(ideaId: IdeaId)
+final case class IdeaSearchFilter(ideaIds: Seq[IdeaId])
 
 final case class Limit(value: Int)
 

@@ -65,6 +65,7 @@ object IdeaElasticsearchFieldNames {
   val status: String = "status"
   val createdAt: String = "createdAt"
   val updatedAt: String = "updatedAt"
+  val proposalsCount: String = "proposalsCount"
 }
 
 case class IndexedIdea(ideaId: IdeaId,
@@ -77,13 +78,14 @@ case class IndexedIdea(ideaId: IdeaId,
                        language: Option[Language],
                        status: IdeaStatus,
                        createdAt: ZonedDateTime,
-                       updatedAt: Option[ZonedDateTime])
+                       updatedAt: Option[ZonedDateTime],
+                       proposalsCount: Int)
 
 object IndexedIdea extends CirceFormatters {
   implicit val encoder: Encoder[IndexedIdea] = deriveEncoder[IndexedIdea]
   implicit val decoder: Decoder[IndexedIdea] = deriveDecoder[IndexedIdea]
 
-  def createFromIdea(idea: Idea): IndexedIdea = {
+  def createFromIdea(idea: Idea, proposalsCount: Int): IndexedIdea = {
     IndexedIdea(
       ideaId = idea.ideaId,
       name = idea.name,
@@ -98,7 +100,8 @@ object IndexedIdea extends CirceFormatters {
         case Some(date) => date
         case _          => throw new IllegalStateException("created at required")
       },
-      updatedAt = idea.updatedAt
+      updatedAt = idea.updatedAt,
+      proposalsCount = proposalsCount
     )
   }
 }
