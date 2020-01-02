@@ -2247,6 +2247,53 @@ class ProposalServiceTest
     }
   }
 
+  feature("get top proposals") {
+    scenario("get top proposals") {
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(any[SearchQuery]))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 2,
+                results = Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote")))
+              )
+            )
+        )
+
+      Mockito
+        .when(
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
+            )
+        )
+        .thenReturn(
+          Future
+            .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+        )
+
+      Mockito
+        .when(elasticsearchProposalAPI.getTopProposalsByIdea(QuestionId("question-id"), size = 10))
+        .thenReturn(
+          Future.successful(Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote"))))
+        )
+
+      val topProposals = proposalService.getTopProposals(
+        None,
+        QuestionId("question-id"),
+        size = 10,
+        RequestContext.empty.copy(sessionId = SessionId("my-session"))
+      )
+
+      whenReady(topProposals, Timeout(5.seconds)) { result =>
+        result.results.size should be(2)
+        result.results.head.votes.filter(_.voteKey == Agree).map(_.hasVoted) should contain(true)
+        result.results.tail.flatMap(_.votes).filter(_.voteKey == Agree).map(_.hasVoted) should contain(false)
+      }
+    }
+  }
+
   feature("get moderation proposal by id") {
     scenario("regular participation") {
 

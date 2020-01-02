@@ -77,6 +77,11 @@ trait ProposalService {
                     query: SearchQuery,
                     requestContext: RequestContext): Future[ProposalsResultSeededResponse]
 
+  def getTopProposals(maybeUserId: Option[UserId],
+                      questionId: QuestionId,
+                      size: Int,
+                      requestContext: RequestContext): Future[ProposalsResultResponse]
+
   def searchProposalsVotedByUser(userId: UserId,
                                  filterVotes: Option[Seq[VoteKey]],
                                  filterQualifications: Option[Seq[QualificationKey]],
@@ -358,6 +363,29 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }.map { proposalResultResponse =>
         ProposalsResultSeededResponse(proposalResultResponse.total, proposalResultResponse.results, query.getSeed)
       }
+    }
+
+    override def getTopProposals(maybeUserId: Option[UserId],
+                                 questionId: QuestionId,
+                                 size: Int,
+                                 requestContext: RequestContext): Future[ProposalsResultResponse] = {
+      elasticsearchProposalAPI
+        .getTopProposalsByIdea(questionId, size)
+        .flatMap { results =>
+          val searchResult = ProposalsSearchResult(results.size, results)
+          maybeUserId.map { userId =>
+            userHistoryCoordinatorService
+              .retrieveVoteAndQualifications(RequestVoteValues(userId = userId, searchResult.results.map(_.id)))
+          }.getOrElse {
+            sessionHistoryCoordinatorService
+              .retrieveVoteAndQualifications(
+                RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
+              )
+          }.map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
+        }
+        .map { proposalResultResponse =>
+          ProposalsResultResponse(proposalResultResponse.total, proposalResultResponse.results)
+        }
     }
 
     override def propose(user: User,
