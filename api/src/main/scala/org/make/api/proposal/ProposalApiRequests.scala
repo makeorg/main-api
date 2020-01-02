@@ -199,7 +199,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                @Deprecated isRandom: Option[Boolean] = Some(false),
                                sortAlgorithm: Option[String] = None,
                                operationKinds: Option[Seq[OperationKind]] = None,
-                               userType: Option[UserType] = None) {
+                               userType: Option[UserType] = None,
+                               ideaIds: Option[Seq[IdeaId]] = None) {
 
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =
@@ -217,7 +218,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         language = language.map(LanguageSearchFilter.apply),
         country = country.map(CountrySearchFilter.apply),
         operationKinds = operationKinds.map(OperationKindsSearchFilter.apply),
-        userType = userType.map(UserTypeSearchFilter.apply)
+        userType = userType.map(UserTypeSearchFilter.apply),
+        idea = ideaIds.map(IdeaSearchFilter.apply)
       )
 
     val randomSeed: Int = seed.getOrElse(MakeRandom.random.nextInt())
