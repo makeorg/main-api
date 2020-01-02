@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -35,7 +36,9 @@ import org.make.api.operation.OperationOfQuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.crm.CrmServiceComponent
+import org.make.api.technical.storage.StorageConfigurationComponent
 import org.make.api.user.UserServiceComponent
+import org.make.api.userhistory.UserUploadAvatarEvent
 import org.make.core.operation.OperationOfQuestion
 import org.make.core.tag.{Tag => _}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Validation}
@@ -105,7 +108,22 @@ trait MigrationApi extends Directives {
   @Path(value = "/count-damage-user-account")
   def countDamageUserAccount: Route
 
-  def routes: Route = deleteMailjetAnonedContacts ~ setProperSignUpOperation ~ countDamageUserAccount
+  @ApiOperation(
+    value = "upload-all-avatars",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @Path(value = "/upload-all-avatars")
+  def uploadAllAvatars: Route
+
+  def routes: Route = deleteMailjetAnonedContacts ~ setProperSignUpOperation ~ countDamageUserAccount ~ uploadAllAvatars
 }
 
 trait MigrationApiComponent {
@@ -121,7 +139,9 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with CrmServiceComponent
     with MailJetConfigurationComponent
     with OperationOfQuestionServiceComponent
-    with UserServiceComponent =>
+    with UserServiceComponent
+    with EventBusServiceComponent
+    with StorageConfigurationComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
@@ -259,6 +279,45 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       }
     }
 
+    override def uploadAllAvatars: Route = post {
+      path("migrations" / "upload-all-avatars") {
+        makeOperation("UploadAllAvatars") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              val batchSize: Int = 1000
+              StreamUtils
+                .asyncPageToPageSource(userService.findUsersForCrmSynchro(None, None, _, batchSize))
+                .mapConcat(identity)
+                .collect {
+                  case user
+                      if user.profile.flatMap(_.avatarUrl).isDefined
+                        && !user.profile.flatMap(_.avatarUrl).exists(_.startsWith(storageConfiguration.baseUrl)) =>
+                    val avatarUrl = user.profile.flatMap(_.avatarUrl).get
+                    val largeAvatarUrl = avatarUrl match {
+                      case url if url.startsWith("https://graph.facebook.com/v3.0/") => s"$url?width=512&height=512"
+                      case url if url.contains("google")                             => url.replace("s96-c", "s512-c")
+                      case _                                                         => avatarUrl
+                    }
+                    eventBusService.publish(
+                      UserUploadAvatarEvent(
+                        connectedUserId = Some(userAuth.user.userId),
+                        userId = user.userId,
+                        country = user.country,
+                        language = user.language,
+                        requestContext = requestContext,
+                        avatarUrl = largeAvatarUrl,
+                        eventDate = DateHelper.now()
+                      )
+                    )
+                }
+                .runWith(Sink.ignore)
+              complete(StatusCodes.NoContent)
+            }
+          }
+        }
+
+      }
+    }
   }
 
 }

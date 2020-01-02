@@ -470,22 +470,15 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       val hashedPassword = if (!user.emailVerified) None else user.hashedPassword
 
       val updatedProfile: Option[Profile] = user.profile.map {
-        _.copy(
-          facebookId = userInfo.facebookId,
-          googleId = userInfo.googleId,
-          avatarUrl = userInfo.picture,
-          gender = userInfo.gender.map {
-            case "male"   => Male
-            case "female" => Female
-            case _        => Other
-          },
-          genderName = userInfo.gender
-        )
+        _.copy(facebookId = userInfo.facebookId, googleId = userInfo.googleId, gender = userInfo.gender.map {
+          case "male"   => Male
+          case "female" => Female
+          case _        => Other
+        }, genderName = userInfo.gender)
       }.orElse {
         Profile.parseProfile(
           facebookId = userInfo.facebookId,
           googleId = userInfo.googleId,
-          avatarUrl = userInfo.picture,
           gender = userInfo.gender.map {
             case "male"   => Male
             case "female" => Female
