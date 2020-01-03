@@ -436,7 +436,7 @@ trait DefaultModerationProposalApiComponent
                     Symbol("skip").as[Int].?,
                     Symbol("sort").?,
                     Symbol("order").?,
-                    Symbol("userType").as[UserType].?
+                    Symbol("userType").as[immutable.Seq[UserType]].?
                   )
                 ) {
                   (proposalIds: Option[Seq[ProposalId]],
@@ -460,7 +460,7 @@ trait DefaultModerationProposalApiComponent
                    skip: Option[Int],
                    sort: Option[String],
                    order: Option[String],
-                   userType: Option[UserType]) =>
+                   userTypes: Option[Seq[UserType]]) =>
                     Validation.validate(Seq(country.map { countryValue =>
                       Validation.validChoices(
                         fieldName = "country",
@@ -537,7 +537,7 @@ trait DefaultModerationProposalApiComponent
                       limit = limit,
                       skip = skip,
                       createdBefore = createdBefore,
-                      userType = userType
+                      userTypes = userTypes
                     )
                     val query: SearchQuery = exhaustiveSearchRequest.toSearchQuery(requestContext)
                     provideAsync(

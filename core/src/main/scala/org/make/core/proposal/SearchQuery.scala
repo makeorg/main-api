@@ -85,7 +85,7 @@ case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
                          operationKinds: Option[OperationKindsSearchFilter] = None,
                          questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
                          segment: Option[SegmentSearchFilter] = None,
-                         userType: Option[UserTypeSearchFilter] = None)
+                         userTypes: Option[UserTypesSearchFilter] = None)
 
 object SearchFilters extends ElasticDsl {
 
@@ -114,7 +114,7 @@ object SearchFilters extends ElasticDsl {
             operationKinds: Option[OperationKindsSearchFilter] = None,
             questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
             segment: Option[SegmentSearchFilter] = None,
-            userType: Option[UserTypeSearchFilter] = None): Option[SearchFilters] = {
+            userTypes: Option[UserTypesSearchFilter] = None): Option[SearchFilters] = {
 
     Seq(
       proposals,
@@ -141,7 +141,7 @@ object SearchFilters extends ElasticDsl {
       operationKinds,
       questionIsOpen,
       segment,
-      userType
+      userTypes
     ).flatten match {
       case Seq() => None
       case _ =>
@@ -171,7 +171,7 @@ object SearchFilters extends ElasticDsl {
             operationKinds,
             questionIsOpen,
             segment,
-            userType
+            userTypes
           )
         )
     }
@@ -212,7 +212,7 @@ object SearchFilters extends ElasticDsl {
       buildOperationKindSearchFilter(searchQuery),
       buildQuestionIsOpenSearchFilter(searchQuery),
       buildSegmentSearchFilter(searchQuery),
-      buildUserTypeSearchFilter(searchQuery)
+      buildUserTypesSearchFilter(searchQuery)
     ).flatten
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
@@ -590,11 +590,13 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildUserTypeSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildUserTypesSearchFilter(searchQuery: SearchQuery): Option[Query] = {
     searchQuery.filters.flatMap {
-      _.userType match {
-        case Some(UserTypeSearchFilter(userType)) =>
+      _.userTypes match {
+        case Some(UserTypesSearchFilter(Seq(userType))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorUserType, userType.shortName))
+        case Some(UserTypesSearchFilter(userTypes)) =>
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.authorUserType, userTypes.map(_.shortName)))
         case _ => None
       }
     }
@@ -649,4 +651,4 @@ final case class SequencePoolSearchFilter(sequencePool: SequencePool)
 final case class OperationKindsSearchFilter(kinds: Seq[OperationKind])
 final case class QuestionIsOpenSearchFilter(isOpen: Boolean)
 final case class SegmentSearchFilter(segment: String)
-final case class UserTypeSearchFilter(userType: UserType)
+final case class UserTypesSearchFilter(userTypes: Seq[UserType])
