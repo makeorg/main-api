@@ -410,10 +410,11 @@ trait DefaultQuestionApiComponent
         makeOperation("GetQuestionPopularTags") { _ =>
           parameters((Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)) { (limit: Option[Int], skip: Option[Int]) =>
             provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
-              val size = limit.getOrElse(10) + skip.getOrElse(0)
+              val offset = skip.getOrElse(0)
+              val size = limit.map(_ + offset).getOrElse(Int.MaxValue)
 
               provideAsync(elasticsearchProposalAPI.getPopularTagsByProposal(questionId, size)) { popularTagsResponse =>
-                val popularTags = popularTagsResponse.sortBy(_.proposalCount * -1).drop(skip.getOrElse(0))
+                val popularTags = popularTagsResponse.sortBy(_.proposalCount * -1).drop(offset)
                 complete(popularTags)
               }
             }
