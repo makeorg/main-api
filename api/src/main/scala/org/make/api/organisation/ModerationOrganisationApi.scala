@@ -189,12 +189,9 @@ trait DefaultModerationOrganisationApiComponent
                         organisationService
                           .update(
                             organisation.copy(
-                              organisationName =
-                                request.organisationName.map(_.value).orElse(organisation.organisationName),
+                              organisationName = Some(request.organisationName.value),
                               email = maybeEmail.getOrElse(organisation.email).toLowerCase,
-                              profile = request.profile
-                                .flatMap(_.mergeProfile(organisation.profile))
-                                .orElse(organisation.profile)
+                              profile = request.profile.flatMap(_.toProfile)
                             ),
                             maybeEmail,
                             requestContext
@@ -296,12 +293,12 @@ object ModerationCreateOrganisationRequest {
 }
 
 final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     organisationName: Option[String Refined MaxSize[W.`256`.T]] = None,
+                                                     organisationName: String Refined MaxSize[W.`256`.T],
                                                      @(ApiModelProperty @field)(dataType = "string", required = false)
                                                      email: Option[String] = None,
                                                      profile: Option[ProfileRequest]) {
   OrganisationValidation.validateUpdate(
-    organisationName = organisationName.map(_.value),
+    organisationName = organisationName.value,
     email = email,
     description = profile.flatMap(_.description.map(_.value)),
     profile
@@ -325,14 +322,14 @@ private object OrganisationValidation {
     )
   }
 
-  def validateUpdate(organisationName: Option[String],
+  def validateUpdate(organisationName: String,
                      email: Option[String],
                      description: Option[String],
                      profileRequest: Option[ProfileRequest]): Unit = {
     validateOptional(
-      organisationName.map(value => validateUserInput("organisationName", value, None)),
-      description.map(value      => validateUserInput("description", value, None)),
-      email.map(value            => validateUserInput("email", value, None))
+      Some(validateUserInput("organisationName", organisationName, None)),
+      description.map(value => validateUserInput("description", value, None)),
+      email.map(value       => validateUserInput("email", value, None))
     )
 
     validateOptional(email.map(value => validateEmail("email", value, None)))
