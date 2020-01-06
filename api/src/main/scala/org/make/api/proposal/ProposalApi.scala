@@ -35,6 +35,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.{Order, SortRequest}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, PublicConsultation}
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
@@ -70,7 +71,6 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "trending", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "content", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "seed", paramType = "query", dataType = "integer"),
@@ -88,7 +88,8 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean"),
-      new ApiImplicitParam(name = "userType", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "userType", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "ideaIds", paramType = "query", dataType = "string"),
     )
   )
   def search: Route
@@ -256,7 +257,6 @@ trait DefaultProposalApiComponent
                   Symbol("questionId").as[immutable.Seq[QuestionId]].?,
                   Symbol("tagsIds").as[immutable.Seq[TagId]].?,
                   Symbol("operationId").as[OperationId].?,
-                  Symbol("trending").?,
                   Symbol("content").?,
                   Symbol("slug").?,
                   Symbol("seed").as[Int].?,
@@ -273,14 +273,14 @@ trait DefaultProposalApiComponent
                   Symbol("sortAlgorithm").?,
                   Symbol("operationKinds").as[immutable.Seq[OperationKind]].?,
                   Symbol("isOrganisation").as[Boolean].?,
-                  Symbol("userType").as[UserType].?
+                  Symbol("userType").as[UserType].?,
+                  Symbol("ideaIds").as[immutable.Seq[IdeaId]].?
                 )
               ) {
                 (proposalIds: Option[Seq[ProposalId]],
                  questionIds: Option[Seq[QuestionId]],
                  tagsIds: Option[Seq[TagId]],
                  operationId: Option[OperationId],
-                 trending: Option[String],
                  content: Option[String],
                  slug: Option[String],
                  seed: Option[Int],
@@ -297,7 +297,8 @@ trait DefaultProposalApiComponent
                  sortAlgorithm: Option[String],
                  operationKinds: Option[Seq[OperationKind]],
                  isOrganisation: Option[Boolean],
-                 userType: Option[UserType]) =>
+                 userType: Option[UserType],
+                 ideaIds: Option[Seq[IdeaId]]) =>
                   Validation.validate(Seq(country.map { countryValue =>
                     Validation.validChoices(
                       fieldName = "country",
@@ -355,7 +356,6 @@ trait DefaultProposalApiComponent
                     questionIds = questionIds,
                     tagsIds = tagsIds,
                     operationId = operationId,
-                    trending = trending,
                     content = content,
                     slug = slug,
                     seed = seed,
@@ -380,7 +380,8 @@ trait DefaultProposalApiComponent
                       } else {
                         None
                       }
-                    })
+                    }),
+                    ideaIds = ideaIds
                   )
                   provideAsync(
                     proposalService
