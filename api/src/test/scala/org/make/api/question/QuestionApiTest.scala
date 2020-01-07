@@ -364,7 +364,7 @@ class QuestionApiTest
     scenario("all tags") {
       when(
         elasticsearchProposalAPI
-          .getPopularTagsByProposal(ArgumentMatchers.eq(QuestionId("question-id")), ArgumentMatchers.eq(10))
+          .getPopularTagsByProposal(ArgumentMatchers.eq(QuestionId("question-id")), ArgumentMatchers.eq(Int.MaxValue))
       ).thenReturn(
         Future.successful(
           Seq(
