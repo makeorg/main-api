@@ -226,6 +226,22 @@ object ProposalScorerHelper extends StrictLogging {
         configuration.nonSequenceVotesWeight * allScores.topScore()
     }
 
+    def topScoreAjustedWithVotes(configuration: SequenceConfiguration,
+                                 allScores: ScoreCounts,
+                                 specificScores: ScoreCounts,
+                                 votesCount: Int): Double = {
+      val score = topScore(configuration, allScores, specificScores)
+      if (votesCount < configuration.scoreAdjustementVotesThreshold) {
+        if (score > 0) {
+          score / configuration.scoreAdjustementFactor
+        } else {
+          score * configuration.scoreAdjustementFactor
+        }
+      } else {
+        score
+      }
+    }
+
     /*
      * Note on bayesian estimates: the estimator requires a prior,
      * i.e. an initial probability to start the estimate from.

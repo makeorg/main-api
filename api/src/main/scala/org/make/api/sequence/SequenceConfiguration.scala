@@ -111,7 +111,11 @@ case class SequenceConfiguration(
   @(ApiModelProperty @field)(dataType = "string", example = "Bandit")
   selectionAlgorithmName: SelectionAlgorithmName = SelectionAlgorithmName.Bandit,
   @(ApiModelProperty @field)(dataType = "double", example = "0.5")
-  nonSequenceVotesWeight: Double = 0.5
+  nonSequenceVotesWeight: Double = 0.5,
+  @(ApiModelProperty @field)(dataType = "int", example = "100")
+  scoreAdjustementVotesThreshold: Int = 100,
+  @(ApiModelProperty @field)(dataType = "double", example = "1000")
+  scoreAdjustementFactor: Double = 1000
 )
 
 object SequenceConfiguration {
@@ -137,7 +141,9 @@ object SequenceConfiguration {
     maxTestedProposalCount = 1000,
     sequenceSize = 12,
     selectionAlgorithmName = SelectionAlgorithmName.Bandit,
-    nonSequenceVotesWeight = 0.5
+    nonSequenceVotesWeight = 0.5,
+    scoreAdjustementVotesThreshold = 100,
+    scoreAdjustementFactor = 1000
   )
 
 }

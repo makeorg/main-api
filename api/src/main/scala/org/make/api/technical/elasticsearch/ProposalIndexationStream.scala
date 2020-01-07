@@ -239,6 +239,12 @@ trait ProposalIndexationStream
         realistic = regularScore.realistic(),
         platitude = regularScore.platitude(),
         topScore = ScoreCounts.topScore(sequenceConfiguration, scoreWithEverything, regularScore),
+        topScoreAjustedWithVotes = ScoreCounts.topScoreAjustedWithVotes(
+          sequenceConfiguration,
+          scoreWithEverything,
+          regularScore,
+          proposal.votes.map(_.countVerified).sum
+        ),
         controversy = regularScore.controversy(),
         rejection = regularScore.rejection(),
         scoreUpperBound = regularScore.topScoreUpperBound()
@@ -250,6 +256,12 @@ trait ProposalIndexationStream
         realistic = segmentScore.realistic(),
         platitude = segmentScore.platitude(),
         topScore = ScoreCounts.topScore(sequenceConfiguration, scoreWithEverything, segmentScore),
+        topScoreAjustedWithVotes = ScoreCounts.topScoreAjustedWithVotes(
+          sequenceConfiguration,
+          scoreWithEverything,
+          segmentScore,
+          proposal.votes.map(_.countSegment).sum
+        ),
         controversy = segmentScore.controversy(),
         rejection = segmentScore.rejection(),
         scoreUpperBound = segmentScore.topScoreUpperBound()

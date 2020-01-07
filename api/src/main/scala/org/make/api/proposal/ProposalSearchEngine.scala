@@ -285,7 +285,8 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
 
       // This aggregation create a field "maxTopScore" with the max value of indexedProposal.scores.topScore
-      val maxAggregation = MaxAggregation(name = "maxTopScore", field = Some(ProposalElasticsearchFieldNames.topScore))
+      val maxAggregation =
+        MaxAggregation(name = "maxTopScore", field = Some(ProposalElasticsearchFieldNames.topScoreAjustedWithVotes))
 
       // This aggregation sort each bucket from the field "maxTopScore"
       val bucketSortAggregation = BucketSortPipelineAgg(
@@ -294,11 +295,13 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       )
 
       // This aggregation take the proposal with the highest indexedProposal.scores.topScore on each bucket
-      val topHitsAggregation = TopHitsAggregation(
-        name = "topHits",
-        sorts = Seq(FieldSort(field = ProposalElasticsearchFieldNames.topScore, order = SortOrder.DESC)),
-        size = Some(1)
-      )
+      val topHitsAggregation =
+        TopHitsAggregation(
+          name = "topHits",
+          sorts =
+            Seq(FieldSort(field = ProposalElasticsearchFieldNames.topScoreAjustedWithVotes, order = SortOrder.DESC)),
+          size = Some(1)
+        )
 
       val finalRequest: ElasticSearchRequest = request
         .aggregations(
