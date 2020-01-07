@@ -199,7 +199,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                @Deprecated isRandom: Option[Boolean] = Some(false),
                                sortAlgorithm: Option[String] = None,
                                operationKinds: Option[Seq[OperationKind]] = None,
-                               userType: Option[UserType] = None,
+                               userTypes: Option[Seq[UserType]] = None,
                                ideaIds: Option[Seq[IdeaId]] = None) {
 
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
@@ -218,7 +218,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
         language = language.map(LanguageSearchFilter.apply),
         country = country.map(CountrySearchFilter.apply),
         operationKinds = operationKinds.map(OperationKindsSearchFilter.apply),
-        userType = userType.map(UserTypeSearchFilter.apply),
+        userTypes = userTypes.map(UserTypesSearchFilter.apply),
         idea = ideaIds.map(IdeaSearchFilter.apply)
       )
 
@@ -267,7 +267,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
                                          limit: Option[Int] = None,
                                          skip: Option[Int] = None,
                                          createdBefore: Option[ZonedDateTime] = None,
-                                         userType: Option[UserType] = None) {
+                                         userTypes: Option[Seq[UserType]] = None) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
@@ -287,7 +287,7 @@ final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = 
         language = language.map(LanguageSearchFilter.apply),
         country = country.map(CountrySearchFilter.apply),
         createdAt = createdBefore.map(createdBeforeDate => CreatedAtSearchFilter(Some(createdBeforeDate), None)),
-        userType = userType.map(UserTypeSearchFilter.apply)
+        userTypes = userTypes.map(UserTypesSearchFilter.apply)
       )
 
     SearchQuery(

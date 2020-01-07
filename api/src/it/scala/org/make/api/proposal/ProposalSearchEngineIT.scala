@@ -1140,14 +1140,14 @@ class ProposalSearchEngineIT
       trending = None,
       labels = Seq(),
       author = IndexedAuthor(
-        firstName = Some("Jennifer"),
+        firstName = Some("Jennifer - Personality"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("81966"),
         age = Some(21),
         avatarUrl = None,
         anonymousParticipation = false,
-        userType = UserType.UserTypeUser
+        userType = UserType.UserTypePersonality
       ),
       organisations = Seq.empty,
       themeId = None,
@@ -1653,7 +1653,7 @@ class ProposalSearchEngineIT
       val query = SearchQuery(
         filters = Some(
           SearchFilters(
-            userType = Some(UserTypeSearchFilter(UserType.UserTypeOrganisation)),
+            userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation))),
             status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
           )
         )
@@ -1713,6 +1713,25 @@ class ProposalSearchEngineIT
           results(ideaIdOne) shouldBe 2
           results.get(ideaIdTwo).isDefined shouldBe true
           results.get(IdeaId("idea-id-3")).isDefined shouldBe false
+      }
+    }
+  }
+
+  feature("search proposals by userType") {
+    scenario("search for author organisation and personality") {
+      val query = SearchQuery(
+        filters = Some(
+          SearchFilters(
+            userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation, UserType.UserTypePersonality))),
+            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+          )
+        )
+      )
+
+      whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
+        results.results.size should be(2)
+        results.results.exists(_.author.userType == UserType.UserTypeOrganisation) shouldBe true
+        results.results.exists(_.author.userType == UserType.UserTypePersonality) shouldBe true
       }
     }
   }

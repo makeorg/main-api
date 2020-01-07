@@ -273,7 +273,7 @@ trait DefaultProposalApiComponent
                   Symbol("sortAlgorithm").?,
                   Symbol("operationKinds").as[immutable.Seq[OperationKind]].?,
                   Symbol("isOrganisation").as[Boolean].?,
-                  Symbol("userType").as[UserType].?,
+                  Symbol("userType").as[immutable.Seq[UserType]].?,
                   Symbol("ideaIds").as[immutable.Seq[IdeaId]].?
                 )
               ) {
@@ -297,7 +297,7 @@ trait DefaultProposalApiComponent
                  sortAlgorithm: Option[String],
                  operationKinds: Option[Seq[OperationKind]],
                  isOrganisation: Option[Boolean],
-                 userType: Option[UserType],
+                 userType: Option[Seq[UserType]],
                  ideaIds: Option[Seq[IdeaId]]) =>
                   Validation.validate(Seq(country.map { countryValue =>
                     Validation.validChoices(
@@ -374,9 +374,9 @@ trait DefaultProposalApiComponent
                         Some(Seq(GreatCause, PublicConsultation, BusinessConsultation))
                       }
                     },
-                    userType = userType.orElse(isOrganisation.flatMap { isOrganisation =>
+                    userTypes = userType.orElse(isOrganisation.flatMap { isOrganisation =>
                       if (isOrganisation) {
-                        Some(UserType.UserTypeOrganisation)
+                        Some(Seq(UserType.UserTypeOrganisation))
                       } else {
                         None
                       }
