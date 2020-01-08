@@ -124,6 +124,7 @@ trait MakeApi
     with DefaultAdminPersonalityApiComponent
     with DefaultAdminProposalApiComponent
     with DefaultAdminQuestionPersonalityApiComponent
+    with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAdminViewApiComponent
     with DefaultAuthenticationApiComponent
@@ -195,6 +196,7 @@ trait MakeApi
     with DefaultPersistentTagTypeServiceComponent
     with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
+    with DefaultPersistentTopIdeaServiceComponent
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentUserToAnonymizeServiceComponent
     with DefaultQuestionPersonalityServiceComponent
@@ -227,6 +229,7 @@ trait MakeApi
     with DefaultTagTypeServiceComponent
     with DefaultThemeServiceComponent
     with DefaultTokenGeneratorComponent
+    with DefaultTopIdeaServiceComponent
     with DefaultTrackingApiComponent
     with DefaultUserApiComponent
     with DefaultUserHistoryCoordinatorServiceComponent
@@ -323,6 +326,7 @@ trait MakeApi
       classOf[AdminPersonalityApi],
       classOf[AdminQuestionPersonalityApi],
       classOf[AdminProposalApi],
+      classOf[AdminTopIdeaApi],
       classOf[AdminUserApi],
       classOf[AdminViewApi],
       classOf[AuthenticationApi],
@@ -386,6 +390,7 @@ trait MakeApi
       adminPersonalityApi.routes ~
       adminProposalApi.routes ~
       adminQuestionPersonalityApi.routes ~
+      adminTopIdeaApi.routes ~
       adminUserApi.routes ~
       adminViewApi.routes ~
       authenticationApi.routes ~
