@@ -75,7 +75,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
     }
 
     override def logHistory(command: SessionHistoryEvent[_]): Unit = {
-      (sessionHistoryCoordinator ? command).map(_ => ())
+      sessionHistoryCoordinator ! command
     }
 
     override def retrieveVoteAndQualifications(
