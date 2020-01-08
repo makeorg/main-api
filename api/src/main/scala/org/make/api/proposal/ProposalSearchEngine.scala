@@ -264,7 +264,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         )
         .limit(0)
       def popularTagResponseFrombucket(bucket: TermBucket): PopularTagResponse = {
-        val Array(tagId, label) = bucket.key.split(",")
+        val Array(tagId, label) = bucket.key.split(",", 2)
         PopularTagResponse(TagId(tagId), label, bucket.docCount)
       }
 
