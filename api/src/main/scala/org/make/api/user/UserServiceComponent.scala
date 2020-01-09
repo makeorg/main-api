@@ -136,7 +136,9 @@ case class PersonalityRegisterData(email: String,
                                    country: Country,
                                    language: Language,
                                    description: Option[String],
-                                   avatarUrl: Option[String])
+                                   avatarUrl: Option[String],
+                                   website: Option[String],
+                                   politicalParty: Option[String])
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -354,7 +356,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           description = personalityRegisterData.description,
           avatarUrl = personalityRegisterData.avatarUrl,
           optInNewsletter = false,
-          optInPartner = Some(false)
+          optInPartner = Some(false),
+          politicalParty = personalityRegisterData.politicalParty,
+          website = personalityRegisterData.website
         )
 
       val result = for {

@@ -75,14 +75,12 @@ case class OrganisationRegisterData(name: String,
                                     description: Option[String],
                                     country: Country,
                                     language: Language,
-                                    politicalParty: Option[String],
                                     website: Option[String])
 
 case class OrganisationUpdateData(name: Option[String],
                                   email: Option[String],
                                   avatar: Option[String],
                                   description: Option[String],
-                                  politicalParty: Option[String],
                                   website: Option[String])
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
