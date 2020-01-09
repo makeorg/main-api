@@ -1145,7 +1145,7 @@
             },
             "avatarUrl": {
               "type": "text",
-              "index": false
+              "index": true
             },
             "anonymousParticipation": {
               "type": "boolean",

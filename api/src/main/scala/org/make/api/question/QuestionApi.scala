@@ -46,6 +46,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Order
+import org.make.core.idea.{IdeaId, TopIdeaId, TopIdeaScores}
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
@@ -182,8 +183,38 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/personalities")
   def getPersonalities: Route
 
+  @ApiOperation(value = "get-question-top-ideas", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "seed", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionTopIdeasResponseWithSeed]))
+  )
+  @Path(value = "/{questionId}/top-ideas")
+  def getTopIdeas: Route
+
+  @ApiOperation(value = "get-question-top-idea", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "topIdeaId", paramType = "path", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionTopIdeaResponse]))
+  )
+  @Path(value = "/{questionId}/top-idea/{topIdeaId}")
+  def getTopIdea: Route
+
   def routes: Route =
-    questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~ getPersonalities
+    questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~
+      getPersonalities ~ getTopIdeas ~ getTopIdea
 }
 
 trait DefaultQuestionApiComponent
@@ -213,6 +244,7 @@ trait DefaultQuestionApiComponent
   class DefaultQuestionApi extends QuestionApi {
 
     private val questionId: PathMatcher1[QuestionId] = Segment.map(id => QuestionId(id))
+    private val topIdeaId: PathMatcher1[TopIdeaId] = Segment.map(id   => TopIdeaId(id))
     private val questionSlugOrQuestionId: PathMatcher1[String] = Segment
 
     // TODO: remove the public access once authent is handled in server side
@@ -521,6 +553,36 @@ trait DefaultQuestionApiComponent
       }
     }
 
+    override def getTopIdeas: Route = {
+      get {
+        path("questions" / questionId / "top-ideas") { questionId =>
+          makeOperation("GetQuestionTopIdeas") { requestContext =>
+            parameters((Symbol("limit").as[Int].?, Symbol("skip").as[Int].?, Symbol("seed").as[Int].?)) {
+              (limit: Option[Int], skip: Option[Int], seed: Option[Int]) =>
+                provideAsync(
+                  questionService
+                    .getTopIdeas(skip.getOrElse(0), limit, seed, questionId, requestContext)
+                ) { response =>
+                  complete(response)
+                }
+            }
+          }
+        }
+      }
+    }
+
+    override def getTopIdea: Route = {
+      get {
+        path("questions" / questionId / "top-ideas" / topIdeaId) { (questionId, topIdeaId) =>
+          makeOperation("GetQuestionTopIdea") { _ =>
+            provideAsyncOrNotFound(questionService.getTopIdea(topIdeaId, questionId)) { response =>
+              complete(response)
+            }
+          }
+        }
+      }
+    }
+
   }
 }
 
@@ -560,4 +622,33 @@ final case class QuestionPersonalityResponse(userId: UserId,
 object QuestionPersonalityResponse {
   implicit val decoder: Decoder[QuestionPersonalityResponse] = deriveDecoder[QuestionPersonalityResponse]
   implicit val encoder: Encoder[QuestionPersonalityResponse] = deriveEncoder[QuestionPersonalityResponse]
+}
+
+final case class QuestionTopIdeaResponse(id: TopIdeaId,
+                                         ideaId: IdeaId,
+                                         questionId: QuestionId,
+                                         name: String,
+                                         scores: TopIdeaScores)
+
+object QuestionTopIdeaResponse {
+  implicit val encoder: Encoder[QuestionTopIdeaResponse] = deriveEncoder[QuestionTopIdeaResponse]
+}
+
+final case class QuestionTopIdeaWithAvatarResponse(id: TopIdeaId,
+                                                   ideaId: IdeaId,
+                                                   questionId: QuestionId,
+                                                   name: String,
+                                                   scores: TopIdeaScores,
+                                                   proposalsCount: Int,
+                                                   avatars: Seq[String],
+                                                   weight: Float)
+
+object QuestionTopIdeaWithAvatarResponse {
+  implicit val encoder: Encoder[QuestionTopIdeaWithAvatarResponse] = deriveEncoder[QuestionTopIdeaWithAvatarResponse]
+}
+
+final case class QuestionTopIdeasResponseWithSeed(questionTopIdeas: Seq[QuestionTopIdeaWithAvatarResponse], seed: Int)
+
+object QuestionTopIdeasResponseWithSeed {
+  implicit val encoder: Encoder[QuestionTopIdeasResponseWithSeed] = deriveEncoder[QuestionTopIdeasResponseWithSeed]
 }
