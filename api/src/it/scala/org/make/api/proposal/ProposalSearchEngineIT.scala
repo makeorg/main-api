@@ -224,7 +224,7 @@ class ProposalSearchEngineIT
   private def newTag(label: String, display: Boolean = true) =
     IndexedTag(TagId(UUID.randomUUID().toString), label, display)
 
-  val tagAlpha = newTag("alpha")
+  val tagAlpha = newTag("alpha, with a comma")
   val tagBeta = newTag("beta")
   val tagGamma = newTag("gamma")
   val tagDelta = newTag("delta", false)
