@@ -160,7 +160,6 @@ class OrganisationServiceTest
           description = None,
           country = Country("FR"),
           language = Language("fr"),
-          politicalParty = Some("PP"),
           website = Some("http://example.com")
         ),
         RequestContext.empty
@@ -201,7 +200,6 @@ class OrganisationServiceTest
           description = None,
           country = Country("FR"),
           language = Language("fr"),
-          politicalParty = None,
           website = None
         ),
         RequestContext.empty
@@ -239,7 +237,6 @@ class OrganisationServiceTest
           description = None,
           country = Country("FR"),
           language = Language("fr"),
-          politicalParty = None,
           website = None
         ),
         RequestContext.empty

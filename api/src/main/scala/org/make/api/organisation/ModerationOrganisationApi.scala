@@ -155,7 +155,6 @@ trait DefaultModerationOrganisationApiComponent
                             description = request.description.map(_.value),
                             country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
                             language = request.language.orElse(requestContext.language).getOrElse(Language("fr")),
-                            politicalParty = request.politicalParty,
                             website = request.website.map(_.value)
                           ),
                           requestContext
@@ -281,7 +280,6 @@ final case class ModerationCreateOrganisationRequest(
   country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Option[Language],
-  politicalParty: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
   website: Option[String Refined Url]
 ) {

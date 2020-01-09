@@ -21,8 +21,11 @@ package org.make.api.personality
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import io.circe.refined._
 import io.swagger.annotations.{ApiImplicitParam, _}
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -239,7 +242,9 @@ trait DefaultAdminPersonalityApiComponent
                           gender = request.gender,
                           genderName = request.genderName,
                           description = request.description,
-                          avatarUrl = request.avatarUrl
+                          avatarUrl = request.avatarUrl,
+                          website = request.website.map(_.value),
+                          politicalParty = request.politicalParty
                         ),
                         requestContext
                       )
@@ -289,7 +294,10 @@ trait DefaultAdminPersonalityApiComponent
                                     avatarUrl = request.avatarUrl.orElse(user.profile.flatMap(_.avatarUrl)),
                                     description = request.description.orElse(user.profile.flatMap(_.description)),
                                     gender = request.gender.orElse(user.profile.flatMap(_.gender)),
-                                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName))
+                                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName)),
+                                    politicalParty =
+                                      request.politicalParty.orElse(user.profile.flatMap(_.politicalParty)),
+                                    website = request.website.map(_.value).orElse(user.profile.flatMap(_.website))
                                   )
                                 )
                                 .orElse(
@@ -297,7 +305,9 @@ trait DefaultAdminPersonalityApiComponent
                                     avatarUrl = request.avatarUrl,
                                     description = request.description,
                                     gender = request.gender,
-                                    genderName = request.genderName
+                                    genderName = request.genderName,
+                                    politicalParty = request.politicalParty,
+                                    website = request.website.map(_.value)
                                   )
                                 )
                             ),
@@ -328,7 +338,10 @@ final case class CreatePersonalityRequest(
   @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
   @(ApiModelProperty @field)(dataType = "string") description: Option[String],
   @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String]
+  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String],
+  politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  website: Option[String Refined Url]
 ) {
   validate(
     mandatoryField("firstName", firstName),
@@ -355,7 +368,10 @@ final case class UpdatePersonalityRequest(
   @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
   @(ApiModelProperty @field)(dataType = "string") description: Option[String],
   @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String]
+  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String],
+  politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  website: Option[String Refined Url]
 ) {
   private val maxLanguageLength = 3
   private val maxCountryLength = 3
@@ -385,7 +401,10 @@ case class PersonalityResponse(
   @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
   @(ApiModelProperty @field)(dataType = "string") description: Option[String],
   @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String]
+  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String],
+  politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  website: Option[String]
 ) {
   validate(
     validateUserInput("email", email, None),
@@ -408,6 +427,8 @@ object PersonalityResponse extends CirceFormatters {
     avatarUrl = user.profile.flatMap(_.avatarUrl),
     description = user.profile.flatMap(_.description),
     gender = user.profile.flatMap(_.gender),
-    genderName = user.profile.flatMap(_.genderName)
+    genderName = user.profile.flatMap(_.genderName),
+    politicalParty = user.profile.flatMap(_.politicalParty),
+    website = user.profile.flatMap(_.website)
   )
 }
