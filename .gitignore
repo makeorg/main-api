@@ -3,3 +3,7 @@ target
 ddata*
 # for apache math3 annotations
 /org
+.metals
+.bloop
+/.vscode
+project/metals.sbt
