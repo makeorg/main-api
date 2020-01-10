@@ -984,7 +984,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
     futureJohnMailing2 =
       persistentUserService.persist(johnDoe.copy(email = "johnmailing2@example.com", userId = UserId("7")))

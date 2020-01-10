@@ -80,10 +80,10 @@ class MailJetCallbackProducerActorIT
 
       Then("I should receive the wrapped version of it in the consumer")
       val wrapped = probe.expectMsgType[MailJetEventWrapper](2.minutes)
-      wrapped.id shouldBe ("test@make.org")
-      wrapped.version > 0 shouldBe (true)
-      wrapped.event shouldBe (bounceEvent)
-      wrapped.date shouldBe (ZonedDateTime.parse("2015-05-05T07:49:55Z"))
+      wrapped.id shouldBe "test@make.org"
+      wrapped.version > 0 shouldBe true
+      wrapped.event shouldBe bounceEvent
+      wrapped.date shouldBe ZonedDateTime.parse("2015-05-05T07:49:55Z")
 
       // Clean up stuff
       producer ! PoisonPill
@@ -94,9 +94,9 @@ class MailJetCallbackProducerActorIT
     }
   }
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
+  override def afterAll(): Unit = {
     system.terminate()
+    super.afterAll()
   }
 
 }

@@ -73,14 +73,8 @@ class OperationOfQuestionSearchEngineIT
   Mockito.when(elasticsearchConfiguration.operationOfQuestionAliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    stopAllQuietly()
-  }
-
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
-    startAllOrFail()
     initializeElasticsearch()
   }
 

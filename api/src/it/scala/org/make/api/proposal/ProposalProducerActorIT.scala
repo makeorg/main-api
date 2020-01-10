@@ -90,9 +90,9 @@ class ProposalProducerActorIT
     }
   }
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
+  override def afterAll(): Unit = {
     system.terminate()
+    super.afterAll()
   }
 }
 

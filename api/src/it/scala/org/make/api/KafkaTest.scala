@@ -28,16 +28,6 @@ import org.make.api.docker.DockerKafkaService
 import org.make.api.technical.MakeKafkaAvroSerializer
 
 trait KafkaTest extends ItMakeTest with DockerKafkaService {
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    startAllOrFail()
-  }
-
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    stopAllQuietly()
-  }
-
   def createProducer[T](schema: SchemaFor[T], format: RecordFormat[T]): KafkaProducer[String, T] = {
     val registryUrl = s"http://localhost:$registryExposedPort"
     val props = new Properties()

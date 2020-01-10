@@ -35,11 +35,6 @@ class CockroachHealthCheckActorIT
     with ItMakeTest
     with DatabaseTest {
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    system.terminate()
-  }
-
   override protected val databaseName: String = CockroachHealthCheckActorIT.databaseName
   override val cockroachExposedPort: Int = CockroachHealthCheckActorIT.cockroachExposedPort
 

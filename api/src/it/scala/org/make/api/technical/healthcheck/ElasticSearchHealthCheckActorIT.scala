@@ -59,9 +59,8 @@ class ElasticSearchHealthCheckActorIT
     with ActorSystemComponent
     with DockerElasticsearchService {
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
-    startAllOrFail()
     initializeElasticsearch()
   }
 
@@ -161,9 +160,9 @@ class ElasticSearchHealthCheckActorIT
 
   }
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
+  override def afterAll(): Unit = {
     system.terminate()
+    super.afterAll()
   }
 
   override val elasticsearchExposedPort: Int = ElasticSearchHealthCheckActorIT.elasticsearchExposedPort

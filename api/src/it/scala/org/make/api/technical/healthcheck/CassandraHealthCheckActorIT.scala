@@ -40,19 +40,13 @@ import scala.concurrent.duration.DurationInt
 
 class CassandraHealthCheckActorIT
     extends TestKit(CassandraHealthCheckActorIT.actorSystem)
+    with ItMakeTest
     with ImplicitSender
-    with DockerCassandraService
-    with ItMakeTest {
+    with DockerCassandraService {
 
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    startAllOrFail()
-  }
-
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    stopAllQuietly()
+  override def afterAll(): Unit = {
     system.terminate()
+    super.afterAll()
   }
 
   override val cassandraExposedPort: Int = CassandraHealthCheckActorIT.cassandraExposedPort

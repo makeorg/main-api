@@ -25,13 +25,12 @@ import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
 import com.typesafe.config.ConfigFactory
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.api.userhistory._
-import org.make.api.{KafkaTest, KafkaTestConsumerActor}
+import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor}
 import org.make.core.proposal.ProposalId
 import org.make.core.user.UserId
-import org.make.core.{AvroSerializers, DateHelper, MakeSerializable, RequestContext}
+import org.make.core.{DateHelper, MakeSerializable, RequestContext}
 import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.duration.DurationInt
@@ -39,9 +38,8 @@ import scala.concurrent.{Await, Future}
 
 class ProposalUserHistoryConsumerActorIT
     extends TestKit(ProposalUserHistoryConsumerActorIT.actorSystem)
-    with KafkaTest
+    with KafkaConsumerTest[ProposalEventWrapper]
     with ImplicitSender
-    with AvroSerializers
     with UserHistoryCoordinatorServiceComponent {
 
   // If wou want to change ports and names to avoid collisions, just override them
@@ -52,24 +50,24 @@ class ProposalUserHistoryConsumerActorIT
   override val zookeeperName: String = "zookeeperproposaleventconsumer"
   override val zookeeperExposedPort: Int = 32184
 
+  override val topic: String = "proposals"
+
+  override val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
+  override val schema: SchemaFor[ProposalEventWrapper] = ProposalEventWrapper.schemaFor
+
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService =
     mock[UserHistoryCoordinatorService]
 
-  val format: RecordFormat[ProposalEventWrapper] = RecordFormat[ProposalEventWrapper]
-  val schema: SchemaFor[ProposalEventWrapper] = SchemaFor[ProposalEventWrapper]
   val consumer: ActorRef =
     system.actorOf(ProposalUserHistoryConsumerActor.props(userHistoryCoordinatorService), "ProposalEvent")
-  val producer: KafkaProducer[String, ProposalEventWrapper] = createProducer(schema, format)
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
     Await.result(KafkaTestConsumerActor.waitUntilReady(consumer), atMost = 2.minutes)
   }
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     consumer ! PoisonPill
-    producer.close()
-    Thread.sleep(2000)
     super.afterAll()
   }
 
@@ -122,9 +120,9 @@ class ProposalUserHistoryConsumerActorIT
         eventType = eventProposed.getClass.getSimpleName
       )
 
-      producer.send(new ProducerRecord[String, ProposalEventWrapper]("proposals", wrappedProposalProposed))
+      send(wrappedProposalProposed)
 
-      probe.expectMsg(500 millis, "LogUserProposalProposedEvent called")
+      probe.expectMsg(500.millis, "LogUserProposalProposedEvent called")
 
     }
 
@@ -172,9 +170,9 @@ class ProposalUserHistoryConsumerActorIT
           Future.successful(true)
         })
 
-      producer.send(new ProducerRecord[String, ProposalEventWrapper]("proposals", wrappedProposalAccepted))
+      send(wrappedProposalAccepted)
 
-      probe.expectMsg(500 millis, "LogUserProposalAcceptedEvent called")
+      probe.expectMsg(500.millis, "LogUserProposalAcceptedEvent called")
 
     }
 
@@ -216,9 +214,9 @@ class ProposalUserHistoryConsumerActorIT
           Future.successful(true)
         })
 
-      producer.send(new ProducerRecord[String, ProposalEventWrapper]("proposals", wrappedProposalRefused))
+      send(wrappedProposalRefused)
 
-      probe.expectMsg(500 millis, "LogUserProposalRefusedEvent called")
+      probe.expectMsg(500.millis, "LogUserProposalRefusedEvent called")
 
     }
 
@@ -257,9 +255,9 @@ class ProposalUserHistoryConsumerActorIT
           Future.successful(true)
         })
 
-      producer.send(new ProducerRecord[String, ProposalEventWrapper]("proposals", wrappedProposalPostponed))
+      send(wrappedProposalPostponed)
 
-      probe.expectMsg(500 millis, "LogUserProposalPostponedEvent called")
+      probe.expectMsg(500.millis, "LogUserProposalPostponedEvent called")
 
     }
 
@@ -300,9 +298,9 @@ class ProposalUserHistoryConsumerActorIT
           Future.successful(true)
         })
 
-      producer.send(new ProducerRecord[String, ProposalEventWrapper]("proposals", wrappedProposalLocked))
+      send(wrappedProposalLocked)
 
-      probe.expectMsg(500 millis, "LogUserProposalLockedEvent called")
+      probe.expectMsg(500.millis, "LogUserProposalLockedEvent called")
 
     }
 

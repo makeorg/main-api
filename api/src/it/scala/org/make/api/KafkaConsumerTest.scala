@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,22 +17,30 @@
  *
  */
 
-package org.make.api.docker
+package org.make.api
 
-import com.whisk.docker.{DockerContainer, DockerReadyChecker}
-import org.scalatest.Suite
+import java.util.concurrent.Future
 
-trait DockerSwiftAllInOne extends DockerBaseTest {
-  self: Suite =>
+import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
+import org.make.core.AvroSerializers
 
-  private val internalPort = 8080
+trait KafkaConsumerTest[T] extends KafkaTest with AvroSerializers {
 
-  def externalPort: Option[Int] = None
+  def topic: String
+  def format: RecordFormat[T]
+  def schema: SchemaFor[T]
+  def producer: KafkaProducer[String, T] = createProducer(schema, format)
 
-  private def swiftContainer: DockerContainer =
-    DockerContainer(image = "bouncestorage/swift-aio", name = Some(getClass.getSimpleName))
-      .withPorts(internalPort -> externalPort)
-      .withReadyChecker(DockerReadyChecker.LogLineContains("supervisord started with pid"))
+  override def afterAll(): Unit = {
+    producer.close()
+    Thread.sleep(2000)
+    super.afterAll()
+  }
 
-  override def dockerContainers: List[DockerContainer] = swiftContainer :: super.dockerContainers
+  def send(event: T): Future[RecordMetadata] = {
+    producer.send(new ProducerRecord[String, T](topic, event))
+
+  }
+
 }

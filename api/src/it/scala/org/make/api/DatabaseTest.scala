@@ -46,10 +46,8 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
   protected def adminEmail: String = "admin@example.com"
   protected def adminPassword: String = "passpass".bcrypt
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
-
-    startAllOrFail()
 
     GlobalSettings.loggingSQLErrors = true
     GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
@@ -114,11 +112,5 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
     writeDataSource.setUrl(s"jdbc:postgresql://localhost:$cockroachExposedPort/$databaseName")
     writeDataSource.setUsername("root")
     writeDataSource
-  }
-
-  override protected def afterAll(): Unit = {
-
-    super.afterAll()
-    stopAllQuietly()
   }
 }

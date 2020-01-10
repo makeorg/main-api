@@ -20,8 +20,10 @@
 package org.make.api.docker
 
 import com.whisk.docker.{ContainerLink, DockerContainer, DockerReadyChecker}
+import org.scalatest.Suite
 
 trait DockerKafkaService extends DockerZookeeperService {
+  self: Suite =>
 
   val kafkaInternalPort: Int = 9092
   private val defaultKafkaExposedPort: Int = 29092

@@ -30,8 +30,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.Await
 
 class SwiftClientTest
-    extends DockerSwiftAllInOne
-    with ItMakeTest
+    extends ItMakeTest
+    with DockerSwiftAllInOne
     with DefaultSwiftClientComponent
     with ActorSystemComponent {
 
@@ -60,13 +60,9 @@ class SwiftClientTest
     }
   }
 
-  override protected def beforeAll(): Unit = {
-    startAllOrFail()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
     Await.result(swiftClient.init(), atMost = 30.seconds)
-  }
-
-  override protected def afterAll(): Unit = {
-    stopAllQuietly()
   }
 
 }

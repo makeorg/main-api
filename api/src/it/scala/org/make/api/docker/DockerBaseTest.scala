@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -18,21 +18,18 @@
  */
 
 package org.make.api.docker
-
-import com.whisk.docker.{DockerContainer, DockerReadyChecker}
+import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientConfig}
+import com.github.dockerjava.netty.NettyDockerCmdExecFactory
+import com.whisk.docker.DockerFactory
+import com.whisk.docker.impl.dockerjava.{Docker, DockerJavaExecutorFactory}
+import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest.Suite
 
-trait DockerSwiftAllInOne extends DockerBaseTest {
+trait DockerBaseTest extends DockerTestKit {
   self: Suite =>
 
-  private val internalPort = 8080
+  private val dockerClientConfig: DockerClientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
+  private val client: Docker = new Docker(dockerClientConfig, new NettyDockerCmdExecFactory())
+  override implicit val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(client)
 
-  def externalPort: Option[Int] = None
-
-  private def swiftContainer: DockerContainer =
-    DockerContainer(image = "bouncestorage/swift-aio", name = Some(getClass.getSimpleName))
-      .withPorts(internalPort -> externalPort)
-      .withReadyChecker(DockerReadyChecker.LogLineContains("supervisord started with pid"))
-
-  override def dockerContainers: List[DockerContainer] = swiftContainer :: super.dockerContainers
 }
