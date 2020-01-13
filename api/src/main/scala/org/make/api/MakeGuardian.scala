@@ -25,17 +25,26 @@ import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor}
 import org.make.api.proposal.ProposalSupervisor
 import org.make.api.semantic.{SemanticPredictionsProducerActor, SemanticProducerActor}
 import org.make.api.sequence.SequenceConfigurationActor
+import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
 import org.make.api.technical.tracking.TrackingProducerActor
 import org.make.api.technical.{DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.user.UserSupervisor
+import org.make.api.userhistory.UserHistoryCoordinator
 
 class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
   override def preStart(): Unit = {
     context.watch(context.actorOf(MakeDowningActor.props, MakeDowningActor.name))
 
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
+
+    val userHistoryCoordinator =
+      context.watch(context.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name))
+
+    context.watch(
+      context.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator), SessionHistoryCoordinator.name)
+    )
 
     context.watch(
       context
