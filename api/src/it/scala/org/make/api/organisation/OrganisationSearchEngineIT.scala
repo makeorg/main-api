@@ -59,11 +59,6 @@ class OrganisationSearchEngineIT
   override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    stopAllQuietly()
-  }
-
   private val eSIndexName: String = "organisation-it-test"
   private val eSDocType: String = "organisation"
 
@@ -75,9 +70,8 @@ class OrganisationSearchEngineIT
   Mockito.when(elasticsearchConfiguration.organisationAliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
-    startAllOrFail()
     initializeElasticsearch()
   }
 

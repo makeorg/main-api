@@ -1646,8 +1646,8 @@ class UserApiTest
 
     scenario("file successfully uploaded and returned by admin or related-user") {
       when(
-        storageService.uploadFile(
-          ArgumentMatchers.eq(FileType.Avatar),
+        storageService.uploadUserAvatar(
+          ArgumentMatchers.any[UserId],
           ArgumentMatchers.any[String],
           ArgumentMatchers.any[String],
           ArgumentMatchers.any[FileContent]

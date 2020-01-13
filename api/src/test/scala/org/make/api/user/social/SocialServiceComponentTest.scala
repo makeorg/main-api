@@ -91,7 +91,7 @@ class SocialServiceComponentTest
         iat = Some("123456789"),
         exp = None,
         name = Some("google user"),
-        picture = "picture_url",
+        picture = "picture_url/photo.jpg",
         givenName = Some("google"),
         familyName = Some("user"),
         local = None,
@@ -155,7 +155,7 @@ class SocialServiceComponentTest
             googleId = googleData.iat,
             domain = googleData.hd,
             facebookId = None,
-            picture = Some("picture_url")
+            picture = Some("picture_url-s512/photo.jpg")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -245,7 +245,7 @@ class SocialServiceComponentTest
             googleId = googleData.iat,
             domain = googleData.hd,
             facebookId = None,
-            picture = Some("picture_url")
+            picture = Some("picture_url-s512")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -389,7 +389,7 @@ class SocialServiceComponentTest
         language = "fr",
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v3.0/444444/picture")
+        picture = Some("https://graph.facebook.com/v3.0/444444/picture?width=512&height=512")
       )
 
       Mockito
@@ -431,7 +431,7 @@ class SocialServiceComponentTest
             language = "fr",
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture")
+            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture?width=512&height=512")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -469,7 +469,7 @@ class SocialServiceComponentTest
         language = "fr",
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v3.0/444444/picture")
+        picture = Some("https://graph.facebook.com/v3.0/444444/picture?width=512&height=512")
       )
 
       Mockito
@@ -512,7 +512,7 @@ class SocialServiceComponentTest
             language = "fr",
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture")
+            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture?width=512&height=512")
           )
 
         verify(userService).createOrUpdateUserFromSocial(

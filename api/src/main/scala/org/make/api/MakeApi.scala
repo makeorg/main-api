@@ -135,6 +135,7 @@ trait MakeApi
     with DefaultCrmServiceComponent
     with DefaultCrmTemplatesServiceComponent
     with DefaultCurrentOperationServiceComponent
+    with DefaultDownloadServiceComponent
     with DefaultElasticSearchApiComponent
     with DefaultElasticsearchClientComponent
     with DefaultElasticsearchConfigurationComponent

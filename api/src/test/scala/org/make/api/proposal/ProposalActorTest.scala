@@ -21,10 +21,11 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef}
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposal.ProposalActor.ProposalState
+import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
 import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.core.history.HistoryActions._
 import org.make.core.idea.IdeaId
@@ -38,10 +39,13 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.GivenWhenThen
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.mockito.MockitoSugar
+
+import scala.concurrent.Future
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
 
@@ -56,12 +60,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       case something => controller.handle(something, sender())
     }
   }
-
-  val userHistoryController: Controller = new Controller
-  val sessionHistoryController: Controller = new Controller
-
-  val sessionHistoryActor: ActorRef =
-    system.actorOf(Props(new ControllableActor(sessionHistoryController)), "session-history")
 
   val questionOnNothingFr = Question(
     questionId = QuestionId("my-question"),
@@ -121,8 +119,16 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val CREATED_DATE_SECOND_MINUS: Int = 10
   val THREAD_SLEEP_MICROSECONDS: Int = 100
 
+  val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
+  Mockito
+    .when(
+      sessionHistoryCoordinatorService
+        .logTransactionalHistory(ArgumentMatchers.any[TransactionalSessionHistoryEvent[_]])
+    )
+    .thenReturn(Future.successful({}))
+
   val coordinator: ActorRef =
-    system.actorOf(ProposalCoordinator.props(sessionHistoryActor = sessionHistoryActor), ProposalCoordinator.name)
+    system.actorOf(ProposalCoordinator.props(sessionHistoryCoordinatorService), ProposalCoordinator.name)
 
   val mainUserId: UserId = UserId("1234")
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))

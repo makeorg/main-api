@@ -21,17 +21,18 @@ package org.make.api.proposal
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
+import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 
 object ProposalCoordinator {
-  def props(sessionHistoryActor: ActorRef): Props =
-    Props(new ProposalCoordinator(sessionHistoryActor = sessionHistoryActor))
+  def props(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService): Props =
+    Props(new ProposalCoordinator(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService))
   val name: String = "proposal-coordinator"
 }
 
-class ProposalCoordinator(sessionHistoryActor: ActorRef) extends Actor {
+class ProposalCoordinator(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService) extends Actor {
   ClusterSharding(context.system).start(
     ShardedProposal.shardName,
-    ShardedProposal.props(sessionHistoryActor = sessionHistoryActor),
+    ShardedProposal.props(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService),
     ClusterShardingSettings(context.system),
     ShardedProposal.extractEntityId,
     ShardedProposal.extractShardId

@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,15 +17,30 @@
  *
  */
 
-package org.make.api.user.social.models.facebook
+package org.make.api
 
-import io.circe.Decoder
+import java.util.concurrent.Future
 
-final case class UserInfo(id: String, email: Option[String], firstName: Option[String], lastName: Option[String]) {
-  def picture: String = s"https://graph.facebook.com/v3.0/$id/picture?width=512&height=512"
-}
+import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
+import org.make.core.AvroSerializers
 
-object UserInfo {
-  implicit val decoder: Decoder[UserInfo] =
-    Decoder.forProduct4("id", "email", "first_name", "last_name")(UserInfo.apply)
+trait KafkaConsumerTest[T] extends KafkaTest with AvroSerializers {
+
+  def topic: String
+  def format: RecordFormat[T]
+  def schema: SchemaFor[T]
+  def producer: KafkaProducer[String, T] = createProducer(schema, format)
+
+  override def afterAll(): Unit = {
+    producer.close()
+    Thread.sleep(2000)
+    super.afterAll()
+  }
+
+  def send(event: T): Future[RecordMetadata] = {
+    producer.send(new ProducerRecord[String, T](topic, event))
+
+  }
+
 }

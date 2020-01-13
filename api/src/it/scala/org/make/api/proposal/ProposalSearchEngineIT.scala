@@ -75,9 +75,8 @@ class ProposalSearchEngineIT
   Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn(defaultElasticsearchProposalIndex)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchProposalIndex)
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
-    startAllOrFail()
     initializeElasticsearch()
   }
 
@@ -1734,10 +1733,5 @@ class ProposalSearchEngineIT
         results.results.exists(_.author.userType == UserType.UserTypePersonality) shouldBe true
       }
     }
-  }
-
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    stopAllQuietly()
   }
 }

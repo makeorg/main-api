@@ -19,7 +19,7 @@
 
 package org.make.api.proposal
 
-import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.proposal.PublishedProposalEvent._
@@ -28,7 +28,7 @@ import org.make.api.userhistory._
 
 import scala.concurrent.Future
 
-class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
+class ProposalUserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinatorService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with ActorEventBusServiceComponent
     with ActorLogging {
@@ -65,51 +65,61 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
   }
 
   def handleProposalProposed(event: ProposalProposed): Future[Unit] = {
-    userHistoryCoordinator ! LogUserProposalEvent(
-      userId = event.userId,
-      requestContext = event.requestContext,
-      action = UserAction(
-        date = event.eventDate,
-        actionType = LogUserProposalEvent.action,
-        arguments = UserProposal(content = event.content, event.theme)
+    userHistoryCoordinatorService.logHistory(
+      LogUserProposalEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogUserProposalEvent.action,
+          arguments = UserProposal(content = event.content, event.theme)
+        )
       )
     )
     Future.successful {}
   }
 
   def handleProposalLocked(event: ProposalLocked): Future[Unit] = {
-    userHistoryCoordinator ! LogLockProposalEvent(
-      userId = event.moderatorId,
-      moderatorName = event.moderatorName,
-      requestContext = event.requestContext,
-      action = UserAction(date = event.eventDate, actionType = ProposalLocked.actionType, arguments = event)
+    userHistoryCoordinatorService.logHistory(
+      LogLockProposalEvent(
+        userId = event.moderatorId,
+        moderatorName = event.moderatorName,
+        requestContext = event.requestContext,
+        action = UserAction(date = event.eventDate, actionType = ProposalLocked.actionType, arguments = event)
+      )
     )
     Future.successful {}
   }
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
-    userHistoryCoordinator ! LogAcceptProposalEvent(
-      userId = event.moderator,
-      requestContext = event.requestContext,
-      action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
+    userHistoryCoordinatorService.logHistory(
+      LogAcceptProposalEvent(
+        userId = event.moderator,
+        requestContext = event.requestContext,
+        action = UserAction(date = event.eventDate, actionType = ProposalAccepted.actionType, arguments = event)
+      )
     )
     Future.successful {}
   }
 
   def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
-    userHistoryCoordinator ! LogRefuseProposalEvent(
-      userId = event.moderator,
-      requestContext = event.requestContext,
-      action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
+    userHistoryCoordinatorService.logHistory(
+      LogRefuseProposalEvent(
+        userId = event.moderator,
+        requestContext = event.requestContext,
+        action = UserAction(date = event.eventDate, actionType = ProposalRefused.actionType, arguments = event)
+      )
     )
     Future.successful {}
   }
 
   def handleProposalPostponed(event: ProposalPostponed): Future[Unit] = {
-    userHistoryCoordinator ! LogPostponeProposalEvent(
-      userId = event.moderator,
-      requestContext = event.requestContext,
-      action = UserAction(date = event.eventDate, actionType = ProposalPostponed.actionType, arguments = event)
+    userHistoryCoordinatorService.logHistory(
+      LogPostponeProposalEvent(
+        userId = event.moderator,
+        requestContext = event.requestContext,
+        action = UserAction(date = event.eventDate, actionType = ProposalPostponed.actionType, arguments = event)
+      )
     )
     Future.successful {}
   }
@@ -117,6 +127,6 @@ class ProposalUserHistoryConsumerActor(userHistoryCoordinator: ActorRef)
 
 object ProposalUserHistoryConsumerActor {
   val name: String = "proposal-events-user-history-consumer"
-  def props(userHistoryCoordinator: ActorRef): Props =
-    Props(new ProposalUserHistoryConsumerActor(userHistoryCoordinator))
+  def props(userHistoryCoordinatorService: UserHistoryCoordinatorService): Props =
+    Props(new ProposalUserHistoryConsumerActor(userHistoryCoordinatorService))
 }

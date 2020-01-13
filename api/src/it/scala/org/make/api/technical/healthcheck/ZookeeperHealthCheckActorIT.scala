@@ -36,15 +36,9 @@ class ZookeeperHealthCheckActorIT
     with ItMakeTest
     with DockerZookeeperService {
 
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    startAllOrFail()
-  }
-
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    stopAllQuietly()
+  override def afterAll(): Unit = {
     system.terminate()
+    super.afterAll()
   }
 
   override val zookeeperExposedPort: Int = ZookeeperHealthCheckActorIT.zookeeperExposedPort

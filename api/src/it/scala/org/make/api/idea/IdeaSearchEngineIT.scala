@@ -61,11 +61,6 @@ class IdeaSearchEngineIT
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
-  override protected def afterAll(): Unit = {
-    super.afterAll()
-    stopAllQuietly()
-  }
-
   private val eSIndexName: String = "ideaittest"
   private val eSDocType: String = "idea"
 
@@ -77,9 +72,8 @@ class IdeaSearchEngineIT
   Mockito.when(elasticsearchConfiguration.ideaAliasName).thenReturn(eSIndexName)
   Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
-    startAllOrFail()
     initializeElasticsearch()
   }
 

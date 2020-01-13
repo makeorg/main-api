@@ -19,14 +19,13 @@
 
 package org.make.api.docker
 
-import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientConfig}
-import com.github.dockerjava.netty.NettyDockerCmdExecFactory
-import com.whisk.docker.impl.dockerjava.{Docker, DockerJavaExecutorFactory}
-import com.whisk.docker.{DockerContainer, DockerFactory, DockerKit, DockerReadyChecker}
+import com.whisk.docker.{DockerContainer, DockerReadyChecker}
+import org.scalatest.Suite
 
 import scala.concurrent.duration.DurationInt
 
-trait DockerElasticsearchService extends DockerKit {
+trait DockerElasticsearchService extends DockerBaseTest {
+  self: Suite =>
 
   val defaultElasticsearchHttpPort = 9200
   val defaultElasticsearchClientPort = 9300
@@ -55,10 +54,4 @@ trait DockerElasticsearchService extends DockerKit {
 
   abstract override def dockerContainers: List[DockerContainer] =
     elasticSearchContainer :: super.dockerContainers
-
-  private val dockerClientConfig: DockerClientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
-
-  private val client: Docker = new Docker(dockerClientConfig, new NettyDockerCmdExecFactory())
-
-  override implicit val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(client)
 }

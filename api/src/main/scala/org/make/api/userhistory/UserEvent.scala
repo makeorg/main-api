@@ -273,3 +273,16 @@ case class UserUnfollowEvent(override val connectedUserId: Option[UserId] = None
     extends UserEvent {
   override def version(): Int = MakeSerializable.V1
 }
+
+@AvroSortPriority(2)
+case class UserUploadAvatarEvent(override val connectedUserId: Option[UserId] = None,
+                                 @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                   UserEvent.defaultDate,
+                                 override val userId: UserId,
+                                 override val requestContext: RequestContext,
+                                 @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                                 @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                                 avatarUrl: String)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}

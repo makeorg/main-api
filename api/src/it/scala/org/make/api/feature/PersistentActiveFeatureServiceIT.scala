@@ -39,7 +39,7 @@ class PersistentActiveFeatureServiceIT
 
   override protected val cockroachExposedPort: Int = 40009
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     super.beforeAll()
     whenReady(
       persistentQuestionService.persist(

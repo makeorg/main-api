@@ -19,9 +19,11 @@
 
 package org.make.api.user
 
+import java.io.File
 import java.text.SimpleDateFormat
 import java.time.{LocalDate, ZonedDateTime}
 
+import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import com.github.t3hnar.bcrypt._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
@@ -29,12 +31,13 @@ import org.make.api.question.AuthorRequest
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
-import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.storage.Content.FileContent
+import org.make.api.technical.storage.{StorageService, StorageServiceComponent}
+import org.make.api.technical._
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
-import org.make.api.userhistory._
-import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
+import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent, _}
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female
@@ -67,7 +70,9 @@ class UserServiceTest
     with TokenGeneratorComponent
     with EventBusServiceComponent
     with MakeSettingsComponent
-    with UserRegistrationValidatorComponent {
+    with UserRegistrationValidatorComponent
+    with StorageServiceComponent
+    with DownloadServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -82,6 +87,8 @@ class UserServiceTest
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
+  override val storageService: StorageService = mock[StorageService]
+  override val downloadService: DownloadService = mock[DownloadService]
 
   Mockito.when(makeSettings.defaultUserAnonymousParticipation).thenReturn(false)
 
@@ -1059,4 +1066,41 @@ class UserServiceTest
     }
   }
 
+  feature("upload avatar") {
+    scenario("image url") {
+      val imageUrl = "https://i.picsum.photos/id/352/200/200.jpg"
+      val file = File.createTempFile("tmp", ".jpeg")
+      file.deleteOnExit()
+      Mockito
+        .when(downloadService.downloadImage(ArgumentMatchers.eq(imageUrl), ArgumentMatchers.any[ContentType => File]()))
+        .thenReturn(Future.successful((ContentType(MediaTypes.`image/jpeg`), file)))
+      Mockito
+        .when(
+          storageService.uploadUserAvatar(
+            ArgumentMatchers.eq(UserId("user-id")),
+            ArgumentMatchers.eq(".jpeg"),
+            ArgumentMatchers.eq(MediaTypes.`image/jpeg`.value),
+            ArgumentMatchers.any[FileContent]
+          )
+        )
+        .thenReturn(Future.successful("path/to/user-id/image"))
+
+      whenReady(userService.changeAvatarForUser(UserId("user-id"), imageUrl), Timeout(2.seconds)) { path =>
+        path shouldBe "path/to/user-id/image"
+      }
+    }
+
+    scenario("download failed") {
+      val imageUrl = "https://www.google.fr"
+      val file = File.createTempFile("tmp", ".pdf")
+      file.deleteOnExit()
+      Mockito
+        .when(downloadService.downloadImage(ArgumentMatchers.eq(imageUrl), ArgumentMatchers.any[ContentType => File]()))
+        .thenReturn(Future.failed(new IllegalArgumentException(s"URL does not refer to an image: $imageUrl")))
+
+      whenReady(userService.changeAvatarForUser(UserId("user-id"), imageUrl).failed, Timeout(2.seconds)) { exception =>
+        exception shouldBe a[IllegalArgumentException]
+      }
+    }
+  }
 }

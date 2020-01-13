@@ -24,6 +24,9 @@ import java.net.URL
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.api.ActorSystemComponent
+import org.make.api.technical.IdGeneratorComponent
+import org.make.core.DateHelper
+import org.make.core.user.UserId
 import org.make.swift.model.Bucket
 
 import scala.concurrent.Future
@@ -32,7 +35,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 trait StorageService {
 
   def uploadFile(fileType: FileType, name: String, contentType: String, content: Content): Future[String]
-
+  def uploadUserAvatar(userId: UserId, name: String, contentType: String, content: Content): Future[String]
 }
 
 case class UploadResponse(path: String)
@@ -112,7 +115,7 @@ trait StorageServiceComponent {
 }
 
 trait DefaultStorageServiceComponent extends StorageServiceComponent {
-  self: SwiftClientComponent with StorageConfigurationComponent =>
+  self: SwiftClientComponent with StorageConfigurationComponent with IdGeneratorComponent =>
 
   override lazy val storageService: StorageService = new DefaultStorageService
 
@@ -124,6 +127,16 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
         .map { _ =>
           s"${storageConfiguration.baseUrl}/$path"
         }
+    }
+
+    override def uploadUserAvatar(userId: UserId,
+                                  extension: String,
+                                  contentType: String,
+                                  content: Content): Future[String] = {
+      val date = DateHelper.now()
+      val name = s"${date.getYear}/${date.getMonthValue}/${userId.value}/${idGenerator.nextId()}.$extension"
+      storageService.uploadFile(FileType.Avatar, name, contentType, content)
+
     }
   }
 

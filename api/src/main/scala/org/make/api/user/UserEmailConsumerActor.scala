@@ -54,6 +54,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case event: UserAnonymizedEvent             => doNothing(event)
       case event: UserFollowEvent                 => doNothing(event)
       case event: UserUnfollowEvent               => doNothing(event)
+      case event: UserUploadAvatarEvent           => doNothing(event)
     }
   }
 
