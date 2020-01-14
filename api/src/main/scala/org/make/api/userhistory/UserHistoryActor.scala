@@ -47,6 +47,10 @@ class UserHistoryActor
     with Stash {
 
   def userId: UserId = UserId(self.path.name)
+  override def persistenceId: String = userId.value
+
+  // Have an initial state to allow snapshotting, even if the user has no vote-related event
+  state = Some(UserVotesAndQualifications(Map.empty))
 
   override protected def unhandledRecover: Receive = {
     case SnapshotOffer(_, history: UserHistory) =>
@@ -77,10 +81,6 @@ class UserHistoryActor
       }
     case _: ReloadState => reloadState()
   }
-
-  override def onRecoveryCompleted(): Unit = {}
-
-  override def persistenceId: String = userId.value
 
   private def persistEvent[Event <: UserHistoryEvent[_]](event: Event)(andThen: Event => Unit): Unit = {
     persist(event) { e: Event =>
