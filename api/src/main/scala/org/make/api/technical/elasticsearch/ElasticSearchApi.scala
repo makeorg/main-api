@@ -58,7 +58,7 @@ trait ElasticSearchApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
   @Path(value = "/technical/elasticsearch/reindex")
   def reindex: Route
 
@@ -87,16 +87,14 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
               decodeRequest {
                 entity(as[ReindexRequest]) { request: ReindexRequest =>
                   makeOperation("ReindexingData") { _ =>
-                    provideAsync(
-                      indexationService.reindexData(
-                        Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
-                        Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
-                        Seq(request.forceAll, request.forceProposals).flatten.contains(true),
-                        Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
-                      )
-                    ) { _ =>
-                      complete(StatusCodes.NoContent)
-                    }
+                    // Do not wait until the reindexation job is over to give an answer
+                    indexationService.reindexData(
+                      Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
+                      Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
+                      Seq(request.forceAll, request.forceProposals).flatten.contains(true),
+                      Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
+                    )
+                    complete(StatusCodes.Accepted)
                   }
                 }
               }
