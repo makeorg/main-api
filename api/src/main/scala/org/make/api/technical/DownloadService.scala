@@ -33,6 +33,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 trait DownloadServiceComponent {
   def downloadService: DownloadService
@@ -53,32 +54,36 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
     implicit val ec: ExecutionContext =
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))
     override def downloadImage(imageUrl: String, destFn: ContentType => File): Future[(ContentType, File)] = {
-      val req = HttpRequest(uri = Uri(imageUrl), headers = Seq(Accept.create(MediaRanges.`image/*`)))
+      Try(Uri(imageUrl)) match {
+        case Success(uri) =>
+          val req = HttpRequest(uri = uri, headers = Seq(Accept.create(MediaRanges.`image/*`)))
 
-      Http()(actorSystem)
-        .singleRequest(req)
-        .flatMap {
-          case response if response.status.isFailure() =>
-            response.entity.toStrict(2.second).flatMap { entity =>
-              val body = entity.data.decodeString(Charset.forName("UTF-8"))
-              val code = response.status.value
-              Future.failed(
-                new IllegalStateException(s"URL failed with status code: $code, from: $imageUrl with body: $body")
-              )
+          Http()(actorSystem)
+            .singleRequest(req)
+            .flatMap {
+              case response if response.status.isFailure() =>
+                response.entity.toStrict(2.second).flatMap { entity =>
+                  val body = entity.data.decodeString(Charset.forName("UTF-8"))
+                  val code = response.status.value
+                  Future.failed(
+                    new IllegalStateException(s"URL failed with status code: $code, from: $imageUrl with body: $body")
+                  )
+                }
+              case response if !response.entity.httpEntity.contentType.mediaType.isImage =>
+                response.discardEntityBytes()
+                Future.failed(new IllegalStateException(s"URL does not refer to an image: $imageUrl"))
+              case response if response.status.isRedirection() =>
+                response.discardEntityBytes()
+                Future.failed(new IllegalStateException(s"URL is a redirection: $imageUrl"))
+              case response =>
+                val contentType = response.entity.httpEntity.contentType
+                val dest = destFn(contentType)
+                response.entity.dataBytes
+                  .runWith(FileIO.toPath(dest.toPath))
+                  .map(_ => contentType -> dest)
             }
-          case response if !response.entity.httpEntity.contentType.mediaType.isImage =>
-            response.discardEntityBytes()
-            Future.failed(new IllegalStateException(s"URL does not refer to an image: $imageUrl"))
-          case response if response.status.isRedirection() =>
-            response.discardEntityBytes()
-            Future.failed(new IllegalStateException(s"URL is a redirection: $imageUrl"))
-          case response =>
-            val contentType = response.entity.httpEntity.contentType
-            val dest = destFn(contentType)
-            response.entity.dataBytes
-              .runWith(FileIO.toPath(dest.toPath))
-              .map(_ => contentType -> dest)
-        }
+        case Failure(e) => Future.failed(e)
+      }
     }
   }
 }

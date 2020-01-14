@@ -185,8 +185,6 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
             )
         )
       )
-
-    Future.successful {}
   }
 }
 

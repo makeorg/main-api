@@ -21,10 +21,9 @@ package org.make.api.technical
 
 import java.time.ZonedDateTime
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -46,7 +45,7 @@ import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Validation}
 import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -288,29 +287,29 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
               StreamUtils
                 .asyncPageToPageSource(userService.findUsersForCrmSynchro(None, None, _, batchSize))
                 .mapConcat(identity)
-                .collect {
-                  case user
-                      if user.profile.flatMap(_.avatarUrl).isDefined
-                        && !user.profile.flatMap(_.avatarUrl).exists(_.startsWith(storageConfiguration.baseUrl)) =>
-                    val avatarUrl = user.profile.flatMap(_.avatarUrl).get
-                    val largeAvatarUrl = avatarUrl match {
-                      case url if url.startsWith("https://graph.facebook.com/v3.0/") => s"$url?width=512&height=512"
-                      case url if url.contains("google")                             => url.replace("s96-c", "s512-c")
-                      case _                                                         => avatarUrl
-                    }
-                    eventBusService.publish(
-                      UserUploadAvatarEvent(
-                        connectedUserId = Some(userAuth.user.userId),
-                        userId = user.userId,
-                        country = user.country,
-                        language = user.language,
-                        requestContext = requestContext,
-                        avatarUrl = largeAvatarUrl,
-                        eventDate = DateHelper.now()
-                      )
-                    )
+                .filter { user =>
+                  user.profile.flatMap(_.avatarUrl).isDefined && user.profile
+                    .flatMap(_.avatarUrl)
+                    .exists(url => Try(Uri(url)).isSuccess && !url.startsWith(storageConfiguration.baseUrl))
                 }
-                .runWith(Sink.ignore)
+                .map { user =>
+                  val avatarUrl = user.profile.flatMap(_.avatarUrl).get
+                  val largeAvatarUrl = avatarUrl match {
+                    case url if url.startsWith("https://graph.facebook.com/v3.0/") => s"$url?width=512&height=512"
+                    case url if url.contains("google")                             => url.replace("s96-c", "s512-c")
+                    case _                                                         => avatarUrl
+                  }
+                  UserUploadAvatarEvent(
+                    connectedUserId = Some(userAuth.user.userId),
+                    userId = user.userId,
+                    country = user.country,
+                    language = user.language,
+                    requestContext = requestContext,
+                    avatarUrl = largeAvatarUrl,
+                    eventDate = DateHelper.now()
+                  )
+                }
+                .runForeach(eventBusService.publish)
               complete(StatusCodes.NoContent)
             }
           }
