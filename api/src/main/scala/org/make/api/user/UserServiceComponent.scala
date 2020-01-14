@@ -23,7 +23,7 @@ import java.io.File
 import java.nio.file.Files
 import java.time.LocalDate
 
-import akka.http.scaladsl.model.ContentType
+import akka.http.scaladsl.model.{ContentType, Uri}
 import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
@@ -36,7 +36,7 @@ import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.StorageServiceComponent
-import org.make.api.technical.{DownloadServiceComponent, EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
+import org.make.api.technical._
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
@@ -56,6 +56,7 @@ import scalaoauth2.provider.AuthInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 trait UserServiceComponent {
   def userService: UserService
@@ -895,14 +896,35 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     def changeAvatarForUser(userId: UserId, avatarUrl: String): Future[String] = {
-      def extension(contentType: ContentType) = s".${contentType.mediaType.subType}"
+      def extension(contentType: ContentType): String = contentType.mediaType.subType
       def destFn(contentType: ContentType): File =
-        Files.createTempFile("user-upload-avatar", extension(contentType)).toFile
+        Files.createTempFile("user-upload-avatar", s".${extension(contentType)}").toFile
 
-      downloadService.downloadImage(avatarUrl, destFn).flatMap {
-        case (contentType, tempFile) =>
-          tempFile.deleteOnExit()
-          storageService.uploadUserAvatar(userId, extension(contentType), contentType.value, FileContent(tempFile))
+      Try(Uri(avatarUrl)) match {
+        case Success(imageUri) =>
+          downloadService
+            .downloadImage(imageUri, destFn)
+            .flatMap {
+              case (contentType, tempFile) =>
+                tempFile.deleteOnExit()
+                storageService.uploadUserAvatar(
+                  userId,
+                  extension(contentType),
+                  contentType.value,
+                  FileContent(tempFile)
+                )
+            }
+            .recoverWith {
+              case e: ImageNotFound =>
+                getUser(userId).flatMap {
+                  case Some(user) =>
+                    val userWithoutAvatarUrl = user.copy(profile = user.profile.map(_.copy(avatarUrl = None)))
+                    update(userWithoutAvatarUrl, RequestContext.empty)
+                  case _ => Future.failed(e)
+                }.flatMap(_ => Future.failed(e))
+
+            }
+        case Failure(e) => Future.failed(e)
       }
     }
 
