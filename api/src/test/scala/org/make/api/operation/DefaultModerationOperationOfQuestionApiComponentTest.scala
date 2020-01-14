@@ -29,6 +29,7 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.IdGeneratorComponent
+import org.make.core.ValidationError
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -570,7 +571,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
             description = OperationOfQuestion.defaultDescription,
-            displayResults = false
+            displayResults = false,
+            consultationImage = None,
+            descriptionImage = None
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -583,30 +586,71 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       Put("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
         .withEntity(ContentTypes.`application/json`, """{
-            | "startDate": "2018-12-01T10:15:30+00:00",
+            | "startDate": "2018-12-01T10:15:30.000Z",
             | "canPropose": true,
             | "question": "question ?",
             | "sequenceCardsConfiguration": {
             |   "introCard": { "enabled": true },
             |   "pushProposalCard": { "enabled": true },
             |   "signUpCard": { "enabled": true },
-            |   finalCard = {
+            |   "finalCard": {
             |     "enabled": true,
             |     "sharingEnabled": false
             |   }
             | },
-            | metas = { "title": "metas" },
-            | theme = {
+            | "metas": { "title": "metas" },
+            | "theme": {
             |   "gradientStart": "wrongFormattedColor",
             |   "gradientEnd": "#000000",
             |   "color": "#000000",
             |   "fontColor": "#000000"
             | },
-            | description = "description",
-            | displayResults = false
+            | "description": "description",
+            | "displayResults": false,
+            | "consultationImage": "https://example"
           }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(1)
+        errors.head.field shouldBe "gradientStart"
+      }
+    }
+
+    scenario("update image as moderator with incorrect URL") {
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withEntity(ContentTypes.`application/json`, """{
+                                                       | "startDate": "2018-12-01T10:15:30.000Z",
+                                                       | "canPropose": true,
+                                                       | "question": "question ?",
+                                                       | "sequenceCardsConfiguration": {
+                                                       |   "introCard": { "enabled": true },
+                                                       |   "pushProposalCard": { "enabled": true },
+                                                       |   "signUpCard": { "enabled": true },
+                                                       |   "finalCard": {
+                                                       |     "enabled": true,
+                                                       |     "sharingEnabled": false
+                                                       |   }
+                                                       | },
+                                                       | "metas": { "title": "metas" },
+                                                       | "theme": {
+                                                       |   "gradientStart": "#000000",
+                                                       |   "gradientEnd": "#000000",
+                                                       |   "color": "#000000",
+                                                       |   "fontColor": "#000000"
+                                                       | },
+                                                       | "description": "description",
+                                                       | "displayResults": false,
+                                                       | "consultationImage": "wrong URL",
+                                                       | "descriptionImage": "wrong URL"
+          }""".stripMargin) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(2)
+        errors.head.field shouldBe "consultationImage"
+        errors(1).field shouldBe "descriptionImage"
       }
     }
   }
