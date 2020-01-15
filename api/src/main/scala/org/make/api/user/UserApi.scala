@@ -103,6 +103,25 @@ trait UserApi extends Directives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   def getMe: Route
 
+  @Path(value = "/current")
+  @ApiOperation(
+    value = "current-user",
+    httpMethod = "GET",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[CurrentUserResponse]))
+  )
+  def currentUser: Route
+
   @Path(value = "/login/social")
   @ApiOperation(value = "Login Social", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -461,6 +480,7 @@ trait UserApi extends Directives {
 
   def routes: Route =
     getMe ~
+      currentUser ~
       getUser ~
       register ~
       socialLogin ~
@@ -548,6 +568,33 @@ trait DefaultUserApiComponent
         }
       }
     }
+    override def currentUser: Route = {
+      get {
+        path("user" / "current") {
+          makeOperation("GetCurrentUser") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              provideAsyncOrNotFound(userService.getUser(userAuth.user.userId)) { user =>
+                complete(
+                  CurrentUserResponse(
+                    userId = user.userId,
+                    email = user.email,
+                    displayName = user.displayName,
+                    userType = user.userType,
+                    roles = user.roles,
+                    hasPassword = user.hashedPassword.isDefined,
+                    enabled = user.enabled,
+                    emailVerified = user.emailVerified,
+                    country = user.country,
+                    language = user.language,
+                    avatarUrl = user.profile.flatMap(_.avatarUrl)
+                  )
+                )
+              }
+            }
+          }
+        }
+      }
+    }
 
     override def socialLogin: Route = post {
       path("user" / "login" / "social") {
@@ -612,12 +659,14 @@ trait DefaultUserApiComponent
                 Symbol("skip").as[Int].?
               )
             ) {
-              (votes: Option[Seq[VoteKey]],
-               qualifications: Option[Seq[QualificationKey]],
-               sort: Option[String],
-               order: Option[SortOrder],
-               limit: Option[Int],
-               skip: Option[Int]) =>
+              (
+                votes: Option[Seq[VoteKey]],
+                qualifications: Option[Seq[QualificationKey]],
+                sort: Option[String],
+                order: Option[SortOrder],
+                limit: Option[Int],
+                skip: Option[Int]
+              ) =>
                 if (userAuth.user.userId != userId) {
                   complete(StatusCodes.Forbidden)
                 } else {

@@ -25,6 +25,10 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical}
 import org.scalatest._
 import org.scalatestplus.mockito.MockitoSugar
+import org.make.core.profile.Profile
+import org.make.core.question.QuestionId
+import org.make.core.user.UserType.UserTypeOrganisation
+import org.make.core.user.UserType.UserTypePersonality
 
 class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers {
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
@@ -145,5 +149,120 @@ class UserTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Mat
       Then("result is John Doe")
       fullName shouldBe Some("John Doe")
     }
+  }
+
+  feature("display name") {
+    scenario("regular users") {
+      Given("a regular user")
+      val currentUser: User = user(
+        UserId("test"),
+        firstName = Some("first-name"),
+        lastName = Some("last-name"),
+        organisationName = Some("organisation-name")
+      )
+
+      Then("the display name should be the same as the first name")
+
+      currentUser.displayName should contain("first-name")
+    }
+
+    scenario("regular user with no first name") {
+      Given("a regular user with no first name")
+      val currentUser: User = user(
+        UserId("test"),
+        firstName = None,
+        lastName = Some("last-name"),
+        organisationName = Some("organisation-name")
+      )
+
+      Then("the display name should be the same as the first name")
+
+      currentUser.displayName should be(empty)
+    }
+
+    scenario("organisations") {
+      Given("an organisation")
+      val currentUser: User = user(
+        UserId("test"),
+        firstName = Some("first-name"),
+        lastName = Some("last-name"),
+        organisationName = Some("organisation-name"),
+        userType = UserTypeOrganisation
+      )
+
+      Then("the display name should be the organisation name")
+
+      currentUser.displayName should contain("organisation-name")
+    }
+
+    scenario("personalities") {
+      Given("a personality")
+      val currentUser: User = user(
+        UserId("test"),
+        firstName = Some("first-name"),
+        lastName = Some("last-name"),
+        organisationName = Some("organisation-name"),
+        userType = UserTypePersonality
+      )
+
+      Then("the display name should be the full name")
+
+      currentUser.displayName should contain("first-name last-name")
+    }
+
+  }
+
+  def user(
+    id: UserId,
+    anonymousParticipation: Boolean = false,
+    email: String = "test@make.org",
+    firstName: Option[String] = Some("Joe"),
+    lastName: Option[String] = Some("Chip"),
+    lastIp: Option[String] = None,
+    hashedPassword: Option[String] = None,
+    enabled: Boolean = true,
+    emailVerified: Boolean = true,
+    lastConnection: ZonedDateTime = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
+    verificationToken: Option[String] = None,
+    verificationTokenExpiresAt: Option[ZonedDateTime] = None,
+    resetToken: Option[String] = None,
+    resetTokenExpiresAt: Option[ZonedDateTime] = None,
+    roles: Seq[Role] = Seq(RoleCitizen),
+    country: Country = Country("FR"),
+    language: Language = Language("fr"),
+    profile: Option[Profile] = None,
+    createdAt: Option[ZonedDateTime] = None,
+    updatedAt: Option[ZonedDateTime] = None,
+    lastMailingError: Option[MailingErrorLog] = None,
+    organisationName: Option[String] = None,
+    availableQuestions: Seq[QuestionId] = Seq.empty,
+    userType: UserType = UserType.UserTypeUser
+  ): User = {
+    User(
+      userId = id,
+      email = email,
+      firstName = firstName,
+      lastName = lastName,
+      lastIp = lastIp,
+      hashedPassword = hashedPassword,
+      enabled = enabled,
+      emailVerified = emailVerified,
+      lastConnection = lastConnection,
+      verificationToken = verificationToken,
+      verificationTokenExpiresAt = verificationTokenExpiresAt,
+      resetToken = resetToken,
+      resetTokenExpiresAt = resetTokenExpiresAt,
+      roles = roles,
+      country = country,
+      language = language,
+      profile = profile,
+      createdAt = createdAt,
+      updatedAt = updatedAt,
+      lastMailingError = lastMailingError,
+      organisationName = organisationName,
+      availableQuestions = availableQuestions,
+      anonymousParticipation = anonymousParticipation,
+      userType = userType
+    )
   }
 }
