@@ -57,16 +57,16 @@ class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceCompon
 
     }
 
-    scenario("failed URL") {
+    scenario("URL not found") {
       val imageUrl = "https://api.make.org/404"
       val futureImage = downloadService.downloadImage(imageUrl, destFn)
 
       whenReady(futureImage.failed, Timeout(3.seconds)) { exception =>
-        exception shouldBe a[IllegalStateException]
+        exception shouldBe a[ImageNotFound]
         exception
-          .asInstanceOf[IllegalStateException]
+          .asInstanceOf[ImageNotFound]
           .getMessage
-          .contains("URL failed with status code: 404") shouldBe true
+          .startsWith("Image not found for URL") shouldBe true
       }
 
     }

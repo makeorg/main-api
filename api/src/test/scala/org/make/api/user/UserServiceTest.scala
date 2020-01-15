@@ -23,7 +23,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.time.{LocalDate, ZonedDateTime}
 
-import akka.http.scaladsl.model.{ContentType, MediaTypes}
+import akka.http.scaladsl.model.{ContentType, MediaTypes, Uri}
 import com.github.t3hnar.bcrypt._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
@@ -1072,13 +1072,19 @@ class UserServiceTest
       val file = File.createTempFile("tmp", ".jpeg")
       file.deleteOnExit()
       Mockito
-        .when(downloadService.downloadImage(ArgumentMatchers.eq(imageUrl), ArgumentMatchers.any[ContentType => File]()))
+        .when(
+          downloadService.downloadImage(
+            ArgumentMatchers.eq(Uri(imageUrl)),
+            ArgumentMatchers.any[ContentType => File](),
+            ArgumentMatchers.any[Int]
+          )
+        )
         .thenReturn(Future.successful((ContentType(MediaTypes.`image/jpeg`), file)))
       Mockito
         .when(
           storageService.uploadUserAvatar(
             ArgumentMatchers.eq(UserId("user-id")),
-            ArgumentMatchers.eq(".jpeg"),
+            ArgumentMatchers.eq("jpeg"),
             ArgumentMatchers.eq(MediaTypes.`image/jpeg`.value),
             ArgumentMatchers.any[FileContent]
           )
@@ -1095,7 +1101,13 @@ class UserServiceTest
       val file = File.createTempFile("tmp", ".pdf")
       file.deleteOnExit()
       Mockito
-        .when(downloadService.downloadImage(ArgumentMatchers.eq(imageUrl), ArgumentMatchers.any[ContentType => File]()))
+        .when(
+          downloadService.downloadImage(
+            ArgumentMatchers.eq(Uri(imageUrl)),
+            ArgumentMatchers.any[ContentType => File](),
+            ArgumentMatchers.any[Int]
+          )
+        )
         .thenReturn(Future.failed(new IllegalArgumentException(s"URL does not refer to an image: $imageUrl")))
 
       whenReady(userService.changeAvatarForUser(UserId("user-id"), imageUrl).failed, Timeout(2.seconds)) { exception =>
