@@ -33,13 +33,14 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ActorSystemComponent
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 trait DownloadServiceComponent {
   def downloadService: DownloadService
 }
 
 trait DownloadService {
-  def downloadImage(imageUrl: Uri, destFn: ContentType => File, redirectCount: Int = 0): Future[(ContentType, File)]
+  def downloadImage(imageUrl: String, destFn: ContentType => File, redirectCount: Int = 0): Future[(ContentType, File)]
 }
 
 trait DefaultDownloadServiceComponent extends DownloadServiceComponent with StrictLogging {
@@ -53,46 +54,48 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
 
     implicit val ec: ExecutionContext =
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))
-    override def downloadImage(imageUri: Uri,
+    override def downloadImage(imageUrl: String,
                                destFn: ContentType => File,
                                redirectCount: Int = 0): Future[(ContentType, File)] = {
-      val req = HttpRequest(uri = imageUri, headers = Seq(Accept.create(MediaRanges.`image/*`)))
-
-      Http()(actorSystem)
-        .singleRequest(req)
-        .flatMap {
-          case response if response.status == StatusCodes.NotFound =>
-            response.discardEntityBytes()
-            Future.failed(ImageNotFound(imageUri.toString))
-          case response if response.status.isFailure() =>
-            response.entity.toStrict(2.second).flatMap { entity =>
-              val body = entity.data.decodeString(Charset.forName("UTF-8"))
-              val code = response.status.value
-              Future.failed(
-                new IllegalStateException(s"URL failed with status code: $code, from: $imageUri with body: $body")
-              )
-            }
-          case response if response.status.isRedirection() =>
-            response.header[headers.Location] match {
-              case Some(location) if redirectCount < maxRedirectCount =>
-                downloadImage(location.uri, destFn, redirectCount + 1)
-              case None =>
+      Try(HttpRequest(uri = Uri(imageUrl), headers = Seq(Accept.create(MediaRanges.`image/*`)))) match {
+        case Failure(e) => Future.failed(e)
+        case Success(req) =>
+          Http()(actorSystem)
+            .singleRequest(req)
+            .flatMap {
+              case response if response.status == StatusCodes.NotFound =>
                 response.discardEntityBytes()
-                Future.failed(new IllegalStateException(s"URL is a redirect without location: $imageUri"))
-              case _ =>
+                Future.failed(ImageNotFound(imageUrl))
+              case response if response.status.isFailure() =>
+                response.entity.toStrict(2.second).flatMap { entity =>
+                  val body = entity.data.decodeString(Charset.forName("UTF-8"))
+                  val code = response.status.value
+                  Future.failed(
+                    new IllegalStateException(s"URL failed with status code: $code, from: $imageUrl with body: $body")
+                  )
+                }
+              case response if response.status.isRedirection() =>
+                response.header[headers.Location] match {
+                  case Some(location) if redirectCount < maxRedirectCount =>
+                    downloadImage(location.uri.toString, destFn, redirectCount + 1)
+                  case None =>
+                    response.discardEntityBytes()
+                    Future.failed(new IllegalStateException(s"URL is a redirect without location: $imageUrl"))
+                  case _ =>
+                    response.discardEntityBytes()
+                    Future.failed(new IllegalStateException(s"Max redirect count reached with url: $imageUrl"))
+                }
+              case response if !response.entity.httpEntity.contentType.mediaType.isImage =>
                 response.discardEntityBytes()
-                Future.failed(new IllegalStateException(s"Max redirect count reached with url: $imageUri"))
+                Future.failed(new IllegalStateException(s"URL does not refer to an image: $imageUrl"))
+              case response =>
+                val contentType = response.entity.httpEntity.contentType
+                val dest = destFn(contentType)
+                response.entity.dataBytes
+                  .runWith(FileIO.toPath(dest.toPath))
+                  .map(_ => contentType -> dest)
             }
-          case response if !response.entity.httpEntity.contentType.mediaType.isImage =>
-            response.discardEntityBytes()
-            Future.failed(new IllegalStateException(s"URL does not refer to an image: $imageUri"))
-          case response =>
-            val contentType = response.entity.httpEntity.contentType
-            val dest = destFn(contentType)
-            response.entity.dataBytes
-              .runWith(FileIO.toPath(dest.toPath))
-              .map(_ => contentType -> dest)
-        }
+      }
     }
   }
 }

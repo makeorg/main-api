@@ -23,7 +23,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.time.{LocalDate, ZonedDateTime}
 
-import akka.http.scaladsl.model.{ContentType, MediaTypes, Uri}
+import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import com.github.t3hnar.bcrypt._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
@@ -112,7 +112,7 @@ class UserServiceTest
   }
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
-  val fooProfile = Profile(
+  val fooProfile: Profile = Profile(
     dateOfBirth = Some(LocalDate.parse("2000-01-01")),
     avatarUrl = Some("https://www.example.com"),
     profession = Some("profession"),
@@ -130,7 +130,7 @@ class UserServiceTest
     website = Some("http://example.com"),
     politicalParty = Some("PP")
   )
-  val fooUser = TestUtils.user(
+  val fooUser: User = TestUtils.user(
     id = UserId("1"),
     email = "foo@example.com",
     firstName = Some("Foo"),
@@ -177,7 +177,7 @@ class UserServiceTest
     profile = Some(johnDoeProfile)
   )
 
-  val returnedPersonality = TestUtils.user(
+  val returnedPersonality: User = TestUtils.user(
     id = UserId("AAA-BBB-CCC"),
     email = "personality@mail.com",
     hashedPassword = Some("passpass"),
@@ -1074,7 +1074,7 @@ class UserServiceTest
       Mockito
         .when(
           downloadService.downloadImage(
-            ArgumentMatchers.eq(Uri(imageUrl)),
+            ArgumentMatchers.eq(imageUrl),
             ArgumentMatchers.any[ContentType => File](),
             ArgumentMatchers.any[Int]
           )
@@ -1103,7 +1103,7 @@ class UserServiceTest
       Mockito
         .when(
           downloadService.downloadImage(
-            ArgumentMatchers.eq(Uri(imageUrl)),
+            ArgumentMatchers.eq(imageUrl),
             ArgumentMatchers.any[ContentType => File](),
             ArgumentMatchers.any[Int]
           )
