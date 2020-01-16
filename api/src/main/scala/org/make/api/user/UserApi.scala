@@ -86,6 +86,34 @@ trait UserApi extends Directives {
   )
   def getUser: Route
 
+  @Path(value = "/{userId}/profile")
+  @ApiOperation(
+    value = "get-user-profile",
+    httpMethod = "GET",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserProfileResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
+      )
+    )
+  )
+  def getUserProfile: Route
   @Path(value = "/me")
   @ApiOperation(
     value = "get-me",
@@ -478,6 +506,28 @@ trait UserApi extends Directives {
   @Path(value = "/{userId}/upload-avatar")
   def uploadAvatar: Route
 
+  @ApiOperation(
+    value = "update-user-profile",
+    httpMethod = "PUT",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "user", description = "application user"))
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserProfileResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UserProfileRequest")
+    )
+  )
+  @Path(value = "/{userId}/profile")
+  def modifyUserProfile: Route
+
   def routes: Route =
     getMe ~
       currentUser ~
@@ -499,7 +549,9 @@ trait UserApi extends Directives {
       unfollowUser ~
       reconnectInfo ~
       resendValidationEmail ~
-      uploadAvatar
+      uploadAvatar ~
+      getUserProfile ~
+      modifyUserProfile
 
   val userId: PathMatcher1[UserId] =
     Segment.map(id => UserId(id))
@@ -545,6 +597,34 @@ trait DefaultUserApiComponent
                   provideAsync(userService.getFollowedUsers(userId)) { followedUsers =>
                     complete(UserResponse(user, followedUsers))
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def getUserProfile: Route = {
+      get {
+        path("user" / userId / "profile") { userId =>
+          makeOperation("GetUserProfile") { _ =>
+            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+              authorize(userId == userAuth.user.userId) {
+                provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                  complete(
+                    UserProfileResponse(
+                      firstName = user.firstName,
+                      lastName = user.lastName,
+                      dateOfBirth = user.profile.flatMap(_.dateOfBirth),
+                      avatarUrl = user.profile.flatMap(_.avatarUrl),
+                      profession = user.profile.flatMap(_.profession),
+                      description = user.profile.flatMap(_.description),
+                      postalCode = user.profile.flatMap(_.postalCode),
+                      optInNewsletter = user.profile.map(_.optInNewsletter).getOrElse(true),
+                      website = user.profile.flatMap(_.website)
+                    )
+                  )
                 }
               }
             }
@@ -1199,6 +1279,59 @@ trait DefaultUserApiComponent
                         complete(UploadResponse(path))
                       }
                     }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def modifyUserProfile: Route = {
+      put {
+        path("user" / userId / "profile") { userId =>
+          makeOperation("modifyUserProfile") { requestContext =>
+            makeOAuth2 { user =>
+              authorize(user.user.userId == userId) {
+                decodeRequest {
+                  entity(as[UserProfileRequest]) { entity =>
+                    provideAsyncOrNotFound(userService.getUser(userId)) { user =>
+                      val modifiedProfile = user.profile
+                        .orElse(Profile.parseProfile())
+                        .map(
+                          _.copy(
+                            dateOfBirth = entity.dateOfBirth,
+                            avatarUrl = entity.avatarUrl.map(_.value),
+                            profession = entity.profession,
+                            description = entity.description,
+                            postalCode = entity.postalCode,
+                            optInNewsletter = entity.optInNewsletter,
+                            website = entity.website.map(_.value)
+                          )
+                        )
+
+                      val modifiedUser =
+                        user.copy(
+                          profile = modifiedProfile,
+                          firstName = Some(entity.firstName),
+                          lastName = entity.lastName
+                        )
+
+                      provideAsync(userService.update(modifiedUser, requestContext)) { result =>
+                        complete(UserProfileResponse(
+                          firstName = result.firstName,
+                          lastName = result.lastName,
+                          dateOfBirth = result.profile.flatMap(_.dateOfBirth),
+                          avatarUrl = result.profile.flatMap(_.avatarUrl),
+                          profession = result.profile.flatMap(_.profession),
+                          description = result.profile.flatMap(_.description),
+                          postalCode = result.profile.flatMap(_.postalCode),
+                          optInNewsletter = result.profile.map(_.optInNewsletter).getOrElse(true),
+                          website = result.profile.flatMap(_.website)
+                        ))
+                      }
+                    }
+                  }
                 }
               }
             }
