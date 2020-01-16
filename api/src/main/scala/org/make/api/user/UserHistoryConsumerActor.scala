@@ -26,7 +26,6 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
-import org.make.core.profile.Profile
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -58,7 +57,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       case event: UserAnonymizedEvent             => handleUserAnonymizedEvent(event)
       case event: UserFollowEvent                 => doNothing(event)
       case event: UserUnfollowEvent               => doNothing(event)
-      case event: UserUploadAvatarEvent           => handleUserUploadAvatarEvent(event)
+      case event: UserUploadAvatarEvent           => doNothing(event)
     }
   }
 
@@ -152,39 +151,6 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
     )
 
     Future.successful {}
-  }
-
-  def handleUserUploadAvatarEvent(event: UserUploadAvatarEvent): Future[Unit] = {
-    userService
-      .changeAvatarForUser(event.userId, event.avatarUrl)
-      .flatMap(
-        path =>
-          userService.getUser(event.userId).flatMap {
-            case Some(user) =>
-              val newProfile: Option[Profile] = user.profile match {
-                case Some(profile) => Some(profile.copy(avatarUrl = Some(path)))
-                case None          => Profile.parseProfile(avatarUrl = Some(path))
-              }
-              userService.update(user.copy(profile = newProfile), event.requestContext).map(_ => {})
-            case None =>
-              logger.warn(s"Could not find user ${event.userId} to upload avatar")
-              Future.successful {}
-        }
-      )
-      .map(
-        _ =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserUploadedAvatarEvent(
-              userId = event.userId,
-              requestContext = event.requestContext,
-              action = UserAction(
-                date = event.eventDate,
-                actionType = LogUserAnonymizedEvent.action,
-                arguments = UploadedAvatar(avatarUrl = event.avatarUrl)
-              )
-            )
-        )
-      )
   }
 }
 

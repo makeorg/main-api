@@ -23,7 +23,7 @@ import java.io.File
 import java.nio.file.Files
 import java.time.LocalDate
 
-import akka.http.scaladsl.model.{ContentType, Uri}
+import akka.http.scaladsl.model.ContentType
 import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
@@ -56,7 +56,6 @@ import scalaoauth2.provider.AuthInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success, Try}
 
 trait UserServiceComponent {
   def userService: UserService
@@ -900,32 +899,23 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       def destFn(contentType: ContentType): File =
         Files.createTempFile("user-upload-avatar", s".${extension(contentType)}").toFile
 
-      Try(Uri(avatarUrl)) match {
-        case Success(imageUri) =>
-          downloadService
-            .downloadImage(imageUri, destFn)
-            .flatMap {
-              case (contentType, tempFile) =>
-                tempFile.deleteOnExit()
-                storageService.uploadUserAvatar(
-                  userId,
-                  extension(contentType),
-                  contentType.value,
-                  FileContent(tempFile)
-                )
-            }
-            .recoverWith {
-              case e: ImageNotFound =>
-                getUser(userId).flatMap {
-                  case Some(user) =>
-                    val userWithoutAvatarUrl = user.copy(profile = user.profile.map(_.copy(avatarUrl = None)))
-                    update(userWithoutAvatarUrl, RequestContext.empty)
-                  case _ => Future.failed(e)
-                }.flatMap(_ => Future.failed(e))
+      downloadService
+        .downloadImage(avatarUrl, destFn)
+        .flatMap {
+          case (contentType, tempFile) =>
+            tempFile.deleteOnExit()
+            storageService.uploadUserAvatar(userId, extension(contentType), contentType.value, FileContent(tempFile))
+        }
+        .recoverWith {
+          case e: ImageNotFound =>
+            getUser(userId).flatMap {
+              case Some(user) =>
+                val userWithoutAvatarUrl = user.copy(profile = user.profile.map(_.copy(avatarUrl = None)))
+                update(userWithoutAvatarUrl, RequestContext.empty)
+              case _ => Future.failed(e)
+            }.flatMap(_ => Future.failed(e))
 
-            }
-        case Failure(e) => Future.failed(e)
-      }
+        }
     }
 
   }

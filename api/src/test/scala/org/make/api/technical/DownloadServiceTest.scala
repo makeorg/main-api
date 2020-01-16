@@ -22,9 +22,10 @@ import java.io.File
 import java.nio.file.Files
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentType
+import akka.http.scaladsl.model.{ContentType, IllegalUriException}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
 import scala.concurrent.duration.DurationInt
 
 class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceComponent with ActorSystemComponent {
@@ -69,6 +70,15 @@ class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceCompon
           .startsWith("Image not found for URL") shouldBe true
       }
 
+    }
+
+    scenario("empty URL") {
+      val imageUrl = ""
+      val futureImage = downloadService.downloadImage(imageUrl, destFn)
+
+      whenReady(futureImage.failed, Timeout(3.seconds)) { exception =>
+        exception shouldBe a[IllegalUriException]
+      }
     }
   }
 }
