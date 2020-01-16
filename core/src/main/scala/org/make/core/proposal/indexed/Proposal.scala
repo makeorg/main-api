@@ -42,6 +42,7 @@ object ProposalElasticsearchFieldNames {
   val authorFirstName: String = "author.firstName"
   val authorPostalCode: String = "author.postalCode"
   val authorUserType: String = "author.userType"
+  val authorAvatarUrl: String = "author.avatarUrl"
   val content: String = "content"
   val contentBg: String = "content.bg"
   val contentBgStemmed: String = "content.stemmed-bg"

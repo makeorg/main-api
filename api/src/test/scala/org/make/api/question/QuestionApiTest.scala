@@ -34,18 +34,13 @@ import org.make.api.feature.{
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
-import org.make.api.proposal.{
-  ProposalSearchEngine,
-  ProposalSearchEngineComponent,
-  ProposalService,
-  ProposalServiceComponent,
-  ProposalsResultResponse
-}
+import org.make.api.proposal._
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature, FeatureId}
+import org.make.core.idea.{IdeaId, TopIdeaId, TopIdeaScores}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
@@ -58,7 +53,7 @@ import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 
@@ -575,6 +570,57 @@ class QuestionApiTest
 
       Get("/questions/question-id/personalities") ~> routes ~> check {
         status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("get question top ideas") {
+
+    scenario("ok response") {
+      when(
+        questionService.getTopIdeas(
+          start = matches(0),
+          end = matches(None),
+          seed = matches(None),
+          questionId = matches(QuestionId("question-id")),
+          requestContext = any[RequestContext]
+        )
+      ).thenReturn(Future.successful(QuestionTopIdeasResponseWithSeed(Seq.empty, 42)))
+
+      Get("/questions/question-id/top-ideas") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+  }
+
+  feature("get topIdea by id") {
+    scenario("ok response") {
+      when(questionService.getTopIdea(matches(TopIdeaId("top-idea-id")), matches(QuestionId("question-id"))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              QuestionTopIdeaResponse(
+                id = TopIdeaId("top-idea-id"),
+                ideaId = IdeaId("idea-id"),
+                questionId = QuestionId("question-id"),
+                name = "name",
+                scores = TopIdeaScores(0, 0, 0)
+              )
+            )
+          )
+        )
+
+      Get("/questions/question-id/top-ideas/top-idea-id") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    scenario("not found") {
+      when(questionService.getTopIdea(matches(TopIdeaId("not-found")), matches(QuestionId("question-id"))))
+        .thenReturn(Future.successful(None))
+
+      Get("/questions/question-id/top-ideas/not-found") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
       }
     }
   }

@@ -21,6 +21,7 @@ package org.make.api
 
 import java.time.ZonedDateTime
 
+import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
@@ -38,6 +39,15 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.{
+  IndexedAuthor,
+  IndexedProposal,
+  IndexedProposalQuestion,
+  IndexedQualification,
+  IndexedScores,
+  IndexedVote,
+  SequencePool
+}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag.TagId
@@ -86,6 +96,45 @@ trait TestUtils {
     ),
   )
 
+  private val defaultIndexedVotes: Seq[IndexedVote] = Seq(
+    IndexedVote(
+      key = Agree,
+      count = 0,
+      countVerified = 0,
+      countSegment = 0,
+      countSequence = 0,
+      qualifications = Seq(
+        IndexedQualification(key = LikeIt, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = PlatitudeAgree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+      )
+    ),
+    IndexedVote(
+      key = Disagree,
+      count = 0,
+      countVerified = 0,
+      countSegment = 0,
+      countSequence = 0,
+      qualifications = Seq(
+        IndexedQualification(key = NoWay, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = Impossible, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = PlatitudeDisagree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+      )
+    ),
+    IndexedVote(
+      key = Neutral,
+      count = 0,
+      countVerified = 0,
+      countSegment = 0,
+      countSequence = 0,
+      qualifications = Seq(
+        IndexedQualification(key = DoNotUnderstand, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+        IndexedQualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+      )
+    ),
+  )
+
   def proposal(id: ProposalId,
                votes: Seq[Vote] = defaultVotes,
                author: UserId = UserId("author"),
@@ -125,6 +174,110 @@ trait TestUtils {
       createdAt = createdAt,
       updatedAt = updatedAt,
       events = events
+    )
+  }
+
+  private val defaultAuthor: IndexedAuthor = IndexedAuthor(
+    firstName = Some("firstname"),
+    organisationName = None,
+    organisationSlug = None,
+    postalCode = Some("12345"),
+    age = Some(25),
+    avatarUrl = Some("http://some-url"),
+    anonymousParticipation = false,
+    userType = UserType.UserTypeUser
+  )
+
+  def indexedProposal(id: ProposalId,
+                      votes: Seq[IndexedVote] = defaultIndexedVotes,
+                      userId: UserId = UserId("author"),
+                      author: IndexedAuthor = defaultAuthor,
+                      questionId: QuestionId = QuestionId("question-id"),
+                      operationId: Option[OperationId] = Some(OperationId("operation-id")),
+                      content: String = "Il faut tester l'indexation des propositions",
+                      country: Country = Country("FR"),
+                      language: Language = Language("fr"),
+                      status: ProposalStatus = Accepted,
+                      refusalReason: Option[String] = None,
+                      ideaId: Option[IdeaId] = None,
+                      theme: Option[ThemeId] = None,
+                      initialProposal: Boolean = false,
+                      regularTopScore: Double = 0,
+                      regularTopScoreAjustedWithVotes: Double = 0,
+                      segmentTopScore: Double = 0,
+                      segmentTopScoreAjustedWithVotes: Double = 0,
+                      createdAt: ZonedDateTime = ZonedDateTime.parse("2019-10-10T10:10:10.000Z"),
+                      updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z"))) = {
+
+    val regularScore = ScoreCounts.fromSequenceVotes(votes)
+    val segmentScore = ScoreCounts.fromSegmentVotes(votes)
+
+    IndexedProposal(
+      id = id,
+      userId = userId,
+      content = content,
+      slug = SlugHelper(content),
+      status = status,
+      createdAt = createdAt,
+      updatedAt = updatedAt,
+      votes = votes,
+      votesCount = votes.map(_.count).sum,
+      votesVerifiedCount = votes.map(_.countVerified).sum,
+      votesSequenceCount = votes.map(_.countSequence).sum,
+      votesSegmentCount = votes.map(_.countSegment).sum,
+      toEnrich = false,
+      scores = IndexedScores(
+        engagement = regularScore.engagement(),
+        agreement = regularScore.agreement(),
+        adhesion = regularScore.adhesion(),
+        realistic = regularScore.realistic(),
+        platitude = regularScore.platitude(),
+        topScore = regularTopScore,
+        topScoreAjustedWithVotes = regularTopScoreAjustedWithVotes,
+        controversy = regularScore.controversy(),
+        rejection = regularScore.rejection(),
+        scoreUpperBound = regularScore.topScoreUpperBound()
+      ),
+      segmentScores = IndexedScores(
+        engagement = segmentScore.engagement(),
+        agreement = segmentScore.agreement(),
+        adhesion = segmentScore.adhesion(),
+        realistic = segmentScore.realistic(),
+        platitude = segmentScore.platitude(),
+        topScore = segmentTopScore,
+        topScoreAjustedWithVotes = segmentTopScoreAjustedWithVotes,
+        controversy = segmentScore.controversy(),
+        rejection = segmentScore.rejection(),
+        scoreUpperBound = segmentScore.topScoreUpperBound()
+      ),
+      context = None,
+      trending = None,
+      labels = Seq.empty,
+      author = author,
+      organisations = Seq.empty,
+      country = country,
+      language = language,
+      themeId = theme,
+      tags = Seq.empty,
+      ideaId = ideaId,
+      operationId = operationId,
+      question = Some(
+        IndexedProposalQuestion(
+          questionId = questionId,
+          slug = questionId.value,
+          title = questionId.value,
+          question = questionId.value,
+          startDate = None,
+          endDate = None,
+          isOpen = true
+        )
+      ),
+      sequencePool = SequencePool.New,
+      sequenceSegmentPool = SequencePool.New,
+      initialProposal = initialProposal,
+      refusalReason = refusalReason,
+      operationKind = None,
+      segment = None
     )
   }
 

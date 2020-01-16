@@ -1,16 +1,25 @@
 package org.make.api.question
 
 import akka.actor.ActorSystem
+import org.make.api.idea.{
+  PersistentTopIdeaService,
+  PersistentTopIdeaServiceComponent,
+  TopIdeaService,
+  TopIdeaServiceComponent
+}
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEngineComponent}
 import org.make.api.personality.{QuestionPersonalityService, QuestionPersonalityServiceComponent}
+import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
+import org.make.core.RequestContext
+import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.personality.{Candidate, Personality, PersonalityId}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult, ProposalsAndVotesCountsByQuestion}
 import org.make.core.user._
+import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult, ProposalsAndVotesCountsByQuestion}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -27,7 +36,10 @@ class QuestionServiceTest
     with IdGeneratorComponent
     with QuestionPersonalityServiceComponent
     with UserServiceComponent
-    with OrganisationSearchEngineComponent {
+    with OrganisationSearchEngineComponent
+    with TopIdeaServiceComponent
+    with ProposalSearchEngineComponent
+    with PersistentTopIdeaServiceComponent {
 
   override val actorSystem: ActorSystem = ActorSystem()
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -35,6 +47,9 @@ class QuestionServiceTest
   override val userService: UserService = mock[UserService]
   override val persistentQuestionService: PersistentQuestionService = mock[PersistentQuestionService]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
+  override val topIdeaService: TopIdeaService = mock[TopIdeaService]
+  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
+  override val persistentTopIdeaService: PersistentTopIdeaService = mock[PersistentTopIdeaService]
 
   val personalities: Seq[Personality] = Seq(
     Personality(
@@ -142,6 +157,94 @@ class QuestionServiceTest
         res.results.head.organisationId.value shouldBe "organisation-2"
         res.results(1).organisationId.value shouldBe "organisation-1"
       }
+    }
+  }
+
+  feature("get top ideas") {
+    scenario("get top ideas") {
+      when(
+        topIdeaService
+          .search(start = 0, end = None, ideaId = None, questionId = Some(QuestionId("question-id")), name = None)
+      ).thenReturn(
+        Future
+          .successful(
+            Seq(
+              TopIdea(
+                TopIdeaId("top-idea-1"),
+                IdeaId("idea-1"),
+                QuestionId("question-id"),
+                "top-idea-1",
+                TopIdeaScores(0, 0, 0),
+                42
+              ),
+              TopIdea(
+                TopIdeaId("top-idea-2"),
+                IdeaId("idea-2"),
+                QuestionId("question-id"),
+                "top-idea-2",
+                TopIdeaScores(0, 0, 0),
+                21
+              )
+            )
+          )
+      )
+
+      when(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-1"), IdeaId("idea-2")), 1337))
+        .thenReturn(
+          Future.successful(
+            Map(
+              IdeaId("idea-1") ->
+                AvatarsAndProposalsCount(
+                  avatars = Seq("avatar-1", "avatar-2", "avatar-3", "avatar-4"),
+                  proposalsCount = 42
+                ),
+              IdeaId("idea-2") -> AvatarsAndProposalsCount(
+                avatars = Seq("avatar-5", "avatar-6", "avatar-7", "avatar-8"),
+                proposalsCount = 21
+              )
+            )
+          )
+        )
+
+      whenReady(
+        questionService.getTopIdeas(
+          start = 0,
+          end = None,
+          seed = Some(1337),
+          questionId = QuestionId("question-id"),
+          requestContext = RequestContext.empty
+        ),
+        Timeout(3.seconds)
+      ) { result =>
+        result.questionTopIdeas.size should be(2)
+        result.questionTopIdeas.head.ideaId should be(IdeaId("idea-1"))
+        result.questionTopIdeas.head.proposalsCount should be(42)
+        result.questionTopIdeas.head.avatars.size should be(4)
+      }
+    }
+  }
+
+  feature("get top idea by id") {
+    when(persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("top-idea-id"), QuestionId("question-id"))).thenReturn(
+      Future.successful(
+        Some(
+          TopIdea(
+            TopIdeaId("top-idea-id"),
+            IdeaId("idea-id"),
+            QuestionId("question-id"),
+            name = "name",
+            TopIdeaScores(0, 0, 0),
+            42
+          )
+        )
+      )
+    )
+
+    whenReady(
+      questionService.getTopIdea(topIdeaId = TopIdeaId("top-idea-id"), questionId = QuestionId("question-id")),
+      Timeout(3.seconds)
+    ) { result =>
+      result.map(_.name) should contain("name")
     }
   }
 

@@ -22,17 +22,20 @@ package org.make.api.question
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import org.make.api.ActorSystemComponent
+import org.make.api.idea.{PersistentTopIdeaServiceComponent, TopIdeaServiceComponent}
 import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.personality.QuestionPersonalityServiceComponent
-import org.make.api.technical.IdGeneratorComponent
+import org.make.api.proposal.ProposalSearchEngineComponent
+import org.make.api.technical.{IdGeneratorComponent, MakeRandom}
 import org.make.api.user.UserServiceComponent
+import org.make.core.idea.{TopIdea, TopIdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.personality.PersonalityRole
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{ValidationError, ValidationFailedError}
+import org.make.core.{RequestContext, ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -62,6 +65,12 @@ trait QuestionService {
                   sortAlgorithm: Option[OrganisationSortAlgorithm],
                   limit: Option[Int],
                   skip: Option[Int]): Future[OrganisationSearchResult]
+  def getTopIdeas(start: Int,
+                  end: Option[Int],
+                  seed: Option[Int],
+                  questionId: QuestionId,
+                  requestContext: RequestContext): Future[QuestionTopIdeasResponseWithSeed]
+  def getTopIdea(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[QuestionTopIdeaResponse]]
 }
 
 case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
@@ -85,7 +94,10 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     with IdGeneratorComponent
     with QuestionPersonalityServiceComponent
     with UserServiceComponent
-    with OrganisationSearchEngineComponent =>
+    with OrganisationSearchEngineComponent
+    with TopIdeaServiceComponent
+    with ProposalSearchEngineComponent
+    with PersistentTopIdeaServiceComponent =>
 
   override lazy val questionService: QuestionService = new DefaultQuestionService
 
@@ -251,5 +263,57 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       }
 
     }
+
+    override def getTopIdeas(start: Int,
+                             end: Option[Int],
+                             seed: Option[Int],
+                             questionId: QuestionId,
+                             requestContext: RequestContext): Future[QuestionTopIdeasResponseWithSeed] = {
+
+      val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
+
+      topIdeaService
+        .search(start = start, end = end, ideaId = None, questionId = Some(questionId), name = None)
+        .flatMap { topIdeas =>
+          elasticsearchProposalAPI
+            .getRandomProposalsByIdeaWithAvatar(ideaIds = topIdeas.map(_.ideaId), randomSeed)
+            .map { AvatarsAndProposalsCountByIdea =>
+              AvatarsAndProposalsCountByIdea.toSeq.flatMap {
+                case (ideaId, avatarsAndProposalsCount) =>
+                  topIdeas.find(_.ideaId.value == ideaId.value).map { topIdea =>
+                    QuestionTopIdeaWithAvatarResponse(
+                      id = topIdea.topIdeaId,
+                      ideaId = topIdea.ideaId,
+                      questionId = topIdea.questionId,
+                      name = topIdea.name,
+                      scores = topIdea.scores,
+                      proposalsCount = avatarsAndProposalsCount.proposalsCount,
+                      avatars = avatarsAndProposalsCount.avatars,
+                      weight = topIdea.weight
+                    )
+                  }
+              }
+            }
+        }
+        .map(result => QuestionTopIdeasResponseWithSeed(result, randomSeed))
+    }
+
+    def getTopIdea(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[QuestionTopIdeaResponse]] = {
+      persistentTopIdeaService.getByIdAndQuestionId(topIdeaId, questionId).map { maybeTopIdea =>
+        maybeTopIdea.map { topIdea =>
+          QuestionTopIdeaResponse(
+            id = topIdeaId,
+            ideaId = topIdea.ideaId,
+            questionId = questionId,
+            name = topIdea.name,
+            scores = topIdea.scores
+          )
+        }
+      }
+    }
   }
 }
+
+final case class AvatarsAndProposalsCount(avatars: Seq[String], proposalsCount: Int)
+
+final case class AvatarsTopIdeaAndProposalsCount(avatars: Seq[String], topIdea: TopIdea, proposalsCount: Int)

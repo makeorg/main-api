@@ -36,6 +36,7 @@ trait PersistentTopIdeaServiceComponent {
 
 trait PersistentTopIdeaService {
   def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]]
+  def getByIdAndQuestionId(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[TopIdea]]
   def search(start: Int,
              end: Option[Int],
              sort: Option[String],
@@ -72,6 +73,19 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
       futurePersistentTopIdea.map(_.map(_.toTopIdea))
     }
 
+    override def getByIdAndQuestionId(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[TopIdea]] = {
+      implicit val context: EC = readExecutionContext
+      val futurePersistentTopIdea = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTopIdea.as(topIdeaAlias))
+            .where(sqls.eq(topIdeaAlias.id, topIdeaId.value).and(sqls.eq(topIdeaAlias.questionId, questionId.value)))
+        }.map(PersistentTopIdea.apply()).single.apply
+      })
+
+      futurePersistentTopIdea.map(_.map(_.toTopIdea))
+    }
+
     override def search(start: Int,
                         end: Option[Int],
                         sort: Option[String],
@@ -101,7 +115,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
             case (Some(field), _) =>
               logger.warn(s"Unsupported filter '$field'")
               query.orderBy(topIdeaAlias.weight).asc.offset(start)
-            case (_, _) => query.orderBy(topIdeaAlias.weight).asc.offset(start)
+            case (_, _) => query.orderBy(topIdeaAlias.weight).desc.offset(start)
           }
           end match {
             case Some(limit) => queryOrdered.limit(limit)

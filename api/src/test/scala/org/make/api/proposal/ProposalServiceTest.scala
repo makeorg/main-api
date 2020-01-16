@@ -61,7 +61,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
 import org.make.core.tag._
-import org.make.core.user.{Role, User, UserId, UserType}
+import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.{never, times, verify}
@@ -165,57 +165,6 @@ class ProposalServiceTest
   def user(id: UserId): User = {
     val idString = id.value
     TestUtils.user(id = id, email = s"$idString@make.org", firstName = Some(idString))
-  }
-
-  def indexedProposal(id: ProposalId): IndexedProposal = {
-    IndexedProposal(
-      id = id,
-      userId = UserId(s"user-${id.value}"),
-      content = s"proposal with id ${id.value}",
-      slug = s"proposal-with-id-${id.value}",
-      status = ProposalStatus.Pending,
-      createdAt = DateHelper.now(),
-      updatedAt = None,
-      votes = Seq(
-        IndexedVote(Agree, 42, 42, 42, 42, Seq.empty),
-        IndexedVote(Disagree, 42, 42, 42, 42, Seq.empty),
-        IndexedVote(Neutral, 42, 42, 42, 42, Seq.empty)
-      ),
-      votesCount = 0,
-      votesVerifiedCount = 0,
-      votesSequenceCount = 0,
-      votesSegmentCount = 0,
-      toEnrich = false,
-      scores = IndexedScores.empty,
-      segmentScores = IndexedScores.empty,
-      context = None,
-      trending = None,
-      labels = Seq.empty,
-      author = IndexedAuthor(
-        firstName = Some(id.value),
-        organisationName = None,
-        organisationSlug = None,
-        postalCode = Some("12345"),
-        age = Some(25),
-        avatarUrl = Some("http://some-url"),
-        anonymousParticipation = false,
-        userType = UserType.UserTypeUser
-      ),
-      organisations = Seq.empty,
-      country = Country("FR"),
-      language = Language("fr"),
-      themeId = None,
-      tags = Seq.empty,
-      ideaId = None,
-      operationId = None,
-      question = None,
-      sequencePool = SequencePool.New,
-      sequenceSegmentPool = SequencePool.New,
-      initialProposal = false,
-      refusalReason = None,
-      operationKind = None,
-      segment = None
-    )
   }
 
   def simpleProposal(id: ProposalId): Proposal = {

@@ -21,17 +21,17 @@ package org.make.api.proposal
 
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.search.TermBucket
+import com.sksamuel.elastic4s.http.search.{SearchResponse, TermBucket}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.aggs.pipeline.BucketSortPipelineAgg
-import com.sksamuel.elastic4s.searches.aggs.{MaxAggregation, TermsAggregation, TopHitsAggregation}
+import com.sksamuel.elastic4s.searches.aggs.{GlobalAggregation, MaxAggregation, TermsAggregation, TopHitsAggregation}
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
-import com.sksamuel.elastic4s.searches.queries.{BoolQuery, IdQuery, Query}
+import com.sksamuel.elastic4s.searches.queries.{BoolQuery, ExistsQuery, IdQuery, Query}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
-import com.sksamuel.elastic4s.searches.{SearchRequest => ElasticSearchRequest}
+import com.sksamuel.elastic4s.searches.{IncludeExclude, SearchRequest => ElasticSearchRequest}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.question.PopularTagResponse
+import org.make.api.question.{AvatarsAndProposalsCount, PopularTagResponse}
 import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent, _}
 import org.make.core.DateHelper
 import org.make.core.DateHelper._
@@ -68,6 +68,7 @@ trait ProposalSearchEngine {
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
   def getTopProposalsByIdea(questionId: QuestionId, size: Int): Future[Seq[IndexedProposal]]
   def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]]
+  def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId], seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]]
 }
 
 object ProposalSearchEngine {
@@ -337,6 +338,76 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           .toMap
       }
 
+    }
+
+    override def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId],
+                                                    seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]] = {
+      val avatarsSize = 4
+
+      // this aggregation count the proposals without taking account of the search filters set for the bool query
+      val globalAggregation = GlobalAggregation(name = "all_proposals")
+        .subAggregations(
+          TermsAggregation(
+            name = "by_idea",
+            field = Some(ProposalElasticsearchFieldNames.ideaId),
+            includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty))
+          )
+        )
+
+      val topHitsAggregation =
+        TopHitsAggregation(
+          name = "top_proposals",
+          sorts = Seq(FieldSort(field = "_score", order = SortOrder.DESC)),
+          size = Some(avatarsSize)
+        )
+
+      var request = searchWithType(proposalAlias)
+        .bool(BoolQuery(must = Seq(ExistsQuery(field = ProposalElasticsearchFieldNames.authorAvatarUrl))))
+        .aggregations(
+          TermsAggregation(
+            name = "by_idea",
+            field = Some(ProposalElasticsearchFieldNames.ideaId),
+            includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty))
+          ).subAggregations(topHitsAggregation),
+          globalAggregation
+        )
+        .size(0)
+
+      request = RandomAlgorithm(seed).sortDefinition(request)
+
+      client.executeAsFuture(request).map { response =>
+        computeAvatarAndProposalsCountResponse(response)
+      }
+    }
+
+    private def computeAvatarAndProposalsCountResponse(
+      response: SearchResponse
+    ): Map[IdeaId, AvatarsAndProposalsCount] = {
+      val proposalsCountByIdea = response.aggregations
+        .global("all_proposals")
+        .keyedFilters("by_idea_global")
+        .aggResults
+        .map {
+          case (ideaId, filterAgg) => ideaId -> filterAgg.docCount
+        }
+      val avatarsByIdea = response.aggregations
+        .keyedFilters("by_idea")
+        .aggResults
+        .map {
+          case (ideaId, filterAgg) =>
+            ideaId -> filterAgg
+              .tophits("top_proposals")
+              .hits
+              .map(_.to[IndexedProposal])
+              .map(_.author.avatarUrl.getOrElse(""))
+        }
+      avatarsByIdea.map {
+        case (ideaId, avatars) =>
+          IdeaId(ideaId) -> AvatarsAndProposalsCount(
+            avatars = avatars,
+            proposalsCount = proposalsCountByIdea.getOrElse(ideaId, 0L).toInt
+          )
+      }
     }
   }
 
