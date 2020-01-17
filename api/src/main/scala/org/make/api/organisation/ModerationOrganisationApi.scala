@@ -292,11 +292,13 @@ object ModerationCreateOrganisationRequest {
     deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
-final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     organisationName: String Refined MaxSize[W.`256`.T],
-                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     email: Option[String] = None,
-                                                     profile: Option[ProfileRequest]) {
+final case class ModerationUpdateOrganisationRequest(
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  organisationName: String Refined MaxSize[W.`256`.T],
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  email: Option[String] = None,
+  profile: Option[ProfileRequest]
+) {
   OrganisationValidation.validateUpdate(
     organisationName = organisationName.value,
     email = email,
@@ -322,10 +324,12 @@ private object OrganisationValidation {
     )
   }
 
-  def validateUpdate(organisationName: String,
-                     email: Option[String],
-                     description: Option[String],
-                     profileRequest: Option[ProfileRequest]): Unit = {
+  def validateUpdate(
+    organisationName: String,
+    email: Option[String],
+    description: Option[String],
+    profileRequest: Option[ProfileRequest]
+  ): Unit = {
     validateOptional(
       Some(validateUserInput("organisationName", organisationName, None)),
       description.map(value => validateUserInput("description", value, None)),
@@ -361,6 +365,34 @@ object OrganisationResponse extends CirceFormatters {
     country = user.country,
     language = user.language
   )
+}
+
+final case class OrganisationProfileRequest(
+  organisationName: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar")
+  avatarUrl: Option[String Refined Url],
+  description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
+  website: Option[String Refined Url],
+  optInNewsletter: Boolean
+)
+
+object OrganisationProfileRequest {
+  implicit val encoder: Encoder[OrganisationProfileRequest] = deriveEncoder[OrganisationProfileRequest]
+  implicit val decoder: Decoder[OrganisationProfileRequest] = deriveDecoder[OrganisationProfileRequest]
+}
+
+final case class OrganisationProfileResponse(
+  organisationName: Option[String],
+  avatarUrl: Option[String],
+  description: Option[String],
+  website: Option[String],
+  optInNewsletter: Boolean
+)
+
+object OrganisationProfileResponse {
+  implicit val encoder: Encoder[OrganisationProfileResponse] = deriveEncoder[OrganisationProfileResponse]
+  implicit val decoder: Decoder[OrganisationProfileResponse] = deriveDecoder[OrganisationProfileResponse]
 }
 
 final case class OrganisationIdResponse(

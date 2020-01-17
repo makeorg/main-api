@@ -477,7 +477,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(persistentUserService.persist(userOrganisationDGSE), Timeout(3.seconds)) { organisation =>
         organisation.organisationName should be(Some("Direction Générale de la Sécurité Extérieure"))
         whenReady(
-          persistentUserService.modify(userOrganisationDGSE.copy(organisationName = Some("DGSE Updated"))),
+          persistentUserService.modifyOrganisation(userOrganisationDGSE.copy(organisationName = Some("DGSE Updated"))),
           Timeout(3.seconds)
         ) { organisationUpdated =>
           organisationUpdated shouldBe a[Either[_, User]]
@@ -492,7 +492,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         organisation.organisationName shouldBe Some("Federal Security Service")
         organisation.email shouldBe "fsb@secret-agency.com"
         whenReady(
-          persistentUserService.modify(
+          persistentUserService.modifyOrganisation(
             userOrganisationDGSE.copy(organisationName = Some("FSB Updated"), email = "fsbupdated@secret-agency.com")
           ),
           Timeout(3.seconds)
@@ -507,7 +507,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
     scenario("Fail organisation update") {
       whenReady(
-        persistentUserService.modify(userOrganisationCSIS.copy(organisationName = Some("CSIS Updated"))),
+        persistentUserService.modifyOrganisation(userOrganisationCSIS.copy(organisationName = Some("CSIS Updated"))),
         Timeout(3.seconds)
       ) { organisationFailUpdate =>
         organisationFailUpdate shouldBe a[Either[UpdateFailed, _]]

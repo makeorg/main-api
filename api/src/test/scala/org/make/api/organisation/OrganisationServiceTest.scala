@@ -256,7 +256,7 @@ class OrganisationServiceTest
     scenario("successfully update an organisation by changing the name and avatar") {
       Mockito.reset(eventBusService)
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
-      Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
+      Mockito.when(persistentUserService.modifyOrganisation(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
       Mockito
         .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
         .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
@@ -285,7 +285,7 @@ class OrganisationServiceTest
 
     scenario("successfully update an organisation without changing anything") {
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
-      Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
+      Mockito.when(persistentUserService.modifyOrganisation(any[User])).thenReturn(Future.successful(Right(returnedOrganisation)))
       Mockito
         .when(
           elasticsearchProposalAPI
@@ -311,7 +311,7 @@ class OrganisationServiceTest
     }
 
     scenario("Fail update") {
-      Mockito.when(persistentUserService.modify(any[User])).thenReturn(Future.successful(Left(UpdateFailed())))
+      Mockito.when(persistentUserService.modifyOrganisation(any[User])).thenReturn(Future.successful(Left(UpdateFailed())))
 
       val futureOrganisation =
         organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)

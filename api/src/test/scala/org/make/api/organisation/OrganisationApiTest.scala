@@ -46,6 +46,10 @@ import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
+import org.make.core.profile.Profile
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.ContentTypes
+import org.make.core.user.User
 
 class OrganisationApiTest
     extends MakeApiTestBase
@@ -58,11 +62,33 @@ class OrganisationApiTest
   override val organisationService: OrganisationService = mock[OrganisationService]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
 
+  val returnedOrganisation = TestUtils.user(
+    id = UserId("make-org"),
+    email = "make@make.org",
+    firstName = None,
+    lastName = None,
+    enabled = true,
+    emailVerified = true,
+    roles = Seq(RoleActor),
+    organisationName = Some("Make.org"),
+    userType = UserType.UserTypeOrganisation,
+    profile = Profile.parseProfile(
+      description = Some("my description"),
+      avatarUrl = Some("https://my-avatar.com"),
+      website = Some("make.org"),
+      optInNewsletter = true
+    )
+  )
+
   private val validAccessToken = "my-valid-access-token"
+  private val makeToken = "make.org"
   val tokenCreationDate = new Date()
   private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
+  private val makeAccessToken = AccessToken(makeToken, None, None, Some(1234567890L), tokenCreationDate)
 
   Mockito.when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
+  Mockito.when(oauth2DataHandler.findAccessToken(makeToken)).thenReturn(Future.successful(Some(makeAccessToken)))
+
   Mockito
     .when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
     .thenReturn(
@@ -83,21 +109,29 @@ class OrganisationApiTest
       )
     )
 
+  Mockito
+    .when(oauth2DataHandler.findAuthInfoByAccessToken(matches(makeAccessToken)))
+    .thenReturn(
+      Future.successful(
+        Some(
+          AuthInfo(
+            UserRights(
+              userId = returnedOrganisation.userId,
+              roles = Seq(RoleCitizen),
+              availableQuestions = Seq.empty,
+              emailVerified = true
+            ),
+            None,
+            Some("user"),
+            None
+          )
+        )
+      )
+    )
+
   val routes: Route = sealRoute(organisationApi.routes)
 
   val now: ZonedDateTime = DateHelper.now()
-
-  val returnedOrganisation = TestUtils.user(
-    id = UserId("make-org"),
-    email = "make@make.org",
-    firstName = None,
-    lastName = None,
-    enabled = true,
-    emailVerified = true,
-    roles = Seq(RoleActor),
-    organisationName = Some("Make.org"),
-    userType = UserType.UserTypeOrganisation
-  )
 
   Mockito
     .when(organisationService.getOrganisation(UserId("make-org")))
@@ -110,6 +144,10 @@ class OrganisationApiTest
   Mockito
     .when(organisationService.getOrganisation(UserId("non-existant")))
     .thenReturn(Future.successful(None))
+
+  Mockito
+    .when(organisationService.update(any[User], any[Option[String]], any[RequestContext]))
+    .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0).userId))
 
   val proposalsList = ProposalsResultSeededResponse(
     total = 4,
@@ -447,7 +485,7 @@ class OrganisationApiTest
             vote = Agree,
             voteDate = DateHelper.now(),
             voteDetails = None
-        )
+          )
       ),
       seed = None
     )
@@ -487,13 +525,80 @@ class OrganisationApiTest
     }
 
     scenario("get proposals voted from non organisation user") {
-      Mockito
-        .when(organisationService.getOrganisation(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(None))
-      Get("/organisations/make-org/votes") ~> routes ~> check {
+      Get("/organisations/classic-user/votes") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
   }
 
+  feature("get an organisation profile") {
+    scenario("nonexisting organisation") {
+      Get("/organisations/non-existant/profile") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("user used as an organisation") {
+      Get("/organisations/classic-user/profile") ~> routes ~> check {
+        status should be(StatusCodes.NotFound)
+      }
+    }
+
+    scenario("existing organisation") {
+      Get("/organisations/make-org/profile") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val response = responseAs[OrganisationProfileResponse]
+        response.organisationName should be(returnedOrganisation.organisationName)
+        response.avatarUrl should be(returnedOrganisation.profile.flatMap(_.avatarUrl))
+        response.description should be(returnedOrganisation.profile.flatMap(_.description))
+        response.website should be(returnedOrganisation.profile.flatMap(_.website))
+        returnedOrganisation.profile.map(_.optInNewsletter) should contain(response.optInNewsletter)
+      }
+    }
+
+  }
+
+  feature("update an organisation profile") {
+    val validModification = """{
+      |  "organisationName": "Make.org (TM)",
+      |  "description": "Let's make the world a better place",
+      |  "website": "https://make.org/FR−fr",
+      |  "avatarUrl": "https://make.org/avatar",
+      |  "optInNewsletter": false
+      |}""".stripMargin
+
+    scenario("unauthentified modification") {
+      Put("/organisations/make-org/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validModification)) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("authentified modification") {
+
+      Put("/organisations/make-org/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validModification))
+        .withHeaders(Authorization(OAuth2BearerToken(makeToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.OK)
+        val response = responseAs[OrganisationProfileResponse]
+        response.organisationName should contain("Make.org (TM)")
+        response.description should contain("Let's make the world a better place")
+        response.avatarUrl should contain("https://make.org/avatar")
+        response.website should contain("https://make.org/FR−fr")
+        response.optInNewsletter should be(false)
+      }
+    }
+
+    scenario("authentified modification with the wrong user") {
+
+      Put("/organisations/make-org/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, validModification))
+        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+  }
 }
