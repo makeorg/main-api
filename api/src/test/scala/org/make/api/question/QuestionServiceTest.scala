@@ -222,6 +222,54 @@ class QuestionServiceTest
         result.questionTopIdeas.head.avatars.size should be(4)
       }
     }
+
+    scenario("get top ideas if no proposals found") {
+      when(
+        topIdeaService
+          .search(start = 0, end = None, ideaId = None, questionId = Some(QuestionId("question-id")), name = None)
+      ).thenReturn(
+        Future
+          .successful(
+            Seq(
+              TopIdea(
+                TopIdeaId("top-idea-1"),
+                IdeaId("idea-1"),
+                QuestionId("question-id"),
+                "top-idea-1",
+                TopIdeaScores(0, 0, 0),
+                42
+              ),
+              TopIdea(
+                TopIdeaId("top-idea-2"),
+                IdeaId("idea-2"),
+                QuestionId("question-id"),
+                "top-idea-2",
+                TopIdeaScores(0, 0, 0),
+                21
+              )
+            )
+          )
+      )
+
+      when(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-1"), IdeaId("idea-2")), 1337))
+        .thenReturn(Future.successful(Map()))
+
+      whenReady(
+        questionService.getTopIdeas(
+          start = 0,
+          end = None,
+          seed = Some(1337),
+          questionId = QuestionId("question-id"),
+          requestContext = RequestContext.empty
+        ),
+        Timeout(3.seconds)
+      ) { result =>
+        result.questionTopIdeas.size should be(2)
+        result.questionTopIdeas.head.ideaId should be(IdeaId("idea-1"))
+        result.questionTopIdeas.head.proposalsCount should be(0)
+        result.questionTopIdeas.head.avatars.size should be(0)
+      }
+    }
   }
 
   feature("get top idea by id") {

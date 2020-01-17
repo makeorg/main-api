@@ -383,24 +383,24 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     private def computeAvatarAndProposalsCountResponse(
       response: SearchResponse
     ): Map[IdeaId, AvatarsAndProposalsCount] = {
-      val proposalsCountByIdea = response.aggregations
+      val proposalsCountByIdea: Map[String, Long] = response.aggregations
         .global("all_proposals")
-        .keyedFilters("by_idea_global")
-        .aggResults
-        .map {
-          case (ideaId, filterAgg) => ideaId -> filterAgg.docCount
-        }
-      val avatarsByIdea = response.aggregations
-        .keyedFilters("by_idea")
-        .aggResults
-        .map {
-          case (ideaId, filterAgg) =>
-            ideaId -> filterAgg
-              .tophits("top_proposals")
+        .terms("by_idea_global")
+        .buckets
+        .map(bucket => bucket.key -> bucket.docCount)
+        .toMap
+      val avatarsByIdea: Map[String, Seq[String]] = response.aggregations
+        .terms("by_idea")
+        .buckets
+        .map(
+          bucket =>
+            bucket.key -> bucket
+              .tophits("topHits")
               .hits
               .map(_.to[IndexedProposal])
               .map(_.author.avatarUrl.getOrElse(""))
-        }
+        )
+        .toMap
       avatarsByIdea.map {
         case (ideaId, avatars) =>
           IdeaId(ideaId) -> AvatarsAndProposalsCount(
