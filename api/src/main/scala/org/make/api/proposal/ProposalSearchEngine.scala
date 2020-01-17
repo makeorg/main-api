@@ -348,7 +348,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val globalAggregation = GlobalAggregation(name = "all_proposals")
         .subAggregations(
           TermsAggregation(
-            name = "by_idea",
+            name = "by_idea_global",
             field = Some(ProposalElasticsearchFieldNames.ideaId),
             includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty))
           )
