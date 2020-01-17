@@ -29,6 +29,9 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
 import spray.json.{JsString, JsValue, JsonFormat}
+import org.make.core.user.UserType.UserTypeUser
+import org.make.core.user.UserType.UserTypeOrganisation
+import org.make.core.user.UserType.UserTypePersonality
 
 sealed trait Role {
   def shortName: String
@@ -124,33 +127,34 @@ object UserType {
 
 case class MailingErrorLog(error: String, date: ZonedDateTime)
 
-case class User(userId: UserId,
-                email: String,
-                firstName: Option[String],
-                lastName: Option[String],
-                lastIp: Option[String],
-                hashedPassword: Option[String],
-                enabled: Boolean,
-                emailVerified: Boolean,
-                userType: UserType,
-                lastConnection: ZonedDateTime,
-                verificationToken: Option[String],
-                verificationTokenExpiresAt: Option[ZonedDateTime],
-                resetToken: Option[String],
-                resetTokenExpiresAt: Option[ZonedDateTime],
-                roles: Seq[Role],
-                country: Country,
-                language: Language,
-                profile: Option[Profile],
-                override val createdAt: Option[ZonedDateTime] = None,
-                override val updatedAt: Option[ZonedDateTime] = None,
-                isHardBounce: Boolean = false,
-                lastMailingError: Option[MailingErrorLog] = None,
-                organisationName: Option[String] = None,
-                publicProfile: Boolean = false,
-                availableQuestions: Seq[QuestionId],
-                anonymousParticipation: Boolean)
-    extends MakeSerializable
+case class User(
+  userId: UserId,
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  lastIp: Option[String],
+  hashedPassword: Option[String],
+  enabled: Boolean,
+  emailVerified: Boolean,
+  userType: UserType,
+  lastConnection: ZonedDateTime,
+  verificationToken: Option[String],
+  verificationTokenExpiresAt: Option[ZonedDateTime],
+  resetToken: Option[String],
+  resetTokenExpiresAt: Option[ZonedDateTime],
+  roles: Seq[Role],
+  country: Country,
+  language: Language,
+  profile: Option[Profile],
+  override val createdAt: Option[ZonedDateTime] = None,
+  override val updatedAt: Option[ZonedDateTime] = None,
+  isHardBounce: Boolean = false,
+  lastMailingError: Option[MailingErrorLog] = None,
+  organisationName: Option[String] = None,
+  publicProfile: Boolean = false,
+  availableQuestions: Seq[QuestionId],
+  anonymousParticipation: Boolean
+) extends MakeSerializable
     with Timestamped {
 
   def fullName: Option[String] = {
@@ -161,6 +165,12 @@ case class User(userId: UserId,
       case (None, Some(definedLastName), _)                   => Some(definedLastName)
       case (Some(definedFirstName), Some(definedLastName), _) => Some(s"$definedFirstName $definedLastName")
     }
+  }
+
+  def displayName: Option[String] = this.userType match {
+    case UserTypeUser         => this.firstName
+    case UserTypeOrganisation => this.organisationName
+    case UserTypePersonality  => this.fullName
   }
 
   def verificationTokenIsExpired: Boolean =
@@ -228,11 +238,13 @@ object ConnectionMode {
   }
 }
 
-case class ReconnectInfo(reconnectToken: String,
-                         firstName: Option[String],
-                         avatarUrl: Option[String],
-                         hiddenMail: String,
-                         connectionMode: Seq[ConnectionMode])
+case class ReconnectInfo(
+  reconnectToken: String,
+  firstName: Option[String],
+  avatarUrl: Option[String],
+  hiddenMail: String,
+  connectionMode: Seq[ConnectionMode]
+)
 
 object ReconnectInfo {
   implicit lazy val encoder: Encoder[ReconnectInfo] = deriveEncoder[ReconnectInfo]

@@ -53,7 +53,7 @@ case class UserResponse(
   lastMailingError: Option[MailingErrorLogResponse],
   hasPassword: Boolean,
   @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty,
-  userType: UserType
+  @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType
 )
 
 object UserResponse extends CirceFormatters {
@@ -82,6 +82,30 @@ object UserResponse extends CirceFormatters {
     followedUsers = followedUsers,
     userType = user.userType
   )
+}
+
+case class CurrentUserResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
+  userId: UserId,
+  email: String,
+  displayName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "USER")
+  userType: UserType,
+  @(ApiModelProperty @field)(dataType = "list[string]", allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN")
+  roles: Seq[Role],
+  hasPassword: Boolean,
+  enabled: Boolean,
+  emailVerified: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  avatarUrl: Option[String]
+)
+
+object CurrentUserResponse {
+  implicit val encoder: Encoder[CurrentUserResponse] = deriveEncoder[CurrentUserResponse]
+  implicit val decoder: Decoder[CurrentUserResponse] = deriveDecoder[CurrentUserResponse]
 }
 
 case class MailingErrorLogResponse(error: String,

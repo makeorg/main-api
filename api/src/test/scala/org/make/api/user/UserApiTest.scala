@@ -203,6 +203,7 @@ class UserApiTest
     .thenReturn(Future.successful(Some(vincent)))
   when(userService.getUser(ArgumentMatchers.eq(fakeUser.userId)))
     .thenReturn(Future.successful(Some(fakeUser)))
+
   feature("register user") {
 
     Mockito
@@ -657,7 +658,7 @@ class UserApiTest
       emailVerified = false,
       lastConnection = DateHelper.now(),
       verificationToken = Some("token"),
-      verificationTokenExpiresAt = Some(DateHelper.now()),
+      verificationTokenExpiresAt = Some(DateHelper.now())
     )
     Mockito
       .when(persistentUserService.findByEmail("john.doe@example.com"))
@@ -670,7 +671,7 @@ class UserApiTest
         invocation =>
           if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeUser.userId)) {
             throw new IllegalArgumentException("UserId not match")
-        }
+          }
       )
     Mockito
       .when(persistentUserService.findByEmail("fake@example.com"))
@@ -904,6 +905,21 @@ class UserApiTest
       Get("/user/me").withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val result = entityAs[UserResponse]
+        result.userId shouldBe sylvain.userId
+      }
+    }
+
+    scenario("no auth token from current user") {
+      Get("/user/current") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("valid token from current user") {
+
+      Get("/user/current").withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val result = entityAs[CurrentUserResponse]
         result.userId shouldBe sylvain.userId
       }
     }
@@ -1582,11 +1598,10 @@ class UserApiTest
     }
 
     scenario("incorrect file type") {
-      val request: Multipart = Multipart.FormData(
-        fields = Map(
-          "data" -> HttpEntity
-            .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
-        )
+      val request: Multipart = Multipart.FormData(fields = Map(
+        "data" -> HttpEntity
+          .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
+      )
       )
 
       Post("/user/ABCD/upload-avatar", request)
