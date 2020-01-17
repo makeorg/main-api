@@ -31,6 +31,9 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
 
 import scala.annotation.meta.field
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
+import io.circe.refined._
 
 case class UserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55") userId: UserId,
@@ -108,11 +111,47 @@ object CurrentUserResponse {
   implicit val decoder: Decoder[CurrentUserResponse] = deriveDecoder[CurrentUserResponse]
 }
 
-case class MailingErrorLogResponse(error: String,
-                                   @(ApiModelProperty @field)(
-                                     dataType = "string",
-                                     example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]"
-                                   ) date: ZonedDateTime)
+case class UserProfileResponse(
+  firstName: Option[String],
+  lastName: Option[String],
+  dateOfBirth: Option[LocalDate],
+  avatarUrl: Option[String],
+  profession: Option[String],
+  description: Option[String],
+  postalCode: Option[String],
+  optInNewsletter: Boolean,
+  website: Option[String]
+)
+
+object UserProfileResponse {
+  implicit val encoder: Encoder[UserProfileResponse] = deriveEncoder[UserProfileResponse]
+  implicit val decoder: Decoder[UserProfileResponse] = deriveDecoder[UserProfileResponse]
+}
+
+case class UserProfileRequest(
+  firstName: String,
+  lastName: Option[String],
+  dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.jpg")
+  avatarUrl: Option[String Refined Url],
+  profession: Option[String],
+  description: Option[String],
+  postalCode: Option[String],
+  optInNewsletter: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://make.org")
+  website: Option[String Refined Url]
+)
+
+object UserProfileRequest {
+  implicit val encoder: Encoder[UserProfileRequest] = deriveEncoder[UserProfileRequest]
+  implicit val decoder: Decoder[UserProfileRequest] = deriveDecoder[UserProfileRequest]
+}
+
+case class MailingErrorLogResponse(
+  error: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]") date: ZonedDateTime
+)
+
 object MailingErrorLogResponse extends CirceFormatters {
   implicit val encoder: Encoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
   implicit val decoder: Decoder[MailingErrorLogResponse] = deriveDecoder[MailingErrorLogResponse]

@@ -197,12 +197,34 @@ class UserApiTest
     .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(adminAccessToken)))
     .thenReturn(Future.successful(Some(adminFakeAuthInfo)))
 
-  when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
-    .thenReturn(Future.successful(Some(sylvain)))
-  when(userService.getUser(ArgumentMatchers.eq(vincent.userId)))
-    .thenReturn(Future.successful(Some(vincent)))
-  when(userService.getUser(ArgumentMatchers.eq(fakeUser.userId)))
-    .thenReturn(Future.successful(Some(fakeUser)))
+
+  val publicUser = fakeUser.copy(userId = UserId("EFGH"), publicProfile = true)
+
+  val users = Map(
+    sylvain.userId -> sylvain,
+    vincent.userId -> vincent,
+    fakeUser.userId -> fakeUser,
+    publicUser.userId -> publicUser
+  )
+  when(userService.getUser(ArgumentMatchers.any[UserId]))
+    .thenAnswer(invocation => Future.successful(users.get(invocation.getArgument[UserId](0))))
+
+  when(userService.update(any[User], any[RequestContext]))
+    .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0)))
+
+  Mockito
+    .when(
+      userService
+        .followUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId], ArgumentMatchers.any[RequestContext])
+    )
+    .thenAnswer(invocation => Future.successful(invocation.getArgument[UserId](0)))
+
+  Mockito
+    .when(
+      userService
+        .unfollowUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId], ArgumentMatchers.any[RequestContext])
+    )
+    .thenAnswer(invocation => Future.successful(invocation.getArgument[UserId](0)))
 
   feature("register user") {
 
@@ -1179,13 +1201,6 @@ class UserApiTest
 
       when(userService.getUser(ArgumentMatchers.eq(UserId("BAD")))).thenReturn(Future.successful(Some(fakeUser)))
 
-      Mockito
-        .when(
-          userService
-            .update(any[User], any[RequestContext])
-        )
-        .thenReturn(Future.successful(fakeUser))
-
       val request =
         """
           |{
@@ -1210,12 +1225,6 @@ class UserApiTest
     scenario("successful update user") {
       when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(Future.successful(Some(fakeUser)))
 
-      Mockito
-        .when(
-          userService
-            .update(any[User], any[RequestContext])
-        )
-        .thenReturn(Future.successful(fakeUser))
       val request =
         """
           |{
@@ -1416,15 +1425,12 @@ class UserApiTest
 
   feature("follow user") {
     scenario("unconnected user") {
-      Post("/user/sylvain-user-id/follow") ~> routes ~> check {
+      Post(s"/user/${sylvain.userId.value}/follow") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
     scenario("try to follow unexistant user") {
-      Mockito
-        .when(userService.getUser(ArgumentMatchers.eq(UserId("non-existant"))))
-        .thenReturn(Future.successful(None))
 
       Post("/user/non-existant/follow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
@@ -1433,32 +1439,20 @@ class UserApiTest
     }
 
     scenario("try to follow a user without public profile") {
-      Mockito
-        .when(userService.getUser(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(Some(fakeUser)))
-      Post("/user/ABCD/follow")
+
+      Post(s"/user/${fakeUser.userId.value}/follow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
     scenario("try to follow a user already followed") {
-      Mockito
-        .when(userService.getUser(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(Some(fakeUser.copy(publicProfile = true))))
+
       Mockito
         .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(Seq(fakeUser.userId)))
-      Mockito
-        .when(
-          userService.followUser(
-            ArgumentMatchers.any[UserId],
-            ArgumentMatchers.any[UserId],
-            ArgumentMatchers.any[RequestContext]
-          )
-        )
-        .thenReturn(Future.successful(fakeUser.userId))
-      Post("/user/ABCD/follow")
+        .thenReturn(Future.successful(Seq(publicUser.userId)))
+
+      Post(s"/user/${publicUser.userId.value}/follow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
@@ -1466,21 +1460,10 @@ class UserApiTest
 
     scenario("successfully follow a user") {
       Mockito
-        .when(userService.getUser(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(Some(fakeUser.copy(publicProfile = true))))
-      Mockito
         .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
         .thenReturn(Future.successful(Seq.empty))
-      Mockito
-        .when(
-          userService.followUser(
-            ArgumentMatchers.any[UserId],
-            ArgumentMatchers.any[UserId],
-            ArgumentMatchers.any[RequestContext]
-          )
-        )
-        .thenReturn(Future.successful(fakeUser.userId))
-      Post("/user/ABCD/follow")
+
+      Post(s"/user/${publicUser.userId.value}/follow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
@@ -1489,15 +1472,12 @@ class UserApiTest
 
   feature("unfollow a user") {
     scenario("unconnected user") {
-      Post("/user/sylvain-user-id/unfollow") ~> routes ~> check {
+      Post(s"/user/${sylvain.userId.value}/unfollow") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
     scenario("try to unfollow unexistant user") {
-      Mockito
-        .when(userService.getUser(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(None))
       Post("/user/non-existant/unfollow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
@@ -1506,34 +1486,22 @@ class UserApiTest
 
     scenario("try to unfollow a user already unfollowed") {
       Mockito
-        .when(userService.getUser(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(Some(fakeUser)))
-      Mockito
-        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+        .when(userService.getFollowedUsers(sylvain.userId))
         .thenReturn(Future.successful(Seq.empty))
-      Post("/user/ABCD/unfollow")
+
+      Post(s"/user/${publicUser.userId.value}/unfollow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
 
     scenario("successfully unfollow a user") {
-      Mockito
-        .when(userService.getUser(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(Some(fakeUser.copy(publicProfile = true))))
+
       Mockito
         .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
-        .thenReturn(Future.successful(Seq(UserId("ABCD"))))
-      Mockito
-        .when(
-          userService.unfollowUser(
-            ArgumentMatchers.any[UserId],
-            ArgumentMatchers.any[UserId],
-            ArgumentMatchers.any[RequestContext]
-          )
-        )
-        .thenReturn(Future.successful(fakeUser.userId))
-      Post("/user/ABCD/unfollow")
+        .thenReturn(Future.successful(Seq(publicUser.userId)))
+
+      Post(s"/user/${publicUser.userId.value}/unfollow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
@@ -1668,7 +1636,6 @@ class UserApiTest
           ArgumentMatchers.any[FileContent]
         )
       ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
-      when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(fakeUser))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(
         Multipart.FormData.BodyPart
@@ -1691,6 +1658,133 @@ class UserApiTest
 
         val path: UploadResponse = entityAs[UploadResponse]
         path.path shouldBe "path/to/uploaded/image.jpeg"
+      }
+    }
+  }
+
+  feature("read user information") {
+
+    scenario("get user when not connected") {
+      Get(s"/user/${sylvain.userId.value}") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("get user with the correct connected user") {
+      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      Get(s"/user/${sylvain.userId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val result = entityAs[UserResponse]
+        result.userId should be(sylvain.userId)
+      }
+    }
+
+    scenario("get user with an incorrect connected user") {
+
+      Get(s"/user/${sylvain.userId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("get user with as admin") {
+      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      Get(s"/user/${sylvain.userId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val result = entityAs[UserResponse]
+        result.userId should be(sylvain.userId)
+      }
+    }
+
+    scenario("get user profile when not connected") {
+      Get(s"/user/${sylvain.userId.value}/profile") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("get user profile with the correct connected user") {
+      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      Get(s"/user/${sylvain.userId.value}/profile")
+        .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val result = entityAs[UserProfileResponse]
+        result.firstName should be(sylvain.firstName)
+      }
+    }
+
+    scenario("get user profile with the incorrect connected user") {
+
+      Get(s"/user/${sylvain.userId.value}/profile")
+        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("get user profile as admin") {
+      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+        .thenReturn(Future.successful(Some(sylvain)))
+
+      Get(s"/user/${sylvain.userId.value}/profile")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+  }
+
+  feature("update user profile") {
+    scenario("unauthentified profile modification") {
+      Put(s"/user/${sylvain.userId.value}/profile") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("profile modification with the wrong user") {
+      Put(s"/user/${sylvain.userId.value}/profile")
+        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("profile modification with the correct user") {
+
+      val entity = """{
+        |  "firstName": "new-firstname",
+        |  "lastName": "new-lastname",
+        |  "dateOfBirth": "1970-01-01",
+        |  "avatarUrl": "https://some-avatar.com",
+        |  "profession": "new-profession",
+        |  "description": "new-description",
+        |  "postalCode": "12345",
+        |  "optInNewsletter": true,
+        |  "website": "https://some-website.com"
+      }""".stripMargin
+
+      Put(s"/user/${sylvain.userId.value}/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity))
+        .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.OK)
+
+        val profile = responseAs[UserProfileResponse]
+        profile.firstName should contain("new-firstname")
+        profile.lastName should contain("new-lastname")
+        profile.dateOfBirth should contain(LocalDate.parse("1970-01-01"))
+        profile.avatarUrl should contain("https://some-avatar.com")
+        profile.profession should contain("new-profession")
+        profile.description should contain("new-description")
+        profile.postalCode should contain("12345")
+        profile.optInNewsletter should be(true)
+        profile.website should contain("https://some-website.com")
+
       }
     }
   }
