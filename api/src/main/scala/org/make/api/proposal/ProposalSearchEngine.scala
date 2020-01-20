@@ -401,11 +401,11 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
               .map(_.author.avatarUrl.getOrElse(""))
         )
         .toMap
-      avatarsByIdea.map {
-        case (ideaId, avatars) =>
+      proposalsCountByIdea.map {
+        case (ideaId, count) =>
           IdeaId(ideaId) -> AvatarsAndProposalsCount(
-            avatars = avatars,
-            proposalsCount = proposalsCountByIdea.getOrElse(ideaId, 0L).toInt
+            avatars = avatarsByIdea.getOrElse(ideaId, Seq.empty),
+            proposalsCount = count.toInt
           )
       }
     }

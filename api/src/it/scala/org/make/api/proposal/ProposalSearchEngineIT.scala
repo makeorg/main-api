@@ -288,7 +288,7 @@ class ProposalSearchEngineIT
         organisationSlug = None,
         postalCode = Some("92876"),
         age = Some(25),
-        avatarUrl = None,
+        avatarUrl = Some("avatar.url"),
         anonymousParticipation = false,
         userType = UserType.UserTypeUser
       ),
@@ -1731,6 +1731,21 @@ class ProposalSearchEngineIT
         results.results.size should be(2)
         results.results.exists(_.author.userType == UserType.UserTypeOrganisation) shouldBe true
         results.results.exists(_.author.userType == UserType.UserTypePersonality) shouldBe true
+      }
+    }
+  }
+
+  feature("get random proposals by top idea") {
+    scenario("get random proposals by top idea") {
+      whenReady(
+        elasticsearchProposalAPI
+          .getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-id"), IdeaId("idea-id-2"), IdeaId("idea-id-3")), 42),
+        Timeout(10.seconds)
+      ) { result =>
+        result(IdeaId("idea-id")).proposalsCount should be(2)
+        result(IdeaId("idea-id")).avatars should contain("avatar.url")
+        result(IdeaId("idea-id-2")).proposalsCount should be(1)
+        result(IdeaId("idea-id-3")).proposalsCount should be(1)
       }
     }
   }
