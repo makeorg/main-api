@@ -19,23 +19,16 @@
 
 package org.make.api.tag
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -47,34 +40,6 @@ class TagApiTest
 
   override val tagService: TagService = mock[TagService]
   override val questionService: QuestionService = mock[QuestionService]
-
-  val validCitizenAccessToken = "my-valid-citizen-access-token"
-
-  val tokenCreationDate = new Date()
-  private val citizenAccessToken =
-    AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
-    .thenReturn(Future.successful(Some(citizenAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-citizen-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("citizen"),
-            None
-          )
-        )
-      )
-    )
 
   val validTagText: String = "tag"
   val helloWorldTagText: String = "hello world"

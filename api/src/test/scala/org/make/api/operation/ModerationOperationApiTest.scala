@@ -20,7 +20,7 @@
 package org.make.api.operation
 
 import java.time.ZonedDateTime
-import java.util.{Date, UUID}
+import java.util.UUID
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
@@ -29,18 +29,16 @@ import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
-import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.make.core.user.{Role, UserId}
+import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, ValidationError}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -210,77 +208,14 @@ class ModerationOperationApiTest
       |}
     """.stripMargin
 
-  val validAccessToken = "my-valid-access-token"
-  val adminToken = "my-admin-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
+  val johnToken = "john-citizen-token"
+  val tyrionToken = "tyrion-citizen-token"
 
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
+  override def customUserByToken: Map[String, User] = Map(johnToken -> john, tyrionToken -> tyrion)
 
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = john.userId,
-              roles = john.roles,
-              availableQuestions = john.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = daenerys.userId,
-              roles = daenerys.roles,
-              availableQuestions = daenerys.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = tyrion.userId,
-              roles = tyrion.roles,
-              availableQuestions = tyrion.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
+  when(userService.getUser(ArgumentMatchers.eq(john.userId))).thenReturn(Future.successful(Some(john)))
+  when(userService.getUser(ArgumentMatchers.eq(tyrion.userId))).thenReturn(Future.successful(Some(tyrion)))
+  when(userService.getUser(ArgumentMatchers.eq(daenerys.userId))).thenReturn(Future.successful(Some(daenerys)))
 
   when(operationService.findOneSimple(OperationId("firstOperation")))
     .thenReturn(Future.successful(Some(firstOperation)))
@@ -383,7 +318,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Get("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -394,7 +329,7 @@ class ModerationOperationApiTest
       Then("I get a list of 2 operations")
       Get("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
         val moderationOperationsResponse: Seq[ModerationOperationResponse] =
@@ -418,7 +353,7 @@ class ModerationOperationApiTest
       And("the operation match the slug")
       Get("/moderation/operations?slug=second-operation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("1"))
         val moderationOperationsResponse: Seq[ModerationOperationResponse] =
@@ -450,7 +385,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Get("/moderation/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -461,7 +396,7 @@ class ModerationOperationApiTest
       Then("I get a not found status response")
       Get("/moderation/operations/fakeid")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -472,7 +407,7 @@ class ModerationOperationApiTest
       Then("the call success")
       Get("/moderation/operations/firstOperation")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         val firstOperationResult: ModerationOperationResponse =
           entityAs[ModerationOperationResponse]
@@ -498,7 +433,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Post("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -509,7 +444,7 @@ class ModerationOperationApiTest
       And("operation is registered")
       Post("/moderation/operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validCreateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Created)
       }
     }
@@ -525,7 +460,7 @@ class ModerationOperationApiTest
             "my-create-operation".r.replaceFirstIn(s"$validCreateJson", "existing-operation-slug")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
@@ -554,7 +489,7 @@ class ModerationOperationApiTest
       Then("I get a forbidden status response")
       Put("/moderation/operations/updateOperationId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(johnToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -565,7 +500,7 @@ class ModerationOperationApiTest
       And("operation is registered")
       Put("/moderation/operations/updateOperationId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"$validUpdateJson"))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -581,7 +516,7 @@ class ModerationOperationApiTest
             "my-update-operation".r.replaceFirstIn(s"$validUpdateJson", "existing-operation-slug")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
@@ -602,7 +537,7 @@ class ModerationOperationApiTest
             "my-update-operation".r.replaceFirstIn(s"$validUpdateJson", "existing-operation-slug-second")
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> operationRoutes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
       }
     }

@@ -19,24 +19,18 @@
 
 package org.make.api.crmTemplates
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.core.auth.UserRights
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{any, eq => matches}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -49,83 +43,6 @@ class AdminCrmTemplatesApiTest
 
   override val crmTemplatesService: CrmTemplatesService = mock[CrmTemplatesService]
   override val questionService: QuestionService = mock[QuestionService]
-
-  val validCitizenAccessToken = "my-valid-citizen-access-token"
-  val validModeratorAccessToken = "my-valid-moderator-access-token"
-  val validAdminAccessToken = "my-valid-admin-access-token"
-
-  val tokenCreationDate = new Date()
-  private val citizenAccessToken =
-    AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken =
-    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
-    .thenReturn(Future.successful(Some(citizenAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
-    .thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
-    .thenReturn(Future.successful(Some(adminAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-citizen-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("citizen"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-moderator-user-id"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("moderator"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = UserId("my-admin-user-id"),
-                roles = Seq(RoleAdmin),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              Some("admin"),
-              None
-            )
-          )
-        )
-    )
 
   val defaultCrmTemplate = CrmTemplates(
     crmTemplatesId = CrmTemplatesId("default-id"),
@@ -249,7 +166,7 @@ class AdminCrmTemplatesApiTest
     scenario("authenticated citizen") {
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, crmTemplateData))
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -257,7 +174,7 @@ class AdminCrmTemplatesApiTest
     scenario("authenticated moderator") {
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, crmTemplateData))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -265,7 +182,7 @@ class AdminCrmTemplatesApiTest
     scenario("authenticated admin") {
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, crmTemplateData))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
 
@@ -286,14 +203,14 @@ class AdminCrmTemplatesApiTest
 
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, requestNoQuestionId))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
 
       val requestQuestionIdExists = crmTemplateData.replace("question-id", "existing-question-id")
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, requestQuestionIdExists))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
 
@@ -312,7 +229,7 @@ class AdminCrmTemplatesApiTest
 
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, requestNoQuestionIdNoLocale))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
 
@@ -329,7 +246,7 @@ class AdminCrmTemplatesApiTest
 
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, requestDefaultDoesntExistAndSomeTemplatesAreMissing))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -342,22 +259,22 @@ class AdminCrmTemplatesApiTest
       }
 
       Get("/admin/crm/templates/id")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
       Get("/admin/crm/templates/id")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
       Get("/admin/crm/templates/id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
 
       Get("/admin/crm/templates/fake")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -368,17 +285,17 @@ class AdminCrmTemplatesApiTest
       }
 
       Get("/admin/crm/templates?_start=0&_end=10")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
       Get("/admin/crm/templates?_start=0&_end=10")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
       Get("/admin/crm/templates?_start=0&_end=10")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
         val templates: Seq[CrmTemplatesResponse] = entityAs[Seq[CrmTemplatesResponse]]
@@ -409,25 +326,25 @@ class AdminCrmTemplatesApiTest
       }
 
       Put("/admin/crm/templates/fake")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
       Put("/admin/crm/templates/fake")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
       Put("/admin/crm/templates/fake")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateCrmTemplateData))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
     scenario("update crmTemplates with an invalid request") {
       Put("/admin/crm/templates/fake")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -448,7 +365,7 @@ class AdminCrmTemplatesApiTest
 
       Put("/admin/crm/templates/fake")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateCrmTemplateData))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -456,7 +373,7 @@ class AdminCrmTemplatesApiTest
     scenario("update crmTemplates") {
       Put("/admin/crm/templates/id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateCrmTemplateData))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val crmTemplates: CrmTemplatesResponse = entityAs[CrmTemplatesResponse]
         crmTemplates.id.value should be("id")

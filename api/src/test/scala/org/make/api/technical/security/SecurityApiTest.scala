@@ -19,8 +19,6 @@
 
 package org.make.api.technical.security
 
-import java.util.Date
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
@@ -30,13 +28,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
-import org.make.core.auth.UserRights
-import org.make.core.user.{Role, UserId}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
-import scalaoauth2.provider.{AccessToken, AuthInfo}
-
-import scala.concurrent.Future
+import org.make.core.user.UserId
 
 class SecurityApiTest
     extends MakeApiTestBase
@@ -50,80 +42,9 @@ class SecurityApiTest
 
   override val actorSystem: ActorSystem = SecurityApiTest.system
 
-  val citizenUserId = UserId("citizen")
-  val moderatorUserId = UserId("moderator")
-  val adminUserId = UserId("admin")
-
-  val validAccessToken = "my-valid-access-token"
-  val adminToken = "my-admin-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = citizenUserId,
-              roles = Seq(Role.RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(moderatorAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = moderatorUserId,
-                roles = Seq(Role.RoleModerator),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              None,
-              None
-            )
-          )
-        )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = adminUserId,
-              roles = Seq(Role.RoleAdmin),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
+  val citizenUserId: UserId = UserId("citizen")
+  val moderatorUserId: UserId = UserId("moderator")
+  val adminUserId: UserId = UserId("admin")
 
   val routes: Route = sealRoute(securityApi.routes)
 
@@ -136,14 +57,14 @@ class SecurityApiTest
 
     scenario("citizen forbidden") {
       Post("/admin/security/secure-hash")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator forbidden") {
       Post("/admin/security/secure-hash")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -151,7 +72,7 @@ class SecurityApiTest
     scenario("admin with valid value") {
       Post("/admin/security/secure-hash")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "{\"value\": \"toto\"}"))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val secureHashResponse: SecureHashResponse = entityAs[SecureHashResponse]
         SecurityHelper.validateSecureHash(secureHashResponse.hash, "toto", securityConfiguration.secureHashSalt) shouldBe true
@@ -161,7 +82,7 @@ class SecurityApiTest
     scenario("admin but no value given") {
       Post("/admin/security/secure-hash")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }

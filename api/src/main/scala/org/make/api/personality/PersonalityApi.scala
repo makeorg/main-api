@@ -1,23 +1,27 @@
 package org.make.api.personality
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.idea.TopIdeaServiceComponent
+import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.core._
-import org.make.core.user.UserId
-import io.circe.generic.semiauto._
-import io.circe.Encoder
-import io.circe.Decoder
-import org.make.core.user.User
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.string.Url
-import scala.annotation.meta.field
-import io.circe.refined._
+import org.make.core.idea.{TopIdeaComment, TopIdeaCommentId, TopIdeaId}
 import org.make.core.profile.Profile
+import org.make.core.proposal.{QualificationKey, VoteKey}
+import org.make.core.user.{User, UserId}
+import io.circe.refined._
+
+import scala.annotation.meta.field
 
 @Api(value = "Personalities")
 @Path(value = "/personalities")
@@ -81,7 +85,23 @@ trait PersonalityApi extends Directives {
   @Path(value = "/{userId}/profile")
   def modifyPersonalityProfile: Route
 
-  def routes: Route = getPersonality ~ getPersonalityProfile ~ modifyPersonalityProfile
+  @Path("/{userId}/comments")
+  @ApiOperation(value = "create-top-idea-comments-for-personality", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.personality.CreateTopIdeaCommentRequest"
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.Created, message = "Ok", response = classOf[TopIdeaCommentResponse]))
+  )
+  def createComment: Route
+
+  def routes: Route = getPersonality ~ getPersonalityProfile ~ modifyPersonalityProfile ~ createComment
 
 }
 
@@ -93,7 +113,9 @@ trait DefaultPersonalityApiComponent extends PersonalityApiComponent with MakeAu
   this: UserServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with SessionHistoryCoordinatorServiceComponent =>
+    with SessionHistoryCoordinatorServiceComponent
+    with TopIdeaServiceComponent
+    with TopIdeaCommentServiceComponent =>
 
   override lazy val personalityApi: PersonalityApi = new DefaultPersonalityApi
 
@@ -163,18 +185,56 @@ trait DefaultPersonalityApiComponent extends PersonalityApiComponent with MakeAu
         }
       }
     }
+
+    override def createComment: Route = post {
+      path("personalities" / userId / "comments") { userId =>
+        makeOperation("CreateTopIdeaComment") { _ =>
+          makeOAuth2 { userAuth =>
+            authorize(userId == userAuth.user.userId) {
+              provideAsyncOrNotFound(userService.getPersonality(userId)) { _ =>
+                decodeRequest {
+                  entity(as[CreateTopIdeaCommentRequest]) { request =>
+                    provideAsync(topIdeaService.getById(request.topIdeaId)) { maybeTopIdea =>
+                      Validation.validate(
+                        Validation.validateField(
+                          "topIdeaId",
+                          "invalid_content",
+                          maybeTopIdea.isDefined,
+                          s"Top idea ${request.topIdeaId} does not exists."
+                        )
+                      )
+                      provideAsync(
+                        topIdeaCommentService.create(
+                          topIdeaId = request.topIdeaId,
+                          personalityId = userId,
+                          comment1 = request.comment1,
+                          comment2 = request.comment2,
+                          comment3 = request.comment3,
+                          vote = request.vote,
+                          qualification = request.qualification,
+                        )
+                      ) { comment =>
+                        complete(StatusCodes.Created -> TopIdeaCommentResponse(comment))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
-final case class PersonalityProfileResponse(
-  firstName: Option[String],
-  lastName: Option[String],
-  avatarUrl: Option[String],
-  description: Option[String],
-  optInNewsletter: Option[Boolean],
-  website: Option[String],
-  politicalParty: Option[String]
-)
+final case class PersonalityProfileResponse(firstName: Option[String],
+                                            lastName: Option[String],
+                                            avatarUrl: Option[String],
+                                            description: Option[String],
+                                            optInNewsletter: Option[Boolean],
+                                            website: Option[String],
+                                            politicalParty: Option[String])
 
 object PersonalityProfileResponse {
   implicit val encoder: Encoder[PersonalityProfileResponse] = deriveEncoder[PersonalityProfileResponse]
@@ -190,6 +250,7 @@ object PersonalityProfileResponse {
       politicalParty = user.profile.flatMap(_.politicalParty),
       optInNewsletter = user.profile.map(_.optInNewsletter)
     )
+
   }
 }
 
@@ -208,4 +269,56 @@ final case class PersonalityProfileRequest(
 object PersonalityProfileRequest {
   implicit val encoder: Encoder[PersonalityProfileRequest] = deriveEncoder[PersonalityProfileRequest]
   implicit val decoder: Decoder[PersonalityProfileRequest] = deriveDecoder[PersonalityProfileRequest]
+}
+
+@ApiModel
+final case class CreateTopIdeaCommentRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "4b95a17e-145d-496b-8859-6688b3592711")
+  topIdeaId: TopIdeaId,
+  comment1: Option[String],
+  comment2: Option[String],
+  comment3: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  vote: Option[VoteKey],
+  @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
+  qualification: Option[QualificationKey]
+)
+
+object CreateTopIdeaCommentRequest {
+  implicit val decoder: Decoder[CreateTopIdeaCommentRequest] = deriveDecoder[CreateTopIdeaCommentRequest]
+  implicit val encoder: Encoder[CreateTopIdeaCommentRequest] = deriveEncoder[CreateTopIdeaCommentRequest]
+}
+
+@ApiModel
+final case class TopIdeaCommentResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "828cada5-52e1-4a27-9d45-756766c485d2")
+  id: TopIdeaCommentId,
+  @(ApiModelProperty @field)(dataType = "string", example = "886251c3-e302-49eb-add5-84cabf46878a")
+  topIdeaId: TopIdeaId,
+  @(ApiModelProperty @field)(dataType = "string", example = "6002582e-60b9-409a-8aec-6eaf0863101a")
+  personalityId: UserId,
+  comment1: Option[String],
+  comment2: Option[String],
+  comment3: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  vote: Option[VoteKey],
+  @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
+  qualification: Option[QualificationKey]
+) {}
+
+object TopIdeaCommentResponse {
+  implicit val decoder: Decoder[TopIdeaCommentResponse] = deriveDecoder[TopIdeaCommentResponse]
+  implicit val encoder: Encoder[TopIdeaCommentResponse] = deriveEncoder[TopIdeaCommentResponse]
+
+  def apply(comment: TopIdeaComment): TopIdeaCommentResponse =
+    TopIdeaCommentResponse(
+      id = comment.topIdeaCommentId,
+      topIdeaId = comment.topIdeaId,
+      personalityId = comment.personalityId,
+      comment1 = comment.comment1,
+      comment2 = comment.comment2,
+      comment3 = comment.comment3,
+      vote = comment.vote,
+      qualification = comment.qualification
+    )
 }

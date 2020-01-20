@@ -19,8 +19,6 @@
 
 package org.make.api.user
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -29,7 +27,6 @@ import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
-import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
 import org.make.core.user._
@@ -37,7 +34,6 @@ import org.make.core.{RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito._
 import org.mockito.{ArgumentMatchers, Mockito}
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -57,78 +53,9 @@ class AdminUserApiTest
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) { adminUserApi.routes })
 
-  val citizenId = UserId("citizen")
-  val moderatorId = UserId("moderator")
-  val adminId = UserId("admin")
-
-  val validAccessToken = "my-valid-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val adminToken = "my-admin-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken = AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = citizenId,
-                roles = Seq(Role.RoleCitizen),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              Some("user"),
-              None
-            )
-          )
-        )
-    )
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = moderatorId,
-                roles = Seq(Role.RoleModerator),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              None,
-              None
-            )
-          )
-        )
-    )
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = adminId,
-              roles = Seq(Role.RoleAdmin),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
+  val citizenId: UserId = defaultCitizenUser.userId
+  val moderatorId: UserId = defaultModeratorUser.userId
+  val adminId: UserId = defaultAdminUser.userId
 
   private val newModerator = TestUtils.user(
     id = moderatorId,
@@ -149,29 +76,29 @@ class AdminUserApiTest
 
   feature("get moderator") {
     scenario("unauthenticate user unauthorized to get moderator") {
-      Get("/admin/moderators/moderator-id") ~> routes ~> check {
+      Get(s"/admin/moderators/${moderatorId.value}") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
     scenario("citizen forbidden to get moderator") {
-      Get("/admin/moderators/moderator-id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+      Get(s"/admin/moderators/${moderatorId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator forbidden to get moderator") {
-      Get("/admin/moderators/moderator-id")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+      Get(s"/admin/moderators/${moderatorId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("unexistant moderator") {
       Mockito.when(userService.getUser(ArgumentMatchers.any[UserId])).thenReturn(Future.successful(None))
-      Get("/admin/moderators/moderator-id")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+      Get("/admin/moderators/moderator-fake")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -180,8 +107,8 @@ class AdminUserApiTest
       Mockito
         .when(userService.getUser(ArgumentMatchers.eq(moderatorId)))
         .thenReturn(Future.successful(Some(newModerator.copy(roles = Seq(Role.RoleCitizen)))))
-      Get("/admin/moderators/moderator")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+      Get(s"/admin/moderators/${moderatorId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -190,8 +117,8 @@ class AdminUserApiTest
       Mockito
         .when(userService.getUser(ArgumentMatchers.eq(moderatorId)))
         .thenReturn(Future.successful(Some(newModerator)))
-      Get("/admin/moderators/moderator")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+      Get(s"/admin/moderators/${moderatorId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val moderator = entityAs[ModeratorResponse]
         moderator.id should be(moderatorId)
@@ -201,29 +128,29 @@ class AdminUserApiTest
 
   feature("get user") {
     scenario("unauthenticate user unauthorized to get user") {
-      Get("/admin/users/user-id") ~> routes ~> check {
+      Get(s"/admin/users/${citizenId.value}") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
     scenario("citizen forbidden to get user") {
-      Get("/admin/users/user-id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+      Get(s"/admin/users/${citizenId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator forbidden to get user") {
-      Get("/admin/users/user-id")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+      Get(s"/admin/users/${citizenId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("unexistant user") {
       Mockito.when(userService.getUser(ArgumentMatchers.any[UserId])).thenReturn(Future.successful(None))
-      Get("/admin/users/user-id")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+      Get("/admin/users/user-fake")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -232,8 +159,8 @@ class AdminUserApiTest
       Mockito
         .when(userService.getUser(ArgumentMatchers.eq(citizenId)))
         .thenReturn(Future.successful(Some(newCitizen)))
-      Get("/admin/users/citizen")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+      Get(s"/admin/users/${citizenId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val user = entityAs[AdminUserResponse]
         user.id should be(citizenId)
@@ -275,14 +202,14 @@ class AdminUserApiTest
 
     scenario("citizen forbidden to get moderator") {
       Get("/admin/moderators")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator forbidden to get moderator") {
       Get("/admin/moderators")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -316,7 +243,7 @@ class AdminUserApiTest
         )
         .thenReturn(Future.successful(listModerator.size))
       Get("/admin/moderators")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val moderators = entityAs[Seq[ModeratorResponse]]
         moderators.size should be(listModerator.size)
@@ -328,14 +255,14 @@ class AdminUserApiTest
 
     scenario("moderator forbidden to create moderator") {
       Post("/admin/moderators")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("citizen forbidden to create moderator") {
       Post("/admin/moderators")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -363,7 +290,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
           matches(
@@ -409,7 +336,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -431,7 +358,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val countryError = errors.find(_.field == "country")
@@ -453,7 +380,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -475,7 +402,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Post("/admin/moderators", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val rolesError = errors.find(_.field == "roles")
@@ -489,7 +416,7 @@ class AdminUserApiTest
 
     scenario("citizen forbidden to update moderator") {
       Put(s"/admin/moderators/${moderatorId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -505,7 +432,7 @@ class AdminUserApiTest
 
     scenario("moderator allowed to update itself") {
       Put(s"/admin/moderators/${moderatorId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -526,7 +453,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
 
         verify(userService)
@@ -563,7 +490,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -589,7 +516,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -613,7 +540,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -632,7 +559,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val rolesError = errors.find(_.field == "roles")
@@ -652,21 +579,21 @@ class AdminUserApiTest
 
     scenario("citizen user") {
       Delete("/admin/users/user-id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator user") {
       Delete("/admin/users/user-id")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("admin user") {
-      Delete(s"/admin/users/$moderatorId")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+      Delete(s"/admin/users/${moderatorId.value}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
         Mockito
           .when(userService.anonymize(newModerator, adminId, RequestContext.empty))
@@ -698,14 +625,14 @@ class AdminUserApiTest
 
     scenario("citizen user") {
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator user") {
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -719,14 +646,14 @@ class AdminUserApiTest
         .thenReturn(Future.successful({}))
       Mockito.when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
 
     scenario("bad request") {
       Post("/admin/users/anonymize", HttpEntity(ContentTypes.`application/json`, badRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -754,14 +681,14 @@ class AdminUserApiTest
 
     scenario("citizen forbidden to get user") {
       Get("/admin/users")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator forbidden to get user") {
       Get("/admin/users")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -822,14 +749,14 @@ class AdminUserApiTest
         )
         .thenReturn(Future.successful(Seq(tataUser)))
       Get("/admin/users")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val users = entityAs[Seq[AdminUserResponse]]
         users.size should be(listUsers.size)
       }
 
       Get("/admin/users?role=some-custom-role")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val users = entityAs[Seq[AdminUserResponse]]
         users.size should be(1)
@@ -842,7 +769,7 @@ class AdminUserApiTest
 
     scenario("citizen forbidden to update user") {
       Put(s"/admin/users/${citizenId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -858,7 +785,7 @@ class AdminUserApiTest
 
     scenario("moderator forbidden to update user") {
       Put(s"/admin/users/${moderatorId.value}")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -879,7 +806,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/users/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
 
         verify(userService)
@@ -916,7 +843,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -943,7 +870,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val emailError = errors.find(_.field == "email")
@@ -967,7 +894,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -987,7 +914,7 @@ class AdminUserApiTest
         """.stripMargin
 
       Put(s"/admin/moderators/${moderatorId.value}", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val rolesError = errors.find(_.field == "roles")

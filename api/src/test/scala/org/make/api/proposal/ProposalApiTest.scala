@@ -20,7 +20,6 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-import java.util.Date
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
@@ -34,7 +33,6 @@ import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigura
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
-import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
@@ -45,7 +43,6 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -138,78 +135,8 @@ class ProposalApiTest
 
   when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
 
-  val validAccessToken = "my-valid-access-token"
-  val adminToken = "my-admin-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-
   val refuseProposalWithReasonEntity: String =
     RefuseProposalRequest(sendNotificationEmail = true, refusalReason = Some("not allowed word")).asJson.toString
-
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = john.userId,
-              roles = john.roles,
-              availableQuestions = john.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = daenerys.userId,
-              roles = daenerys.roles,
-              availableQuestions = daenerys.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = tyrion.userId,
-              roles = tyrion.roles,
-              availableQuestions = tyrion.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
 
   val validProposalText: String = "Il faut que tout le monde respecte les conventions de code"
   val invalidMaxLengthProposalText: String =
@@ -321,7 +248,7 @@ class ProposalApiTest
             s"""{"content": "$validProposalText", "language": "fr", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
     }
@@ -338,7 +265,7 @@ class ProposalApiTest
             s"""{"content": "$invalidMaxLengthProposalText", "language": "fr", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "content")
@@ -360,7 +287,7 @@ class ProposalApiTest
             s"""{"content": "$invalidMinLengthProposalText", "language": "fr", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "content")
@@ -382,7 +309,7 @@ class ProposalApiTest
             s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "question")
@@ -404,7 +331,7 @@ class ProposalApiTest
             s"""{"content": "$validProposalText", "operationId": "fake", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "language")
@@ -426,7 +353,7 @@ class ProposalApiTest
             s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "country")
@@ -447,7 +374,7 @@ class ProposalApiTest
             s"""{"content": "$validProposalText", "operationId": "1234-1234", "language": "fr", "country": "FR"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
     }

@@ -20,7 +20,6 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-import java.util.Date
 
 import akka.Done
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -32,7 +31,6 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.auth.UserRights
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
@@ -49,12 +47,10 @@ import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.{Future, Promise}
 
@@ -74,83 +70,6 @@ class DefaultAdminProposalApiComponentTest
 
   val routes: Route = sealRoute(adminProposalApi.routes)
 
-  private val adminToken = "my-admin-access-token"
-  private val userToken = "my-user-access-token"
-  private val moderatorToken = "my-moderator-access-token"
-
-  private val tokenCreationDate = new Date()
-
-  private val userAccessToken = AccessToken(userToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(userToken)).thenReturn(Future.successful(Some(userAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(adminAccessToken))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("admin"),
-              roles = Seq(RoleAdmin, RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-  when(oauth2DataHandler.findAuthInfoByAccessToken(moderatorAccessToken))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("moderator"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq(
-                QuestionId("my-question"),
-                QuestionId("question-fire-and-ice"),
-                QuestionId("some-question"),
-                QuestionId("question-mieux-vivre-ensemble"),
-                QuestionId("question-vff")
-              ),
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(userAccessToken))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("user"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
   feature("update verified votes") {
     scenario("unauthorized user") {
       Put("/admin/proposals/123456/fix-trolled-proposal") ~> routes ~> check {
@@ -160,14 +79,14 @@ class DefaultAdminProposalApiComponentTest
 
     scenario("forbidden citizen") {
       Put("/admin/proposals/123456/fix-trolled-proposal")
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("forbidden moderator") {
       Put("/admin/proposals/123456/fix-trolled-proposal")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -178,7 +97,7 @@ class DefaultAdminProposalApiComponentTest
 
       val verifiedVotesRequest = UpdateProposalVotesRequest(Seq.empty)
       Put("/admin/proposals/invalid/fix-trolled-proposal")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString)) ~>
         routes ~>
         check {
@@ -359,7 +278,7 @@ class DefaultAdminProposalApiComponentTest
       )
       Put("/admin/proposals/counts-123/fix-trolled-proposal")
         .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -374,14 +293,14 @@ class DefaultAdminProposalApiComponentTest
 
     scenario("forbidden citizen") {
       Post("/admin/proposals/reset-votes")
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("forbidden moderator") {
       Post("/admin/proposals/reset-votes")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -390,7 +309,7 @@ class DefaultAdminProposalApiComponentTest
       when(proposalService.resetVotes(any[UserId], any[RequestContext]))
         .thenReturn(Future.successful(Done))
       Post("/admin/proposals/reset-votes")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Accepted)
       }
     }
@@ -399,7 +318,7 @@ class DefaultAdminProposalApiComponentTest
       when(proposalService.resetVotes(any[UserId], any[RequestContext]))
         .thenReturn(Promise[Done]().future)
       Post("/admin/proposals/reset-votes")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Accepted)
       }
     }

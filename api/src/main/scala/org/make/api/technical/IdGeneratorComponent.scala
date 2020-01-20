@@ -25,7 +25,7 @@ import org.make.api.idea.IdeaMappingId
 import org.make.core.auth.ClientId
 import org.make.core.crmTemplate.CrmTemplatesId
 import org.make.core.feature.{ActiveFeatureId, FeatureId}
-import org.make.core.idea.{IdeaId, TopIdeaId}
+import org.make.core.idea.{IdeaId, TopIdeaCommentId, TopIdeaId}
 import org.make.core.operation.{CurrentOperationId, FeaturedOperationId, OperationId}
 import org.make.core.partner.PartnerId
 import org.make.core.personality.PersonalityId
@@ -60,6 +60,7 @@ trait IdGenerator {
   def nextVisitorId(): VisitorId = VisitorId(nextId())
   def nextPersonalityId(): PersonalityId = PersonalityId(nextId())
   def nextTopIdeaId(): TopIdeaId = TopIdeaId(nextId())
+  def nextTopIdeaCommentId(): TopIdeaCommentId = TopIdeaCommentId(nextId())
 
   def nextId(): String
 }

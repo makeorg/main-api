@@ -19,102 +19,20 @@
 
 package org.make.api.technical.auth
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.core.auth.{Client, ClientId, UserRights}
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
+import org.make.core.auth.{Client, ClientId}
 import org.make.core.user.{CustomRole, UserId}
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito.when
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
 class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiComponent with ClientServiceComponent {
 
   override val clientService: ClientService = mock[ClientService]
-
-  val validCitizenAccessToken = "my-valid-citizen-access-token"
-  val validModeratorAccessToken = "my-valid-moderator-access-token"
-  val validAdminAccessToken = "my-valid-admin-access-token"
-
-  val tokenCreationDate = new Date()
-  private val citizenAccessToken =
-    AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken =
-    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
-    .thenReturn(Future.successful(Some(citizenAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
-    .thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
-    .thenReturn(Future.successful(Some(adminAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-citizen-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("citizen"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-moderator-user-id"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("moderator"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = UserId("my-admin-user-id"),
-                roles = Seq(RoleAdmin),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              Some("admin"),
-              None
-            )
-          )
-        )
-    )
 
   val routes: Route = sealRoute(adminClientApi.routes)
 
@@ -154,14 +72,14 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
 
     scenario("forbid authenticated citizen") {
       Post("/admin/clients")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("forbid authenticated moderator") {
       Post("/admin/clients")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -178,7 +96,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
               |  "roles" : ["role_custom","role_default"],
               |  "tokenExpirationSeconds": 300
               |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
     }
@@ -209,20 +127,20 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     }
 
     scenario("forbid authenticated citizen") {
-      Get("/admin/clients/apiclient").withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+      Get("/admin/clients/apiclient").withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("forbid authenticated moderator") {
-      Get("/admin/clients/apiclient").withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+      Get("/admin/clients/apiclient").withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("allow authenticated admin on existing oauth client") {
       Get("/admin/clients/apiclient")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val client: ClientResponse = entityAs[ClientResponse]
         client.clientId should be(client.clientId)
@@ -232,7 +150,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
 
     scenario("not found and allow authenticated admin on a non existing oauth client") {
       Get("/admin/clients/fake-client")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -299,14 +217,14 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
 
     scenario("forbid authenticated citizen") {
       Put("/admin/clients/apiclient")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("forbid authenticated moderator") {
       Put("/admin/clients/apiclient")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -325,7 +243,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "tokenExpirationSeconds": 300
                                                |}""".stripMargin)
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val client: ClientResponse = entityAs[ClientResponse]
         client.clientId should be(updatedClient.clientId)
@@ -347,7 +265,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "tokenExpirationSeconds": 300
                                                |}""".stripMargin)
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }

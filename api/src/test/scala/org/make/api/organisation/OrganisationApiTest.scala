@@ -20,36 +20,30 @@
 package org.make.api.organisation
 
 import java.time.ZonedDateTime
-import java.util.Date
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import org.make.api.proposal._
 import org.make.api.user.UserResponse
 import org.make.api.{MakeApiTestBase, TestUtils}
-import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
+import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.{eq => matches, _}
+import org.mockito.ArgumentMatchers._
 import org.mockito.{ArgumentMatchers, Mockito}
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import org.make.core.profile.Profile
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.ContentTypes
-import org.make.core.user.User
 
 class OrganisationApiTest
     extends MakeApiTestBase
@@ -69,7 +63,7 @@ class OrganisationApiTest
     lastName = None,
     enabled = true,
     emailVerified = true,
-    roles = Seq(RoleActor),
+    roles = Seq(RoleCitizen, RoleActor),
     organisationName = Some("Make.org"),
     userType = UserType.UserTypeOrganisation,
     profile = Profile.parseProfile(
@@ -80,54 +74,9 @@ class OrganisationApiTest
     )
   )
 
-  private val validAccessToken = "my-valid-access-token"
   private val makeToken = "make.org"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val makeAccessToken = AccessToken(makeToken, None, None, Some(1234567890L), tokenCreationDate)
 
-  Mockito.when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  Mockito.when(oauth2DataHandler.findAccessToken(makeToken)).thenReturn(Future.successful(Some(makeAccessToken)))
-
-  Mockito
-    .when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("user-citizen"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-
-  Mockito
-    .when(oauth2DataHandler.findAuthInfoByAccessToken(matches(makeAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = returnedOrganisation.userId,
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
+  override def customUserByToken: Map[String, User] = Map(makeToken -> returnedOrganisation)
 
   val routes: Route = sealRoute(organisationApi.routes)
 
@@ -455,7 +404,7 @@ class OrganisationApiTest
 
     scenario("search organisation proposals authenticated") {
       Get("/organisations/make-org/proposals")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val proposalsResultSeededResponse: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
         proposalsResultSeededResponse.total shouldBe 4
@@ -466,7 +415,7 @@ class OrganisationApiTest
 
     scenario("search ordered organisation proposals with uppercase order") {
       Get("/organisations/make-org/proposals?sort=createdAt&order=DESC")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val proposalsResultSeededResponse: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
         proposalsResultSeededResponse.total shouldBe 4
@@ -485,7 +434,7 @@ class OrganisationApiTest
             vote = Agree,
             voteDate = DateHelper.now(),
             voteDetails = None
-          )
+        )
       ),
       seed = None
     )
@@ -516,7 +465,7 @@ class OrganisationApiTest
 
     scenario("get proposals voted from existing organisation authenticated") {
       Get("/organisations/make-org/votes")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val votedProposals: ProposalsResultWithUserVoteSeededResponse =
           entityAs[ProposalsResultWithUserVoteSeededResponse]
@@ -594,7 +543,7 @@ class OrganisationApiTest
 
       Put("/organisations/make-org/profile")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validModification))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }

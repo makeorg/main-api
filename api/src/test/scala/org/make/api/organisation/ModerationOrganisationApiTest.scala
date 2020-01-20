@@ -19,8 +19,6 @@
 
 package org.make.api.organisation
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -29,12 +27,10 @@ import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
-import org.make.core.auth.UserRights
-import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator}
+import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId, UserType}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito.when
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -64,76 +60,6 @@ class ModerationOrganisationApiTest
     userType = UserType.UserTypeOrganisation
   )
 
-  val validAccessToken = "my-valid-access-token"
-  val adminToken = "my-admin-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken = AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("user-citizen"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              UserId("user-admin"),
-              roles = Seq(RoleAdmin),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                UserId("user-moderator"),
-                roles = Seq(RoleModerator),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              None,
-              None
-            )
-          )
-        )
-    )
-
   feature("register organisation") {
     scenario("register organisation unauthenticate") {
       Given("a unauthenticate user")
@@ -150,7 +76,7 @@ class ModerationOrganisationApiTest
       Then("I should get a forbidden error")
       Post("/moderation/organisations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -168,7 +94,7 @@ class ModerationOrganisationApiTest
             """{"organisationName": "orga", "email": "bar@foo.com", "password": "azertyui"}"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.Created
       }
     }
@@ -183,7 +109,7 @@ class ModerationOrganisationApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga", "email": "bar@foo.com"}""")
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.Created
       }
     }
@@ -194,7 +120,7 @@ class ModerationOrganisationApiTest
       Then("I should get a BadRequest status")
       Post("/moderation/organisations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"email": "bar@foo.com", "password": "azertyui"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -211,7 +137,7 @@ class ModerationOrganisationApiTest
             s"""{"email": "bar@foo.com", "password": "azertyui", "organisationName":"azer","avatarUrl":"$longAvatarUrl"}""".stripMargin
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -233,14 +159,14 @@ class ModerationOrganisationApiTest
 
     scenario("get moderation organisation without admin rights") {
       Get("/moderation/organisations/ABCD")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
     scenario("get existing organisation") {
       Get("/moderation/organisations/ABCD")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisation: OrganisationResponse = entityAs[OrganisationResponse]
         organisation.id should be(UserId("ABCD"))
@@ -249,7 +175,7 @@ class ModerationOrganisationApiTest
 
     scenario("get non existing organisation") {
       Get("/moderation/organisations/non-existant")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -272,7 +198,7 @@ class ModerationOrganisationApiTest
       Then("I should get a not found error")
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -286,7 +212,7 @@ class ModerationOrganisationApiTest
         .thenReturn(Future.successful(fakeOrganisation.userId))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }
@@ -299,7 +225,7 @@ class ModerationOrganisationApiTest
         .thenReturn(Future.successful(None))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -312,7 +238,7 @@ class ModerationOrganisationApiTest
         .thenReturn(Future.successful(None))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -333,7 +259,7 @@ class ModerationOrganisationApiTest
       When("I want to get organisations")
       Then("I should get a forbidden error")
       Get("/moderation/organisations")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -348,7 +274,7 @@ class ModerationOrganisationApiTest
       when(organisationService.find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]]))
         .thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -363,7 +289,7 @@ class ModerationOrganisationApiTest
       when(organisationService.find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]]))
         .thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }

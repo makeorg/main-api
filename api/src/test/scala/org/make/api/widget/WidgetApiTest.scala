@@ -19,8 +19,6 @@
 
 package org.make.api.widget
 
-import java.util.Date
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
@@ -33,27 +31,14 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.RequestContext
-import org.make.core.auth.UserRights
-import org.make.core.operation.{
-  FinalCard,
-  IntroCard,
-  Metas,
-  OperationId,
-  OperationOfQuestion,
-  PushProposalCard,
-  QuestionTheme,
-  SequenceCardsConfiguration,
-  SignUpCard
-}
+import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
-import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -79,30 +64,6 @@ class WidgetApiTest
     mock[PersistentOperationOfQuestionService]
 
   val routes: Route = sealRoute(widgetApi.routes)
-  val validAccessToken = "my-valid-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
 
   when(
     widgetService.startNewWidgetSequence(
