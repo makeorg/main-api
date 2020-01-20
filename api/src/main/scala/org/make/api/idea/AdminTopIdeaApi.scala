@@ -26,12 +26,13 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.question.QuestionId
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.{HttpCodes, ParameterExtractors, ValidationError}
 
 import scala.annotation.meta.field
 
@@ -164,7 +165,9 @@ trait DefaultAdminTopIdeaApiComponent
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
-    with TopIdeaServiceComponent =>
+    with TopIdeaServiceComponent
+    with QuestionServiceComponent
+    with IdeaServiceComponent =>
 
   override val adminTopIdeaApi: DefaultAdminTopIdeaApi = new DefaultAdminTopIdeaApi
 
@@ -237,17 +240,39 @@ trait DefaultAdminTopIdeaApiComponent
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[CreateTopIdeaRequest]) { request =>
-                  provideAsync(
-                    topIdeaService
-                      .create(
-                        request.ideaId,
-                        request.questionId,
-                        request.name,
-                        TopIdeaScores(request.totalProposalsRatio, request.agreementRatio, request.likeItRatio),
-                        request.weight
+                  provideAsync(questionService.getQuestion(request.questionId)) {
+                    case None =>
+                      complete(
+                        StatusCodes.BadRequest -> Seq(
+                          ValidationError(
+                            "questionId",
+                            "not_found",
+                            Some(s"questionId ${request.questionId} doesn't exists")
+                          )
+                        )
                       )
-                  ) { result =>
-                    complete(StatusCodes.Created -> TopIdeaResponse.fromTopIdea(result))
+                    case Some(_) =>
+                      provideAsync(ideaService.fetchOne(request.ideaId)) {
+                        case None =>
+                          complete(
+                            StatusCodes.BadRequest -> Seq(
+                              ValidationError("ideaId", "not_found", Some(s"ideaId ${request.ideaId} doesn't exists"))
+                            )
+                          )
+                        case Some(_) =>
+                          provideAsync(
+                            topIdeaService
+                              .create(
+                                request.ideaId,
+                                request.questionId,
+                                request.name,
+                                TopIdeaScores(request.totalProposalsRatio, request.agreementRatio, request.likeItRatio),
+                                request.weight
+                              )
+                          ) { result =>
+                            complete(StatusCodes.Created -> TopIdeaResponse.fromTopIdea(result))
+                          }
+                      }
                   }
                 }
               }
@@ -265,18 +290,43 @@ trait DefaultAdminTopIdeaApiComponent
               decodeRequest {
                 entity(as[UpdateTopIdeaRequest]) { request =>
                   provideAsyncOrNotFound(topIdeaService.getById(topIdeaId)) { topIdea =>
-                    provideAsync(
-                      topIdeaService.update(
-                        topIdea.copy(
-                          ideaId = request.ideaId,
-                          name = request.name,
-                          scores =
-                            TopIdeaScores(request.totalProposalsRatio, request.agreementRatio, request.likeItRatio),
-                          weight = request.weight
+                    provideAsync(questionService.getQuestion(request.questionId)) {
+                      case None =>
+                        complete(
+                          StatusCodes.BadRequest -> Seq(
+                            ValidationError(
+                              "questionId",
+                              "not_found",
+                              Some(s"questionId ${request.questionId} doesn't exists")
+                            )
+                          )
                         )
-                      )
-                    ) { updateTopIdea =>
-                      complete(StatusCodes.OK -> TopIdeaResponse.fromTopIdea(updateTopIdea))
+                      case Some(_) =>
+                        provideAsync(ideaService.fetchOne(request.ideaId)) {
+                          case None =>
+                            complete(
+                              StatusCodes.BadRequest -> Seq(
+                                ValidationError("ideaId", "not_found", Some(s"ideaId ${request.ideaId} doesn't exists"))
+                              )
+                            )
+                          case Some(_) =>
+                            provideAsync(
+                              topIdeaService.update(
+                                topIdea.copy(
+                                  ideaId = request.ideaId,
+                                  name = request.name,
+                                  scores = TopIdeaScores(
+                                    request.totalProposalsRatio,
+                                    request.agreementRatio,
+                                    request.likeItRatio
+                                  ),
+                                  weight = request.weight
+                                )
+                              )
+                            ) { updateTopIdea =>
+                              complete(StatusCodes.OK -> TopIdeaResponse.fromTopIdea(updateTopIdea))
+                            }
+                        }
                     }
                   }
                 }
@@ -353,6 +403,7 @@ object CreateTopIdeaRequest {
 @ApiModel
 final case class UpdateTopIdeaRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2") ideaId: IdeaId,
+  @(ApiModelProperty @field)(dataType = "string", example = "613ea01f-2da7-4d77-b1fe-99f9f252b3a2") questionId: QuestionId,
   name: String,
   totalProposalsRatio: Float,
   agreementRatio: Float,

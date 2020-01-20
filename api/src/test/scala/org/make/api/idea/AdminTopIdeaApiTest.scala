@@ -25,11 +25,13 @@ import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.auth.UserRights
-import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
-import org.make.core.question.QuestionId
+import org.make.core.idea.{Idea, IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches}
@@ -44,9 +46,13 @@ class AdminTopIdeaApiTest
     with IdGeneratorComponent
     with MakeDataHandlerComponent
     with MakeSettingsComponent
-    with TopIdeaServiceComponent {
+    with TopIdeaServiceComponent
+    with QuestionServiceComponent
+    with IdeaServiceComponent {
 
   override val topIdeaService: TopIdeaService = mock[TopIdeaService]
+  override val questionService: QuestionService = mock[QuestionService]
+  override val ideaService: IdeaService = mock[IdeaService]
 
   val validCitizenAccessToken = "my-valid-citizen-access-token"
   val validModeratorAccessToken = "my-valid-moderator-access-token"
@@ -147,7 +153,96 @@ class AdminTopIdeaApiTest
         }
     }
 
+    scenario("question doesn't exists") {
+      when(questionService.getQuestion(QuestionId("not-found"))).thenReturn(Future.successful(None))
+      when(ideaService.fetchOne(IdeaId("idea-id")))
+        .thenReturn(
+          Future.successful(Some(Idea(ideaId = IdeaId("idea-id"), name = "idea", createdAt = None, updatedAt = None)))
+        )
+
+      val entity =
+        """{
+          | "ideaId": "idea-id",
+          | "questionId": "not-found",
+          | "name": "name",
+          | "totalProposalsRatio": 0,
+          | "agreementRatio": 0,
+          | "likeItRatio": 0,
+          | "weight": 42
+          |}""".stripMargin
+
+      Post("/admin/top-ideas")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.BadRequest)
+        }
+    }
+
+    scenario("idea doesn't exists") {
+      when(questionService.getQuestion(QuestionId("question-id")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              Question(
+                questionId = QuestionId("question-id"),
+                slug = "question",
+                country = Country("FR"),
+                language = Language("fr"),
+                question = "question ?",
+                operationId = None,
+                themeId = None
+              )
+            )
+          )
+        )
+
+      when(ideaService.fetchOne(IdeaId("not-found"))).thenReturn(Future.successful(None))
+
+      val entity =
+        """{
+          | "ideaId": "not-found",
+          | "questionId": "question-id",
+          | "name": "name",
+          | "totalProposalsRatio": 0,
+          | "agreementRatio": 0,
+          | "likeItRatio": 0,
+          | "weight": 42
+          |}""".stripMargin
+
+      Post("/admin/top-ideas")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.BadRequest)
+        }
+    }
+
     scenario("access granted for admin") {
+
+      when(questionService.getQuestion(QuestionId("question-id")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              Question(
+                questionId = QuestionId("question-id"),
+                slug = "question",
+                country = Country("FR"),
+                language = Language("fr"),
+                question = "question ?",
+                operationId = None,
+                themeId = None
+              )
+            )
+          )
+        )
+
+      when(ideaService.fetchOne(IdeaId("idea-id")))
+        .thenReturn(
+          Future.successful(Some(Idea(ideaId = IdeaId("idea-id"), name = "idea", createdAt = None, updatedAt = None)))
+        )
 
       when(
         topIdeaService.create(IdeaId("idea-id"), QuestionId("question-id"), name = "name", TopIdeaScores(0, 0, 0), 42)
@@ -205,6 +300,102 @@ class AdminTopIdeaApiTest
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
+        }
+    }
+
+    scenario("question doesn't exists") {
+      when(topIdeaService.getById(TopIdeaId("top-idea-id"))).thenReturn(
+        Future.successful(
+          Some(
+            TopIdea(
+              TopIdeaId("top-idea-id"),
+              IdeaId("idea-id"),
+              QuestionId("question-id"),
+              name = "update name",
+              TopIdeaScores(0, 0, 0),
+              42
+            )
+          )
+        )
+      )
+      when(questionService.getQuestion(QuestionId("not-found"))).thenReturn(Future.successful(None))
+      when(ideaService.fetchOne(IdeaId("idea-id")))
+        .thenReturn(
+          Future.successful(Some(Idea(ideaId = IdeaId("idea-id"), name = "idea", createdAt = None, updatedAt = None)))
+        )
+
+      val entity =
+        """{
+          | "ideaId": "idea-id",
+          | "questionId": "not-found",
+          | "name": "name",
+          | "totalProposalsRatio": 0,
+          | "agreementRatio": 0,
+          | "likeItRatio": 0,
+          | "weight": 42
+          |}""".stripMargin
+
+      Post("/admin/top-ideas")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.BadRequest)
+        }
+    }
+
+    scenario("idea doesn't exists") {
+      when(topIdeaService.getById(TopIdeaId("top-idea-id"))).thenReturn(
+        Future.successful(
+          Some(
+            TopIdea(
+              TopIdeaId("top-idea-id"),
+              IdeaId("idea-id"),
+              QuestionId("question-id"),
+              name = "update name",
+              TopIdeaScores(0, 0, 0),
+              42
+            )
+          )
+        )
+      )
+
+      when(questionService.getQuestion(QuestionId("question-id")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              Question(
+                questionId = QuestionId("question-id"),
+                slug = "question",
+                country = Country("FR"),
+                language = Language("fr"),
+                question = "question ?",
+                operationId = None,
+                themeId = None
+              )
+            )
+          )
+        )
+
+      when(ideaService.fetchOne(IdeaId("not-found"))).thenReturn(Future.successful(None))
+
+      val entity =
+        """{
+          | "ideaId": "not-found",
+          | "questionId": "question-id",
+          | "name": "name",
+          | "totalProposalsRatio": 0,
+          | "agreementRatio": 0,
+          | "likeItRatio": 0,
+          | "weight": 42
+          |}""".stripMargin
+
+      Post("/admin/top-ideas")
+        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.BadRequest)
         }
     }
 

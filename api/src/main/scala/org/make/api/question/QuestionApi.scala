@@ -209,7 +209,7 @@ trait QuestionApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionTopIdeaResponse]))
   )
-  @Path(value = "/{questionId}/top-idea/{topIdeaId}")
+  @Path(value = "/{questionId}/top-ideas/{topIdeaId}")
   def getTopIdea: Route
 
   def routes: Route =

@@ -275,24 +275,38 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       topIdeaService
         .search(start = start, end = end, ideaId = None, questionId = Some(questionId), name = None)
         .flatMap { topIdeas =>
+          val emptyResult = topIdeas.map { topIdea =>
+            QuestionTopIdeaWithAvatarResponse(
+              id = topIdea.topIdeaId,
+              ideaId = topIdea.ideaId,
+              questionId = topIdea.questionId,
+              name = topIdea.name,
+              scores = topIdea.scores,
+              proposalsCount = 0,
+              avatars = Seq.empty,
+              weight = topIdea.weight
+            )
+          }
           elasticsearchProposalAPI
             .getRandomProposalsByIdeaWithAvatar(ideaIds = topIdeas.map(_.ideaId), randomSeed)
-            .map { AvatarsAndProposalsCountByIdea =>
-              AvatarsAndProposalsCountByIdea.toSeq.flatMap {
-                case (ideaId, avatarsAndProposalsCount) =>
-                  topIdeas.find(_.ideaId.value == ideaId.value).map { topIdea =>
-                    QuestionTopIdeaWithAvatarResponse(
-                      id = topIdea.topIdeaId,
-                      ideaId = topIdea.ideaId,
-                      questionId = topIdea.questionId,
-                      name = topIdea.name,
-                      scores = topIdea.scores,
-                      proposalsCount = avatarsAndProposalsCount.proposalsCount,
-                      avatars = avatarsAndProposalsCount.avatars,
-                      weight = topIdea.weight
-                    )
-                  }
-              }
+            .map {
+              case avatarsAndProposalsCountByIdea if avatarsAndProposalsCountByIdea.isEmpty => emptyResult
+              case avatarsAndProposalsCountByIdea =>
+                avatarsAndProposalsCountByIdea.toSeq.flatMap {
+                  case (ideaId, avatarsAndProposalsCount) =>
+                    topIdeas.find(_.ideaId.value == ideaId.value).map { topIdea =>
+                      QuestionTopIdeaWithAvatarResponse(
+                        id = topIdea.topIdeaId,
+                        ideaId = topIdea.ideaId,
+                        questionId = topIdea.questionId,
+                        name = topIdea.name,
+                        scores = topIdea.scores,
+                        proposalsCount = avatarsAndProposalsCount.proposalsCount,
+                        avatars = avatarsAndProposalsCount.avatars,
+                        weight = topIdea.weight
+                      )
+                    }
+                }
             }
         }
         .map(result => QuestionTopIdeasResponseWithSeed(result, randomSeed))
