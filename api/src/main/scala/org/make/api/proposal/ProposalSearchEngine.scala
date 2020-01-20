@@ -395,7 +395,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .map(
           bucket =>
             bucket.key -> bucket
-              .tophits("topHits")
+              .tophits("top_proposals")
               .hits
               .map(_.to[IndexedProposal])
               .map(_.author.avatarUrl.getOrElse(""))
