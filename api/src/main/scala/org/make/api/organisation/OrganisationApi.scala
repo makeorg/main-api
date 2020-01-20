@@ -46,6 +46,7 @@ import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
+import org.make.core.profile.Profile
 
 @Api(value = "Organisations")
 @Path(value = "/organisations")
@@ -58,6 +59,16 @@ trait OrganisationApi extends Directives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UserResponse])))
   @Path(value = "/{organisationId}")
   def getOrganisation: Route
+
+  @ApiOperation(value = "get-organisation-profile", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"))
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationProfileResponse]))
+  )
+  @Path(value = "/{organisationId}/profile")
+  def getOrganisationProfile: Route
 
   @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -116,7 +127,30 @@ trait OrganisationApi extends Directives {
   @Path(value = "/{organisationId}/votes")
   def getOrganisationVotes: Route
 
-  def routes: Route = getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes
+  @ApiOperation(
+    value = "update-organisation-profile",
+    httpMethod = "PUT",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "user", description = "application user"))
+      )
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[OrganisationProfileResponse]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.organisation.OrganisationProfileRequest")
+    )
+  )
+  @Path(value = "/{userId}/profile")
+  def updateProfile: Route
+
+  def routes: Route =
+    getOrganisation ~ getOrganisations ~ getOrganisationProposals ~ getOrganisationVotes ~ getOrganisationProfile ~ updateProfile
 
 }
 
@@ -153,6 +187,24 @@ trait DefaultOrganisationApiComponent
         }
       }
 
+    override def getOrganisationProfile: Route = {
+      get {
+        path("organisations" / organisationId / "profile") { organisationId =>
+          provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
+            complete(
+              OrganisationProfileResponse(
+                organisationName = organisation.organisationName,
+                avatarUrl = organisation.profile.flatMap(_.avatarUrl),
+                description = organisation.profile.flatMap(_.description),
+                website = organisation.profile.flatMap(_.website),
+                optInNewsletter = organisation.profile.map(_.optInNewsletter).getOrElse(true)
+              )
+            )
+          }
+        }
+      }
+    }
+
     override def getOrganisations: Route =
       get {
         path("organisations") {
@@ -166,11 +218,13 @@ trait DefaultOrganisationApiComponent
                 Symbol("language").as[Language].?
               )
             ) {
-              (organisationIds: Option[Seq[UserId]],
-               organisationName: Option[String],
-               slug: Option[String],
-               country: Option[Country],
-               language: Option[Language]) =>
+              (
+                organisationIds: Option[Seq[UserId]],
+                organisationName: Option[String],
+                slug: Option[String],
+                country: Option[Country],
+                language: Option[Language]
+              ) =>
                 provideAsync(organisationService.search(organisationName, slug, organisationIds, country, language)) {
                   results =>
                     complete(OrganisationsSearchResultResponse.fromOrganisationSearchResult(results))
@@ -241,12 +295,14 @@ trait DefaultOrganisationApiComponent
                     Symbol("skip").as[Int].?
                   )
                 ) {
-                  (votes: Option[Seq[VoteKey]],
-                   qualifications: Option[Seq[QualificationKey]],
-                   sort: Option[String],
-                   order: Option[SortOrder],
-                   limit: Option[Int],
-                   skip: Option[Int]) =>
+                  (
+                    votes: Option[Seq[VoteKey]],
+                    qualifications: Option[Seq[QualificationKey]],
+                    sort: Option[String],
+                    order: Option[SortOrder],
+                    limit: Option[Int],
+                    skip: Option[Int]
+                  ) =>
                     val defaultSort = Some("createdAt")
                     val defaultOrder = Some(Desc)
                     onSuccess(
@@ -269,5 +325,49 @@ trait DefaultOrganisationApiComponent
           }
         }
       }
+
+    override def updateProfile: Route = {
+      put {
+        path("organisations" / organisationId / "profile") { organisationId =>
+          makeOperation("UpdateOrganisationProfile") { requestContext =>
+            makeOAuth2 { user =>
+              authorize(user.user.userId == organisationId) {
+                decodeRequest {
+                  entity(as[OrganisationProfileRequest]) { request =>
+                    provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
+                      val modifiedProfile = organisation.profile
+                        .orElse(Profile.parseProfile())
+                        .map(
+                          _.copy(
+                            avatarUrl = request.avatarUrl.map(_.value),
+                            description = request.description,
+                            website = request.website.map(_.value),
+                            optInNewsletter = request.optInNewsletter
+                          )
+                        )
+
+                      val modifiedOrganisation =
+                        organisation.copy(profile = modifiedProfile, organisationName = Some(request.organisationName))
+
+                      provideAsync(organisationService.update(modifiedOrganisation, None, requestContext)) { _ =>
+                        complete(
+                          OrganisationProfileResponse(
+                            organisationName = modifiedOrganisation.organisationName,
+                            avatarUrl = modifiedOrganisation.profile.flatMap(_.avatarUrl),
+                            description = modifiedOrganisation.profile.flatMap(_.description),
+                            website = modifiedOrganisation.profile.flatMap(_.website),
+                            optInNewsletter = modifiedOrganisation.profile.map(_.optInNewsletter).getOrElse(true)
+                          )
+                        )
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

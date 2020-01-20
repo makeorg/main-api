@@ -276,7 +276,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       for {
         emailExists <- updateMailExists(maybeEmail.map(_.toLowerCase))
         _           <- verifyEmail(organisation.email.toLowerCase, emailExists)
-        update <- persistentUserService.modify(organisation).flatMap {
+        update <- persistentUserService.modifyOrganisation(organisation).flatMap {
           case Right(orga) =>
             updateProposalsFromOrganisation(orga.userId, requestContext).flatMap { _ =>
               eventBusService.publish(

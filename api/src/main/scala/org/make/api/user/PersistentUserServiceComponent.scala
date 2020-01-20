@@ -340,7 +340,7 @@ trait PersistentUserService {
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
   def updateUser(user: User): Future[User]
-  def modify(organisation: User): Future[Either[UpdateFailed, User]]
+  def modifyOrganisation(organisation: User): Future[Either[UpdateFailed, User]]
   def requestResetPassword(userId: UserId,
                            resetToken: String,
                            resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean]
@@ -769,7 +769,7 @@ trait DefaultPersistentUserServiceComponent
       }).map(_ => user)
     }
 
-    override def modify(organisation: User): Future[Either[UpdateFailed, User]] = {
+    override def modifyOrganisation(organisation: User): Future[Either[UpdateFailed, User]] = {
       implicit val ctx: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
       Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
@@ -780,8 +780,8 @@ trait DefaultPersistentUserServiceComponent
               column.email -> organisation.email,
               column.avatarUrl -> organisation.profile.flatMap(_.avatarUrl),
               column.description -> organisation.profile.flatMap(_.description),
-              column.politicalParty -> organisation.profile.flatMap(_.politicalParty),
               column.website -> organisation.profile.flatMap(_.website),
+              column.optInNewsletter -> organisation.profile.map(_.optInNewsletter).getOrElse(true),
               column.updatedAt -> nowDate
             )
             .where(
