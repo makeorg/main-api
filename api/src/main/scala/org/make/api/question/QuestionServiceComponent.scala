@@ -70,7 +70,9 @@ trait QuestionService {
                   seed: Option[Int],
                   questionId: QuestionId,
                   requestContext: RequestContext): Future[QuestionTopIdeasResponseWithSeed]
-  def getTopIdea(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[QuestionTopIdeaResponse]]
+  def getTopIdea(topIdeaId: TopIdeaId,
+                 questionId: QuestionId,
+                 seed: Option[Int]): Future[Option[QuestionTopIdeaResponseWithSeed]]
 }
 
 case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
@@ -312,17 +314,33 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         .map(result => QuestionTopIdeasResponseWithSeed(result, randomSeed))
     }
 
-    def getTopIdea(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[QuestionTopIdeaResponse]] = {
-      persistentTopIdeaService.getByIdAndQuestionId(topIdeaId, questionId).map { maybeTopIdea =>
-        maybeTopIdea.map { topIdea =>
-          QuestionTopIdeaResponse(
-            id = topIdeaId,
-            ideaId = topIdea.ideaId,
-            questionId = questionId,
-            name = topIdea.name,
-            scores = topIdea.scores
-          )
-        }
+    def getTopIdea(topIdeaId: TopIdeaId,
+                   questionId: QuestionId,
+                   seed: Option[Int]): Future[Option[QuestionTopIdeaResponseWithSeed]] = {
+      val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
+
+      persistentTopIdeaService.getByIdAndQuestionId(topIdeaId, questionId).flatMap {
+        case None => Future.successful(None)
+        case Some(topIdea) =>
+          elasticsearchProposalAPI
+            .getRandomProposalsByIdeaWithAvatar(ideaIds = Seq(topIdea.ideaId), randomSeed)
+            .map { result =>
+              result.get(topIdea.ideaId).map { avatarsAndProposalsCount =>
+                QuestionTopIdeaResponseWithSeed(
+                  questionTopIdea = QuestionTopIdeaWithAvatarResponse(
+                    id = topIdeaId,
+                    ideaId = topIdea.ideaId,
+                    name = topIdea.name,
+                    questionId = questionId,
+                    scores = topIdea.scores,
+                    proposalsCount = avatarsAndProposalsCount.proposalsCount,
+                    avatars = avatarsAndProposalsCount.avatars,
+                    weight = topIdea.weight
+                  ),
+                  seed = randomSeed
+                )
+              }
+            }
       }
     }
   }

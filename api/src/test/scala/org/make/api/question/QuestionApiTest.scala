@@ -595,20 +595,27 @@ class QuestionApiTest
 
   feature("get topIdea by id") {
     scenario("ok response") {
-      when(questionService.getTopIdea(matches(TopIdeaId("top-idea-id")), matches(QuestionId("question-id"))))
-        .thenReturn(
-          Future.successful(
-            Some(
-              QuestionTopIdeaResponse(
+      when(
+        questionService.getTopIdea(matches(TopIdeaId("top-idea-id")), matches(QuestionId("question-id")), matches(None))
+      ).thenReturn(
+        Future.successful(
+          Some(
+            QuestionTopIdeaResponseWithSeed(
+              QuestionTopIdeaWithAvatarResponse(
                 id = TopIdeaId("top-idea-id"),
                 ideaId = IdeaId("idea-id"),
                 questionId = QuestionId("question-id"),
                 name = "name",
-                scores = TopIdeaScores(0, 0, 0)
-              )
+                scores = TopIdeaScores(0, 0, 0),
+                proposalsCount = 0,
+                avatars = Seq.empty,
+                weight = 0
+              ),
+              seed = 42
             )
           )
         )
+      )
 
       Get("/questions/question-id/top-ideas/top-idea-id") ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -616,8 +623,9 @@ class QuestionApiTest
     }
 
     scenario("not found") {
-      when(questionService.getTopIdea(matches(TopIdeaId("not-found")), matches(QuestionId("question-id"))))
-        .thenReturn(Future.successful(None))
+      when(
+        questionService.getTopIdea(matches(TopIdeaId("not-found")), matches(QuestionId("question-id")), matches(None))
+      ).thenReturn(Future.successful(None))
 
       Get("/questions/question-id/top-ideas/not-found") ~> routes ~> check {
         status should be(StatusCodes.NotFound)

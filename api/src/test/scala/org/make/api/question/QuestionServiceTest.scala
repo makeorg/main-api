@@ -273,26 +273,57 @@ class QuestionServiceTest
   }
 
   feature("get top idea by id") {
-    when(persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("top-idea-id"), QuestionId("question-id"))).thenReturn(
-      Future.successful(
-        Some(
-          TopIdea(
-            TopIdeaId("top-idea-id"),
-            IdeaId("idea-id"),
-            QuestionId("question-id"),
-            name = "name",
-            TopIdeaScores(0, 0, 0),
-            42
+    scenario("top idea exists") {
+      when(persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("top-idea-id"), QuestionId("question-id")))
+        .thenReturn(
+          Future.successful(
+            Some(
+              TopIdea(
+                TopIdeaId("top-idea-id"),
+                IdeaId("idea-id"),
+                QuestionId("question-id"),
+                name = "name",
+                TopIdeaScores(0, 0, 0),
+                42
+              )
+            )
           )
         )
-      )
-    )
 
-    whenReady(
-      questionService.getTopIdea(topIdeaId = TopIdeaId("top-idea-id"), questionId = QuestionId("question-id")),
-      Timeout(3.seconds)
-    ) { result =>
-      result.map(_.name) should contain("name")
+      when(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-id")), 1337))
+        .thenReturn(
+          Future.successful(
+            Map(
+              IdeaId("idea-id") ->
+                AvatarsAndProposalsCount(
+                  avatars = Seq("avatar-1", "avatar-2", "avatar-3", "avatar-4"),
+                  proposalsCount = 42
+                )
+            )
+          )
+        )
+
+      whenReady(
+        questionService
+          .getTopIdea(topIdeaId = TopIdeaId("top-idea-id"), questionId = QuestionId("question-id"), seed = Some(1337)),
+        Timeout(3.seconds)
+      ) { result =>
+        result.isDefined should be(true)
+        result.get.questionTopIdea.name should be("name")
+      }
+    }
+
+    scenario("top idea doesn't exist") {
+      when(persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("not-found"), QuestionId("question-id")))
+        .thenReturn(Future.successful(None))
+
+      whenReady(
+        questionService
+          .getTopIdea(topIdeaId = TopIdeaId("not-found"), questionId = QuestionId("question-id"), seed = None),
+        Timeout(3.seconds)
+      ) { result =>
+        result.isDefined should be(false)
+      }
     }
   }
 
