@@ -203,11 +203,13 @@ trait QuestionApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "topIdeaId", paramType = "path", dataType = "string")
+      new ApiImplicitParam(name = "topIdeaId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "seed", paramType = "query", dataType = "string")
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionTopIdeaResponse]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionTopIdeaResponseWithSeed]))
   )
   @Path(value = "/{questionId}/top-ideas/{topIdeaId}")
   def getTopIdea: Route
@@ -575,8 +577,10 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "top-ideas" / topIdeaId) { (questionId, topIdeaId) =>
           makeOperation("GetQuestionTopIdea") { _ =>
-            provideAsyncOrNotFound(questionService.getTopIdea(topIdeaId, questionId)) { response =>
-              complete(response)
+            parameters(Symbol("seed").as[Int].?) { (seed: Option[Int]) =>
+              provideAsyncOrNotFound(questionService.getTopIdea(topIdeaId, questionId, seed)) { response =>
+                complete(response)
+              }
             }
           }
         }
@@ -624,16 +628,6 @@ object QuestionPersonalityResponse {
   implicit val encoder: Encoder[QuestionPersonalityResponse] = deriveEncoder[QuestionPersonalityResponse]
 }
 
-final case class QuestionTopIdeaResponse(id: TopIdeaId,
-                                         ideaId: IdeaId,
-                                         questionId: QuestionId,
-                                         name: String,
-                                         scores: TopIdeaScores)
-
-object QuestionTopIdeaResponse {
-  implicit val encoder: Encoder[QuestionTopIdeaResponse] = deriveEncoder[QuestionTopIdeaResponse]
-}
-
 final case class QuestionTopIdeaWithAvatarResponse(id: TopIdeaId,
                                                    ideaId: IdeaId,
                                                    questionId: QuestionId,
@@ -651,4 +645,10 @@ final case class QuestionTopIdeasResponseWithSeed(questionTopIdeas: Seq[Question
 
 object QuestionTopIdeasResponseWithSeed {
   implicit val encoder: Encoder[QuestionTopIdeasResponseWithSeed] = deriveEncoder[QuestionTopIdeasResponseWithSeed]
+}
+
+final case class QuestionTopIdeaResponseWithSeed(questionTopIdea: QuestionTopIdeaWithAvatarResponse, seed: Int)
+
+object QuestionTopIdeaResponseWithSeed {
+  implicit val encoder: Encoder[QuestionTopIdeaResponseWithSeed] = deriveEncoder[QuestionTopIdeaResponseWithSeed]
 }
