@@ -165,9 +165,11 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "not-found",
           | "name": "name",
-          | "totalProposalsRatio": 0,
-          | "agreementRatio": 0,
-          | "likeItRatio": 0,
+          | "scores": {
+          |   "totalProposalsRatio": 0,
+          |   "agreementRatio": 0,
+          |   "likeItRatio": 0
+          | },
           | "weight": 42
           |}""".stripMargin
 
@@ -205,9 +207,11 @@ class AdminTopIdeaApiTest
           | "ideaId": "not-found",
           | "questionId": "question-id",
           | "name": "name",
-          | "totalProposalsRatio": 0,
-          | "agreementRatio": 0,
-          | "likeItRatio": 0,
+          | "scores": {
+          |   "totalProposalsRatio": 0,
+          |   "agreementRatio": 0,
+          |   "likeItRatio": 0
+          | },
           | "weight": 42
           |}""".stripMargin
 
@@ -265,9 +269,11 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "question-id",
           | "name": "name",
-          | "totalProposalsRatio": 0,
-          | "agreementRatio": 0,
-          | "likeItRatio": 0,
+          | "scores": {
+          |   "totalProposalsRatio": 0,
+          |   "agreementRatio": 0,
+          |   "likeItRatio": 0
+          | },
           | "weight": 42
           |}""".stripMargin
 
@@ -329,9 +335,11 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "not-found",
           | "name": "name",
-          | "totalProposalsRatio": 0,
-          | "agreementRatio": 0,
-          | "likeItRatio": 0,
+          | "scores": {
+          |   "totalProposalsRatio": 0,
+          |   "agreementRatio": 0,
+          |   "likeItRatio": 0
+          | },
           | "weight": 42
           |}""".stripMargin
 
@@ -384,9 +392,11 @@ class AdminTopIdeaApiTest
           | "ideaId": "not-found",
           | "questionId": "question-id",
           | "name": "name",
-          | "totalProposalsRatio": 0,
-          | "agreementRatio": 0,
-          | "likeItRatio": 0,
+          | "scores": {
+          |   "totalProposalsRatio": 0,
+          |   "agreementRatio": 0,
+          |   "likeItRatio": 0
+          | },
           | "weight": 42
           |}""".stripMargin
 
@@ -446,9 +456,11 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "question-id",
           | "name": "update name",
-          | "totalProposalsRatio": 0,
-          | "agreementRatio": 0,
-          | "likeItRatio": 0,
+          | "scores": {
+          |   "totalProposalsRatio": 0,
+          |   "agreementRatio": 0,
+          |   "likeItRatio": 0
+          | },
           | "weight": 42
           |}""".stripMargin
 
@@ -473,9 +485,11 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "question-id",
           | "name": "update name",
-          | "totalProposalsRatio": 0,
-          | "agreementRatio": 0,
-          | "likeItRatio": 0,
+          | "scores": {
+          |   "totalProposalsRatio": 0,
+          |   "agreementRatio": 0,
+          |   "likeItRatio": 0
+          | },
           | "weight": 42
           |}""".stripMargin
 
