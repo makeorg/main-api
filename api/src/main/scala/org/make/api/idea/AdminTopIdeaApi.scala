@@ -204,11 +204,7 @@ trait DefaultAdminTopIdeaApiComponent
                         .search(start.getOrElse(0), end, sort, order, ideaId, questionId, name)
                     ) { topIdeas =>
                       complete(
-                        (
-                          StatusCodes.OK,
-                          List(`X-Total-Count`(count.toString)),
-                          topIdeas.map(TopIdeaResponse.fromTopIdea)
-                        )
+                        (StatusCodes.OK, List(`X-Total-Count`(count.toString)), topIdeas.map(TopIdeaResponse.apply))
                       )
                     }
                   }
@@ -225,7 +221,7 @@ trait DefaultAdminTopIdeaApiComponent
           makeOAuth2 { auth =>
             requireAdminRole(auth.user) {
               provideAsyncOrNotFound(topIdeaService.getById(topIdeaId)) { topIdea =>
-                complete(StatusCodes.OK -> TopIdeaResponse.fromTopIdea(topIdea))
+                complete(StatusCodes.OK -> TopIdeaResponse(topIdea))
               }
             }
           }
@@ -274,7 +270,7 @@ trait DefaultAdminTopIdeaApiComponent
                                 request.weight
                               )
                           ) { result =>
-                            complete(StatusCodes.Created -> TopIdeaResponse.fromTopIdea(result))
+                            complete(StatusCodes.Created -> TopIdeaResponse(result))
                           }
                       }
                   }
@@ -328,7 +324,7 @@ trait DefaultAdminTopIdeaApiComponent
                                 )
                               )
                             ) { updateTopIdea =>
-                              complete(StatusCodes.OK -> TopIdeaResponse.fromTopIdea(updateTopIdea))
+                              complete(StatusCodes.OK -> TopIdeaResponse(updateTopIdea))
                             }
                         }
                     }
@@ -367,9 +363,10 @@ final case class TopIdeaResponse(
   weight: Float
 )
 object TopIdeaResponse {
+  implicit val decoder: Decoder[TopIdeaResponse] = deriveDecoder[TopIdeaResponse]
   implicit val encoder: Encoder[TopIdeaResponse] = deriveEncoder[TopIdeaResponse]
 
-  def fromTopIdea(topIdea: TopIdea): TopIdeaResponse = {
+  def apply(topIdea: TopIdea): TopIdeaResponse = {
     TopIdeaResponse(
       id = topIdea.topIdeaId,
       ideaId = topIdea.ideaId,
