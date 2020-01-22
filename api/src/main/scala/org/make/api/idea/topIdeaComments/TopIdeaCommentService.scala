@@ -20,8 +20,7 @@
 package org.make.api.idea.topIdeaComments
 
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.idea.{TopIdeaComment, TopIdeaCommentId, TopIdeaId}
-import org.make.core.proposal.{QualificationKey, VoteKey}
+import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, TopIdeaComment, TopIdeaCommentId, TopIdeaId}
 import org.make.core.user.UserId
 
 import scala.concurrent.Future
@@ -33,8 +32,8 @@ trait TopIdeaCommentService {
              comment1: Option[String],
              comment2: Option[String],
              comment3: Option[String],
-             vote: Option[VoteKey],
-             qualification: Option[QualificationKey]): Future[TopIdeaComment]
+             vote: CommentVoteKey,
+             qualification: Option[CommentQualificationKey]): Future[TopIdeaComment]
   def search(start: Int,
              end: Option[Int],
              topIdeaIds: Option[Seq[TopIdeaId]],
@@ -60,8 +59,8 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
                         comment1: Option[String],
                         comment2: Option[String],
                         comment3: Option[String],
-                        vote: Option[VoteKey],
-                        qualification: Option[QualificationKey]): Future[TopIdeaComment] = {
+                        vote: CommentVoteKey,
+                        qualification: Option[CommentQualificationKey]): Future[TopIdeaComment] = {
       persistentTopIdeaCommentService.persist(
         TopIdeaComment(
           topIdeaCommentId = idGenerator.nextTopIdeaCommentId(),

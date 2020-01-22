@@ -1,3 +1,22 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.personality
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
@@ -24,7 +43,6 @@ import org.make.core.operation.{
 }
 import org.make.core.personality.{Candidate, Personality, PersonalityId}
 import org.make.core.profile.Profile
-import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -212,7 +230,30 @@ class PersonalityApiTest
           | "comment2": "some other comment",
           | "comment3": null,
           | "vote": "agree",
-          | "qualification": "likeIt"
+          | "qualification": "doable"
+          |}""".stripMargin
+
+      Post(s"/personalities/${personalityId.value}/comments")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.BadRequest)
+        }
+    }
+
+    scenario("validation error") {
+      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+        .thenReturn(Future.successful(Some(TestUtils.user(personalityId, userType = UserType.UserTypePersonality))))
+
+      val entity =
+        """{
+          | "topIdeaId": "fake-top-idea-id",
+          | "comment1": "some comment",
+          | "comment2": "some other comment",
+          | "comment3": null,
+          | "vote": "agree",
+          | "qualification": "noWay"
           |}""".stripMargin
 
       Post(s"/personalities/${personalityId.value}/comments")
@@ -252,8 +293,8 @@ class PersonalityApiTest
           ArgumentMatchers.eq(Some("some comment")),
           ArgumentMatchers.eq(Some("some other comment")),
           ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(VoteKey.Agree)),
-          ArgumentMatchers.eq(Some(QualificationKey.LikeIt))
+          ArgumentMatchers.eq(CommentVoteKey.Agree),
+          ArgumentMatchers.eq(Some(CommentQualificationKey.Doable))
         )
       ).thenReturn(
         Future.successful(
@@ -264,8 +305,8 @@ class PersonalityApiTest
             Some("some comment"),
             Some("some other comment"),
             None,
-            Some(VoteKey.Agree),
-            Some(QualificationKey.LikeIt)
+            CommentVoteKey.Agree,
+            Some(CommentQualificationKey.Doable)
           )
         )
       )
@@ -277,7 +318,7 @@ class PersonalityApiTest
           | "comment2": "some other comment",
           | "comment3": null,
           | "vote": "agree",
-          | "qualification": "likeIt"
+          | "qualification": "doable"
           |}""".stripMargin
 
       Post(s"/personalities/${personalityId.value}/comments")
@@ -564,7 +605,7 @@ class PersonalityApiTest
               Some("comment one"),
               Some("comment two"),
               None,
-              Some(VoteKey.Agree),
+              CommentVoteKey.Agree,
               None
             )
           )

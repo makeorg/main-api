@@ -21,8 +21,7 @@ package org.make.api.idea.topIdeaComments
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
-import org.make.core.idea.{TopIdeaComment, TopIdeaCommentId, TopIdeaId}
-import org.make.core.proposal.VoteKey
+import org.make.core.idea.{CommentVoteKey, TopIdeaComment, TopIdeaCommentId, TopIdeaId}
 import org.make.core.user.UserId
 import org.mockito.Mockito.when
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -47,7 +46,7 @@ class TopIdeaCommentServiceTest
         Some("comment 1"),
         None,
         None,
-        Some(VoteKey.Agree),
+        CommentVoteKey.Agree,
         None
       )
 

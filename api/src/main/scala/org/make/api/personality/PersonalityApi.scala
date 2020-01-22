@@ -1,3 +1,22 @@
+/*
+ *  Make.org Core API
+ *  Copyright (C) 2018 Make.org
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 package org.make.api.personality
 
 import akka.http.scaladsl.model.StatusCodes
@@ -15,9 +34,8 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.core._
-import org.make.core.idea.{TopIdeaComment, TopIdeaCommentId, TopIdeaId}
+import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, TopIdeaComment, TopIdeaCommentId, TopIdeaId}
 import org.make.core.profile.Profile
-import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.user.{User, UserId}
 import io.circe.refined._
 import org.make.api.operation.{OperationOfQuestionResponse, OperationOfQuestionServiceComponent}
@@ -345,10 +363,24 @@ final case class CreateTopIdeaCommentRequest(
   comment2: Option[String],
   comment3: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "agree")
-  vote: Option[VoteKey],
-  @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
-  qualification: Option[QualificationKey]
-)
+  vote: CommentVoteKey,
+  @(ApiModelProperty @field)(dataType = "string", example = "doable")
+  qualification: Option[CommentQualificationKey]
+) {
+  Validation.validateOptional(
+    comment1.map(Validation.minLength("comment1", 3, _)),
+    comment2.map(Validation.minLength("comment2", 3, _)),
+    comment3.map(Validation.minLength("comment3", 3, _)),
+    Some(
+      Validation.validateField(
+        "qualification",
+        "wrong_qualifiaction_key",
+        qualification.map(_.commentVoteKey).forall(_ == vote),
+        "The qualification does no correspond to the vote"
+      )
+    )
+  )
+}
 
 object CreateTopIdeaCommentRequest {
   implicit val decoder: Decoder[CreateTopIdeaCommentRequest] = deriveDecoder[CreateTopIdeaCommentRequest]
@@ -367,9 +399,9 @@ final case class TopIdeaCommentResponse(
   comment2: Option[String],
   comment3: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "agree")
-  vote: Option[VoteKey],
-  @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
-  qualification: Option[QualificationKey]
+  vote: CommentVoteKey,
+  @(ApiModelProperty @field)(dataType = "string", example = "doable")
+  qualification: Option[CommentQualificationKey]
 )
 
 object TopIdeaCommentResponse {
