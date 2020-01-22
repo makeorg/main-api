@@ -28,6 +28,7 @@ trait TopIdeaService {
   def create(ideaId: IdeaId,
              questionId: QuestionId,
              name: String,
+             label: String,
              scores: TopIdeaScores,
              weight: Float): Future[TopIdea]
   def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]]
@@ -57,9 +58,12 @@ trait DefaultTopIdeaServiceComponent extends TopIdeaServiceComponent {
     override def create(ideaId: IdeaId,
                         questionId: QuestionId,
                         name: String,
+                        label: String,
                         scores: TopIdeaScores,
                         weight: Float): Future[TopIdea] = {
-      persistentTopIdeaService.persist(TopIdea(idGenerator.nextTopIdeaId(), ideaId, questionId, name, scores, weight))
+      persistentTopIdeaService.persist(
+        TopIdea(idGenerator.nextTopIdeaId(), ideaId, questionId, name, label, scores, weight)
+      )
     }
 
     override def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]] = {

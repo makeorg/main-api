@@ -606,6 +606,7 @@ class QuestionApiTest
                 ideaId = IdeaId("idea-id"),
                 questionId = QuestionId("question-id"),
                 name = "name",
+                label = "label",
                 scores = TopIdeaScores(0, 0, 0),
                 proposalsCount = 0,
                 avatars = Seq.empty,

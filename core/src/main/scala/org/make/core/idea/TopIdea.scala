@@ -30,6 +30,7 @@ final case class TopIdea(topIdeaId: TopIdeaId,
                          ideaId: IdeaId,
                          questionId: QuestionId,
                          name: String,
+                         label: String,
                          scores: TopIdeaScores,
                          weight: Float)
 

@@ -174,6 +174,7 @@ class QuestionServiceTest
                 IdeaId("idea-1"),
                 QuestionId("question-id"),
                 "top-idea-1",
+                "label",
                 TopIdeaScores(0, 0, 0),
                 42
               ),
@@ -182,6 +183,7 @@ class QuestionServiceTest
                 IdeaId("idea-2"),
                 QuestionId("question-id"),
                 "top-idea-2",
+                "label",
                 TopIdeaScores(0, 0, 0),
                 21
               )
@@ -236,6 +238,7 @@ class QuestionServiceTest
                 IdeaId("idea-1"),
                 QuestionId("question-id"),
                 "top-idea-1",
+                "label",
                 TopIdeaScores(0, 0, 0),
                 42
               ),
@@ -244,6 +247,7 @@ class QuestionServiceTest
                 IdeaId("idea-2"),
                 QuestionId("question-id"),
                 "top-idea-2",
+                "label",
                 TopIdeaScores(0, 0, 0),
                 21
               )
@@ -283,6 +287,7 @@ class QuestionServiceTest
                 IdeaId("idea-id"),
                 QuestionId("question-id"),
                 name = "name",
+                label = "label",
                 TopIdeaScores(0, 0, 0),
                 42
               )
