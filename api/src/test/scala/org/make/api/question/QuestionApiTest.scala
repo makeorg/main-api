@@ -31,6 +31,7 @@ import org.make.api.feature.{
   FeatureService,
   FeatureServiceComponent
 }
+import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
 import org.make.api.operation.{PersistentOperationOfQuestionService, _}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
@@ -40,7 +41,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature, FeatureId}
-import org.make.core.idea.{IdeaId, TopIdeaId, TopIdeaScores}
+import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
@@ -76,7 +77,8 @@ class QuestionApiTest
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
     with TagServiceComponent
-    with ProposalServiceComponent {
+    with ProposalServiceComponent
+    with TopIdeaCommentServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -90,6 +92,7 @@ class QuestionApiTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val tagService: TagService = mock[TagService]
   override val proposalService: ProposalService = mock[ProposalService]
+  override val topIdeaCommentService: TopIdeaCommentService = mock[TopIdeaCommentService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -599,23 +602,26 @@ class QuestionApiTest
       ).thenReturn(
         Future.successful(
           Some(
-            QuestionTopIdeaResponseWithSeed(
-              QuestionTopIdeaWithAvatarResponse(
-                id = TopIdeaId("top-idea-id"),
+            QuestionTopIdeaResultWithSeed(
+              topIdea = TopIdea(
+                topIdeaId = TopIdeaId("top-idea-id"),
                 ideaId = IdeaId("idea-id"),
                 questionId = QuestionId("question-id"),
                 name = "name",
                 label = "label",
                 scores = TopIdeaScores(0, 0, 0),
-                proposalsCount = 0,
-                avatars = Seq.empty,
                 weight = 0
               ),
+              avatars = Seq.empty,
+              proposalsCount = 0,
               seed = 42
             )
           )
         )
       )
+
+      when(topIdeaCommentService.getCommentsWithPersonality(topIdeaIds = Seq(TopIdeaId("top-idea-id"))))
+        .thenReturn(Future.successful(Seq.empty))
 
       Get("/questions/question-id/top-ideas/top-idea-id") ~> routes ~> check {
         status should be(StatusCodes.OK)

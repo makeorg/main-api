@@ -281,6 +281,13 @@ class PersistentTopIdeaCommentServiceIT
       ) {
         _ shouldBe 1
       }
+
+      //COUNT FOR ALL
+      whenReady(persistentTopIdeaCommentService.countForAll(topIdeaComments.map(_.topIdeaId)), Timeout(5.seconds)) {
+        result =>
+          result.size should be(2)
+          result(topIdeas(4).topIdeaId.value) should be(2)
+      }
     }
   }
 }

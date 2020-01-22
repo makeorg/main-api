@@ -19,10 +19,16 @@
 
 package org.make.api.idea.topIdeaComments
 
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
+import org.make.api.ActorSystemComponent
+import org.make.api.question.{QuestionTopIdeaCommentsPersonalityResponse, QuestionTopIdeaCommentsResponse}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, TopIdeaComment, TopIdeaCommentId, TopIdeaId}
+import org.make.api.user.UserServiceComponent
 import org.make.core.user.UserId
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait TopIdeaCommentService {
@@ -38,6 +44,7 @@ trait TopIdeaCommentService {
              end: Option[Int],
              topIdeaIds: Option[Seq[TopIdeaId]],
              personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]]
+  def getCommentsWithPersonality(topIdeaIds: Seq[TopIdeaId]): Future[Seq[QuestionTopIdeaCommentsResponse]]
 }
 
 trait TopIdeaCommentServiceComponent {
@@ -45,7 +52,10 @@ trait TopIdeaCommentServiceComponent {
 }
 
 trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceComponent {
-  self: PersistentTopIdeaCommentServiceComponent with IdGeneratorComponent =>
+  this: PersistentTopIdeaCommentServiceComponent
+    with ActorSystemComponent
+    with IdGeneratorComponent
+    with UserServiceComponent =>
 
   override val topIdeaCommentService: DefaultTopIdeaCommentService = new DefaultTopIdeaCommentService
 
@@ -80,6 +90,42 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
                         topIdeaIds: Option[Seq[TopIdeaId]],
                         personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]] = {
       persistentTopIdeaCommentService.search(start, end, topIdeaIds, personalityIds)
+    }
+
+    override def getCommentsWithPersonality(
+      topIdeaIds: Seq[TopIdeaId]
+    ): Future[Seq[QuestionTopIdeaCommentsResponse]] = {
+      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
+      Source
+        .fromFuture(
+          persistentTopIdeaCommentService
+            .search(start = 0, end = None, topIdeaIds = Some(topIdeaIds), personalityIds = None)
+        )
+        .mapConcat(identity)
+        .mapAsync(1) { topIdeaComment =>
+          userService.getPersonality(topIdeaComment.personalityId).map((topIdeaComment, _))
+        }
+        .collect {
+          case (topIdeaComment, Some(personality)) => (topIdeaComment, personality)
+        }
+        .map {
+          case (topIdeaComment, personality) =>
+            QuestionTopIdeaCommentsResponse(
+              id = topIdeaComment.topIdeaCommentId,
+              personality = QuestionTopIdeaCommentsPersonalityResponse(
+                personalityId = personality.userId,
+                displayName = personality.displayName,
+                avatarUrl = personality.profile.flatMap(_.avatarUrl),
+                politicalParty = personality.profile.flatMap(_.politicalParty)
+              ),
+              comment1 = topIdeaComment.comment1,
+              comment2 = topIdeaComment.comment2,
+              comment3 = topIdeaComment.comment3,
+              vote = topIdeaComment.vote,
+              qualification = topIdeaComment.qualification
+            )
+        }
+        .runWith(Sink.seq[QuestionTopIdeaCommentsResponse])
     }
   }
 }
