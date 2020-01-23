@@ -13,7 +13,6 @@ import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponen
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
-import org.make.core.RequestContext
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.personality.{Candidate, Personality, PersonalityId}
 import org.make.core.question.QuestionId
@@ -209,13 +208,7 @@ class QuestionServiceTest
         )
 
       whenReady(
-        questionService.getTopIdeas(
-          start = 0,
-          end = None,
-          seed = Some(1337),
-          questionId = QuestionId("question-id"),
-          requestContext = RequestContext.empty
-        ),
+        questionService.getTopIdeas(start = 0, end = None, seed = Some(1337), questionId = QuestionId("question-id")),
         Timeout(3.seconds)
       ) { result =>
         result.questionTopIdeas.size should be(2)
@@ -259,13 +252,7 @@ class QuestionServiceTest
         .thenReturn(Future.successful(Map()))
 
       whenReady(
-        questionService.getTopIdeas(
-          start = 0,
-          end = None,
-          seed = Some(1337),
-          questionId = QuestionId("question-id"),
-          requestContext = RequestContext.empty
-        ),
+        questionService.getTopIdeas(start = 0, end = None, seed = Some(1337), questionId = QuestionId("question-id")),
         Timeout(3.seconds)
       ) { result =>
         result.questionTopIdeas.size should be(2)

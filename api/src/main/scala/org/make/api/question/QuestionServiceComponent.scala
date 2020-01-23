@@ -35,7 +35,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.{ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -68,8 +68,7 @@ trait QuestionService {
   def getTopIdeas(start: Int,
                   end: Option[Int],
                   seed: Option[Int],
-                  questionId: QuestionId,
-                  requestContext: RequestContext): Future[QuestionTopIdeasResponseWithSeed]
+                  questionId: QuestionId): Future[QuestionTopIdeasResponseWithSeed]
   def getTopIdea(topIdeaId: TopIdeaId,
                  questionId: QuestionId,
                  seed: Option[Int]): Future[Option[QuestionTopIdeaResponseWithSeed]]
@@ -269,8 +268,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     override def getTopIdeas(start: Int,
                              end: Option[Int],
                              seed: Option[Int],
-                             questionId: QuestionId,
-                             requestContext: RequestContext): Future[QuestionTopIdeasResponseWithSeed] = {
+                             questionId: QuestionId): Future[QuestionTopIdeasResponseWithSeed] = {
 
       val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
 

@@ -558,12 +558,12 @@ trait DefaultQuestionApiComponent
     override def getTopIdeas: Route = {
       get {
         path("questions" / questionId / "top-ideas") { questionId =>
-          makeOperation("GetQuestionTopIdeas") { requestContext =>
+          makeOperation("GetQuestionTopIdeas") { _ =>
             parameters((Symbol("limit").as[Int].?, Symbol("skip").as[Int].?, Symbol("seed").as[Int].?)) {
               (limit: Option[Int], skip: Option[Int], seed: Option[Int]) =>
                 provideAsync(
                   questionService
-                    .getTopIdeas(skip.getOrElse(0), limit, seed, questionId, requestContext)
+                    .getTopIdeas(skip.getOrElse(0), limit, seed, questionId)
                 ) { response =>
                   complete(response)
                 }

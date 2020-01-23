@@ -24,8 +24,15 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.{SearchResponse, TermBucket}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.aggs.pipeline.BucketSortPipelineAgg
-import com.sksamuel.elastic4s.searches.aggs.{GlobalAggregation, MaxAggregation, TermsAggregation, TopHitsAggregation}
+import com.sksamuel.elastic4s.searches.aggs.{
+  FilterAggregation,
+  GlobalAggregation,
+  MaxAggregation,
+  TermsAggregation,
+  TopHitsAggregation
+}
 import com.sksamuel.elastic4s.searches.queries.funcscorer.FunctionScoreQuery
+import com.sksamuel.elastic4s.searches.queries.term.TermQuery
 import com.sksamuel.elastic4s.searches.queries.{BoolQuery, ExistsQuery, IdQuery, Query}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.{IncludeExclude, SearchRequest => ElasticSearchRequest}
@@ -36,6 +43,7 @@ import org.make.api.technical.elasticsearch.{ElasticsearchConfigurationComponent
 import org.make.core.DateHelper
 import org.make.core.DateHelper._
 import org.make.core.idea.IdeaId
+import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
@@ -347,11 +355,14 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       // this aggregation count the proposals without taking account of the search filters set for the bool query
       val globalAggregation = GlobalAggregation(name = "all_proposals")
         .subAggregations(
-          TermsAggregation(
-            name = "by_idea_global",
-            field = Some(ProposalElasticsearchFieldNames.ideaId),
-            includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty))
-          )
+          FilterAggregation(name = "filter_global", query = TermQuery(field = "status", value = Accepted.shortName))
+            .subAggregations(
+              TermsAggregation(
+                name = "by_idea_global",
+                field = Some(ProposalElasticsearchFieldNames.ideaId),
+                includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty))
+              )
+            )
         )
 
       val topHitsAggregation =
@@ -385,6 +396,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     ): Map[IdeaId, AvatarsAndProposalsCount] = {
       val proposalsCountByIdea: Map[String, Long] = response.aggregations
         .global("all_proposals")
+        .filter("filter_global")
         .terms("by_idea_global")
         .buckets
         .map(bucket => bucket.key -> bucket.docCount)
