@@ -19,7 +19,6 @@
 
 package org.make.api.operation
 import java.time.ZonedDateTime
-import java.util.Date
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
@@ -30,16 +29,12 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.ValidationError
-import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.{Role, UserId}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -53,57 +48,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
   override val questionService: QuestionService = mock[QuestionService]
-
-  val moderatorToken = "moderator-token"
-  val adminToken = "admin-token"
-  val userToken = "userToken"
-
-  val rights: Map[String, Seq[Role]] = Map(
-    moderatorToken -> Seq(RoleModerator),
-    userToken -> Seq(RoleCitizen),
-    adminToken -> Seq(RoleAdmin, RoleModerator)
-  )
-
-  when(oauth2DataHandler.findAccessToken(any[String]))
-    .thenAnswer(
-      invocation =>
-        Future.successful {
-          val token = invocation.getArgument[String](0)
-          if (rights.contains(token)) {
-            Some(
-              AccessToken(
-                token = token,
-                refreshToken = None,
-                scope = None,
-                lifeSeconds = None,
-                createdAt = new Date(),
-                params = Map.empty
-              )
-            )
-          } else {
-            None
-          }
-      }
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(any[AccessToken])).thenAnswer { invocation =>
-    val accessToken = invocation.getArgument[AccessToken](0)
-    Future.successful {
-      rights.get(accessToken.token).map { roles =>
-        AuthInfo(
-          clientId = None,
-          scope = None,
-          redirectUri = None,
-          user = UserRights(
-            userId = UserId(accessToken.token),
-            roles = roles,
-            availableQuestions = Seq.empty,
-            emailVerified = true
-          )
-        )
-      }
-    }
-  }
 
   when(operationOfQuestionService.create(any[CreateOperationOfQuestion])).thenAnswer { invocation =>
     val request = invocation.getArgument[CreateOperationOfQuestion](0)
@@ -446,31 +390,31 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     scenario("citizen user") {
 
       Get("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
 
       Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
 
       Get("/moderation/operations-of-questions/some-question")
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
 
       Put("/moderation/operations-of-questions/some-question")
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
 
       Delete("/moderation/operations-of-questions/some-question")
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
@@ -478,19 +422,19 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
     scenario("admin-only endpoints") {
       Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
 
       Put("/moderation/operations-of-questions/some-question")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
 
       Delete("/moderation/operations-of-questions/some-question")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
         status should be(StatusCodes.Forbidden)
       }
@@ -501,7 +445,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   feature("create operationOfQuestion") {
     scenario("create as moderator") {
       Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
           ContentTypes.`application/json`,
           CreateOperationOfQuestionRequest(
@@ -525,7 +469,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
     scenario("create as moderator with bad consultationImage format") {
       Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
             |"operationId": "some-operation",
             |"startDate": "2018-12-01T10:15:30+00:00",
@@ -545,7 +489,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   feature("update operationOfQuestion") {
     scenario("update as moderator") {
       Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
           ContentTypes.`application/json`,
           ModifyOperationOfQuestionRequest(
@@ -584,7 +528,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     scenario("update with bad color") {
 
       Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
             | "startDate": "2018-12-01T10:15:30.000Z",
             | "canPropose": true,
@@ -619,7 +563,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
     scenario("update image as moderator with incorrect URL") {
       Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
                                                        | "startDate": "2018-12-01T10:15:30.000Z",
                                                        | "canPropose": true,
@@ -658,7 +602,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   feature("delete operationOfQuestion") {
     scenario("delete as admin") {
       Delete("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
 
         status should be(StatusCodes.NoContent)
       }
@@ -668,7 +612,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   feature("get by operation of question") {
     scenario("get as moderator") {
       Get("/moderation/operations-of-questions/some-question")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
       }
@@ -678,7 +622,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   feature("search operation of question") {
     scenario("search as moderator") {
       Get("/moderation/operations-of-questions?openAt=2018-01-01")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
       }

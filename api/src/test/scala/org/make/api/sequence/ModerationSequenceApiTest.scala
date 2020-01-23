@@ -19,22 +19,16 @@
 
 package org.make.api.sequence
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.testkit.TestDuration
 import org.make.api.MakeApiTestBase
-import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -49,76 +43,6 @@ class ModerationSequenceApiTest
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
 
   implicit val timeout: RouteTestTimeout = RouteTestTimeout(3.seconds.dilated)
-
-  val validAccessToken = "my-valid-access-token"
-  val adminToken = "my-admin-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("the-mother-of-dragons"),
-              roles = Seq(RoleAdmin),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("the-dwarf"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
 
   val setSequenceConfigurationPayload: String = """{
                                                   |  "maxAvailableProposals": 1000,
@@ -174,7 +98,7 @@ class ModerationSequenceApiTest
   feature("get sequence configuration") {
     scenario("set sequence config as user") {
       Get("/moderation/sequences/mySequence/configuration")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -182,7 +106,7 @@ class ModerationSequenceApiTest
     scenario("get sequence config as moderator") {
       Get("/moderation/sequences/mySequence/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -190,14 +114,14 @@ class ModerationSequenceApiTest
     scenario("get sequence config as admin") {
       Get("/moderation/sequences/mySequence/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
 
     scenario("get unknown sequence config as admin") {
       Get("/moderation/sequences/unknownSequence/unknownQuestion/configuration")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -207,7 +131,7 @@ class ModerationSequenceApiTest
     scenario("set sequence config as user") {
       Put("/moderation/sequences/mySequence/myQuestion/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -215,7 +139,7 @@ class ModerationSequenceApiTest
     scenario("set sequence config as moderator") {
       Put("/moderation/sequences/mySequence/myQuestion/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -223,7 +147,7 @@ class ModerationSequenceApiTest
     scenario("set sequence config as admin") {
       Put("/moderation/sequences/mySequence/myQuestion/configuration")
         .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -233,7 +157,7 @@ class ModerationSequenceApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid"))
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }

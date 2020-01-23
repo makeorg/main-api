@@ -1,35 +1,38 @@
 package org.make.api.personality
 
-import akka.http.scaladsl.model.StatusCodes
-import org.make.api.{MakeApiTestBase, TestUtils}
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.server.Route
+import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
+import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
-import org.make.core.user.{UserId, UserType}
-import org.mockito.Mockito
+import org.make.api.{MakeApiTestBase, TestUtils}
+import org.make.core.RequestContext
+import org.make.core.idea._
+import org.make.core.profile.Profile
+import org.make.core.proposal.{QualificationKey, VoteKey}
+import org.make.core.question.QuestionId
+import org.make.core.user.{User, UserId, UserType}
+import org.mockito.Mockito.when
+import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.Future
-import scalaoauth2.provider.AccessToken
-import java.{util => ju}
-import java.time.Instant
-import org.mockito.ArgumentMatchers
-import scalaoauth2.provider.AuthInfo
-import org.make.core.auth.UserRights
-import akka.http.scaladsl.model.headers.Authorization
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.ContentTypes
-import org.make.core.user.User
-import org.make.core.RequestContext
-import org.make.core.profile.Profile
 
-class PersonalityApiTest extends MakeApiTestBase with DefaultPersonalityApiComponent with UserServiceComponent {
+class PersonalityApiTest
+    extends MakeApiTestBase
+    with DefaultPersonalityApiComponent
+    with UserServiceComponent
+    with TopIdeaCommentServiceComponent
+    with TopIdeaServiceComponent {
 
   override val userService: UserService = mock[UserService]
+  override val topIdeaCommentService: TopIdeaCommentService = mock[TopIdeaCommentService]
+  override val topIdeaService: TopIdeaService = mock[TopIdeaService]
 
-  val routes = personalityApi.routes
+  val routes: Route = personalityApi.routes
 
-  val otherUser = TestUtils.user(UserId("other"))
-
-  val returnedPersonality = TestUtils.user(
+  val tokenPersonalityCitizen = "personality"
+  val returnedPersonality: User = TestUtils.user(
     id = UserId("personality-id"),
     email = "personality@make.org",
     firstName = Some("my-personality"),
@@ -39,45 +42,15 @@ class PersonalityApiTest extends MakeApiTestBase with DefaultPersonalityApiCompo
     userType = UserType.UserTypePersonality
   )
 
-  val usersByToken = Map("user" -> otherUser, "personality" -> returnedPersonality)
-  val personalities = Map(returnedPersonality.userId -> returnedPersonality)
+  override val customUserByToken = Map(tokenPersonalityCitizen -> returnedPersonality)
 
   Mockito
-    .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.any[String]))
-    .thenAnswer { invocation =>
-      val token = invocation.getArgument[String](0)
-      val maybeAccessToken =
-        usersByToken.get(token).map(_ => AccessToken(token, None, None, None, ju.Date.from(Instant.now)))
-      Future.successful(maybeAccessToken)
-    }
+    .when(userService.getPersonality(ArgumentMatchers.eq(returnedPersonality.userId)))
+    .thenReturn(Future.successful(Some(returnedPersonality)))
 
   Mockito
-    .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.any[AccessToken]))
-    .thenAnswer(
-      invocation =>
-        Future.successful(
-          usersByToken
-            .get(invocation.getArgument[AccessToken](0).token)
-            .map(
-              user =>
-                AuthInfo(
-                  UserRights(
-                    userId = user.userId,
-                    roles = user.roles,
-                    availableQuestions = user.availableQuestions,
-                    emailVerified = user.emailVerified
-                  ),
-                  None,
-                  None,
-                  None
-                )
-            )
-        )
-    )
-
-  Mockito
-    .when(userService.getPersonality(ArgumentMatchers.any[UserId]))
-    .thenAnswer(invocation => Future.successful(personalities.get(invocation.getArgument[UserId](0))))
+    .when(userService.getPersonality(ArgumentMatchers.eq(UserId("non-existant"))))
+    .thenReturn(Future.successful(None))
 
   Mockito
     .when(userService.update(ArgumentMatchers.any[User], ArgumentMatchers.any[RequestContext]))
@@ -138,7 +111,7 @@ class PersonalityApiTest extends MakeApiTestBase with DefaultPersonalityApiCompo
 
     scenario("wrong user") {
       Put(s"/personalities/${returnedPersonality.userId.value}/profile")
-        .withHeaders(Authorization(OAuth2BearerToken("user")))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -146,7 +119,7 @@ class PersonalityApiTest extends MakeApiTestBase with DefaultPersonalityApiCompo
 
     scenario("correct user") {
       Put(s"/personalities/${returnedPersonality.userId.value}/profile")
-        .withHeaders(Authorization(OAuth2BearerToken("personality")))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenPersonalityCitizen)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val response = entityAs[PersonalityProfileResponse]
@@ -158,6 +131,139 @@ class PersonalityApiTest extends MakeApiTestBase with DefaultPersonalityApiCompo
         response.website should contain("https://les-saucisses-masquees.org")
         response.politicalParty should contain("Les saucisses masquées")
       }
+    }
+  }
+
+  feature("create top idea comment for personality") {
+    val personalityId: UserId = defaultCitizenUser.userId
+
+    scenario("access refused for other user than self") {
+      Post(s"/personalities/some-user-other-than-self/comments") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+
+      Post(s"/personalities/some-user-other-than-self/comments")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.Forbidden)
+        }
+
+      Post(s"/personalities/some-user-other-than-self/comments")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.Forbidden)
+        }
+
+      Post(s"/personalities/some-user-other-than-self/comments")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.Forbidden)
+        }
+    }
+
+    scenario("access granted but not found if not personality") {
+      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+        .thenReturn(Future.successful(None))
+
+      Post(s"/personalities/${personalityId.value}/comments")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.NotFound)
+        }
+    }
+
+    scenario("authorized and personality but top idea does not exist") {
+      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+        .thenReturn(Future.successful(Some(TestUtils.user(personalityId, userType = UserType.UserTypePersonality))))
+
+      when(topIdeaService.getById(ArgumentMatchers.eq(TopIdeaId("fake-top-idea-id"))))
+        .thenReturn(Future.successful(None))
+
+      val entity =
+        """{
+          | "topIdeaId": "fake-top-idea-id",
+          | "comment1": "some comment",
+          | "comment2": "some other comment",
+          | "comment3": null,
+          | "vote": "agree",
+          | "qualification": "likeIt"
+          |}""".stripMargin
+
+      Post(s"/personalities/${personalityId.value}/comments")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.BadRequest)
+        }
+    }
+
+    scenario("successful create") {
+      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+        .thenReturn(Future.successful(Some(TestUtils.user(personalityId, userType = UserType.UserTypePersonality))))
+
+      when(topIdeaService.getById(ArgumentMatchers.eq(TopIdeaId("top-idea-id"))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              TopIdea(
+                TopIdeaId("top-idea-id"),
+                IdeaId("idea-id"),
+                QuestionId("question-id"),
+                "name",
+                TopIdeaScores(0f, 0f, 0f),
+                0f
+              )
+            )
+          )
+        )
+
+      when(
+        topIdeaCommentService.create(
+          ArgumentMatchers.eq(TopIdeaId("top-idea-id")),
+          ArgumentMatchers.eq(personalityId),
+          ArgumentMatchers.eq(Some("some comment")),
+          ArgumentMatchers.eq(Some("some other comment")),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(VoteKey.Agree)),
+          ArgumentMatchers.eq(Some(QualificationKey.LikeIt))
+        )
+      ).thenReturn(
+        Future.successful(
+          TopIdeaComment(
+            topIdeaCommentId = TopIdeaCommentId("top-idea-comment-id"),
+            TopIdeaId("top-idea-id"),
+            personalityId,
+            Some("some comment"),
+            Some("some other comment"),
+            None,
+            Some(VoteKey.Agree),
+            Some(QualificationKey.LikeIt)
+          )
+        )
+      )
+
+      val entity =
+        """{
+          | "topIdeaId": "top-idea-id",
+          | "comment1": "some comment",
+          | "comment2": "some other comment",
+          | "comment3": null,
+          | "vote": "agree",
+          | "qualification": "likeIt"
+          |}""".stripMargin
+
+      Post(s"/personalities/${personalityId.value}/comments")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen)))
+        .withEntity(ContentTypes.`application/json`, entity) ~>
+        routes ~>
+        check {
+          status should be(StatusCodes.Created)
+        }
     }
   }
 

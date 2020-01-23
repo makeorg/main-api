@@ -31,7 +31,7 @@ import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
-import org.mockito.ArgumentMatchers
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo, TokenEndpoint}
@@ -47,6 +47,8 @@ class AuthenticationApiTest
 
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful {})
+
+  Mockito.reset(oauth2DataHandler)
 
   val routes: Route = sealRoute(authenticationApi.routes)
 

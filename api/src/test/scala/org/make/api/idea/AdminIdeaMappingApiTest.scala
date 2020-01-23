@@ -18,24 +18,18 @@
  */
 
 package org.make.api.idea
-import java.util.Date
-
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.UserId
 import org.mockito.Mockito.when
-import scalaoauth2.provider.{AccessToken, AuthInfo}
-import org.mockito.ArgumentMatchers.{eq => matches}
 
 import scala.concurrent.Future
 
@@ -49,83 +43,6 @@ class AdminIdeaMappingApiTest
 
   override val ideaMappingService: IdeaMappingService = mock[IdeaMappingService]
 
-  val validCitizenAccessToken = "my-valid-citizen-access-token"
-  val validModeratorAccessToken = "my-valid-moderator-access-token"
-  val validAdminAccessToken = "my-valid-admin-access-token"
-
-  val tokenCreationDate = new Date()
-  private val citizenAccessToken =
-    AccessToken(validCitizenAccessToken, None, Some("user"), Some(0L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(validModeratorAccessToken, None, Some("user"), Some(0L), tokenCreationDate)
-  private val adminAccessToken =
-    AccessToken(validAdminAccessToken, None, Some("user"), Some(0L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
-    .thenReturn(Future.successful(Some(citizenAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
-    .thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
-    .thenReturn(Future.successful(Some(adminAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-citizen-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("citizen"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-moderator-user-id"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("moderator"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = UserId("my-admin-user-id"),
-                roles = Seq(RoleAdmin),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              Some("admin"),
-              None
-            )
-          )
-        )
-    )
-
   val routes: Route = sealRoute(adminIdeaMappingApi.routes)
 
   feature("create idea mapping") {
@@ -135,13 +52,13 @@ class AdminIdeaMappingApiTest
         status should be(StatusCodes.Unauthorized)
       }
 
-      Post("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~>
+      Post("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
         }
 
-      Post("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~>
+      Post("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
@@ -166,7 +83,7 @@ class AdminIdeaMappingApiTest
         """.stripMargin
 
       Post("/admin/idea-mappings")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, entity) ~>
         routes ~>
         check {
@@ -184,13 +101,13 @@ class AdminIdeaMappingApiTest
         status should be(StatusCodes.Unauthorized)
       }
 
-      Put("/admin/idea-mappings/456").withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~>
+      Put("/admin/idea-mappings/456").withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
         }
 
-      Put("/admin/idea-mappings/456").withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~>
+      Put("/admin/idea-mappings/456").withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
@@ -222,7 +139,7 @@ class AdminIdeaMappingApiTest
         """.stripMargin
 
       Put("/admin/idea-mappings/456")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, entity) ~>
         routes ~>
         check {
@@ -251,7 +168,7 @@ class AdminIdeaMappingApiTest
         """.stripMargin
 
       Put("/admin/idea-mappings/456")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken)))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, entity) ~>
         routes ~>
         check {
@@ -268,13 +185,13 @@ class AdminIdeaMappingApiTest
         status should be(StatusCodes.Unauthorized)
       }
 
-      Get("/admin/idea-mappings/123").withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~>
+      Get("/admin/idea-mappings/123").withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
         }
 
-      Get("/admin/idea-mappings/123").withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~>
+      Get("/admin/idea-mappings/123").withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
@@ -291,7 +208,7 @@ class AdminIdeaMappingApiTest
         )
 
       Get("/admin/idea-mappings/123")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~>
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
         routes ~>
         check {
           status should be(StatusCodes.OK)
@@ -308,13 +225,13 @@ class AdminIdeaMappingApiTest
         status should be(StatusCodes.Unauthorized)
       }
 
-      Get("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~>
+      Get("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
         }
 
-      Get("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~>
+      Get("/admin/idea-mappings").withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~>
         routes ~>
         check {
           status should be(StatusCodes.Forbidden)
@@ -343,7 +260,7 @@ class AdminIdeaMappingApiTest
       ).thenReturn(Future.successful(Seq.empty))
 
       Get("/admin/idea-mappings?stakeTagId=None&solutionTypeTagId=solution-tag&questionId=question-id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~>
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~>
         routes ~>
         check {
           status should be(StatusCodes.OK)

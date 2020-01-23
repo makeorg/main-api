@@ -20,7 +20,6 @@
 package org.make.api.proposal
 
 import java.time.ZonedDateTime
-import java.util.Date
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
@@ -33,7 +32,6 @@ import org.make.api.semantic.SimilarIdea
 import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
-import org.make.core.auth.UserRights
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -43,11 +41,10 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
-import org.make.core.user.UserId
+import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -106,7 +103,7 @@ class ModerationProposalApiTest
     lastName = Some("Snoww")
   )
 
-  val daenerys = TestUtils.user(
+  val daenerys: User = TestUtils.user(
     id = UserId("the-mother-of-dragons"),
     email = "d.narys@tergarian.com",
     firstName = Some("Daenerys"),
@@ -114,7 +111,7 @@ class ModerationProposalApiTest
     roles = Seq(RoleAdmin)
   )
 
-  val tyrion = TestUtils.user(
+  val tyrion: User = TestUtils.user(
     id = UserId("the-dwarf"),
     email = "tyrion@pays-his-debts.com",
     firstName = Some("Tyrion"),
@@ -129,28 +126,22 @@ class ModerationProposalApiTest
     )
   )
 
-  val arya = TestUtils.user(
+  val arya: User = TestUtils.user(
     id = UserId("the-faceless"),
     email = "arya@kills-the-bad-guys.com",
     firstName = Some("Arya"),
     lastName = Some("Stark")
   )
 
-  when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
+  val moderatorNoRight: User = TestUtils.user(
+    id = UserId("no-right-moderator"),
+    roles = Seq(RoleModerator),
+    availableQuestions = Seq(QuestionId("some-question-without-answer")),
+    firstName = Some("No"),
+    lastName = Some("Right")
+  )
 
-  val validAccessToken = "my-valid-access-token"
-  val adminToken = "my-admin-access-token"
-  val userToken = "my-user-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val moderator2Token = "my-moderator-access-token2"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val userAccessToken = AccessToken(userToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderator2AccessToken =
-    AccessToken(moderator2Token, None, None, Some(1234567890L), tokenCreationDate)
+  when(userService.getUser(any[UserId])).thenReturn(Future.successful(Some(john)))
 
   val validateProposalEntity: String = ValidateProposalRequest(
     newContent = None,
@@ -177,97 +168,19 @@ class ModerationProposalApiTest
   val refuseProposalWithReasonEntity: String =
     RefuseProposalRequest(sendNotificationEmail = true, refusalReason = Some("not allowed word")).asJson.toString
 
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderator2Token)).thenReturn(Future.successful(Some(moderator2AccessToken)))
-  when(oauth2DataHandler.findAccessToken(userToken)).thenReturn(Future.successful(Some(userAccessToken)))
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(john.userId, john.roles, availableQuestions = john.availableQuestions, emailVerified = true),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = daenerys.userId,
-              roles = daenerys.roles,
-              availableQuestions = daenerys.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = tyrion.userId,
-              roles = tyrion.roles,
-              availableQuestions = tyrion.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
+  val tokenAryaCitizen = "arya-citizen-access-token"
+  val tokenTyrionModerator = "tyrion-moderator-access-token"
+  val tokenDaenerysAdmin = "daenerys-admin-access-token"
+  val tokenJohnCitizen = "john-citizen-access-token"
+  val tokenNoRightModerator = "my-moderator-access-token2"
 
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderator2AccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("no-right-moderator"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq(QuestionId("some-question-without-answer")),
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(userAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = arya.userId,
-              roles = arya.roles,
-              availableQuestions = arya.availableQuestions,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
+  override def customUserByToken: Map[String, User] =
+    Map(
+      tokenAryaCitizen -> arya,
+      tokenTyrionModerator -> tyrion,
+      tokenDaenerysAdmin -> daenerys,
+      tokenJohnCitizen -> john,
+      tokenNoRightModerator -> moderatorNoRight
     )
 
   when(
@@ -690,7 +603,7 @@ class ModerationProposalApiTest
 
     scenario("validation with user role") {
       Post("/moderation/proposals/123456/accept")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -715,7 +628,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/123456/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -742,7 +655,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/123456/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -774,7 +687,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -807,7 +720,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/nop/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -839,7 +752,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntityWithoutTagNorIdea))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -854,7 +767,7 @@ class ModerationProposalApiTest
 
     scenario("refuse with user role") {
       Post("/moderation/proposals/123456/refuse")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -862,7 +775,7 @@ class ModerationProposalApiTest
     scenario("refusing with moderation role") {
       Post("/moderation/proposals/123456/refuse")
         .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -870,7 +783,7 @@ class ModerationProposalApiTest
     scenario("refusing with admin role") {
       Post("/moderation/proposals/987654/refuse")
         .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -883,7 +796,7 @@ class ModerationProposalApiTest
   feature("get proposal for moderation") {
     scenario("moderator get proposal by id") {
       Get("/moderation/proposals/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         entityAs[ModerationProposalResponse]
       }
@@ -891,14 +804,14 @@ class ModerationProposalApiTest
 
     scenario("moderator get proposal by id without right") {
       Get("/moderation/proposals/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("moderator get proposal as admin") {
       Get("/moderation/proposals/sim-123")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -910,25 +823,25 @@ class ModerationProposalApiTest
   feature("lock proposal") {
     scenario("moderator can lock an unlocked proposal") {
       Post("/moderation/proposals/123456/lock")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
 
     scenario("moderator can expand the time a proposal is locked by itself") {
       Post("/moderation/proposals/123456/lock")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
       Post("/moderation/proposals/123456/lock")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
 
     scenario("user cannot lock an unlocked proposal") {
       Post("/moderation/proposals/123456/lock")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -937,13 +850,13 @@ class ModerationProposalApiTest
   feature("get duplicates") {
     scenario("moderator without right") {
       Get("/moderation/proposals/123456/duplicates")
-        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
     scenario("moderator can fetch duplicate ideas") {
       Get("/moderation/proposals/123456/duplicates")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val results: Seq[DuplicateResponse] = entityAs[Seq[DuplicateResponse]]
         results.length should be(2)
@@ -977,7 +890,7 @@ class ModerationProposalApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"Idea 3" }""")
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -991,7 +904,7 @@ class ModerationProposalApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"Idea 3" }""")
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
@@ -1006,7 +919,7 @@ class ModerationProposalApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"proposalIds": ["sim-123", "sim-124"], "ideaId":"fake" }""")
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "ideaId")
@@ -1027,7 +940,7 @@ class ModerationProposalApiTest
             """{"proposalIds": ["sim-123", "sim-124", "fake", "fake2"], "ideaId":"Idea 3" }"""
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "proposalIds")
@@ -1101,7 +1014,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(userToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAryaCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -1113,7 +1026,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -1137,7 +1050,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -1169,7 +1082,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
@@ -1200,7 +1113,7 @@ class ModerationProposalApiTest
 
       Post("/moderation/proposals/next")
         .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -1234,7 +1147,7 @@ class ModerationProposalApiTest
       ).thenReturn(Future.successful(ProposalsSearchResult(total = 42, results = Seq.empty)))
 
       Get(s"/moderation/proposals?createdBefore=$beforeDateString")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val results: ProposalsSearchResult = entityAs[ProposalsSearchResult]
         results.total should be(42)
@@ -1251,7 +1164,7 @@ class ModerationProposalApiTest
     }
     scenario("forbidden citizen") {
       Get("/moderation/proposals/123456/predicted-tags")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -1276,7 +1189,7 @@ class ModerationProposalApiTest
           )
         )
       Get("/moderation/proposals/123456/predicted-tags")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val results: TagsForProposalResponse = entityAs[TagsForProposalResponse]
         results.tags.length should be(1)
@@ -1305,7 +1218,7 @@ class ModerationProposalApiTest
           )
         )
       Get("/moderation/proposals/123456/predicted-tags")
-        .withHeaders(Authorization(OAuth2BearerToken(moderator2Token))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -1314,7 +1227,7 @@ class ModerationProposalApiTest
         .thenReturn(Future.successful(None))
 
       Get("/moderation/proposals/invalid/predicted-tags")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }

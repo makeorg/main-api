@@ -19,22 +19,16 @@
 
 package org.make.api.operation
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.auth.UserRights
 import org.make.core.operation.{FeaturedOperation, FeaturedOperationId}
 import org.make.core.question.QuestionId
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches, _}
 import org.mockito.Mockito.when
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -48,76 +42,6 @@ class AdminFeaturedOperationApiTest
   override val featuredOperationService: FeaturedOperationService = mock[FeaturedOperationService]
 
   val routes: Route = sealRoute(adminFeaturedOperationApi.routes)
-
-  val validAccessToken = "my-valid-access-token"
-  val adminToken = "my-admin-access-token"
-  val moderatorToken = "my-moderator-access-token"
-  val tokenCreationDate = new Date()
-  private val accessToken = AccessToken(validAccessToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken = AccessToken(adminToken, None, None, Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken = AccessToken(moderatorToken, None, None, Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validAccessToken)).thenReturn(Future.successful(Some(accessToken)))
-  when(oauth2DataHandler.findAccessToken(adminToken)).thenReturn(Future.successful(Some(adminAccessToken)))
-  when(oauth2DataHandler.findAccessToken(moderatorToken)).thenReturn(Future.successful(Some(moderatorAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(accessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("user-citizen"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("user"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              UserId("user-admin"),
-              roles = Seq(RoleAdmin),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            None,
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                UserId("user-moderator"),
-                roles = Seq(RoleModerator),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              None,
-              None
-            )
-          )
-        )
-    )
 
   val featuredOperation = FeaturedOperation(
     featuredOperationId = FeaturedOperationId("featured-operation-id"),
@@ -143,13 +67,13 @@ class AdminFeaturedOperationApiTest
 
       Post("/admin/views/home/featured-operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
 
       Post("/admin/views/home/featured-operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -162,13 +86,13 @@ class AdminFeaturedOperationApiTest
 
       Put("/admin/views/home/featured-operations/featured-operation-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
 
       Put("/admin/views/home/featured-operations/featured-operation-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -179,12 +103,12 @@ class AdminFeaturedOperationApiTest
       }
 
       Get("/admin/views/home/featured-operations/featured-operation-id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
 
       Get("/admin/views/home/featured-operations/featured-operation-id")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -195,12 +119,12 @@ class AdminFeaturedOperationApiTest
       }
 
       Get("/admin/views/home/featured-operations")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
 
       Get("/admin/views/home/featured-operations")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -211,12 +135,12 @@ class AdminFeaturedOperationApiTest
       }
 
       Delete("/admin/views/home/featured-operations/featured-operation-id")
-        .withHeaders(Authorization(OAuth2BearerToken(validAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
 
       Delete("/admin/views/home/featured-operations/featured-operation-id")
-        .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -241,7 +165,7 @@ class AdminFeaturedOperationApiTest
             | "internalLink": "Consultation",
             | "slot": "1"
             |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.Created
       }
     }
@@ -256,7 +180,7 @@ class AdminFeaturedOperationApiTest
             | "internalLink": "Consultation",
             | "slot": "1"
             |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -280,7 +204,7 @@ class AdminFeaturedOperationApiTest
           |}""".stripMargin
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -300,7 +224,7 @@ class AdminFeaturedOperationApiTest
           | "externalLink": "link.com",
           | "slot": "1"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -325,7 +249,7 @@ class AdminFeaturedOperationApiTest
           | "internalLink": "Consultation",
           | "slot": "1"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }
@@ -349,7 +273,7 @@ class AdminFeaturedOperationApiTest
           | "internalLink": "Consultation",
           | "slot": "1"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -363,7 +287,7 @@ class AdminFeaturedOperationApiTest
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -387,7 +311,7 @@ class AdminFeaturedOperationApiTest
           |}""".stripMargin
           )
         )
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -407,7 +331,7 @@ class AdminFeaturedOperationApiTest
           | "externalLink": "link.com",
           | "slot": "1"
           |}""".stripMargin))
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -420,7 +344,7 @@ class AdminFeaturedOperationApiTest
       ).thenReturn(Future.successful(Some(featuredOperation)))
 
       Get("/admin/views/home/featured-operations/featured-operation-id")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }
@@ -433,7 +357,7 @@ class AdminFeaturedOperationApiTest
       ).thenReturn(Future.successful(None))
 
       Get("/admin/views/home/featured-operations/not-found-id")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -443,7 +367,7 @@ class AdminFeaturedOperationApiTest
       when(featuredOperationService.getAll).thenReturn(Future.successful(Seq(featuredOperation)))
 
       Get("/admin/views/home/featured-operations")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
     }
@@ -461,7 +385,7 @@ class AdminFeaturedOperationApiTest
       ).thenReturn(Future.successful({}))
 
       Delete("/admin/views/home/featured-operations/featured-operation-id")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NoContent
       }
     }
@@ -474,7 +398,7 @@ class AdminFeaturedOperationApiTest
       ).thenReturn(Future.successful(None))
 
       Delete("/admin/views/home/featured-operations/not-found-id")
-        .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }

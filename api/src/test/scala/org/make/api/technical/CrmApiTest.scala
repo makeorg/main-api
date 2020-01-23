@@ -19,8 +19,6 @@
 
 package org.make.api.technical
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -31,14 +29,9 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.technical.auth._
 import org.make.api.technical.crm._
-import org.make.core.auth.UserRights
 import org.make.core.session.VisitorId
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.UserId
-import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -67,83 +60,6 @@ class CrmApiTest
   when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-visitor-id"))
 
   val routes: Route = sealRoute(crmApi.routes)
-
-  val validCitizenAccessToken = "my-valid-citizen-access-token"
-  val validModeratorAccessToken = "my-valid-moderator-access-token"
-  val validAdminAccessToken = "my-valid-admin-access-token"
-
-  val tokenCreationDate = new Date()
-  private val citizenAccessToken =
-    AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken =
-    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
-    .thenReturn(Future.successful(Some(citizenAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
-    .thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
-    .thenReturn(Future.successful(Some(adminAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(citizenAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-citizen-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("citizen"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-moderator-user-id"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("moderator"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(adminAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = UserId("my-admin-user-id"),
-                roles = Seq(RoleAdmin),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              Some("admin"),
-              None
-            )
-          )
-        )
-    )
 
   val requestMultipleEvents: String =
     """
@@ -266,20 +182,20 @@ class CrmApiTest
       implicit val timeout: RouteTestTimeout = RouteTestTimeout(15.seconds.dilated)
 
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Accepted)
         verify(crmService, times(1)).synchronizeContactsWithCrm()
       }
     }
     scenario("moderator triggers sync") {
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
     scenario("user triggers sync") {
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }

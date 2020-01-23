@@ -33,7 +33,7 @@ import org.make.api.technical.auth._
 import org.make.core.auth.UserRights
 import org.make.core.user.{Role, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
@@ -104,6 +104,8 @@ class MakeDirectivesTest
       case None        => complete(StatusCodes.NotFound)
     }
   })
+
+  Mockito.reset(oauth2DataHandler)
 
   feature("session id management") {
 
@@ -326,6 +328,8 @@ class MakeDirectivesTest
     }
 
     scenario("exception in oauth returns header allow all origins") {
+      when(oauth2DataHandler.refreshIfTokenIsExpired(ArgumentMatchers.eq("invalid")))
+        .thenReturn(Future.successful(None))
       when(oauth2DataHandler.findAccessToken("invalid"))
         .thenReturn(Future.failed(TokenAlreadyRefreshed("invalid")))
 

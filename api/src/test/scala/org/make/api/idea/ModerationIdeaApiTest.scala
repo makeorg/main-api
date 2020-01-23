@@ -19,8 +19,6 @@
 
 package org.make.api.idea
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -30,18 +28,13 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.DateHelper
-import org.make.core.auth.UserRights
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery, IdeaStatus}
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{eq => matches}
 import org.mockito.Mockito._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -56,83 +49,6 @@ class ModerationIdeaApiTest
 
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
-
-  val validCitizenAccessToken = "my-valid-citizen-access-token"
-  val validModeratorAccessToken = "my-valid-moderator-access-token"
-  val validAdminAccessToken = "my-valid-admin-access-token"
-
-  val tokenCreationDate = new Date()
-  private val citizenAccessToken =
-    AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken =
-    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
-    .thenReturn(Future.successful(Some(citizenAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
-    .thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
-    .thenReturn(Future.successful(Some(adminAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-citizen-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("citizen"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-moderator-user-id"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("moderator"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = UserId("my-admin-user-id"),
-                roles = Seq(RoleAdmin),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              Some("admin"),
-              None
-            )
-          )
-        )
-    )
 
   val fooIdeaText: String = "fooIdea"
   val fooIdeaId: IdeaId = IdeaId("fooIdeaId")
@@ -216,7 +132,7 @@ class ModerationIdeaApiTest
 
       Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -228,7 +144,7 @@ class ModerationIdeaApiTest
 
       Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -240,7 +156,7 @@ class ModerationIdeaApiTest
 
       Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -254,7 +170,7 @@ class ModerationIdeaApiTest
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, s"""{"name": "$fooIdeaText", "questionId": "vff-fr-question"}""")
         )
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         val idea: IdeaResponse = entityAs[IdeaResponse]
         idea.id.value should be(fooIdeaId.value)
@@ -268,7 +184,7 @@ class ModerationIdeaApiTest
 
       Post("/moderation/ideas")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"bibi": "$fooIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -293,7 +209,7 @@ class ModerationIdeaApiTest
 
       Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -305,7 +221,7 @@ class ModerationIdeaApiTest
 
       Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -317,7 +233,7 @@ class ModerationIdeaApiTest
 
       Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$otherIdeaText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -329,7 +245,7 @@ class ModerationIdeaApiTest
 
       Put(s"/moderation/ideas/${fooIdeaId.value}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"name": "$barIdeaText", "status": "Activated"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val ideaId: IdeaIdResponse = entityAs[IdeaIdResponse]
         ideaId.ideaId should be(fooIdeaId)
@@ -353,7 +269,7 @@ class ModerationIdeaApiTest
       Then("he should get an forbidden (403) return code")
 
       Get("/moderation/ideas/foo-idea")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -376,7 +292,7 @@ class ModerationIdeaApiTest
       Then("he should get an forbidden (403) return code")
 
       Get("/moderation/ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -387,7 +303,7 @@ class ModerationIdeaApiTest
       Then("the result should be a IdeaSearchResult")
 
       Get("/moderation/ideas")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val ideas: Seq[IdeaResponse] = entityAs[Seq[IdeaResponse]]
         ideas should be(Seq.empty)

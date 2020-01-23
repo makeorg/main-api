@@ -19,26 +19,20 @@
 
 package org.make.api.tag
 
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.RequestContext
-import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
-import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{any, eq => matches}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
-import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
 
@@ -52,83 +46,6 @@ class ModerationTagApiTest
   override val tagService: TagService = mock[TagService]
 
   override val questionService: QuestionService = mock[QuestionService]
-
-  val validCitizenAccessToken = "my-valid-citizen-access-token"
-  val validModeratorAccessToken = "my-valid-moderator-access-token"
-  val validAdminAccessToken = "my-valid-admin-access-token"
-
-  val tokenCreationDate = new Date()
-  private val citizenAccessToken =
-    AccessToken(validCitizenAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val moderatorAccessToken =
-    AccessToken(validModeratorAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-  private val adminAccessToken =
-    AccessToken(validAdminAccessToken, None, Some("user"), Some(1234567890L), tokenCreationDate)
-
-  when(oauth2DataHandler.findAccessToken(validCitizenAccessToken))
-    .thenReturn(Future.successful(Some(citizenAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validModeratorAccessToken))
-    .thenReturn(Future.successful(Some(moderatorAccessToken)))
-  when(oauth2DataHandler.findAccessToken(validAdminAccessToken))
-    .thenReturn(Future.successful(Some(adminAccessToken)))
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(citizenAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-citizen-user-id"),
-              roles = Seq(RoleCitizen),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("citizen"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(moderatorAccessToken)))
-    .thenReturn(
-      Future.successful(
-        Some(
-          AuthInfo(
-            UserRights(
-              userId = UserId("my-moderator-user-id"),
-              roles = Seq(RoleModerator),
-              availableQuestions = Seq.empty,
-              emailVerified = true
-            ),
-            None,
-            Some("moderator"),
-            None
-          )
-        )
-      )
-    )
-
-  when(oauth2DataHandler.findAuthInfoByAccessToken(matches(adminAccessToken)))
-    .thenReturn(
-      Future
-        .successful(
-          Some(
-            AuthInfo(
-              UserRights(
-                userId = UserId("my-admin-user-id"),
-                roles = Seq(RoleAdmin),
-                availableQuestions = Seq.empty,
-                emailVerified = true
-              ),
-              None,
-              Some("admin"),
-              None
-            )
-          )
-        )
-    )
 
   when(questionService.getQuestion(any[QuestionId])).thenReturn(
     Future.successful(
@@ -256,7 +173,7 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -268,7 +185,7 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"label": "$validTagText"}"""))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -287,7 +204,7 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
       }
 
@@ -304,7 +221,7 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestDuplicate))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
 
@@ -320,7 +237,7 @@ class ModerationTagApiTest
 
       Post("/moderation/tags")
         .withEntity(HttpEntity(ContentTypes.`application/json`, tagRequestEmpty))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -342,7 +259,7 @@ class ModerationTagApiTest
       Then("she should get a forbidden response")
 
       Get(s"/moderation/tags/$fakeTagText")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
@@ -351,7 +268,7 @@ class ModerationTagApiTest
       Then("she should get a not found response")
 
       Get(s"/moderation/tags/$fakeTagText")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -364,7 +281,7 @@ class ModerationTagApiTest
 
       Get("/moderation/tags/hello-world")
         .withHeaders(Accept(MediaTypes.`application/json`))
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val tag: TagResponse = entityAs[TagResponse]
         tag.label should be(helloWorldTagText)
@@ -386,7 +303,7 @@ class ModerationTagApiTest
       Then("she should get a forbidden response")
 
       Get("/moderation/tags?_start=0&_end=10&_sort=label&_order=ASC")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
 
@@ -395,7 +312,7 @@ class ModerationTagApiTest
       Then("I get a list of all tags")
 
       Get("/moderation/tags?_start=0&_end=10&_sort=label&_order=ASC")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
         val tags: Seq[TagResponse] = entityAs[Seq[TagResponse]]
@@ -430,7 +347,7 @@ class ModerationTagApiTest
       When(s"I update tag from id '$fakeTag")
       Then("I get a forbidden response")
       Put(s"/moderation/tags/$fakeTag")
-        .withHeaders(Authorization(OAuth2BearerToken(validCitizenAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -440,7 +357,7 @@ class ModerationTagApiTest
       When(s"I update tag from id '$fakeTag")
       Then("I get a forbidden response")
       Put(s"/moderation/tags/$fakeTag")
-        .withHeaders(Authorization(OAuth2BearerToken(validModeratorAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
@@ -451,7 +368,7 @@ class ModerationTagApiTest
       Then("I get a not found response")
       Put(s"/moderation/tags/$fakeTagText")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
@@ -461,7 +378,7 @@ class ModerationTagApiTest
       When("I update tag with an invalid body")
       Then("I get a bad request response")
       Put(s"/moderation/tags/$fakeTagText")
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -472,7 +389,7 @@ class ModerationTagApiTest
       Then("I get an OK response")
       Put(s"/moderation/tags/$helloWorldTagId")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateTagRequest))
-        .withHeaders(Authorization(OAuth2BearerToken(validAdminAccessToken))) ~> routes ~> check {
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val tag: TagResponse = entityAs[TagResponse]
         tag.id.value should be(helloWorldTagId)

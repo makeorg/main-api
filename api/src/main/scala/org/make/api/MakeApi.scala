@@ -38,7 +38,10 @@ import org.make.api.crmTemplates.{
 import org.make.api.extensions._
 import org.make.api.feature._
 import org.make.api.idea._
-import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceComponent
+import org.make.api.idea.topIdeaComments.{
+  DefaultPersistentTopIdeaCommentServiceComponent,
+  DefaultTopIdeaCommentServiceComponent,
+}
 import org.make.api.operation._
 import org.make.api.organisation._
 import org.make.api.partner.{
@@ -233,6 +236,7 @@ trait MakeApi
     with DefaultThemeServiceComponent
     with DefaultTokenGeneratorComponent
     with DefaultTopIdeaServiceComponent
+    with DefaultTopIdeaCommentServiceComponent
     with DefaultTrackingApiComponent
     with DefaultUserApiComponent
     with DefaultUserHistoryCoordinatorServiceComponent
