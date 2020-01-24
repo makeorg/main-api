@@ -5,13 +5,29 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
 import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
+import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
 import org.make.core.idea._
+import org.make.core.operation.{
+  FinalCard,
+  IntroCard,
+  Metas,
+  OperationId,
+  OperationOfQuestion,
+  PushProposalCard,
+  QuestionTheme,
+  SequenceCardsConfiguration,
+  SignUpCard
+}
+import org.make.core.personality.{Candidate, Personality, PersonalityId}
 import org.make.core.profile.Profile
 import org.make.core.proposal.{QualificationKey, VoteKey}
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language}
+import org.make.core.sequence.SequenceId
 import org.make.core.user.{User, UserId, UserType}
 import org.mockito.Mockito.when
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -23,11 +39,17 @@ class PersonalityApiTest
     with DefaultPersonalityApiComponent
     with UserServiceComponent
     with TopIdeaCommentServiceComponent
-    with TopIdeaServiceComponent {
+    with TopIdeaServiceComponent
+    with QuestionPersonalityServiceComponent
+    with QuestionServiceComponent
+    with OperationOfQuestionServiceComponent {
 
   override val userService: UserService = mock[UserService]
   override val topIdeaCommentService: TopIdeaCommentService = mock[TopIdeaCommentService]
   override val topIdeaService: TopIdeaService = mock[TopIdeaService]
+  override val questionPersonalityService: QuestionPersonalityService = mock[QuestionPersonalityService]
+  override val questionService: QuestionService = mock[QuestionService]
+  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 
   val routes: Route = personalityApi.routes
 
@@ -264,6 +286,294 @@ class PersonalityApiTest
         check {
           status should be(StatusCodes.Created)
         }
+    }
+  }
+
+  feature("get personality opinions") {
+
+    scenario("personality not found") {
+      when(
+        questionPersonalityService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(UserId("non-existant"))),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(Future.successful(Seq.empty))
+
+      Get("/personalities/non-existant/opinions") ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    scenario("multiple questions for personality") {
+      when(
+        questionPersonalityService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(UserId("multiple-personality-id"))),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            Personality(
+              PersonalityId("one"),
+              UserId("multiple-personality-id"),
+              QuestionId("question-id-one"),
+              Candidate
+            ),
+            Personality(
+              PersonalityId("two"),
+              UserId("multiple-personality-id"),
+              QuestionId("question-id-two"),
+              Candidate
+            ),
+          )
+        )
+      )
+      Get("/personalities/multiple-personality-id/opinions") ~> routes ~> check {
+        status shouldBe StatusCodes.MultipleChoices
+      }
+    }
+
+    scenario("questions not found") {
+      when(
+        questionPersonalityService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(UserId("personality-id"))),
+          ArgumentMatchers.any[Option[QuestionId]],
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(Personality(PersonalityId("id"), UserId("personality-id"), QuestionId("fake-question-id"), Candidate))
+        )
+      )
+
+      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("fake-question-id"))))
+        .thenReturn(Future.successful(None))
+      Get("/personalities/personality-id/opinions?") ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    scenario("empty list of top ideas") {
+      when(
+        questionPersonalityService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(UserId("personality-id"))),
+          ArgumentMatchers.any[Option[QuestionId]],
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(Personality(PersonalityId("id"), UserId("personality-id"), QuestionId("question-id"), Candidate))
+        )
+      )
+      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("question-id"))))
+        .thenReturn(
+          Future.successful(
+            Some(Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "question", None, None))
+          )
+        )
+      when(operationOfQuestionService.findByQuestionId(ArgumentMatchers.eq(QuestionId("question-id"))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              OperationOfQuestion(
+                operationId = OperationId("operation-id"),
+                questionId = QuestionId("question-id"),
+                startDate = None,
+                endDate = None,
+                operationTitle = "title",
+                landingSequenceId = SequenceId("sequence-id"),
+                canPropose = true,
+                sequenceCardsConfiguration = SequenceCardsConfiguration(
+                  introCard = IntroCard(enabled = true, title = None, description = None),
+                  pushProposalCard = PushProposalCard(enabled = true),
+                  signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+                  finalCard = FinalCard(
+                    enabled = true,
+                    sharingEnabled = false,
+                    title = None,
+                    shareDescription = None,
+                    learnMoreTitle = None,
+                    learnMoreTextButton = None,
+                    linkUrl = None
+                  )
+                ),
+                aboutUrl = None,
+                metas = Metas(title = None, description = None, picture = None),
+                theme = QuestionTheme.default,
+                description = OperationOfQuestion.defaultDescription,
+                consultationImage = Some("https://example.com/image"),
+                descriptionImage = Some("https://example.com/descriptionImage"),
+                displayResults = false
+              )
+            )
+          )
+        )
+      when(
+        topIdeaService.search(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(QuestionId("question-id"))),
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(Future.successful(Seq.empty))
+      when(
+        topIdeaCommentService
+          .search(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some(Seq.empty)),
+            ArgumentMatchers.eq(Some(Seq(UserId("personality-id"))))
+          )
+      ).thenReturn(Future.successful(Seq.empty))
+      Get("/personalities/personality-id/opinions") ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+        val opinions = entityAs[Seq[PersonalityOpinionResponse]]
+        opinions shouldBe empty
+      }
+    }
+    scenario("all comments") {
+      when(
+        questionPersonalityService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(UserId("personality-id"))),
+          ArgumentMatchers.any[Option[QuestionId]],
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(Personality(PersonalityId("id"), UserId("personality-id"), QuestionId("question-id"), Candidate))
+        )
+      )
+      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("question-id"))))
+        .thenReturn(
+          Future.successful(
+            Some(Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "question", None, None))
+          )
+        )
+      when(operationOfQuestionService.findByQuestionId(ArgumentMatchers.eq(QuestionId("question-id"))))
+        .thenReturn(
+          Future.successful(
+            Some(
+              OperationOfQuestion(
+                operationId = OperationId("operation-id"),
+                questionId = QuestionId("question-id"),
+                startDate = None,
+                endDate = None,
+                operationTitle = "title",
+                landingSequenceId = SequenceId("sequence-id"),
+                canPropose = true,
+                sequenceCardsConfiguration = SequenceCardsConfiguration(
+                  introCard = IntroCard(enabled = true, title = None, description = None),
+                  pushProposalCard = PushProposalCard(enabled = true),
+                  signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+                  finalCard = FinalCard(
+                    enabled = true,
+                    sharingEnabled = false,
+                    title = None,
+                    shareDescription = None,
+                    learnMoreTitle = None,
+                    learnMoreTextButton = None,
+                    linkUrl = None
+                  )
+                ),
+                aboutUrl = None,
+                metas = Metas(title = None, description = None, picture = None),
+                theme = QuestionTheme.default,
+                description = OperationOfQuestion.defaultDescription,
+                consultationImage = Some("https://example.com/image"),
+                descriptionImage = Some("https://example.com/descriptionImage"),
+                displayResults = false
+              )
+            )
+          )
+        )
+      when(
+        topIdeaService.search(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(QuestionId("question-id"))),
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            TopIdea(
+              TopIdeaId("top-idea-id"),
+              IdeaId("idea-id"),
+              QuestionId("question-id"),
+              "name",
+              TopIdeaScores(0f, 0f, 0f),
+              0f
+            ),
+            TopIdea(
+              TopIdeaId("top-idea-id-2"),
+              IdeaId("idea-id-2"),
+              QuestionId("question-id"),
+              "name",
+              TopIdeaScores(0f, 0f, 0f),
+              0f
+            )
+          )
+        )
+      )
+      when(
+        topIdeaCommentService
+          .search(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2")))),
+            ArgumentMatchers.eq(Some(Seq(UserId("personality-id"))))
+          )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            TopIdeaComment(
+              TopIdeaCommentId("top-idea-comment-id"),
+              TopIdeaId("top-idea-id"),
+              UserId("personality-id"),
+              Some("comment one"),
+              Some("comment two"),
+              None,
+              Some(VoteKey.Agree),
+              None
+            )
+          )
+        )
+      )
+      Get("/personalities/personality-id/opinions") ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+        val opinions = entityAs[Seq[PersonalityOpinionResponse]]
+        opinions.size shouldBe 2
+        opinions.head.comment shouldBe defined
+        opinions(1).comment shouldBe empty
+      }
     }
   }
 

@@ -9,7 +9,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.idea.TopIdeaServiceComponent
+import org.make.api.idea.{TopIdeaResponse, TopIdeaServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -20,6 +20,9 @@ import org.make.core.profile.Profile
 import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.user.{User, UserId}
 import io.circe.refined._
+import org.make.api.operation.{OperationOfQuestionResponse, OperationOfQuestionServiceComponent}
+import org.make.api.question.QuestionServiceComponent
+import org.make.core.question.QuestionId
 
 import scala.annotation.meta.field
 
@@ -101,7 +104,27 @@ trait PersonalityApi extends Directives {
   )
   def createComment: Route
 
-  def routes: Route = getPersonality ~ getPersonalityProfile ~ modifyPersonalityProfile ~ createComment
+  @ApiOperation(value = "get-personality-opinions", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[PersonalityOpinionResponse]]))
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "userId",
+        paramType = "path",
+        dataType = "string",
+        example = "cefebb24-4f17-49aa-890b-bc90ed7d6bac"
+      ),
+      new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string")
+    )
+  )
+  @Path(value = "/{userId}/opinions")
+  def getPersonalityOpinions: Route
+
+  def routes: Route =
+    getPersonality ~ getPersonalityProfile ~ modifyPersonalityProfile ~ createComment ~ getPersonalityOpinions
 
 }
 
@@ -109,13 +132,19 @@ trait PersonalityApiComponent {
   def personalityApi: PersonalityApi
 }
 
-trait DefaultPersonalityApiComponent extends PersonalityApiComponent with MakeAuthenticationDirectives {
+trait DefaultPersonalityApiComponent
+    extends PersonalityApiComponent
+    with MakeAuthenticationDirectives
+    with ParameterExtractors {
   this: UserServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
     with SessionHistoryCoordinatorServiceComponent
     with TopIdeaServiceComponent
-    with TopIdeaCommentServiceComponent =>
+    with TopIdeaCommentServiceComponent
+    with QuestionPersonalityServiceComponent
+    with QuestionServiceComponent
+    with OperationOfQuestionServiceComponent =>
 
   override lazy val personalityApi: PersonalityApi = new DefaultPersonalityApi
 
@@ -225,6 +254,43 @@ trait DefaultPersonalityApiComponent extends PersonalityApiComponent with MakeAu
         }
       }
     }
+
+    override def getPersonalityOpinions: Route = get {
+      path("personalities" / userId / "opinions") { userId =>
+        makeOperation("GetPersonalityOpinions") { _ =>
+          parameters(Symbol("questionId").as[QuestionId].?) { maybeQuestionId: Option[QuestionId] =>
+            provideAsync(
+              questionPersonalityService
+                .find(0, None, None, None, userId = Some(userId), questionId = maybeQuestionId, None)
+            ) {
+              case empty if empty.isEmpty                  => complete(StatusCodes.NotFound)
+              case personalities if personalities.size > 1 => complete(StatusCodes.MultipleChoices)
+              case Seq(personality) =>
+                val questionId = personality.questionId
+                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
+                  provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) { opOfQuestion =>
+                    provideAsync(topIdeaService.search(0, None, None, None, None, Some(questionId), None)) { topIdeas =>
+                      provideAsync(
+                        topIdeaCommentService
+                          .search(0, None, Some(topIdeas.map(_.topIdeaId)), Some(Seq(userId)))
+                      ) { topIdeaComments =>
+                        val response = topIdeas.map { topIdea =>
+                          PersonalityOpinionResponse(
+                            OperationOfQuestionResponse(opOfQuestion, question),
+                            TopIdeaResponse(topIdea),
+                            topIdeaComments.find(_.topIdeaId == topIdea.topIdeaId).map(TopIdeaCommentResponse.apply)
+                          )
+                        }
+                        complete(response)
+                      }
+                    }
+                  }
+                }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -304,7 +370,7 @@ final case class TopIdeaCommentResponse(
   vote: Option[VoteKey],
   @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
   qualification: Option[QualificationKey]
-) {}
+)
 
 object TopIdeaCommentResponse {
   implicit val decoder: Decoder[TopIdeaCommentResponse] = deriveDecoder[TopIdeaCommentResponse]
@@ -321,4 +387,14 @@ object TopIdeaCommentResponse {
       vote = comment.vote,
       qualification = comment.qualification
     )
+}
+
+@ApiModel
+final case class PersonalityOpinionResponse(question: OperationOfQuestionResponse,
+                                            topIdea: TopIdeaResponse,
+                                            comment: Option[TopIdeaCommentResponse])
+
+object PersonalityOpinionResponse {
+  implicit val decoder: Decoder[PersonalityOpinionResponse] = deriveDecoder[PersonalityOpinionResponse]
+  implicit val encoder: Encoder[PersonalityOpinionResponse] = deriveEncoder[PersonalityOpinionResponse]
 }
