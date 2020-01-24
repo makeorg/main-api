@@ -582,8 +582,7 @@ class QuestionApiTest
           start = matches(0),
           end = matches(None),
           seed = matches(None),
-          questionId = matches(QuestionId("question-id")),
-          requestContext = any[RequestContext]
+          questionId = matches(QuestionId("question-id"))
         )
       ).thenReturn(Future.successful(QuestionTopIdeasResponseWithSeed(Seq.empty, 42)))
 

@@ -915,7 +915,7 @@ class ProposalSearchEngineIT
       themeId = None,
       tags = Seq(),
       status = ProposalStatus.Pending,
-      ideaId = None,
+      ideaId = Some(IdeaId("idea-id")),
       operationId = None,
       question = None,
       sequencePool = SequencePool.Excluded,
