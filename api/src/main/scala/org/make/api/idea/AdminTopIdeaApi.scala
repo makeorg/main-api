@@ -262,6 +262,7 @@ trait DefaultAdminTopIdeaApiComponent
                                 request.ideaId,
                                 request.questionId,
                                 request.name,
+                                request.label,
                                 TopIdeaScores(
                                   request.scores.totalProposalsRatio,
                                   request.scores.agreementRatio,
@@ -315,6 +316,7 @@ trait DefaultAdminTopIdeaApiComponent
                                 topIdea.copy(
                                   ideaId = request.ideaId,
                                   name = request.name,
+                                  label = request.label,
                                   scores = TopIdeaScores(
                                     request.scores.totalProposalsRatio,
                                     request.scores.agreementRatio,
@@ -359,6 +361,7 @@ final case class TopIdeaResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2") ideaId: IdeaId,
   @(ApiModelProperty @field)(dataType = "string", example = "613ea01f-2da7-4d77-b1fe-99f9f252b3a2") questionId: QuestionId,
   name: String,
+  label: String,
   scores: TopIdeaScores,
   weight: Float
 )
@@ -372,6 +375,7 @@ object TopIdeaResponse {
       ideaId = topIdea.ideaId,
       questionId = topIdea.questionId,
       name = topIdea.name,
+      label = topIdea.label,
       scores = topIdea.scores,
       weight = topIdea.weight
     )
@@ -392,6 +396,7 @@ final case class CreateTopIdeaRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2") ideaId: IdeaId,
   @(ApiModelProperty @field)(dataType = "string", example = "613ea01f-2da7-4d77-b1fe-99f9f252b3a2") questionId: QuestionId,
   name: String,
+  label: String,
   scores: TopIdeaScores,
   weight: Float
 )
@@ -404,6 +409,7 @@ final case class UpdateTopIdeaRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2") ideaId: IdeaId,
   @(ApiModelProperty @field)(dataType = "string", example = "613ea01f-2da7-4d77-b1fe-99f9f252b3a2") questionId: QuestionId,
   name: String,
+  label: String,
   scores: TopIdeaScores,
   weight: Float
 )

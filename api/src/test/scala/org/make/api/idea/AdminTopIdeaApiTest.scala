@@ -81,6 +81,7 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "not-found",
           | "name": "name",
+          | "label": "label",
           | "scores": {
           |   "totalProposalsRatio": 0,
           |   "agreementRatio": 0,
@@ -123,6 +124,7 @@ class AdminTopIdeaApiTest
           | "ideaId": "not-found",
           | "questionId": "question-id",
           | "name": "name",
+          | "label": "label",
           | "scores": {
           |   "totalProposalsRatio": 0,
           |   "agreementRatio": 0,
@@ -165,7 +167,14 @@ class AdminTopIdeaApiTest
         )
 
       when(
-        topIdeaService.create(IdeaId("idea-id"), QuestionId("question-id"), name = "name", TopIdeaScores(0, 0, 0), 42)
+        topIdeaService.create(
+          IdeaId("idea-id"),
+          QuestionId("question-id"),
+          name = "name",
+          label = "label",
+          TopIdeaScores(0, 0, 0),
+          42
+        )
       ).thenReturn(
         Future
           .successful(
@@ -174,6 +183,7 @@ class AdminTopIdeaApiTest
               IdeaId("idea-id"),
               QuestionId("question-id"),
               name = "name",
+              label = "label",
               TopIdeaScores(0, 0, 0),
               42
             )
@@ -185,6 +195,7 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "question-id",
           | "name": "name",
+          | "label": "label",
           | "scores": {
           |   "totalProposalsRatio": 0,
           |   "agreementRatio": 0,
@@ -234,6 +245,7 @@ class AdminTopIdeaApiTest
               IdeaId("idea-id"),
               QuestionId("question-id"),
               name = "update name",
+              label = "label",
               TopIdeaScores(0, 0, 0),
               42
             )
@@ -251,6 +263,7 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "not-found",
           | "name": "name",
+          | "label": "label",
           | "scores": {
           |   "totalProposalsRatio": 0,
           |   "agreementRatio": 0,
@@ -277,6 +290,7 @@ class AdminTopIdeaApiTest
               IdeaId("idea-id"),
               QuestionId("question-id"),
               name = "update name",
+              label = "label",
               TopIdeaScores(0, 0, 0),
               42
             )
@@ -308,6 +322,7 @@ class AdminTopIdeaApiTest
           | "ideaId": "not-found",
           | "questionId": "question-id",
           | "name": "name",
+          | "label": "label",
           | "scores": {
           |   "totalProposalsRatio": 0,
           |   "agreementRatio": 0,
@@ -335,6 +350,7 @@ class AdminTopIdeaApiTest
               IdeaId("idea-id"),
               QuestionId("question-id"),
               name = "update name",
+              label = "label",
               TopIdeaScores(0, 0, 0),
               42
             )
@@ -350,6 +366,7 @@ class AdminTopIdeaApiTest
               IdeaId("idea-id"),
               QuestionId("question-id"),
               name = "update name",
+              label = "label",
               TopIdeaScores(0, 0, 0),
               42
             )
@@ -361,6 +378,7 @@ class AdminTopIdeaApiTest
             IdeaId("idea-id"),
             QuestionId("question-id"),
             name = "update name",
+            label = "label",
             TopIdeaScores(0, 0, 0),
             42
           )
@@ -372,6 +390,7 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "question-id",
           | "name": "update name",
+          | "label": "label",
           | "scores": {
           |   "totalProposalsRatio": 0,
           |   "agreementRatio": 0,
@@ -401,6 +420,7 @@ class AdminTopIdeaApiTest
           | "ideaId": "idea-id",
           | "questionId": "question-id",
           | "name": "update name",
+          | "label": "label",
           | "scores": {
           |   "totalProposalsRatio": 0,
           |   "agreementRatio": 0,
@@ -451,6 +471,7 @@ class AdminTopIdeaApiTest
                 IdeaId("idea-id"),
                 QuestionId("question-id"),
                 name = "update name",
+                label = "label",
                 TopIdeaScores(0, 0, 0),
                 42
               )

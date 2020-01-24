@@ -72,14 +72,14 @@ class PersistentTopIdeaServiceIT
 
       val insert =
         persistTopIdea(
-          TopIdea(TopIdeaId("123"), IdeaId("some-idea"), questionId, "top-idea", TopIdeaScores(0, 0, 0), 0)
+          TopIdea(TopIdeaId("123"), IdeaId("some-idea"), questionId, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
         )
 
       whenReady(insert, Timeout(5.seconds)) { _.topIdeaId should be(TopIdeaId("123")) }
 
       val unknownIdea =
         persistTopIdea(
-          TopIdea(TopIdeaId("678"), IdeaId("unknown-idea"), questionId, "top-idea", TopIdeaScores(0, 0, 0), 0)
+          TopIdea(TopIdeaId("678"), IdeaId("unknown-idea"), questionId, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
         )
 
       waitForCompletion(unknownIdea.failed)
@@ -98,7 +98,7 @@ class PersistentTopIdeaServiceIT
       waitForCompletion(insertDependencies)
 
       val topIdea =
-        TopIdea(TopIdeaId("update-1"), IdeaId("update-1"), questionId, "top-idea", TopIdeaScores(0, 0, 0), 0)
+        TopIdea(TopIdeaId("update-1"), IdeaId("update-1"), questionId, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
 
       waitForCompletion(persistTopIdea(topIdea))
 
@@ -125,12 +125,24 @@ class PersistentTopIdeaServiceIT
         _ <- persistentQuestionService.persist(createQuestion(questionId2))
         _ <- persistentIdeaService.persist(Idea(idea1, "Find 1", createdAt = None, updatedAt = None))
         _ <- persistentIdeaService.persist(Idea(idea2, "Find 2", createdAt = None, updatedAt = None))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("find-1"), idea1, questionId1, "top-idea", TopIdeaScores(0, 0, 0), 0))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("find-2"), idea2, questionId1, "top-idea", TopIdeaScores(0, 0, 0), 0))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("find-3"), idea1, questionId1, "top-idea", TopIdeaScores(0, 0, 0), 0))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("find-4"), idea2, questionId2, "top-idea", TopIdeaScores(0, 0, 0), 0))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("find-5"), idea2, questionId1, "top-idea", TopIdeaScores(0, 0, 0), 0))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("find-6"), idea1, questionId2, "top-idea", TopIdeaScores(0, 0, 0), 0))
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("find-1"), idea1, questionId1, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("find-2"), idea2, questionId1, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("find-3"), idea1, questionId1, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("find-4"), idea2, questionId2, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("find-5"), idea2, questionId1, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("find-6"), idea1, questionId2, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
       } yield ()
 
       waitForCompletion(insertDependencies)
@@ -151,8 +163,12 @@ class PersistentTopIdeaServiceIT
       val insertDependencies = for {
         _ <- persistentQuestionService.persist(createQuestion(questionId))
         _ <- persistentIdeaService.persist(Idea(idea, "Count 1", createdAt = None, updatedAt = None))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("count-1"), idea, questionId, "top-idea", TopIdeaScores(0, 0, 0), 0))
-        _ <- persistTopIdea(TopIdea(TopIdeaId("count-2"), idea, questionId, "top-idea", TopIdeaScores(0, 0, 0), 0))
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("count-1"), idea, questionId, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
+        _ <- persistTopIdea(
+          TopIdea(TopIdeaId("count-2"), idea, questionId, "top-idea", "label", TopIdeaScores(0, 0, 0), 0)
+        )
       } yield ()
 
       waitForCompletion(insertDependencies)

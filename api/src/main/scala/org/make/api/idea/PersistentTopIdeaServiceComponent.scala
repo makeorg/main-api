@@ -138,6 +138,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
               column.ideaId -> topIdea.ideaId.value,
               column.questionId -> topIdea.questionId.value,
               column.name -> topIdea.name,
+              column.label -> topIdea.label,
               column.totalProposalsRatio -> topIdea.scores.totalProposalsRatio,
               column.agreementRatio -> topIdea.scores.agreementRatio,
               column.likeItRatio -> topIdea.scores.likeItRatio,
@@ -156,6 +157,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
               column.ideaId -> topIdea.ideaId.value,
               column.questionId -> topIdea.questionId.value,
               column.name -> topIdea.name,
+              column.label -> topIdea.label,
               column.totalProposalsRatio -> topIdea.scores.totalProposalsRatio,
               column.agreementRatio -> topIdea.scores.agreementRatio,
               column.likeItRatio -> topIdea.scores.likeItRatio,
@@ -207,6 +209,7 @@ object DefaultPersistentTopIdeaServiceComponent {
                                ideaId: String,
                                questionId: String,
                                name: String,
+                               label: String,
                                totalProposalsRatio: Float,
                                agreementRatio: Float,
                                likeItRatio: Float,
@@ -217,6 +220,7 @@ object DefaultPersistentTopIdeaServiceComponent {
         ideaId = IdeaId(ideaId),
         questionId = QuestionId(questionId),
         name = name,
+        label = label,
         scores = TopIdeaScores(totalProposalsRatio, agreementRatio, likeItRatio),
         weight = weight
       )
@@ -225,7 +229,17 @@ object DefaultPersistentTopIdeaServiceComponent {
   object PersistentTopIdea extends SQLSyntaxSupport[PersistentTopIdea] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("id", "idea_id", "question_id", "name", "total_proposals_ratio", "agreement_ratio", "like_it_ratio", "weight")
+      Seq(
+        "id",
+        "idea_id",
+        "question_id",
+        "name",
+        "label",
+        "total_proposals_ratio",
+        "agreement_ratio",
+        "like_it_ratio",
+        "weight"
+      )
 
     override val tableName: String = "top_idea"
 
@@ -239,6 +253,7 @@ object DefaultPersistentTopIdeaServiceComponent {
         ideaId = resultSet.string(topIdeaResultName.ideaId),
         questionId = resultSet.string(topIdeaResultName.questionId),
         name = resultSet.string(topIdeaResultName.name),
+        label = resultSet.string(topIdeaResultName.label),
         totalProposalsRatio = resultSet.float(topIdeaResultName.totalProposalsRatio),
         agreementRatio = resultSet.float(topIdeaResultName.agreementRatio),
         likeItRatio = resultSet.float(topIdeaResultName.likeItRatio),

@@ -237,6 +237,7 @@ class PersonalityApiTest
                 IdeaId("idea-id"),
                 QuestionId("question-id"),
                 "name",
+                "label",
                 TopIdeaScores(0f, 0f, 0f),
                 0f
               )
@@ -529,6 +530,7 @@ class PersonalityApiTest
               IdeaId("idea-id"),
               QuestionId("question-id"),
               "name",
+              "label",
               TopIdeaScores(0f, 0f, 0f),
               0f
             ),
@@ -537,6 +539,7 @@ class PersonalityApiTest
               IdeaId("idea-id-2"),
               QuestionId("question-id"),
               "name",
+              "label",
               TopIdeaScores(0f, 0f, 0f),
               0f
             )

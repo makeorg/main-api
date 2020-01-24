@@ -62,11 +62,51 @@ class PersistentTopIdeaCommentServiceIT
   )
 
   private val topIdeas: Seq[TopIdea] = Seq(
-    TopIdea(TopIdeaId("top-idea-id-0"), ideas(0).ideaId, question.questionId, "top-idea-0", TopIdeaScores(0, 0, 0), 0),
-    TopIdea(TopIdeaId("top-idea-id-1"), ideas(1).ideaId, question.questionId, "top-idea-1", TopIdeaScores(0, 0, 0), 0),
-    TopIdea(TopIdeaId("top-idea-id-2"), ideas(2).ideaId, question.questionId, "top-idea-2", TopIdeaScores(0, 0, 0), 0),
-    TopIdea(TopIdeaId("top-idea-id-3"), ideas(3).ideaId, question.questionId, "top-idea-3", TopIdeaScores(0, 0, 0), 0),
-    TopIdea(TopIdeaId("top-idea-id-4"), ideas(4).ideaId, question.questionId, "top-idea-4", TopIdeaScores(0, 0, 0), 0),
+    TopIdea(
+      TopIdeaId("top-idea-id-0"),
+      ideas(0).ideaId,
+      question.questionId,
+      "top-idea-0",
+      "label",
+      TopIdeaScores(0, 0, 0),
+      0
+    ),
+    TopIdea(
+      TopIdeaId("top-idea-id-1"),
+      ideas(1).ideaId,
+      question.questionId,
+      "top-idea-1",
+      "label",
+      TopIdeaScores(0, 0, 0),
+      0
+    ),
+    TopIdea(
+      TopIdeaId("top-idea-id-2"),
+      ideas(2).ideaId,
+      question.questionId,
+      "top-idea-2",
+      "label",
+      TopIdeaScores(0, 0, 0),
+      0
+    ),
+    TopIdea(
+      TopIdeaId("top-idea-id-3"),
+      ideas(3).ideaId,
+      question.questionId,
+      "top-idea-3",
+      "label",
+      TopIdeaScores(0, 0, 0),
+      0
+    ),
+    TopIdea(
+      TopIdeaId("top-idea-id-4"),
+      ideas(4).ideaId,
+      question.questionId,
+      "top-idea-4",
+      "label",
+      TopIdeaScores(0, 0, 0),
+      0
+    ),
   )
 
   val personalities: Seq[User] = Seq(
