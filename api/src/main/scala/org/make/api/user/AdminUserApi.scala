@@ -32,6 +32,7 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.Validation._
 import org.make.core._
@@ -44,6 +45,7 @@ import org.make.core.user.{CustomRole, Role, User, UserId, UserType}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import scala.concurrent.Future
 
 @Api(value = "Admin Moderator")
 @Path(value = "/admin")
@@ -284,9 +286,31 @@ trait AdminUserApi extends Directives {
   @Path(value = "/users/anonymize")
   def anonymizeUserByEmail: Route
 
+  @ApiOperation(
+    value = "admin-upload-avatar",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    consumes = "multipart/form-data",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "userType", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "data", paramType = "formData", dataType = "file")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UploadResponse])))
+  @Path(value = "/upload-avatar/{userType}")
+  def adminUploadAvatar: Route
+
   def routes: Route =
     getUsers ~ getUser ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~
-      anonymizeUser ~ anonymizeUserByEmail
+      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar
 }
 
 trait AdminUserApiComponent {
@@ -304,7 +328,9 @@ trait DefaultAdminUserApiComponent
     with IdGeneratorComponent
     with SessionHistoryCoordinatorServiceComponent
     with MakeSettingsComponent
-    with PersistentUserServiceComponent =>
+    with PersistentUserServiceComponent
+    with StorageServiceComponent
+    with StorageConfigurationComponent =>
 
   override lazy val adminUserApi: AdminUserApi = new DefaultAdminUserApi
 
@@ -312,6 +338,7 @@ trait DefaultAdminUserApiComponent
 
     val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
     val userId: PathMatcher1[UserId] = Segment.map(UserId.apply)
+    val userType: PathMatcher1[UserType] = Segment.map(UserType.matchUserType)
 
     override def getUsers: Route = get {
       path("admin" / "users") {
@@ -649,6 +676,26 @@ trait DefaultAdminUserApiComponent
                       }
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def adminUploadAvatar: Route = {
+      post {
+        path("admin" / "user" / "upload-avatar" / userType) { userType =>
+          makeOperation("AdminUserUploadAvatar") { _ =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] =
+                  storageService.uploadAdminUserAvatar(extension, contentType, fileContent, userType)
+                uploadImageAsync("data", uploadFile, sizeLimit = Some(storageConfiguration.maxFileSize)) {
+                  (path, file) =>
+                    file.delete()
+                    complete(UploadResponse(path))
                 }
               }
             }

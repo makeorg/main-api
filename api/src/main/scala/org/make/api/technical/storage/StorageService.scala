@@ -26,7 +26,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.api.ActorSystemComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.DateHelper
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.swift.model.Bucket
 
 import scala.concurrent.Future
@@ -36,6 +36,10 @@ trait StorageService {
 
   def uploadFile(fileType: FileType, name: String, contentType: String, content: Content): Future[String]
   def uploadUserAvatar(userId: UserId, name: String, contentType: String, content: Content): Future[String]
+  def uploadAdminUserAvatar(extension: String,
+                            contentType: String,
+                            content: Content,
+                            userType: UserType): Future[String]
 }
 
 case class UploadResponse(path: String)
@@ -138,8 +142,18 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
       storageService.uploadFile(FileType.Avatar, name, contentType, content)
 
     }
-  }
 
+    override def uploadAdminUserAvatar(extension: String,
+                                       contentType: String,
+                                       content: Content,
+                                       userType: UserType): Future[String] = {
+      val date = DateHelper.now()
+      val name =
+        s"${date.getYear}/${date.getMonthValue}/${userType.shortName.toLowerCase}/${idGenerator.nextId()}.$extension"
+      storageService.uploadFile(FileType.Avatar, name, contentType, content)
+
+    }
+  }
 }
 
 case class StorageConfiguration(bucketName: String, baseUrl: String, maxFileSize: Long)
