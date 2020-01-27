@@ -1,12 +1,26 @@
 [![build status](https://gitlab.com/makeorg-scala/make-api/badges/preproduction/build.svg)](https://gitlab.com/makeorg-scala/make-api/commits/preproduction)
 [![coverage report](https://gitlab.com/makeorg-scala/make-api/badges/preproduction/coverage.svg)](https://gitlab.com/makeorg-scala/make-api/commits/preproduction)
 
-## Setting up the dev environment
+## Setting up the dev environment with IntelliJ Idea
 
-
-- Install coursier (sbt plugin) https://github.com/coursier/coursier
 - Install the _scalafmt_ IntelliJ plugin
 - Install the _scala_ IntelliJ plugin
+
+## Setting up the dev environment with Code
+
+- Install code (`yaourt -S code`)
+- Install the `Metals` extension
+- Configure metals, as defined in [the documentation](https://scalameta.org/metals/docs/editors/vscode.html)
+
+You should consider configuring the memory allocated to the bloop server.
+So far, there is no way to do it if metals starts the bloop server, so you should start it yourself.
+
+To do it:
+- Install Bloop (`yaourt -S bloop`)
+- Configure the bloop jvm (sudo echo '-Xmx2G' > /usr/lib/bloop/.jvmopts)
+- Start the bloop server (`bloop server`)
+
+As a bonus, you can now use the `bloop` commands, that will share the compilation made by code
 
 ## Running the app :
 
@@ -24,6 +38,11 @@ when infrastructure is up you can run your app
 make run
 ```
 
+or
+
+```
+sbt api/run
+```
 
 ### Running the app in Debug Mode:
 
@@ -34,6 +53,8 @@ There are two methods here:
     - Define the task as `api/run`
 - Run MakeMain in Debug mode from idea. This method requires two VM options to be defined:
     - Set the javaagent: type `sbt "show api/kanelaRunnerOptions"` and copy the javaagent in vm parameters.
+
+If you use Metals, just click on run or debug in the MakeMain class
 
 ### Run tests
 
@@ -90,29 +111,12 @@ make package-docker-image
 
 ## releasing the application
 
-In order to start a release, you need:
-
-- To login into the registry, using docker login
-- To define your credentials in the ~/.sbt/1.0/credentials.sbt with content :
-
-```scala
-credentials ++= Seq(
-  Credentials("Sonatype Nexus Repository Manager", "nexus.prod.makeorg.tech", global_login, global_password)
-)
-```
-
-Then type 
-
-```
-make release
-```
-
-and set versions accordingly
+Releasing the application consists in packaging the docker image lacally,
+then tag and push (using `docker push`) the created image.
 
 ## Misc
 
 - The netty version has been forced, so when new dependencies are added, it may be a good idea to exclude netty if it includes it
-- Because of the that, there may be some weird behaviour once we start tests with several nodes
 
 ## Secure connection to cockroach
 
