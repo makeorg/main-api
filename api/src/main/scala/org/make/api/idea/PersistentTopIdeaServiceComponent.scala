@@ -42,7 +42,7 @@ trait PersistentTopIdeaService {
              sort: Option[String],
              order: Option[String],
              ideaId: Option[IdeaId],
-             questionId: Option[QuestionId],
+             questionIds: Option[Seq[QuestionId]],
              name: Option[String]): Future[Seq[TopIdea]]
   def persist(topIdea: TopIdea): Future[TopIdea]
   def modify(topIdea: TopIdea): Future[TopIdea]
@@ -91,7 +91,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
                         sort: Option[String],
                         order: Option[String],
                         ideaId: Option[IdeaId],
-                        questionId: Option[QuestionId],
+                        questionIds: Option[Seq[QuestionId]],
                         name: Option[String]): Future[Seq[TopIdea]] = {
       implicit val context: EC = readExecutionContext
 
@@ -101,9 +101,9 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
             .from(PersistentTopIdea.as(topIdeaAlias))
             .where(
               sqls.toAndConditionOpt(
-                ideaId.map(ideaId         => sqls.eq(topIdeaAlias.ideaId, ideaId.value)),
-                questionId.map(questionId => sqls.eq(topIdeaAlias.questionId, questionId.value)),
-                name.map(name             => sqls.like(topIdeaAlias.name, name))
+                ideaId.map(ideaId   => sqls.eq(topIdeaAlias.ideaId, ideaId.value)),
+                questionIds.map(ids => sqls.in(topIdeaAlias.questionId, ids.map(_.value))),
+                name.map(name       => sqls.like(topIdeaAlias.name, name))
               )
             )
 

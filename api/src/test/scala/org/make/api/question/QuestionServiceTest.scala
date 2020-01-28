@@ -166,7 +166,7 @@ class QuestionServiceTest
     scenario("get top ideas") {
       when(
         topIdeaService
-          .search(start = 0, end = None, ideaId = None, questionId = Some(QuestionId("question-id")), name = None)
+          .search(start = 0, end = None, ideaId = None, questionIds = Some(Seq(QuestionId("question-id"))), name = None)
       ).thenReturn(
         Future
           .successful(
@@ -228,7 +228,7 @@ class QuestionServiceTest
     scenario("get top ideas if no proposals found") {
       when(
         topIdeaService
-          .search(start = 0, end = None, ideaId = None, questionId = Some(QuestionId("question-id")), name = None)
+          .search(start = 0, end = None, ideaId = None, questionIds = Some(Seq(QuestionId("question-id"))), name = None)
       ).thenReturn(
         Future
           .successful(

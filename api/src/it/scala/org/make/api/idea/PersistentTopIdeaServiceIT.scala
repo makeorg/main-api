@@ -36,10 +36,13 @@ class PersistentTopIdeaServiceIT
 
   override protected val cockroachExposedPort: Int = 40020
 
-  val findTopIdea
-    : (Int, Option[Int], Option[String], Option[String], Option[IdeaId], Option[QuestionId], Option[String]) => Future[
-      Seq[TopIdea]
-    ] =
+  val findTopIdea: (Int,
+                    Option[Int],
+                    Option[String],
+                    Option[String],
+                    Option[IdeaId],
+                    Option[Seq[QuestionId]],
+                    Option[String]) => Future[Seq[TopIdea]] =
     persistentTopIdeaService.search
 
   def persistTopIdea(topIdea: TopIdea): Future[TopIdea] = persistentTopIdeaService.persist(topIdea)
@@ -151,7 +154,7 @@ class PersistentTopIdeaServiceIT
         results.map(_.topIdeaId.value).sorted should be(Seq("find-2", "find-4", "find-5"))
       }
 
-      whenReady(findTopIdea(0, None, None, None, None, Some(questionId2), None), Timeout(5.seconds)) { results =>
+      whenReady(findTopIdea(0, None, None, None, None, Some(Seq(questionId2)), None), Timeout(5.seconds)) { results =>
         results.map(_.topIdeaId.value).sorted should be(Seq("find-4", "find-6"))
       }
     }

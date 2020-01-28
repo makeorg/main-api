@@ -519,7 +519,7 @@ class AdminTopIdeaApiTest
 
       when(
         topIdeaService
-          .search(start = 0, end = None, sort = None, order = None, ideaId = None, questionId = None, name = None)
+          .search(start = 0, end = None, sort = None, order = None, ideaId = None, questionIds = None, name = None)
       ).thenReturn(Future.successful(Seq.empty))
 
       Get("/admin/top-ideas")

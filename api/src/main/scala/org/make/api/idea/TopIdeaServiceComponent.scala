@@ -37,7 +37,7 @@ trait TopIdeaService {
              sort: Option[String] = None,
              order: Option[String] = None,
              ideaId: Option[IdeaId],
-             questionId: Option[QuestionId],
+             questionIds: Option[Seq[QuestionId]],
              name: Option[String]): Future[Seq[TopIdea]]
   def update(topIdea: TopIdea): Future[TopIdea]
   def delete(topIdeaId: TopIdeaId): Future[Unit]
@@ -79,9 +79,9 @@ trait DefaultTopIdeaServiceComponent extends TopIdeaServiceComponent {
                         sort: Option[String] = None,
                         order: Option[String] = None,
                         ideaId: Option[IdeaId],
-                        questionId: Option[QuestionId],
+                        questionIds: Option[Seq[QuestionId]],
                         name: Option[String]): Future[Seq[TopIdea]] = {
-      persistentTopIdeaService.search(start, end, sort, order, ideaId, questionId, name)
+      persistentTopIdeaService.search(start, end, sort, order, ideaId, questionIds, name)
     }
 
     override def delete(topIdeaId: TopIdeaId): Future[Unit] = {
