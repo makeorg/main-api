@@ -347,7 +347,7 @@ trait DefaultSendMailPublisherServiceComponent
         case Some(token) => token
         case _           => throw new IllegalStateException("reset token required")
       }
-      def publishSendEmail(crmTemplates: CrmTemplates): Unit =
+      def publishSendEmail(crmTemplates: CrmTemplates): Unit = {
         eventBusService.publish(
           SendEmail.create(
             templateId = Some(crmTemplates.forgottenPasswordOrganisation.value.toInt),
@@ -357,7 +357,6 @@ trait DefaultSendMailPublisherServiceComponent
             ),
             variables = Some(
               Map(
-                "firstname" -> organisation.organisationName.orElse(organisation.firstName).getOrElse(""),
                 "forgotten_password_url" -> getForgottenPasswordUrl(organisation, resetToken, requestContext),
                 "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
                 "question" -> requestContext.question.getOrElse(""),
@@ -369,6 +368,7 @@ trait DefaultSendMailPublisherServiceComponent
             monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
           )
         )
+      }
 
       findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
         publishSendEmail(crmTemplates)

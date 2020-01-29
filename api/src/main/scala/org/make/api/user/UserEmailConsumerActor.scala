@@ -68,9 +68,9 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
 
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(user) =>
+      case Some(user) if user.userType == UserType.UserTypeUser =>
         sendMailPublisherService.publishWelcome(user, event.country, event.language, event.requestContext)
-      case None => Future.successful {}
+      case _ => Future.successful {}
     }
   }
 
@@ -78,15 +78,23 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
     getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.userType == UserType.UserTypeUser && !event.isSocialLogin =>
         sendMailPublisherService.publishRegistration(user, event.country, event.language, event.requestContext)
+      case Some(user) if user.userType == UserType.UserTypePersonality =>
+        sendMailPublisherService.publishForgottenPasswordOrganisation(
+          user,
+          event.country,
+          event.language,
+          event.requestContext
+        )
       case _ => Future.successful {}
     }
   }
 
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(organisation) if organisation.userType == UserType.UserTypeOrganisation =>
+      case Some(user)
+          if user.userType == UserType.UserTypeOrganisation || user.userType == UserType.UserTypePersonality =>
         sendMailPublisherService.publishForgottenPasswordOrganisation(
-          organisation,
+          user,
           event.country,
           event.language,
           event.requestContext
