@@ -31,11 +31,8 @@ import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
-import org.make.api.operation.{
-  OperationOfQuestionServiceComponent,
-  OperationServiceComponent,
-  PersistentOperationOfQuestionServiceComponent
-}
+import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
+import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent, PersistentOperationOfQuestionServiceComponent}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent, ProposalsResultResponse}
@@ -46,7 +43,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Order
-import org.make.core.idea.{IdeaId, TopIdeaId, TopIdeaScores}
+import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, IdeaId, TopIdeaCommentId, TopIdeaId, TopIdeaScores}
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
@@ -239,7 +236,8 @@ trait DefaultQuestionApiComponent
     with ActiveFeatureServiceComponent
     with ProposalSearchEngineComponent
     with TagServiceComponent
-    with ProposalServiceComponent =>
+    with ProposalServiceComponent
+    with TopIdeaCommentServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -578,8 +576,27 @@ trait DefaultQuestionApiComponent
         path("questions" / questionId / "top-ideas" / topIdeaId) { (questionId, topIdeaId) =>
           makeOperation("GetQuestionTopIdea") { _ =>
             parameters(Symbol("seed").as[Int].?) { (seed: Option[Int]) =>
-              provideAsyncOrNotFound(questionService.getTopIdea(topIdeaId, questionId, seed)) { response =>
-                complete(response)
+              provideAsyncOrNotFound(questionService.getTopIdea(topIdeaId, questionId, seed)) { topIdeaResult =>
+                provideAsync(
+                  topIdeaCommentService
+                    .getCommentsWithPersonality(topIdeaIds = Seq(topIdeaResult.topIdea.topIdeaId))
+                ) { comments =>
+                  val response = QuestionTopIdeaResponseWithSeed(
+                    questionTopIdea = QuestionTopIdeaWithAvatarAndCommentsResponse(
+                      id = topIdeaId,
+                      ideaId = topIdeaResult.topIdea.ideaId,
+                      questionId = topIdeaResult.topIdea.questionId,
+                      name = topIdeaResult.topIdea.name,
+                      scores = topIdeaResult.topIdea.scores,
+                      proposalsCount = topIdeaResult.proposalsCount,
+                      avatars = topIdeaResult.avatars,
+                      weight = topIdeaResult.topIdea.weight,
+                      comments = comments
+                    ),
+                    seed = topIdeaResult.seed
+                  )
+                  complete(response)
+                }
               }
             }
           }
@@ -636,10 +653,61 @@ final case class QuestionTopIdeaWithAvatarResponse(id: TopIdeaId,
                                                    scores: TopIdeaScores,
                                                    proposalsCount: Int,
                                                    avatars: Seq[String],
-                                                   weight: Float)
+                                                   weight: Float,
+                                                   commentsCount: Int)
 
 object QuestionTopIdeaWithAvatarResponse {
   implicit val encoder: Encoder[QuestionTopIdeaWithAvatarResponse] = deriveEncoder[QuestionTopIdeaWithAvatarResponse]
+}
+
+final case class QuestionTopIdeaCommentsPersonalityResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
+  personalityId: UserId,
+  displayName: Option[String],
+  avatarUrl: Option[String],
+  politicalParty: Option[String]
+)
+
+object QuestionTopIdeaCommentsPersonalityResponse {
+  implicit val encoder: Encoder[QuestionTopIdeaCommentsPersonalityResponse] =
+    deriveEncoder[QuestionTopIdeaCommentsPersonalityResponse]
+}
+
+final case class QuestionTopIdeaCommentsResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
+  id: TopIdeaCommentId,
+  personality: QuestionTopIdeaCommentsPersonalityResponse,
+  comment1: Option[String],
+  comment2: Option[String],
+  comment3: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  vote: CommentVoteKey,
+  @(ApiModelProperty @field)(dataType = "string", example = "doable")
+  qualification: Option[CommentQualificationKey]
+)
+
+object QuestionTopIdeaCommentsResponse {
+  implicit val encoder: Encoder[QuestionTopIdeaCommentsResponse] = deriveEncoder[QuestionTopIdeaCommentsResponse]
+}
+
+final case class QuestionTopIdeaWithAvatarAndCommentsResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
+  id: TopIdeaId,
+  @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
+  ideaId: IdeaId,
+  @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
+  questionId: QuestionId,
+  name: String,
+  scores: TopIdeaScores,
+  proposalsCount: Int,
+  avatars: Seq[String],
+  weight: Float,
+  comments: Seq[QuestionTopIdeaCommentsResponse]
+)
+
+object QuestionTopIdeaWithAvatarAndCommentsResponse {
+  implicit val encoder: Encoder[QuestionTopIdeaWithAvatarAndCommentsResponse] =
+    deriveEncoder[QuestionTopIdeaWithAvatarAndCommentsResponse]
 }
 
 final case class QuestionTopIdeasResponseWithSeed(questionTopIdeas: Seq[QuestionTopIdeaWithAvatarResponse], seed: Int)
@@ -648,7 +716,8 @@ object QuestionTopIdeasResponseWithSeed {
   implicit val encoder: Encoder[QuestionTopIdeasResponseWithSeed] = deriveEncoder[QuestionTopIdeasResponseWithSeed]
 }
 
-final case class QuestionTopIdeaResponseWithSeed(questionTopIdea: QuestionTopIdeaWithAvatarResponse, seed: Int)
+final case class QuestionTopIdeaResponseWithSeed(questionTopIdea: QuestionTopIdeaWithAvatarAndCommentsResponse,
+                                                 seed: Int)
 
 object QuestionTopIdeaResponseWithSeed {
   implicit val encoder: Encoder[QuestionTopIdeaResponseWithSeed] = deriveEncoder[QuestionTopIdeaResponseWithSeed]

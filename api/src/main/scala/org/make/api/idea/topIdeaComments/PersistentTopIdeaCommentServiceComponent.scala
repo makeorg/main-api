@@ -44,6 +44,7 @@ trait PersistentTopIdeaCommentService {
              topIdeaIds: Option[Seq[TopIdeaId]],
              personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]]
   def count(topIdeaIds: Option[Seq[TopIdeaId]], personalityIds: Option[Seq[UserId]]): Future[Int]
+  def countForAll(topIdeaIds: Seq[TopIdeaId]): Future[Map[String, Int]]
 }
 
 trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaCommentServiceComponent {
@@ -167,6 +168,19 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
+      })
+    }
+
+    def countForAll(topIdeaIds: Seq[TopIdeaId]): Future[Map[String, Int]] = {
+      implicit val context: EC = readExecutionContext
+
+      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+        withSQL {
+          select(topIdeaCommentAlias.topIdeaId, sqls.count)
+            .from(PersistentTopIdeaComment.as(topIdeaCommentAlias))
+            .where(sqls.in(topIdeaCommentAlias.topIdeaId, topIdeaIds.map(_.value)))
+            .groupBy(topIdeaCommentAlias.topIdeaId)
+        }.map(rs => (rs.string(1), rs.int(2))).list.apply().toMap
       })
     }
 

@@ -1,6 +1,7 @@
 package org.make.api.question
 
 import akka.actor.ActorSystem
+import org.make.api.idea.topIdeaComments.{PersistentTopIdeaCommentService, PersistentTopIdeaCommentServiceComponent}
 import org.make.api.idea.{
   PersistentTopIdeaService,
   PersistentTopIdeaServiceComponent,
@@ -38,7 +39,8 @@ class QuestionServiceTest
     with OrganisationSearchEngineComponent
     with TopIdeaServiceComponent
     with ProposalSearchEngineComponent
-    with PersistentTopIdeaServiceComponent {
+    with PersistentTopIdeaServiceComponent
+    with PersistentTopIdeaCommentServiceComponent {
 
   override val actorSystem: ActorSystem = ActorSystem()
   override val idGenerator: IdGenerator = mock[IdGenerator]
@@ -49,6 +51,7 @@ class QuestionServiceTest
   override val topIdeaService: TopIdeaService = mock[TopIdeaService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val persistentTopIdeaService: PersistentTopIdeaService = mock[PersistentTopIdeaService]
+  override val persistentTopIdeaCommentService: PersistentTopIdeaCommentService = mock[PersistentTopIdeaCommentService]
 
   val personalities: Seq[Personality] = Seq(
     Personality(
@@ -190,6 +193,9 @@ class QuestionServiceTest
           )
       )
 
+      when(persistentTopIdeaCommentService.countForAll(Seq(TopIdeaId("top-idea-1"), TopIdeaId("top-idea-2"))))
+        .thenReturn(Future.successful(Map("top-idea-1" -> 5, "top-idea-2" -> 2)))
+
       when(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-1"), IdeaId("idea-2")), 1337))
         .thenReturn(
           Future.successful(
@@ -215,6 +221,7 @@ class QuestionServiceTest
         result.questionTopIdeas.head.ideaId should be(IdeaId("idea-1"))
         result.questionTopIdeas.head.proposalsCount should be(42)
         result.questionTopIdeas.head.avatars.size should be(4)
+        result.questionTopIdeas.head.commentsCount should be(5)
       }
     }
 
@@ -301,7 +308,7 @@ class QuestionServiceTest
         Timeout(3.seconds)
       ) { result =>
         result.isDefined should be(true)
-        result.get.questionTopIdea.name should be("name")
+        result.get.topIdea.name should be("name")
       }
     }
 

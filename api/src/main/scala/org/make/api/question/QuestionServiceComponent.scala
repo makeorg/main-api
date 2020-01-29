@@ -22,6 +22,7 @@ package org.make.api.question
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import org.make.api.ActorSystemComponent
+import org.make.api.idea.topIdeaComments.PersistentTopIdeaCommentServiceComponent
 import org.make.api.idea.{PersistentTopIdeaServiceComponent, TopIdeaServiceComponent}
 import org.make.api.organisation.OrganisationSearchEngineComponent
 import org.make.api.personality.QuestionPersonalityServiceComponent
@@ -71,7 +72,7 @@ trait QuestionService {
                   questionId: QuestionId): Future[QuestionTopIdeasResponseWithSeed]
   def getTopIdea(topIdeaId: TopIdeaId,
                  questionId: QuestionId,
-                 seed: Option[Int]): Future[Option[QuestionTopIdeaResponseWithSeed]]
+                 seed: Option[Int]): Future[Option[QuestionTopIdeaResultWithSeed]]
 }
 
 case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
@@ -98,7 +99,8 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     with OrganisationSearchEngineComponent
     with TopIdeaServiceComponent
     with ProposalSearchEngineComponent
-    with PersistentTopIdeaServiceComponent =>
+    with PersistentTopIdeaServiceComponent
+    with PersistentTopIdeaCommentServiceComponent =>
 
   override lazy val questionService: QuestionService = new DefaultQuestionService
 
@@ -275,48 +277,52 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       topIdeaService
         .search(start = start, end = end, ideaId = None, questionId = Some(questionId), name = None)
         .flatMap { topIdeas =>
-          val emptyResult = topIdeas.map { topIdea =>
-            QuestionTopIdeaWithAvatarResponse(
-              id = topIdea.topIdeaId,
-              ideaId = topIdea.ideaId,
-              questionId = topIdea.questionId,
-              name = topIdea.name,
-              label = topIdea.label,
-              scores = topIdea.scores,
-              proposalsCount = 0,
-              avatars = Seq.empty,
-              weight = topIdea.weight
-            )
-          }
-          elasticsearchProposalAPI
-            .getRandomProposalsByIdeaWithAvatar(ideaIds = topIdeas.map(_.ideaId), randomSeed)
-            .map {
-              case avatarsAndProposalsCountByIdea if avatarsAndProposalsCountByIdea.isEmpty => emptyResult
-              case avatarsAndProposalsCountByIdea =>
-                avatarsAndProposalsCountByIdea.toSeq.flatMap {
-                  case (ideaId, avatarsAndProposalsCount) =>
-                    topIdeas.find(_.ideaId.value == ideaId.value).map { topIdea =>
-                      QuestionTopIdeaWithAvatarResponse(
-                        id = topIdea.topIdeaId,
-                        ideaId = topIdea.ideaId,
-                        questionId = topIdea.questionId,
-                        name = topIdea.name,
-                        label = topIdea.label,
-                        scores = topIdea.scores,
-                        proposalsCount = avatarsAndProposalsCount.proposalsCount,
-                        avatars = avatarsAndProposalsCount.avatars,
-                        weight = topIdea.weight
-                      )
-                    }
-                }
+          persistentTopIdeaCommentService.countForAll(topIdeas.map(_.topIdeaId)).flatMap { commentByTopIdea =>
+            val resultsWithoutAvatar = topIdeas.map { topIdea =>
+              QuestionTopIdeaWithAvatarResponse(
+                id = topIdea.topIdeaId,
+                ideaId = topIdea.ideaId,
+                questionId = topIdea.questionId,
+                name = topIdea.name,
+                label = topIdea.label,
+                scores = topIdea.scores,
+                proposalsCount = 0,
+                avatars = Seq.empty,
+                weight = topIdea.weight,
+                commentsCount = commentByTopIdea.getOrElse(topIdea.topIdeaId.value, 0)
+              )
             }
+            elasticsearchProposalAPI
+              .getRandomProposalsByIdeaWithAvatar(ideaIds = topIdeas.map(_.ideaId), randomSeed)
+              .map {
+                case avatarsAndProposalsCountByIdea if avatarsAndProposalsCountByIdea.isEmpty => resultsWithoutAvatar
+                case avatarsAndProposalsCountByIdea =>
+                  avatarsAndProposalsCountByIdea.toSeq.flatMap {
+                    case (ideaId, avatarsAndProposalsCount) =>
+                      topIdeas.find(_.ideaId.value == ideaId.value).map { topIdea =>
+                        QuestionTopIdeaWithAvatarResponse(
+                          id = topIdea.topIdeaId,
+                          ideaId = topIdea.ideaId,
+                          questionId = topIdea.questionId,
+                          name = topIdea.name,
+                          label = topIdea.label,
+                          scores = topIdea.scores,
+                          proposalsCount = avatarsAndProposalsCount.proposalsCount,
+                          avatars = avatarsAndProposalsCount.avatars,
+                          weight = topIdea.weight,
+                          commentsCount = commentByTopIdea.getOrElse(topIdea.topIdeaId.value, 0)
+                        )
+                      }
+                  }
+              }
+          }
         }
         .map(result => QuestionTopIdeasResponseWithSeed(result, randomSeed))
     }
 
     def getTopIdea(topIdeaId: TopIdeaId,
                    questionId: QuestionId,
-                   seed: Option[Int]): Future[Option[QuestionTopIdeaResponseWithSeed]] = {
+                   seed: Option[Int]): Future[Option[QuestionTopIdeaResultWithSeed]] = {
       val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
 
       persistentTopIdeaService.getByIdAndQuestionId(topIdeaId, questionId).flatMap {
@@ -326,18 +332,10 @@ trait DefaultQuestionService extends QuestionServiceComponent {
             .getRandomProposalsByIdeaWithAvatar(ideaIds = Seq(topIdea.ideaId), randomSeed)
             .map { result =>
               result.get(topIdea.ideaId).map { avatarsAndProposalsCount =>
-                QuestionTopIdeaResponseWithSeed(
-                  questionTopIdea = QuestionTopIdeaWithAvatarResponse(
-                    id = topIdeaId,
-                    ideaId = topIdea.ideaId,
-                    name = topIdea.name,
-                    label = topIdea.label,
-                    questionId = questionId,
-                    scores = topIdea.scores,
-                    proposalsCount = avatarsAndProposalsCount.proposalsCount,
-                    avatars = avatarsAndProposalsCount.avatars,
-                    weight = topIdea.weight
-                  ),
+                QuestionTopIdeaResultWithSeed(
+                  topIdea = topIdea,
+                  proposalsCount = avatarsAndProposalsCount.proposalsCount,
+                  avatars = avatarsAndProposalsCount.avatars,
                   seed = randomSeed
                 )
               }
@@ -349,4 +347,4 @@ trait DefaultQuestionService extends QuestionServiceComponent {
 
 final case class AvatarsAndProposalsCount(avatars: Seq[String], proposalsCount: Int)
 
-final case class AvatarsTopIdeaAndProposalsCount(avatars: Seq[String], topIdea: TopIdea, proposalsCount: Int)
+final case class QuestionTopIdeaResultWithSeed(topIdea: TopIdea, avatars: Seq[String], proposalsCount: Int, seed: Int)
