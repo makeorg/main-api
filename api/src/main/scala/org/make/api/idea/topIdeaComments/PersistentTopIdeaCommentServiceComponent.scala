@@ -25,7 +25,6 @@ import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceC
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.core.idea._
-import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.user.UserId
 import scalikejdbc._
 
@@ -87,7 +86,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
               column.comment1 -> topIdeaComment.comment1,
               column.comment2 -> topIdeaComment.comment2,
               column.comment3 -> topIdeaComment.comment3,
-              column.vote -> topIdeaComment.vote.map(_.shortName),
+              column.vote -> topIdeaComment.vote.shortName,
               column.qualification -> topIdeaComment.qualification.map(_.shortName)
             )
         }.execute().apply()
@@ -105,7 +104,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
               column.comment1 -> topIdeaComment.comment1,
               column.comment2 -> topIdeaComment.comment2,
               column.comment3 -> topIdeaComment.comment3,
-              column.vote -> topIdeaComment.vote.map(_.shortName),
+              column.vote -> topIdeaComment.vote.shortName,
               column.qualification -> topIdeaComment.qualification.map(_.shortName)
             )
             .where(
@@ -182,7 +181,7 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
                                       comment1: Option[String],
                                       comment2: Option[String],
                                       comment3: Option[String],
-                                      vote: Option[String],
+                                      vote: String,
                                       qualification: Option[String]) {
     def toTopIdeaComment: TopIdeaComment =
       TopIdeaComment(
@@ -192,8 +191,10 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
         comment1 = comment1,
         comment2 = comment2,
         comment3 = comment3,
-        vote = vote.flatMap(VoteKey.matchVoteKey),
-        qualification = qualification.flatMap(QualificationKey.matchQualificationKey)
+        vote = CommentVoteKey
+          .matchCommentVoteKey(vote)
+          .getOrElse(throw new IllegalArgumentException(s"$vote is not a valid voteKey")),
+        qualification = qualification.flatMap(CommentQualificationKey.matchCommentQualificationKey)
       )
   }
 
@@ -219,7 +220,7 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
         comment1 = resultSet.stringOpt(topIdeaCommentResultName.comment1),
         comment2 = resultSet.stringOpt(topIdeaCommentResultName.comment2),
         comment3 = resultSet.stringOpt(topIdeaCommentResultName.comment3),
-        vote = resultSet.stringOpt(topIdeaCommentResultName.vote),
+        vote = resultSet.string(topIdeaCommentResultName.vote),
         qualification = resultSet.stringOpt(topIdeaCommentResultName.qualification),
       )
     }

@@ -24,7 +24,6 @@ import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceC
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.core.idea._
-import org.make.core.proposal.{QualificationKey, VoteKey}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
@@ -144,8 +143,8 @@ class PersistentTopIdeaCommentServiceIT
           Some("comment"),
           None,
           None,
-          Some(VoteKey.Agree),
-          Some(QualificationKey.LikeIt)
+          CommentVoteKey.Agree,
+          Some(CommentQualificationKey.Doable)
         )
       )
 
@@ -164,8 +163,8 @@ class PersistentTopIdeaCommentServiceIT
           Some("comment"),
           None,
           None,
-          Some(VoteKey.Agree),
-          Some(QualificationKey.LikeIt)
+          CommentVoteKey.Agree,
+          Some(CommentQualificationKey.Doable)
         )
 
       waitForCompletion(persistentTopIdeaCommentService.persist(topIdeaComment))
@@ -183,7 +182,6 @@ class PersistentTopIdeaCommentServiceIT
             comment1 = None,
             comment2 = Some("new comment"),
             comment3 = None,
-            vote = None,
             qualification = None
           )
         )
@@ -197,7 +195,6 @@ class PersistentTopIdeaCommentServiceIT
           topIdeaComment.comment1 shouldBe None
           topIdeaComment.comment2 shouldBe Some("new comment")
           topIdeaComment.comment3 shouldBe None
-          topIdeaComment.vote shouldBe None
           topIdeaComment.qualification shouldBe None
       }
 
@@ -212,8 +209,8 @@ class PersistentTopIdeaCommentServiceIT
           Some("comment"),
           None,
           None,
-          Some(VoteKey.Agree),
-          Some(QualificationKey.LikeIt)
+          CommentVoteKey.Agree,
+          Some(CommentQualificationKey.Doable)
         ),
         TopIdeaComment(
           TopIdeaCommentId("find-2"),
@@ -222,8 +219,8 @@ class PersistentTopIdeaCommentServiceIT
           Some("comment"),
           None,
           None,
-          Some(VoteKey.Agree),
-          Some(QualificationKey.LikeIt)
+          CommentVoteKey.Agree,
+          Some(CommentQualificationKey.Doable)
         ),
         TopIdeaComment(
           TopIdeaCommentId("find-3"),
@@ -232,8 +229,8 @@ class PersistentTopIdeaCommentServiceIT
           Some("comment"),
           None,
           None,
-          Some(VoteKey.Agree),
-          Some(QualificationKey.LikeIt)
+          CommentVoteKey.Agree,
+          Some(CommentQualificationKey.Doable)
         ),
         TopIdeaComment(
           TopIdeaCommentId("find-4"),
@@ -242,8 +239,8 @@ class PersistentTopIdeaCommentServiceIT
           Some("comment"),
           None,
           None,
-          Some(VoteKey.Agree),
-          Some(QualificationKey.LikeIt)
+          CommentVoteKey.Agree,
+          Some(CommentQualificationKey.Doable)
         )
       )
 
