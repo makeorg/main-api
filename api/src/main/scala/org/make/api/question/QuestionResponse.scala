@@ -140,6 +140,7 @@ final case class QuestionTopIdeaWithAvatarAndCommentsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
   questionId: QuestionId,
   name: String,
+  label: String,
   scores: TopIdeaScores,
   proposalsCount: Int,
   avatars: Seq[String],

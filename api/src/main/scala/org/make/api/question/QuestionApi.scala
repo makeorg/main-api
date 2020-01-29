@@ -589,6 +589,7 @@ trait DefaultQuestionApiComponent
                       ideaId = topIdeaResult.topIdea.ideaId,
                       questionId = topIdeaResult.topIdea.questionId,
                       name = topIdeaResult.topIdea.name,
+                      label = topIdeaResult.topIdea.label,
                       scores = topIdeaResult.topIdea.scores,
                       proposalsCount = topIdeaResult.proposalsCount,
                       avatars = topIdeaResult.avatars,
