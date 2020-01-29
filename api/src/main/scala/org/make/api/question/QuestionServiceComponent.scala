@@ -275,7 +275,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
 
       topIdeaService
-        .search(start = start, end = end, ideaId = None, questionId = Some(questionId), name = None)
+        .search(start = start, end = end, ideaId = None, questionIds = Some(Seq(questionId)), name = None)
         .flatMap { topIdeas =>
           persistentTopIdeaCommentService.countForAll(topIdeas.map(_.topIdeaId)).flatMap { commentByTopIdea =>
             val resultsWithoutAvatar = topIdeas.map { topIdea =>

@@ -201,7 +201,7 @@ trait DefaultAdminTopIdeaApiComponent
                   provideAsync(topIdeaService.count(ideaId, questionId, name)) { count =>
                     provideAsync(
                       topIdeaService
-                        .search(start.getOrElse(0), end, sort, order, ideaId, questionId, name)
+                        .search(start.getOrElse(0), end, sort, order, ideaId, questionId.map(Seq(_)), name)
                     ) { topIdeas =>
                       complete(
                         (StatusCodes.OK, List(`X-Total-Count`(count.toString)), topIdeas.map(TopIdeaResponse.apply))

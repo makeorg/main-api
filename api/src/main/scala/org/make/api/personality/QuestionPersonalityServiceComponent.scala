@@ -19,7 +19,16 @@
 
 package org.make.api.personality
 
+import org.make.api.idea.{TopIdeaResponse, TopIdeaServiceComponent}
+import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
+import org.make.api.operation.OperationOfQuestionServiceComponent
+import org.make.api.question.{QuestionServiceComponent, SimpleQuestionResponse, SimpleQuestionWordingResponse}
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
+import org.make.core.operation.{
+  OperationOfQuestionSearchFilters,
+  OperationOfQuestionSearchQuery,
+  QuestionIdsSearchFilter
+}
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
@@ -47,10 +56,16 @@ trait QuestionPersonalityService extends ShortenedNames {
   def updatePersonality(personalityId: PersonalityId,
                         request: UpdateQuestionPersonalityRequest): Future[Option[Personality]]
   def deletePersonality(personalityId: PersonalityId): Future[Unit]
+  def getPersonalitiesOpinionsByQuestions(personalities: Seq[Personality]): Future[Seq[PersonalityOpinionResponse]]
 }
 
 trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServiceComponent {
-  this: PersistentQuestionPersonalityServiceComponent with IdGeneratorComponent =>
+  this: PersistentQuestionPersonalityServiceComponent
+    with IdGeneratorComponent
+    with QuestionServiceComponent
+    with OperationOfQuestionServiceComponent
+    with TopIdeaServiceComponent
+    with TopIdeaCommentServiceComponent =>
 
   override lazy val questionPersonalityService: DefaultQuestionPersonalityService =
     new DefaultQuestionPersonalityService
@@ -100,6 +115,51 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
 
     override def deletePersonality(personalityId: PersonalityId): Future[Unit] = {
       persistentQuestionPersonalityService.delete(personalityId)
+    }
+
+    override def getPersonalitiesOpinionsByQuestions(
+      personalities: Seq[Personality]
+    ): Future[Seq[PersonalityOpinionResponse]] = {
+      questionService.getQuestions(personalities.map(_.questionId)).flatMap { questions =>
+        val questionIds = questions.map(_.questionId)
+        val opOfQuestionQuery =
+          OperationOfQuestionSearchQuery(
+            filters = Some(OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(questionIds))))
+          )
+        operationOfQuestionService.search(opOfQuestionQuery).flatMap { opOfQuestionsResult =>
+          topIdeaService.search(0, None, None, None, None, Some(questionIds), None).flatMap { topIdeas =>
+            topIdeaCommentService
+              .search(0, None, Some(topIdeas.map(_.topIdeaId)), Some(personalities.map(_.userId).distinct))
+              .map { topIdeaComments =>
+                topIdeas.flatMap { topIdea =>
+                  val maybeQuestion = questions.find(_.questionId == topIdea.questionId)
+                  val maybeOpOfQuestion = opOfQuestionsResult.results.find(_.questionId == topIdea.questionId)
+                  (maybeQuestion, maybeOpOfQuestion) match {
+                    case (Some(question), Some(opOfQuestion)) =>
+                      val simpleQuestion = SimpleQuestionResponse(
+                        question.questionId,
+                        question.slug,
+                        SimpleQuestionWordingResponse(opOfQuestion.operationTitle, opOfQuestion.question),
+                        opOfQuestion.startDate,
+                        opOfQuestion.endDate
+                      )
+                      Some(
+                        PersonalityOpinionResponse(
+                          simpleQuestion,
+                          TopIdeaResponse(topIdea),
+                          topIdeaComments
+                            .find(_.topIdeaId == topIdea.topIdeaId)
+                            .map(TopIdeaCommentResponse.apply)
+                        )
+                      )
+                    case _ => None
+                  }
+                }
+              }
+          }
+        }
+      }
+
     }
 
   }

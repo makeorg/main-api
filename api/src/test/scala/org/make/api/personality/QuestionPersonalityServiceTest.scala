@@ -20,11 +20,20 @@
 package org.make.api.personality
 
 import org.make.api.MakeUnitTest
+import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
+import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
+import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
+import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.core.idea._
+import org.make.core.operation._
+import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.personality.{Candidate, Personality, PersonalityId}
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.mockito.Mockito
+import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -34,11 +43,19 @@ class QuestionPersonalityServiceTest
     extends MakeUnitTest
     with DefaultQuestionPersonalityServiceComponent
     with PersistentQuestionPersonalityServiceComponent
-    with IdGeneratorComponent {
+    with IdGeneratorComponent
+    with QuestionServiceComponent
+    with OperationOfQuestionServiceComponent
+    with TopIdeaServiceComponent
+    with TopIdeaCommentServiceComponent {
 
   override val persistentQuestionPersonalityService: PersistentQuestionPersonalityService =
     mock[PersistentQuestionPersonalityService]
   override val idGenerator: IdGenerator = mock[IdGenerator]
+  override val topIdeaCommentService: TopIdeaCommentService = mock[TopIdeaCommentService]
+  override val topIdeaService: TopIdeaService = mock[TopIdeaService]
+  override val questionService: QuestionService = mock[QuestionService]
+  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 
   val personality: Personality = Personality(
     personalityId = PersonalityId("personality"),
@@ -106,4 +123,200 @@ class QuestionPersonalityServiceTest
     }
   }
 
+  feature("personalities opinions by questions") {
+    scenario("empty list of top ideas") {
+      when(questionService.getQuestions(ArgumentMatchers.eq(Seq.empty))).thenReturn(Future.successful(Seq.empty))
+      when(
+        operationOfQuestionService.search(
+          ArgumentMatchers.eq(
+            OperationOfQuestionSearchQuery(
+              filters = Some(OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(Seq.empty))))
+            )
+          )
+        )
+      ).thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 0L, results = Seq.empty)))
+      when(
+        topIdeaService.search(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(Seq.empty)),
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(Future.successful(Seq.empty))
+      when(
+        topIdeaCommentService
+          .search(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some(Seq.empty)),
+            ArgumentMatchers.eq(Some(Seq.empty))
+          )
+      ).thenReturn(Future.successful(Seq.empty))
+
+      whenReady(questionPersonalityService.getPersonalitiesOpinionsByQuestions(Seq.empty), Timeout(2.seconds)) {
+        opinions =>
+          opinions shouldBe empty
+      }
+    }
+
+    scenario("all comments") {
+      when(
+        questionPersonalityService.find(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(UserId("personality-id"))),
+          ArgumentMatchers.any[Option[QuestionId]],
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
+            Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
+          )
+        )
+      )
+      when(
+        questionService
+          .getQuestions(ArgumentMatchers.eq(Seq(QuestionId("question-id-one"), QuestionId("question-id-two"))))
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            Question(QuestionId("question-id-one"), "slug", Country("FR"), Language("fr"), "question", None, None),
+            Question(QuestionId("question-id-two"), "slug", Country("FR"), Language("fr"), "question", None, None)
+          )
+        )
+      )
+      when(
+        operationOfQuestionService.search(
+          ArgumentMatchers.eq(
+            OperationOfQuestionSearchQuery(
+              filters = Some(
+                OperationOfQuestionSearchFilters(
+                  questionIds =
+                    Some(QuestionIdsSearchFilter(Seq(QuestionId("question-id-one"), QuestionId("question-id-two"))))
+                )
+              )
+            )
+          )
+        )
+      ).thenReturn(
+        Future.successful(
+          OperationOfQuestionSearchResult(
+            total = 2L,
+            results = Seq(
+              IndexedOperationOfQuestion(
+                operationId = OperationId("operation-id-one"),
+                questionId = QuestionId("question-id-one"),
+                startDate = None,
+                endDate = None,
+                operationTitle = "title",
+                question = "",
+                slug = "",
+                description = "Description opeOfQue",
+                theme = QuestionTheme("#000000", "#000000", "#000000", "#000000"),
+                consultationImage = None,
+                country = Country("FR"),
+                language = Language("fr"),
+                operationKind = "",
+                aboutUrl = Some("http://about")
+              ),
+              IndexedOperationOfQuestion(
+                operationId = OperationId("operation-id-two"),
+                questionId = QuestionId("question-id-two"),
+                startDate = None,
+                endDate = None,
+                operationTitle = "title",
+                question = "",
+                slug = "",
+                description = "Description opeOfQue",
+                theme = QuestionTheme("#000000", "#000000", "#000000", "#000000"),
+                consultationImage = None,
+                country = Country("FR"),
+                language = Language("fr"),
+                operationKind = "",
+                aboutUrl = Some("http://about")
+              )
+            )
+          )
+        )
+      )
+      when(
+        topIdeaService.search(
+          ArgumentMatchers.eq(0),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(None),
+          ArgumentMatchers.eq(Some(Seq(QuestionId("question-id-one"), QuestionId("question-id-two")))),
+          ArgumentMatchers.eq(None)
+        )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            TopIdea(
+              TopIdeaId("top-idea-id"),
+              IdeaId("idea-id"),
+              QuestionId("question-id-one"),
+              "name",
+              "label",
+              TopIdeaScores(0f, 0f, 0f),
+              0f
+            ),
+            TopIdea(
+              TopIdeaId("top-idea-id-2"),
+              IdeaId("idea-id-2"),
+              QuestionId("question-id-two"),
+              "name",
+              "label",
+              TopIdeaScores(0f, 0f, 0f),
+              0f
+            )
+          )
+        )
+      )
+      when(
+        topIdeaCommentService
+          .search(
+            ArgumentMatchers.eq(0),
+            ArgumentMatchers.eq(None),
+            ArgumentMatchers.eq(Some(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2")))),
+            ArgumentMatchers.eq(Some(Seq(UserId("personality-id"))))
+          )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            TopIdeaComment(
+              TopIdeaCommentId("top-idea-comment-id"),
+              TopIdeaId("top-idea-id"),
+              UserId("personality-id"),
+              Some("comment one"),
+              Some("comment two"),
+              None,
+              CommentVoteKey.Agree,
+              None
+            )
+          )
+        )
+      )
+      val personalities =
+        Seq(
+          Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
+          Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
+        )
+
+      whenReady(questionPersonalityService.getPersonalitiesOpinionsByQuestions(personalities), Timeout(2.seconds)) {
+        opinions =>
+          opinions.size shouldBe 2
+          opinions.head.comment shouldBe defined
+          opinions(1).comment shouldBe empty
+      }
+    }
+
+  }
 }

@@ -38,8 +38,7 @@ import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, TopIdeaComme
 import org.make.core.profile.Profile
 import org.make.core.user.{User, UserId}
 import io.circe.refined._
-import org.make.api.operation.{OperationOfQuestionResponse, OperationOfQuestionServiceComponent}
-import org.make.api.question.QuestionServiceComponent
+import org.make.api.question.SimpleQuestionResponse
 import org.make.core.question.QuestionId
 
 import scala.annotation.meta.field
@@ -160,9 +159,7 @@ trait DefaultPersonalityApiComponent
     with SessionHistoryCoordinatorServiceComponent
     with TopIdeaServiceComponent
     with TopIdeaCommentServiceComponent
-    with QuestionPersonalityServiceComponent
-    with QuestionServiceComponent
-    with OperationOfQuestionServiceComponent =>
+    with QuestionPersonalityServiceComponent =>
 
   override lazy val personalityApi: PersonalityApi = new DefaultPersonalityApi
 
@@ -281,28 +278,11 @@ trait DefaultPersonalityApiComponent
               questionPersonalityService
                 .find(0, None, None, None, userId = Some(userId), questionId = maybeQuestionId, None)
             ) {
-              case empty if empty.isEmpty                  => complete(StatusCodes.NotFound)
-              case personalities if personalities.size > 1 => complete(StatusCodes.MultipleChoices)
-              case Seq(personality) =>
-                val questionId = personality.questionId
-                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
-                  provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) { opOfQuestion =>
-                    provideAsync(topIdeaService.search(0, None, None, None, None, Some(questionId), None)) { topIdeas =>
-                      provideAsync(
-                        topIdeaCommentService
-                          .search(0, None, Some(topIdeas.map(_.topIdeaId)), Some(Seq(userId)))
-                      ) { topIdeaComments =>
-                        val response = topIdeas.map { topIdea =>
-                          PersonalityOpinionResponse(
-                            OperationOfQuestionResponse(opOfQuestion, question),
-                            TopIdeaResponse(topIdea),
-                            topIdeaComments.find(_.topIdeaId == topIdea.topIdeaId).map(TopIdeaCommentResponse.apply)
-                          )
-                        }
-                        complete(response)
-                      }
-                    }
-                  }
+              case empty if empty.isEmpty => complete(StatusCodes.NotFound)
+              case personalities =>
+                provideAsync(questionPersonalityService.getPersonalitiesOpinionsByQuestions(personalities)) {
+                  opinions =>
+                    complete(opinions)
                 }
             }
           }
@@ -422,7 +402,7 @@ object TopIdeaCommentResponse {
 }
 
 @ApiModel
-final case class PersonalityOpinionResponse(question: OperationOfQuestionResponse,
+final case class PersonalityOpinionResponse(question: SimpleQuestionResponse,
                                             topIdea: TopIdeaResponse,
                                             comment: Option[TopIdeaCommentResponse])
 
