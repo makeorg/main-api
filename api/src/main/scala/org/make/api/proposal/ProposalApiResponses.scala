@@ -318,6 +318,8 @@ object ProposalResponse extends CirceFormatters {
           questionId = proposalQuestion.questionId,
           slug = proposalQuestion.slug,
           wording = SimpleQuestionWordingResponse(title = proposalQuestion.title, question = proposalQuestion.question),
+          country = indexedProposal.country,
+          language = indexedProposal.language,
           startDate = proposalQuestion.startDate,
           endDate = proposalQuestion.endDate
         )

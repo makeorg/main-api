@@ -32,6 +32,7 @@ import org.make.core.idea._
 import org.make.core.personality.{Candidate, Personality, PersonalityId}
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId, UserType}
 import org.mockito.Mockito.when
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -417,6 +418,8 @@ class PersonalityApiTest
                 QuestionId("question-id"),
                 "slug",
                 SimpleQuestionWordingResponse("title", "question"),
+                Country("FR"),
+                Language("fr"),
                 None,
                 None
               ),
@@ -436,6 +439,8 @@ class PersonalityApiTest
                 QuestionId("question-id-two"),
                 "slug",
                 SimpleQuestionWordingResponse("title", "question"),
+                Country("FR"),
+                Language("fr"),
                 None,
                 None
               ),
