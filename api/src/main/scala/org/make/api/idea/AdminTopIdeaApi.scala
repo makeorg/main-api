@@ -314,6 +314,7 @@ trait DefaultAdminTopIdeaApiComponent
                             provideAsync(
                               topIdeaService.update(
                                 topIdea.copy(
+                                  questionId = request.questionId,
                                   ideaId = request.ideaId,
                                   name = request.name,
                                   label = request.label,

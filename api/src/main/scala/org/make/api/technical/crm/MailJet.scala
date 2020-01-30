@@ -44,7 +44,7 @@ object TemplateErrorReporting {
     }
 }
 
-final case class SendEmail(id: String = "unknown",
+final case class SendEmail(id: String = "none",
                            from: Option[Recipient] = None,
                            subject: Option[String] = None,
                            textPart: Option[String] = None,
