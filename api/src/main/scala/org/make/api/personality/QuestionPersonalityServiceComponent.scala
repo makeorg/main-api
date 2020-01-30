@@ -140,6 +140,8 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
                         question.questionId,
                         question.slug,
                         SimpleQuestionWordingResponse(opOfQuestion.operationTitle, opOfQuestion.question),
+                        opOfQuestion.country,
+                        opOfQuestion.language,
                         opOfQuestion.startDate,
                         opOfQuestion.endDate
                       )

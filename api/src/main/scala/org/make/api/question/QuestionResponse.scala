@@ -27,6 +27,7 @@ import org.make.core.CirceFormatters
 import org.make.core.question.QuestionId
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, IdeaId, TopIdeaCommentId, TopIdeaId, TopIdeaScores}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
@@ -37,6 +38,10 @@ final case class SimpleQuestionResponse(
   questionId: QuestionId,
   slug: String,
   wording: SimpleQuestionWordingResponse,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
   startDate: Option[ZonedDateTime],
   endDate: Option[ZonedDateTime]
 )
