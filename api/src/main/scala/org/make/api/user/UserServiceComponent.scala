@@ -238,7 +238,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                                    lowerCasedEmail: String,
                                    country: Country,
                                    language: Language,
-                                   profile: Option[Profile]): Future[User] = {
+                                   profile: Option[Profile],
+                                   resetToken: String): Future[User] = {
 
       val user = User(
         userId = idGenerator.nextUserId(),
@@ -252,8 +253,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
+        resetToken = Some(resetToken),
+        resetTokenExpiresAt = Some(DateHelper.now().plusSeconds(resetTokenExpiresIn)),
         roles = Seq(Role.RoleCitizen),
         country = country,
         language = language,
@@ -372,7 +373,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       val result = for {
         emailExists <- persistentUserService.emailExists(lowerCasedEmail)
         _           <- validateAccountCreation(emailExists, canRegister = true, lowerCasedEmail)
-        user        <- persistPersonality(personalityRegisterData, lowerCasedEmail, country, language, profile)
+        resetToken  <- generateResetToken()
+        user        <- persistPersonality(personalityRegisterData, lowerCasedEmail, country, language, profile, resetToken)
       } yield user
 
       result.map { user =>
