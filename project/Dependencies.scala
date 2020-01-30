@@ -98,7 +98,7 @@ object Dependencies {
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.2"
 
-  val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.6"
+  val swiftClient: ModuleID = "org.make" %% "openstack-swift-client" % "1.0.17"
 
   val jsoup: ModuleID = "org.jsoup" % "jsoup" % "1.11.3"
 
