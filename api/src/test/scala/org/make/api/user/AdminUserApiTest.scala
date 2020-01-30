@@ -20,11 +20,21 @@
 package org.make.api.user
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, MediaTypes, Multipart, StatusCodes}
 import akka.http.scaladsl.server.Route
+import akka.util.ByteString
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth._
+import org.make.api.technical.storage.Content.FileContent
+import org.make.api.technical.storage.{
+  FileType,
+  StorageConfiguration,
+  StorageConfigurationComponent,
+  StorageService,
+  StorageServiceComponent,
+  UploadResponse
+}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.reference.{Country, Language}
@@ -46,10 +56,14 @@ class AdminUserApiTest
     with IdGeneratorComponent
     with MakeSettingsComponent
     with ActorSystemComponent
-    with PersistentUserServiceComponent {
+    with PersistentUserServiceComponent
+    with StorageServiceComponent
+    with StorageConfigurationComponent {
 
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
+  override val storageService: StorageService = mock[StorageService]
+  override val storageConfiguration: StorageConfiguration = mock[StorageConfiguration]
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) { adminUserApi.routes })
 
@@ -923,5 +937,119 @@ class AdminUserApiTest
       }
     }
 
+  }
+
+  feature("upload avatar") {
+    val maxUploadFileSize = 4242L
+    when(storageConfiguration.maxFileSize).thenReturn(maxUploadFileSize)
+    scenario("unauthorized not connected") {
+      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("forbidden citizen") {
+      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("forbidden moderator") {
+      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("incorrect file type") {
+      val request: Multipart = Multipart.FormData(
+        fields = Map(
+          "data" -> HttpEntity
+            .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
+        )
+      )
+
+      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    scenario("storage unavailable") {
+      when(
+        storageService.uploadFile(
+          ArgumentMatchers.eq(FileType.Operation),
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[FileContent]
+        )
+      ).thenReturn(Future.failed(new Exception("swift client error")))
+      val request: Multipart =
+        Multipart.FormData(
+          Multipart.FormData.BodyPart
+            .Strict(
+              "data",
+              HttpEntity.Strict(ContentType(MediaTypes.`image/jpeg`), ByteString("image")),
+              Map("filename" -> "image.jpeg")
+            )
+        )
+
+      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.InternalServerError)
+      }
+    }
+
+    scenario("file too large uploaded by admin") {
+      when(
+        storageService.uploadFile(
+          ArgumentMatchers.eq(FileType.Avatar),
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[FileContent]
+        )
+      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+
+      def entityOfSize(size: Int): Multipart = Multipart.FormData(
+        Multipart.FormData.BodyPart
+          .Strict(
+            "data",
+            HttpEntity.Strict(ContentType(MediaTypes.`image/jpeg`), ByteString("0" * size)),
+            Map("filename" -> "image.jpeg")
+          )
+      )
+      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(maxUploadFileSize.toInt + 1))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.RequestEntityTooLarge)
+      }
+    }
+
+    scenario("file successfully uploaded") {
+      when(
+        storageService.uploadAdminUserAvatar(
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[String],
+          ArgumentMatchers.any[FileContent],
+          ArgumentMatchers.any[UserType]
+        )
+      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+
+      def entityOfSize(size: Int): Multipart = Multipart.FormData(
+        Multipart.FormData.BodyPart
+          .Strict(
+            "data",
+            HttpEntity.Strict(ContentType(MediaTypes.`image/jpeg`), ByteString("0" * size)),
+            Map("filename" -> "image.jpeg")
+          )
+      )
+      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(10))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.OK)
+
+        val path: UploadResponse = entityAs[UploadResponse]
+        path.path shouldBe "path/to/uploaded/image.jpeg"
+      }
+    }
   }
 }

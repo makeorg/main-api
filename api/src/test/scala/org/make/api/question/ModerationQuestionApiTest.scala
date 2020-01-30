@@ -472,7 +472,7 @@ class ModerationQuestionApiTest
 
   feature("upload image") {
     implicit val timeout: RouteTestTimeout = RouteTestTimeout(300.seconds)
-    def uri(id: String = "question-id") = s"/moderation/questions/$id/consultation-image"
+    def uri(id: String = "question-id") = s"/moderation/questions/$id/image"
 
     when(questionService.getQuestion(QuestionId("question-id-no-operation")))
       .thenReturn(Future.successful(Some(baseQuestion.copy(operationId = None))))
@@ -558,8 +558,6 @@ class ModerationQuestionApiTest
           ArgumentMatchers.any[FileContent]
         )
       ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
-      when(operationOfQuestionService.update(ArgumentMatchers.any[OperationOfQuestion]))
-        .thenReturn(Future.successful(baseOperationOfQuestion))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(
         Multipart.FormData.BodyPart
