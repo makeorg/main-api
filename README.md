@@ -8,9 +8,13 @@
 
 ## Setting up the dev environment with Code
 
+### Installing Metals
+
 - Install code (`yaourt -S code`)
 - Install the `Metals` extension
 - Configure metals, as defined in [the documentation](https://scalameta.org/metals/docs/editors/vscode.html)
+
+### Using a custom bloop server
 
 You should consider configuring the memory allocated to the bloop server.
 So far, there is no way to do it if metals starts the bloop server, so you should start it yourself.
@@ -21,6 +25,31 @@ To do it:
 - Start the bloop server (`bloop server`)
 
 As a bonus, you can now use the `bloop` commands, that will share the compilation made by code
+
+To avoid keeping a shell always open, you can setup a systemd job.
+
+Create the directory `~/.config/systemd/user`
+edit the file `.config/systemd/user/bloop.service` with content
+
+```
+[Unit]
+Description=Bloop server
+
+[Service]
+ExecStart=/usr/bin/bloop server
+
+[Install]
+WantedBy=basic.target
+```
+
+you can now control the bloop server using `systemctl`:
+- `systemctl --user start bloop` to start the server
+- `systemctl --user stop bloop` to stop the server
+- `systemctl --user status bloop` to get the server status
+
+If you want it to start automatically when you connect to your account, 
+just use `systemctl --user enable bloop`
+
 
 ## Running the app :
 
