@@ -45,6 +45,7 @@ import org.make.core.proposal.indexed.{
   IndexedProposalQuestion,
   IndexedQualification,
   IndexedScores,
+  IndexedTag,
   IndexedVote,
   SequencePool
 }
@@ -200,12 +201,17 @@ trait TestUtils {
                       status: ProposalStatus = Accepted,
                       refusalReason: Option[String] = None,
                       ideaId: Option[IdeaId] = None,
+                      selectedStakeTag: Option[IndexedTag] = None,
                       theme: Option[ThemeId] = None,
                       initialProposal: Boolean = false,
                       regularTopScore: Double = 0,
                       regularTopScoreAjustedWithVotes: Double = 0,
                       segmentTopScore: Double = 0,
                       segmentTopScoreAjustedWithVotes: Double = 0,
+                      regularTopScoreUpperBound: Double = 0,
+                      regularTopScoreLowerBound: Double = 0,
+                      segmentTopScoreUpperBound: Double = 0,
+                      segmentTopScoreLowerBound: Double = 0,
                       createdAt: ZonedDateTime = ZonedDateTime.parse("2019-10-10T10:10:10.000Z"),
                       updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z"))) = {
 
@@ -236,7 +242,8 @@ trait TestUtils {
         topScoreAjustedWithVotes = regularTopScoreAjustedWithVotes,
         controversy = regularScore.controversy(),
         rejection = regularScore.rejection(),
-        scoreUpperBound = regularScore.topScoreUpperBound()
+        scoreUpperBound = regularTopScoreUpperBound,
+        scoreLowerBound = regularTopScoreLowerBound
       ),
       segmentScores = IndexedScores(
         engagement = segmentScore.engagement(),
@@ -248,7 +255,8 @@ trait TestUtils {
         topScoreAjustedWithVotes = segmentTopScoreAjustedWithVotes,
         controversy = segmentScore.controversy(),
         rejection = segmentScore.rejection(),
-        scoreUpperBound = segmentScore.topScoreUpperBound()
+        scoreUpperBound = segmentTopScoreUpperBound,
+        scoreLowerBound = segmentTopScoreLowerBound
       ),
       context = None,
       trending = None,
@@ -259,6 +267,7 @@ trait TestUtils {
       language = language,
       themeId = theme,
       tags = Seq.empty,
+      selectedStakeTag = selectedStakeTag,
       ideaId = ideaId,
       operationId = operationId,
       question = Some(

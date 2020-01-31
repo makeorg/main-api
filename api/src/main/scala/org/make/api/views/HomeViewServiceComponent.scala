@@ -20,7 +20,12 @@
 package org.make.api.views
 
 import org.make.api.operation._
-import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.proposal.{
+  ProposalSearchEngineComponent,
+  ProposalServiceComponent,
+  ProposalsResultSeededResponse,
+  SortAlgorithmConfigurationComponent
+}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
@@ -73,7 +78,8 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
     with ProposalServiceComponent
     with ProposalSearchEngineComponent
     with CurrentOperationServiceComponent
-    with FeaturedOperationServiceComponent =>
+    with FeaturedOperationServiceComponent
+    with SortAlgorithmConfigurationComponent =>
 
   override lazy val homeViewService: HomeViewService = new DefaultHomeViewService
 
@@ -101,7 +107,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           userId = userId,
           language = language,
           country = country,
-          sortAlgorithm = PopularAlgorithm(),
+          sortAlgorithm = PopularAlgorithm(sortAlgorithmConfiguration.popularVoteCountTreshold),
           requestContext = requestContext
         )
         controversialProposals <- getProposals(
@@ -109,7 +115,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           userId = userId,
           language = language,
           country = country,
-          sortAlgorithm = ControversyAlgorithm(),
+          sortAlgorithm = ControversyAlgorithm(sortAlgorithmConfiguration.controversyTreshold),
           requestContext = requestContext
         )
         currentConsultations  <- currentOperationService.getAll

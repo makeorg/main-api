@@ -57,7 +57,7 @@ import org.make.core.proposal.QualificationKey.{
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.session.SessionId
 import org.make.core.tag._
@@ -2197,7 +2197,9 @@ class ProposalServiceTest
   }
 
   feature("get top proposals") {
-    scenario("get top proposals") {
+
+    scenario("get top proposals by stake tag") {
+
       Mockito
         .when(elasticsearchProposalAPI.searchProposals(any[SearchQuery]))
         .thenReturn(
@@ -2223,7 +2225,10 @@ class ProposalServiceTest
         )
 
       Mockito
-        .when(elasticsearchProposalAPI.getTopProposalsByIdea(QuestionId("question-id"), size = 10))
+        .when(
+          elasticsearchProposalAPI
+            .getTopProposals(QuestionId("question-id"), size = 10, ProposalElasticsearchFieldNames.selectedStakeTagId)
+        )
         .thenReturn(
           Future.successful(Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote"))))
         )
@@ -2232,7 +2237,58 @@ class ProposalServiceTest
         None,
         QuestionId("question-id"),
         size = 10,
+        None,
         RequestContext.empty.copy(sessionId = SessionId("my-session"))
+      )
+
+      whenReady(topProposals, Timeout(5.seconds)) { result =>
+        result.results.size should be(2)
+        result.results.head.votes.filter(_.voteKey == Agree).map(_.hasVoted) should contain(true)
+        result.results.tail.flatMap(_.votes).filter(_.voteKey == Agree).map(_.hasVoted) should contain(false)
+      }
+    }
+
+    scenario("get top proposals by idea") {
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(any[SearchQuery]))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 2,
+                results = Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote")))
+              )
+            )
+        )
+
+      Mockito
+        .when(
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
+            )
+        )
+        .thenReturn(
+          Future
+            .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+        )
+
+      Mockito
+        .when(
+          elasticsearchProposalAPI
+            .getTopProposals(QuestionId("question-id"), size = 10, ProposalElasticsearchFieldNames.ideaId)
+        )
+        .thenReturn(
+          Future.successful(Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote"))))
+        )
+
+      val topProposals = proposalService.getTopProposals(
+        maybeUserId = None,
+        questionId = QuestionId("question-id"),
+        size = 10,
+        mode = Some(TopProposalsMode.IdeaMode),
+        requestContext = RequestContext.empty.copy(sessionId = SessionId("my-session"))
       )
 
       whenReady(topProposals, Timeout(5.seconds)) { result =>

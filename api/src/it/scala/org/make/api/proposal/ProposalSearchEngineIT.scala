@@ -205,6 +205,7 @@ class ProposalSearchEngineIT
     organisations = Seq.empty,
     themeId = None,
     tags = Seq.empty,
+    selectedStakeTag = None,
     trending = None,
     labels = Seq(),
     country = Country("FR"),
@@ -275,8 +276,8 @@ class ProposalSearchEngineIT
       votesSequenceCount = 287,
       votesSegmentCount = 287,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84),
-      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 0),
+      segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0),
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
       ),
@@ -295,6 +296,7 @@ class ProposalSearchEngineIT
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
       tags = Seq(tagAlpha, tagBeta, tagGamma, tagDelta),
+      selectedStakeTag = Some(tagGamma),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
@@ -352,7 +354,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 310,
       votesSegmentCount = 310,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
@@ -372,6 +374,7 @@ class ProposalSearchEngineIT
       organisations = Seq.empty,
       themeId = Some(ThemeId("foo-theme")),
       tags = Seq(tagAlpha, tagBeta, tagDelta),
+      selectedStakeTag = Some(tagBeta),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
@@ -429,7 +432,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 127,
       votesSegmentCount = 127,
       toEnrich = true,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 35, 35, 0, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-2")),
@@ -451,6 +454,7 @@ class ProposalSearchEngineIT
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(tagBeta),
+      selectedStakeTag = Some(tagBeta),
       operationId = None,
       question = Some(baseQuestion),
       sequencePool = SequencePool.Tested,
@@ -508,7 +512,7 @@ class ProposalSearchEngineIT
       votesSequenceCount = 353,
       votesSegmentCount = 353,
       toEnrich = false,
-      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0),
+      scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
         IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
@@ -528,6 +532,7 @@ class ProposalSearchEngineIT
       organisations = Seq.empty,
       themeId = None,
       tags = Seq(tagBeta),
+      selectedStakeTag = Some(tagDelta),
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-3")),
       operationId = None,
@@ -604,7 +609,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
@@ -681,7 +687,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
@@ -756,7 +763,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
@@ -831,7 +839,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Accepted,
       ideaId = None,
       operationId = None,
@@ -913,7 +922,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = Some(IdeaId("idea-id")),
       operationId = None,
@@ -992,7 +1002,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
@@ -1071,7 +1082,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
@@ -1150,7 +1162,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
@@ -1227,7 +1240,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
@@ -1304,7 +1318,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
@@ -1382,7 +1397,8 @@ class ProposalSearchEngineIT
       ),
       organisations = Seq.empty,
       themeId = None,
-      tags = Seq(),
+      tags = Seq.empty,
+      selectedStakeTag = None,
       status = ProposalStatus.Pending,
       ideaId = None,
       operationId = None,
@@ -1686,12 +1702,25 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("get top proposals by idea") {
+  feature("get top proposals") {
     scenario("get top proposals by idea for base question") {
-      whenReady(elasticsearchProposalAPI.getTopProposalsByIdea(baseQuestion.questionId, 10), Timeout(10.seconds)) {
-        results =>
-          results.take(3).map(_.scores.topScore) should be(Seq(42.0, 35.0, 16.0))
-          results.take(3).flatMap(_.ideaId).map(_.value) should be(Seq("idea-id", "idea-id-2", "idea-id-3"))
+      whenReady(
+        elasticsearchProposalAPI.getTopProposals(baseQuestion.questionId, 10, ProposalElasticsearchFieldNames.ideaId),
+        Timeout(10.seconds)
+      ) { results =>
+        results.take(3).map(_.scores.topScore) should be(Seq(42.0, 35.0, 16.0))
+        results.take(3).flatMap(_.ideaId).map(_.value) should be(Seq("idea-id", "idea-id-2", "idea-id-3"))
+      }
+    }
+
+    scenario("get top proposals by stake tag") {
+      whenReady(
+        elasticsearchProposalAPI
+          .getTopProposals(baseQuestion.questionId, 10, ProposalElasticsearchFieldNames.selectedStakeTagId),
+        Timeout(10.seconds)
+      ) { results =>
+        results.take(3).map(_.scores.topScore) should be(Seq(42.0, 35.0, 16.0))
+        results.take(3).flatMap(_.selectedStakeTag).map(_.label) should be(Seq("gamma", "beta", "delta"))
       }
     }
   }

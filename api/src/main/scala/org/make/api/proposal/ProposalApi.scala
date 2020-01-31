@@ -207,7 +207,8 @@ trait DefaultProposalApiComponent
     with UserServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
-    with SecurityConfigurationComponent =>
+    with SecurityConfigurationComponent
+    with SortAlgorithmConfigurationComponent =>
 
   override lazy val proposalApi: DefaultProposalApi = new DefaultProposalApi
 
@@ -387,7 +388,7 @@ trait DefaultProposalApiComponent
                     proposalService
                       .searchForUser(
                         userId = userAuth.map(_.user.userId),
-                        query = searchRequest.toSearchQuery(requestContext),
+                        query = searchRequest.toSearchQuery(requestContext, sortAlgorithmConfiguration),
                         requestContext = requestContext
                       )
                   ) { proposals =>

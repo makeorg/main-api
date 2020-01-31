@@ -270,6 +270,7 @@ final case class ProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
   themeId: Option[ThemeId],
   tags: Seq[IndexedTag],
+  selectedStakeTag: Option[IndexedTag],
   myProposal: Boolean,
   @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
   idea: Option[IdeaId],
@@ -311,6 +312,7 @@ object ProposalResponse extends CirceFormatters {
       language = indexedProposal.language,
       themeId = indexedProposal.themeId,
       tags = indexedProposal.tags,
+      selectedStakeTag = indexedProposal.selectedStakeTag,
       myProposal = myProposal,
       idea = indexedProposal.ideaId,
       question = indexedProposal.question.map { proposalQuestion =>

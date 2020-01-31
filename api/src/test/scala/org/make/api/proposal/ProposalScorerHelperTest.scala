@@ -420,6 +420,8 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         )
 
       ScoreCounts.topScore(sequenceConfiguration, counts1, counts2) should equal(-2.74 +- 0.02)
+      ScoreCounts.topScoreLowerBound(sequenceConfiguration, counts1, counts2) should equal(-4.02 +- 0.02)
+      ScoreCounts.topScoreUpperBound(sequenceConfiguration, counts1, counts2) should equal(-1.46 +- 0.02)
     }
 
   }

@@ -359,4 +359,48 @@ class TagServiceTest
 
   }
 
+  feature("retrieve stake tag") {
+    scenario("error") {
+      Mockito.when(persistentTagTypeService.findAll()).thenReturn(Future.successful(Seq.empty))
+
+      whenReady(tagService.retrieveIndexedStakeTags(Seq.empty).failed, Timeout(3.seconds)) { res =>
+        res should be(a[IllegalStateException])
+      }
+    }
+
+    scenario("1 stake tag") {
+      Mockito
+        .when(persistentTagTypeService.findAll())
+        .thenReturn(
+          Future.successful(Seq(TagType(TagTypeId("stake"), label = "stake", display = TagTypeDisplay.Displayed)))
+        )
+
+      Mockito
+        .when(tagService.findByTagIds(Seq(TagId("tag-1"))))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              Tag(
+                tagId = TagId("tag-1"),
+                label = "tag 1",
+                display = TagDisplay.Inherit,
+                tagTypeId = TagTypeId("stake"),
+                weight = 0,
+                operationId = None,
+                questionId = None,
+                themeId = None,
+                country = Country("FR"),
+                language = Language("fr")
+              )
+            )
+          )
+        )
+
+      whenReady(tagService.retrieveIndexedStakeTags(Seq(TagId("tag-1"))), Timeout(3.seconds)) { res =>
+        res.head.label should be("tag 1")
+        res.head.display should be(true)
+      }
+    }
+  }
+
 }

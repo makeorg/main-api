@@ -74,7 +74,7 @@ trait ProposalSearchEngine {
   def updateProposals(records: Seq[IndexedProposal],
                       mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
-  def getTopProposalsByIdea(questionId: QuestionId, size: Int): Future[Seq[IndexedProposal]]
+  def getTopProposals(questionId: QuestionId, size: Int, aggregationField: String): Future[Seq[IndexedProposal]]
   def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]]
   def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId], seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]]
 }
@@ -286,7 +286,13 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def getTopProposalsByIdea(questionId: QuestionId, size: Int): Future[Seq[IndexedProposal]] = {
+    override def getTopProposals(questionId: QuestionId,
+                                 size: Int,
+                                 aggregationField: String): Future[Seq[IndexedProposal]] = {
+      val topHitsAggregationName = "topHits"
+      val termsAggregationName = "termsAgg"
+      val maxAggregationName = "maxTopScore"
+
       val searchQuery: SearchQuery = SearchQuery(
         filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId)))))
       )
@@ -295,18 +301,21 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       // This aggregation create a field "maxTopScore" with the max value of indexedProposal.scores.topScore
       val maxAggregation =
-        MaxAggregation(name = "maxTopScore", field = Some(ProposalElasticsearchFieldNames.topScoreAjustedWithVotes))
+        MaxAggregation(
+          name = maxAggregationName,
+          field = Some(ProposalElasticsearchFieldNames.topScoreAjustedWithVotes)
+        )
 
       // This aggregation sort each bucket from the field "maxTopScore"
       val bucketSortAggregation = BucketSortPipelineAgg(
         name = "topScoreBucketSort",
-        sort = Seq(FieldSort(field = "maxTopScore", order = SortOrder.DESC))
+        sort = Seq(FieldSort(field = maxAggregationName, order = SortOrder.DESC))
       )
 
       // This aggregation take the proposal with the highest indexedProposal.scores.topScore on each bucket
       val topHitsAggregation =
         TopHitsAggregation(
-          name = "topHits",
+          name = topHitsAggregationName,
           sorts =
             Seq(FieldSort(field = ProposalElasticsearchFieldNames.topScoreAjustedWithVotes, order = SortOrder.DESC)),
           size = Some(1)
@@ -314,7 +323,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val finalRequest: ElasticSearchRequest = request
         .aggregations(
-          TermsAggregation(name = "byIdea", field = Some(ProposalElasticsearchFieldNames.ideaId), size = Some(size))
+          TermsAggregation(name = termsAggregationName, field = Some(aggregationField), size = Some(size))
             .subAggregations(Seq(maxAggregation, bucketSortAggregation, topHitsAggregation)) // Those 3 subAggregation are execute on each bucket created by the parent aggregation
             .minDocCount(min = 1)
         )
@@ -322,9 +331,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       client.executeAsFuture(finalRequest).map { response =>
         response.aggregations
-          .terms("byIdea")
+          .terms(termsAggregationName)
           .buckets
-          .flatMap(_.tophits("topHits").hits.map(_.to[IndexedProposal]))
+          .flatMap(_.tophits(topHitsAggregationName).hits.map(_.to[IndexedProposal]))
       }
     }
 

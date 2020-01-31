@@ -227,6 +227,7 @@ trait MakeApi
     with DefaultSequenceServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
     with DefaultSocialServiceComponent
+    with DefaultSortAlgorithmConfigurationComponent
     with DefaultStorageConfigurationComponent
     with DefaultStorageServiceComponent
     with DefaultSwiftClientComponent
