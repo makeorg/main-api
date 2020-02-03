@@ -328,7 +328,11 @@ trait PersistentUserService {
                      maybeRole: Option[Role],
                      maybeUserType: Option[UserType]): Future[Seq[User]]
   def findAllOrganisations(): Future[Seq[User]]
-  def findOrganisations(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]]
+  def findOrganisations(start: Int,
+                        end: Option[Int],
+                        sort: Option[String],
+                        order: Option[String],
+                        organisationName: Option[String]): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
   def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]]
@@ -362,7 +366,7 @@ trait PersistentUserService {
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
-  def countOrganisations(): Future[Int]
+  def countOrganisations(organisationName: Option[String]): Future[Int]
   def adminCountUsers(email: Option[String],
                       firstName: Option[String],
                       lastName: Option[String],
@@ -522,9 +526,15 @@ trait DefaultPersistentUserServiceComponent
             .from(PersistentUser.as(userAlias))
             .where(
               sqls.toAndConditionOpt(
-                email.map(email            => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
-                firstName.map(firstName    => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
-                lastName.map(lastName      => sqls.like(userAlias.lastName, s"%${lastName.replace("%", "\\%")}%")),
+                email.map(email => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
+                firstName.map(
+                  firstName =>
+                    sqls.like(sqls.lower(userAlias.firstName), s"%${firstName.replace("%", "\\%").toLowerCase}%")
+                ),
+                lastName.map(
+                  lastName =>
+                    sqls.like(sqls.lower(userAlias.lastName), s"%${lastName.replace("%", "\\%").toLowerCase}%")
+                ),
                 maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.shortName}%")),
                 maybeUserType.map(userType => sqls.eq(userAlias.userType, userType.shortName))
               )
@@ -568,7 +578,8 @@ trait DefaultPersistentUserServiceComponent
     override def findOrganisations(start: Int,
                                    end: Option[Int],
                                    sort: Option[String],
-                                   order: Option[String]): Future[Seq[User]] = {
+                                   order: Option[String],
+                                   organisationName: Option[String]): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB(Symbol("READ")).retryableTx {
         implicit session =>
@@ -576,7 +587,19 @@ trait DefaultPersistentUserServiceComponent
             val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
               select
                 .from(PersistentUser.as(userAlias))
-                .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
+                .where(
+                  sqls
+                    .eq(userAlias.userType, UserType.UserTypeOrganisation.shortName)
+                    .and(
+                      organisationName.map(
+                        organisationName =>
+                          sqls.like(
+                            sqls.lower(userAlias.organisationName),
+                            s"%${organisationName.replace("%", "\\%").toLowerCase}%"
+                        )
+                      )
+                    )
+                )
 
             val queryOrdered = (sort, order) match {
               case (Some(field), Some("DESC")) if PersistentUser.columnNames.contains(field) =>
@@ -1093,13 +1116,25 @@ trait DefaultPersistentUserServiceComponent
       })
     }
 
-    override def countOrganisations(): Future[Int] = {
+    override def countOrganisations(organisationName: Option[String]): Future[Int] = {
       implicit val ctx: EC = readExecutionContext
       Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
+            .where(
+              sqls
+                .eq(userAlias.userType, UserType.UserTypeOrganisation.shortName)
+                .and(
+                  organisationName.map(
+                    organisationName =>
+                      sqls.like(
+                        sqls.lower(userAlias.organisationName),
+                        s"%${organisationName.replace("%", "\\%").toLowerCase}%"
+                    )
+                  )
+                )
+            )
         }.map(_.int(1)).single.apply().getOrElse(0)
       })
     }

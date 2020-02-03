@@ -228,8 +228,20 @@ trait DefaultModerationOrganisationApiComponent
       get {
         path("moderation" / "organisations") {
           makeOperation("ModerationGetOrganisations") { _ =>
-            parameters((Symbol("_start").as[Int].?, Symbol("_end").as[Int].?, Symbol("_sort").?, Symbol("_order").?)) {
-              (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[String]) =>
+            parameters(
+              (
+                Symbol("_start").as[Int].?,
+                Symbol("_end").as[Int].?,
+                Symbol("_sort").?,
+                Symbol("_order").?,
+                Symbol("organisationName").?
+              )
+            ) {
+              (start: Option[Int],
+               end: Option[Int],
+               sort: Option[String],
+               order: Option[String],
+               organisationName: Option[String]) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     order.foreach { orderValue =>
@@ -243,15 +255,16 @@ trait DefaultModerationOrganisationApiComponent
                           )
                       )
                     }
-                    provideAsync(organisationService.count()) { count =>
-                      provideAsync(organisationService.find(start.getOrElse(0), end, sort, order)) { result =>
-                        complete(
-                          (
-                            StatusCodes.OK,
-                            List(`X-Total-Count`(count.toString)),
-                            result.map(OrganisationResponse.apply)
+                    provideAsync(organisationService.count(organisationName)) { count =>
+                      provideAsync(organisationService.find(start.getOrElse(0), end, sort, order, organisationName)) {
+                        result =>
+                          complete(
+                            (
+                              StatusCodes.OK,
+                              List(`X-Total-Count`(count.toString)),
+                              result.map(OrganisationResponse.apply)
+                            )
                           )
-                        )
                       }
                     }
                   }
@@ -292,13 +305,11 @@ object ModerationCreateOrganisationRequest {
     deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
-final case class ModerationUpdateOrganisationRequest(
-  @(ApiModelProperty @field)(dataType = "string", required = false)
-  organisationName: String Refined MaxSize[W.`256`.T],
-  @(ApiModelProperty @field)(dataType = "string", required = false)
-  email: Option[String] = None,
-  profile: Option[ProfileRequest]
-) {
+final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
+                                                     organisationName: String Refined MaxSize[W.`256`.T],
+                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
+                                                     email: Option[String] = None,
+                                                     profile: Option[ProfileRequest]) {
   OrganisationValidation.validateUpdate(
     organisationName = organisationName.value,
     email = email,
@@ -324,12 +335,10 @@ private object OrganisationValidation {
     )
   }
 
-  def validateUpdate(
-    organisationName: String,
-    email: Option[String],
-    description: Option[String],
-    profileRequest: Option[ProfileRequest]
-  ): Unit = {
+  def validateUpdate(organisationName: String,
+                     email: Option[String],
+                     description: Option[String],
+                     profileRequest: Option[ProfileRequest]): Unit = {
     validateOptional(
       Some(validateUserInput("organisationName", organisationName, None)),
       description.map(value => validateUserInput("description", value, None)),
@@ -382,13 +391,11 @@ object OrganisationProfileRequest {
   implicit val decoder: Decoder[OrganisationProfileRequest] = deriveDecoder[OrganisationProfileRequest]
 }
 
-final case class OrganisationProfileResponse(
-  organisationName: Option[String],
-  avatarUrl: Option[String],
-  description: Option[String],
-  website: Option[String],
-  optInNewsletter: Boolean
-)
+final case class OrganisationProfileResponse(organisationName: Option[String],
+                                             avatarUrl: Option[String],
+                                             description: Option[String],
+                                             website: Option[String],
+                                             optInNewsletter: Boolean)
 
 object OrganisationProfileResponse {
   implicit val encoder: Encoder[OrganisationProfileResponse] = deriveEncoder[OrganisationProfileResponse]

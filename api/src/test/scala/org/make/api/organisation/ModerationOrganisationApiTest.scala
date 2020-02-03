@@ -266,13 +266,15 @@ class ModerationOrganisationApiTest
 
     scenario("get organisations with moderation role") {
 
-      when(organisationService.count()).thenReturn(Future.successful(1))
+      when(organisationService.count(None)).thenReturn(Future.successful(1))
 
       Given("a moderator")
       When("I want to get organisations")
       Then("I should get a forbidden status")
-      when(organisationService.find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]]))
-        .thenReturn(Future.successful(Seq(fakeOrganisation)))
+      when(
+        organisationService
+          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[Option[String]])
+      ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
@@ -281,13 +283,15 @@ class ModerationOrganisationApiTest
 
     scenario("get organisations with admin role") {
 
-      when(organisationService.count()).thenReturn(Future.successful(1))
+      when(organisationService.count(None)).thenReturn(Future.successful(1))
 
       Given("a moderator")
       When("I want to get organisations")
       Then("I should get an OK status")
-      when(organisationService.find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]]))
-        .thenReturn(Future.successful(Seq(fakeOrganisation)))
+      when(
+        organisationService
+          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[Option[String]])
+      ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK

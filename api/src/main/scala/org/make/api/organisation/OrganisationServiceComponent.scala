@@ -48,8 +48,12 @@ trait OrganisationServiceComponent {
 trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
   def getOrganisations: Future[Seq[User]]
-  def find(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]]
-  def count(): Future[Int]
+  def find(start: Int,
+           end: Option[Int],
+           sort: Option[String],
+           order: Option[String],
+           organisationName: Option[String]): Future[Seq[User]]
+  def count(organisationName: Option[String]): Future[Int]
   def search(organisationName: Option[String],
              slug: Option[String],
              organisationIds: Option[Seq[UserId]],
@@ -109,12 +113,16 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       * start and end are here to paginate the result
       * sort and order are here to sort the result
       */
-    override def find(start: Int, end: Option[Int], sort: Option[String], order: Option[String]): Future[Seq[User]] = {
-      persistentUserService.findOrganisations(start, end, sort, order)
+    override def find(start: Int,
+                      end: Option[Int],
+                      sort: Option[String],
+                      order: Option[String],
+                      organisationName: Option[String]): Future[Seq[User]] = {
+      persistentUserService.findOrganisations(start, end, sort, order, organisationName)
     }
 
-    override def count(): Future[Int] = {
-      persistentUserService.countOrganisations()
+    override def count(organisationName: Option[String]): Future[Int] = {
+      persistentUserService.countOrganisations(organisationName)
     }
 
     /**
