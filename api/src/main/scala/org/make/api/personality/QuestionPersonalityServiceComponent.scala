@@ -19,18 +19,27 @@
 
 package org.make.api.personality
 
-import org.make.api.idea.{TopIdeaResponse, TopIdeaServiceComponent}
+import org.make.api.idea.TopIdeaServiceComponent
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.operation.OperationOfQuestionServiceComponent
-import org.make.api.question.{QuestionServiceComponent, SimpleQuestionResponse, SimpleQuestionWordingResponse}
-import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
+import org.make.api.proposal.ProposalSearchEngineComponent
+import org.make.api.question.{
+  AvatarsAndProposalsCount,
+  QuestionServiceComponent,
+  QuestionTopIdeaWithAvatarResponse,
+  SimpleQuestionResponse,
+  SimpleQuestionWordingResponse
+}
+import org.make.api.technical.{IdGeneratorComponent, MakeRandom, ShortenedNames}
+import org.make.core.idea.{IdeaId, TopIdea, TopIdeaComment}
+import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.operation.{
   OperationOfQuestionSearchFilters,
   OperationOfQuestionSearchQuery,
   QuestionIdsSearchFilter
 }
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -65,7 +74,8 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
     with QuestionServiceComponent
     with OperationOfQuestionServiceComponent
     with TopIdeaServiceComponent
-    with TopIdeaCommentServiceComponent =>
+    with TopIdeaCommentServiceComponent
+    with ProposalSearchEngineComponent =>
 
   override lazy val questionPersonalityService: DefaultQuestionPersonalityService =
     new DefaultQuestionPersonalityService
@@ -117,50 +127,86 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
       persistentQuestionPersonalityService.delete(personalityId)
     }
 
+    private def opinionsResponse(
+      topIdeas: Seq[TopIdea],
+      questions: Seq[Question],
+      opOfQuestions: Seq[IndexedOperationOfQuestion],
+      topIdeaComments: Seq[TopIdeaComment],
+      commentByTopIdea: Map[String, Int],
+      avatarsAndProposalsCountByIdea: Map[IdeaId, AvatarsAndProposalsCount]
+    ): Seq[PersonalityOpinionResponse] = {
+      topIdeas.flatMap { topIdea =>
+        val maybeQuestion = questions.find(_.questionId == topIdea.questionId)
+        val maybeOpOfQuestion = opOfQuestions.find(_.questionId == topIdea.questionId)
+        (maybeQuestion, maybeOpOfQuestion) match {
+          case (Some(question), Some(opOfQuestion)) =>
+            val simpleQuestion = SimpleQuestionResponse(
+              question.questionId,
+              question.slug,
+              SimpleQuestionWordingResponse(opOfQuestion.operationTitle, opOfQuestion.question),
+              opOfQuestion.country,
+              opOfQuestion.language,
+              opOfQuestion.startDate,
+              opOfQuestion.endDate
+            )
+            val ideaAvatarsCount = avatarsAndProposalsCountByIdea
+              .getOrElse(topIdea.ideaId, AvatarsAndProposalsCount(Seq.empty, 0))
+            val topIdeaResponse = QuestionTopIdeaWithAvatarResponse(
+              id = topIdea.topIdeaId,
+              ideaId = topIdea.ideaId,
+              questionId = topIdea.questionId,
+              name = topIdea.name,
+              label = topIdea.label,
+              scores = topIdea.scores,
+              proposalsCount = ideaAvatarsCount.proposalsCount,
+              avatars = ideaAvatarsCount.avatars,
+              weight = topIdea.weight,
+              commentsCount = commentByTopIdea.getOrElse(topIdea.topIdeaId.value, 0)
+            )
+
+            Some(
+              PersonalityOpinionResponse(
+                simpleQuestion,
+                topIdeaResponse,
+                topIdeaComments
+                  .find(_.topIdeaId == topIdea.topIdeaId)
+                  .map(TopIdeaCommentResponse.apply)
+              )
+            )
+          case _ => None
+        }
+      }
+    }
+
     override def getPersonalitiesOpinionsByQuestions(
       personalities: Seq[Personality]
     ): Future[Seq[PersonalityOpinionResponse]] = {
-      questionService.getQuestions(personalities.map(_.questionId)).flatMap { questions =>
-        val questionIds = questions.map(_.questionId)
-        val opOfQuestionQuery =
-          OperationOfQuestionSearchQuery(
-            filters = Some(OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(questionIds))))
-          )
-        operationOfQuestionService.search(opOfQuestionQuery).flatMap { opOfQuestionsResult =>
-          topIdeaService.search(0, None, None, None, None, Some(questionIds), None).flatMap { topIdeas =>
-            topIdeaCommentService
-              .search(0, None, Some(topIdeas.map(_.topIdeaId)), Some(personalities.map(_.userId).distinct))
-              .map { topIdeaComments =>
-                topIdeas.flatMap { topIdea =>
-                  val maybeQuestion = questions.find(_.questionId == topIdea.questionId)
-                  val maybeOpOfQuestion = opOfQuestionsResult.results.find(_.questionId == topIdea.questionId)
-                  (maybeQuestion, maybeOpOfQuestion) match {
-                    case (Some(question), Some(opOfQuestion)) =>
-                      val simpleQuestion = SimpleQuestionResponse(
-                        question.questionId,
-                        question.slug,
-                        SimpleQuestionWordingResponse(opOfQuestion.operationTitle, opOfQuestion.question),
-                        opOfQuestion.country,
-                        opOfQuestion.language,
-                        opOfQuestion.startDate,
-                        opOfQuestion.endDate
-                      )
-                      Some(
-                        PersonalityOpinionResponse(
-                          simpleQuestion,
-                          TopIdeaResponse(topIdea),
-                          topIdeaComments
-                            .find(_.topIdeaId == topIdea.topIdeaId)
-                            .map(TopIdeaCommentResponse.apply)
-                        )
-                      )
-                    case _ => None
-                  }
-                }
-              }
-          }
-        }
-      }
+      for {
+        questions <- questionService.getQuestions(personalities.map(_.questionId))
+        questionIds = questions.map(_.questionId)
+        queryFilters = OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(questionIds)))
+        opOfQuestionsResult <- operationOfQuestionService.search(OperationOfQuestionSearchQuery(Some(queryFilters)))
+        topIdeas            <- topIdeaService.search(0, None, None, None, None, Some(questionIds), None)
+        topIdeaComments <- topIdeaCommentService.search(
+          0,
+          None,
+          Some(topIdeas.map(_.topIdeaId)),
+          Some(personalities.map(_.userId).distinct)
+        )
+        commentByTopIdea <- topIdeaCommentService.countForAll(topIdeas.map(_.topIdeaId))
+        avatarsAndProposalsCountByIdea <- elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(
+          ideaIds = topIdeas.map(_.ideaId),
+          MakeRandom.random.nextInt()
+        )
+      } yield
+        opinionsResponse(
+          topIdeas,
+          questions,
+          opOfQuestionsResult.results,
+          topIdeaComments,
+          commentByTopIdea,
+          avatarsAndProposalsCountByIdea
+        )
 
     }
 

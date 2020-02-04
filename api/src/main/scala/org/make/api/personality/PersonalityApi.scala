@@ -28,7 +28,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.idea.{TopIdeaResponse, TopIdeaServiceComponent}
+import org.make.api.idea.TopIdeaServiceComponent
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -38,7 +38,7 @@ import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, TopIdeaComme
 import org.make.core.profile.Profile
 import org.make.core.user.{User, UserId}
 import io.circe.refined._
-import org.make.api.question.SimpleQuestionResponse
+import org.make.api.question.{QuestionTopIdeaWithAvatarResponse, SimpleQuestionResponse}
 import org.make.core.question.QuestionId
 
 import scala.annotation.meta.field
@@ -403,7 +403,7 @@ object TopIdeaCommentResponse {
 
 @ApiModel
 final case class PersonalityOpinionResponse(question: SimpleQuestionResponse,
-                                            topIdea: TopIdeaResponse,
+                                            topIdea: QuestionTopIdeaWithAvatarResponse,
                                             comment: Option[TopIdeaCommentResponse])
 
 object PersonalityOpinionResponse {

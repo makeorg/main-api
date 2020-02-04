@@ -45,6 +45,7 @@ trait TopIdeaCommentService {
              topIdeaIds: Option[Seq[TopIdeaId]],
              personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]]
   def getCommentsWithPersonality(topIdeaIds: Seq[TopIdeaId]): Future[Seq[QuestionTopIdeaCommentsResponse]]
+  def countForAll(topIdeaIds: Seq[TopIdeaId]): Future[Map[String, Int]]
 }
 
 trait TopIdeaCommentServiceComponent {
@@ -127,5 +128,8 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
         }
         .runWith(Sink.seq[QuestionTopIdeaCommentsResponse])
     }
+
+    override def countForAll(topIdeaIds: Seq[TopIdeaId]): Future[Map[String, Int]] =
+      persistentTopIdeaCommentService.countForAll(topIdeaIds)
   }
 }
