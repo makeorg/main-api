@@ -536,11 +536,27 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     scenario("find organisations with params") {
       whenReady(
         persistentUserService
-          .findOrganisations(start = 0, end = Some(2), sort = Some("organisation_name"), order = Some("ASC"))
+          .findOrganisations(start = 0, end = Some(2), sort = Some("organisation_name"), order = Some("ASC"), None)
       ) { organisations =>
         organisations.size should be(2)
         organisations.head.userId shouldBe UserId("CIA")
         organisations.last.userId shouldBe UserId("DGSE")
+      }
+    }
+
+    scenario(("find organisation with organisation name filter")) {
+      whenReady(persistentUserService.findOrganisations(start = 0, end = None, sort = None, order = None, Some("CIA"))) {
+        organisations =>
+          organisations.size should be(1)
+          organisations.head.userId should be(UserId("CIA"))
+      }
+    }
+
+    scenario(("find organisation with organisation name filter - check case insensitivity")) {
+      whenReady(persistentUserService.findOrganisations(start = 0, end = None, sort = None, order = None, Some("cia"))) {
+        organisations =>
+          organisations.size should be(1)
+          organisations.head.userId should be(UserId("CIA"))
       }
     }
   }
