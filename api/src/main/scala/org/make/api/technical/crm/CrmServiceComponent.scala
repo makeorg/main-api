@@ -39,7 +39,6 @@ import io.circe.Decoder
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
-import org.make.api.proposal.{ProposalCoordinatorServiceComponent, ProposalSearchEngineComponent}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.RichFutures._
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
@@ -49,18 +48,15 @@ import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserService
 import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
-import org.make.core.operation.OperationId
-import org.make.core.proposal._
-import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.question.Question
-import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId, UserType}
-import org.make.core.{DateHelper, RequestContext}
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
+import org.make.core.DateHelper
+import org.make.api.proposal.ProposalServiceComponent
 
 trait CrmService {
   def sendEmail(message: SendEmail): Future[SendEmailResponse]
@@ -68,12 +64,14 @@ trait CrmService {
   def createCrmUsers(): Future[Unit]
   def anonymize(): Future[Unit]
   def synchronizeContactsWithCrm(): Future[Unit]
-  def getUsersMailFromList(listId: Option[String] = None,
-                           sort: Option[String] = None,
-                           order: Option[String] = None,
-                           countOnly: Option[Boolean] = None,
-                           limit: Int,
-                           offset: Int = 0): Future[GetUsersMail]
+  def getUsersMailFromList(
+    listId: Option[String] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    countOnly: Option[Boolean] = None,
+    limit: Int,
+    offset: Int = 0
+  ): Future[GetUsersMail]
   def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime, deleteEmptyProperties: Boolean): Future[Int]
 }
 
@@ -81,7 +79,7 @@ trait CrmServiceComponent {
   def crmService: CrmService
 }
 
-trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging {
+trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging with ErrorAccumulatingCirceSupport {
   self: MailJetConfigurationComponent
     with ActorSystemComponent
     with OperationServiceComponent
@@ -90,39 +88,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with UserServiceComponent
     with PersistentUserToAnonymizeServiceComponent
     with ReadJournalComponent
-    with ProposalCoordinatorServiceComponent
-    with ProposalSearchEngineComponent
-    with PersistentUserToAnonymizeServiceComponent
+    with ProposalServiceComponent
     with PersistentCrmUserServiceComponent
     with CrmClientComponent
     with EventBusServiceComponent
     with ErrorAccumulatingCirceSupport =>
-
-  class QuestionResolver(questions: Seq[Question], operations: Map[String, OperationId]) {
-
-    private val questionsWithOperation: Seq[Question] = questions.filter(_.operationId.isDefined)
-
-    def findQuestionWithOperation(predicate: Question => Boolean): Option[Question] =
-      questionsWithOperation.find(predicate)
-
-    def extractQuestionWithOperationFromRequestContext(requestContext: RequestContext): Option[Question] = {
-      requestContext.questionId
-        .flatMap(questionId => questionsWithOperation.find(_.questionId == questionId))
-        .orElse {
-          requestContext.operationId.flatMap { operationId =>
-            questionsWithOperation.find(
-              question =>
-                // In old operations, the header contained the slug and not the id
-                // also the old operations didn't all have a country or language
-                (question.operationId.contains(operationId) ||
-                  question.operationId == operations.get(operationId.value)) &&
-                  requestContext.country.orElse(Some(Country("FR"))).contains(question.country) &&
-                  requestContext.language.orElse(Some(Language("fr"))).contains(question.language)
-            )
-          }
-        }
-    }
-  }
 
   override lazy val crmService: DefaultCrmService = new DefaultCrmService
 
@@ -164,12 +134,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       result
     }
 
-    override def getUsersMailFromList(listId: Option[String] = None,
-                                      sort: Option[String] = None,
-                                      order: Option[String] = None,
-                                      countOnly: Option[Boolean] = None,
-                                      limit: Int,
-                                      offset: Int = 0): Future[GetUsersMail] = {
+    override def getUsersMailFromList(
+      listId: Option[String] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      countOnly: Option[Boolean] = None,
+      limit: Int,
+      offset: Int = 0
+    ): Future[GetUsersMail] = {
       crmClient
         .getUsersInformationMailFromList(listId, sort, order, countOnly, limit, offset)
         .map { response =>
@@ -371,10 +343,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .runWith(Sink.ignore)
     }
 
-    private def verifyJobCompletion(responseHardBouunce: Long,
-                                    responseOptIn: Long,
-                                    responseUnsubscribe: Long): Future[Unit] = {
-      val jobIds = Seq(responseHardBouunce, responseOptIn, responseUnsubscribe)
+    private def verifyJobCompletion(
+      responseHardBounce: Long,
+      responseOptIn: Long,
+      responseUnsubscribe: Long
+    ): Future[Unit] = {
+      val jobIds = Seq(responseHardBounce, responseOptIn, responseUnsubscribe)
       val promise = Promise[Unit]()
       actorSystem.actorOf(CrmSynchroCsvMonitor.props(crmClient, jobIds, promise, mailJetConfiguration.tickInterval))
       promise.future
@@ -445,15 +419,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           .throttle(200, 1.hour)
           .mapAsync(1) { grouppedEmails =>
             crmClient
-              .manageContactList(
-                manageContactList = ManageManyContacts(
-                  contacts = grouppedEmails,
-                  contactList = Seq(
-                    ContactList(mailJetConfiguration.hardBounceListId, Remove),
-                    ContactList(mailJetConfiguration.unsubscribeListId, Remove),
-                    ContactList(mailJetConfiguration.optInListId, Remove)
-                  )
+              .manageContactList(manageContactList = ManageManyContacts(
+                contacts = grouppedEmails,
+                contactList = Seq(
+                  ContactList(mailJetConfiguration.hardBounceListId, Remove),
+                  ContactList(mailJetConfiguration.unsubscribeListId, Remove),
+                  ContactList(mailJetConfiguration.optInListId, Remove)
                 )
+              )
               )
               .map(Right(_))
               .recoverWith { case e => Future.successful(Left(e)) }
@@ -565,9 +538,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         updatedAt = userProperty.updatedAt.map(_.format(dateFormatter))
       )
     }
-    private def accumulateEvent(accumulator: UserProperties,
-                                envelope: EventEnvelope,
-                                questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateEvent(
+      accumulator: UserProperties,
+      envelope: EventEnvelope,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       envelope.event match {
         case event: LogRegisterCitizenEvent =>
           Future.successful(accumulateLogRegisterCitizenEvent(accumulator, event, questionResolver))
@@ -585,23 +560,17 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def accumulateLogUserUnqualificationEvent(accumulator: UserProperties,
-                                                      event: LogUserUnqualificationEvent,
-                                                      questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserUnqualificationEvent(
+      accumulator: UserProperties,
+      event: LogUserUnqualificationEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureQuestion: Future[Option[Question]] =
-        questionResolver
-          .extractQuestionWithOperationFromRequestContext(event.requestContext)
-          .map(Some(_))
-          .map(Future.successful)
-          .getOrElse(
-            proposalCoordinatorService
-              .getProposal(event.action.arguments.proposalId)
-              .map { maybeProposal =>
-                questionResolver.findQuestionWithOperation { question =>
-                  maybeProposal.flatMap(_.questionId).contains(question.questionId)
-                }
-              }
-          )
+        proposalService.resolveQuestionFromVoteEvent(
+          questionResolver,
+          event.requestContext,
+          event.action.arguments.proposalId
+        )
 
       futureQuestion.map { maybeQuestion =>
         accumulator.copy(
@@ -621,24 +590,18 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def accumulateLogUserQualificationEvent(accumulator: UserProperties,
-                                                    event: LogUserQualificationEvent,
-                                                    questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserQualificationEvent(
+      accumulator: UserProperties,
+      event: LogUserQualificationEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
 
       val futureQuestion: Future[Option[Question]] =
-        questionResolver
-          .extractQuestionWithOperationFromRequestContext(event.requestContext)
-          .map(Some(_))
-          .map(Future.successful)
-          .getOrElse(
-            proposalCoordinatorService
-              .getProposal(event.action.arguments.proposalId)
-              .map { maybeProposal =>
-                questionResolver.findQuestionWithOperation { question =>
-                  maybeProposal.flatMap(_.questionId).contains(question.questionId)
-                }
-              }
-          )
+        proposalService.resolveQuestionFromVoteEvent(
+          questionResolver,
+          event.requestContext,
+          event.action.arguments.proposalId
+        )
 
       futureQuestion.map { maybeQuestion =>
         accumulator.copy(
@@ -657,23 +620,17 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         )
       }
     }
-    private def accumulateLogUserUnvoteEvent(accumulator: UserProperties,
-                                             event: LogUserUnvoteEvent,
-                                             questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserUnvoteEvent(
+      accumulator: UserProperties,
+      event: LogUserUnvoteEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureQuestion: Future[Option[Question]] =
-        questionResolver
-          .extractQuestionWithOperationFromRequestContext(event.requestContext)
-          .map(Some(_))
-          .map(Future.successful)
-          .getOrElse(
-            proposalCoordinatorService
-              .getProposal(event.action.arguments.proposalId)
-              .map { maybeProposal =>
-                questionResolver.findQuestionWithOperation { question =>
-                  maybeProposal.flatMap(_.questionId).contains(question.questionId)
-                }
-              }
-          )
+        proposalService.resolveQuestionFromVoteEvent(
+          questionResolver,
+          event.requestContext,
+          event.action.arguments.proposalId
+        )
 
       futureQuestion.map { maybeQuestion =>
         accumulator.copy(
@@ -693,23 +650,17 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         )
       }
     }
-    private def accumulateLogUserVoteEvent(accumulator: UserProperties,
-                                           event: LogUserVoteEvent,
-                                           questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserVoteEvent(
+      accumulator: UserProperties,
+      event: LogUserVoteEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureQuestion: Future[Option[Question]] =
-        questionResolver
-          .extractQuestionWithOperationFromRequestContext(event.requestContext)
-          .map(Some(_))
-          .map(Future.successful)
-          .getOrElse(
-            proposalCoordinatorService
-              .getProposal(event.action.arguments.proposalId)
-              .map { maybeProposal =>
-                questionResolver.findQuestionWithOperation { question =>
-                  maybeProposal.flatMap(_.questionId).contains(question.questionId)
-                }
-              }
-          )
+        proposalService.resolveQuestionFromVoteEvent(
+          questionResolver,
+          event.requestContext,
+          event.action.arguments.proposalId
+        )
 
       futureQuestion.map { maybeQuestion =>
         accumulator.copy(
@@ -731,44 +682,18 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def searchUserProposals(userId: UserId): Future[ProposalsSearchResult] = {
-      val filters = SearchFilters(
-        user = Some(UserSearchFilter(userId)),
-        status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-      )
-      elasticsearchProposalAPI
-        .countProposals(SearchQuery(filters = Some(filters)))
-        .flatMap { count =>
-          if (count == 0) {
-            Future.successful(ProposalsSearchResult(0L, Seq.empty))
-          } else {
-            elasticsearchProposalAPI
-              .searchProposals(SearchQuery(filters = Some(filters), limit = Some(count.intValue())))
-          }
-
-        }
-    }
-
-    private def accumulateLogUserProposalEvent(accumulator: UserProperties,
-                                               event: LogUserProposalEvent,
-                                               questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserProposalEvent(
+      accumulator: UserProperties,
+      event: LogUserProposalEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureMaybeQuestion: Future[Option[Question]] =
-        questionResolver
-          .extractQuestionWithOperationFromRequestContext(event.requestContext) match {
-          case Some(question) => Future.successful(Some(question))
-          case None           =>
-            // If we can't resolve the question, retrieve the user proposals,
-            // and search for the one proposed at the event date
-            searchUserProposals(event.userId).map { proposalResult =>
-              proposalResult.results
-                .find(_.createdAt == event.action.date)
-                .flatMap(_.question.map(_.questionId))
-                .flatMap { questionId =>
-                  questionResolver
-                    .findQuestionWithOperation(question => questionId == question.questionId)
-                }
-            }
-        }
+        proposalService.resolveQuestionFromUserProposal(
+          questionResolver,
+          event.requestContext,
+          accumulator.userId,
+          event.action.date
+        )
 
       futureMaybeQuestion.map { maybeQuestion =>
         accumulator.copy(
@@ -790,9 +715,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def accumulateLogRegisterCitizenEvent(accumulator: UserProperties,
-                                                  event: LogRegisterCitizenEvent,
-                                                  questionResolver: QuestionResolver): UserProperties = {
+    private def accumulateLogRegisterCitizenEvent(
+      accumulator: UserProperties,
+      event: LogRegisterCitizenEvent,
+      questionResolver: QuestionResolver
+    ): UserProperties = {
 
       val maybeQuestion = questionResolver
         .extractQuestionWithOperationFromRequestContext(event.requestContext)

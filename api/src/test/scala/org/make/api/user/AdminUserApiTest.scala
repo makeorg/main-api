@@ -234,7 +234,7 @@ class AdminUserApiTest
           userService
             .adminFindUsers(
               start = 0,
-              end = None,
+              limit = None,
               sort = None,
               order = None,
               email = None,
@@ -724,7 +724,7 @@ class AdminUserApiTest
           userService
             .adminFindUsers(
               start = 0,
-              end = None,
+              limit = None,
               sort = None,
               order = None,
               email = None,
@@ -751,7 +751,7 @@ class AdminUserApiTest
         .when(
           userService.adminFindUsers(
             start = 0,
-            end = None,
+            limit = None,
             sort = None,
             order = None,
             email = None,

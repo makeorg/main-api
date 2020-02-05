@@ -319,7 +319,7 @@ trait PersistentUserService {
   def findByUserIdAndUserType(userId: UserId, userType: UserType): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def adminFindUsers(start: Int,
-                     end: Option[Int],
+                     limit: Option[Int],
                      sort: Option[String],
                      order: Option[String],
                      email: Option[String],
@@ -511,7 +511,7 @@ trait DefaultPersistentUserServiceComponent
     }
 
     override def adminFindUsers(start: Int,
-                                end: Option[Int],
+                                limit: Option[Int],
                                 sort: Option[String],
                                 order: Option[String],
                                 email: Option[String],
@@ -550,7 +550,7 @@ trait DefaultPersistentUserServiceComponent
               query.orderBy(userAlias.email).asc.offset(start)
             case (_, _) => query.orderBy(userAlias.email).asc.offset(start)
           }
-          end match {
+          limit match {
             case Some(limit) => queryOrdered.limit(limit)
             case None        => queryOrdered.limit(defaultLimit)
           }

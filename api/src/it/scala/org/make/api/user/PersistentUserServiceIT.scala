@@ -566,7 +566,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(
         persistentUserService.adminFindUsers(
           start = 0,
-          end = None,
+          limit = None,
           sort = None,
           order = None,
           email = None,
@@ -586,7 +586,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         persistentUserService
           .adminFindUsers(
             start = 0,
-            end = None,
+            limit = None,
             sort = None,
             order = None,
             email = Some("doe@example.com"),

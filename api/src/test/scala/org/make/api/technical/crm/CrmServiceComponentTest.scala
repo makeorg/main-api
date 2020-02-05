@@ -31,15 +31,8 @@ import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
 import akka.stream.scaladsl.Source
 import com.typesafe.config.ConfigFactory
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
-import org.make.api.proposal.{
-  ProposalCoordinatorService,
-  ProposalCoordinatorServiceComponent,
-  ProposalSearchEngine,
-  ProposalSearchEngineComponent
-}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, ReadJournalComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
@@ -54,12 +47,9 @@ import org.make.api.{ActorSystemComponent, MakeUnitTest, StaminaTestUtils, TestU
 import org.make.core.history.HistoryActions.Trusted
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
-import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal._
-import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
-import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.{never, times, verify, when}
@@ -72,6 +62,19 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io
+import org.make.api.proposal.ProposalServiceComponent
+import org.make.api.proposal.ProposalService
+import org.make.core.user.UserId
+import org.make.core.user.Role
+import org.make.core.user.User
+import org.make.core.proposal.indexed.IndexedProposal
+import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.proposal.indexed.SequencePool
+import org.make.core.proposal.indexed.IndexedProposalQuestion
+import org.make.core.proposal.indexed.IndexedAuthor
+import org.make.core.proposal.indexed.IndexedScores
+import org.make.core.user.UserType
+
 
 import arbitraries._
 
@@ -81,16 +84,14 @@ class CrmServiceComponentTest
     with OperationServiceComponent
     with QuestionServiceComponent
     with MailJetConfigurationComponent
-    with ErrorAccumulatingCirceSupport
     with ActorSystemComponent
     with UserHistoryCoordinatorServiceComponent
     with UserServiceComponent
     with ReadJournalComponent
-    with ProposalCoordinatorServiceComponent
+    with ProposalServiceComponent
     with PersistentUserToAnonymizeServiceComponent
     with CrmClientComponent
     with PersistentCrmUserServiceComponent
-    with ProposalSearchEngineComponent
     with EventBusServiceComponent
     with ScalaCheckDrivenPropertyChecks
     with PrivateMethodTester {
@@ -114,9 +115,8 @@ class CrmServiceComponentTest
 
   override val crmClient: CrmClient = mock[CrmClient]
   override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
-  override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
-  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val eventBusService: EventBusService = mock[EventBusService]
+  override val proposalService: ProposalService = mock[ProposalService]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
   when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
@@ -171,6 +171,37 @@ class CrmServiceComponentTest
     lastName = Some("Terrieur"),
     profile = Profile.parseProfile(optInNewsletter = true)
   )
+
+  val handledUserIds: Seq[UserId] = Seq(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))
+
+  when(
+    proposalService
+      .resolveQuestionFromUserProposal(
+        any[QuestionResolver],
+        any[RequestContext],
+        matches(UserId("50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74")),
+        any[ZonedDateTime]
+      )
+  ).thenAnswer { invocation =>
+    val resolver = invocation.getArgument[QuestionResolver](0)
+    val requestContext = invocation.getArgument[RequestContext](1)
+    val maybeQuestion = resolver.extractQuestionWithOperationFromRequestContext(requestContext)
+    Future.successful(maybeQuestion)
+  }
+
+  when(
+    proposalService
+      .resolveQuestionFromUserProposal(
+        any[QuestionResolver],
+        any[RequestContext],
+        matches(UserId("1")),
+        any[ZonedDateTime]
+      )
+  ).thenAnswer { invocation =>
+    val resolver = invocation.getArgument[QuestionResolver](0)
+    val requestContext = invocation.getArgument[RequestContext](1)
+    Future.successful(resolver.extractQuestionWithOperationFromRequestContext(requestContext))
+  }
 
   def readEvents(resource: String): Source[EventEnvelope, NotUsed] = {
     val file = getClass.getClassLoader.getResourceAsStream(resource)
@@ -244,13 +275,32 @@ class CrmServiceComponentTest
   val proposalIt: Proposal =
     proposalFr.copy(proposalId = ProposalId("proposalId-it"), questionId = Some(questionIt.questionId))
 
-  when(proposalCoordinatorService.getProposal(ProposalId("proposalId-fr")))
-    .thenReturn(Future.successful(Some(proposalFr)))
-  when(proposalCoordinatorService.getProposal(ProposalId("proposalId-gb")))
-    .thenReturn(Future.successful(Some(proposalGb)))
-  when(proposalCoordinatorService.getProposal(ProposalId("proposalId-it")))
-    .thenReturn(Future.successful(Some(proposalIt)))
+  val proposals =
+    Map(proposalFr.proposalId -> proposalFr, proposalIt.proposalId -> proposalIt, proposalGb.proposalId -> proposalGb)
 
+  when(
+    proposalService
+      .resolveQuestionFromVoteEvent(any[QuestionResolver], any[RequestContext], any[ProposalId])
+  ).thenAnswer { invocation =>
+    val questionResolver = invocation.getArgument[QuestionResolver](0)
+    val requestContext = invocation.getArgument[RequestContext](1)
+    val proposalId = invocation.getArgument[ProposalId](2)
+    val maybeProposal = proposals.get(proposalId)
+    val maybeQuestion =
+      questionResolver
+        .extractQuestionWithOperationFromRequestContext(requestContext)
+        .orElse(
+          maybeProposal.flatMap(
+            proposal =>
+              questionResolver.findQuestionWithOperation { question =>
+                proposal.questionId.contains(question.questionId)
+              }
+          )
+        )
+    Future.successful(maybeQuestion)
+  }
+
+  
   val defaultOperation: Operation = Operation(
     status = OperationStatus.Active,
     operationId = OperationId("default"),
@@ -638,25 +688,12 @@ class CrmServiceComponentTest
         )
       )
 
-      when(
-        elasticsearchProposalAPI
-          .countProposals(
-            SearchQuery(
-              filters = Some(
-                SearchFilters(
-                  user = Some(UserSearchFilter(fooUser.userId)),
-                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-                )
-              )
-            )
-          )
-      ).thenReturn(Future.successful(0L))
-
       val futureProperties = crmService.getPropertiesFromUser(
         fooUser,
         new QuestionResolver(questions, operations.map(operation => operation.slug -> operation.operationId).toMap)
       )
-      whenReady(futureProperties, Timeout(3.seconds)) { maybeProperties =>
+
+      whenReady(futureProperties, Timeout(300000.seconds)) { maybeProperties =>
         maybeProperties.userId shouldBe Some(UserId("1"))
         maybeProperties.firstName shouldBe Some("Foo")
         maybeProperties.postalCode shouldBe Some("93")
@@ -793,6 +830,30 @@ class CrmServiceComponentTest
       val questionId1 = QuestionId("question-1")
       val questionId2 = QuestionId("question-2")
 
+      val operationId1 = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
+
+      val questions =
+        Seq(
+          Question(
+            questionId1,
+            "question-1",
+            Country("FR"),
+            Language("fr"),
+            "Comment sauver le monde ?",
+            Some(operationId1)
+          ),
+          Question(
+            questionId2,
+            "question-2",
+            Country("FR"),
+            Language("fr"),
+            "Comment resauver le monde ?",
+            Some(OperationId("who cares?"))
+          )
+        )
+
+      val resolver = new QuestionResolver(questions, Map())
+
       val proposal1Date = ZonedDateTime.parse("2019-03-18T23:00:31.243Z")
       val proposal2Date = ZonedDateTime.parse("2019-03-18T23:21:03.501Z")
 
@@ -888,57 +949,24 @@ class CrmServiceComponentTest
       )
 
       when(
-        elasticsearchProposalAPI
-          .searchProposals(
-            SearchQuery(
-              filters = Some(
-                SearchFilters(
-                  user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))),
-                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-                )
-              ),
-              limit = Some(2)
-            )
-          )
-      ).thenReturn(Future.successful(ProposalsSearchResult(2, proposals)))
-
-      when(
-        elasticsearchProposalAPI
-          .countProposals(
-            SearchQuery(
-              filters = Some(
-                SearchFilters(
-                  user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))),
-                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-                )
-              )
-            )
-          )
-      ).thenReturn(Future.successful(2L))
-
-      val operationId1 = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
-
-      val questions =
-        Seq(
-          Question(
-            questionId1,
-            "question-1",
-            Country("FR"),
-            Language("fr"),
-            "Comment sauver le monde ?",
-            Some(operationId1)
-          ),
-          Question(
-            questionId2,
-            "question-2",
-            Country("FR"),
-            Language("fr"),
-            "Comment resauver le monde ?",
-            Some(OperationId("who cares?"))
-          )
+        proposalService.resolveQuestionFromUserProposal(
+          any[QuestionResolver],
+          any[RequestContext],
+          matches(user.userId),
+          any[ZonedDateTime]
         )
-
-      val resolver = new QuestionResolver(questions, Map())
+      ).thenAnswer { invocation =>
+        val resolver = invocation.getArgument[QuestionResolver](0)
+        val date = invocation.getArgument[ZonedDateTime](3)
+        val requestContext = invocation.getArgument[RequestContext](1)
+        val maybeQuestion: Option[Question] =
+          resolver.extractQuestionWithOperationFromRequestContext(requestContext).orElse {
+            proposals.find(_.createdAt == date).flatMap(_.question).map(_.questionId).flatMap { questionId =>
+              resolver.findQuestionWithOperation(_.questionId == questionId)
+            }
+          }
+        Future.successful(maybeQuestion)
+      }
 
       when(userJournal.currentEventsByPersistenceId(matches(user.userId.value), any[Long], any[Long]))
         .thenReturn(source)
@@ -946,18 +974,6 @@ class CrmServiceComponentTest
       whenReady(crmService.getPropertiesFromUser(user, resolver), Timeout(5.seconds)) { result =>
         result.operationActivity.toSeq.flatMap(_.split(",").sorted) should be(Seq("question-1", "question-2"))
         result.totalProposals should contain(2)
-        verify(elasticsearchProposalAPI)
-          .searchProposals(
-            SearchQuery(
-              filters = Some(
-                SearchFilters(
-                  user = Some(UserSearchFilter(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))),
-                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-                )
-              ),
-              limit = Some(2)
-            )
-          )
       }
     }
   }
@@ -1013,11 +1029,14 @@ class CrmServiceComponentTest
         if (users.forall(_.operationActivity.contains(question.slug))) {
           Future.successful(users)
         } else {
+          val failedUsers = users.filter(!_.operationActivity.contains(question.slug))
+          failedUsers.foreach(user => logger.error(s"user ${user.userId} has operation ${user.operationActivity}, failing test"))
           fail()
         }
       }
 
-      whenReady(crmService.createCrmUsers(), Timeout(2.seconds)) { _ =>
+      val result = crmService.createCrmUsers()
+      whenReady(result, Timeout(2.seconds)) { _ =>
         verify(persistentCrmUserService).persist(any[Seq[PersistentCrmUser]])
       }
 
@@ -1173,10 +1192,12 @@ class CrmServiceComponentTest
         Future.successful(SendCsvResponse(6L))
       )
 
-      def csvImportResponse(jobId: Long,
-                            dataId: Long,
-                            errorCount: Int,
-                            status: String): BasicCrmResponse[CsvImportResponse] = {
+      def csvImportResponse(
+        jobId: Long,
+        dataId: Long,
+        errorCount: Int,
+        status: String
+      ): BasicCrmResponse[CsvImportResponse] = {
         BasicCrmResponse[CsvImportResponse](
           count = 1,
           total = 1,
