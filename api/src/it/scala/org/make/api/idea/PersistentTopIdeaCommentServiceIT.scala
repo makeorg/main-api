@@ -171,7 +171,9 @@ class PersistentTopIdeaCommentServiceIT
 
       whenReady(persistentTopIdeaCommentService.getById(TopIdeaCommentId("update-1")), Timeout(5.seconds)) {
         maybeTopIdeaComment =>
-          maybeTopIdeaComment should contain(topIdeaComment)
+          maybeTopIdeaComment.map(_.topIdeaId) shouldBe Some(topIdeaComment.topIdeaId)
+          maybeTopIdeaComment.flatMap(_.comment1) shouldBe Some("comment")
+          maybeTopIdeaComment.flatMap(_.comment2) shouldBe empty
       }
 
       waitForCompletion(
