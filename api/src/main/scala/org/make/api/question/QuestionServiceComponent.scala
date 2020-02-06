@@ -314,14 +314,15 @@ trait DefaultQuestionService extends QuestionServiceComponent {
           elasticsearchProposalAPI
             .getRandomProposalsByIdeaWithAvatar(ideaIds = Seq(topIdea.ideaId), randomSeed)
             .map { result =>
-              result.get(topIdea.ideaId).map { avatarsAndProposalsCount =>
+              val ideaAvatarsCount = result.getOrElse(topIdea.ideaId, AvatarsAndProposalsCount(Seq.empty, 0))
+              Some(
                 QuestionTopIdeaResultWithSeed(
                   topIdea = topIdea,
-                  proposalsCount = avatarsAndProposalsCount.proposalsCount,
-                  avatars = avatarsAndProposalsCount.avatars,
+                  proposalsCount = ideaAvatarsCount.proposalsCount,
+                  avatars = ideaAvatarsCount.avatars,
                   seed = randomSeed
                 )
-              }
+              )
             }
       }
     }

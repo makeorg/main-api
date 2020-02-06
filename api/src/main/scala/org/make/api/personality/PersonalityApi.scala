@@ -274,16 +274,18 @@ trait DefaultPersonalityApiComponent
       path("personalities" / userId / "opinions") { userId =>
         makeOperation("GetPersonalityOpinions") { _ =>
           parameters(Symbol("questionId").as[QuestionId].?) { maybeQuestionId: Option[QuestionId] =>
-            provideAsync(
-              questionPersonalityService
-                .find(0, None, None, None, userId = Some(userId), questionId = maybeQuestionId, None)
-            ) {
-              case empty if empty.isEmpty => complete(StatusCodes.NotFound)
-              case personalities =>
-                provideAsync(questionPersonalityService.getPersonalitiesOpinionsByQuestions(personalities)) {
-                  opinions =>
-                    complete(opinions)
-                }
+            provideAsyncOrNotFound(userService.getPersonality(userId)) { _ =>
+              provideAsync(
+                questionPersonalityService
+                  .find(0, None, None, None, userId = Some(userId), questionId = maybeQuestionId, None)
+              ) {
+                case Seq() => complete(Seq.empty[PersonalityOpinionResponse])
+                case personalities =>
+                  provideAsync(questionPersonalityService.getPersonalitiesOpinionsByQuestions(personalities)) {
+                    opinions =>
+                      complete(opinions)
+                  }
+              }
             }
           }
         }

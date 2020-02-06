@@ -317,20 +317,28 @@ class PersonalityApiTest
   feature("get personality opinions") {
 
     scenario("personality not found") {
+      Get("/personalities/non-existant/opinions") ~> routes ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    scenario("personality not in question") {
       when(
         questionPersonalityService.find(
           ArgumentMatchers.eq(0),
           ArgumentMatchers.eq(None),
           ArgumentMatchers.eq(None),
           ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(UserId("non-existant"))),
+          ArgumentMatchers.eq(Some(UserId("personality-id"))),
           ArgumentMatchers.eq(None),
           ArgumentMatchers.eq(None)
         )
       ).thenReturn(Future.successful(Seq.empty))
 
-      Get("/personalities/non-existant/opinions") ~> routes ~> check {
-        status shouldBe StatusCodes.NotFound
+      Get("/personalities/personality-id/opinions") ~> routes ~> check {
+        status shouldBe StatusCodes.OK
+        val opinions = entityAs[Seq[PersonalityOpinionResponse]]
+        opinions shouldBe empty
       }
     }
 
@@ -341,15 +349,15 @@ class PersonalityApiTest
           ArgumentMatchers.eq(None),
           ArgumentMatchers.eq(None),
           ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(UserId("personality-id-empty"))),
+          ArgumentMatchers.eq(Some(UserId("personality-id"))),
           ArgumentMatchers.eq(None),
           ArgumentMatchers.eq(None)
         )
       ).thenReturn(
         Future.successful(
           Seq(
-            Personality(PersonalityId("one"), UserId("personality-id-empty"), QuestionId("question-id-one"), Candidate),
-            Personality(PersonalityId("two"), UserId("personality-id-empty"), QuestionId("question-id-two"), Candidate)
+            Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
+            Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
           )
         )
       )
@@ -359,13 +367,13 @@ class PersonalityApiTest
             Seq(
               Personality(
                 personalityId = PersonalityId("one"),
-                userId = UserId("personality-id-empty"),
+                userId = UserId("personality-id"),
                 questionId = QuestionId("question-id-one"),
                 personalityRole = Candidate
               ),
               Personality(
                 personalityId = PersonalityId("two"),
-                userId = UserId("personality-id-empty"),
+                userId = UserId("personality-id"),
                 questionId = QuestionId("question-id-two"),
                 personalityRole = Candidate
               )
@@ -374,7 +382,7 @@ class PersonalityApiTest
         )
       ).thenReturn(Future.successful(Seq.empty))
 
-      Get("/personalities/personality-id-empty/opinions") ~> routes ~> check {
+      Get("/personalities/personality-id/opinions") ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val opinions = entityAs[Seq[PersonalityOpinionResponse]]
         opinions shouldBe empty
