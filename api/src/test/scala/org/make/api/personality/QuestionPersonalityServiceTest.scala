@@ -20,10 +20,11 @@
 package org.make.api.personality
 
 import org.make.api.MakeUnitTest
-import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
+import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
 import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
-import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
+import org.make.api.question.{AvatarsAndProposalsCount, QuestionService, QuestionServiceComponent}
 import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.idea._
 import org.make.core.operation._
@@ -32,8 +33,8 @@ import org.make.core.personality.{Candidate, Personality, PersonalityId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.Mockito.when
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -47,7 +48,8 @@ class QuestionPersonalityServiceTest
     with QuestionServiceComponent
     with OperationOfQuestionServiceComponent
     with TopIdeaServiceComponent
-    with TopIdeaCommentServiceComponent {
+    with TopIdeaCommentServiceComponent
+    with ProposalSearchEngineComponent {
 
   override val persistentQuestionPersonalityService: PersistentQuestionPersonalityService =
     mock[PersistentQuestionPersonalityService]
@@ -56,6 +58,7 @@ class QuestionPersonalityServiceTest
   override val topIdeaService: TopIdeaService = mock[TopIdeaService]
   override val questionService: QuestionService = mock[QuestionService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
+  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
 
   val personality: Personality = Personality(
     personalityId = PersonalityId("personality"),
@@ -155,6 +158,12 @@ class QuestionPersonalityServiceTest
             ArgumentMatchers.eq(Some(Seq.empty))
           )
       ).thenReturn(Future.successful(Seq.empty))
+      when(topIdeaCommentService.countForAll(ArgumentMatchers.eq(Seq.empty)))
+        .thenReturn(Future.successful(Map.empty))
+      when(
+        elasticsearchProposalAPI
+          .getRandomProposalsByIdeaWithAvatar(ArgumentMatchers.eq(Seq.empty), ArgumentMatchers.any[Int])
+      ).thenReturn(Future.successful(Map.empty))
 
       whenReady(questionPersonalityService.getPersonalitiesOpinionsByQuestions(Seq.empty), Timeout(2.seconds)) {
         opinions =>
@@ -304,6 +313,24 @@ class QuestionPersonalityServiceTest
           )
         )
       )
+      when(
+        topIdeaCommentService
+          .countForAll(ArgumentMatchers.eq(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2"))))
+      ).thenReturn(Future.successful(Map("top-idea-id" -> 2, "top-idea-id-2" -> 0)))
+      when(
+        elasticsearchProposalAPI
+          .getRandomProposalsByIdeaWithAvatar(
+            ArgumentMatchers.eq(Seq(IdeaId("idea-id"), IdeaId("idea-id-2"))),
+            ArgumentMatchers.any[Int]
+          )
+      ).thenReturn(
+        Future.successful(
+          Map(
+            IdeaId("idea-id-2") -> AvatarsAndProposalsCount(Seq("http://example.com/42", "http://example.com/84"), 21)
+          )
+        )
+      )
+
       val personalities =
         Seq(
           Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
@@ -315,6 +342,8 @@ class QuestionPersonalityServiceTest
           opinions.size shouldBe 2
           opinions.head.comment shouldBe defined
           opinions(1).comment shouldBe empty
+          opinions.head.topIdea.avatars shouldBe empty
+          opinions(1).topIdea.avatars.size shouldBe 2
       }
     }
 

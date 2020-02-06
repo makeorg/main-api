@@ -23,8 +23,8 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
-import org.make.api.idea.{TopIdeaResponse, TopIdeaService, TopIdeaServiceComponent}
-import org.make.api.question.{SimpleQuestionResponse, SimpleQuestionWordingResponse}
+import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
+import org.make.api.question.{QuestionTopIdeaWithAvatarResponse, SimpleQuestionResponse, SimpleQuestionWordingResponse}
 import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
@@ -358,16 +358,16 @@ class PersonalityApiTest
           ArgumentMatchers.eq(
             Seq(
               Personality(
-                PersonalityId("one"),
-                UserId("personality-id-empty"),
-                QuestionId("question-id-one"),
-                Candidate
+                personalityId = PersonalityId("one"),
+                userId = UserId("personality-id-empty"),
+                questionId = QuestionId("question-id-one"),
+                personalityRole = Candidate
               ),
               Personality(
-                PersonalityId("two"),
-                UserId("personality-id-empty"),
-                QuestionId("question-id-two"),
-                Candidate
+                personalityId = PersonalityId("two"),
+                userId = UserId("personality-id-empty"),
+                questionId = QuestionId("question-id-two"),
+                personalityRole = Candidate
               )
             )
           )
@@ -414,46 +414,52 @@ class PersonalityApiTest
         Future.successful(
           Seq(
             PersonalityOpinionResponse(
-              SimpleQuestionResponse(
-                QuestionId("question-id"),
-                "slug",
-                SimpleQuestionWordingResponse("title", "question"),
-                Country("FR"),
-                Language("fr"),
-                None,
-                None
+              question = SimpleQuestionResponse(
+                questionId = QuestionId("question-id"),
+                slug = "slug",
+                wording = SimpleQuestionWordingResponse("title", "question"),
+                country = Country("FR"),
+                language = Language("fr"),
+                startDate = None,
+                endDate = None
               ),
-              TopIdeaResponse(
-                TopIdeaId("top-idea-id"),
-                IdeaId("idea-id"),
-                QuestionId("question-id"),
-                "name",
-                "label",
-                TopIdeaScores(0f, 0f, 0f),
-                0f
+              topIdea = QuestionTopIdeaWithAvatarResponse(
+                id = TopIdeaId("top-idea-id"),
+                ideaId = IdeaId("idea-id"),
+                questionId = QuestionId("question-id"),
+                name = "name",
+                label = "label",
+                scores = TopIdeaScores(0f, 0f, 0f),
+                proposalsCount = 0,
+                avatars = Seq.empty,
+                weight = 0f,
+                commentsCount = 0
               ),
-              None
+              comment = None
             ),
             PersonalityOpinionResponse(
-              SimpleQuestionResponse(
-                QuestionId("question-id-two"),
-                "slug",
-                SimpleQuestionWordingResponse("title", "question"),
-                Country("FR"),
-                Language("fr"),
-                None,
-                None
+              question = SimpleQuestionResponse(
+                questionId = QuestionId("question-id-two"),
+                slug = "slug",
+                wording = SimpleQuestionWordingResponse("title", "question"),
+                country = Country("FR"),
+                language = Language("fr"),
+                startDate = None,
+                endDate = None
               ),
-              TopIdeaResponse(
-                TopIdeaId("top-idea-id-two"),
-                IdeaId("idea-id-two"),
-                QuestionId("question-id-two"),
-                "name",
-                "label",
-                TopIdeaScores(0f, 0f, 0f),
-                0f
+              topIdea = QuestionTopIdeaWithAvatarResponse(
+                id = TopIdeaId("top-idea-id-two"),
+                ideaId = IdeaId("idea-id-two"),
+                questionId = QuestionId("question-id-two"),
+                name = "name",
+                label = "label",
+                scores = TopIdeaScores(0f, 0f, 0f),
+                proposalsCount = 0,
+                avatars = Seq.empty,
+                weight = 0f,
+                commentsCount = 0
               ),
-              None
+              comment = None
             )
           )
         )

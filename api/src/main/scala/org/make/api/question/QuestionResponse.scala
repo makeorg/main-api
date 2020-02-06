@@ -92,19 +92,25 @@ object QuestionPersonalityResponse {
   implicit val encoder: Encoder[QuestionPersonalityResponse] = deriveEncoder[QuestionPersonalityResponse]
 }
 
-final case class QuestionTopIdeaWithAvatarResponse(id: TopIdeaId,
-                                                   ideaId: IdeaId,
-                                                   questionId: QuestionId,
-                                                   name: String,
-                                                   label: String,
-                                                   scores: TopIdeaScores,
-                                                   proposalsCount: Int,
-                                                   avatars: Seq[String],
-                                                   weight: Float,
-                                                   commentsCount: Int)
+final case class QuestionTopIdeaWithAvatarResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "5c935d31-fda8-4d36-927c-3b2c26666a42")
+  id: TopIdeaId,
+  @(ApiModelProperty @field)(dataType = "string", example = "d740e4c2-60de-465a-80fb-d9d72409f72e")
+  ideaId: IdeaId,
+  @(ApiModelProperty @field)(dataType = "string", example = "bb929df0-7666-41fe-b20a-36530edb123b")
+  questionId: QuestionId,
+  name: String,
+  label: String,
+  scores: TopIdeaScores,
+  proposalsCount: Int,
+  avatars: Seq[String],
+  weight: Float,
+  commentsCount: Int
+)
 
 object QuestionTopIdeaWithAvatarResponse {
   implicit val encoder: Encoder[QuestionTopIdeaWithAvatarResponse] = deriveEncoder[QuestionTopIdeaWithAvatarResponse]
+  implicit val decoder: Decoder[QuestionTopIdeaWithAvatarResponse] = deriveDecoder[QuestionTopIdeaWithAvatarResponse]
 }
 
 final case class QuestionTopIdeaCommentsPersonalityResponse(

@@ -145,4 +145,18 @@ class TopIdeaCommentServiceTest
       }
     }
   }
+
+  feature("count for all ideas") {
+    scenario("empty list") {
+      topIdeaCommentService.countForAll(Seq.empty)
+      Mockito.verify(persistentTopIdeaCommentService).countForAll(Seq.empty)
+    }
+
+    scenario("full list") {
+      topIdeaCommentService.countForAll(Seq(TopIdeaId("top-idea-id-1"), TopIdeaId("top-idea-id-2")))
+      Mockito
+        .verify(persistentTopIdeaCommentService)
+        .countForAll(Seq(TopIdeaId("top-idea-id-1"), TopIdeaId("top-idea-id-2")))
+    }
+  }
 }
