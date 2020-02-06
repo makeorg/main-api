@@ -278,42 +278,25 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         .search(start = start, end = end, ideaId = None, questionIds = Some(Seq(questionId)), name = None)
         .flatMap { topIdeas =>
           persistentTopIdeaCommentService.countForAll(topIdeas.map(_.topIdeaId)).flatMap { commentByTopIdea =>
-            val resultsWithoutAvatar = topIdeas.map { topIdea =>
-              QuestionTopIdeaWithAvatarResponse(
-                id = topIdea.topIdeaId,
-                ideaId = topIdea.ideaId,
-                questionId = topIdea.questionId,
-                name = topIdea.name,
-                label = topIdea.label,
-                scores = topIdea.scores,
-                proposalsCount = 0,
-                avatars = Seq.empty,
-                weight = topIdea.weight,
-                commentsCount = commentByTopIdea.getOrElse(topIdea.topIdeaId.value, 0)
-              )
-            }
             elasticsearchProposalAPI
               .getRandomProposalsByIdeaWithAvatar(ideaIds = topIdeas.map(_.ideaId), randomSeed)
-              .map {
-                case avatarsAndProposalsCountByIdea if avatarsAndProposalsCountByIdea.isEmpty => resultsWithoutAvatar
-                case avatarsAndProposalsCountByIdea =>
-                  avatarsAndProposalsCountByIdea.toSeq.flatMap {
-                    case (ideaId, avatarsAndProposalsCount) =>
-                      topIdeas.find(_.ideaId.value == ideaId.value).map { topIdea =>
-                        QuestionTopIdeaWithAvatarResponse(
-                          id = topIdea.topIdeaId,
-                          ideaId = topIdea.ideaId,
-                          questionId = topIdea.questionId,
-                          name = topIdea.name,
-                          label = topIdea.label,
-                          scores = topIdea.scores,
-                          proposalsCount = avatarsAndProposalsCount.proposalsCount,
-                          avatars = avatarsAndProposalsCount.avatars,
-                          weight = topIdea.weight,
-                          commentsCount = commentByTopIdea.getOrElse(topIdea.topIdeaId.value, 0)
-                        )
-                      }
-                  }
+              .map { avatarsAndProposalsCountByIdea =>
+                topIdeas.map { topIdea =>
+                  val ideaAvatarsCount = avatarsAndProposalsCountByIdea
+                    .getOrElse(topIdea.ideaId, AvatarsAndProposalsCount(Seq.empty, 0))
+                  QuestionTopIdeaWithAvatarResponse(
+                    id = topIdea.topIdeaId,
+                    ideaId = topIdea.ideaId,
+                    questionId = topIdea.questionId,
+                    name = topIdea.name,
+                    label = topIdea.label,
+                    scores = topIdea.scores,
+                    proposalsCount = ideaAvatarsCount.proposalsCount,
+                    avatars = ideaAvatarsCount.avatars,
+                    weight = topIdea.weight,
+                    commentsCount = commentByTopIdea.getOrElse(topIdea.topIdeaId.value, 0)
+                  )
+                }
               }
           }
         }

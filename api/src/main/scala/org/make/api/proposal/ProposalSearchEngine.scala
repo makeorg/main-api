@@ -355,14 +355,17 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       // this aggregation count the proposals without taking account of the search filters set for the bool query
       val globalAggregation = GlobalAggregation(name = "all_proposals")
         .subAggregations(
-          FilterAggregation(name = "filter_global", query = TermQuery(field = "status", value = Accepted.shortName))
-            .subAggregations(
-              TermsAggregation(
-                name = "by_idea_global",
-                field = Some(ProposalElasticsearchFieldNames.ideaId),
-                includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty))
-              )
+          FilterAggregation(
+            name = "filter_global",
+            query = TermQuery(field = ProposalElasticsearchFieldNames.status, value = Accepted.shortName)
+          ).subAggregations(
+            TermsAggregation(
+              name = "by_idea_global",
+              field = Some(ProposalElasticsearchFieldNames.ideaId),
+              includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty)),
+              size = Some(ideaIds.size)
             )
+          )
         )
 
       val topHitsAggregation =
@@ -378,7 +381,8 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           TermsAggregation(
             name = "by_idea",
             field = Some(ProposalElasticsearchFieldNames.ideaId),
-            includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty))
+            includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty)),
+            size = Some(ideaIds.size)
           ).subAggregations(topHitsAggregation),
           globalAggregation
         )
