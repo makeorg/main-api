@@ -312,6 +312,43 @@ class QuestionServiceTest
       }
     }
 
+    scenario("top idea exists without proposal") {
+      when(
+        persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("top-idea-id-no-proposal"), QuestionId("question-id"))
+      ).thenReturn(
+          Future.successful(
+            Some(
+              TopIdea(
+                TopIdeaId("top-idea-id-no-proposal"),
+                IdeaId("idea-id"),
+                QuestionId("question-id"),
+                name = "name",
+                label = "label",
+                TopIdeaScores(0, 0, 0),
+                42
+              )
+            )
+          )
+        )
+
+      when(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-id")), 1337))
+        .thenReturn(Future.successful(Map.empty))
+
+      whenReady(
+        questionService
+          .getTopIdea(
+            topIdeaId = TopIdeaId("top-idea-id-no-proposal"),
+            questionId = QuestionId("question-id"),
+            seed = Some(1337)
+          ),
+        Timeout(3.seconds)
+      ) { result =>
+        result.isDefined should be(true)
+        result.get.topIdea.name should be("name")
+        result.get.proposalsCount shouldBe 0
+      }
+    }
+
     scenario("top idea doesn't exist") {
       when(persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("not-found"), QuestionId("question-id")))
         .thenReturn(Future.successful(None))
