@@ -19,11 +19,14 @@
 
 package org.make.api.idea.topIdeaComments
 
+import java.time.ZonedDateTime
+
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceComponent.PersistentTopIdeaComment
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
+import org.make.core.DateHelper
 import org.make.core.idea._
 import org.make.core.user.UserId
 import scalikejdbc._
@@ -88,7 +91,8 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
               column.comment2 -> topIdeaComment.comment2,
               column.comment3 -> topIdeaComment.comment3,
               column.vote -> topIdeaComment.vote.shortName,
-              column.qualification -> topIdeaComment.qualification.map(_.shortName)
+              column.qualification -> topIdeaComment.qualification.map(_.shortName),
+              column.createdAt -> DateHelper.now()
             )
         }.execute().apply()
       }).map(_ => topIdeaComment)
@@ -106,7 +110,8 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
               column.comment2 -> topIdeaComment.comment2,
               column.comment3 -> topIdeaComment.comment3,
               column.vote -> topIdeaComment.vote.shortName,
-              column.qualification -> topIdeaComment.qualification.map(_.shortName)
+              column.qualification -> topIdeaComment.qualification.map(_.shortName),
+              column.updatedAt -> DateHelper.now()
             )
             .where(
               sqls
@@ -143,6 +148,8 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
                 personalityIds.map(ids => sqls.in(topIdeaCommentAlias.personalityId, ids.map(_.value)))
               )
             )
+            .orderBy(topIdeaCommentAlias.createdAt)
+            .asc
 
           end match {
             case Some(limit) => query.limit(limit)
@@ -196,7 +203,9 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
                                       comment2: Option[String],
                                       comment3: Option[String],
                                       vote: String,
-                                      qualification: Option[String]) {
+                                      qualification: Option[String],
+                                      createdAt: Option[ZonedDateTime],
+                                      updatedAt: Option[ZonedDateTime]) {
     def toTopIdeaComment: TopIdeaComment =
       TopIdeaComment(
         topIdeaCommentId = TopIdeaCommentId(id),
@@ -208,7 +217,9 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
         vote = CommentVoteKey
           .matchCommentVoteKey(vote)
           .getOrElse(throw new IllegalArgumentException(s"$vote is not a valid voteKey")),
-        qualification = qualification.flatMap(CommentQualificationKey.matchCommentQualificationKey)
+        qualification = qualification.flatMap(CommentQualificationKey.matchCommentQualificationKey),
+        createdAt = createdAt,
+        updatedAt = updatedAt
       )
   }
 
@@ -218,7 +229,18 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
       with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("id", "top_idea_id", "personality_id", "comment1", "comment2", "comment3", "vote", "qualification")
+      Seq(
+        "id",
+        "top_idea_id",
+        "personality_id",
+        "comment1",
+        "comment2",
+        "comment3",
+        "vote",
+        "qualification",
+        "created_at",
+        "updated_at"
+      )
 
     override val tableName: String = "top_idea_comment"
 
@@ -236,6 +258,8 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
         comment3 = resultSet.stringOpt(topIdeaCommentResultName.comment3),
         vote = resultSet.string(topIdeaCommentResultName.vote),
         qualification = resultSet.stringOpt(topIdeaCommentResultName.qualification),
+        createdAt = resultSet.zonedDateTimeOpt(topIdeaCommentResultName.createdAt),
+        updatedAt = resultSet.zonedDateTimeOpt(topIdeaCommentResultName.updatedAt),
       )
     }
   }

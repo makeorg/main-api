@@ -1,5 +1,7 @@
 package org.make.core.idea
 
+import java.time.ZonedDateTime
+
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json}
@@ -34,7 +36,9 @@ final case class TopIdeaComment(topIdeaCommentId: TopIdeaCommentId,
                                 comment2: Option[String],
                                 comment3: Option[String],
                                 vote: CommentVoteKey,
-                                qualification: Option[CommentQualificationKey])
+                                qualification: Option[CommentQualificationKey],
+                                createdAt: Option[ZonedDateTime] = None,
+                                updatedAt: Option[ZonedDateTime] = None)
 
 object TopIdeaComment {
   implicit val encoder: Encoder[TopIdeaComment] = deriveEncoder[TopIdeaComment]
