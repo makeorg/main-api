@@ -65,6 +65,7 @@ trait TagService extends ShortenedNames {
                 question: Question,
                 requestContext: RequestContext = RequestContext.empty): Future[Option[Tag]]
   def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]]
+  def retrieveIndexedStakeTags(tags: Seq[TagId]): Future[Seq[IndexedTag]]
   def find(start: Int = 0,
            end: Option[Int] = None,
            sort: Option[String] = None,
@@ -147,6 +148,33 @@ trait DefaultTagServiceComponent
                 IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
               }
             })
+          }
+      }
+    }
+
+    override def retrieveIndexedStakeTags(tags: Seq[TagId]): Future[Seq[IndexedTag]] = {
+      val stake: Future[Option[TagType]] =
+        persistentTagTypeService.findAll().map(_.find(_.label.toLowerCase == "stake"))
+
+      stake.flatMap {
+        case Some(stake) => Future.successful(stake)
+        case None        => Future.failed(new IllegalStateException("Unable to find stake tag types"))
+      }.flatMap { stake =>
+        tagService
+          .findByTagIds(tags)
+          .map { tags =>
+            tags.filter(_.tagTypeId.value == stake.tagTypeId.value).map { tag =>
+              if (tag.display == TagDisplay.Inherit) {
+                IndexedTag(
+                  tagId = tag.tagId,
+                  label = tag.label,
+                  display = stake.display.shortName
+                    .contains(TagDisplay.Displayed.shortName)
+                )
+              } else {
+                IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
+              }
+            }
           }
       }
     }

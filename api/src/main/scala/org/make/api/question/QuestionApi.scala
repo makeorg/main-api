@@ -53,7 +53,7 @@ import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNam
 import org.make.core.partner.PartnerKind
 import org.make.core.personality.PersonalityRole
 import org.make.core.proposal.ProposalId
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _, _}
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
@@ -134,7 +134,14 @@ trait QuestionApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "mode",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "tag,idea",
+        allowEmptyValue = true
+      )
     )
   )
   @ApiResponses(
@@ -460,21 +467,23 @@ trait DefaultQuestionApiComponent
     override def getTopProposals: Route = get {
       path("questions" / questionId / "top-proposals") { questionId =>
         makeOperation("GetTopProposals") { requestContext =>
-          parameters((Symbol("limit").as[Int].?)) { (limit: Option[Int]) =>
-            optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-              provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
-                provideAsync(
-                  proposalService.getTopProposals(
-                    maybeUserId = userAuth.map(_.user.userId),
-                    questionId = questionId,
-                    size = limit.getOrElse(10),
-                    requestContext = requestContext
-                  )
-                ) { proposalsResponse =>
-                  complete(proposalsResponse)
+          parameters((Symbol("limit").as[Int].?, Symbol("mode").as[TopProposalsMode].?)) {
+            (limit: Option[Int], mode: Option[TopProposalsMode]) =>
+              optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
+                provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
+                  provideAsync(
+                    proposalService.getTopProposals(
+                      maybeUserId = userAuth.map(_.user.userId),
+                      questionId = questionId,
+                      size = limit.getOrElse(10),
+                      mode = mode,
+                      requestContext = requestContext
+                    )
+                  ) { proposalsResponse =>
+                    complete(proposalsResponse)
+                  }
                 }
               }
-            }
           }
         }
       }

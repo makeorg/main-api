@@ -46,7 +46,7 @@ import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQ
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.proposal.ProposalId
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
@@ -423,8 +423,16 @@ class QuestionApiTest
       when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("question-id"))))
         .thenReturn(Future.successful(Some(baseQuestion)))
 
-      when(proposalService.getTopProposals(any[Option[UserId]], any[QuestionId], any[Int], any[RequestContext]))
-        .thenReturn(Future.successful(ProposalsResultResponse(total = 0, results = Seq.empty)))
+      when(
+        proposalService
+          .getTopProposals(
+            any[Option[UserId]],
+            any[QuestionId],
+            any[Int],
+            any[Option[TopProposalsMode]],
+            any[RequestContext]
+          )
+      ).thenReturn(Future.successful(ProposalsResultResponse(total = 0, results = Seq.empty)))
 
       Get("/questions/question-id/top-proposals") ~> routes ~> check {
         status should be(StatusCodes.OK)

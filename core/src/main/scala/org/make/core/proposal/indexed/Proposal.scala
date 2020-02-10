@@ -108,6 +108,7 @@ object ProposalElasticsearchFieldNames {
   val scores: String = "scores"
   val scoreRealistic: String = "scores.realistic"
   val scoreUpperBound: String = "scores.scoreUpperBound"
+  val scoreLowerBound: String = "scores.scoreLowerBound"
   val segment: String = "segment"
   val sequenceSegmentPool: String = "sequenceSegmentPool"
   val sequencePool: String = "sequencePool"
@@ -115,6 +116,7 @@ object ProposalElasticsearchFieldNames {
   val status: String = "status"
   val tagId: String = "tags.tagId"
   val tags: String = "tags"
+  val selectedStakeTagId: String = "selectedStakeTag.tagId"
   val themeId: String = "themeId"
   val toEnrich: String = "toEnrich"
   val topScore: String = "scores.topScore"
@@ -159,6 +161,7 @@ case class IndexedProposal(
   themeId: Option[ThemeId],
   question: Option[IndexedProposalQuestion],
   tags: Seq[IndexedTag],
+  selectedStakeTag: Option[IndexedTag],
   @(ApiModelProperty @field)(dataType = "string", example = "2a774774-33ca-41a3-a0fa-65931397fbfc")
   ideaId: Option[IdeaId],
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
@@ -305,13 +308,14 @@ final case class IndexedScores(boost: Double = 0,
                                topScoreAjustedWithVotes: Double,
                                controversy: Double,
                                rejection: Double,
-                               scoreUpperBound: Double)
+                               scoreUpperBound: Double,
+                               scoreLowerBound: Double)
 
 object IndexedScores {
   implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]
   implicit val decoder: Decoder[IndexedScores] = deriveDecoder[IndexedScores]
 
-  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  def empty: IndexedScores = IndexedScores(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 }
 
 final case class ProposalsSearchResult(total: Long, results: Seq[IndexedProposal])

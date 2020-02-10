@@ -116,6 +116,7 @@ class ProposalSearchEngineTest
     organisations = Seq.empty,
     themeId = Some(ThemeId("foo-theme")),
     tags = Seq.empty,
+    selectedStakeTag = None,
     status = ProposalStatus.Accepted,
     ideaId = Some(IdeaId("idea-id")),
     operationId = None,

@@ -1022,6 +1022,10 @@
             "scoreUpperBound": {
               "type": "double",
               "index": true
+            },
+            "scoreLowerBound": {
+              "type": "double",
+              "index": true
             }
           }
         },
@@ -1071,7 +1075,12 @@
             "scoreUpperBound": {
               "type": "double",
               "index": true
+            },
+            "scoreLowerBound": {
+              "type": "double",
+              "index": true
             }
+
           }
         },
         "slug": {
@@ -1175,6 +1184,23 @@
           }
         },
         "tags": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "keyword",
+              "index": true
+            },
+            "tagId": {
+              "type": "keyword",
+              "index": true
+            },
+            "display": {
+              "type": "boolean",
+              "index": false
+            }
+          }
+        },
+        "selectedStakeTag": {
           "type": "object",
           "properties": {
             "label": {

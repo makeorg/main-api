@@ -49,7 +49,8 @@ import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Pending
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.TopProposalsMode.IdeaMode
+import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.tag.{Tag, TagId}
 import org.make.core.user._
 import org.make.core.{CirceFormatters, DateHelper, RequestContext}
@@ -80,6 +81,7 @@ trait ProposalService {
   def getTopProposals(maybeUserId: Option[UserId],
                       questionId: QuestionId,
                       size: Int,
+                      mode: Option[TopProposalsMode],
                       requestContext: RequestContext): Future[ProposalsResultResponse]
 
   def searchProposalsVotedByUser(userId: UserId,
@@ -368,24 +370,28 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def getTopProposals(maybeUserId: Option[UserId],
                                  questionId: QuestionId,
                                  size: Int,
+                                 mode: Option[TopProposalsMode],
                                  requestContext: RequestContext): Future[ProposalsResultResponse] = {
-      elasticsearchProposalAPI
-        .getTopProposalsByIdea(questionId, size)
-        .flatMap { results =>
-          val searchResult = ProposalsSearchResult(results.size, results)
-          maybeUserId.map { userId =>
-            userHistoryCoordinatorService
-              .retrieveVoteAndQualifications(RequestVoteValues(userId = userId, searchResult.results.map(_.id)))
-          }.getOrElse {
-            sessionHistoryCoordinatorService
-              .retrieveVoteAndQualifications(
-                RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
-              )
-          }.map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
-        }
-        .map { proposalResultResponse =>
-          ProposalsResultResponse(proposalResultResponse.total, proposalResultResponse.results)
-        }
+      val search = mode match {
+        case Some(IdeaMode) =>
+          elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldNames.ideaId)
+        case _ =>
+          elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldNames.selectedStakeTagId)
+      }
+      search.flatMap { results =>
+        val searchResult = ProposalsSearchResult(results.size, results)
+        maybeUserId.map { userId =>
+          userHistoryCoordinatorService
+            .retrieveVoteAndQualifications(RequestVoteValues(userId = userId, searchResult.results.map(_.id)))
+        }.getOrElse {
+          sessionHistoryCoordinatorService
+            .retrieveVoteAndQualifications(
+              RequestSessionVoteValues(sessionId = requestContext.sessionId, searchResult.results.map(_.id))
+            )
+        }.map(votes => mergeVoteResults(maybeUserId, searchResult, votes, requestContext))
+      }.map { proposalResultResponse =>
+        ProposalsResultResponse(proposalResultResponse.total, proposalResultResponse.results)
+      }
     }
 
     override def propose(user: User,

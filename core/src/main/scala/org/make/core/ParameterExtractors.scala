@@ -31,7 +31,7 @@ import org.make.core.partner.PartnerKind
 import org.make.core.personality.PersonalityRole
 import org.make.core.personality.PersonalityRole.roleMap
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.question.QuestionId
+import org.make.core.question.{QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.{UserId, UserType}
@@ -196,6 +196,17 @@ trait ParameterExtractors {
         value,
         throw ValidationFailedError(
           Seq(ValidationError("userType", "invalid_value", Some(s"$value is not a valid user type")))
+        )
+      )
+    }
+  }
+
+  implicit val topProposalsModeFromStringUnmarshaller: Unmarshaller[String, TopProposalsMode] = {
+    Unmarshaller.strict[String, TopProposalsMode] { value =>
+      TopProposalsMode.modes.getOrElse(
+        value,
+        throw ValidationFailedError(
+          Seq(ValidationError("topProposalsMode", "invalid_value", Some(s"$value is not a valid mode")))
         )
       )
     }

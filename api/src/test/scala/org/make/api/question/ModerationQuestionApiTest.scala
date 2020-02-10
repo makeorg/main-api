@@ -295,6 +295,7 @@ class ModerationQuestionApiTest
                 language = Language("fr"),
                 themeId = None,
                 tags = Seq.empty,
+                selectedStakeTag = None,
                 votesCount = 0,
                 votesVerifiedCount = 0,
                 votesSequenceCount = 0,

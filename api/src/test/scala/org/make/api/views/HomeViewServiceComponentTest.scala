@@ -49,7 +49,8 @@ class HomeViewServiceComponentTest
     with ProposalServiceComponent
     with ProposalSearchEngineComponent
     with CurrentOperationServiceComponent
-    with FeaturedOperationServiceComponent {
+    with FeaturedOperationServiceComponent
+    with SortAlgorithmConfigurationComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
@@ -58,6 +59,7 @@ class HomeViewServiceComponentTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val currentOperationService: CurrentOperationService = mock[CurrentOperationService]
   override val featuredOperationService: FeaturedOperationService = mock[FeaturedOperationService]
+  override val sortAlgorithmConfiguration: SortAlgorithmConfiguration = mock[SortAlgorithmConfiguration]
 
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
@@ -245,6 +247,7 @@ class HomeViewServiceComponentTest
           language = Language("fr"),
           themeId = None,
           tags = Seq.empty,
+          selectedStakeTag = None,
           ideaId = None,
           operationId = None,
           question = None,
@@ -256,6 +259,10 @@ class HomeViewServiceComponentTest
           segment = None
         )
       }
+
+      Mockito.when(sortAlgorithmConfiguration.popularVoteCountTreshold).thenReturn(200)
+      Mockito.when(sortAlgorithmConfiguration.controversyTreshold).thenReturn(0.1d)
+
       Mockito
         .when(operationService.findSimple())
         .thenReturn(Future.successful(operations))
@@ -312,7 +319,7 @@ class HomeViewServiceComponentTest
         )
       val searchQueryPopular = SearchQuery(
         limit = Some(2),
-        sortAlgorithm = Some(PopularAlgorithm()),
+        sortAlgorithm = Some(PopularAlgorithm(200)),
         filters = Some(
           SearchFilters(
             language = Some(LanguageSearchFilter(Language("fr"))),
@@ -321,7 +328,7 @@ class HomeViewServiceComponentTest
           )
         )
       )
-      val searchQueryControverse = searchQueryPopular.copy(sortAlgorithm = Some(ControversyAlgorithm()))
+      val searchQueryControverse = searchQueryPopular.copy(sortAlgorithm = Some(ControversyAlgorithm(0.1d)))
       Mockito
         .when(
           proposalService.searchForUser(

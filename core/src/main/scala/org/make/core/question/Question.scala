@@ -61,3 +61,32 @@ object QuestionId {
     override def apply(key: String): Option[QuestionId] = Some(QuestionId(key))
   }
 }
+
+sealed trait TopProposalsMode {
+  def shortName: String
+}
+
+object TopProposalsMode {
+
+  implicit lazy val voteKeyEncoder: Encoder[TopProposalsMode] =
+    (mode: TopProposalsMode) => Json.fromString(mode.shortName)
+  implicit lazy val voteKeyDecoder: Decoder[TopProposalsMode] =
+    Decoder.decodeString.emap(
+      mode => TopProposalsMode.matchMode(mode).map(Right.apply).getOrElse(Left(s"$mode is not a valid mode"))
+    )
+
+  val modes: Map[String, TopProposalsMode] = Map(IdeaMode.shortName -> IdeaMode, StakeTagMode.shortName -> StakeTagMode)
+
+  def matchMode(mode: String): Option[TopProposalsMode] = {
+    modes.get(mode)
+  }
+
+  case object IdeaMode extends TopProposalsMode {
+    val shortName = "idea"
+  }
+
+  case object StakeTagMode extends TopProposalsMode {
+    val shortName = "tag"
+  }
+
+}

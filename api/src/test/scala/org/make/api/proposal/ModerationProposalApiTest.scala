@@ -443,6 +443,7 @@ class ModerationProposalApiTest
     language = Language("ar"),
     themeId = None,
     tags = Seq.empty,
+    selectedStakeTag = None,
     myProposal = false,
     idea = None,
     operationId = None,

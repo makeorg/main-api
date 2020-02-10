@@ -35,7 +35,7 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
+import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, SortAlgorithmConfiguration}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
@@ -56,7 +56,8 @@ class ProposalApiTest
     with ThemeServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
-    with SecurityConfigurationComponent {
+    with SecurityConfigurationComponent
+    with SortAlgorithmConfigurationComponent {
 
   override val proposalService: ProposalService = mock[ProposalService]
 
@@ -66,6 +67,7 @@ class ProposalApiTest
   override val questionService: QuestionService = mock[QuestionService]
   override val operationService: OperationService = mock[OperationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
+  override val sortAlgorithmConfiguration: SortAlgorithmConfiguration = mock[SortAlgorithmConfiguration]
 
   when(questionService.findQuestion(any[Option[ThemeId]], any[Option[OperationId]], any[Country], any[Language]))
     .thenAnswer(
@@ -183,6 +185,7 @@ class ProposalApiTest
     language = Language("ar"),
     themeId = None,
     tags = Seq.empty,
+    selectedStakeTag = None,
     myProposal = false,
     idea = None,
     operationId = None,

@@ -202,7 +202,8 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
                                userTypes: Option[Seq[UserType]] = None,
                                ideaIds: Option[Seq[IdeaId]] = None) {
 
-  def toSearchQuery(requestContext: RequestContext): SearchQuery = {
+  def toSearchQuery(requestContext: RequestContext,
+                    sortAlgorithmConfiguration: SortAlgorithmConfiguration): SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
@@ -224,7 +225,7 @@ final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
 
     val randomSeed: Int = seed.getOrElse(MakeRandom.random.nextInt())
     val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector
-      .select(sortAlgorithm, randomSeed)
+      .select(sortAlgorithm, randomSeed, sortAlgorithmConfiguration)
       // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
       .orElse(isRandom.flatMap { randomise =>
         if (randomise) {

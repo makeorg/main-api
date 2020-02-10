@@ -46,7 +46,7 @@ import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationCompon
 import org.make.api.tag.TagServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
-import org.make.core.proposal.{Proposal, ProposalId}
+import org.make.core.proposal.{Proposal, ProposalId, SearchFilters, SearchQuery, TagsSearchFilter}
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
   IndexedAuthor,
@@ -61,6 +61,7 @@ import org.make.core.proposal.indexed.{
 }
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.tag.TagId
 import org.make.core.user.User
 import org.make.core.{DateHelper, SlugHelper}
 
@@ -156,12 +157,38 @@ trait ProposalIndexationStream
     case None             => Future.successful[Option[Question]](None)
   }
 
+  private def getSelectedStakeTag(tags: Seq[TagId]): Future[Option[IndexedTag]] = {
+    tagService.retrieveIndexedStakeTags(tags).flatMap {
+      case Seq()         => Future.successful(None)
+      case Seq(stakeTag) => Future.successful(Some(stakeTag))
+      case stakeTags =>
+        Future
+          .traverse(stakeTags) { tag =>
+            elasticsearchProposalAPI
+              .countProposals(SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(tag.tagId)))))))
+              .map { count =>
+                tag -> count
+              }
+          }
+          .map { mapCount =>
+            Some(mapCount.sortBy {
+              case (tag, count) => (count * -1, tag.label)
+            }).map {
+              case tags => tags.head
+            }.map {
+              case (tag, _) => tag
+            }
+          }
+    }
+  }
+
   def getIndexedProposal(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
 
     val maybeResult: OptionT[Future, IndexedProposal] = for {
-      proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
-      user     <- OptionT(userService.getUser(proposal.author))
-      tags     <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
+      proposal         <- OptionT(proposalCoordinatorService.getProposal(proposalId))
+      user             <- OptionT(userService.getUser(proposal.author))
+      tags             <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
+      selectedStakeTag <- OptionT(getSelectedStakeTag(proposal.tags).map(Option(_)))
       organisationInfos <- OptionT(
         Future
           .traverse(proposal.organisationIds) { organisationId =>
@@ -186,6 +213,7 @@ trait ProposalIndexationStream
         user,
         organisationInfos,
         tags,
+        selectedStakeTag,
         question,
         operationOfQuestion,
         operation
@@ -201,6 +229,7 @@ trait ProposalIndexationStream
                                     user: User,
                                     organisationInfos: Seq[User],
                                     tags: Seq[IndexedTag],
+                                    selectedStakeTag: Option[IndexedTag],
                                     question: Question,
                                     operationOfQuestion: OperationOfQuestion,
                                     operation: SimpleOperation): IndexedProposal = {
@@ -247,7 +276,8 @@ trait ProposalIndexationStream
         ),
         controversy = regularScore.controversy(),
         rejection = regularScore.rejection(),
-        scoreUpperBound = regularScore.topScoreUpperBound()
+        scoreUpperBound = ScoreCounts.topScoreUpperBound(sequenceConfiguration, scoreWithEverything, regularScore),
+        scoreLowerBound = ScoreCounts.topScoreLowerBound(sequenceConfiguration, scoreWithEverything, regularScore)
       ),
       segmentScores = IndexedScores(
         engagement = segmentScore.engagement(),
@@ -264,7 +294,8 @@ trait ProposalIndexationStream
         ),
         controversy = segmentScore.controversy(),
         rejection = segmentScore.rejection(),
-        scoreUpperBound = segmentScore.topScoreUpperBound()
+        scoreUpperBound = ScoreCounts.topScoreUpperBound(sequenceConfiguration, scoreWithEverything, regularScore),
+        scoreLowerBound = ScoreCounts.topScoreLowerBound(sequenceConfiguration, scoreWithEverything, regularScore)
       ),
       context = Some(
         ProposalContext(
@@ -309,6 +340,7 @@ trait ProposalIndexationStream
       language = proposal.language.getOrElse(Language("fr")),
       themeId = proposal.theme,
       tags = tags,
+      selectedStakeTag = selectedStakeTag,
       ideaId = proposal.idea,
       operationId = proposal.operation,
       question = proposal.questionId.map(

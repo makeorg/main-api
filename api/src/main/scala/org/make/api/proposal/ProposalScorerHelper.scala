@@ -213,6 +213,7 @@ object ProposalScorerHelper extends StrictLogging {
 
       controversyEstimate.rate + ScoreCounts.ConfidenceInterval95Percent * controversyEstimate.sd
     }
+
   }
 
   object ScoreCounts {
@@ -225,6 +226,16 @@ object ProposalScorerHelper extends StrictLogging {
       (1 - configuration.nonSequenceVotesWeight) * specificScores.topScore() +
         configuration.nonSequenceVotesWeight * allScores.topScore()
     }
+
+    def topScoreUpperBound(configuration: SequenceConfiguration,
+                           allScores: ScoreCounts,
+                           specificScores: ScoreCounts): Double =
+      topScore(configuration, allScores, specificScores) + specificScores.topScoreConfidenceInterval()
+
+    def topScoreLowerBound(configuration: SequenceConfiguration,
+                           allScores: ScoreCounts,
+                           specificScores: ScoreCounts): Double =
+      topScore(configuration, allScores, specificScores) - specificScores.topScoreConfidenceInterval()
 
     def topScoreAjustedWithVotes(configuration: SequenceConfiguration,
                                  allScores: ScoreCounts,
