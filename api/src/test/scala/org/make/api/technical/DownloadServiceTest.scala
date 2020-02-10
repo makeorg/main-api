@@ -63,9 +63,9 @@ class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceCompon
       val futureImage = downloadService.downloadImage(imageUrl, destFn)
 
       whenReady(futureImage.failed, Timeout(3.seconds)) { exception =>
-        exception shouldBe a[ImageNotFound]
+        exception shouldBe a[ImageUnavailable]
         exception
-          .asInstanceOf[ImageNotFound]
+          .asInstanceOf[ImageUnavailable]
           .getMessage
           .startsWith("Image not found for URL") shouldBe true
       }

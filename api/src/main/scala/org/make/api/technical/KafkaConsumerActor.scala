@@ -53,6 +53,7 @@ abstract class KafkaConsumerActor[T]
 
   def handleMessage(message: T): Future[Unit]
   def groupId: String
+  def customProperties: Properties = new Properties()
 
   private var consumer: KafkaConsumer[String, T] = _
 
@@ -70,6 +71,7 @@ abstract class KafkaConsumerActor[T]
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
     props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
+    props.putAll(customProperties)
     val consumer = new KafkaConsumer[String, T](
       props,
       new StringDeserializer(),
