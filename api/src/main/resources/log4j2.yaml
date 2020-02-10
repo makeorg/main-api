@@ -5,7 +5,7 @@ Configuration:
     Console:
       - name: AkkaConsole
         PatternLayout:
-          Pattern: "%highlight{%d %p [%X{akkaSource}:%L] %m%n}"
+          Pattern: "%highlight{%d %p [%X{akkaSource}:%L] %entrypoint %m%n}"
         ThreadContextMapFilter:
           onMatch: ACCEPT
           onMismatch: DENY
@@ -14,7 +14,7 @@ Configuration:
             value: make-api
       - name: console
         PatternLayout:
-          Pattern: "%highlight{%d %p %C:%L %m%n}"
+          Pattern: "%highlight{%d %p %C:%L %entrypoint %m%n}"
         ThreadContextMapFilter:
           onMatch: DENY
           onMismatch: NEUTRAL
