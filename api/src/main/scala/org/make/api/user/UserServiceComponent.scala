@@ -909,7 +909,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             storageService.uploadUserAvatar(userId, extension(contentType), contentType.value, FileContent(tempFile))
         }
         .recoverWith {
-          case e: ImageNotFound =>
+          case e: ImageUnavailable =>
             getUser(userId).flatMap {
               case Some(user) =>
                 val userWithoutAvatarUrl = user.copy(profile = user.profile.map(_.copy(avatarUrl = None)))

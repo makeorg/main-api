@@ -63,9 +63,9 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
           Http()(actorSystem)
             .singleRequest(req)
             .flatMap {
-              case response if response.status == StatusCodes.NotFound =>
+              case response if response.status.intValue() >= 400 && response.status.intValue() < 500 =>
                 response.discardEntityBytes()
-                Future.failed(ImageNotFound(imageUrl))
+                Future.failed(ImageUnavailable(imageUrl))
               case response if response.status.isFailure() =>
                 response.entity.toStrict(2.second).flatMap { entity =>
                   val body = entity.data.decodeString(Charset.forName("UTF-8"))
@@ -100,4 +100,4 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
   }
 }
 
-final case class ImageNotFound(imageUrl: String) extends Exception(s"Image not found for URL $imageUrl.")
+final case class ImageUnavailable(imageUrl: String) extends Exception(s"Image not found for URL $imageUrl.")

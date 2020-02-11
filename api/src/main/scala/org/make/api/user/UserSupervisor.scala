@@ -72,6 +72,17 @@ class UserSupervisor(dependencies: UserSupervisorDependencies)
     context.watch {
       val (props, name) =
         MakeBackoffSupervisor.propsAndName(
+          UserImageConsumerActor
+            .props(dependencies.userHistoryCoordinatorService, dependencies.userService)
+            .withDispatcher(kafkaDispatcher),
+          UserImageConsumerActor.name
+        )
+      context.actorOf(props, name)
+    }
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(
           OrganisationConsumerActor
             .props(
               dependencies.organisationService,

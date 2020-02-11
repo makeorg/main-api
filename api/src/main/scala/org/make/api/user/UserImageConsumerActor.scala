@@ -19,10 +19,13 @@
 
 package org.make.api.user
 
+import java.util.Properties
+
 import akka.actor.Props
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import com.typesafe.scalalogging.StrictLogging
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
@@ -40,6 +43,12 @@ class UserImageConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinat
   override protected lazy val kafkaTopic: String = UserProducerActor.topicKey
   override protected val format: RecordFormat[UserEventWrapper] = UserEventWrapper.recordFormat
   override val groupId = "user-images"
+  override def customProperties: Properties = {
+    val props = new Properties()
+// Fetch a batch of events only in order to handle some downloads but not all at once
+    props.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, 4096)
+    props
+  }
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
