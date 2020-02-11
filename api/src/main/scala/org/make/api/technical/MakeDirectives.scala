@@ -41,6 +41,7 @@ import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent
 import org.make.api.technical.monitoring.MonitoringMessageHelper
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
+import org.make.api.technical.tracing.Tracing
 import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
@@ -252,6 +253,7 @@ trait MakeDirectives
 
   def makeOperation(name: String, endpointType: EndpointType = EndpointType.Regular): Directive1[RequestContext] = {
     val slugifiedName: String = SlugHelper(name)
+    Tracing.entrypoint(slugifiedName)
 
     for {
 

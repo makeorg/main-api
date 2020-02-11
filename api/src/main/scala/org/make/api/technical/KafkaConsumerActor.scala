@@ -28,7 +28,8 @@ import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.make.api.extensions.KafkaConfigurationExtension
 import org.make.api.technical.KafkaConsumerActor.{CheckState, Consume, Ready, Waiting}
-import org.make.core.AvroSerializers
+import org.make.api.technical.tracing.Tracing
+import org.make.core.{AvroSerializers, EventWrapper, SlugHelper}
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -92,7 +93,15 @@ abstract class KafkaConsumerActor[T]
       self ! Consume
       val records = consumer.poll(kafkaConfiguration.pollTimeout)
       records.asScala.foreach { record =>
-        val future = handleMessage(record.value())
+        val message = record.value()
+
+        val messageClass = (message match {
+          case wrapper: EventWrapper[_] => wrapper.event
+          case _ => message
+        }).getClass.getSimpleName
+        Tracing.entrypoint(SlugHelper(s"${getClass.getSimpleName}-$messageClass"))
+
+        val future = handleMessage(message)
         Await.ready(future, 1.minute)
         future.onComplete {
           case Success(_) =>
