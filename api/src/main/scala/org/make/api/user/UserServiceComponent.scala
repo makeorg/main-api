@@ -441,7 +441,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,
         firstName = userInfo.firstName,
-        lastName = userInfo.lastName,
+        lastName = None,
         lastIp = clientIp,
         hashedPassword = None,
         enabled = true,
@@ -492,7 +492,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       val updatedUser: User =
         user.copy(
           firstName = userInfo.firstName,
-          lastName = userInfo.lastName,
           lastIp = clientIp,
           country = country,
           language = language,

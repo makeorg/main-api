@@ -250,7 +250,6 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
         country = "FR",
         language = "fr",
         gender = None,
@@ -283,7 +282,6 @@ class UserServiceTest
         id = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
         firstName = info.firstName,
-        lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
         lastConnection = DateHelper.now(),
@@ -309,7 +307,6 @@ class UserServiceTest
         user shouldBe a[User]
         user.email should be(info.email.getOrElse(""))
         user.firstName should be(info.firstName)
-        user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
         user.profile.flatMap(_.registerQuestionId) should be(Some(QuestionId("question")))
 
@@ -329,7 +326,6 @@ class UserServiceTest
       val infoWithGender = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
         gender = Some("female"),
         googleId = None,
         facebookId = Some("444444"),
@@ -360,7 +356,6 @@ class UserServiceTest
         id = UserId("AAA-BBB-CCC-DDD-EEE"),
         email = infoWithGender.email.getOrElse(""),
         firstName = infoWithGender.firstName,
-        lastName = infoWithGender.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
         lastConnection = DateHelper.now(),
@@ -380,7 +375,6 @@ class UserServiceTest
         user shouldBe a[User]
         user.email should be(infoWithGender.email.getOrElse(""))
         user.firstName should be(infoWithGender.firstName)
-        user.lastName should be(infoWithGender.lastName)
         user.profile.get.facebookId should be(infoWithGender.facebookId)
         user.profile.get.gender should be(Some(Female))
         user.profile.get.genderName should be(Some("female"))
@@ -400,7 +394,6 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
         country = "FR",
         language = "fr",
         gender = None,
@@ -431,7 +424,6 @@ class UserServiceTest
         id = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
         firstName = info.firstName,
-        lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
         lastConnection = DateHelper.now(),
@@ -448,7 +440,6 @@ class UserServiceTest
         user shouldBe a[User]
         user.email should be(info.email.getOrElse(""))
         user.firstName should be(info.firstName)
-        user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
 
         verify(persistentUserService, times(1)).updateSocialUser(ArgumentMatchers.any[User])
@@ -464,7 +455,6 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
         country = "FR",
         language = "fr",
         gender = None,
@@ -495,7 +485,6 @@ class UserServiceTest
         id = UserId("AAA-BBB-CCC-DDD"),
         email = info.email.getOrElse(""),
         firstName = info.firstName,
-        lastName = info.lastName,
         lastIp = Some("127.0.0.1"),
         hashedPassword = Some("passpass"),
         lastConnection = DateHelper.now(),
@@ -513,7 +502,6 @@ class UserServiceTest
         user shouldBe a[User]
         user.email should be(info.email.getOrElse(""))
         user.firstName should be(info.firstName)
-        user.lastName should be(info.lastName)
         user.profile.get.facebookId should be(info.facebookId)
       }
     }
@@ -554,7 +542,6 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
         country = "FR",
         language = "fr",
         gender = None,
@@ -593,7 +580,6 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
         country = "FR",
         language = "fr",
         gender = None,

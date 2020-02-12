@@ -149,7 +149,6 @@ class SocialServiceComponentTest
           UserInfo(
             email = googleData.email,
             firstName = googleData.givenName,
-            lastName = googleData.familyName,
             country = "FR",
             language = "fr",
             googleId = googleData.iat,
@@ -239,7 +238,6 @@ class SocialServiceComponentTest
           UserInfo(
             email = googleData.email,
             firstName = googleData.givenName,
-            lastName = googleData.familyName,
             country = "FR",
             language = "fr",
             googleId = googleData.iat,
@@ -384,7 +382,6 @@ class SocialServiceComponentTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        lastName = Some("user"),
         country = "FR",
         language = "fr",
         googleId = None,
@@ -426,7 +423,6 @@ class SocialServiceComponentTest
           UserInfo(
             email = facebookData.email,
             firstName = facebookData.firstName,
-            lastName = facebookData.lastName,
             country = "FR",
             language = "fr",
             googleId = None,
@@ -464,7 +460,6 @@ class SocialServiceComponentTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = None,
-        lastName = None,
         country = "FR",
         language = "fr",
         googleId = None,
@@ -507,7 +502,6 @@ class SocialServiceComponentTest
           UserInfo(
             email = facebookData.email,
             firstName = facebookData.firstName,
-            lastName = facebookData.lastName,
             country = "FR",
             language = "fr",
             googleId = None,
