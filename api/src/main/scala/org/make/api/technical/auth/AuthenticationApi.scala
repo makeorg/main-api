@@ -152,8 +152,27 @@ trait AuthenticationApi extends Directives {
 
   def form: Route
 
+  @ApiOperation(
+    value = "reset-cookies",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    consumes = "text/plain",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(
+          new AuthorizationScope(scope = "user", description = "application user"),
+          new AuthorizationScope(scope = "admin", description = "BO Admin")
+        )
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
+  @Path(value = "/resetCookies")
+  def resetCookies: Route
+
   def routes: Route =
-    getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute ~ form ~ createAuthorizationCode ~ reconnect
+    getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute ~ form ~ createAuthorizationCode ~ reconnect ~ resetCookies
 }
 
 object AuthenticationApi {
@@ -355,91 +374,116 @@ trait DefaultAuthenticationApiComponent
       }
     }
 
+    private def logoutCookies: Seq[`Set-Cookie`] = Seq(
+      `Set-Cookie`(
+        HttpCookie(
+          name = makeSettings.SessionCookie.name,
+          value = idGenerator.nextId(),
+          secure = makeSettings.SessionCookie.isSecure,
+          httpOnly = true,
+          maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
+          path = Some("/"),
+          domain = Some(makeSettings.SessionCookie.domain)
+        )
+      ),
+      `Set-Cookie`(
+        HttpCookie(
+          name = makeSettings.SessionCookie.expirationName,
+          value = DateHelper
+            .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
+          secure = makeSettings.SessionCookie.isSecure,
+          httpOnly = false,
+          maxAge = None,
+          path = Some("/"),
+          domain = Some(makeSettings.SessionCookie.domain)
+        )
+      ),
+      `Set-Cookie`(
+        HttpCookie(
+          name = makeSettings.SecureCookie.name,
+          value = "",
+          secure = makeSettings.SecureCookie.isSecure,
+          httpOnly = true,
+          maxAge = Some(0),
+          path = Some("/"),
+          domain = Some(makeSettings.SecureCookie.domain)
+        )
+      ),
+      `Set-Cookie`(
+        HttpCookie(
+          name = makeSettings.SecureCookie.expirationName,
+          value = "",
+          secure = makeSettings.SecureCookie.isSecure,
+          httpOnly = false,
+          maxAge = Some(0),
+          path = Some("/"),
+          domain = Some(makeSettings.SecureCookie.domain)
+        )
+      )
+    )
+
     override def logoutRoute: Route = post {
       path("logout") {
         makeOperation("OauthLogout") { _ =>
-          optionalMakeOAuth2 { user =>
-            extractToken { token =>
-              onComplete(token.map(oauth2DataHandler.removeToken).getOrElse(Future.successful(()))) {
-                case Success(_) =>
-                  mapResponseHeaders(
-                    _ ++ Seq(
-                      `Set-Cookie`(
-                        HttpCookie(
-                          name = makeSettings.SessionCookie.name,
-                          value = idGenerator.nextId(),
-                          secure = makeSettings.SessionCookie.isSecure,
-                          httpOnly = true,
-                          maxAge = Some(makeSettings.SessionCookie.lifetime.toSeconds),
-                          path = Some("/"),
-                          domain = Some(makeSettings.SessionCookie.domain)
-                        )
-                      ),
-                      `Set-Cookie`(
-                        HttpCookie(
-                          name = makeSettings.SessionCookie.expirationName,
-                          value = DateHelper
-                            .format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
-                          secure = makeSettings.SessionCookie.isSecure,
-                          httpOnly = false,
-                          maxAge = None,
-                          path = Some("/"),
-                          domain = Some(makeSettings.SessionCookie.domain)
-                        )
-                      ),
-                      `Set-Cookie`(
-                        HttpCookie(
-                          name = makeSettings.SecureCookie.name,
-                          value = "",
-                          secure = makeSettings.SecureCookie.isSecure,
-                          httpOnly = true,
-                          maxAge = Some(0),
-                          path = Some("/"),
-                          domain = Some(makeSettings.SecureCookie.domain)
-                        )
-                      ),
-                      `Set-Cookie`(
-                        HttpCookie(
-                          name = makeSettings.SecureCookie.expirationName,
-                          value = "",
-                          secure = makeSettings.SecureCookie.isSecure,
-                          httpOnly = false,
-                          maxAge = Some(0),
-                          path = Some("/"),
-                          domain = Some(makeSettings.SecureCookie.domain)
-                        )
-                      )
-                    ) ++ user.fold(
-                      Seq(
-                        `Set-Cookie`(
-                          HttpCookie(
-                            name = makeSettings.VisitorCookie.name,
-                            value = "",
-                            secure = makeSettings.VisitorCookie.isSecure,
-                            httpOnly = true,
-                            maxAge = Some(0),
-                            path = Some("/"),
-                            domain = Some(makeSettings.VisitorCookie.domain)
-                          )
-                        ),
-                        `Set-Cookie`(
-                          HttpCookie(
-                            name = makeSettings.VisitorCookie.createdAtName,
-                            value = "",
-                            secure = makeSettings.VisitorCookie.isSecure,
-                            httpOnly = true,
-                            maxAge = Some(0),
-                            path = Some("/"),
-                            domain = Some(makeSettings.VisitorCookie.domain)
-                          )
-                        )
-                      )
-                    )(_ => Nil)
-                  ) {
-                    complete(StatusCodes.NoContent)
-                  }
+          makeOAuth2 { _ =>
+            requireToken { token =>
+              onComplete(oauth2DataHandler.removeToken(token)) {
+                case Success(_)  => mapResponseHeaders(_ ++ logoutCookies) { complete(StatusCodes.NoContent) }
                 case Failure(ex) => failWith(ex)
               }
+            }
+          }
+        }
+      }
+    }
+
+    override def resetCookies: Route = post {
+      path("resetCookies") {
+        makeOperation("ResetCookies") { _ =>
+          extractToken { token =>
+            onComplete(token.map(oauth2DataHandler.removeToken).getOrElse(Future.successful(()))) {
+              case Success(_) =>
+                mapResponseHeaders(
+                  _ ++ logoutCookies ++
+                    Seq(
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.UserIdCookie.name,
+                          value = "",
+                          secure = makeSettings.UserIdCookie.isSecure,
+                          httpOnly = true,
+                          maxAge = Some(0),
+                          path = Some("/"),
+                          domain = Some(makeSettings.UserIdCookie.domain)
+                        )
+                      ),
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.VisitorCookie.name,
+                          value = "",
+                          secure = makeSettings.VisitorCookie.isSecure,
+                          httpOnly = true,
+                          maxAge = Some(0),
+                          path = Some("/"),
+                          domain = Some(makeSettings.VisitorCookie.domain)
+                        )
+                      ),
+                      `Set-Cookie`(
+                        HttpCookie(
+                          name = makeSettings.VisitorCookie.createdAtName,
+                          value = "",
+                          secure = makeSettings.VisitorCookie.isSecure,
+                          httpOnly = true,
+                          maxAge = Some(0),
+                          path = Some("/"),
+                          domain = Some(makeSettings.VisitorCookie.domain)
+                        )
+                      )
+                    )
+                ) {
+                  complete(StatusCodes.NoContent)
+                }
+              case Failure(ex) => failWith(ex)
             }
           }
         }
