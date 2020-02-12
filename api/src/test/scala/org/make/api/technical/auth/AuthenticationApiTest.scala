@@ -23,7 +23,7 @@ import java.time.Instant
 import java.util.Date
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{`Set-Cookie`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical._
@@ -128,22 +128,45 @@ class AuthenticationApiTest
       Then("the service must delete at least one row")
       logoutRoute ~> check {
         status should be(StatusCodes.NoContent)
+        response.headers[`Set-Cookie`].map(_.cookie).find(_.name == makeSettings.VisitorCookie.name) should be(None)
       }
     }
 
-    scenario("unauthorize an empty authentication") {
+    scenario("logout an invalid user") {
       Given("an invalid authentication")
       val invalidToken: String = "FAULTY_TOKEN"
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
         .thenReturn(Future.successful(None))
+      when(oauth2DataHandler.removeToken(ArgumentMatchers.eq("FAULTY_TOKEN")))
+        .thenReturn(Future.successful {})
 
       When("logout is called")
       val logoutRoute
         : RouteTestResult = Post("/logout").withHeaders(Authorization(OAuth2BearerToken(invalidToken))) ~> routes
 
-      Then("the service must delete at least one row")
+      Then("the visitor should be reset")
       logoutRoute ~> check {
-        status should be(StatusCodes.Unauthorized)
+        status should be(StatusCodes.NoContent)
+        response
+          .headers[`Set-Cookie`]
+          .map(_.cookie)
+          .find(_.name == makeSettings.VisitorCookie.name)
+          .flatMap(_.maxAge) should be(Some(0))
+      }
+    }
+
+    scenario("logout an anonymous visitor") {
+      When("logout is called without authentication")
+      val logoutRoute: RouteTestResult = Post("/logout") ~> routes
+
+      Then("the visitor should be reset")
+      logoutRoute ~> check {
+        status should be(StatusCodes.NoContent)
+        response
+          .headers[`Set-Cookie`]
+          .map(_.cookie)
+          .find(_.name == makeSettings.VisitorCookie.name)
+          .flatMap(_.maxAge) should be(Some(0))
       }
     }
   }

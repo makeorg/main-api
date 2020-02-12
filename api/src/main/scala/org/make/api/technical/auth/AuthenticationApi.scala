@@ -358,9 +358,9 @@ trait DefaultAuthenticationApiComponent
     override def logoutRoute: Route = post {
       path("logout") {
         makeOperation("OauthLogout") { _ =>
-          makeOAuth2 { _ =>
-            requireToken { token =>
-              onComplete(oauth2DataHandler.removeToken(token)) {
+          optionalMakeOAuth2 { user =>
+            extractToken { token =>
+              onComplete(token.map(oauth2DataHandler.removeToken).getOrElse(Future.successful(()))) {
                 case Success(_) =>
                   mapResponseHeaders(
                     _ ++ Seq(
@@ -409,7 +409,32 @@ trait DefaultAuthenticationApiComponent
                           domain = Some(makeSettings.SecureCookie.domain)
                         )
                       )
-                    )
+                    ) ++ user.fold(
+                      Seq(
+                        `Set-Cookie`(
+                          HttpCookie(
+                            name = makeSettings.VisitorCookie.name,
+                            value = "",
+                            secure = makeSettings.VisitorCookie.isSecure,
+                            httpOnly = true,
+                            maxAge = Some(0),
+                            path = Some("/"),
+                            domain = Some(makeSettings.VisitorCookie.domain)
+                          )
+                        ),
+                        `Set-Cookie`(
+                          HttpCookie(
+                            name = makeSettings.VisitorCookie.createdAtName,
+                            value = "",
+                            secure = makeSettings.VisitorCookie.isSecure,
+                            httpOnly = true,
+                            maxAge = Some(0),
+                            path = Some("/"),
+                            domain = Some(makeSettings.VisitorCookie.domain)
+                          )
+                        )
+                      )
+                    )(_ => Nil)
                   ) {
                     complete(StatusCodes.NoContent)
                   }
