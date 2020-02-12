@@ -20,10 +20,10 @@
 package org.make.api.technical.auth
 
 import java.time.Instant
-import java.util.Date
+import java.util.{Date, UUID}
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Set-Cookie`, Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{`Set-Cookie`, Authorization, Cookie, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical._
@@ -137,21 +137,14 @@ class AuthenticationApiTest
       val invalidToken: String = "FAULTY_TOKEN"
       when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
         .thenReturn(Future.successful(None))
-      when(oauth2DataHandler.removeToken(ArgumentMatchers.eq("FAULTY_TOKEN")))
-        .thenReturn(Future.successful {})
 
       When("logout is called")
       val logoutRoute
         : RouteTestResult = Post("/logout").withHeaders(Authorization(OAuth2BearerToken(invalidToken))) ~> routes
 
-      Then("the visitor should be reset")
+      Then("the service must return unauthorized")
       logoutRoute ~> check {
-        status should be(StatusCodes.NoContent)
-        response
-          .headers[`Set-Cookie`]
-          .map(_.cookie)
-          .find(_.name == makeSettings.VisitorCookie.name)
-          .flatMap(_.maxAge) should be(Some(0))
+        status should be(StatusCodes.Unauthorized)
       }
     }
 
@@ -159,14 +152,41 @@ class AuthenticationApiTest
       When("logout is called without authentication")
       val logoutRoute: RouteTestResult = Post("/logout") ~> routes
 
-      Then("the visitor should be reset")
+      Then("the service must return unauthorized")
       logoutRoute ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("reset all cookies") {
+      When("reset is called ")
+      when(idGenerator.nextId).thenAnswer(_ => UUID.randomUUID.toString)
+      val sessionId = idGenerator.nextId
+      val resetRoute: RouteTestResult = Post("/resetCookies").withHeaders(
+        Cookie(makeSettings.SessionCookie.name, sessionId)
+      ) ~> routes
+
+      Then("a new session is created and other cookies are reset")
+      resetRoute ~> check {
+
         status should be(StatusCodes.NoContent)
+
         response
           .headers[`Set-Cookie`]
           .map(_.cookie)
-          .find(_.name == makeSettings.VisitorCookie.name)
-          .flatMap(_.maxAge) should be(Some(0))
+          .find(_.name == makeSettings.SessionCookie.name)
+          .map(_.value)
+          .get should not be sessionId
+
+        Seq(makeSettings.SecureCookie.name, makeSettings.UserIdCookie.name, makeSettings.VisitorCookie.name).foreach(
+          name =>
+            response
+              .headers[`Set-Cookie`]
+              .map(_.cookie)
+              .find(_.name == name)
+              .flatMap(_.maxAge) should be(Some(0))
+        )
+
       }
     }
   }
