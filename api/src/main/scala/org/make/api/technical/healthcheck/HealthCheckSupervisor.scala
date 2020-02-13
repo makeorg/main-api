@@ -38,7 +38,8 @@ class HealthCheckSupervisor extends Actor with ActorLogging {
       CockroachHealthCheckActor,
       ElasticsearchHealthCheckActor,
       CassandraHealthCheckActor,
-      KafkaHealthCheckActor
+      KafkaHealthCheckActor,
+      SwiftHealthCheckActor
     )
 
   private implicit val timeout: Timeout = TimeSettings.defaultTimeout
