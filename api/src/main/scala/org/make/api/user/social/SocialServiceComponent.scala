@@ -79,7 +79,6 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
             UserInfo(
               email = googleUserInfo.email,
               firstName = googleUserInfo.givenName,
-              lastName = googleUserInfo.familyName,
               country = country.value,
               language = language.value,
               googleId = googleUserInfo.iat,
@@ -93,7 +92,6 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
             UserInfo(
               email = facebookUserInfo.email,
               firstName = facebookUserInfo.firstName,
-              lastName = facebookUserInfo.lastName,
               country = country.value,
               language = language.value,
               facebookId = Some(facebookUserInfo.id),
