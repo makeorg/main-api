@@ -19,6 +19,7 @@
 
 package org.make.api.organisation
 
+import akka.Done
 import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
@@ -51,7 +52,7 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  override def handleMessage(message: UserEventWrapper): Future[Unit] = {
+  override def handleMessage(message: UserEventWrapper): Future[_] = {
     message.event match {
       case event: OrganisationRegisteredEvent => onCreateOrUpdate(event)
       case event: OrganisationUpdatedEvent    => onCreateOrUpdate(event)
@@ -59,11 +60,11 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
     }
   }
 
-  def onCreateOrUpdate(event: UserEvent): Future[Unit] = {
+  def onCreateOrUpdate(event: UserEvent): Future[Done] = {
     retrieveAndShapeOrganisation(event.userId).flatMap(indexOrUpdate)
   }
 
-  def indexOrUpdate(organisation: IndexedOrganisation): Future[Unit] = {
+  def indexOrUpdate(organisation: IndexedOrganisation): Future[Done] = {
     log.debug(s"Indexing $organisation")
     elasticsearchOrganisationAPI
       .findOrganisationById(organisation.organisationId)
@@ -72,8 +73,6 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
         case Some(found) =>
           elasticsearchOrganisationAPI.updateOrganisation(organisation.copy(countsByQuestion = found.countsByQuestion))
       }
-      .map { _ =>
-        }
   }
 
   private def retrieveAndShapeOrganisation(id: UserId): Future[IndexedOrganisation] = {

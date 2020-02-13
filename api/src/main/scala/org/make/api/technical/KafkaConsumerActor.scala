@@ -53,7 +53,7 @@ abstract class KafkaConsumerActor[T]
     }
   }
 
-  def handleMessage(message: T): Future[Unit]
+  def handleMessage(message: T): Future[_]
   def groupId: String
   def customProperties: Properties = new Properties()
   def handleMessagesParalellism: Int = 4
@@ -98,9 +98,7 @@ abstract class KafkaConsumerActor[T]
       val records = consumer.poll(kafkaConfiguration.pollTimeout)
       val handleRecords = Source
         .fromIterator(() => records.asScala.iterator)
-        .map { record =>
-          record.value()
-        }
+        .map(_.value())
         .mapAsync(handleMessagesParalellism) { message =>
           val messageClass = (message match {
             case wrapper: EventWrapper[_] => wrapper.event

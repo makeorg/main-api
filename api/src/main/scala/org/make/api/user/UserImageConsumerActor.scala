@@ -53,7 +53,7 @@ class UserImageConsumerActor(userService: UserService)
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  override def handleMessage(message: UserEventWrapper): Future[Unit] = {
+  override def handleMessage(message: UserEventWrapper): Future[_] = {
     message.event match {
       case event: ResetPasswordEvent              => doNothing(event)
       case event: UserRegisteredEvent             => doNothing(event)
@@ -73,7 +73,7 @@ class UserImageConsumerActor(userService: UserService)
   }
 
   def handleUserUploadAvatarEvent(event: UserUploadAvatarEvent): Future[Unit] = {
-    userService.changeAvatarForUser(event.userId, event.avatarUrl, event.requestContext, event.eventDate).map(_ => {})
+    userService.changeAvatarForUser(event.userId, event.avatarUrl, event.requestContext, event.eventDate)
   }
 }
 

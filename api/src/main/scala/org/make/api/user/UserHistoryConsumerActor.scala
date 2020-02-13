@@ -42,7 +42,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  override def handleMessage(message: UserEventWrapper): Future[Unit] = {
+  override def handleMessage(message: UserEventWrapper): Future[_] = {
     message.event match {
       case event: ResetPasswordEvent              => doNothing(event)
       case event: UserRegisteredEvent             => handleUserRegisteredEvent(event)

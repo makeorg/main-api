@@ -39,7 +39,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  override def handleMessage(message: UserEventWrapper): Future[Unit] = {
+  override def handleMessage(message: UserEventWrapper): Future[_] = {
     message.event match {
       case event: ResetPasswordEvent              => handleResetPasswordEvent(event)
       case event: UserRegisteredEvent             => handleUserRegisteredEvent(event)
