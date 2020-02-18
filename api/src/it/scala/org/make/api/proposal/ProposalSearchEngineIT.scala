@@ -29,6 +29,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import io.circe.syntax._
 import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.api.docker.DockerElasticsearchService
@@ -37,6 +38,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
+import org.make.core.common.indexed.Sort
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
@@ -52,6 +54,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, Future}
 import scala.io.{Codec, Source}
+import scala.math.Ordering.Double.TotalOrdering
 import scala.util.{Failure, Success, Try}
 
 class ProposalSearchEngineIT
@@ -1484,6 +1487,25 @@ class ProposalSearchEngineIT
     scenario("should return a list of proposals from Italy") {
       whenReady(elasticsearchProposalAPI.searchProposals(queryCountry), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.count(_.country == Country("IT")))
+      }
+    }
+  }
+
+  feature("search proposals by top score") {
+    val queryTopScore =
+      SearchQuery(
+        filters = None,
+        sort = Some(
+          Sort(field = Some(ProposalElasticsearchFieldNames.topScoreAjustedWithVotes), mode = Some(SortOrder.Desc))
+        )
+      )
+
+    scenario("should return a list of proposals sorted by top score") {
+      whenReady(elasticsearchProposalAPI.searchProposals(queryTopScore), Timeout(3.seconds)) { result =>
+        result.total should be(acceptedProposals.size)
+        result.results.map(_.scores.topScoreAjustedWithVotes) should be(
+          acceptedProposals.map(_.scores.topScoreAjustedWithVotes).sorted.reverse
+        )
       }
     }
   }

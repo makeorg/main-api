@@ -39,6 +39,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, PublicConsultation}
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
+import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
@@ -311,7 +312,17 @@ trait DefaultProposalApiComponent
                     )
                   }, sort.map { sortValue =>
                     val choices =
-                      Seq("content", "slug", "createdAt", "updatedAt", "trending", "labels", "country", "language")
+                      Seq(
+                        ProposalElasticsearchFieldNames.content,
+                        ProposalElasticsearchFieldNames.slug,
+                        ProposalElasticsearchFieldNames.createdAt,
+                        ProposalElasticsearchFieldNames.updatedAt,
+                        ProposalElasticsearchFieldNames.trending,
+                        ProposalElasticsearchFieldNames.labels,
+                        ProposalElasticsearchFieldNames.country,
+                        ProposalElasticsearchFieldNames.language,
+                        ProposalElasticsearchFieldNames.topScoreAjustedWithVotes
+                      )
                     Validation.validChoices(
                       fieldName = "sort",
                       message = Some(
