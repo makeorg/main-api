@@ -21,7 +21,7 @@ package org.make.api.user
 
 import java.io.File
 import java.nio.file.Files
-import java.time.LocalDate
+import java.time.{LocalDate, ZonedDateTime}
 
 import akka.http.scaladsl.model.ContentType
 import com.github.t3hnar.bcrypt._
@@ -30,13 +30,13 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.question.AuthorRequest
+import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{MakeDataHandlerComponent, TokenGeneratorComponent, UserTokenGeneratorComponent}
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.security.SecurityHelper
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.StorageServiceComponent
-import org.make.api.technical._
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
@@ -110,7 +110,10 @@ trait UserService extends ShortenedNames {
                       userType: Option[UserType]): Future[Int]
   def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]]
   def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]]
-  def changeAvatarForUser(userId: UserId, avatarUrl: String): Future[String]
+  def changeAvatarForUser(userId: UserId,
+                          avatarUrl: String,
+                          requestContext: RequestContext,
+                          eventDate: ZonedDateTime): Future[Unit]
 }
 
 case class UserRegisterData(email: String,
@@ -159,7 +162,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with MakeSettingsComponent
     with UserRegistrationValidatorComponent
     with StorageServiceComponent
-    with DownloadServiceComponent =>
+    with DownloadServiceComponent
+    with UserHistoryCoordinatorServiceComponent =>
 
   override lazy val userService: UserService = new DefaultUserService
 
@@ -895,7 +899,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    def changeAvatarForUser(userId: UserId, avatarUrl: String): Future[String] = {
+    def changeAvatarForUser(userId: UserId,
+                            avatarUrl: String,
+                            requestContext: RequestContext,
+                            eventDate: ZonedDateTime): Future[Unit] = {
       def extension(contentType: ContentType): String = contentType.mediaType.subType
       def destFn(contentType: ContentType): File =
         Files.createTempFile("user-upload-avatar", s".${extension(contentType)}").toFile
@@ -905,18 +912,41 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         .flatMap {
           case (contentType, tempFile) =>
             tempFile.deleteOnExit()
-            storageService.uploadUserAvatar(userId, extension(contentType), contentType.value, FileContent(tempFile))
+            storageService
+              .uploadUserAvatar(userId, extension(contentType), contentType.value, FileContent(tempFile))
+              .map(Option.apply)
         }
-        .recoverWith {
-          case e: ImageUnavailable =>
+        .recover {
+          case _: ImageUnavailable => None
+        }
+        .flatMap(
+          path =>
             getUser(userId).flatMap {
               case Some(user) =>
-                val userWithoutAvatarUrl = user.copy(profile = user.profile.map(_.copy(avatarUrl = None)))
-                update(userWithoutAvatarUrl, RequestContext.empty)
-              case _ => Future.failed(e)
-            }.flatMap(_ => Future.failed(e))
-
+                val newProfile: Option[Profile] = user.profile match {
+                  case Some(profile) => Some(profile.copy(avatarUrl = path))
+                  case None          => Profile.parseProfile(avatarUrl = path)
+                }
+                update(user.copy(profile = newProfile), requestContext).map(_ => path)
+              case None =>
+                logger.warn(s"Could not find user $userId to update avatar")
+                Future.successful(path)
+          }
+        )
+        .map { _ =>
+          userHistoryCoordinatorService.logHistory(
+            LogUserUploadedAvatarEvent(
+              userId = userId,
+              requestContext = requestContext,
+              action = UserAction(
+                date = eventDate,
+                actionType = LogUserAnonymizedEvent.action,
+                arguments = UploadedAvatar(avatarUrl = avatarUrl)
+              )
+            )
+          )
         }
+
     }
 
   }

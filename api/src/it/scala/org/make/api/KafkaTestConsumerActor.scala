@@ -39,7 +39,7 @@ class KafkaTestConsumerActor[T](override val format: RecordFormat[T],
     extends KafkaConsumerActor[T]
     with ActorLogging {
 
-  override def handleMessage(message: T): Future[Unit] = Future.successful {
+  override def handleMessage(message: T): Future[_] = Future.successful {
     receiver ! message
   }
 }

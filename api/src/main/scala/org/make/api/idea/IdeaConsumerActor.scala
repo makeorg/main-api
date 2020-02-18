@@ -19,6 +19,7 @@
 
 package org.make.api.idea
 
+import akka.Done
 import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
@@ -52,18 +53,18 @@ class IdeaConsumerActor(ideaService: IdeaService,
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  override def handleMessage(message: IdeaEventWrapper): Future[Unit] = {
+  override def handleMessage(message: IdeaEventWrapper): Future[_] = {
     message.event match {
       case event: IdeaCreatedEvent => onCreateOrUpdate(event)
       case event: IdeaUpdatedEvent => onCreateOrUpdate(event)
     }
   }
 
-  def onCreateOrUpdate(event: IdeaEvent): Future[Unit] = {
+  def onCreateOrUpdate(event: IdeaEvent): Future[Done] = {
     retrieveAndShapeIdea(event.ideaId).flatMap(indexOrUpdate)
   }
 
-  def indexOrUpdate(idea: IndexedIdea): Future[Unit] = {
+  def indexOrUpdate(idea: IndexedIdea): Future[Done] = {
     log.debug(s"Indexing $idea")
     elasticsearchIdeaAPI
       .findIdeaById(idea.ideaId)
@@ -71,8 +72,6 @@ class IdeaConsumerActor(ideaService: IdeaService,
         case None        => elasticsearchIdeaAPI.indexIdea(idea)
         case Some(found) => elasticsearchIdeaAPI.updateIdea(idea.copy(proposalsCount = found.proposalsCount))
       }
-      .map { _ =>
-        }
   }
 
   private def retrieveAndShapeIdea(id: IdeaId): Future[IndexedIdea] = {

@@ -63,7 +63,7 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Pro
 import scala.util.{Failure, Success, Try}
 
 trait CrmService {
-  def sendEmail(message: SendEmail): Future[Unit]
+  def sendEmail(message: SendEmail): Future[SendEmailResponse]
   def synchronizeList(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Done]
   def createCrmUsers(): Future[Unit]
   def anonymize(): Future[Unit]
@@ -148,7 +148,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
     private val dayDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("ddMMyyyy").withZone(ZoneOffset.UTC)
 
-    override def sendEmail(message: SendEmail): Future[Unit] = {
+    override def sendEmail(message: SendEmail): Future[SendEmailResponse] = {
       val messages = SendMessages(message)
       val result = crmClient.sendEmail(message = messages)
 
@@ -159,7 +159,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           logger.error(s"Sent email $messages failed", e)
       }
 
-      result.map(_ => ())
+      result
     }
 
     override def getUsersMailFromList(listId: Option[String] = None,

@@ -39,12 +39,12 @@ class MailJetEventConsumerActor(userService: UserService)
   override protected val format: RecordFormat[MailJetEventWrapper] = MailJetEventWrapper.recordFormat
   override def groupId: String = "mailJet-event-consumer"
 
-  override def handleMessage(message: MailJetEventWrapper): Future[Unit] = {
+  override def handleMessage(message: MailJetEventWrapper): Future[_] = {
     message.event match {
-      case event: MailJetBounceEvent      => handleBounceEvent(event, message.date).map(_ => {})
+      case event: MailJetBounceEvent      => handleBounceEvent(event, message.date)
       case event: MailJetBlockedEvent     => doNothing(event)
-      case event: MailJetSpamEvent        => handleSpamEvent(event).map(_ => {})
-      case event: MailJetUnsubscribeEvent => handleUnsubscribeEvent(event).map(_ => {})
+      case event: MailJetSpamEvent        => handleSpamEvent(event)
+      case event: MailJetUnsubscribeEvent => handleUnsubscribeEvent(event)
       case event                          => doNothing(event)
     }
   }
@@ -52,7 +52,7 @@ class MailJetEventConsumerActor(userService: UserService)
   def handleBounceEvent(event: MailJetBounceEvent, date: ZonedDateTime): Future[Boolean] = {
     for {
       resultUpdateBounce <- userService.updateIsHardBounce(email = event.email, isHardBounce = event.hardBounce)
-      resultUpdateError  <- registerMailingError(email = event.email, error = event.error, date = date)
+      resultUpdateError  <- registerMailingError(email = event.email, maybeError = event.error, date = date)
     } yield resultUpdateBounce && resultUpdateError
   }
 
@@ -64,8 +64,10 @@ class MailJetEventConsumerActor(userService: UserService)
     userService.updateOptInNewsletter(email = event.email, optInNewsletter = false)
   }
 
-  private def registerMailingError(email: String, error: Option[MailJetError], date: ZonedDateTime): Future[Boolean] = {
-    error match {
+  private def registerMailingError(email: String,
+                                   maybeError: Option[MailJetError],
+                                   date: ZonedDateTime): Future[Boolean] = {
+    maybeError match {
       case None => Future.successful(false)
       case Some(error) =>
         userService.updateLastMailingError(

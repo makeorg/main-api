@@ -23,6 +23,8 @@ import java.util
 import java.util.Properties
 
 import akka.actor.{Actor, ActorLogging}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.avro4s.RecordFormat
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -31,10 +33,9 @@ import org.make.api.technical.KafkaConsumerActor.{CheckState, Consume, Ready, Wa
 import org.make.api.technical.tracing.Tracing
 import org.make.core.{AvroSerializers, EventWrapper, SlugHelper}
 
-import scala.jdk.CollectionConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, Future}
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 abstract class KafkaConsumerActor[T]
@@ -52,11 +53,14 @@ abstract class KafkaConsumerActor[T]
     }
   }
 
-  def handleMessage(message: T): Future[Unit]
+  def handleMessage(message: T): Future[_]
   def groupId: String
   def customProperties: Properties = new Properties()
+  def handleMessagesParalellism: Int = 4
+  def handleMessagesTimeout: FiniteDuration = 1.minute
 
   private var consumer: KafkaConsumer[String, T] = _
+  private implicit val materializer: ActorMaterializer = ActorMaterializer()(context)
 
   override def preStart(): Unit = {
     consumer = createConsumer()
@@ -92,25 +96,27 @@ abstract class KafkaConsumerActor[T]
     case Consume =>
       self ! Consume
       val records = consumer.poll(kafkaConfiguration.pollTimeout)
-      records.asScala.foreach { record =>
-        val message = record.value()
-
-        val messageClass = (message match {
-          case wrapper: EventWrapper[_] => wrapper.event
-          case _ => message
-        }).getClass.getSimpleName
-        Tracing.entrypoint(SlugHelper(s"${getClass.getSimpleName}-$messageClass"))
-
-        val future = handleMessage(message)
-        Await.ready(future, 1.minute)
-        future.onComplete {
-          case Success(_) =>
-          case Failure(e) => log.error(e, "Error while consuming messages")
+      val handleRecords = Source
+        .fromIterator(() => records.asScala.iterator)
+        .map(_.value())
+        .mapAsync(handleMessagesParalellism) { message =>
+          val messageClass = (message match {
+            case wrapper: EventWrapper[_] => wrapper.event
+            case _                        => message
+          }).getClass.getSimpleName
+          Tracing.entrypoint(SlugHelper(s"${getClass.getSimpleName}-$messageClass"))
+          handleMessage(message).recover {
+            case e => log.error(e, s"Error while handling message of type [$messageClass]: $message")
+          }(context.dispatcher)
         }
+        .runWith(Sink.ignore)
+
+      Try(Await.ready(handleRecords, handleMessagesTimeout)) match {
+        case Success(_) =>
+        case Failure(e) => log.error(e, "Timeout occurred while consuming message")
       }
       // toDo: manage failures
       consumer.commitSync()
-
   }
 }
 

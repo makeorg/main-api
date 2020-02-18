@@ -1053,6 +1053,7 @@ class UserServiceTest
   }
 
   feature("upload avatar") {
+    val nowDate = DateHelper.now()
     scenario("image url") {
       val imageUrl = "https://i.picsum.photos/id/352/200/200.jpg"
       val file = File.createTempFile("tmp", ".jpeg")
@@ -1069,16 +1070,82 @@ class UserServiceTest
       Mockito
         .when(
           storageService.uploadUserAvatar(
-            ArgumentMatchers.eq(UserId("user-id")),
+            ArgumentMatchers.eq(UserId("upload-avatar-image-url")),
             ArgumentMatchers.eq("jpeg"),
             ArgumentMatchers.eq(MediaTypes.`image/jpeg`.value),
             ArgumentMatchers.any[FileContent]
           )
         )
-        .thenReturn(Future.successful("path/to/user-id/image"))
+        .thenReturn(Future.successful("path/to/upload-avatar-image-url/image"))
+      Mockito
+        .when(persistentUserService.get(UserId("upload-avatar-image-url")))
+        .thenReturn(Future.successful(Some(fooUser.copy(userId = UserId("upload-avatar-image-url")))))
+      Mockito
+        .when(
+          proposalService.searchForUser(
+            ArgumentMatchers.eq(Some(UserId("upload-avatar-image-url"))),
+            ArgumentMatchers.any[SearchQuery],
+            ArgumentMatchers.eq(RequestContext.empty)
+          )
+        )
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
 
-      whenReady(userService.changeAvatarForUser(UserId("user-id"), imageUrl), Timeout(2.seconds)) { path =>
-        path shouldBe "path/to/user-id/image"
+      whenReady(
+        userService.changeAvatarForUser(UserId("upload-avatar-image-url"), imageUrl, RequestContext.empty, nowDate),
+        Timeout(2.seconds)
+      ) { _ =>
+        Mockito
+          .verify(persistentUserService)
+          .updateUser(
+            argThat[User](user => user.profile.flatMap(_.avatarUrl).contains("path/to/upload-avatar-image-url/image"))
+          )
+        Mockito
+          .verify(userHistoryCoordinatorService)
+          .logHistory(argThat[LogUserUploadedAvatarEvent] { event =>
+            event.userId.value == "upload-avatar-image-url"
+          })
+      }
+    }
+
+    scenario("image url unavailable") {
+      val imageUrl = "https://i.picsum.photos/id/352/200/200.jpg"
+      val file = File.createTempFile("tmp", ".jpeg")
+      file.deleteOnExit()
+      Mockito
+        .when(
+          downloadService.downloadImage(
+            ArgumentMatchers.eq(imageUrl),
+            ArgumentMatchers.any[ContentType => File](),
+            ArgumentMatchers.any[Int]
+          )
+        )
+        .thenReturn(Future.failed(ImageUnavailable("path/url")))
+      Mockito
+        .when(persistentUserService.get(UserId("upload-avatar-image-url-unavailable")))
+        .thenReturn(Future.successful(Some(fooUser.copy(userId = UserId("upload-avatar-image-url-unavailable")))))
+      Mockito
+        .when(
+          proposalService.searchForUser(
+            ArgumentMatchers.eq(Some(UserId("upload-avatar-image-url-unavailable"))),
+            ArgumentMatchers.any[SearchQuery],
+            ArgumentMatchers.eq(RequestContext.empty)
+          )
+        )
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
+
+      whenReady(
+        userService
+          .changeAvatarForUser(UserId("upload-avatar-image-url-unavailable"), imageUrl, RequestContext.empty, nowDate),
+        Timeout(2.seconds)
+      ) { _ =>
+        Mockito
+          .verify(persistentUserService)
+          .updateUser(argThat[User](user => user.profile.flatMap(_.avatarUrl).isEmpty))
+        Mockito
+          .verify(userHistoryCoordinatorService)
+          .logHistory(argThat[LogUserUploadedAvatarEvent] { event =>
+            event.userId.value == "upload-avatar-image-url-unavailable"
+          })
       }
     }
 
@@ -1096,7 +1163,10 @@ class UserServiceTest
         )
         .thenReturn(Future.failed(new IllegalArgumentException(s"URL does not refer to an image: $imageUrl")))
 
-      whenReady(userService.changeAvatarForUser(UserId("user-id"), imageUrl).failed, Timeout(2.seconds)) { exception =>
+      whenReady(
+        userService.changeAvatarForUser(UserId("user-id"), imageUrl, RequestContext.empty, nowDate).failed,
+        Timeout(2.seconds)
+      ) { exception =>
         exception shouldBe a[IllegalArgumentException]
       }
     }

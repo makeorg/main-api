@@ -29,12 +29,11 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.make.api.technical.{ActorEventBusServiceComponent, KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
 import org.make.core.AvroSerializers
-import org.make.core.profile.Profile
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
 
-class UserImageConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinatorService, userService: UserService)
+class UserImageConsumerActor(userService: UserService)
     extends KafkaConsumerActor[UserEventWrapper]
     with ActorEventBusServiceComponent
     with AvroSerializers
@@ -46,13 +45,15 @@ class UserImageConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinat
   override def customProperties: Properties = {
     val props = new Properties()
 // Fetch a batch of events only in order to handle some downloads but not all at once
-    props.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, 4096)
+    props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 4)
     props
   }
+  override def handleMessagesTimeout: FiniteDuration = 5.minutes
 
+  implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  override def handleMessage(message: UserEventWrapper): Future[Unit] = {
+  override def handleMessage(message: UserEventWrapper): Future[_] = {
     message.event match {
       case event: ResetPasswordEvent              => doNothing(event)
       case event: UserRegisteredEvent             => doNothing(event)
@@ -72,41 +73,12 @@ class UserImageConsumerActor(userHistoryCoordinatorService: UserHistoryCoordinat
   }
 
   def handleUserUploadAvatarEvent(event: UserUploadAvatarEvent): Future[Unit] = {
-    userService
-      .changeAvatarForUser(event.userId, event.avatarUrl)
-      .flatMap(
-        path =>
-          userService.getUser(event.userId).flatMap {
-            case Some(user) =>
-              val newProfile: Option[Profile] = user.profile match {
-                case Some(profile) => Some(profile.copy(avatarUrl = Some(path)))
-                case None          => Profile.parseProfile(avatarUrl = Some(path))
-              }
-              userService.update(user.copy(profile = newProfile), event.requestContext).map(_ => {})
-            case None =>
-              logger.warn(s"Could not find user ${event.userId} to upload avatar")
-              Future.successful {}
-        }
-      )
-      .map(
-        _ =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserUploadedAvatarEvent(
-              userId = event.userId,
-              requestContext = event.requestContext,
-              action = UserAction(
-                date = event.eventDate,
-                actionType = LogUserAnonymizedEvent.action,
-                arguments = UploadedAvatar(avatarUrl = event.avatarUrl)
-              )
-            )
-        )
-      )
+    userService.changeAvatarForUser(event.userId, event.avatarUrl, event.requestContext, event.eventDate)
   }
 }
 
 object UserImageConsumerActor {
-  def props(userHistoryCoordinatorService: UserHistoryCoordinatorService, userService: UserService): Props =
-    Props(new UserImageConsumerActor(userHistoryCoordinatorService, userService))
+  def props(userService: UserService): Props =
+    Props(new UserImageConsumerActor(userService))
   val name: String = "user-events-image-consumer"
 }
