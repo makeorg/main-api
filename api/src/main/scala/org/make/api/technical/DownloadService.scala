@@ -34,6 +34,7 @@ import org.make.api.ActorSystemComponent
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import kamon.annotation.api.Trace
 
 trait DownloadServiceComponent {
   def downloadService: DownloadService
@@ -54,6 +55,8 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
 
     implicit val ec: ExecutionContext =
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))
+
+    @Trace(operationName = "client-downloadImage")
     override def downloadImage(imageUrl: String,
                                destFn: ContentType => File,
                                redirectCount: Int = 0): Future[(ContentType, File)] = {

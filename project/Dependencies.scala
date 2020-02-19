@@ -82,6 +82,7 @@ object Dependencies {
     ("io.kamon" %% "kamon-akka-http" % kamonAkkaHttpVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonSystemMetricsVersion
   val kamonPrometheus: ModuleID = "io.kamon"    %% "kamon-prometheus"     % kamonPrometheusVersion
+  val kamonAnnotations: ModuleID = "io.kamon"   %% "kamon-annotation" % "2.0.1"
 
   val kanela: ModuleID = "io.kamon" % "kanela-agent" % kanelaVersion
 

@@ -30,6 +30,7 @@ libraryDependencies ++= Seq(
   Dependencies.kamonExecutors,
   Dependencies.kamonAkka,
   Dependencies.kamonAkkaHttp,
+  Dependencies.kamonAnnotations,
   Dependencies.kamonScalaFutures,
   Dependencies.kamonPrometheus,
   Dependencies.kamonSystemMetrics,
