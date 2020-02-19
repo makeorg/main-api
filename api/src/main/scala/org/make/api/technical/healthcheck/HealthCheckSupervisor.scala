@@ -29,6 +29,7 @@ import org.make.api.technical.healthcheck.HealthCheckCommands._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
+import akka.actor.ActorRef
 
 class HealthCheckSupervisor extends Actor with ActorLogging {
 
@@ -46,20 +47,18 @@ class HealthCheckSupervisor extends Actor with ActorLogging {
 
   val healthCheckExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
-  override def preStart(): Unit = {
-    healthCheckActorDefinitions.map { actor =>
-      context.watch(context.actorOf(actor.props(healthCheckExecutionContext), actor.name))
-    }
-  }
-
   override def receive: Receive = {
     case CheckExternalServices =>
+      val caller: ActorRef = sender()
+      val children = healthCheckActorDefinitions.map { actor =>
+        context.actorOf(actor.props(healthCheckExecutionContext), actor.name)
+      }
       Future
-        .traverse(context.children) { hc =>
-          (hc ? CheckStatus).mapTo[HealthCheckResponse]
+        .traverse(children) { healthCheck =>
+          (healthCheck ? CheckStatus).mapTo[HealthCheckResponse]
         }
-        .pipeTo(sender())
-    case x => log.info(s"received $x")
+        .pipeTo(caller)
+    case other => log.info(s"received $other")
   }
 }
 
