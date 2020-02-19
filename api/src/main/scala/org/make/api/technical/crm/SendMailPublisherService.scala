@@ -118,11 +118,13 @@ trait DefaultSendMailPublisherServiceComponent
     s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$appParams"
   }
 
-  private def sequenceUrlForProposal(isAccepted: Boolean, userType: UserType, questionSlug: String): String = {
+  private def sequenceUrlForProposal(isAccepted: Boolean, userType: UserType, questionSlug: String, requestContext: RequestContext): String = {
+    val language: String = requestContext.language.map(_.value).getOrElse("fr")
+    val country: String = requestContext.country.map(_.value).getOrElse("FR")
     val term: String = if (isAccepted) "publication" else "refus"
     val utmTerm: String = if (userType != UserType.UserTypeUser) s"${term}acteur" else term
     val utmParams = s"utm_source=crm&utm_medium=email&utm_content=cta&utm_campaign=$questionSlug&utm_term=$utmTerm"
-    s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/consultation/$questionSlug/selection?$utmParams&introCard=false"
+    s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$country-$language/consultation/$questionSlug/selection?$utmParams&introCard=false"
   }
 
   private def getLocale(country: Country, language: Language): String = {
@@ -425,7 +427,7 @@ trait DefaultSendMailPublisherServiceComponent
             "question" -> maybeQuestionId.map(_.value).getOrElse(""),
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse(""),
-            "sequence_url" -> sequenceUrlForProposal(isAccepted = true, user.userType, slug)
+            "sequence_url" -> sequenceUrlForProposal(isAccepted = true, user.userType, slug, requestContext)
           )
         def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
           if (userType == UserType.UserTypeOrganisation)
@@ -462,7 +464,7 @@ trait DefaultSendMailPublisherServiceComponent
             "question" -> maybeQuestionId.map(_.value).getOrElse(""),
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse(""),
-            "sequence_url" -> sequenceUrlForProposal(isAccepted = false, user.userType, slug)
+            "sequence_url" -> sequenceUrlForProposal(isAccepted = false, user.userType, slug, requestContext)
           )
         def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
           if (userType == UserType.UserTypeOrganisation)
