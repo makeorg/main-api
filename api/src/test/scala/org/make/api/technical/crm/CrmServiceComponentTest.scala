@@ -41,7 +41,7 @@ import org.make.api.proposal.{
   ProposalSearchEngineComponent
 }
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.technical.ReadJournalComponent
+import org.make.api.technical.{EventBusService, EventBusServiceComponent, ReadJournalComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.user.{
   PersistentUserToAnonymizeService,
@@ -64,6 +64,7 @@ import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.mockito.Mockito.{never, verify, when}
 import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.verification.After
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -87,6 +88,7 @@ class CrmServiceComponentTest
     with CrmClientComponent
     with PersistentCrmUserServiceComponent
     with ProposalSearchEngineComponent
+    with EventBusServiceComponent
     with PrivateMethodTester {
 
   trait MakeReadJournalForMocks
@@ -110,10 +112,12 @@ class CrmServiceComponentTest
   override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
+  override val eventBusService: EventBusService = mock[EventBusService]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
   when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
   when(mailJetConfiguration.tickInterval).thenReturn(5.milliseconds)
+  when(mailJetConfiguration.delayBeforeResend).thenReturn(10.milliseconds)
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
@@ -1403,6 +1407,33 @@ class CrmServiceComponentTest
       }
     }
   }
+
+  feature("Resend emails on error") {
+
+    val testDelay = 10 * mailJetConfiguration.delayBeforeResend.toMillis
+
+    scenario("sending email succeeds") {
+      Given("a succeeding email provider")
+      val sendEmail = SendEmail(recipients = Nil, subject = Some("wesh maggle"))
+      when(crmClient.sendEmail(matches(SendMessages(sendEmail)))(any[ExecutionContext])).thenReturn(Future.successful(SendEmailResponse(Nil)))
+      When("sending an email")
+      crmService.sendEmail(sendEmail)
+      Then("the message should not be rescheduled")
+      verify(eventBusService, new After(testDelay, never)).publish(matches(sendEmail))
+    }
+
+    scenario("sending email fails once") {
+      Given("a failing email provider")
+      val sendEmail = SendEmail(recipients = Nil, subject = Some("wesh maggle"))
+      when(crmClient.sendEmail(matches(SendMessages(sendEmail)))(any[ExecutionContext])).thenReturn(Future.failed(new Exception("Don't worry, this exception is fake")))
+      When("sending an email")
+      crmService.sendEmail(sendEmail)
+      Then("the message should be rescheduled")
+      verify(eventBusService, Mockito.after(testDelay)).publish(matches(sendEmail))
+    }
+
+  }
+
 }
 
 object CrmServiceComponentTest {
