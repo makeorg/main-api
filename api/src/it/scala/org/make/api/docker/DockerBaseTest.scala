@@ -25,11 +25,14 @@ import com.whisk.docker.impl.dockerjava.{Docker, DockerJavaExecutorFactory}
 import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest.Suite
 
+import scala.concurrent.duration.DurationInt
+
 trait DockerBaseTest extends DockerTestKit {
   self: Suite =>
 
   private val dockerClientConfig: DockerClientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder().build()
   private val client: Docker = new Docker(dockerClientConfig, new NettyDockerCmdExecFactory())
   override implicit val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(client)
+  override val StartContainersTimeout = 1.minute
 
 }
