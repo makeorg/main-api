@@ -87,28 +87,19 @@ class ProposalApiTest
       )
     )
 
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      any[Option[QuestionId]],
-      any[Option[ThemeId]],
-      any[Option[OperationId]],
-      any[Country],
-      any[Language]
-    )
-  ).thenAnswer(
-    invocation =>
-      Future.successful(
-        Some(
-          Question(
-            QuestionId("my-question"),
-            slug = "my-question",
-            country = invocation.getArgument[Country](3),
-            language = invocation.getArgument[Language](4),
-            question = "my question",
-            operationId = invocation.getArgument[Option[OperationId]](2),
-            themeId = invocation.getArgument[Option[ThemeId]](1)
-          )
+  when(questionService.getQuestion(any[QuestionId])).thenReturn(
+    Future.successful(
+      Some(
+        Question(
+          QuestionId("my-question"),
+          slug = "my-question",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "my question",
+          operationId = Some(OperationId("operation")),
+          themeId = None
         )
+      )
     )
   )
 
@@ -215,18 +206,7 @@ class ProposalApiTest
 
   when(
     questionService
-      .findQuestion(matches(None), matches(Some(OperationId("fake"))), matches(Country("FR")), matches(Language("fr")))
-  ).thenReturn(Future.successful(None))
-
-  when(
-    questionService
-      .findQuestionByQuestionIdOrThemeOrOperation(
-        matches(None),
-        matches(None),
-        matches(Some(OperationId("fake"))),
-        matches(Country("FR")),
-        matches(Language("fr"))
-      )
+      .getQuestion(matches(QuestionId("not-found")))
   ).thenReturn(Future.successful(None))
 
   feature("proposing") {
@@ -248,7 +228,7 @@ class ProposalApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$validProposalText", "language": "fr", "country": "FR"}"""
+            s"""{"content": "$validProposalText", "questionId": "question", "language": "fr", "country": "FR"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -265,7 +245,7 @@ class ProposalApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$invalidMaxLengthProposalText", "language": "fr", "country": "FR"}"""
+            s"""{"content": "$invalidMaxLengthProposalText", "questionId": "question", "language": "fr", "country": "FR"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -287,7 +267,7 @@ class ProposalApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$invalidMinLengthProposalText", "language": "fr", "country": "FR"}"""
+            s"""{"content": "$invalidMinLengthProposalText", "questionId": "question", "language": "fr", "country": "FR"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -300,16 +280,16 @@ class ProposalApiTest
       }
     }
 
-    scenario("invalid proposal due to bad operation") {
+    scenario("invalid proposal with question not found") {
       Given("an authenticated user")
-      And("a bad operationId")
-      When("the user want to propose in an operation context")
+      And("a question not found")
+      When("the user want to propose")
       Then("the proposal should be rejected")
       Post("/proposals")
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr", "country": "FR"}"""
+            s"""{"content": "$validProposalText", "questionId": "not-found", "country": "FR", "language": "fr"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -331,7 +311,7 @@ class ProposalApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$validProposalText", "operationId": "fake", "country": "FR"}"""
+            s"""{"content": "$validProposalText", "questionId": "fake", "country": "FR"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -353,7 +333,7 @@ class ProposalApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$validProposalText", "operationId": "fake", "language": "fr"}"""
+            s"""{"content": "$validProposalText", "questionId": "fake", "language": "fr"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -364,7 +344,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("valid proposal with operation, language and country") {
+    scenario("valid proposal with question, language and country") {
       Given("an authenticated user")
       And("a valid operationId")
       When("the user want to propose in an operation context")
@@ -374,7 +354,7 @@ class ProposalApiTest
         .withEntity(
           HttpEntity(
             ContentTypes.`application/json`,
-            s"""{"content": "$validProposalText", "operationId": "1234-1234", "language": "fr", "country": "FR"}"""
+            s"""{"content": "$validProposalText", "questionId": "1234-1234", "language": "fr", "country": "FR"}"""
           )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {

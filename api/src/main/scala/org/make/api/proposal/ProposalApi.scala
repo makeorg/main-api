@@ -40,11 +40,19 @@ import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, 
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserType
-import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{
+  BusinessConfig,
+  DateHelper,
+  HttpCodes,
+  ParameterExtractors,
+  Validation,
+  ValidationError,
+  ValidationFailedError
+}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
@@ -420,20 +428,14 @@ trait DefaultProposalApiComponent
               decodeRequest {
                 entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
                   provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
-                    provideAsync(
-                      questionService.findQuestionByQuestionIdOrThemeOrOperation(
-                        request.questionId,
-                        requestContext.currentTheme,
-                        request.operationId,
-                        request.country,
-                        request.language
+                    provideAsync(questionService.getQuestion(request.questionId)) { maybeQuestion =>
+                      val question: Question = maybeQuestion.getOrElse(
+                        throw ValidationFailedError(
+                          Seq(
+                            ValidationError("question", "mandatory", Some("This proposal refers to no known question"))
+                          )
+                        )
                       )
-                    ) { maybeQuestion =>
-                      Validation.validate(
-                        Validation
-                          .requirePresent("question", maybeQuestion, Some("This proposal refers to no known question"))
-                      )
-
                       onSuccess(
                         proposalService
                           .propose(
@@ -441,7 +443,7 @@ trait DefaultProposalApiComponent
                             requestContext = requestContext,
                             createdAt = DateHelper.now(),
                             content = request.content,
-                            question = maybeQuestion.get,
+                            question = question,
                             initialProposal = false
                           )
                       ) { proposalId =>

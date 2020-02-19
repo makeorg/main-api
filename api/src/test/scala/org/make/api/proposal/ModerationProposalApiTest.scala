@@ -68,31 +68,6 @@ class ModerationProposalApiTest
   override val questionService: QuestionService = mock[QuestionService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
 
-  when(
-    questionService.findQuestionByQuestionIdOrThemeOrOperation(
-      any[Option[QuestionId]],
-      any[Option[ThemeId]],
-      any[Option[OperationId]],
-      any[Country],
-      any[Language]
-    )
-  ).thenAnswer(
-    invocation =>
-      Future.successful(
-        Some(
-          Question(
-            QuestionId("my-question"),
-            slug = "my-question",
-            country = invocation.getArgument[Country](2),
-            language = invocation.getArgument[Language](3),
-            question = "my question",
-            operationId = invocation.getArgument[Option[OperationId]](1),
-            themeId = invocation.getArgument[Option[ThemeId]](0)
-          )
-        )
-    )
-  )
-
   when(proposalCoordinatorService.getProposal(any[ProposalId]))
     .thenAnswer(invocation => Future.successful(Some(proposal(invocation.getArgument[ProposalId](0)))))
 
@@ -636,24 +611,6 @@ class ModerationProposalApiTest
 
     scenario("validation with moderation role") {
 
-      when(
-        questionService.findQuestion(matches(Some(ThemeId("fire and ice"))), matches(None), any[Country], any[Language])
-      ).thenReturn(
-        Future.successful(
-          Some(
-            Question(
-              questionId = QuestionId("question-fire-and-ice"),
-              slug = "question-fire-and-ice",
-              country = Country("FR"),
-              language = Language("fr"),
-              question = "",
-              operationId = None,
-              themeId = Some(ThemeId("fire and ice"))
-            )
-          )
-        )
-      )
-
       Post("/moderation/proposals/123456/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
@@ -662,29 +619,6 @@ class ModerationProposalApiTest
     }
 
     scenario("validation with admin role") {
-      when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          matches(None),
-          matches(Some(ThemeId("fire and ice"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr"))
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(
-            Question(
-              questionId = QuestionId("question-fire-and-ice"),
-              slug = "question-fire-and-ice",
-              country = Country("FR"),
-              language = Language("fr"),
-              question = "",
-              operationId = None,
-              themeId = Some(ThemeId("fire and ice"))
-            )
-          )
-        )
-      )
 
       Post("/moderation/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
@@ -695,30 +629,6 @@ class ModerationProposalApiTest
 
     scenario("validation of non existing with admin role") {
 
-      when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          matches(None),
-          matches(Some(ThemeId("fire and ice"))),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr"))
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(
-            Question(
-              questionId = QuestionId("question-fire-and-ice"),
-              slug = "question-fire-and-ice",
-              country = Country("FR"),
-              language = Language("fr"),
-              question = "",
-              operationId = None,
-              themeId = Some(ThemeId("fire and ice"))
-            )
-          )
-        )
-      )
-
       Post("/moderation/proposals/nop/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
@@ -727,29 +637,6 @@ class ModerationProposalApiTest
     }
 
     scenario("validation of proposal without Tag nor Idea") {
-      when(
-        questionService.findQuestionByQuestionIdOrThemeOrOperation(
-          matches(Some(QuestionId("question-fire-and-ice"))),
-          matches(None),
-          matches(None),
-          matches(Country("FR")),
-          matches(Language("fr"))
-        )
-      ).thenReturn(
-        Future.successful(
-          Some(
-            Question(
-              questionId = QuestionId("question-fire-and-ice"),
-              slug = "question-fire-and-ice",
-              country = Country("FR"),
-              language = Language("fr"),
-              question = "",
-              operationId = None,
-              themeId = Some(ThemeId("fire and ice"))
-            )
-          )
-        )
-      )
 
       Post("/moderation/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntityWithoutTagNorIdea))

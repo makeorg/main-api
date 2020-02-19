@@ -42,10 +42,8 @@ import scala.annotation.meta.field
 @ApiModel
 final case class ProposeProposalRequest(
   content: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
-  operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
-  questionId: Option[QuestionId],
+  questionId: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
