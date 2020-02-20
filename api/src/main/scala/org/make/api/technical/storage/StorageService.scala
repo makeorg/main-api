@@ -31,6 +31,7 @@ import org.make.swift.model.Bucket
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import kamon.annotation.api.Trace
 
 trait StorageService {
 
@@ -124,6 +125,8 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
   override lazy val storageService: StorageService = new DefaultStorageService
 
   class DefaultStorageService extends StorageService {
+
+    @Trace(operationName = "client-uploadFile")
     override def uploadFile(fileType: FileType, name: String, contentType: String, content: Content): Future[String] = {
       val path = s"${fileType.path}/$name"
       swiftClient
@@ -133,6 +136,7 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
         }
     }
 
+    @Trace(operationName = "client-uploadUserAvatar")
     override def uploadUserAvatar(userId: UserId,
                                   extension: String,
                                   contentType: String,
@@ -143,6 +147,7 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
 
     }
 
+    @Trace(operationName = "client-uploadAdminUserAvatar")
     override def uploadAdminUserAvatar(extension: String,
                                        contentType: String,
                                        content: Content,

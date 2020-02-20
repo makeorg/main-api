@@ -30,4 +30,6 @@ object Tracing {
 
   def entrypoint(name: String): Unit = Kamon.storeContext(Kamon.currentContext.withEntry(EntrypointKey, Some(name)))
 
+  def clearEntrypoint(): Unit = Kamon.storeContext(Kamon.currentContext().withoutEntry(EntrypointKey))
+
 }

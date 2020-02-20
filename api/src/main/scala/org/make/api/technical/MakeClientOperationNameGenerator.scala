@@ -21,12 +21,27 @@ package org.make.api.technical
 
 import com.typesafe.scalalogging.StrictLogging
 import kamon.instrumentation.http.{HttpMessage, HttpOperationNameGenerator}
+import kamon.Kamon
+import org.make.api.technical.tracing.Tracing
+import kamon.trace.Span
 
 class MakeClientOperationNameGenerator extends HttpOperationNameGenerator with StrictLogging {
 
   logger.info("creating make name generator for akka-http")
 
   override def name(request: HttpMessage.Request): Option[String] = {
+    val operationName: Option[String] = Tracing.entrypoint
+    val spanName: String = Kamon.currentSpan().operationName()
+
+    if (spanName == Span.Empty.operationName() || operationName.contains(spanName)) {
+      createOperationNameFromRequest(request)
+    } else {
+      Some(spanName)
+    }
+
+  }
+
+  def createOperationNameFromRequest(request: HttpMessage.Request): Option[String] = {
     val resolvedPort = if (request.port != 80 && request.port != 443 && request.port > 0) {
       s":${request.port}"
     } else {
