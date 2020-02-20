@@ -24,6 +24,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
+import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.core.CirceFormatters
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
@@ -203,4 +204,26 @@ object ProfileResponse extends CirceFormatters {
       website = profile.website
     )
   }
+}
+
+final case class SocialLoginResponse(
+  token_type: String,
+  access_token: String,
+  expires_in: Long,
+  refresh_token: String,
+  account_creation: Boolean
+)
+
+object SocialLoginResponse {
+
+  def apply(token: TokenResponse, accountCreation: Boolean): SocialLoginResponse = SocialLoginResponse(
+    token_type = token.token_type,
+    access_token = token.access_token,
+    expires_in = token.expires_in,
+    refresh_token = token.refresh_token,
+    account_creation = accountCreation
+  )
+
+  implicit val encoder: Encoder[SocialLoginResponse] = deriveEncoder
+
 }

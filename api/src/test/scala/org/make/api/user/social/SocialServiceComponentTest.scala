@@ -21,12 +21,11 @@ package org.make.api.user.social
 
 import java.text.SimpleDateFormat
 
-import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
 import org.make.api.user.social.models.google.{UserInfo   => GoogleUserInfos}
-import org.make.api.user.{UserService, UserServiceComponent}
+import org.make.api.user.{SocialLoginResponse, UserService, UserServiceComponent}
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.RequestContext
 import org.make.core.auth.{Client, ClientId, UserRights}
@@ -124,7 +123,7 @@ class SocialServiceComponentTest
             any[RequestContext]
           )
         )
-        .thenReturn(Future.successful(userFromGoogle))
+        .thenReturn(Future.successful((userFromGoogle, true)))
 
       Mockito
         .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -213,7 +212,7 @@ class SocialServiceComponentTest
             any[RequestContext]
           )
         )
-        .thenReturn(Future.successful(userFromGoogle))
+        .thenReturn(Future.successful((userFromGoogle, true)))
 
       Mockito
         .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -277,8 +276,9 @@ class SocialServiceComponentTest
         kid = None
       )
 
+      val userId = UserId("boo")
       val userFromGoogle =
-        TestUtils.user(id = UserId("boo"), email = "google@make.org", firstName = None, lastName = None)
+        TestUtils.user(id = userId, email = "google@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -302,7 +302,7 @@ class SocialServiceComponentTest
             any[RequestContext]
           )
         )
-        .thenReturn(Future.successful(userFromGoogle))
+        .thenReturn(Future.successful((userFromGoogle, false)))
 
       Mockito
         .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -322,11 +322,13 @@ class SocialServiceComponentTest
         )
 
       Then("my program should return a token response")
-      whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
-        tokenResponse.token shouldBe a[TokenResponse]
-        tokenResponse.token.access_token should be(accessTokenValue)
-        tokenResponse.token.refresh_token should be(refreshTokenValue)
-        tokenResponse.token.token_type should be("Bearer")
+      whenReady(futureTokenResposnse, Timeout(2.seconds)) { case (id, socialLoginResponse) =>
+        id should be(userId)
+        socialLoginResponse shouldBe a[SocialLoginResponse]
+        socialLoginResponse.access_token should be(accessTokenValue)
+        socialLoginResponse.refresh_token should be(refreshTokenValue)
+        socialLoginResponse.token_type should be("Bearer")
+        socialLoginResponse.account_creation should be(false)
       }
     }
 
@@ -397,7 +399,7 @@ class SocialServiceComponentTest
         .when(
           userService.createOrUpdateUserFromSocial(matches(info), matches(None), matches(None), any[RequestContext])
         )
-        .thenReturn(Future.successful(userFromFacebook))
+        .thenReturn(Future.successful((userFromFacebook, true)))
 
       Mockito
         .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -476,7 +478,7 @@ class SocialServiceComponentTest
           userService
             .createOrUpdateUserFromSocial(matches(info), matches(None), any[Option[QuestionId]], any[RequestContext])
         )
-        .thenReturn(Future.successful(userFromFacebook))
+        .thenReturn(Future.successful((userFromFacebook, true)))
 
       Mockito
         .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -528,8 +530,9 @@ class SocialServiceComponentTest
         lastName = Some("USER")
       )
 
+      val userId = UserId("boo")
       val userFromFacebook =
-        TestUtils.user(id = UserId("boo"), email = "facebook@make.org", firstName = None, lastName = None)
+        TestUtils.user(id = userId, email = "facebook@make.org", firstName = None, lastName = None)
 
       val accessToken = AccessToken(
         accessTokenValue,
@@ -553,7 +556,7 @@ class SocialServiceComponentTest
             any[RequestContext]
           )
         )
-        .thenReturn(Future.successful(userFromFacebook))
+        .thenReturn(Future.successful((userFromFacebook, false)))
 
       Mockito
         .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
@@ -573,11 +576,13 @@ class SocialServiceComponentTest
         )
 
       Then("my program should return a token response")
-      whenReady(futureTokenResposnse, Timeout(2.seconds)) { tokenResponse =>
-        tokenResponse.token shouldBe a[TokenResponse]
-        tokenResponse.token.access_token should be(accessTokenValue)
-        tokenResponse.token.refresh_token should be(refreshTokenValue)
-        tokenResponse.token.token_type should be("Bearer")
+      whenReady(futureTokenResposnse, Timeout(2.seconds)) { case (id, socialLoginResponse) =>
+        id should be(userId)
+        socialLoginResponse shouldBe a[SocialLoginResponse]
+        socialLoginResponse.access_token should be(accessTokenValue)
+        socialLoginResponse.refresh_token should be(refreshTokenValue)
+        socialLoginResponse.token_type should be("Bearer")
+        socialLoginResponse.account_creation should be(false)
       }
     }
 

@@ -83,7 +83,7 @@ trait UserService extends ShortenedNames {
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                    clientIp: Option[String],
                                    questionId: Option[QuestionId],
-                                   requestContext: RequestContext): Future[User]
+                                   requestContext: RequestContext): Future[(User, Boolean)]
   def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean]
   def validateEmail(user: User, verificationToken: String): Future[TokenResponse]
@@ -409,13 +409,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                               clientIp: Option[String],
                                               questionId: Option[QuestionId],
-                                              requestContext: RequestContext): Future[User] = {
+                                              requestContext: RequestContext): Future[(User, Boolean)] = {
 
       val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
 
       persistentUserService.findByEmail(lowerCasedEmail).flatMap {
-        case Some(user) => updateUserFromSocial(user, userInfo, clientIp)
-        case None       => createUserFromSocial(requestContext, userInfo, questionId, clientIp)
+        case Some(user) => updateUserFromSocial(user, userInfo, clientIp).map((_, false))
+        case None       => createUserFromSocial(requestContext, userInfo, questionId, clientIp).map((_, true))
       }
     }
 
