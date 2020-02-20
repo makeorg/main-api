@@ -62,15 +62,18 @@ import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{never, times, verify, when}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.verification.After
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io
+
+import arbitraries._
 
 class CrmServiceComponentTest
     extends MakeUnitTest
@@ -89,6 +92,7 @@ class CrmServiceComponentTest
     with PersistentCrmUserServiceComponent
     with ProposalSearchEngineComponent
     with EventBusServiceComponent
+    with ScalaCheckDrivenPropertyChecks
     with PrivateMethodTester {
 
   trait MakeReadJournalForMocks
@@ -1410,26 +1414,16 @@ class CrmServiceComponentTest
 
   feature("Resend emails on error") {
 
-    val testDelay = 10 * mailJetConfiguration.delayBeforeResend.toMillis
-
-    scenario("sending email succeeds") {
-      Given("a succeeding email provider")
-      val sendEmail = SendEmail(recipients = Nil, subject = Some("wesh maggle"))
-      when(crmClient.sendEmail(matches(SendMessages(sendEmail)))(any[ExecutionContext])).thenReturn(Future.successful(SendEmailResponse(Nil)))
-      When("sending an email")
-      crmService.sendEmail(sendEmail)
-      Then("the message should not be rescheduled")
-      verify(eventBusService, new After(testDelay, never)).publish(matches(sendEmail))
-    }
-
-    scenario("sending email fails once") {
-      Given("a failing email provider")
-      val sendEmail = SendEmail(recipients = Nil, subject = Some("wesh maggle"))
-      when(crmClient.sendEmail(matches(SendMessages(sendEmail)))(any[ExecutionContext])).thenReturn(Future.failed(new Exception("Don't worry, this exception is fake")))
-      When("sending an email")
-      crmService.sendEmail(sendEmail)
-      Then("the message should be rescheduled")
-      verify(eventBusService, Mockito.after(testDelay)).publish(matches(sendEmail))
+    scenario("sending email randomly fails") {
+      forAll { (message: SendEmail, succeed: Boolean) =>
+        Given("an unreliable email provider")
+        when(crmClient.sendEmail(matches(SendMessages(message)))(any[ExecutionContext]))
+          .thenReturn(if (succeed) Future.successful(SendEmailResponse(Nil)) else Future.failed(new Exception("Don't worry, this exception is fake")))
+        When("sending an email")
+        crmService.sendEmail(message)
+        Then("the message should be rescheduled if sending failed")
+        verify(eventBusService, new After(1000, times(if (succeed) 0 else 1))).publish(matches(message))
+      }
     }
 
   }
