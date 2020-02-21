@@ -44,6 +44,7 @@ class MailJetConfiguration(config: Config) extends Extension {
   val csvDirectory: String = config.getString("user-list.csv-directory")
   val csvSize: Int = config.getInt("user-list.csv-bytes-size")
   def tickInterval: FiniteDuration = 10.seconds
+  def delayBeforeResend: FiniteDuration = 15.seconds
 }
 
 object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with ExtensionIdProvider {

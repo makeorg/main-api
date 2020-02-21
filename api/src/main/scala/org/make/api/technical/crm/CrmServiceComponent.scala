@@ -44,7 +44,7 @@ import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.RichFutures._
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
 import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
-import org.make.api.technical.{ReadJournalComponent, StreamUtils}
+import org.make.api.technical.{EventBusServiceComponent, ReadJournalComponent, StreamUtils}
 import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
 import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
@@ -95,6 +95,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with PersistentUserToAnonymizeServiceComponent
     with PersistentCrmUserServiceComponent
     with CrmClientComponent
+    with EventBusServiceComponent
     with ErrorAccumulatingCirceSupport =>
 
   class QuestionResolver(questions: Seq[Question], operations: Map[String, OperationId]) {
@@ -157,6 +158,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           logger.info(s"Sent email $messages with reponse $response")
         case Failure(e) =>
           logger.error(s"Sent email $messages failed", e)
+          actorSystem.scheduler.scheduleOnce(mailJetConfiguration.delayBeforeResend) { eventBusService.publish(message) }
       }
 
       result

@@ -41,7 +41,7 @@ import org.make.api.proposal.{
   ProposalSearchEngineComponent
 }
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.technical.ReadJournalComponent
+import org.make.api.technical.{EventBusService, EventBusServiceComponent, ReadJournalComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.user.{
   PersistentUserToAnonymizeService,
@@ -62,14 +62,18 @@ import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{never, times, verify, when}
 import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.verification.After
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io
+
+import arbitraries._
 
 class CrmServiceComponentTest
     extends MakeUnitTest
@@ -87,6 +91,8 @@ class CrmServiceComponentTest
     with CrmClientComponent
     with PersistentCrmUserServiceComponent
     with ProposalSearchEngineComponent
+    with EventBusServiceComponent
+    with ScalaCheckDrivenPropertyChecks
     with PrivateMethodTester {
 
   trait MakeReadJournalForMocks
@@ -110,10 +116,12 @@ class CrmServiceComponentTest
   override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
+  override val eventBusService: EventBusService = mock[EventBusService]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
   when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
   when(mailJetConfiguration.tickInterval).thenReturn(5.milliseconds)
+  when(mailJetConfiguration.delayBeforeResend).thenReturn(10.milliseconds)
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val zonedDateTimeInThePastAt31daysBefore: ZonedDateTime = DateHelper.now().minusDays(31)
@@ -1403,6 +1411,23 @@ class CrmServiceComponentTest
       }
     }
   }
+
+  feature("Resend emails on error") {
+
+    scenario("sending email randomly fails") {
+      forAll { (message: SendEmail, succeed: Boolean) =>
+        Given("an unreliable email provider")
+        when(crmClient.sendEmail(matches(SendMessages(message)))(any[ExecutionContext]))
+          .thenReturn(if (succeed) Future.successful(SendEmailResponse(Nil)) else Future.failed(new Exception("Don't worry, this exception is fake")))
+        When("sending an email")
+        crmService.sendEmail(message)
+        Then("the message should be rescheduled if sending failed")
+        verify(eventBusService, new After(1000, times(if (succeed) 0 else 1))).publish(matches(message))
+      }
+    }
+
+  }
+
 }
 
 object CrmServiceComponentTest {

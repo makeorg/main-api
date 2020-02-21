@@ -125,6 +125,7 @@ object Dependencies {
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"       %% "akka-testkit"             % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka" %% "akka-stream-testkit"      % akkaVersion     % "it,test"
+  val scalaCheck: ModuleID = "org.scalacheck"        %% "scalacheck"               % "1.14.0"        % "test"
   val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.8"         % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"   %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
   val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.24.5"        % "it,test"

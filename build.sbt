@@ -46,6 +46,7 @@ lazy val commonSettings = Seq(
     Dependencies.logger,
     Dependencies.loggerBridge,
     Dependencies.scalaLogging,
+    Dependencies.scalaCheck,
     Dependencies.scalaTest,
     Dependencies.mockito
   ),
