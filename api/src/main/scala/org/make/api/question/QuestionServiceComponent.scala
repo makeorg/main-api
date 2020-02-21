@@ -51,11 +51,6 @@ trait QuestionService {
                    language: Language): Future[Option[Question]]
   def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]]
   def countQuestion(request: SearchQuestionRequest): Future[Int]
-  def findQuestionByQuestionIdOrThemeOrOperation(maybeQuestionId: Option[QuestionId],
-                                                 maybeThemeId: Option[ThemeId],
-                                                 maybeOperationId: Option[OperationId],
-                                                 country: Country,
-                                                 language: Language): Future[Option[Question]]
   def createQuestion(country: Country, language: Language, question: String, slug: String): Future[Question]
   def getQuestionPersonalities(start: Int,
                                end: Option[Int],
@@ -161,21 +156,6 @@ trait DefaultQuestionService extends QuestionServiceComponent {
             .map(_.headOption)
       }
 
-    }
-    override def findQuestionByQuestionIdOrThemeOrOperation(maybeQuestionId: Option[QuestionId],
-                                                            maybeThemeId: Option[ThemeId],
-                                                            maybeOperationId: Option[OperationId],
-                                                            country: Country,
-                                                            language: Language): Future[Option[Question]] = {
-
-      // If all ids are None, return None
-      maybeQuestionId
-        .orElse(maybeOperationId)
-        .orElse(maybeThemeId)
-        .map { _ =>
-          maybeQuestionId.map(getQuestion).getOrElse(findQuestion(maybeThemeId, maybeOperationId, country, language))
-        }
-        .getOrElse(Future.successful(None))
     }
 
     override def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]] = {
