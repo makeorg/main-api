@@ -491,7 +491,6 @@ class OrganisationServiceTest
           organisations = Seq.empty,
           country = Country("FR"),
           language = Language("fr"),
-          themeId = None,
           tags = Seq.empty,
           selectedStakeTag = None,
           ideaId = None,

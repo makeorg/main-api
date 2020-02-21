@@ -27,7 +27,6 @@ import org.make.core.common.indexed.SortRequest
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
-import org.make.core.reference.ThemeId
 import org.make.core.sequence._
 
 import scala.annotation.meta.field
@@ -35,7 +34,6 @@ import scala.annotation.meta.field
 // ToDo: handle translations
 @ApiModel
 final case class CreateSequenceRequest(@(ApiModelProperty @field)(example = "ma séquence") title: String,
-                                       @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId],
                                        operationId: Option[OperationId],
                                        searchable: Boolean)
 
@@ -62,21 +60,14 @@ object RemoveProposalSequenceRequest {
 }
 
 @ApiModel
-final case class UpdateSequenceRequest(
-  title: Option[String],
-  status: Option[String],
-  operation: Option[OperationId],
-  @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Option[Seq[ThemeId]]
-)
+final case class UpdateSequenceRequest(title: Option[String], status: Option[String], operation: Option[OperationId])
 
 object UpdateSequenceRequest {
   implicit val decoder: Decoder[UpdateSequenceRequest] = deriveDecoder[UpdateSequenceRequest]
 }
 
 @ApiModel
-final case class ExhaustiveSearchRequest(@(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId] =
-                                           Seq.empty,
-                                         title: Option[String] = None,
+final case class ExhaustiveSearchRequest(title: Option[String] = None,
                                          slug: Option[String] = None,
                                          context: Option[ContextFilterRequest] = None,
                                          operationId: Option[OperationId] = None,
@@ -87,10 +78,8 @@ final case class ExhaustiveSearchRequest(@(ApiModelProperty @field)(dataType = "
                                          skip: Option[Int] = None) {
   def toSearchQuery: SearchQuery = {
     val filters: Option[SearchFilters] = {
-      val themesFilter: Option[ThemesSearchFilter] = if (themeIds.isEmpty) None else Some(ThemesSearchFilter(themeIds))
       SearchFilters.parse(
-        slug = slug.map(text => SlugSearchFilter(text)),
-        themes = themesFilter,
+        slug = slug.map(text   => SlugSearchFilter(text)),
         title = title.map(text => TitleSearchFilter(text)),
         context = context.map(_.toContext),
         operationId = operationId.map(OperationSearchFilter.apply),

@@ -157,7 +157,6 @@ class CrmServiceComponentTest
       lastContributionDate = None,
       operationActivity = None,
       sourceActivity = None,
-      activeCore = None,
       daysOfActivity = None,
       daysOfActivity30d = None,
       userType = None,
@@ -205,8 +204,7 @@ class CrmServiceComponentTest
     country = Country("FR"),
     language = Language("fr"),
     question = "question ?",
-    operationId = Some(OperationId("999-99-99")),
-    themeId = None
+    operationId = Some(OperationId("999-99-99"))
   )
 
   val questionGb = Question(
@@ -215,8 +213,7 @@ class CrmServiceComponentTest
     country = Country("GB"),
     language = Language("en"),
     question = "question ?",
-    operationId = Some(OperationId("888-88-88")),
-    themeId = None
+    operationId = Some(OperationId("888-88-88"))
   )
 
   val questionIt = Question(
@@ -225,8 +222,7 @@ class CrmServiceComponentTest
     country = Country("IT"),
     language = Language("it"),
     question = "question ?",
-    operationId = Some(OperationId("777-77-77")),
-    themeId = None
+    operationId = Some(OperationId("777-77-77"))
   )
 
   val proposalFr: Proposal = Proposal(
@@ -235,7 +231,6 @@ class CrmServiceComponentTest
     content = "content",
     author = UserId("author"),
     labels = Seq.empty,
-    theme = None,
     status = ProposalStatus.Accepted,
     creationContext = RequestContext.empty,
     createdAt = None,
@@ -336,7 +331,6 @@ class CrmServiceComponentTest
     lastContributionDate = None,
     operationActivity = None,
     sourceActivity = None,
-    activeCore = None,
     daysOfActivity = None,
     daysOfActivity30d = None,
     userType = None,
@@ -396,12 +390,8 @@ class CrmServiceComponentTest
     sequenceNr = Long.MaxValue,
     event = LogUserVoteEvent(
       userId = UserId("1"),
-      requestContext = RequestContext.empty.copy(
-        source = Some("vff"),
-        currentTheme = Some(ThemeId("foo-theme-id")),
-        country = Some(Country("GB")),
-        language = Some(Language("uk"))
-      ),
+      requestContext =
+        RequestContext.empty.copy(source = Some("vff"), country = Some(Country("GB")), language = Some(Language("uk"))),
       action = UserAction(
         date = zonedDateTimeInThePast,
         actionType = ProposalVoteAction.name,
@@ -541,7 +531,6 @@ class CrmServiceComponentTest
         maybeProperties.firstContributionDate shouldBe None
         maybeProperties.lastContributionDate shouldBe None
         maybeProperties.operationActivity shouldBe Some("")
-        maybeProperties.activeCore shouldBe None
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
@@ -586,7 +575,6 @@ class CrmServiceComponentTest
         maybeProperties.firstContributionDate shouldBe None
         maybeProperties.lastContributionDate shouldBe None
         maybeProperties.operationActivity shouldBe Some("")
-        maybeProperties.activeCore shouldBe None
         maybeProperties.daysOfActivity shouldBe Some(0)
         maybeProperties.daysOfActivity30 shouldBe Some(0)
         maybeProperties.userType shouldBe Some("B2C")
@@ -615,8 +603,7 @@ class CrmServiceComponentTest
               Country("FR"),
               Language("fr"),
               "question ?",
-              Some(OperationId("999-99-99")),
-              None
+              Some(OperationId("999-99-99"))
             )
           )
         )
@@ -631,8 +618,7 @@ class CrmServiceComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "200-20-11",
-          operationId = Some(OperationId("200-20-11")),
-          None
+          operationId = Some(OperationId("200-20-11"))
         ),
         Question(
           questionId = QuestionId("culture"),
@@ -640,8 +626,7 @@ class CrmServiceComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "345-34-89",
-          operationId = Some(OperationId("345-34-89")),
-          None
+          operationId = Some(OperationId("345-34-89"))
         ),
         Question(
           questionId = QuestionId("chance-aux-jeunes"),
@@ -649,8 +634,7 @@ class CrmServiceComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "999-99-99",
-          operationId = Some(OperationId("999-99-99")),
-          None
+          operationId = Some(OperationId("999-99-99"))
         )
       )
 
@@ -701,7 +685,6 @@ class CrmServiceComponentTest
           "culture",
           "vff-fr"
         )
-        maybeProperties.activeCore shouldBe Some(true)
         maybeProperties.daysOfActivity shouldBe Some(3)
         maybeProperties.daysOfActivity30 shouldBe Some(1)
         maybeProperties.userType shouldBe Some("B2C")
@@ -790,8 +773,7 @@ class CrmServiceComponentTest
         Country("FR"),
         Language("fr"),
         "Comment sauver le monde ?",
-        Some(operationId),
-        None
+        Some(operationId)
       )
       val resolver = new QuestionResolver(Seq(question), Map())
 
@@ -847,7 +829,6 @@ class CrmServiceComponentTest
           organisations = Seq.empty,
           country = Country("FR"),
           language = Language("fr"),
-          themeId = None,
           question = Some(IndexedProposalQuestion(questionId1, "question-1", "", "", None, None, isOpen = true)),
           tags = Seq.empty,
           selectedStakeTag = None,
@@ -892,7 +873,6 @@ class CrmServiceComponentTest
           organisations = Seq.empty,
           country = Country("FR"),
           language = Language("fr"),
-          themeId = None,
           question = Some(IndexedProposalQuestion(questionId2, "question-2", "", "", None, None, isOpen = true)),
           tags = Seq.empty,
           selectedStakeTag = None,
@@ -946,8 +926,7 @@ class CrmServiceComponentTest
             Country("FR"),
             Language("fr"),
             "Comment sauver le monde ?",
-            Some(operationId1),
-            None
+            Some(operationId1)
           ),
           Question(
             questionId2,
@@ -955,8 +934,7 @@ class CrmServiceComponentTest
             Country("FR"),
             Language("fr"),
             "Comment resauver le monde ?",
-            Some(OperationId("who cares?")),
-            None
+            Some(OperationId("who cares?"))
           )
         )
 
@@ -997,8 +975,7 @@ class CrmServiceComponentTest
         Country("FR"),
         Language("fr"),
         "Comment sauver le monde ?",
-        Some(operationId),
-        None
+        Some(operationId)
       )
 
       when(operationService.findSimple()).thenReturn(
@@ -1066,7 +1043,7 @@ class CrmServiceComponentTest
     scenario("get by id") {
       val questionId = QuestionId("my-question")
       val question =
-        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("toto")), None)
+        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("toto")))
       val resolver = new QuestionResolver(Seq(question), Map.empty)
 
       val result = resolver.extractQuestionWithOperationFromRequestContext(
@@ -1083,7 +1060,7 @@ class CrmServiceComponentTest
     scenario("get by operation") {
       val questionId = QuestionId("my-question")
       val question =
-        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")), None)
+        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")))
       val resolver = new QuestionResolver(Seq(question), Map.empty)
 
       resolver.extractQuestionWithOperationFromRequestContext(
@@ -1121,7 +1098,7 @@ class CrmServiceComponentTest
     scenario("get by operation slug") {
       val questionId = QuestionId("my-question")
       val question =
-        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")), None)
+        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")))
       val resolver = new QuestionResolver(Seq(question), Map("my-operation-slug" -> OperationId("my-operation")))
 
       resolver.extractQuestionWithOperationFromRequestContext(
@@ -1309,7 +1286,6 @@ class CrmServiceComponentTest
             lastContributionDate = Some("2019-10-07 10:47:42"),
             operationActivity = None,
             sourceActivity = None,
-            activeCore = None,
             daysOfActivity = None,
             daysOfActivity30 = None,
             userType = None,
@@ -1320,7 +1296,7 @@ class CrmServiceComponentTest
       )
 
       contact.toStringCsv should be(
-        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,,"2019-10-06 02:00:00"${String
+        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
           .format("%n")}"""
       )
     }
@@ -1366,7 +1342,7 @@ class CrmServiceComponentTest
         val firstLine = fileToSeq.head
         lineCount should be(2)
         firstLine should be(
-          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,,"$formattedDate""""
+          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
         )
         bufferedFile.close()
       }

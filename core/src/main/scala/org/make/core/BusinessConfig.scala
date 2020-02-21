@@ -22,13 +22,12 @@ package org.make.core
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.reference.{Country, Language, Theme}
+import org.make.core.reference.{Country, Language}
 
 import scala.annotation.meta.field
 
 sealed trait BusinessConfig {
   val proposalMaxLength: Int
-  val themes: Seq[Theme]
   val supportedCountries: Seq[CountryConfiguration]
 }
 
@@ -45,13 +44,11 @@ object CountryConfiguration {
 
 case class FrontConfiguration(proposalMinLength: Int,
                               override val proposalMaxLength: Int,
-                              override val themes: Seq[Theme],
                               override val supportedCountries: Seq[CountryConfiguration])
     extends BusinessConfig
 
 object BusinessConfig {
   val defaultProposalMaxLength: Int = 140
-  val themes: Seq[Theme] = Seq.empty
   val supportedCountries: Seq[CountryConfiguration] = Seq(
     CountryConfiguration(
       countryCode = Country("FR"),
@@ -250,12 +247,10 @@ object FrontConfiguration {
 
   def default(proposalMinLength: Int = defaultProposalMinLength,
               proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
-              themes: Seq[Theme] = BusinessConfig.themes,
               supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries): FrontConfiguration =
     FrontConfiguration(
       proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,
-      themes = themes,
       supportedCountries = supportedCountries
     )
 }

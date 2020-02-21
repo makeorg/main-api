@@ -120,7 +120,6 @@ trait DefaultTagServiceComponent
         tagTypeId = tagTypeId,
         operationId = question.operationId,
         questionId = Some(question.questionId),
-        themeId = question.themeId,
         country = question.country,
         language = question.language
       )
@@ -212,7 +211,6 @@ trait DefaultTagServiceComponent
                 weight = weight,
                 operationId = question.operationId,
                 questionId = Some(question.questionId),
-                themeId = question.themeId,
                 country = question.country,
                 language = question.language
               )

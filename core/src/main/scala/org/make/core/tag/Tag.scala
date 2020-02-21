@@ -25,7 +25,7 @@ import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -105,9 +105,6 @@ final case class Tag(
   ],
   @(ApiModelProperty @field)(dataType = "string", example = "bb59193e-4d17-44a1-8b0a-6f85e3de7e90") questionId: Option[
     QuestionId
-  ],
-  @(ApiModelProperty @field)(dataType = "string", example = "d0ba60f6-07c8-4493-9be2-1fffa23d27fb") themeId: Option[
-    ThemeId
   ],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language

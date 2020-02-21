@@ -118,7 +118,10 @@ trait DefaultSendMailPublisherServiceComponent
     s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$appParams"
   }
 
-  private def sequenceUrlForProposal(isAccepted: Boolean, userType: UserType, questionSlug: String, requestContext: RequestContext): String = {
+  private def sequenceUrlForProposal(isAccepted: Boolean,
+                                     userType: UserType,
+                                     questionSlug: String,
+                                     requestContext: RequestContext): String = {
     val language: String = requestContext.language.map(_.value).getOrElse("fr")
     val country: String = requestContext.country.map(_.value).getOrElse("FR")
     val term: String = if (isAccepted) "publication" else "refus"
@@ -146,12 +149,7 @@ trait DefaultSendMailPublisherServiceComponent
         requestContext.operationId.map(
           operationId =>
             questionService
-              .findQuestion(
-                maybeOperationId = Some(operationId),
-                country = country,
-                language = language,
-                maybeThemeId = None
-            )
+              .findQuestion(maybeOperationId = Some(operationId), country = country, language = language)
         )
       } match {
       case Some(futureMaybeQuestion) => futureMaybeQuestion.map(_.map(_.slug).getOrElse("unknown"))

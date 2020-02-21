@@ -165,7 +165,6 @@ class DefaultAdminProposalApiComponentTest
         Country("GB"),
         Language("en"),
         "To be or not to be ?",
-        None,
         None
       )
       when(proposalCoordinatorService.getProposal(ProposalId("counts-123")))
@@ -340,7 +339,6 @@ class DefaultAdminProposalApiComponentTest
         organisationSlug = None
       ),
       labels = Seq(),
-      theme = None,
       status = Accepted,
       tags = Seq(),
       votes = Seq(

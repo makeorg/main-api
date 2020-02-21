@@ -28,7 +28,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.proposal.{ProposalId, SearchFilters, SearchQuery, SlugSearchFilter}
 import org.make.core.question.Question
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
@@ -103,7 +103,6 @@ trait ProposalHelper {
           proposalId = api.idGenerator.nextProposalId(),
           requestContext = emptyContext.copy(
             operationId = question.operationId,
-            currentTheme = question.themeId,
             country = Some(question.country),
             language = Some(question.language),
           ),
@@ -170,7 +169,6 @@ trait ProposalHelper {
 object ProposalHelper {
   case class FixtureDataLine(email: String,
                              content: String,
-                             theme: Option[ThemeId],
                              operation: Option[OperationId],
                              tags: Seq[String],
                              labels: Seq[LabelId],

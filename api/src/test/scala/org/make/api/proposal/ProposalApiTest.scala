@@ -30,7 +30,6 @@ import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
-import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
@@ -53,7 +52,6 @@ class ProposalApiTest
     with IdeaServiceComponent
     with ProposalServiceComponent
     with UserServiceComponent
-    with ThemeServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
     with SecurityConfigurationComponent
@@ -62,14 +60,13 @@ class ProposalApiTest
   override val proposalService: ProposalService = mock[ProposalService]
 
   override val userService: UserService = mock[UserService]
-  override val themeService: ThemeService = mock[ThemeService]
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
   override val operationService: OperationService = mock[OperationService]
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val sortAlgorithmConfiguration: SortAlgorithmConfiguration = mock[SortAlgorithmConfiguration]
 
-  when(questionService.findQuestion(any[Option[ThemeId]], any[Option[OperationId]], any[Country], any[Language]))
+  when(questionService.findQuestion(any[Option[OperationId]], any[Country], any[Language]))
     .thenAnswer(
       invocation =>
         Future.successful(
@@ -80,8 +77,7 @@ class ProposalApiTest
               country = invocation.getArgument[Country](2),
               language = invocation.getArgument[Language](3),
               question = "my question",
-              operationId = invocation.getArgument[Option[OperationId]](1),
-              themeId = invocation.getArgument[Option[ThemeId]](0)
+              operationId = invocation.getArgument[Option[OperationId]](1)
             )
           )
       )
@@ -96,8 +92,7 @@ class ProposalApiTest
           country = Country("FR"),
           language = Language("fr"),
           question = "my question",
-          operationId = Some(OperationId("operation")),
-          themeId = None
+          operationId = Some(OperationId("operation"))
         )
       )
     )
@@ -174,7 +169,6 @@ class ProposalApiTest
     organisations = Seq.empty,
     country = Country("TN"),
     language = Language("ar"),
-    themeId = None,
     tags = Seq.empty,
     selectedStakeTag = None,
     myProposal = false,

@@ -41,7 +41,6 @@ trait MultiOperationsProposalHelper extends Migration with ProposalHelper {
           FixtureDataLine(
             email = email,
             content = content,
-            theme = None,
             operation = None,
             tags = tags.split('|').toSeq,
             labels = Seq.empty,
@@ -66,7 +65,7 @@ trait MultiOperationsProposalHelper extends Migration with ProposalHelper {
         api.operationService.findOneBySlug(operationSlug).flatMap {
           case None => Future.failed(new IllegalStateException(s"Operation $operationSlug doesn't exist"))
           case Some(operation) =>
-            api.questionService.findQuestion(None, Some(operation.operationId), Country("FR"), Language("fr")).flatMap {
+            api.questionService.findQuestion(Some(operation.operationId), Country("FR"), Language("fr")).flatMap {
               case None =>
                 Future.failed(new IllegalStateException(s"no question for operation $operationSlug doesn't exist"))
               case Some(question) =>

@@ -102,8 +102,7 @@ class QuestionApiTest
     country = Country("FR"),
     language = Language("fr"),
     question = "the question",
-    operationId = Some(OperationId("operationid")),
-    themeId = None
+    operationId = Some(OperationId("operationid"))
   )
   val baseOperation = Operation(
     status = OperationStatus.Active,
@@ -350,7 +349,7 @@ class QuestionApiTest
     }
 
     def newTag(s: String): Tag =
-      Tag(TagId(s), s, TagDisplay.Displayed, TagTypeId("type"), 42F, None, None, None, Country("FR"), Language("fr"))
+      Tag(TagId(s), s, TagDisplay.Displayed, TagTypeId("type"), 42F, None, None, Country("FR"), Language("fr"))
 
     val tag1 = newTag("tag1")
     val tag2 = newTag("tag2")

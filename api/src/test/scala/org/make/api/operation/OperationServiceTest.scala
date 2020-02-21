@@ -86,8 +86,7 @@ class OperationServiceTest
           language = Language("fr"),
           slug = "foo-BR",
           question = "foo BR?",
-          operationId = Some(OperationId("foo")),
-          themeId = None
+          operationId = Some(OperationId("foo"))
         ),
         details = OperationOfQuestion(
           questionId = QuestionId("foo1"),
@@ -127,8 +126,7 @@ class OperationServiceTest
           language = Language("en"),
           slug = "foo-GB",
           question = "foo GB?",
-          operationId = Some(OperationId("foo")),
-          themeId = None
+          operationId = Some(OperationId("foo"))
         ),
         details = OperationOfQuestion(
           questionId = QuestionId("foo2"),
@@ -170,7 +168,6 @@ class OperationServiceTest
     display = TagDisplay.Displayed,
     tagTypeId = TagTypeId("tagType"),
     weight = 1,
-    themeId = Some(ThemeId("fooTheme")),
     operationId = None,
     country = Country("GB"),
     language = Language("en"),

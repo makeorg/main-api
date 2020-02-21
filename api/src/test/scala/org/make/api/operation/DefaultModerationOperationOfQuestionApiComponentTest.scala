@@ -138,8 +138,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "what's that?",
-          operationId = None,
-          themeId = None
+          operationId = None
         )
       )
     )
@@ -226,8 +225,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           language = Language("fr"),
           slug = "question-1",
           question = "Est-ce que ?",
-          operationId = request.maybeOperationIds.flatMap(_.headOption),
-          themeId = None
+          operationId = request.maybeOperationIds.flatMap(_.headOption)
         ),
         Question(
           questionId = QuestionId("question-2"),
@@ -235,8 +233,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           language = Language("en"),
           slug = "question-2",
           question = "Is it?",
-          operationId = request.maybeOperationIds.flatMap(_.headOption),
-          themeId = None
+          operationId = request.maybeOperationIds.flatMap(_.headOption)
         )
       )
     )
@@ -251,8 +248,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         country = Country("FR"),
         language = Language("fr"),
         question = questionId.value,
-        operationId = None,
-        themeId = None
+        operationId = None
       )
     })
   }

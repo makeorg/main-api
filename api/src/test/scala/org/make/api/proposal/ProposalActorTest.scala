@@ -34,7 +34,7 @@ import org.make.core.proposal.ProposalStatus.{Accepted, Pending, Postponed, Refu
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
@@ -67,8 +67,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
-    operationId = None,
-    themeId = None
+    operationId = None
   )
 
   val questionOnTheme = Question(
@@ -77,8 +76,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
-    operationId = None,
-    themeId = Some(ThemeId("some-theme"))
+    operationId = None
   )
 
   val questionOnNothingIT = Question(
@@ -87,8 +85,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = Country("IT"),
     language = Language("it"),
     question = "some unsolved question",
-    operationId = None,
-    themeId = None
+    operationId = None
   )
 
   val operation1: Operation = Operation(
@@ -358,7 +355,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(questionOnTheme.themeId)
       response.idea should be(Some(IdeaId("my-idea")))
 
     }
@@ -407,7 +403,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(None)
       response.idea should be(Some(IdeaId("some-idea")))
     }
 
@@ -456,7 +451,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq.empty)
-      response.theme should be(None)
       response.idea should be(Some(IdeaId("some-idea")))
     }
 
@@ -919,7 +913,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(questionOnTheme.themeId)
       response.idea should be(Some(IdeaId("idea-id")))
     }
 
@@ -980,7 +973,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(questionOnTheme.themeId)
       response.idea should be(Some(IdeaId("idea-id")))
     }
 
@@ -1041,7 +1033,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
       response.tags should be(Seq(TagId("some tag id")))
       response.labels should be(Seq(LabelId("action")))
-      response.theme should be(questionOnTheme.themeId)
       response.idea should be(Some(IdeaId("idea-id")))
     }
 
@@ -1408,7 +1399,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         PatchProposalRequest(
           creationContext = Some(
             PatchRequestContext(
-              currentTheme = Some(ThemeId("my-theme")),
               requestId = Some("my-request-id"),
               sessionId = Some(SessionId("session-id")),
               visitorId = Some(VisitorId("visitor-id")),
@@ -1432,7 +1422,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val proposal: Proposal = expectMsgType[Option[Proposal]].get
       proposal.creationContext should be(
         RequestContext(
-          currentTheme = Some(ThemeId("my-theme")),
+          currentTheme = None,
           userId = None,
           requestId = "my-request-id",
           sessionId = SessionId("session-id"),
@@ -1482,7 +1472,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           content = Some("some content different from the slug"),
           author = Some(UserId("the user id")),
           labels = Some(Seq(LabelId("my-label"))),
-          theme = Some(ThemeId("my-theme")),
           status = Some(Refused),
           refusalReason = Some("I don't want"),
           ideaId = Some(IdeaId("my-idea")),
@@ -1497,7 +1486,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.content should be("some content different from the slug")
       proposal.author should be(UserId("the user id"))
       proposal.labels should be(Seq(LabelId("my-label")))
-      proposal.theme should be(Some(ThemeId("my-theme")))
       proposal.status should be(Refused)
       proposal.refusalReason should be(Some("I don't want"))
       proposal.idea should be(Some(IdeaId("my-idea")))
@@ -1531,7 +1519,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           creationContext = None,
           slug = Some("some-custom-slug"),
           author = Some(UserId("the user id")),
-          theme = Some(ThemeId("my-theme")),
           status = Some(Postponed),
           country = Some(Country("GB")),
           language = Some(Language("en"))
@@ -1544,7 +1531,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.slug should be("some-custom-slug")
       proposal.content should be("This is a proposal")
       proposal.author should be(UserId("the user id"))
-      proposal.theme should be(Some(ThemeId("my-theme")))
       proposal.status should be(Postponed)
       proposal.country should be(Some(Country("GB")))
       proposal.language should be(Some(Language("en")))
@@ -1566,8 +1552,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           country = Country("FR"),
           language = Language("fr"),
           question = "my question",
-          operationId = None,
-          themeId = None
+          operationId = None
         ),
         initialProposal = false
       )

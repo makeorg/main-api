@@ -79,8 +79,7 @@ class HomeViewServiceComponentTest
     language = Language("fr"),
     country = Country("FR"),
     question = "question default ?",
-    operationId = Some(defaultOperation.operationId),
-    themeId = None
+    operationId = Some(defaultOperation.operationId)
   )
   val defaultOperationOfQuestion = IndexedOperationOfQuestion(
     questionId = defaultQuestion.questionId,
@@ -245,7 +244,6 @@ class HomeViewServiceComponentTest
           organisations = Seq.empty,
           country = Country("FR"),
           language = Language("fr"),
-          themeId = None,
           tags = Seq.empty,
           selectedStakeTag = None,
           ideaId = None,

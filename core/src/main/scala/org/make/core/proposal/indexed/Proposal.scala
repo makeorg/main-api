@@ -29,7 +29,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 
@@ -117,7 +117,6 @@ object ProposalElasticsearchFieldNames {
   val tagId: String = "tags.tagId"
   val tags: String = "tags"
   val selectedStakeTagId: String = "selectedStakeTag.tagId"
-  val themeId: String = "themeId"
   val toEnrich: String = "toEnrich"
   val topScore: String = "scores.topScore"
   val topScoreAjustedWithVotes: String = "scores.topScoreAjustedWithVotes"
@@ -157,8 +156,6 @@ case class IndexedProposal(
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
-  themeId: Option[ThemeId],
   question: Option[IndexedProposalQuestion],
   tags: Seq[IndexedTag],
   selectedStakeTag: Option[IndexedTag],

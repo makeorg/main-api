@@ -34,7 +34,7 @@ import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.user.{User, UserId, UserType}
@@ -132,7 +132,6 @@ class OrganisationApiTest
           userType = None
         ),
         organisations = Seq.empty,
-        themeId = None,
         tags = Seq.empty,
         selectedStakeTag = None,
         status = ProposalStatus.Accepted,
@@ -173,7 +172,6 @@ class OrganisationApiTest
           userType = None
         ),
         organisations = Seq.empty,
-        themeId = None,
         tags = Seq.empty,
         selectedStakeTag = None,
         status = ProposalStatus.Accepted,
@@ -214,7 +212,6 @@ class OrganisationApiTest
           userType = None
         ),
         organisations = Seq.empty,
-        themeId = None,
         tags = Seq.empty,
         selectedStakeTag = None,
         status = ProposalStatus.Accepted,
@@ -255,7 +252,6 @@ class OrganisationApiTest
           userType = None
         ),
         organisations = Seq.empty,
-        themeId = Some(ThemeId("bar-theme")),
         tags = Seq.empty,
         selectedStakeTag = None,
         status = ProposalStatus.Accepted,

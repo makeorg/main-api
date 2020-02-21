@@ -80,7 +80,6 @@ class CassandraHealthCheckActorIT
           country = Country("FR"),
           language = Language("fr"),
           question = "fake question",
-          None,
           None
         ),
         initialProposal = false

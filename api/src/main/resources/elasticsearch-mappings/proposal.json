@@ -1217,10 +1217,6 @@
             }
           }
         },
-        "themeId": {
-          "type": "keyword",
-          "index": true
-        },
         "country": {
           "type": "keyword",
           "index": true

@@ -39,7 +39,6 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
-import org.make.api.theme.{PersistentThemeService, PersistentThemeServiceComponent}
 import org.make.api.user._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
@@ -64,7 +63,6 @@ class IndexationComponentTest
     with OrganisationServiceComponent
     with TagServiceComponent
     with DefaultPersistentTagTypeServiceComponent
-    with PersistentThemeServiceComponent
     with ProposalSearchEngineComponent
     with IdeaSearchEngineComponent
     with OperationOfQuestionIndexationStream
@@ -95,7 +93,6 @@ class IndexationComponentTest
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
   override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
   override val semanticService: SemanticService = mock[SemanticService]
-  override val persistentThemeService: PersistentThemeService = mock[PersistentThemeService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]

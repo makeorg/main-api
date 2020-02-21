@@ -28,7 +28,6 @@ import org.make.api.proposal.ProposalResponse
 import org.make.api.user.UserResponse
 import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.ThemeId
 import org.make.core.sequence.{SequenceId, SequenceStatus, SequenceTranslation}
 import org.make.core.tag.TagId
 
@@ -41,7 +40,6 @@ final case class SequenceResponse(sequenceId: SequenceId,
                                   @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId] = Seq.empty,
                                   @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId] =
                                     Seq.empty,
-                                  @(ApiModelProperty @field)(dataType = "list[string]") themeIds: Seq[ThemeId],
                                   status: SequenceStatus,
                                   creationContext: RequestContext,
                                   createdAt: Option[ZonedDateTime],

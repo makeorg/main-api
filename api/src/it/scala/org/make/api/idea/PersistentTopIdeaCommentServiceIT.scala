@@ -48,8 +48,7 @@ class PersistentTopIdeaCommentServiceIT
     country = Country("FR"),
     language = Language("fr"),
     question = "question ?",
-    operationId = None,
-    themeId = None
+    operationId = None
   )
 
   private val ideas = Seq(

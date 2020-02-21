@@ -212,10 +212,6 @@
           "type": "keyword",
           "index": true
         },
-        "themeId": {
-          "type": "keyword",
-          "index": true
-        },
         "question": {
           "type": "keyword",
           "index": true

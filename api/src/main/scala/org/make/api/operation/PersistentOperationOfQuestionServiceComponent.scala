@@ -422,8 +422,7 @@ object PersistentOperationOfQuestion
           language = Language(language),
           slug = slug,
           question = question,
-          operationId = Some(OperationId(operationId)),
-          themeId = None
+          operationId = Some(OperationId(operationId))
         ),
         details = OperationOfQuestion(
           questionId = QuestionId(questionId),

@@ -31,7 +31,7 @@ import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
@@ -332,8 +332,6 @@ final case class PatchProposalRequest(
   author: Option[UserId] = None,
   @(ApiModelProperty @field)(dataType = "list[string]")
   labels: Option[Seq[LabelId]] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
-  theme: Option[ThemeId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
   status: Option[ProposalStatus] = None,
   refusalReason: Option[String] = None,
@@ -355,8 +353,6 @@ object PatchProposalRequest {
 }
 
 final case class PatchRequestContext(
-  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
-  currentTheme: Option[ThemeId] = None,
   requestId: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "af938667-a15a-482b-bd0f-681f09c83e51")
   sessionId: Option[SessionId] = None,

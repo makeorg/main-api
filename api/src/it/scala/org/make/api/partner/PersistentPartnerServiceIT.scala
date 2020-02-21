@@ -52,8 +52,7 @@ class PersistentPartnerServiceIT
     country = Country("FR"),
     language = Language("fr"),
     question = "question ?",
-    operationId = None,
-    themeId = None
+    operationId = None
   )
 
   feature("get partner by id") {

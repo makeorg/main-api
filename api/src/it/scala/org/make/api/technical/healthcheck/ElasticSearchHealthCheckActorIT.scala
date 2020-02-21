@@ -42,7 +42,7 @@ import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user.{UserId, UserType}
 
 import scala.collection.immutable.Seq
@@ -131,7 +131,6 @@ class ElasticSearchHealthCheckActorIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = Some(ThemeId("foo-theme")),
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Accepted,

@@ -87,7 +87,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
       val modifiedContext =
         changes.creationContext.map { contextChanges =>
           proposal.creationContext.copy(
-            currentTheme = contextChanges.currentTheme.map(Some(_)).getOrElse(proposal.creationContext.currentTheme),
             requestId = contextChanges.requestId.getOrElse(proposal.creationContext.requestId),
             sessionId = contextChanges.sessionId.getOrElse(proposal.creationContext.sessionId),
             visitorId = contextChanges.visitorId.orElse(proposal.creationContext.visitorId),
@@ -113,7 +112,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           idea = changes.ideaId.map(Some(_)).getOrElse(proposal.idea),
           author = changes.author.getOrElse(proposal.author),
           labels = changes.labels.getOrElse(proposal.labels),
-          theme = changes.theme.map(Some(_)).getOrElse(proposal.theme),
           status = changes.status.getOrElse(proposal.status),
           refusalReason = changes.refusalReason.map(Some(_)).getOrElse(proposal.refusalReason),
           tags = changes.tags.getOrElse(proposal.tags),
@@ -431,7 +429,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         eventDate = command.createdAt,
         content = command.content,
         operation = command.question.operationId,
-        theme = command.question.themeId,
         language = Some(command.question.language),
         country = Some(command.question.country),
         question = Some(command.question.questionId),
@@ -562,7 +559,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
                 edition = command.newContent.map { newContent =>
                   ProposalEdition(proposal.content, newContent)
                 },
-                theme = command.question.themeId,
                 labels = command.labels,
                 tags = command.tags,
                 similarProposals = Seq.empty,
@@ -690,7 +686,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
                   ProposalEdition(proposal.content, newContent)
                 },
                 sendValidationEmail = command.sendNotificationEmail,
-                theme = command.question.themeId,
+                theme = None,
                 labels = command.labels,
                 tags = command.tags,
                 similarProposals = Seq.empty,
@@ -830,7 +826,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             updatedAt = None,
             content = e.content,
             status = ProposalStatus.Pending,
-            theme = e.theme.orElse(e.requestContext.currentTheme),
             questionId = e.question,
             creationContext = e.requestContext,
             labels = Seq.empty,
@@ -952,7 +947,6 @@ object ProposalActor {
 
     val arguments: Map[String, String] = Map(
       "question" -> event.question.map(_.value).getOrElse(""),
-      "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
       "idea" -> event.idea.map(_.value).getOrElse(""),
@@ -985,10 +979,6 @@ object ProposalActor {
     proposal = event.edition match {
       case None                                 => proposal
       case Some(ProposalEdition(_, newVersion)) => proposal.copy(content = newVersion, slug = SlugHelper(newVersion))
-    }
-    proposal = event.theme match {
-      case None  => proposal
-      case theme => proposal.copy(theme = theme)
     }
     state.copy(proposal = proposal, None)
   }
@@ -1028,7 +1018,6 @@ object ProposalActor {
   def applyProposalAccepted(state: ProposalState, event: ProposalAccepted): ProposalState = {
     val arguments: Map[String, String] = Map(
       "question" -> event.question.map(_.value).getOrElse(""),
-      "theme" -> event.theme.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
       "labels" -> event.labels.map(_.value).mkString(", "),
       "idea" -> event.idea.map(_.value).getOrElse(""),
@@ -1058,10 +1047,6 @@ object ProposalActor {
     proposal = event.edition match {
       case None                                 => proposal
       case Some(ProposalEdition(_, newVersion)) => proposal.copy(content = newVersion, slug = SlugHelper(newVersion))
-    }
-    proposal = event.theme match {
-      case None  => proposal
-      case theme => proposal.copy(theme = theme)
     }
     state.copy(proposal = proposal, None)
   }

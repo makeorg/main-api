@@ -554,7 +554,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastContributionDate = userProperty.lastContributionDate.map(_.format(dateFormatter)),
         operationActivity = Some(userProperty.questionActivity.distinct.mkString(",")),
         sourceActivity = Some(userProperty.sourceActivity.distinct.mkString(",")),
-        activeCore = userProperty.activeCore,
         daysOfActivity = Some(userProperty.daysOfActivity.distinct.length),
         daysOfActivity30 = Some(userProperty.daysOfActivity30d.distinct.length),
         userType = if (userProperty.userB2B) {
@@ -612,7 +611,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
-          activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
@@ -650,7 +648,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
-          activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
@@ -687,7 +684,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
-          activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
@@ -725,7 +721,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
           lastContributionDate = Some(event.action.date),
-          activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
@@ -785,7 +780,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toSeq,
           firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
           lastContributionDate = Some(event.action.date),
-          activeCore = event.requestContext.currentTheme.map(_ => true).orElse(accumulator.activeCore),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
             accumulator.daysOfActivity30d ++ Some(event.action.date.format(dayDateFormatter))
@@ -847,7 +841,6 @@ final case class UserProperties(userId: UserId,
                                 lastContributionDate: Option[ZonedDateTime] = None,
                                 questionActivity: Seq[String] = Seq.empty,
                                 sourceActivity: Seq[String] = Seq.empty,
-                                activeCore: Option[Boolean] = None,
                                 daysOfActivity: Seq[String] = Seq.empty,
                                 daysOfActivity30d: Seq[String] = Seq.empty,
                                 accountType: Option[String] = None,

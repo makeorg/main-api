@@ -531,7 +531,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 content = proposal.content,
                 author = ModerationProposalAuthorResponse(author),
                 labels = proposal.labels,
-                theme = proposal.theme,
                 status = proposal.status,
                 refusalReason = proposal.refusalReason,
                 tags = proposal.tags,

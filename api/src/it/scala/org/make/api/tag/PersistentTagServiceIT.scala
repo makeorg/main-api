@@ -24,10 +24,9 @@ import org.make.api.operation.DefaultPersistentOperationServiceComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.theme.DefaultPersistentThemeServiceComponent
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, Theme, ThemeId}
+import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.tag._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -37,7 +36,6 @@ import scala.concurrent.duration.DurationInt
 class PersistentTagServiceIT
     extends DatabaseTest
     with DefaultPersistentTagServiceComponent
-    with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTagTypeServiceComponent
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentQuestionServiceComponent
@@ -62,7 +60,6 @@ class PersistentTagServiceIT
     Question(
       questionId = QuestionId(operationId.value),
       slug = s"some-question-on-operation-${operationId.value}",
-      themeId = None,
       operationId = Some(operationId),
       country = country,
       language = language,
@@ -76,7 +73,6 @@ class PersistentTagServiceIT
     Question(
       questionId = QuestionId(themeId.value),
       slug = s"some-question-on-theme-${themeId.value}",
-      themeId = Some(themeId),
       operationId = None,
       country = country,
       language = language,
@@ -86,17 +82,13 @@ class PersistentTagServiceIT
 
   val fakeQuestion: Question = questionForOperation(fakeOperation.operationId)
 
-  def newTag(label: String,
-             questionId: QuestionId,
-             operationId: Option[OperationId] = None,
-             themeId: Option[ThemeId] = None): Tag = Tag(
+  def newTag(label: String, questionId: QuestionId, operationId: Option[OperationId] = None): Tag = Tag(
     tagId = idGenerator.nextTagId(),
     label = label,
     display = TagDisplay.Inherit,
     weight = 0f,
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = operationId,
-    themeId = themeId,
     country = Country("FR"),
     language = Language("fr"),
     questionId = Some(questionId)
@@ -114,13 +106,12 @@ class PersistentTagServiceIT
   val martell: Tag = newTag("Martell", QuestionId("Martell"))
   val tyrell: Tag = newTag("Tyrell", QuestionId("Tyrell"))
 
-  private val developementDurableTheme = ThemeId("036f24fa-dc32-4808-bca9-7ccec1665585")
   private val developementDurableQuestion = QuestionId("question-for-developement-durable-theme")
   val bron: Tag = newTag("Bron", QuestionId("Bron"))
   val weirdTag: Tag = newTag("weird%Tag", QuestionId("weird-Tag"))
   val snow: Tag = newTag("Snow", operationId = Some(fakeOperation.operationId), questionId = fakeQuestion.questionId)
   val lancaster: Tag =
-    newTag("Lancaster", themeId = Some(developementDurableTheme), questionId = developementDurableQuestion)
+    newTag("Lancaster", questionId = developementDurableQuestion)
   val byron: Tag = newTag("Byron", QuestionId("Byron"))
 
   feature("One tag can be persisted and retrieved") {
@@ -379,7 +370,6 @@ class PersistentTagServiceIT
       tagId = TagId("clio"),
       tagTypeId = tagTypeThird.tagTypeId,
       label = "cliolabel",
-      themeId = None,
       country = Country("BR"),
       language = Language("fr")
     )
@@ -388,26 +378,12 @@ class PersistentTagServiceIT
         tagId = TagId("thalia"),
         tagTypeId = tagTypeFourth.tagTypeId,
         label = "thalialabel",
-        themeId = Some(themeIdFirst),
         questionId = Some(questionThemeFirst.questionId),
         country = Country("BR"),
         language = Language("br")
       )
     val calliope: Tag =
       targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeHeighth.tagTypeId, label = "calliopelabel")
-
-    val baseTheme: Theme = Theme(
-      themeId = themeIdFirst,
-      translations = Seq.empty,
-      questionId = Some(QuestionId(themeIdFirst.value)),
-      actionsCount = 0,
-      proposalsCount = 0,
-      votesCount = 0,
-      country = Country("FR"),
-      color = "",
-      gradient = None,
-      tags = Seq.empty
-    )
 
     scenario("Search tags by label") {
 
@@ -517,7 +493,6 @@ class PersistentTagServiceIT
 
       When(s"I search tags by theme '${themeIdFirst.value}'")
       val futureTagListResultThemeFirst: Future[Seq[Tag]] = for {
-        _ <- persistentThemeService.persist(baseTheme.copy(themeId = themeIdFirst))
         _ <- persistentTagTypeService.persist(tagTypeFourth)
         _ <- persistentTagService.persist(thalia)
         result <- persistentTagService.find(
@@ -533,7 +508,6 @@ class PersistentTagServiceIT
       whenReady(futureTagListResultThemeFirst, Timeout(3.seconds)) { tags =>
         Then("I get a list with two results")
         tags.length should be(1)
-        tags.count(_.themeId.contains(themeIdFirst)) should be(tags.length)
       }
     }
 
@@ -627,29 +601,15 @@ class PersistentTagServiceIT
         tagId = TagId("baz"),
         tagTypeId = fooTagType.tagTypeId,
         label = "bazlabel",
-        themeId = Some(fooThemeId),
         questionId = Some(themeQuestion.questionId),
         country = Country("FR"),
         language = Language("fr")
       )
 
-    val baseTheme: Theme = Theme(
-      themeId = fooThemeId,
-      questionId = Some(QuestionId(fooThemeId.value)),
-      translations = Seq.empty,
-      actionsCount = 0,
-      proposalsCount = 0,
-      votesCount = 0,
-      country = Country("FR"),
-      color = "",
-      gradient = None,
-      tags = Seq.empty
-    )
     scenario("Search tags by label") {
 
       val fooOperation = fakeOperation.copy(operationId = fooOperationId, slug = "foo-operation")
       val persistedTags: Future[Seq[Tag]] = for {
-        _   <- persistentThemeService.persist(baseTheme.copy(themeId = fooThemeId))
         _   <- persistentOperationService.persist(fooOperation)
         _   <- persistentQuestionService.persist(operationQuestion)
         _   <- persistentQuestionService.persist(themeQuestion)

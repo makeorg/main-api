@@ -94,7 +94,6 @@ class OperationServiceIT
     weight = 0f,
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = None,
-    themeId = None,
     country = Country("FR"),
     language = languageFr,
     questionId = None

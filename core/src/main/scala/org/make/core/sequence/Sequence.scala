@@ -26,7 +26,7 @@ import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
-import org.make.core.reference.{Language, ThemeId}
+import org.make.core.reference.Language
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
@@ -53,7 +53,6 @@ case class Sequence(sequenceId: SequenceId,
                     title: String,
                     slug: String,
                     proposalIds: Seq[ProposalId] = Seq.empty,
-                    themeIds: Seq[ThemeId],
                     operationId: Option[OperationId] = None,
                     override val createdAt: Option[ZonedDateTime],
                     override val updatedAt: Option[ZonedDateTime],
@@ -67,7 +66,7 @@ case class Sequence(sequenceId: SequenceId,
 
 object Sequence {
   implicit val sequenceFormatter: RootJsonFormat[Sequence] =
-    DefaultJsonProtocol.jsonFormat13(Sequence.apply)
+    DefaultJsonProtocol.jsonFormat12(Sequence.apply)
 }
 
 final case class SequenceId(value: String) extends StringValue

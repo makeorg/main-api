@@ -50,7 +50,6 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
     lastContributionDate = Some("2019-07-01T16:16:16Z"),
     operationActivity = Some("weeuropeans-fr,weeuropeans-de"),
     sourceActivity = Some("source"),
-    activeCore = Some(false),
     daysOfActivity = Some(20),
     daysOfActivity30d = Some(2),
     userType = Some("B2C"),

@@ -33,7 +33,7 @@ import org.make.core.idea.{TopIdea, TopIdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.personality.PersonalityRole
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
 import org.make.core.{ValidationError, ValidationFailedError}
@@ -45,8 +45,7 @@ trait QuestionService {
   def getQuestion(questionId: QuestionId): Future[Option[Question]]
   def getQuestions(questionIds: Seq[QuestionId]): Future[Seq[Question]]
   def getQuestionByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]]
-  def findQuestion(maybeThemeId: Option[ThemeId],
-                   maybeOperationId: Option[OperationId],
+  def findQuestion(maybeOperationId: Option[OperationId],
                    country: Country,
                    language: Language): Future[Option[Question]]
   def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]]
@@ -71,7 +70,6 @@ trait QuestionService {
 }
 
 case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
-                                 maybeThemeId: Option[ThemeId] = None,
                                  maybeOperationIds: Option[Seq[OperationId]] = None,
                                  country: Option[Country] = None,
                                  language: Option[Language] = None,
@@ -113,34 +111,15 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       persistentQuestionService.getById(questionId)
     }
 
-    override def findQuestion(maybeThemeId: Option[ThemeId],
-                              maybeOperationId: Option[OperationId],
+    override def findQuestion(maybeOperationId: Option[OperationId],
                               country: Country,
                               language: Language): Future[Option[Question]] = {
 
-      (maybeOperationId, maybeThemeId) match {
-        case (None, None) =>
+      maybeOperationId match {
+        case None =>
           Future.failed(
             ValidationFailedError(
-              Seq(
-                ValidationError(
-                  "unknown",
-                  "mandatory",
-                  Some("operationId or themeId must be provided to question search")
-                )
-              )
-            )
-          )
-        case (Some(_), Some(_)) =>
-          Future.failed(
-            ValidationFailedError(
-              Seq(
-                ValidationError(
-                  "unknown",
-                  "mandatory",
-                  Some("You must provide only one of themeId or operationId to question search")
-                )
-              )
+              Seq(ValidationError("unknown", "mandatory", Some("operationId must be provided to question search")))
             )
           )
         case _ =>
@@ -149,8 +128,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
               SearchQuestionRequest(
                 country = Some(country),
                 language = Some(language),
-                maybeOperationIds = maybeOperationId.map(operationId => Seq(operationId)),
-                maybeThemeId = maybeThemeId
+                maybeOperationIds = maybeOperationId.map(operationId => Seq(operationId))
               )
             )
             .map(_.headOption)
@@ -177,8 +155,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
           country = country,
           language = language,
           question = question,
-          operationId = None,
-          themeId = None
+          operationId = None
         )
       )
     }

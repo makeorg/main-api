@@ -27,7 +27,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.SearchQuery
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId, _}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -52,15 +52,13 @@ class TagServiceTest
   def newTag(label: String,
              tagId: TagId = idGenerator.nextTagId(),
              questionId: QuestionId,
-             operationId: Option[OperationId] = None,
-             themeId: Option[ThemeId] = None): Tag = Tag(
+             operationId: Option[OperationId] = None): Tag = Tag(
     tagId = tagId,
     label = label,
     display = TagDisplay.Inherit,
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = operationId,
-    themeId = themeId,
     country = Country("FR"),
     language = Language("fr"),
     questionId = Some(questionId)
@@ -108,7 +106,6 @@ class TagServiceTest
           questionId = QuestionId("new-question"),
           slug = "new-question",
           operationId = None,
-          themeId = None,
           country = Country("FR"),
           language = Language("fr"),
           question = "new question"
@@ -128,7 +125,6 @@ class TagServiceTest
                 weight = 0f,
                 tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
                 operationId = None,
-                themeId = None,
                 country = Country("FR"),
                 language = Language("fr"),
                 questionId = Some(QuestionId("new-question"))
@@ -219,11 +215,10 @@ class TagServiceTest
       Given("a list of registered tags 'theme tag1', 'theme tag2'")
       When("i find tags by theme")
 
-      val themeId = ThemeId("theme-id")
       val questionId = QuestionId("question-of-theme")
 
-      val tag1 = newTag("theme tag1", themeId = Some(themeId), questionId = questionId)
-      val tag2 = newTag("theme tag2", themeId = Some(themeId), questionId = questionId)
+      val tag1 = newTag("theme tag1", questionId = questionId)
+      val tag2 = newTag("theme tag2", questionId = questionId)
 
       Mockito.reset(persistentTagService)
 
@@ -244,7 +239,6 @@ class TagServiceTest
         tags.size shouldBe 2
         tags.map(_.label).contains("theme tag1") shouldBe true
         tags.map(_.label).contains("theme tag2") shouldBe true
-        tags.forall(_.themeId.contains(themeId)) shouldBe true
       }
     }
 
@@ -293,7 +287,6 @@ class TagServiceTest
           questionId = QuestionId("fake-question"),
           slug = "fake-question",
           operationId = None,
-          themeId = None,
           country = Country("FR"),
           language = Language("fr"),
           question = "Fake Question"
@@ -345,7 +338,6 @@ class TagServiceTest
           questionId = QuestionId("fake-question"),
           slug = "fake-question",
           operationId = None,
-          themeId = None,
           country = Country("FR"),
           language = Language("fr"),
           question = "Fake Question"
@@ -388,7 +380,6 @@ class TagServiceTest
                 weight = 0,
                 operationId = None,
                 questionId = None,
-                themeId = None,
                 country = Country("FR"),
                 language = Language("fr")
               )

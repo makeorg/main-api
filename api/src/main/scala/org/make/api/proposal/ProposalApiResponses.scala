@@ -94,8 +94,6 @@ final case class ModerationProposalResponse(
   author: ModerationProposalAuthorResponse,
   @(ApiModelProperty @field)(dataType = "list[string]")
   labels: Seq[LabelId],
-  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
-  theme: Option[ThemeId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
   status: ProposalStatus,
   refusalReason: Option[String] = None,
@@ -267,8 +265,6 @@ final case class ProposalResponse(
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "9aff4846-3cb8-4737-aea0-2c4a608f30fd")
-  themeId: Option[ThemeId],
   tags: Seq[IndexedTag],
   selectedStakeTag: Option[IndexedTag],
   myProposal: Boolean,
@@ -310,7 +306,6 @@ object ProposalResponse extends CirceFormatters {
       organisations = indexedProposal.organisations.map(OrganisationInfoResponse.fromIndexedOrganisationInfo),
       country = indexedProposal.country,
       language = indexedProposal.language,
-      themeId = indexedProposal.themeId,
       tags = indexedProposal.tags,
       selectedStakeTag = indexedProposal.selectedStakeTag,
       myProposal = myProposal,

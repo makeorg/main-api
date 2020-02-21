@@ -160,7 +160,7 @@ object UserRegistered {
 
 }
 
-final case class UserProposal(content: String, theme: Option[ThemeId])
+final case class UserProposal(content: String, theme: Option[ThemeId] = None)
 
 object UserProposal {
   implicit val userProposalFormatted: RootJsonFormat[UserProposal] =
@@ -495,7 +495,7 @@ final case class SequenceCreated(id: SequenceId,
                                  userId: UserId,
                                  eventDate: ZonedDateTime,
                                  title: String,
-                                 themeIds: Seq[ThemeId],
+                                 themeIds: Seq[ThemeId] = Seq.empty,
                                  operationId: Option[OperationId] = None,
                                  searchable: Boolean) {
   def version(): Int = MakeSerializable.V2
@@ -516,7 +516,7 @@ final case class SequenceUpdated(id: SequenceId,
                                  status: Option[SequenceStatus],
                                  @Deprecated operation: Option[String] = None,
                                  operationId: Option[OperationId] = None,
-                                 themeIds: Seq[ThemeId]) {
+                                 themeIds: Seq[ThemeId] = Seq.empty) {
   def version(): Int = MakeSerializable.V2
 }
 

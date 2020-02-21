@@ -126,7 +126,7 @@ class AdminCrmTemplatesApiTest
     .thenReturn(Future.successful(2))
 
   val question =
-    Question(QuestionId("question-id"), "question", Country("FR"), Language("fr"), "question ?", None, None)
+    Question(QuestionId("question-id"), "question", Country("FR"), Language("fr"), "question ?", None)
 
   when(questionService.getQuestion(QuestionId("question-id")))
     .thenReturn(Future.successful(Some(question)))

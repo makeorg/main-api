@@ -63,8 +63,7 @@ trait OperationHelper {
           slug = configuration.slug,
           language = configuration.language,
           question = configuration.question,
-          operationId = Some(operation.operationId),
-          themeId = None
+          operationId = Some(operation.operationId)
         )
       )
       .flatMap { _ =>

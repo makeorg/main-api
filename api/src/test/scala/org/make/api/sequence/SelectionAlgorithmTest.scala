@@ -124,7 +124,6 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       organisations = Seq.empty,
       country = Country("FR"),
       language = Language("fr"),
-      themeId = None,
       question = Some(
         IndexedProposalQuestion(
           questionId = QuestionId("test-question"),
@@ -206,7 +205,6 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       organisations = Seq.empty,
       country = Country("FR"),
       language = Language("fr"),
-      themeId = None,
       question = Some(
         IndexedProposalQuestion(
           questionId = QuestionId("test-question"),

@@ -22,7 +22,7 @@ package org.make.core.question
 import io.circe.{Decoder, Encoder, Json, KeyDecoder, KeyEncoder}
 import org.make.core.StringValue
 import org.make.core.operation.OperationId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import spray.json.{JsString, JsValue, JsonFormat}
 
 case class Question(questionId: QuestionId,
@@ -30,8 +30,7 @@ case class Question(questionId: QuestionId,
                     country: Country,
                     language: Language,
                     question: String,
-                    operationId: Option[OperationId],
-                    themeId: Option[ThemeId]) {
+                    operationId: Option[OperationId]) {
   def getLocale: String = s"${language.value.toLowerCase}_${country.value.toUpperCase}"
 }
 
