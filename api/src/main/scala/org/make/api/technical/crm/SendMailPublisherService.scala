@@ -121,9 +121,9 @@ trait DefaultSendMailPublisherServiceComponent
   private def sequenceUrlForProposal(isAccepted: Boolean,
                                      userType: UserType,
                                      questionSlug: String,
-                                     requestContext: RequestContext): String = {
-    val language: String = requestContext.language.map(_.value).getOrElse("fr")
-    val country: String = requestContext.country.map(_.value).getOrElse("FR")
+                                     proposal: Proposal): String = {
+    val country: String = proposal.country.map(_.value).getOrElse("FR")
+    val language: String = proposal.language.map(_.value).getOrElse("fr")
     val term: String = if (isAccepted) "publication" else "refus"
     val utmTerm: String = if (userType != UserType.UserTypeUser) s"${term}acteur" else term
     val utmParams = s"utm_source=crm&utm_medium=email&utm_content=cta&utm_campaign=$questionSlug&utm_term=$utmTerm"
@@ -425,7 +425,7 @@ trait DefaultSendMailPublisherServiceComponent
             "question" -> maybeQuestionId.map(_.value).getOrElse(""),
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse(""),
-            "sequence_url" -> sequenceUrlForProposal(isAccepted = true, user.userType, slug, requestContext)
+            "sequence_url" -> sequenceUrlForProposal(isAccepted = true, user.userType, slug, proposal)
           )
         def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
           if (userType == UserType.UserTypeOrganisation)
@@ -462,7 +462,7 @@ trait DefaultSendMailPublisherServiceComponent
             "question" -> maybeQuestionId.map(_.value).getOrElse(""),
             "location" -> requestContext.location.getOrElse(""),
             "source" -> requestContext.source.getOrElse(""),
-            "sequence_url" -> sequenceUrlForProposal(isAccepted = false, user.userType, slug, requestContext)
+            "sequence_url" -> sequenceUrlForProposal(isAccepted = false, user.userType, slug, proposal)
           )
         def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
           if (userType == UserType.UserTypeOrganisation)
