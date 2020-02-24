@@ -35,7 +35,6 @@ import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse,
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
-import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.storage._
 import org.make.api.user.social.SocialServiceComponent
@@ -156,7 +155,7 @@ trait UserApi extends Directives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SocialLoginResponse])))
   def socialLogin: Route
 
   @Path(value = "/{userId}/votes")
@@ -703,14 +702,14 @@ trait DefaultUserApiComponent
                         requestContext,
                         request.clientId.getOrElse(ClientId(makeSettings.Authentication.defaultClientId))
                       )
-                      .flatMap { social =>
+                      .flatMap { case (userId, social) =>
                         sessionHistoryCoordinatorService
-                          .convertSession(requestContext.sessionId, social.userId, requestContext)
-                          .map(_ => social)
+                          .convertSession(requestContext.sessionId, userId, requestContext)
+                          .map(_ => (userId, social))
                       }
-                  ) { social =>
-                    setMakeSecure(social.token.access_token, social.userId) {
-                      complete(StatusCodes.Created -> social.token)
+                  ) { case (userId, social) =>
+                    setMakeSecure(social.access_token, userId) {
+                      complete(StatusCodes.Created -> social)
                     }
                   }
                 }

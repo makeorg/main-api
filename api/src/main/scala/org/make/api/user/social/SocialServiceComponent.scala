@@ -22,7 +22,7 @@ package org.make.api.user.social
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{ClientServiceComponent, MakeDataHandlerComponent}
-import org.make.api.user.UserServiceComponent
+import org.make.api.user.{SocialLoginResponse, UserServiceComponent}
 import org.make.api.user.social.models.UserInfo
 import org.make.core.RequestContext
 import org.make.core.auth.{ClientId, UserRights}
@@ -47,10 +47,8 @@ trait SocialService {
             clientIp: Option[String],
             questionId: Option[QuestionId],
             requestContext: RequestContext,
-            clientId: ClientId): Future[UserIdAndToken]
+            clientId: ClientId): Future[(UserId, SocialLoginResponse)]
 }
-
-case class UserIdAndToken(userId: UserId, token: TokenResponse)
 
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
   self: UserServiceComponent with MakeDataHandlerComponent with ClientServiceComponent with StrictLogging =>
@@ -69,7 +67,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               clientIp: Option[String],
               questionId: Option[QuestionId],
               requestContext: RequestContext,
-              clientId: ClientId): Future[UserIdAndToken] = {
+              clientId: ClientId): Future[(UserId, SocialLoginResponse)] = {
 
       val futureUserInfo: Future[UserInfo] = provider match {
         case GOOGLE_PROVIDER =>
@@ -111,8 +109,13 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
 
       for {
         userInfo <- futureUserInfo
-        user     <- userService.createOrUpdateUserFromSocial(userInfo, clientIp, questionId, requestContext)
-        client   <- futureClient(user.userId)
+        (user, accountCreation) <- userService.createOrUpdateUserFromSocial(
+          userInfo,
+          clientIp,
+          questionId,
+          requestContext
+        )
+        client <- futureClient(user.userId)
         accessToken <- oauth2DataHandler.createAccessToken(
           authInfo = AuthInfo(
             user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
@@ -122,15 +125,15 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
           )
         )
       } yield {
-        UserIdAndToken(
-          userId = user.userId,
+        (user.userId, SocialLoginResponse(
           token = TokenResponse(
             "Bearer",
             accessToken.token,
             accessToken.expiresIn.getOrElse(1L),
             accessToken.refreshToken.getOrElse("")
-          )
-        )
+          ),
+          accountCreation = accountCreation
+        ))
       }
     }
 

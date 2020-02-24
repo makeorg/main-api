@@ -582,15 +582,15 @@ class UserApiTest
         )
         .thenReturn(
           Future.successful(
-            UserIdAndToken(
-              UserId("12347"),
+            (UserId("12347"), SocialLoginResponse(
               TokenResponse(
                 token_type = "Bearer",
                 access_token = "access_token",
                 expires_in = expiresInSecond,
                 refresh_token = "refresh_token"
-              )
-            )
+              ),
+              false
+            ))
           )
         )
       val request =
@@ -638,15 +638,15 @@ class UserApiTest
         )
         .thenReturn(
           Future.successful(
-            UserIdAndToken(
-              UserId("12347"),
+            (UserId("12347"), SocialLoginResponse(
               TokenResponse(
                 token_type = "Bearer",
                 access_token = "access_token",
                 expires_in = expiresInSecond,
                 refresh_token = "refresh_token"
-              )
-            )
+              ),
+              false
+            ))
           )
         )
       val request =
