@@ -91,7 +91,6 @@ class PersistentOperationServiceIT
     weight = 0f,
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = None,
-    themeId = None,
     country = Country("FR"),
     language = Language("fr"),
     questionId = None
@@ -131,8 +130,7 @@ class PersistentOperationServiceIT
           language = Language("fr"),
           slug = "hello-fr",
           question = "ça va ?",
-          operationId = Some(operationId),
-          themeId = None
+          operationId = Some(operationId)
         ),
         details = OperationOfQuestion(
           questionId = QuestionId("some-question"),
@@ -172,8 +170,7 @@ class PersistentOperationServiceIT
           language = Language("en"),
           slug = "hello-gb",
           question = "how are you ?",
-          operationId = Some(operationId),
-          themeId = None
+          operationId = Some(operationId)
         ),
         details = OperationOfQuestion(
           questionId = QuestionId("some-question-gb"),

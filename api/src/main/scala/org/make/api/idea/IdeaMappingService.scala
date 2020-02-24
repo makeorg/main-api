@@ -288,7 +288,6 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
           Some(question.question),
           None,
           Some(questionId),
-          None,
           IdeaStatus.Activated,
           Some(DateHelper.now()),
           Some(DateHelper.now())

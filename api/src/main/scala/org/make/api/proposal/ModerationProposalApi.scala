@@ -36,7 +36,6 @@ import org.make.api.semantic.SimilarIdea
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
-import org.make.api.theme.ThemeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.{Order, SortRequest}
@@ -45,7 +44,7 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalsSearchResult
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.UserType
@@ -375,7 +374,6 @@ trait DefaultModerationProposalApiComponent
     with UserServiceComponent
     with IdeaServiceComponent
     with QuestionServiceComponent
-    with ThemeServiceComponent
     with OperationServiceComponent
     with ProposalCoordinatorServiceComponent
     with ReadJournalComponent
@@ -561,7 +559,7 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None, None)) { question =>
+                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None)) { question =>
                     requireRightsOnQuestion(userAuth.user, Some(question.questionId)) {
                       provideAsyncOrNotFound(
                         proposalService.update(
@@ -591,8 +589,7 @@ trait DefaultModerationProposalApiComponent
 
     private def retrieveQuestion(maybeQuestionId: Option[QuestionId],
                                  proposalId: ProposalId,
-                                 maybeOperationId: Option[OperationId],
-                                 maybeThemeId: Option[ThemeId]): Future[Option[Question]] = {
+                                 maybeOperationId: Option[OperationId]): Future[Option[Question]] = {
 
       maybeQuestionId.map { questionId =>
         questionService.getQuestion(questionId)
@@ -603,7 +600,7 @@ trait DefaultModerationProposalApiComponent
               country  <- proposal.country
               language <- proposal.language
             } yield {
-              questionService.findQuestion(maybeThemeId, maybeOperationId, country, language)
+              questionService.findQuestion(maybeOperationId, country, language)
             }
             maybeFuture.getOrElse {
               Future.successful(None)
@@ -621,7 +618,7 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[ValidateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None, None)) { question =>
+                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None)) { question =>
                     requireRightsOnQuestion(auth.user, Some(question.questionId)) {
                       provideAsyncOrNotFound(
                         proposalService.validateProposal(

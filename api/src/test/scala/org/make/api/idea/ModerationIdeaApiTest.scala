@@ -85,8 +85,7 @@ class ModerationIdeaApiTest
           country = Country("FR"),
           language = Language("fr"),
           question = "??",
-          operationId = Some(OperationId("vff")),
-          themeId = None
+          operationId = Some(OperationId("vff"))
         )
       )
     )

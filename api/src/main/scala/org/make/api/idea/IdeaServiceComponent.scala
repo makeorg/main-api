@@ -78,7 +78,6 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent {
           question = Some(question.question),
           questionId = Some(question.questionId),
           operationId = question.operationId,
-          themeId = question.themeId,
           createdAt = Some(DateHelper.now()),
           updatedAt = Some(DateHelper.now())
         )

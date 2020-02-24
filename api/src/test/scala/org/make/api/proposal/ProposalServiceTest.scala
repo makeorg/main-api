@@ -232,7 +232,6 @@ class ProposalServiceTest
           content = "unlockable-1",
           author = UserId("user-unlockable-1"),
           labels = Seq.empty,
-          theme = None,
           status = ProposalStatus.Pending,
           refusalReason = None,
           tags = Seq.empty,
@@ -459,7 +458,6 @@ class ProposalServiceTest
                 content = "unlockable",
                 author = UserId("user-unlockable"),
                 labels = Seq.empty,
-                theme = None,
                 status = ProposalStatus.Pending,
                 refusalReason = None,
                 tags = Seq.empty,
@@ -488,7 +486,6 @@ class ProposalServiceTest
                 content = "lockable",
                 author = UserId("user-lockable"),
                 labels = Seq.empty,
-                theme = None,
                 status = ProposalStatus.Pending,
                 refusalReason = None,
                 tags = Seq.empty,
@@ -565,7 +562,6 @@ class ProposalServiceTest
                 content = "lockable",
                 author = UserId("user-lockable"),
                 labels = Seq.empty,
-                theme = None,
                 status = ProposalStatus.Pending,
                 refusalReason = None,
                 tags = Seq.empty,
@@ -737,8 +733,7 @@ class ProposalServiceTest
           country = Country("FR"),
           language = Language("fr"),
           question = "how to create initial proposals?",
-          operationId = None,
-          themeId = None
+          operationId = None
         )
 
       Mockito
@@ -815,7 +810,6 @@ class ProposalServiceTest
       weight = 1.0F,
       operationId = None,
       questionId = Some(QuestionId("question-id")),
-      themeId = None,
       country = Country("FR"),
       language = Language("fr")
     )
@@ -954,8 +948,7 @@ class ProposalServiceTest
       country = Country("FR"),
       language = Language("fr"),
       question = "question",
-      operationId = None,
-      themeId = None
+      operationId = None
     )
 
     val validatedProposal = simpleProposal(proposalId)
@@ -1061,7 +1054,6 @@ class ProposalServiceTest
                 50.0F,
                 None,
                 None,
-                None,
                 Country("FR"),
                 Language("fr")
               ),
@@ -1071,7 +1063,6 @@ class ProposalServiceTest
                 TagDisplay.Inherit,
                 TagTypeId("stake"),
                 80.0F,
-                None,
                 None,
                 None,
                 Country("FR"),
@@ -1085,7 +1076,6 @@ class ProposalServiceTest
                 50.0F,
                 None,
                 None,
-                None,
                 Country("FR"),
                 Language("fr")
               ),
@@ -1097,7 +1087,6 @@ class ProposalServiceTest
                 20.0F,
                 None,
                 None,
-                None,
                 Country("FR"),
                 Language("fr")
               ),
@@ -1107,7 +1096,6 @@ class ProposalServiceTest
                 TagDisplay.Inherit,
                 TagTypeId("other"),
                 50.0F,
-                None,
                 None,
                 None,
                 Country("FR"),
@@ -1140,7 +1128,6 @@ class ProposalServiceTest
         Country("FR"),
         Language("fr"),
         "how to update a proposal?",
-        None,
         None
       )
 
@@ -1203,7 +1190,6 @@ class ProposalServiceTest
         Country("FR"),
         Language("fr"),
         "how to update a proposal?",
-        None,
         None
       )
 
@@ -1275,7 +1261,6 @@ class ProposalServiceTest
                 50.0F,
                 None,
                 None,
-                None,
                 Country("FR"),
                 Language("fr")
               ),
@@ -1287,7 +1272,6 @@ class ProposalServiceTest
                 20.0F,
                 None,
                 None,
-                None,
                 Country("FR"),
                 Language("fr")
               ),
@@ -1297,7 +1281,6 @@ class ProposalServiceTest
                 TagDisplay.Inherit,
                 TagTypeId("other"),
                 50.0F,
-                None,
                 None,
                 None,
                 Country("FR"),
@@ -1330,7 +1313,6 @@ class ProposalServiceTest
         Country("FR"),
         Language("fr"),
         "how to update a proposal?",
-        None,
         None
       )
 
@@ -1385,8 +1367,7 @@ class ProposalServiceTest
       country = Country("FR"),
       language = Language("fr"),
       question = "question",
-      operationId = None,
-      themeId = None
+      operationId = None
     )
 
     val now = DateHelper.now()

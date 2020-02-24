@@ -38,7 +38,7 @@ import org.make.core.idea._
 import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.{HttpCodes, ParameterExtractors, RequestContext, Validation}
 import scalaoauth2.provider.AuthInfo
 
@@ -419,8 +419,6 @@ final case class IdeaResponse(
   operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "57b1d160-2593-46bd-b7ad-f5e99ba3aa0d")
   questionId: Option[QuestionId],
-  @(ApiModelProperty @field)(dataType = "string", example = "e65fb52e-6438-4074-a79f-adb38fdee544")
-  themeId: Option[ThemeId],
   @(ApiModelProperty @field)(dataType = "string", example = "Activated")
   status: IdeaStatus
 )
@@ -437,7 +435,6 @@ object IdeaResponse {
       country = idea.country,
       operationId = idea.operationId,
       questionId = idea.questionId,
-      themeId = idea.themeId,
       status = idea.status
     )
   }
@@ -450,7 +447,6 @@ object IdeaResponse {
       country = idea.country,
       operationId = idea.operationId,
       questionId = idea.questionId,
-      themeId = idea.themeId,
       status = idea.status
     )
   }

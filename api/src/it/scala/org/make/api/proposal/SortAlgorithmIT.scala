@@ -159,7 +159,6 @@ class SortAlgorithmIT
       userType = UserType.UserTypeUser
     ),
     organisations = Seq.empty,
-    themeId = None,
     tags = Seq.empty,
     selectedStakeTag = None,
     trending = None,

@@ -24,7 +24,7 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 
 import scala.annotation.meta.field
@@ -38,8 +38,6 @@ case class TagResponse(
   weight: Float,
   @(ApiModelProperty @field)(dataType = "string", example = "2392f734-b965-4293-ad45-1073bf1f62c5")
   operationId: Option[OperationId],
-  @(ApiModelProperty @field)(dataType = "string", example = "e5e29c5a-817d-4983-85d5-f7b2b86d514d")
-  themeId: Option[ThemeId],
   @(ApiModelProperty @field)(dataType = "string", example = "1f3757ca-9813-4557-a3b4-295f832b0fd0")
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
@@ -59,7 +57,6 @@ object TagResponse {
       weight = tag.weight,
       operationId = tag.operationId,
       questionId = tag.questionId,
-      themeId = tag.themeId,
       country = tag.country,
       language = tag.language
     )

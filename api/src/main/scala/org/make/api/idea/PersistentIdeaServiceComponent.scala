@@ -30,7 +30,7 @@ import org.make.core.DateHelper
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -130,7 +130,6 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               column.question -> idea.question,
               column.questionId -> idea.questionId.map(_.value),
               column.operationId -> idea.operationId.map(_.value),
-              column.themeId -> idea.themeId.map(_.value),
               column.status -> idea.status.shortName,
               column.createdAt -> DateHelper.now,
               column.updatedAt -> DateHelper.now
@@ -161,7 +160,6 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
             .set(
               column.name -> idea.name,
               column.operationId -> idea.operationId.map(_.value),
-              column.themeId -> idea.themeId.map(_.value),
               column.questionId -> idea.questionId.map(_.value),
               column.country -> idea.country.map(_.value),
               column.language -> idea.language.map(_.value),
@@ -188,7 +186,6 @@ object DefaultPersistentIdeaServiceComponent {
                             question: Option[String],
                             questionId: Option[String],
                             operationId: Option[String],
-                            themeId: Option[String],
                             status: Option[String],
                             createdAt: ZonedDateTime,
                             updatedAt: ZonedDateTime) {
@@ -201,7 +198,6 @@ object DefaultPersistentIdeaServiceComponent {
         question = question,
         questionId = questionId.map(QuestionId.apply),
         operationId = operationId.map(OperationId.apply),
-        themeId = themeId.map(ThemeId.apply),
         status = status.flatMap(IdeaStatus.statusMap.get).getOrElse(IdeaStatus.Activated),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt)
@@ -218,7 +214,6 @@ object DefaultPersistentIdeaServiceComponent {
         "language",
         "country",
         "operation_id",
-        "theme_id",
         "question",
         "status",
         "created_at",
@@ -240,7 +235,6 @@ object DefaultPersistentIdeaServiceComponent {
         question = resultSet.stringOpt(ideaResultName.question),
         questionId = resultSet.stringOpt(ideaResultName.questionId),
         operationId = resultSet.stringOpt(ideaResultName.operationId),
-        themeId = resultSet.stringOpt(ideaResultName.themeId),
         status = resultSet.stringOpt(ideaResultName.status),
         createdAt = resultSet.zonedDateTime(ideaResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(ideaResultName.updatedAt)

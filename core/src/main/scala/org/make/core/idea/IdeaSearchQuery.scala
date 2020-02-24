@@ -27,7 +27,7 @@ import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.core.idea.indexed.IdeaElasticsearchFieldNames
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 
 /**
   * The class holding the entire search query
@@ -195,7 +195,6 @@ object IdeaSearchFilters extends ElasticDsl {
 case class NameSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
 case class QuestionIdSearchFilter(questionId: QuestionId)
 case class OperationIdSearchFilter(operationId: OperationId)
-case class ThemeIdSearchFilter(themeId: ThemeId)
 case class QuestionSearchFilter(question: String)
 case class CountrySearchFilter(country: Country)
 case class LanguageSearchFilter(language: Language)

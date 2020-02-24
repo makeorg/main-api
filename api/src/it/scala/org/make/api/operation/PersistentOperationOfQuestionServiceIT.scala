@@ -89,8 +89,7 @@ class PersistentOperationOfQuestionServiceIT
       country = Country("FR"),
       language = Language("fr"),
       question = "Question ?",
-      operationId = None,
-      themeId = None
+      operationId = None
     )
     val simpleOperation = SimpleOperation(
       operationId = operationOfQuestion.operationId,

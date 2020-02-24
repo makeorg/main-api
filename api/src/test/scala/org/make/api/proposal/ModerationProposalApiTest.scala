@@ -29,7 +29,6 @@ import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.semantic.SimilarIdea
-import org.make.api.theme.{ThemeService, ThemeServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
@@ -54,7 +53,6 @@ class ModerationProposalApiTest
     with IdeaServiceComponent
     with ProposalServiceComponent
     with UserServiceComponent
-    with ThemeServiceComponent
     with OperationServiceComponent
     with QuestionServiceComponent
     with ProposalCoordinatorServiceComponent {
@@ -62,7 +60,6 @@ class ModerationProposalApiTest
   override val proposalService: ProposalService = mock[ProposalService]
 
   override val userService: UserService = mock[UserService]
-  override val themeService: ThemeService = mock[ThemeService]
   override val operationService: OperationService = mock[OperationService]
   override val ideaService: IdeaService = mock[IdeaService]
   override val questionService: QuestionService = mock[QuestionService]
@@ -324,7 +321,6 @@ class ModerationProposalApiTest
             organisationSlug = None
           ),
           labels = proposalSim123.labels,
-          theme = None,
           status = Accepted,
           tags = Seq(),
           votes = proposalSim123.votes,
@@ -364,7 +360,6 @@ class ModerationProposalApiTest
             avatarUrl = None
           ),
           labels = proposalSim124.labels,
-          theme = None,
           status = Accepted,
           tags = Seq(),
           votes = proposalSim124.votes,
@@ -416,7 +411,6 @@ class ModerationProposalApiTest
     organisations = Seq.empty,
     country = Country("TN"),
     language = Language("ar"),
-    themeId = None,
     tags = Seq.empty,
     selectedStakeTag = None,
     myProposal = false,
@@ -447,7 +441,6 @@ class ModerationProposalApiTest
         organisationSlug = None
       ),
       labels = Seq(),
-      theme = None,
       status = Accepted,
       tags = Seq(),
       votes = Seq(
@@ -595,8 +588,7 @@ class ModerationProposalApiTest
               country = Country("FR"),
               language = Language("fr"),
               question = "",
-              operationId = None,
-              themeId = Some(ThemeId("fire and ice"))
+              operationId = None
             )
           )
         )
@@ -610,7 +602,6 @@ class ModerationProposalApiTest
     }
 
     scenario("validation with moderation role") {
-
       Post("/moderation/proposals/123456/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
@@ -859,8 +850,7 @@ class ModerationProposalApiTest
             country = Country("FR"),
             language = Language("fr"),
             question = "",
-            operationId = Some(OperationId("vff")),
-            themeId = None
+            operationId = Some(OperationId("vff"))
           )
         )
       )
@@ -876,8 +866,7 @@ class ModerationProposalApiTest
               country = Country("FR"),
               language = Language("fr"),
               question = "",
-              operationId = Some(OperationId("mieux-vivre-ensemble")),
-              themeId = None
+              operationId = Some(OperationId("mieux-vivre-ensemble"))
             )
           )
         )

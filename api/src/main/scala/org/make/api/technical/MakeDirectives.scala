@@ -46,7 +46,7 @@ import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, ThemeId}
+import org.make.core.reference.Country
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
@@ -277,7 +277,6 @@ trait MakeDirectives
       maybeUser            <- optionalMakeOAuth2
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
       maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
-      maybeTheme           <- optionalHeaderValueByName(`X-Make-Theme-Id`.name)
       maybeOperation       <- optionalHeaderValueByName(`X-Make-Operation`.name)
       maybeSource          <- optionalHeaderValueByName(`X-Make-Source`.name)
       maybeLocation        <- optionalHeaderValueByName(`X-Make-Location`.name)
@@ -293,7 +292,7 @@ trait MakeDirectives
       maybeCustomData      <- optionalHeaderValueByName(`X-Make-Custom-Data`.name)
     } yield {
       val requestContext = RequestContext(
-        currentTheme = maybeTheme.map(ThemeId.apply),
+        currentTheme = None,
         userId = maybeUser.map(_.user.userId),
         requestId = requestId,
         sessionId = SessionId(sessionId),
@@ -594,17 +593,6 @@ trait MakeAuthenticationDirectives extends MakeAuthentication {
 }
 
 case object EmailNotVerifiedRejection extends Rejection
-
-final case class `X-Make-Theme-Id`(override val value: String) extends ModeledCustomHeader[`X-Make-Theme-Id`] {
-  override def companion: ModeledCustomHeaderCompanion[`X-Make-Theme-Id`] = `X-Make-Theme-Id`
-  override def renderInRequests: Boolean = true
-  override def renderInResponses: Boolean = false
-}
-
-object `X-Make-Theme-Id` extends ModeledCustomHeaderCompanion[`X-Make-Theme-Id`] {
-  override val name: String = "x-make-theme-id"
-  override def parse(value: String): Try[`X-Make-Theme-Id`] = Success(new `X-Make-Theme-Id`(value))
-}
 
 final case class `X-Make-Operation`(override val value: String) extends ModeledCustomHeader[`X-Make-Operation`] {
   override def companion: ModeledCustomHeaderCompanion[`X-Make-Operation`] = `X-Make-Operation`

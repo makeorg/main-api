@@ -80,8 +80,7 @@ class OperationApiTest
           language = Language("fr"),
           slug = "first-operation-BR",
           question = "question BR?",
-          operationId = Some(OperationId("firstOperation")),
-          themeId = None
+          operationId = Some(OperationId("firstOperation"))
         ),
         details = OperationOfQuestion(
           questionId = QuestionId("first-question-BR"),
@@ -121,8 +120,7 @@ class OperationApiTest
           language = Language("en"),
           slug = "first-operation-GB",
           question = "question GB?",
-          operationId = Some(OperationId("firstOperation")),
-          themeId = None
+          operationId = Some(OperationId("firstOperation"))
         ),
         details = OperationOfQuestion(
           questionId = QuestionId("first-question-GB"),
@@ -183,8 +181,7 @@ class OperationApiTest
           country = Country("IT"),
           language = Language("it"),
           question = "second question?",
-          operationId = Some(OperationId("secondOperation")),
-          themeId = None
+          operationId = Some(OperationId("secondOperation"))
         ),
         details = OperationOfQuestion(
           questionId = QuestionId("second-question"),

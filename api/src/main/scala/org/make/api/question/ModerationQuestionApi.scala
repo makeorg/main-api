@@ -44,7 +44,7 @@ import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
 import scalaoauth2.provider.AuthInfo
@@ -79,7 +79,6 @@ trait ModerationQuestionApi extends Directives {
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "themeId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string")
     )
@@ -335,7 +334,6 @@ trait DefaultModerationQuestionComponent
             (
               Symbol("slug").?,
               Symbol("operationId").as[OperationId].?,
-              Symbol("themeId").as[ThemeId].?,
               Symbol("country").as[Country].?,
               Symbol("language").as[Language].?,
               Symbol("_start").as[Int].?,
@@ -343,7 +341,7 @@ trait DefaultModerationQuestionComponent
               Symbol("_sort").?,
               Symbol("_order").?
             )
-          ) { (maybeSlug, operationId, themeId, country, language, start, end, sort, order) =>
+          ) { (maybeSlug, operationId, country, language, start, end, sort, order) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireModerationRole(userAuth.user) {
                 val questionIds: Option[Seq[QuestionId]] = if (userAuth.user.roles.contains(RoleAdmin)) {
@@ -354,7 +352,6 @@ trait DefaultModerationQuestionComponent
                 val first: Int = start.getOrElse(0)
                 val request: SearchQuestionRequest = SearchQuestionRequest(
                   maybeQuestionIds = questionIds,
-                  maybeThemeId = themeId,
                   maybeOperationIds = operationId.map(op => Seq(op)),
                   country = country,
                   language = language,

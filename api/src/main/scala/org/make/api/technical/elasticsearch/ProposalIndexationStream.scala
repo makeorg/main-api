@@ -338,7 +338,6 @@ trait ProposalIndexationStream
         ),
       country = proposal.country.getOrElse(Country("FR")),
       language = proposal.language.getOrElse(Language("fr")),
-      themeId = proposal.theme,
       tags = tags,
       selectedStakeTag = selectedStakeTag,
       ideaId = proposal.idea,

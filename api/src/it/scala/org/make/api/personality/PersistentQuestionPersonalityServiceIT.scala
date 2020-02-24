@@ -52,8 +52,7 @@ class PersistentQuestionPersonalityServiceIT
     country = Country("FR"),
     language = Language("fr"),
     question = "question ?",
-    operationId = None,
-    themeId = None
+    operationId = None
   )
 
   val user = TestUtilsIT.user(id = UserId("user-id"))

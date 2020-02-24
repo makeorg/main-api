@@ -50,7 +50,7 @@ import org.make.core.proposal.indexed.{
   SequencePool
 }
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
@@ -150,7 +150,6 @@ trait TestUtils {
                status: ProposalStatus = Accepted,
                idea: Option[IdeaId] = None,
                events: List[ProposalAction] = Nil,
-               theme: Option[ThemeId] = None,
                createdAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T10:10:10.000Z")),
                updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z"))): Proposal = {
     Proposal(
@@ -160,7 +159,6 @@ trait TestUtils {
       slug = SlugHelper(content),
       author = author,
       labels = Seq.empty,
-      theme = theme,
       status = status,
       refusalReason = None,
       tags = tags,
@@ -202,7 +200,6 @@ trait TestUtils {
                       refusalReason: Option[String] = None,
                       ideaId: Option[IdeaId] = None,
                       selectedStakeTag: Option[IndexedTag] = None,
-                      theme: Option[ThemeId] = None,
                       initialProposal: Boolean = false,
                       regularTopScore: Double = 0,
                       regularTopScoreAjustedWithVotes: Double = 0,
@@ -265,7 +262,6 @@ trait TestUtils {
       organisations = Seq.empty,
       country = country,
       language = language,
-      themeId = theme,
       tags = Seq.empty,
       selectedStakeTag = selectedStakeTag,
       ideaId = ideaId,

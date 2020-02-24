@@ -50,7 +50,6 @@ trait InsertOperationFixtureData extends Migration with ProposalHelper with Stri
           FixtureDataLine(
             email = email,
             content = content,
-            theme = None,
             operation = None,
             tags = proposalTags.split('|').toSeq,
             labels = Seq.empty,
@@ -79,7 +78,7 @@ trait InsertOperationFixtureData extends Migration with ProposalHelper with Stri
     api.operationService.findOneBySlug(operationSlug).flatMap {
       case None => Future.failed(new IllegalStateException(s"operation $operationSlug doesn't exist"))
       case Some(operation) =>
-        api.questionService.findQuestion(None, Some(operation.operationId), country, language).flatMap {
+        api.questionService.findQuestion(Some(operation.operationId), country, language).flatMap {
           case None => Future.failed(new IllegalStateException(s"No question for operation $operationSlug"))
           case Some(q) =>
             this.question = q

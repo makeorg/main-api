@@ -95,8 +95,7 @@ class ModerationQuestionApiTest
       Country("FR"),
       Language("fr"),
       "Slug ?",
-      Some(OperationId("operation-id")),
-      None
+      Some(OperationId("operation-id"))
     )
   val baseOperationOfQuestion = OperationOfQuestion(
     QuestionId("question-id"),
@@ -293,7 +292,6 @@ class ModerationQuestionApiTest
                 organisations = Seq.empty,
                 country = Country("FR"),
                 language = Language("fr"),
-                themeId = None,
                 tags = Seq.empty,
                 selectedStakeTag = None,
                 votesCount = 0,
@@ -344,7 +342,6 @@ class ModerationQuestionApiTest
                 organisationSlug = None
               ),
               labels = Seq(),
-              theme = None,
               status = Accepted,
               tags = Seq(),
               votes = Seq(Vote.empty(VoteKey.Agree), Vote.empty(VoteKey.Disagree), Vote.empty(VoteKey.Neutral)),

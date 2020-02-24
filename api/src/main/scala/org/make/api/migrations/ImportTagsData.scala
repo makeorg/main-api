@@ -45,7 +45,7 @@ trait ImportTagsData extends Migration with StrictLogging with TagHelper {
         case None =>
           throw new IllegalStateException(s"Unable to find an operation with slug $operationSlug")
         case Some(operation) =>
-          api.questionService.findQuestion(None, Some(operation.operationId), country, language)
+          api.questionService.findQuestion(Some(operation.operationId), country, language)
       }
       .map {
         case None =>

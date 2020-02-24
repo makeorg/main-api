@@ -30,7 +30,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import scalikejdbc._
 
@@ -215,7 +215,6 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.display -> tag.display.shortName,
               column.tagTypeId -> tag.tagTypeId.value,
               column.operationId -> tag.operationId.map(_.value),
-              column.themeId -> tag.themeId.map(_.value),
               column.questionId -> tag.questionId.map(_.value),
               column.weight -> tag.weight,
               column.country -> tag.country.value,
@@ -239,7 +238,6 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.display -> tag.display.shortName,
               column.tagTypeId -> tag.tagTypeId.value,
               column.operationId -> tag.operationId.map(_.value),
-              column.themeId -> tag.themeId.map(_.value),
               column.questionId -> tag.questionId.map(_.value),
               column.weight -> tag.weight,
               column.country -> tag.country.value,
@@ -373,7 +371,6 @@ object DefaultPersistentTagServiceComponent {
                            display: TagDisplay,
                            tagTypeId: String,
                            operationId: Option[String],
-                           themeId: Option[String],
                            questionId: Option[String],
                            weight: Float,
                            country: String,
@@ -387,7 +384,6 @@ object DefaultPersistentTagServiceComponent {
         display = display,
         tagTypeId = TagTypeId(tagTypeId),
         operationId = operationId.map(OperationId(_)),
-        themeId = themeId.map(ThemeId(_)),
         questionId = questionId.map(QuestionId(_)),
         weight = weight,
         country = Country(country),
@@ -403,7 +399,6 @@ object DefaultPersistentTagServiceComponent {
       "display",
       "tag_type_id",
       "operation_id",
-      "theme_id",
       "weight",
       "country",
       "language",
@@ -426,7 +421,6 @@ object DefaultPersistentTagServiceComponent {
         tagTypeId = resultSet.string(tagResultName.tagTypeId),
         operationId = resultSet.stringOpt(tagResultName.operationId),
         questionId = resultSet.stringOpt(tagResultName.questionId),
-        themeId = resultSet.stringOpt(tagResultName.themeId),
         weight = resultSet.float(tagResultName.weight),
         country = resultSet.string(tagResultName.country),
         language = resultSet.string(tagResultName.language),

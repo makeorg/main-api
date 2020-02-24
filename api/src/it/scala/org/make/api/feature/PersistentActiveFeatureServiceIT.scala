@@ -49,8 +49,7 @@ class PersistentActiveFeatureServiceIT
           country = Country("FR"),
           language = Language("fr"),
           question = "question ?",
-          operationId = None,
-          themeId = None
+          operationId = None
         )
       ),
       Timeout(10.seconds)

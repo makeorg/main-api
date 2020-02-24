@@ -76,7 +76,7 @@ class WidgetApiTest
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
 
   feature("start sequence by question slug") {
-    val baseQuestion = Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "Slug ?", None, None)
+    val baseQuestion = Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "Slug ?", None)
     val baseOperationOfQuestion = OperationOfQuestion(
       QuestionId("question-id"),
       OperationId("foo-operation-id"),

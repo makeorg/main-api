@@ -56,7 +56,7 @@ import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, ValidationError}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -240,8 +240,7 @@ class UserApiTest
               slug = "the-question",
               country = Country("FR"),
               language = Language("fr"),
-              question = "question ?",
-              themeId = None
+              question = "question ?"
             )
           )
         )
@@ -981,7 +980,6 @@ class UserApiTest
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Accepted,
@@ -998,7 +996,7 @@ class UserApiTest
     val indexedProposal2 =
       indexedProposal1.copy(id = ProposalId("proposal-2"), operationId = Some(OperationId("operation2")))
     val indexedProposal3 =
-      indexedProposal1.copy(id = ProposalId("proposal-3"), operationId = None, themeId = Some(ThemeId("theme1")))
+      indexedProposal1.copy(id = ProposalId("proposal-3"), operationId = None)
     val proposalsResult: Seq[ProposalResponse] =
       Seq(
         ProposalResponse(
@@ -1114,7 +1112,6 @@ class UserApiTest
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Accepted,
@@ -1129,7 +1126,7 @@ class UserApiTest
       segment = None
     )
     val indexedProposal2 = indexedProposal1.copy(operationId = Some(OperationId("operation2")))
-    val indexedProposal3 = indexedProposal1.copy(operationId = None, themeId = Some(ThemeId("theme1")))
+    val indexedProposal3 = indexedProposal1.copy(operationId = None)
     val proposalsResult: Seq[ProposalResponse] =
       Seq(
         ProposalResponse(

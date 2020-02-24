@@ -32,7 +32,7 @@ import org.make.core.personality.PersonalityRole
 import org.make.core.personality.PersonalityRole.roleMap
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.question.{QuestionId, TopProposalsMode}
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.{UserId, UserType}
 
@@ -82,11 +82,6 @@ trait ParameterExtractors {
   implicit val userIdFromStringUnmarshaller: Unmarshaller[String, UserId] =
     Unmarshaller.strict[String, UserId] { string =>
       UserId(string)
-    }
-
-  implicit val themeIdFromStringUnmarshaller: Unmarshaller[String, ThemeId] =
-    Unmarshaller.strict[String, ThemeId] { string =>
-      ThemeId(string)
     }
 
   implicit val labelIdFromStringUnmarshaller: Unmarshaller[String, LabelId] =

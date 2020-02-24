@@ -22,7 +22,7 @@ package org.make.api.question
 import org.make.api.DatabaseTest
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -40,8 +40,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("FR"),
         language = Language("fr"),
         question = "some question",
-        operationId = Some(OperationId("my-operation-id")),
-        themeId = Some(ThemeId("my-theme-id"))
+        operationId = Some(OperationId("my-operation-id"))
       )
 
       whenReady(persistentQuestionService.getById(questionId = question.questionId), Timeout(2.seconds)) {
@@ -69,8 +68,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("aa"),
         question = "some question1",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
 
       val question2 = Question(
@@ -79,8 +77,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("bb"),
         question = "some question2",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
 
       val question3 = Question(
@@ -89,8 +86,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("BB"),
         language = Language("aa"),
         question = "some question3",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
 
       val question4 = Question(
@@ -99,8 +95,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("BB"),
         language = Language("bb"),
         question = "some question4",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
 
       val insertAll: Future[Unit] = for {
@@ -177,8 +172,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("aa"),
         question = "some question",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
 
       val question2 = Question(
@@ -187,8 +181,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("bb"),
         question = "some question",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
 
       whenReady(persistentQuestionService.persist(question1), Timeout(5.seconds)) { _ =>
@@ -223,8 +216,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("aa"),
         question = "some question 1",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
       val question2 = Question(
         questionId = QuestionId("question-slugorid-id-2"),
@@ -232,8 +224,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("bb"),
         question = "some question 2",
-        operationId = None,
-        themeId = None
+        operationId = None
       )
 
       val insertQuestions: Future[Unit] = for {
@@ -269,8 +260,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("FR"),
         language = Language("fr"),
         question = "some question ?",
-        operationId = Some(OperationId("operation-id")),
-        themeId = None
+        operationId = Some(OperationId("operation-id"))
       )
 
       whenReady(persistentQuestionService.persist(questionToUpdate), Timeout(5.seconds)) { _ =>
@@ -301,7 +291,6 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         question.language should be(Language("en"))
         question.question should be("new question ?")
         question.operationId should be(Some(OperationId("operation-id")))
-        question.themeId should be(None)
       }
     }
   }

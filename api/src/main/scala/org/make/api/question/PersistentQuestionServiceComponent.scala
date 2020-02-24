@@ -29,7 +29,7 @@ import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import scalikejdbc.{ResultName, WrappedResultSet, _}
 
 import scala.concurrent.Future
@@ -72,7 +72,6 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.language.map(language => sqls.eq(questionAlias.language, language.value)),
                 request.maybeOperationIds
                   .map(operationIds                      => sqls.in(questionAlias.operationId, operationIds.map(_.value))),
-                request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
                 request.maybeSlug.map(slug               => sqls.eq(questionAlias.slug, slug)),
                 request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )
@@ -112,7 +111,6 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.language.map(language => sqls.eq(questionAlias.language, language.value)),
                 request.maybeOperationIds
                   .map(operationIds                      => sqls.in(questionAlias.operationId, operationIds.map(_.value))),
-                request.maybeThemeId.map(themeId         => sqls.eq(questionAlias.themeId, themeId.value)),
                 request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )
             )
@@ -172,7 +170,6 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
               column.question -> question.question,
               column.country -> question.country.value,
               column.language -> question.language.value,
-              column.themeId -> question.themeId.map(_.value),
               column.operationId -> question.operationId.map(_.value)
             )
         }.execute().apply()
@@ -191,7 +188,6 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
               PersistentQuestion.column.question -> question.question,
               PersistentQuestion.column.slug -> question.slug,
               PersistentQuestion.column.operationId -> question.operationId.map(_.value),
-              PersistentQuestion.column.themeId -> question.themeId.map(_.value),
               PersistentQuestion.column.updatedAt -> now
             )
             .where(sqls.eq(PersistentQuestion.column.questionId, question.questionId.value))
@@ -220,8 +216,7 @@ object DefaultPersistentQuestionServiceComponent {
                                 slug: String,
                                 createdAt: ZonedDateTime,
                                 updatedAt: ZonedDateTime,
-                                operationId: Option[String],
-                                themeId: Option[String]) {
+                                operationId: Option[String]) {
 
     def toQuestion: Question = {
       Question(
@@ -231,7 +226,6 @@ object DefaultPersistentQuestionServiceComponent {
         language = Language(this.language),
         question = this.question,
         operationId = this.operationId.map(OperationId(_)),
-        themeId = this.themeId.map(ThemeId(_))
       )
     }
   }
@@ -239,17 +233,7 @@ object DefaultPersistentQuestionServiceComponent {
   object PersistentQuestion extends SQLSyntaxSupport[PersistentQuestion] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq(
-        "question_id",
-        "country",
-        "language",
-        "question",
-        "created_at",
-        "updated_at",
-        "operation_id",
-        "theme_id",
-        "slug"
-      )
+      Seq("question_id", "country", "language", "question", "created_at", "updated_at", "operation_id", "slug")
 
     override val tableName: String = "question"
 
@@ -269,8 +253,7 @@ object DefaultPersistentQuestionServiceComponent {
         question = resultSet.string(questionResultName.question),
         createdAt = resultSet.zonedDateTime(questionResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(questionResultName.updatedAt),
-        operationId = resultSet.stringOpt(questionResultName.operationId),
-        themeId = resultSet.stringOpt(questionResultName.themeId)
+        operationId = resultSet.stringOpt(questionResultName.operationId)
       )
     }
   }

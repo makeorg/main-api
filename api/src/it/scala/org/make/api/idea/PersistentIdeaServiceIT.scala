@@ -41,7 +41,6 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
     language = Some(Language("fr")),
     country = Some(Country("FR")),
     operationId = Some(OperationId("operation")),
-    themeId = None,
     question = Some("question"),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())

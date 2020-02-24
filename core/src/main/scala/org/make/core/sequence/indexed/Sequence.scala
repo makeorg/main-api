@@ -27,7 +27,6 @@ import org.make.core.CirceFormatters
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.proposal.indexed.IndexedProposal
-import org.make.core.reference.{ThemeId, ThemeTranslation}
 import org.make.core.sequence._
 
 import scala.concurrent.Future
@@ -40,11 +39,6 @@ object SequenceElasticsearchFieldNames {
   val status: String = "status"
   val createdAt: String = "createdAt"
   val updatedAt: String = "updatedAt"
-  val themes: String = "themes"
-  val themeId: String = "themes.themeId"
-  val themeTranslation: String = "themes.translation"
-  val themeTranslationTitle: String = "themes.translation.title"
-  val themeTranslationLanguage: String = "themes.translation.language"
   val proposalIds: String = "proposal.proposalId"
   val contextOperation: String = "context.operation"
   val contextSource: String = "context.source"
@@ -55,13 +49,6 @@ object SequenceElasticsearchFieldNames {
 }
 
 case class SequencesResult(total: Future[Int], results: Future[Seq[IndexedSequence]])
-
-case class IndexedSequenceTheme(themeId: ThemeId, translation: Seq[ThemeTranslation])
-
-object IndexedSequenceTheme {
-  implicit val encoder: Encoder[IndexedSequenceTheme] = deriveEncoder[IndexedSequenceTheme]
-  implicit val decoder: Decoder[IndexedSequenceTheme] = deriveDecoder[IndexedSequenceTheme]
-}
 
 case class IndexedSequenceProposalId(proposalId: ProposalId)
 
@@ -78,7 +65,6 @@ case class IndexedSequence(id: SequenceId,
                            createdAt: ZonedDateTime,
                            updatedAt: ZonedDateTime,
                            context: Option[Context],
-                           themes: Seq[IndexedSequenceTheme],
                            operationId: Option[OperationId],
                            proposals: Seq[IndexedSequenceProposalId],
                            searchable: Boolean)
@@ -108,7 +94,6 @@ final case class IndexedStartSequence(id: SequenceId,
                                       title: String,
                                       slug: String,
                                       translation: Seq[SequenceTranslation] = Seq.empty,
-                                      themes: Seq[IndexedSequenceTheme],
                                       proposals: Seq[IndexedProposal])
 
 object IndexedStartSequence {

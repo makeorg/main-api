@@ -43,7 +43,7 @@ import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper}
@@ -206,7 +206,6 @@ class ProposalSearchEngineIT
       userType = UserType.UserTypeUser
     ),
     organisations = Seq.empty,
-    themeId = None,
     tags = Seq.empty,
     selectedStakeTag = None,
     trending = None,
@@ -297,7 +296,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = Some(ThemeId("foo-theme")),
       tags = Seq(tagAlpha, tagBeta, tagGamma, tagDelta),
       selectedStakeTag = Some(tagGamma),
       status = ProposalStatus.Accepted,
@@ -375,7 +373,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = Some(ThemeId("foo-theme")),
       tags = Seq(tagAlpha, tagBeta, tagDelta),
       selectedStakeTag = Some(tagBeta),
       status = ProposalStatus.Accepted,
@@ -455,7 +452,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq(tagBeta),
       selectedStakeTag = Some(tagBeta),
       operationId = None,
@@ -533,7 +529,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq(tagBeta),
       selectedStakeTag = Some(tagDelta),
       status = ProposalStatus.Accepted,
@@ -611,7 +606,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Accepted,
@@ -689,7 +683,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Accepted,
@@ -765,7 +758,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Accepted,
@@ -841,7 +833,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Accepted,
@@ -924,7 +915,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Pending,
@@ -1004,7 +994,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Pending,
@@ -1084,7 +1073,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeOrganisation
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Pending,
@@ -1164,7 +1152,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypePersonality
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Pending,
@@ -1242,7 +1229,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Pending,
@@ -1320,7 +1306,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Pending,
@@ -1399,7 +1384,6 @@ class ProposalSearchEngineIT
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      themeId = None,
       tags = Seq.empty,
       selectedStakeTag = None,
       status = ProposalStatus.Pending,

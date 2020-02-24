@@ -184,8 +184,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         country = parameters.country,
         language = parameters.language,
         question = parameters.question,
-        operationId = Some(parameters.operationId),
-        themeId = None
+        operationId = Some(parameters.operationId)
       )
 
       val operationOfQuestion = OperationOfQuestion(

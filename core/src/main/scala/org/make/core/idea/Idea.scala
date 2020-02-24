@@ -26,7 +26,7 @@ import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Language}
 import org.make.core.{CirceFormatters, MakeSerializable, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
@@ -38,7 +38,6 @@ final case class Idea(ideaId: IdeaId,
                       question: Option[String] = None,
                       operationId: Option[OperationId] = None,
                       questionId: Option[QuestionId] = None,
-                      themeId: Option[ThemeId] = None,
                       status: IdeaStatus = IdeaStatus.Activated,
                       override val createdAt: Option[ZonedDateTime],
                       override val updatedAt: Option[ZonedDateTime])
@@ -48,7 +47,7 @@ final case class Idea(ideaId: IdeaId,
 object Idea extends CirceFormatters {
 
   implicit val ideaFormatter: RootJsonFormat[Idea] =
-    DefaultJsonProtocol.jsonFormat11(Idea.apply)
+    DefaultJsonProtocol.jsonFormat10(Idea.apply)
 
   implicit val encoder: Encoder[Idea] = deriveEncoder[Idea]
   implicit val decoder: Decoder[Idea] = deriveDecoder[Idea]

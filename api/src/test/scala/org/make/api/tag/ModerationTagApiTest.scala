@@ -56,8 +56,7 @@ class ModerationTagApiTest
           Country("FR"),
           Language("fr"),
           "?",
-          Some(OperationId("1234-1234-1234-1234")),
-          None
+          Some(OperationId("1234-1234-1234-1234"))
         )
       )
     )
@@ -75,7 +74,6 @@ class ModerationTagApiTest
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = Some(OperationId("operation-id")),
-    themeId = None,
     country = Country("FR"),
     language = Language("fr"),
     questionId = Some(QuestionId("1234-1234-1234-1234"))

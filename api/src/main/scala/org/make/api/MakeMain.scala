@@ -141,7 +141,6 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   val migrations: Seq[Migration] =
     Seq(
-      CreateQuestions,
       CreateSequenceConfigurations,
       // ReloadSequences should always be the last in this list
       ReloadSequences

@@ -70,7 +70,6 @@ class IdeaMappingServiceTest
     weight = 0.0F,
     operationId = None,
     questionId = Some(QuestionId("my-question")),
-    themeId = None,
     country = Country("FR"),
     language = Language("fr")
   )
@@ -155,7 +154,6 @@ class IdeaMappingServiceTest
           organisations = Seq.empty,
           country = Country("FR"),
           language = Language("fr"),
-          themeId = None,
           question = None,
           tags = tags.map(tagId => IndexedTag(TagId(tagId), tagId, display = true)),
           selectedStakeTag = None,
@@ -178,7 +176,6 @@ class IdeaMappingServiceTest
           weight = weight,
           operationId = None,
           questionId = None,
-          themeId = None,
           country = Country("Fr"),
           language = Language("fr")
         )
@@ -389,8 +386,7 @@ class IdeaMappingServiceTest
               country = Country("FR"),
               language = Language("fr"),
               question = "my question ?",
-              operationId = None,
-              themeId = None
+              operationId = None
             )
           )
         )
@@ -445,8 +441,7 @@ class IdeaMappingServiceTest
               country = Country("FR"),
               language = Language("fr"),
               question = "my question ?",
-              operationId = None,
-              themeId = None
+              operationId = None
             )
           )
         )

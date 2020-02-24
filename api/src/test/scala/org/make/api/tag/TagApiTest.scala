@@ -52,7 +52,6 @@ class TagApiTest
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = None,
-    themeId = None,
     country = Country("FR"),
     language = Language("fr"),
     questionId = None

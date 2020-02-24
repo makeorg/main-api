@@ -94,7 +94,6 @@ import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage._
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
-import org.make.api.theme.{DefaultPersistentThemeServiceComponent, DefaultThemeServiceComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user._
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
@@ -199,7 +198,6 @@ trait MakeApi
     with DefaultPersistentSequenceConfigurationServiceComponent
     with DefaultPersistentTagServiceComponent
     with DefaultPersistentTagTypeServiceComponent
-    with DefaultPersistentThemeServiceComponent
     with DefaultPersistentTokenServiceComponent
     with DefaultPersistentTopIdeaServiceComponent
     with DefaultPersistentTopIdeaCommentServiceComponent
@@ -234,7 +232,6 @@ trait MakeApi
     with DefaultTagApiComponent
     with DefaultTagServiceComponent
     with DefaultTagTypeServiceComponent
-    with DefaultThemeServiceComponent
     with DefaultTokenGeneratorComponent
     with DefaultTopIdeaServiceComponent
     with DefaultTopIdeaCommentServiceComponent
