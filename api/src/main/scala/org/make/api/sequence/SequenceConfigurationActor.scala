@@ -70,6 +70,9 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
     case GetPersistentSequenceConfiguration(sequenceId) =>
       pipe(persistentSequenceConfigurationService.findOne(sequenceId).map(StoredSequenceConfiguration.apply))
         .to(sender())
+    case GetPersistentSequenceConfigurationByQuestionId(questionId) =>
+      pipe(persistentSequenceConfigurationService.findOne(questionId).map(StoredSequenceConfiguration.apply))
+        .to(sender())
   }
 
 }
@@ -84,6 +87,8 @@ object SequenceConfigurationActor {
   case class SetSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
       extends SequenceConfigurationActorProtocol
   case class GetPersistentSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
+  case class GetPersistentSequenceConfigurationByQuestionId(questionId: QuestionId)
+      extends SequenceConfigurationActorProtocol
 
   case class CachedSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
   case class StoredSequenceConfiguration(sequenceConfiguration: Option[SequenceConfiguration])

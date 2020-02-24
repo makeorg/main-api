@@ -23,11 +23,12 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.extensions.ScalikeSupport._
 import org.make.api.proposal.SelectionAlgorithmName
 import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.PersistentSequenceConfiguration
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, StringValue}
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
 import scalikejdbc._
@@ -40,6 +41,7 @@ trait PersistentSequenceConfigurationComponent {
 
 trait PersistentSequenceConfigurationService {
   def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]]
+  def findOne(questionId: QuestionId): Future[Option[SequenceConfiguration]]
   def findAll(): Future[Seq[SequenceConfiguration]]
   def persist(sequenceConfiguration: SequenceConfiguration): Future[Boolean]
   def delete(questionId: QuestionId): Future[Unit]
@@ -59,18 +61,24 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     private val alias = PersistentSequenceConfiguration.alias
     private val column = PersistentSequenceConfiguration.column
 
-    override def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] = {
+    private def findOne(name: SQLSyntax, value: StringValue) = {
       implicit val context: EC = readExecutionContext
       val futurePersistentTag = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentSequenceConfiguration.as(alias))
-            .where(sqls.eq(alias.sequenceId, sequenceId.value))
+            .where(sqls.eq(name, value))
         }.map(PersistentSequenceConfiguration.apply()).single.apply
       })
 
       futurePersistentTag.map(_.map(_.toSequenceConfiguration))
     }
+
+    override def findOne(sequenceId: SequenceId): Future[Option[SequenceConfiguration]] =
+      findOne(alias.sequenceId, sequenceId)
+
+    override def findOne(questionId: QuestionId): Future[Option[SequenceConfiguration]] =
+      findOne(alias.questionId, questionId)
 
     override def findAll(): Future[Seq[SequenceConfiguration]] = {
       implicit val context: EC = readExecutionContext

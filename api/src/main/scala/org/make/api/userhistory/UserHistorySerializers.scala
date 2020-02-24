@@ -332,14 +332,15 @@ object UserHistorySerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
-  private val logUserStartSequenceEventSerializer: JsonPersister[LogUserStartSequenceEvent, V3] =
-    json.persister[LogUserStartSequenceEvent, V3](
+  private val logUserStartSequenceEventSerializer: JsonPersister[LogUserStartSequenceEvent, V4] =
+    json.persister[LogUserStartSequenceEvent, V4](
       "user-history-start-sequence",
       from[V1]
         .to[V2](
           _.update(Symbol("action") / Symbol("arguments") / Symbol("includedProposals") ! set[Seq[String]](Seq.empty))
         )
         .to[V3](_.update(Symbol("context") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
+        .to[V4](_.update(Symbol("action") / Symbol("questionId") ! set[Option[String]](None)))
     )
 
   private val logUserAnonymizedEventSerializer: JsonPersister[LogUserAnonymizedEvent, V2] =

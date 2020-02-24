@@ -32,7 +32,7 @@ import org.make.api.feature.{
   FeatureServiceComponent
 }
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
-import org.make.api.operation.{PersistentOperationOfQuestionService, _}
+import org.make.api.operation._
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
 import org.make.api.proposal._
@@ -82,8 +82,6 @@ class QuestionApiTest
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
-  override val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
-    mock[PersistentOperationOfQuestionService]
   override val operationService: OperationService = mock[OperationService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
   override val partnerService: PartnerService = mock[PartnerService]
@@ -149,56 +147,33 @@ class QuestionApiTest
   )
 
   feature("start sequence by question id") {
-    val baseOperationOfQuestion = OperationOfQuestion(
-      QuestionId("question-id"),
-      OperationId("foo-operation-id"),
-      None,
-      None,
-      "Foo operation",
-      SequenceId("sequence-id"),
-      canPropose = true,
-      sequenceCardsConfiguration = SequenceCardsConfiguration(
-        introCard = IntroCard(enabled = true, title = None, description = None),
-        pushProposalCard = PushProposalCard(enabled = true),
-        signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-        finalCard = FinalCard(
-          enabled = true,
-          sharingEnabled = false,
-          title = None,
-          shareDescription = None,
-          learnMoreTitle = None,
-          learnMoreTextButton = None,
-          linkUrl = None
-        )
-      ),
-      aboutUrl = None,
-      metas = Metas(title = None, description = None, picture = None),
-      theme = QuestionTheme.default,
-      description = OperationOfQuestion.defaultDescription,
-      consultationImage = None,
-      descriptionImage = None,
-      displayResults = false
-    )
     scenario("valid question") {
-      when(persistentOperationOfQuestionService.getById(any[QuestionId]))
-        .thenReturn(Future.successful(Some(baseOperationOfQuestion)))
+      val questionId = QuestionId("question-id")
       when(
         sequenceService.startNewSequence(
           maybeUserId = ArgumentMatchers.any[Option[UserId]],
-          sequenceId = ArgumentMatchers.any[SequenceId],
+          questionId = matches(questionId),
           includedProposals = ArgumentMatchers.any[Seq[ProposalId]],
           tagsIds = ArgumentMatchers.any[Option[Seq[TagId]]],
           requestContext = ArgumentMatchers.any[RequestContext]
         )
       ).thenReturn(Future.successful(Some(SequenceResult(SequenceId("sequence-id"), "title", "slug", Seq.empty))))
-      Get("/questions/question-id/start-sequence") ~> routes ~> check {
+      Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
     scenario("invalid question") {
-      when(persistentOperationOfQuestionService.getById(any[QuestionId]))
-        .thenReturn(Future.successful(None))
-      Get("/questions/question-id/start-sequence") ~> routes ~> check {
+      val questionId = QuestionId("invalid-question-id")
+      when(
+        sequenceService.startNewSequence(
+          maybeUserId = ArgumentMatchers.any[Option[UserId]],
+          questionId = matches(questionId),
+          includedProposals = ArgumentMatchers.any[Seq[ProposalId]],
+          tagsIds = ArgumentMatchers.any[Option[Seq[TagId]]],
+          requestContext = ArgumentMatchers.any[RequestContext]
+        )
+      ).thenReturn(Future.successful(None))
+      Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }

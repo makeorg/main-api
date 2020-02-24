@@ -30,11 +30,7 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
-import org.make.api.operation.{
-  OperationOfQuestionServiceComponent,
-  OperationServiceComponent,
-  PersistentOperationOfQuestionServiceComponent
-}
+import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent, ProposalsResultResponse}
@@ -226,7 +222,6 @@ trait QuestionApi extends Directives {
 trait DefaultQuestionApiComponent
     extends QuestionApiComponent
     with SequenceServiceComponent
-    with PersistentOperationOfQuestionServiceComponent
     with MakeAuthenticationDirectives
     with StrictLogging
     with ParameterExtractors {
@@ -332,19 +327,17 @@ trait DefaultQuestionApiComponent
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
             parameters(Symbol("include").*) { includes =>
-              provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(questionId)) { operationOfQuestion =>
-                provideAsyncOrNotFound(
-                  sequenceService
-                    .startNewSequence(
-                      maybeUserId = userAuth.map(_.user.userId),
-                      sequenceId = operationOfQuestion.landingSequenceId,
-                      includedProposals = includes.toSeq.map(ProposalId(_)),
-                      tagsIds = None,
-                      requestContext = requestContext
-                    )
-                ) { sequences =>
-                  complete(sequences)
-                }
+              provideAsyncOrNotFound(
+                sequenceService
+                  .startNewSequence(
+                    maybeUserId = userAuth.map(_.user.userId),
+                    questionId = questionId,
+                    includedProposals = includes.toSeq.map(ProposalId(_)),
+                    tagsIds = None,
+                    requestContext = requestContext
+                  )
+              ) { sequences =>
+                complete(sequences)
               }
             }
           }

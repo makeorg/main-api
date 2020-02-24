@@ -64,7 +64,7 @@ import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.segment.DefaultSegmentServiceComponent
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
-import org.make.api.sequence.{SequenceApi, _}
+import org.make.api.sequence._
 import org.make.api.sessionhistory.{
   ConcurrentModification,
   DefaultSessionHistoryCoordinatorServiceComponent,
@@ -220,7 +220,6 @@ trait MakeApi
     with DefaultSemanticComponent
     with DefaultSemanticConfigurationComponent
     with DefaultSendMailPublisherServiceComponent
-    with DefaultSequenceApiComponent
     with DefaultSequenceConfigurationComponent
     with DefaultSequenceServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
@@ -355,7 +354,6 @@ trait MakeApi
       classOf[ProposalApi],
       classOf[QuestionApi],
       classOf[SecurityApi],
-      classOf[SequenceApi],
       classOf[TagApi],
       classOf[TrackingApi],
       classOf[UserApi],
@@ -419,7 +417,6 @@ trait MakeApi
       proposalApi.routes ~
       questionApi.routes ~
       securityApi.routes ~
-      sequenceApi.routes ~
       tagApi.routes ~
       trackingApi.routes ~
       userApi.routes ~

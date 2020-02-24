@@ -24,7 +24,6 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
@@ -74,8 +73,7 @@ trait DefaultWidgetApiComponent
     extends WidgetApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors
-    with PersistentQuestionServiceComponent
-    with PersistentOperationOfQuestionServiceComponent {
+    with PersistentQuestionServiceComponent {
   this: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -99,19 +97,16 @@ trait DefaultWidgetApiComponent
                     .find(SearchQuestionRequest(maybeSlug = Some(questionSlug)))
                     .map(_.headOption)
                 ) { question =>
-                  provideAsyncOrNotFound(persistentOperationOfQuestionService.getById(question.questionId)) {
-                    operationOfQuestion =>
-                      provideAsync(
-                        widgetService.startNewWidgetSequence(
-                          maybeUserId = userAuth.map(_.user.userId),
-                          sequenceId = operationOfQuestion.landingSequenceId,
-                          tagsIds = tagsIds,
-                          limit = limit,
-                          requestContext = requestContext
-                        )
-                      ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
-                        complete(proposalsResultSeededResponse)
-                      }
+                  provideAsync(
+                    widgetService.startNewWidgetSequence(
+                      maybeUserId = userAuth.map(_.user.userId),
+                      questionId = question.questionId,
+                      tagsIds = tagsIds,
+                      limit = limit,
+                      requestContext = requestContext
+                    )
+                  ) { proposalsResultSeededResponse: ProposalsResultSeededResponse =>
+                    complete(proposalsResultSeededResponse)
                   }
                 }
             }
