@@ -76,7 +76,8 @@ libraryDependencies ++= Seq(
   Dependencies.staminaTestKit,
   Dependencies.alpakka,
   Dependencies.refinedScala,
-  Dependencies.refinedCirce
+  Dependencies.refinedCirce,
+  Dependencies.refinedScalaCheck
 )
 
 libraryDependencies += {
