@@ -120,14 +120,14 @@ object Dependencies {
   val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
-  val stamina: ModuleID = "com.scalapenos" %% "stamina-json" % "0.1.5"
-  val sprayJson: ModuleID = "io.spray"     %% "spray-json"   % "1.3.5"
-  val jsonLenses = "net.virtual-void"      %% "json-lenses"  % "0.6.2"
+  val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % "0.1.5"
+  val sprayJson: ModuleID = "io.spray"        %% "spray-json"   % "1.3.5"
+  val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"
+  val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.14.0"
 
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"       %% "akka-testkit"             % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka" %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaCheck: ModuleID = "org.scalacheck"        %% "scalacheck"               % "1.14.0"        % "it,test"
   val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.8"         % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"   %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
   val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.24.5"        % "it,test"
