@@ -138,32 +138,46 @@ final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorith
 object ActorVoteAlgorithm { val shortName: String = "actorVote" }
 
 // Sort proposal by their controversy score
-case class ControversyAlgorithm(treshold: Double) extends SortAlgorithm {
+case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
       .sortByFieldDesc(ProposalElasticsearchFieldNames.controversy)
-      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.controversy).gte(treshold))
+      .postFilter(
+        ElasticApi
+          .boolQuery()
+          .must(
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.controversy).gte(threshold),
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountThreshold)
+          )
+      )
   }
 }
 case object ControversyAlgorithm { val shortName: String = "controversy" }
 
 // Sort proposal by their top score
-case class PopularAlgorithm(votesCountTreshold: Int) extends SortAlgorithm {
+case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
       .sortByFieldDesc(ProposalElasticsearchFieldNames.scoreLowerBound)
-      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountTreshold))
+      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountThreshold))
   }
 }
 
 case object PopularAlgorithm { val shortName: String = "popular" }
 
-// Sort proposal by their controversy score
-case class RealisticAlgorithm(treshold: Double) extends SortAlgorithm {
+// Sort proposal by their realistic score
+case class RealisticAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
       .sortByFieldDesc(ProposalElasticsearchFieldNames.scoreRealistic)
-      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.scoreRealistic).gte(treshold))
+      .postFilter(
+        ElasticApi
+          .boolQuery()
+          .must(
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.scoreRealistic).gte(threshold),
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountThreshold)
+          )
+      )
   }
 }
 case object RealisticAlgorithm { val shortName: String = "realistic" }
@@ -201,15 +215,17 @@ case object AlgorithmSelector {
 
   def select(sortAlgorithm: Option[String], randomSeed: Int, conf: SortAlgorithmConfiguration): Option[SortAlgorithm] =
     sortAlgorithm match {
-      case Some(RandomAlgorithm.shortName)            => Some(RandomAlgorithm(randomSeed))
-      case Some(ActorVoteAlgorithm.shortName)         => Some(ActorVoteAlgorithm(randomSeed))
-      case Some(ControversyAlgorithm.shortName)       => Some(ControversyAlgorithm(conf.controversyTreshold))
-      case Some(PopularAlgorithm.shortName)           => Some(PopularAlgorithm(conf.popularVoteCountTreshold))
+      case Some(RandomAlgorithm.shortName)    => Some(RandomAlgorithm(randomSeed))
+      case Some(ActorVoteAlgorithm.shortName) => Some(ActorVoteAlgorithm(randomSeed))
+      case Some(ControversyAlgorithm.shortName) =>
+        Some(ControversyAlgorithm(conf.controversyThreshold, conf.controversyVoteCountThreshold))
+      case Some(PopularAlgorithm.shortName)           => Some(PopularAlgorithm(conf.popularVoteCountThreshold))
       case Some(TaggedFirstLegacyAlgorithm.shortName) => Some(TaggedFirstLegacyAlgorithm(randomSeed))
       case Some(TaggedFirstAlgorithm.shortName)       => Some(TaggedFirstAlgorithm(randomSeed))
-      case Some(RealisticAlgorithm.shortName)         => Some(RealisticAlgorithm(conf.realisticTreshold))
-      case Some(B2BFirstAlgorithm.shortName)          => Some(B2BFirstAlgorithm)
-      case _                                          => None
+      case Some(RealisticAlgorithm.shortName) =>
+        Some(RealisticAlgorithm(conf.realisticThreshold, conf.realisticVoteCountThreshold))
+      case Some(B2BFirstAlgorithm.shortName) => Some(B2BFirstAlgorithm)
+      case _                                 => None
     }
 
 }
