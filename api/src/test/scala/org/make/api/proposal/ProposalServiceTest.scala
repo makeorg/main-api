@@ -71,6 +71,7 @@ import org.make.core.proposal.Vote
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.api.technical.crm.QuestionResolver
 
 class ProposalServiceTest
     extends MakeUnitTest
@@ -139,7 +140,7 @@ class ProposalServiceTest
         Seq(
           TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed),
           TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed),
-          TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed),
+          TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed)
         )
       )
     )
@@ -205,7 +206,7 @@ class ProposalServiceTest
     scenario("no proposal matching criteria") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("vff"))))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery("vff")))
         .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
 
       whenReady(
@@ -247,7 +248,7 @@ class ProposalServiceTest
         )
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("no-proposal-to-lock"))))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery("no-proposal-to-lock")))
         .thenReturn(
           Future
             .successful(
@@ -411,7 +412,7 @@ class ProposalServiceTest
     scenario("second proposal can be locked") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("lock-second"))))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery("lock-second")))
         .thenReturn(
           Future
             .successful(
@@ -535,7 +536,7 @@ class ProposalServiceTest
     scenario("first proposal can be locked") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(matches(searchQuery("lock-first"))))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery("lock-first")))
         .thenReturn(
           Future
             .successful(ProposalsSearchResult(total = 2, results = Seq(indexedProposal(ProposalId("lockable")))))
@@ -700,8 +701,17 @@ class ProposalServiceTest
           )
         )
 
+      val query = SearchQuery(
+        filters = Some(
+          SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds = Seq(gilProposal1.id, gilProposal2.id))))
+        ),
+        sort = None,
+        limit = None,
+        skip = None
+      )
+
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(ArgumentMatchers.any[SearchQuery]))
+        .when(elasticsearchProposalAPI.searchProposals(query))
         .thenReturn(Future.successful(ProposalsSearchResult(total = 2, results = Seq(gilProposal2, gilProposal1))))
 
       whenReady(
@@ -807,7 +817,7 @@ class ProposalServiceTest
       label = "label",
       display = TagDisplay.Inherit,
       tagTypeId = TagTypeId("tag-type-id"),
-      weight = 1.0F,
+      weight = 1.0f,
       operationId = None,
       questionId = Some(QuestionId("question-id")),
       country = Country("FR"),
@@ -837,7 +847,7 @@ class ProposalServiceTest
         .thenReturn(
           Future.successful(
             GetPredictedTagsResponse(
-              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0D)),
+              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0d)),
               modelName = "auto"
             )
           )
@@ -874,7 +884,7 @@ class ProposalServiceTest
         .thenReturn(
           Future.successful(
             GetPredictedTagsResponse(
-              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0D)),
+              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0d)),
               modelName = "auto"
             )
           )
@@ -1051,7 +1061,7 @@ class ProposalServiceTest
                 "stake 1",
                 TagDisplay.Inherit,
                 TagTypeId("stake"),
-                50.0F,
+                50.0f,
                 None,
                 None,
                 Country("FR"),
@@ -1062,7 +1072,7 @@ class ProposalServiceTest
                 "stake 2",
                 TagDisplay.Inherit,
                 TagTypeId("stake"),
-                80.0F,
+                80.0f,
                 None,
                 None,
                 Country("FR"),
@@ -1073,7 +1083,7 @@ class ProposalServiceTest
                 "solution 1",
                 TagDisplay.Inherit,
                 TagTypeId("solution-type"),
-                50.0F,
+                50.0f,
                 None,
                 None,
                 Country("FR"),
@@ -1084,7 +1094,7 @@ class ProposalServiceTest
                 "solution type 2",
                 TagDisplay.Inherit,
                 TagTypeId("solution-type"),
-                20.0F,
+                20.0f,
                 None,
                 None,
                 Country("FR"),
@@ -1095,7 +1105,7 @@ class ProposalServiceTest
                 "other",
                 TagDisplay.Inherit,
                 TagTypeId("other"),
-                50.0F,
+                50.0f,
                 None,
                 None,
                 Country("FR"),
@@ -1258,7 +1268,7 @@ class ProposalServiceTest
                 "solution 1",
                 TagDisplay.Inherit,
                 TagTypeId("solution-type"),
-                50.0F,
+                50.0f,
                 None,
                 None,
                 Country("FR"),
@@ -1269,7 +1279,7 @@ class ProposalServiceTest
                 "solution type 2",
                 TagDisplay.Inherit,
                 TagTypeId("solution-type"),
-                20.0F,
+                20.0f,
                 None,
                 None,
                 Country("FR"),
@@ -1280,7 +1290,7 @@ class ProposalServiceTest
                 "other",
                 TagDisplay.Inherit,
                 TagTypeId("other"),
-                50.0F,
+                50.0f,
                 None,
                 None,
                 Country("FR"),
@@ -2129,8 +2139,9 @@ class ProposalServiceTest
         val tmp = indexedProposal(ProposalId("unvoted"))
         tmp.copy(author = tmp.author.copy(anonymousParticipation = true))
       }
+
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(any[SearchQuery]))
+        .when(elasticsearchProposalAPI.searchProposals(SearchQuery()))
         .thenReturn(
           Future
             .successful(ProposalsSearchResult(total = 2, results = Seq(indexedProposal(ProposalId("voted")), unvoted)))
@@ -2182,18 +2193,6 @@ class ProposalServiceTest
     scenario("get top proposals by stake tag") {
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(any[SearchQuery]))
-        .thenReturn(
-          Future
-            .successful(
-              ProposalsSearchResult(
-                total = 2,
-                results = Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote")))
-              )
-            )
-        )
-
-      Mockito
         .when(
           sessionHistoryCoordinatorService
             .retrieveVoteAndQualifications(
@@ -2230,18 +2229,6 @@ class ProposalServiceTest
     }
 
     scenario("get top proposals by idea") {
-
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(any[SearchQuery]))
-        .thenReturn(
-          Future
-            .successful(
-              ProposalsSearchResult(
-                total = 2,
-                results = Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote")))
-              )
-            )
-        )
 
       Mockito
         .when(
@@ -2397,7 +2384,7 @@ class ProposalServiceTest
             Qualification(key = NoOpinion, count = 1, countVerified = 1, countSequence = 0, countSegment = 1),
             Qualification(key = DoNotCare, count = 1, countVerified = 1, countSequence = 1, countSegment = 0)
           )
-        ),
+        )
       )
       val proposal =
         TestUtils.proposal(id = ProposalId("trolled-votes"), status = ProposalStatus.Accepted, votes = votes)
@@ -2447,7 +2434,7 @@ class ProposalServiceTest
             Qualification(key = NoOpinion, count = 1, countVerified = 1, countSequence = 0, countSegment = 1),
             Qualification(key = DoNotCare, count = 1, countVerified = 1, countSequence = 1, countSegment = 0)
           )
-        ),
+        )
       )
       val proposal =
         TestUtils.proposal(id = ProposalId("trolled-qualification"), status = ProposalStatus.Accepted, votes = votes)
@@ -2497,7 +2484,7 @@ class ProposalServiceTest
             Qualification(key = NoOpinion, count = 1, countVerified = 1, countSequence = 0, countSegment = 1),
             Qualification(key = DoNotCare, count = 1, countVerified = 1, countSequence = 1, countSegment = 0)
           )
-        ),
+        )
       )
       val proposal = TestUtils.proposal(id = ProposalId("correct"), status = ProposalStatus.Accepted, votes = votes)
       proposalService.needVoteReset(proposal) shouldBe false
@@ -2507,6 +2494,142 @@ class ProposalServiceTest
       val proposal = TestUtils.proposal(id = ProposalId("not-accepted"), status = ProposalStatus.Pending)
       proposalService.needVoteReset(proposal) shouldBe false
     }
+  }
+
+  feature("resolve question from vote event") {
+    val question = Question(
+      questionId = QuestionId("some-question"),
+      slug = "some-question",
+      question = "?",
+      country = Country("FR"),
+      language = Language("fr"),
+      operationId = Some(OperationId("who cares?"))
+    )
+
+    val resolver = new QuestionResolver(Seq(question), Map.empty)
+
+    scenario("question resolved from request context") {
+      val requestContext: RequestContext = RequestContext.empty.copy(questionId = Some(question.questionId))
+      val proposalId: ProposalId = ProposalId("whatever")
+
+      whenReady(proposalService.resolveQuestionFromVoteEvent(resolver, requestContext, proposalId), Timeout(3.seconds)) {
+        _ should contain(question)
+      }
+    }
+
+    scenario("question resolved from proposal") {
+      val requestContext: RequestContext = RequestContext.empty
+      val proposalId: ProposalId = ProposalId("question resolved from proposal")
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(id = proposalId, questionId = question.questionId))))
+
+      whenReady(proposalService.resolveQuestionFromVoteEvent(resolver, requestContext, proposalId), Timeout(3.seconds)) {
+        _ should contain(question)
+      }
+    }
+
+    scenario("unable to resolve the question") {
+      val requestContext: RequestContext = RequestContext.empty
+      val proposalId: ProposalId = ProposalId("unable to resolve the question")
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(proposalId))
+        .thenReturn(Future.successful(Some(proposal(id = proposalId, questionId = QuestionId("other")))))
+
+      whenReady(proposalService.resolveQuestionFromVoteEvent(resolver, requestContext, proposalId), Timeout(3.seconds)) {
+        _ should be(None)
+      }
+    }
+  }
+
+  feature("resolve question from proposal event") {
+    val question = Question(
+      questionId = QuestionId("some-question"),
+      slug = "some-question",
+      question = "?",
+      country = Country("FR"),
+      language = Language("fr"),
+      operationId = Some(OperationId("who cares?"))
+    )
+
+    val resolver = new QuestionResolver(Seq(question), Map.empty)
+
+    scenario("question resolved by request context") {
+      val requestContext = RequestContext.empty.copy(questionId = Some(question.questionId))
+      val userId = UserId("question resolved by request context")
+
+      whenReady(
+        proposalService.resolveQuestionFromUserProposal(resolver, requestContext, userId, DateHelper.now()),
+        Timeout(2.seconds)
+      ) {
+        _ should contain(question)
+      }
+    }
+
+    scenario("user has no proposal") {
+      val requestContext = RequestContext.empty
+      val userId = UserId("user has no proposal")
+      val date = DateHelper.now().minusHours(5)
+
+      val filters = SearchFilters(
+        user = Some(UserSearchFilter(userId)),
+        status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+      )
+
+      Mockito
+        .when(
+          elasticsearchProposalAPI
+            .countProposals(SearchQuery(filters = Some(filters)))
+        )
+        .thenReturn(Future.successful(0L))
+
+      whenReady(
+        proposalService.resolveQuestionFromUserProposal(resolver, requestContext, userId, date),
+        Timeout(2.seconds)
+      ) {
+        _ should be(None)
+      }
+    }
+
+    scenario("proposal found") {
+      val requestContext = RequestContext.empty
+      val userId = UserId("proposal found")
+      val date = DateHelper.now().minusHours(5)
+
+      val query = SearchQuery(filters = Some(
+        SearchFilters(
+          user = Some(UserSearchFilter(userId)),
+          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+        )
+      )
+      )
+
+      Mockito
+        .when(elasticsearchProposalAPI.countProposals(query))
+        .thenReturn(Future.successful(2L))
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(query.copy(limit = Some(2))))
+        .thenReturn {
+          Future.successful(
+            ProposalsSearchResult(
+              total = 2L,
+              results = Seq(
+                indexedProposal(ProposalId("proposal-one")),
+                indexedProposal(ProposalId("proposal-two"), questionId = question.questionId, createdAt = date)
+              )
+            )
+          )
+        }
+
+      val result = proposalService.resolveQuestionFromUserProposal(resolver, requestContext, userId, date)
+      whenReady(result, Timeout(2.seconds)) {
+        _ should contain(question)
+      }
+    }
+
   }
 
 }

@@ -31,14 +31,12 @@ import io.swagger.annotations.{Authorization, _}
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
-import org.make.api.operation.OperationOfQuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.crm.CrmServiceComponent
 import org.make.api.technical.storage.StorageConfigurationComponent
 import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory.UserUploadAvatarEvent
-import org.make.core.operation.OperationOfQuestion
 import org.make.core.tag.{Tag => _}
 import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Validation}
 
@@ -46,36 +44,32 @@ import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
+import akka.stream.scaladsl.Sink
+import org.make.api.technical.crm.QuestionResolver
+import org.make.api.question.SearchQuestionRequest
+import org.make.api.operation.OperationServiceComponent
+import org.make.api.question.QuestionServiceComponent
+import org.make.api.userhistory.UserRegisteredEvent
+import org.make.api.userhistory.UserHistoryEvent
+import org.make.core.user.User
+import org.make.core.question.Question
+import org.make.api.proposal.ProposalServiceComponent
+import org.make.api.userhistory.LogUserVoteEvent
+import org.make.api.userhistory.LogUserUnvoteEvent
+import org.make.api.userhistory.LogUserQualificationEvent
+import org.make.api.userhistory.LogUserUnqualificationEvent
+import org.make.api.userhistory.LogUserProposalEvent
+import akka.stream.scaladsl.Source
+import org.make.core.profile.Profile
+import org.make.core.RequestContext
+import akka.persistence.query.EventEnvelope
+import org.make.core.user.UserId
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
 trait MigrationApi extends Directives {
 
   def emptyRoute: Route
-
-  @ApiOperation(
-    value = "delete-mailjet-anoned-contacts",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.technical.DeleteContactsRequest"
-      )
-    )
-  )
-  @Path(value = "/delete-mailjet-anoned-contacts")
-  def deleteMailjetAnonedContacts: Route
 
   @ApiOperation(
     value = "set-proper-signup-operation",
@@ -93,21 +87,6 @@ trait MigrationApi extends Directives {
   def setProperSignUpOperation: Route
 
   @ApiOperation(
-    value = "count-damage-user-account",
-    httpMethod = "GET",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
-      )
-    )
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "OK", response = classOf[Int])))
-  @Path(value = "/count-damage-user-account")
-  def countDamageUserAccount: Route
-
-  @ApiOperation(
     value = "upload-all-avatars",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -122,7 +101,7 @@ trait MigrationApi extends Directives {
   @Path(value = "/upload-all-avatars")
   def uploadAllAvatars: Route
 
-  def routes: Route = deleteMailjetAnonedContacts ~ setProperSignUpOperation ~ countDamageUserAccount ~ uploadAllAvatars
+  def routes: Route = setProperSignUpOperation ~ uploadAllAvatars
 }
 
 trait MigrationApiComponent {
@@ -137,10 +116,13 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with SessionHistoryCoordinatorServiceComponent
     with CrmServiceComponent
     with MailJetConfigurationComponent
-    with OperationOfQuestionServiceComponent
     with UserServiceComponent
+    with ReadJournalComponent
+    with OperationServiceComponent
+    with QuestionServiceComponent
     with EventBusServiceComponent
-    with StorageConfigurationComponent =>
+    with StorageConfigurationComponent
+    with ProposalServiceComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
@@ -154,123 +136,126 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
         }
       }
 
-    override def deleteMailjetAnonedContacts: Route = post {
-      path("migrations" / "delete-mailjet-anoned-contacts") {
-        withoutRequestTimeout {
-          makeOperation("DeleteMailjetAnonedContacts") { _ =>
-            makeOAuth2 { userAuth =>
-              requireAdminRole(userAuth.user) {
-                decodeRequest {
-                  entity(as[DeleteContactsRequest]) { req =>
-                    crmService.deleteAllContactsBefore(req.maxUpdatedAtBeforeDelete, req.deleteEmptyProperties)
-                    complete(StatusCodes.Accepted)
-                  }
-                }
-              }
-            }
+    private def createQuestionResolver(): Future[QuestionResolver] = {
+      val operationsAsMap = operationService
+        .findSimple()
+        .map(_.map(operation => operation.slug -> operation.operationId).toMap)
+      for {
+        questions  <- questionService.searchQuestion(SearchQuestionRequest())
+        operations <- operationsAsMap
+      } yield new QuestionResolver(questions, operations)
+    }
+
+    private def retrieveEventQuestion(
+      resolver: QuestionResolver,
+      event: UserHistoryEvent[_]
+    ): Future[Option[Question]] = {
+      resolver.extractQuestionWithOperationFromRequestContext(event.requestContext) match {
+        case Some(question) => Future.successful(Some(question))
+        case None =>
+          event match {
+            case e: LogUserVoteEvent =>
+              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
+            case e: LogUserUnvoteEvent =>
+              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
+            case e: LogUserQualificationEvent =>
+              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
+            case e: LogUserUnqualificationEvent =>
+              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
+            case e: LogUserProposalEvent =>
+              proposalService.resolveQuestionFromUserProposal(resolver, e.requestContext, e.userId, e.action.date)
+            case e => Future.successful(resolver.extractQuestionWithOperationFromRequestContext(e.requestContext))
           }
+      }
+
+    }
+
+    private def resolveQuestionFromEvents(
+      questionResolver: QuestionResolver,
+      events: Seq[EventEnvelope]
+    ): Future[Option[Question]] = {
+      val maybeRegistration = events
+        .map(_.event)
+        .collectFirst {
+          case e: UserRegisteredEvent => e
         }
+
+      maybeRegistration match {
+        case None => Future.successful(None)
+        case Some(userRegisteredEvent) =>
+          questionResolver
+            .extractQuestionWithOperationFromRequestContext(userRegisteredEvent.requestContext)
+            .map(question => Future.successful(Some(question)))
+            .getOrElse {
+              val registerSessionEvents = events
+                .map(_.event.asInstanceOf[UserHistoryEvent[_]])
+                .filter(_.requestContext.sessionId == userRegisteredEvent.requestContext.sessionId)
+                .sortBy(_.action.date)
+
+              Source(registerSessionEvents)
+                .mapAsync(1)(retrieveEventQuestion(questionResolver, _))
+                .collect {
+                  case Some(question) => question
+                }
+                .runWith(Sink.headOption[Question])
+            }
       }
     }
 
-    private def isValidDate(registerDate: ZonedDateTime,
-                            startDate: Option[ZonedDateTime],
-                            endDate: Option[ZonedDateTime]): Boolean = {
-      startDate.forall(date => registerDate.isAfter(date)) && endDate.forall(date => registerDate.isBefore(date))
+    private def listEvents(userId: UserId) = {
+      userJournal
+        .currentEventsByPersistenceId(userId.value, 0L, Long.MaxValue)
+        .runWith(Sink.seq)
     }
 
-    override def countDamageUserAccount: Route = get {
-      path("migrations" / "count-damage-user-account") {
-        withoutRequestTimeout {
-          makeOperation("CountDamageUserAccount") { _ =>
-            makeOAuth2 { userAuth =>
-              requireAdminRole(userAuth.user) {
-                provideAsync(operationOfQuestionService.find()) { questions =>
-                  StreamUtils
-                    .asyncPageToPageSource(
-                      offset =>
-                        userService.adminFindUsers(
-                          start = offset,
-                          end = Some(mailJetConfiguration.userListBatchSize),
-                          None,
-                          None,
-                          None,
-                          None,
-                          None,
-                          None,
-                          None
-                      )
-                    )
-                    .mapConcat(identity)
-                    .filterNot(user => user.email.startsWith("yopmail"))
-                    .mapAsync(1) { user =>
-                      val registerQuestion: Option[OperationOfQuestion] = questions
-                        .find(question => user.profile.flatMap(_.registerQuestionId).contains(question.questionId))
-                      (user.createdAt, registerQuestion) match {
-                        case (Some(date), Some(question)) if !isValidDate(date, question.startDate, question.endDate) =>
-                          Future.successful(1)
-                        case _ => Future.successful(0)
-                      }
-                    }
-                    .runFold(0)(_ + _)
-                    .onComplete {
-                      case Success(count) => logger.info(s"$count user accounts to be updated")
-                      case Failure(e)     => logger.error("Count damage user accounts error", e)
-                    }
-                  complete(StatusCodes.Accepted)
-                }
-              }
-            }
-          }
-        }
+    private def updateUserIfNeeded(user: User, maybeQuestion: Option[Question]): Future[Int] = {
+      val newProfile =
+        user.profile.orElse(Profile.parseProfile().map(_.copy(registerQuestionId = maybeQuestion.map(_.questionId))))
+
+      if (newProfile == user.profile) {
+        Future.successful(0)
+      } else {
+        userService
+          .update(user.copy(profile = newProfile), RequestContext.empty)
+          .map(_ => 1)
       }
     }
 
     override def setProperSignUpOperation: Route = post {
       path("migrations" / "set-proper-signup-operation") {
         withoutRequestTimeout {
-          makeOperation("SetProperSignUpOperation") { requestContext =>
+          makeOperation("RepairSignupOperation") { _ =>
             makeOAuth2 { userAuth =>
               requireAdminRole(userAuth.user) {
-                operationOfQuestionService.find().map { questions =>
+                provideAsync(createQuestionResolver()) { questionResolver =>
                   StreamUtils
                     .asyncPageToPageSource(
-                      offset =>
-                        userService.adminFindUsers(
-                          start = offset,
-                          end = Some(mailJetConfiguration.userListBatchSize),
-                          None,
-                          None,
-                          None,
-                          None,
-                          None,
-                          None,
-                          None
-                      )
+                      userService.findUsersForCrmSynchro(None, None, _, mailJetConfiguration.userListBatchSize)
                     )
                     .mapConcat(identity)
-                    .filterNot(user => user.email.startsWith("yopmail"))
                     .mapAsync(1) { user =>
-                      val registerQuestion: Option[OperationOfQuestion] = questions
-                        .find(question => user.profile.flatMap(_.registerQuestionId).contains(question.questionId))
-                      (user.createdAt, registerQuestion) match {
-                        case (Some(date), Some(question)) if !isValidDate(date, question.startDate, question.endDate) =>
-                          userService
-                            .update(
-                              user.copy(profile = user.profile.map(_.copy(registerQuestionId = None))),
-                              requestContext
-                            )
-                            .map(_ => 1)
-                        case _ => Future.successful(0)
+                      val updatedUserCount = for {
+                        events        <- listEvents(user.userId)
+                        maybeQuestion <- resolveQuestionFromEvents(questionResolver, events)
+                        count         <- updateUserIfNeeded(user, maybeQuestion)
+                      } yield count
+
+                      updatedUserCount.recover {
+                        case e =>
+                          logger.error(
+                            s"Error when correcting the register question for user ${user.userId.value}, he hasn't been changed.",
+                            e
+                          )
+                          0
                       }
                     }
                     .runFold(0)(_ + _)
                     .onComplete {
-                      case Success(count) => logger.info(s"$count user accounts were successfully updated")
-                      case Failure(e)     => logger.error("Update damage user accounts error", e)
+                      case Success(results) => logger.info(s"$results user accounts have been updated")
+                      case Failure(e)       => logger.error("error when updating register question of all users", e)
                     }
+                  complete(StatusCodes.Accepted)
                 }
-                complete(StatusCodes.NoContent)
               }
             }
           }
@@ -321,11 +306,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
 }
 
-final case class DeleteContactsRequest(@(ApiModelProperty @field)(
-                                         dataType = "string",
-                                         example = "2019-07-11T11:21:40.508Z"
-                                       ) maxUpdatedAtBeforeDelete: ZonedDateTime,
-                                       @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean) {
+final case class DeleteContactsRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean
+) {
   Validation.validate(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",

@@ -25,8 +25,6 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -617,10 +615,4 @@ trait DefaultQuestionApiComponent
     }
 
   }
-}
-
-final case class StartSequenceByQuestionIdRequest(include: Option[Seq[ProposalId]] = None)
-
-object StartSequenceByQuestionIdRequest {
-  implicit val decoder: Decoder[StartSequenceByQuestionIdRequest] = deriveDecoder[StartSequenceByQuestionIdRequest]
 }
