@@ -40,7 +40,7 @@ import org.make.api.feature._
 import org.make.api.idea._
 import org.make.api.idea.topIdeaComments.{
   DefaultPersistentTopIdeaCommentServiceComponent,
-  DefaultTopIdeaCommentServiceComponent,
+  DefaultTopIdeaCommentServiceComponent
 }
 import org.make.api.operation._
 import org.make.api.organisation._
@@ -88,6 +88,11 @@ import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchConfigurationComponent,
   DefaultIndexationComponent,
   ElasticSearchApi
+}
+import org.make.api.technical.generator.fixtures.{
+  DefaultFixturesApiComponent,
+  DefaultFixturesServiceComponent,
+  FixturesApi
 }
 import org.make.api.technical.healthcheck._
 import org.make.api.technical.monitoring.DefaultMonitoringService
@@ -146,6 +151,8 @@ trait MakeApi
     with DefaultFacebookApiComponent
     with DefaultFeaturedOperationServiceComponent
     with DefaultFeatureServiceComponent
+    with DefaultFixturesApiComponent
+    with DefaultFixturesServiceComponent
     with DefaultGoogleApiComponent
     with DefaultHomeViewServiceComponent
     with DefaultViewApiComponent
@@ -337,6 +344,7 @@ trait MakeApi
       classOf[ConfigurationsApi],
       classOf[CrmApi],
       classOf[ElasticSearchApi],
+      classOf[FixturesApi],
       classOf[HealthCheckApi],
       classOf[MigrationApi],
       classOf[ModerationIdeaApi],
@@ -400,6 +408,7 @@ trait MakeApi
       configurationsApi.routes ~
       crmApi.routes ~
       elasticSearchApi.routes ~
+      fixturesApi.routes ~
       healthCheckApi.routes ~
       migrationApi.routes ~
       moderationIdeaApi.routes ~
