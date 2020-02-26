@@ -49,7 +49,6 @@ import org.make.api.technical.crm.QuestionResolver
 import org.make.api.question.SearchQuestionRequest
 import org.make.api.operation.OperationServiceComponent
 import org.make.api.question.QuestionServiceComponent
-import org.make.api.userhistory.UserRegisteredEvent
 import org.make.api.userhistory.UserHistoryEvent
 import org.make.core.user.User
 import org.make.core.question.Question
@@ -64,6 +63,7 @@ import org.make.core.profile.Profile
 import org.make.core.RequestContext
 import akka.persistence.query.EventEnvelope
 import org.make.core.user.UserId
+import org.make.api.userhistory.LogRegisterCitizenEvent
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -174,10 +174,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       questionResolver: QuestionResolver,
       events: Seq[EventEnvelope]
     ): Future[Option[Question]] = {
-      val maybeRegistration = events
+      val maybeRegistration: Option[LogRegisterCitizenEvent] = events
         .map(_.event)
         .collectFirst {
-          case e: UserRegisteredEvent => e
+          case e: LogRegisterCitizenEvent => e
         }
 
       maybeRegistration match {
