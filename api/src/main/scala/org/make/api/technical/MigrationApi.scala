@@ -210,7 +210,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
     private def updateUserIfNeeded(user: User, maybeQuestion: Option[Question]): Future[Int] = {
       val newProfile =
-        user.profile.orElse(Profile.parseProfile().map(_.copy(registerQuestionId = maybeQuestion.map(_.questionId))))
+        user.profile.orElse(Profile.parseProfile()).map(_.copy(registerQuestionId = maybeQuestion.map(_.questionId)))
 
       if (newProfile == user.profile) {
         Future.successful(0)
