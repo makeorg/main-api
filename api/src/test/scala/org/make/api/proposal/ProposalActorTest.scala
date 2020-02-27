@@ -24,7 +24,6 @@ import java.time.ZonedDateTime
 import akka.actor.{Actor, ActorRef}
 import akka.testkit.TestKit
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
 import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.core.history.HistoryActions._
@@ -41,11 +40,10 @@ import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.GivenWhenThen
-import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
-import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
 
@@ -115,6 +113,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   val CREATED_DATE_SECOND_MINUS: Int = 10
   val THREAD_SLEEP_MICROSECONDS: Int = 100
+  val LOCK_DURATION_MILLISECONDS: FiniteDuration = 42.milliseconds
 
   val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
   Mockito
@@ -125,7 +124,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     .thenReturn(Future.successful({}))
 
   val coordinator: ActorRef =
-    system.actorOf(ProposalCoordinator.props(sessionHistoryCoordinatorService), ProposalCoordinator.name)
+    system.actorOf(
+      ProposalCoordinator
+        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS),
+      ProposalCoordinator.name
+    )
 
   val mainUserId: UserId = UserId("1234")
   val mainCreatedAt: Option[ZonedDateTime] = Some(DateHelper.now().minusSeconds(CREATED_DATE_SECOND_MINUS))
@@ -1074,6 +1077,25 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   }
 
   feature("Lock a proposal") {
+    scenario("try to lock a non-existing proposal") {
+      Given("a fake proposalId")
+      val proposalId = ProposalId("this-is-fake-proposal")
+      And("moderator")
+      val moderatorId = UserId("mod")
+
+      When("I try to lock the fake proposal")
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorId,
+        moderatorName = Some("Mod"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("The proposal should not be seen as locked")
+      expectMsg(Right(None))
+
+    }
+
     scenario("lock an unlocked proposal") {
       Given("an unlocked proposal")
       val proposalId: ProposalId = ProposalId("unlockedProposal")
@@ -1129,20 +1151,25 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       val moderatorMod = UserId("mod")
 
       When("I lock the proposal")
-      And("I lock the proposal again after 10 sec")
-      val interval = PatienceConfiguration.Interval(Span(1, Seconds))
-      val timeout = PatienceConfiguration.Timeout(Span(12, Seconds))
-      Eventually.eventually(timeout, interval) {
-        coordinator ! LockProposalCommand(
-          proposalId = proposalId,
-          moderatorId = moderatorMod,
-          moderatorName = Some("Mod"),
-          requestContext = RequestContext.empty
-        )
 
-        Then("I should receive the moderatorId twice")
-        expectMsg(Right(Some(moderatorMod)))
-      }
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod,
+        moderatorName = Some("Mod"),
+        requestContext = RequestContext.empty
+      )
+      expectMsg(Right(Some(moderatorMod)))
+
+      And("I lock the proposal again after 10 milli sec")
+      coordinator ! LockProposalCommand(
+        proposalId = proposalId,
+        moderatorId = moderatorMod,
+        moderatorName = Some("Mod"),
+        requestContext = RequestContext.empty
+      )
+
+      Then("I should receive the moderatorId")
+      expectMsg(Right(Some(moderatorMod)))
     }
 
     scenario("fail to lock a proposal already locked by someone else") {
@@ -1188,61 +1215,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(Left(ValidationFailedError(Seq(ValidationError("moderatorName", "already_locked", Some("Mod1"))))))
     }
 
-    scenario("reset lock by moderating the proposal") {
-      Given("two moderators Mod1 & Mod2")
-      val moderatorMod1 = UserId("mod1")
-      val moderatorMod2 = UserId("mod2")
-
-      And("a proposal locked by Mod1")
-      val proposalId: ProposalId = ProposalId("lockedModerationProposal")
-      coordinator ! ProposeCommand(
-        proposalId = proposalId,
-        requestContext = RequestContext.empty,
-        user = user,
-        createdAt = mainCreatedAt.get,
-        content = "This is an unlocked proposal",
-        question = questionOnNothingFr,
-        initialProposal = false
-      )
-
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
-
-      coordinator ! LockProposalCommand(
-        proposalId = proposalId,
-        moderatorId = moderatorMod1,
-        moderatorName = Some("Mod1"),
-        requestContext = RequestContext.empty
-      )
-
-      expectMsg(Right(Some(moderatorMod1)))
-
-      When("Mod1 moderates the proposal")
-      coordinator ! RefuseProposalCommand(
-        proposalId = proposalId,
-        moderator = moderatorMod1,
-        requestContext = RequestContext.empty,
-        sendNotificationEmail = false,
-        refusalReason = Some("nothing")
-      )
-
-      expectMsgType[Some[ProposalState]]
-
-      And("Mod2 tries to lock the proposal")
-      coordinator ! LockProposalCommand(
-        proposalId = proposalId,
-        moderatorId = moderatorMod2,
-        moderatorName = Some("Mod2"),
-        requestContext = RequestContext.empty
-      )
-
-      Then("Mod2 succeeds to lock the proposal")
-      expectMsg(Right(Some(moderatorMod2)))
-    }
-
-    scenario("lock a proposal after lock expiration date was reached") {
+    scenario("lock a proposal after lock deadline was reached") {
       Given("two moderators Mod1 & Mod2")
       val moderatorMod1 = UserId("mod1")
       val moderatorMod2 = UserId("mod2")
@@ -1273,8 +1246,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       expectMsg(Right(Some(moderatorMod1)))
 
-      When("Mod2 waits more than 20seconds")
-      Thread.sleep(15000)
+      When("Mod2 waits enough time")
+      Thread.sleep(150)
       And("Mod2 tries to lock the proposal")
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
@@ -1396,25 +1369,24 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! PatchProposalCommand(
         proposalId,
         UserId("1234"),
-        PatchProposalRequest(
-          creationContext = Some(
-            PatchRequestContext(
-              requestId = Some("my-request-id"),
-              sessionId = Some(SessionId("session-id")),
-              visitorId = Some(VisitorId("visitor-id")),
-              externalId = Some("external-id"),
-              country = Some(Country("BE")),
-              language = Some(Language("nl")),
-              operation = None /*Some("my-operation")*/, // TODO: use Operation
-              source = Some("my-source"),
-              location = Some("my-location"),
-              question = Some("my-question"),
-              hostname = Some("my-hostname"),
-              ipAddress = Some("1.2.3.4"),
-              getParameters = Some(Map("parameter" -> "value")),
-              userAgent = Some("my-user-agent")
-            )
+        PatchProposalRequest(creationContext = Some(
+          PatchRequestContext(
+            requestId = Some("my-request-id"),
+            sessionId = Some(SessionId("session-id")),
+            visitorId = Some(VisitorId("visitor-id")),
+            externalId = Some("external-id"),
+            country = Some(Country("BE")),
+            language = Some(Language("nl")),
+            operation = None /*Some("my-operation")*/, // TODO: use Operation
+            source = Some("my-source"),
+            location = Some("my-location"),
+            question = Some("my-question"),
+            hostname = Some("my-hostname"),
+            ipAddress = Some("1.2.3.4"),
+            getParameters = Some(Map("parameter" -> "value")),
+            userAgent = Some("my-user-agent")
           )
+        )
         ),
         RequestContext.empty
       )
