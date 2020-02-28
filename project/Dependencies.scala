@@ -24,7 +24,7 @@ object Dependencies {
   private val akkaVersion = "2.6.3"
   private val akkaHttpVersion = "10.1.10"
   private val alpakkaVersion = "1.1.2"
-  private val nettyVersion = "4.1.20.Final"
+  private val nettyVersion = "4.1.45.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.5.4"
   private val kamonVersion = "2.0.4"
