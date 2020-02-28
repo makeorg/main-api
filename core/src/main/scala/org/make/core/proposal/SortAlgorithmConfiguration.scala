@@ -20,7 +20,9 @@
 package org.make.core.proposal
 
 trait SortAlgorithmConfiguration {
-  def controversyTreshold: Double
-  def popularVoteCountTreshold: Int
-  def realisticTreshold: Double
+  def controversyThreshold: Double
+  def controversyVoteCountThreshold: Int
+  def popularVoteCountThreshold: Int
+  def realisticThreshold: Double
+  def realisticVoteCountThreshold: Int
 }

@@ -34,9 +34,13 @@ trait DefaultSortAlgorithmConfigurationComponent extends SortAlgorithmConfigurat
     new DefaultSortAlgorithmConfiguration(actorSystem.settings.config)
 
   class DefaultSortAlgorithmConfiguration(config: Config) extends SortAlgorithmConfiguration {
-    override val controversyTreshold: Double = config.getDouble("make-api.proposal-algorithm.controversy-treshold")
-    override val popularVoteCountTreshold: Int =
-      config.getInt("make-api.proposal-algorithm.popular-vote-count-treshold")
-    override val realisticTreshold: Double = config.getDouble("make-api.proposal-algorithm.realistic-treshold")
+    override val controversyThreshold: Double = config.getDouble("make-api.proposal-algorithm.controversy-threshold")
+    override val controversyVoteCountThreshold: Int =
+      config.getInt("make-api.proposal-algorithm.controversy-vote-count-threshold")
+    override val popularVoteCountThreshold: Int =
+      config.getInt("make-api.proposal-algorithm.popular-vote-count-threshold")
+    override val realisticThreshold: Double = config.getDouble("make-api.proposal-algorithm.realistic-threshold")
+    override val realisticVoteCountThreshold: Int =
+      config.getInt("make-api.proposal-algorithm.realistic-vote-count-threshold")
   }
 }

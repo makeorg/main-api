@@ -107,7 +107,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           userId = userId,
           language = language,
           country = country,
-          sortAlgorithm = PopularAlgorithm(sortAlgorithmConfiguration.popularVoteCountTreshold),
+          sortAlgorithm = PopularAlgorithm(sortAlgorithmConfiguration.popularVoteCountThreshold),
           requestContext = requestContext
         )
         controversialProposals <- getProposals(
@@ -115,7 +115,10 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           userId = userId,
           language = language,
           country = country,
-          sortAlgorithm = ControversyAlgorithm(sortAlgorithmConfiguration.controversyTreshold),
+          sortAlgorithm = ControversyAlgorithm(
+            sortAlgorithmConfiguration.controversyThreshold,
+            sortAlgorithmConfiguration.controversyVoteCountThreshold
+          ),
           requestContext = requestContext
         )
         currentConsultations  <- currentOperationService.getAll

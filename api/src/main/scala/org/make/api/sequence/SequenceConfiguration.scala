@@ -42,14 +42,14 @@ import scala.concurrent.Future
   *  - questionId: The related question.
   *  - newProposalsRatio: Ratio of new proposals to be found in the generated sequence. If this ratio cannot be acheived
   *     (e.g.: user already voted on most new proposals) then a rebalancing occurs to add more tested proposals in the sequence.
-  *  - newProposalsVoteThreshold: Number of votes treshold for a proposal to reach to get out of the "new" proposal pool.
-  *  - testedProposalsEngagementThreshold: _facultative_ Number of votes treshold for a tested proposal to be above in
+  *  - newProposalsVoteThreshold: Number of votes threshold for a proposal to reach to get out of the "new" proposal pool.
+  *  - testedProposalsEngagementThreshold: _facultative_ Number of votes threshold for a tested proposal to be above in
   *     order to stay in the engagement competition (i.e.: emergence).
-  *  - testedProposalsScoreThreshold: _facultative_ Emergence score treshold for a tested proposal to be above in
+  *  - testedProposalsScoreThreshold: _facultative_ Emergence score threshold for a tested proposal to be above in
   *     order to stay in the engagement competition (i.e.: emergence).
-  *  - testedProposalsControversyThreshold: _facultative_ Controversy score treshold for a tested proposal to be above in
+  *  - testedProposalsControversyThreshold: _facultative_ Controversy score threshold for a tested proposal to be above in
   *     order to stay in the engagement competition (i.e.: emergence).
-  *  - testedProposalsMaxVotesThreshold: _facultative_ Number of votes treshold for a tested proposal to be below in
+  *  - testedProposalsMaxVotesThreshold: _facultative_ Number of votes threshold for a tested proposal to be below in
   *     order to stay in the engagement competition (i.e.: emergence).
   *  - intraIdeaEnabled: Boolean to use the competition or not inside every ideas. If false: SoftMin on votes inside every ideas.
   *  - intraIdeaMinCount: The minimum number of proposals needed to apply the bandit algorithm.
@@ -68,7 +68,7 @@ import scala.concurrent.Future
   *  - A tested proposal is a proposal in the "tested" pool.
   *  - A excluded proposal is a proposal in the "excluded" pool.
   *  - If both `testedProposalsScoreThreshold` and `testedProposalsControversyThreshold` are defined, a proposal will be
-  *     in the "tested" proposal pool if only one of the two tresholds is surpassed. I.e. the logical condition is an OR.
+  *     in the "tested" proposal pool if only one of the two thresholds is surpassed. I.e. the logical condition is an OR.
   *
   **/
 

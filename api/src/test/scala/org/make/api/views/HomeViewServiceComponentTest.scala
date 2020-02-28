@@ -258,8 +258,9 @@ class HomeViewServiceComponentTest
         )
       }
 
-      Mockito.when(sortAlgorithmConfiguration.popularVoteCountTreshold).thenReturn(200)
-      Mockito.when(sortAlgorithmConfiguration.controversyTreshold).thenReturn(0.1d)
+      Mockito.when(sortAlgorithmConfiguration.popularVoteCountThreshold).thenReturn(200)
+      Mockito.when(sortAlgorithmConfiguration.controversyThreshold).thenReturn(0.1d)
+      Mockito.when(sortAlgorithmConfiguration.controversyVoteCountThreshold).thenReturn(100)
 
       Mockito
         .when(operationService.findSimple())
@@ -326,7 +327,7 @@ class HomeViewServiceComponentTest
           )
         )
       )
-      val searchQueryControverse = searchQueryPopular.copy(sortAlgorithm = Some(ControversyAlgorithm(0.1d)))
+      val searchQueryControverse = searchQueryPopular.copy(sortAlgorithm = Some(ControversyAlgorithm(0.1d, 100)))
       Mockito
         .when(
           proposalService.searchForUser(
