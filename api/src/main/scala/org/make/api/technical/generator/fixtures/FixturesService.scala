@@ -23,6 +23,7 @@ import java.util.concurrent.Executors
 
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.operation.{
   CreateOperationOfQuestion,
   OperationOfQuestionServiceComponent,
@@ -31,15 +32,25 @@ import org.make.api.operation.{
 import org.make.api.technical.generator.EntitiesGen
 import org.make.api.user.UserServiceComponent
 import org.make.core.operation.{OperationId, SimpleOperation}
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.user.{User, UserId}
 
 import scala.concurrent.{ExecutionContext, Future}
 import fixtures._
 import org.make.api.ActorSystemComponent
-import org.make.core.RequestContext
-import org.make.core.proposal.ProposalId
+import org.make.api.proposal.{
+  ProposalServiceComponent,
+  RefuseProposalRequest,
+  UpdateQualificationRequest,
+  UpdateVoteRequest
+}
+import org.make.api.question.QuestionServiceComponent
+import org.make.core.{DateHelper, RequestContext}
+import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.tag.TagId
 import org.scalacheck.Gen
+import org.scalacheck.Gen.Parameters
+import org.scalacheck.rng.Seed
 
 trait FixturesService {
   def generate(maybeOperationId: Option[OperationId],
@@ -51,10 +62,12 @@ trait FixturesServiceComponent {
   def fixturesService: FixturesService
 }
 
-trait DefaultFixturesServiceComponent extends FixturesServiceComponent {
+trait DefaultFixturesServiceComponent extends FixturesServiceComponent with StrictLogging {
   this: OperationServiceComponent
     with UserServiceComponent
+    with QuestionServiceComponent
     with OperationOfQuestionServiceComponent
+    with ProposalServiceComponent
     with ActorSystemComponent =>
   override lazy val fixturesService: FixturesService = new DefaultFixturesService
 
@@ -66,13 +79,13 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent {
     implicit private val executionContext: ExecutionContext =
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
 
-    def generateOperation(maybeOperationId: Option[OperationId], adminCreatorId: UserId): Future[OperationId] = {
+    def generateOperation(maybeOperationId: Option[OperationId], adminUserId: UserId): Future[OperationId] = {
       maybeOperationId match {
         case Some(operationId) => Future.successful(operationId)
         case None =>
           val operation: SimpleOperation = EntitiesGen.genSimpleOperation.value
           operationService.create(
-            userId = adminCreatorId,
+            userId = adminUserId,
             slug = operation.slug,
             defaultLanguage = operation.defaultLanguage,
             allowedSources = operation.allowedSources,
@@ -90,17 +103,111 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent {
       }
     }
 
-    def generateUsers(questionId: QuestionId): Future[Seq[UserId]] = {
+    def generateUsers(questionId: QuestionId): Future[Seq[User]] = {
       val userDatas = Gen.listOf(EntitiesGen.genUserRegisterData(Some(questionId))).value
       Source(userDatas.distinctBy(_.email))
         .mapAsync(5) { data =>
           userService.register(data, RequestContext.empty)
         }
-        .map(_.userId)
         .runWith(Sink.seq)
     }
 
-    def generateProposals(id: QuestionId, mode: FillMode, usersIds: Seq[UserId]): Future[Seq[ProposalId]] = ???
+    def generateProposals(question: Question,
+                          mode: FillMode,
+                          users: Seq[User],
+                          tagsIds: Seq[TagId],
+                          adminUserId: UserId): Future[Seq[ProposalId]] = {
+      val parameters: Parameters = mode match {
+        case FillMode.Empty => Parameters.default.withSize(0)
+        case FillMode.Tiny  => Parameters.default.withSize(20)
+        case FillMode.Big   => Parameters.default.withSize(2000)
+      }
+      val proposalsData =
+        Gen.listOf(EntitiesGen.genProposal(question, users, tagsIds)).pureApply(parameters, Seed.random())
+      Source(proposalsData)
+        .mapAsync(5) { proposal =>
+          proposalService
+            .propose(
+              user = users.find(_.userId == proposal.author).get,
+              requestContext = RequestContext.empty,
+              createdAt = proposal.createdAt.getOrElse(DateHelper.now()),
+              content = proposal.content,
+              question = question,
+              initialProposal = proposal.initialProposal
+            )
+            .map(proposalId => proposal.copy(proposalId = proposalId))
+        }
+        .mapAsync(5) { proposal =>
+          proposal.status match {
+            case ProposalStatus.Pending => Future.successful(proposal)
+            case ProposalStatus.Postponed =>
+              proposalService
+                .postponeProposal(proposal.proposalId, adminUserId, RequestContext.empty)
+                .map(_ => proposal)
+            case ProposalStatus.Accepted =>
+              proposalService
+                .validateProposal(
+                  proposalId = proposal.proposalId,
+                  moderator = adminUserId,
+                  requestContext = RequestContext.empty,
+                  question = question,
+                  newContent = None,
+                  sendNotificationEmail = false,
+                  idea = proposal.idea,
+                  tags = proposal.tags,
+                  predictedTags = None,
+                  predictedTagsModelName = None
+                )
+                .map(_ => proposal)
+            case ProposalStatus.Refused =>
+              proposalService
+                .refuseProposal(
+                  proposalId = proposal.proposalId,
+                  moderator = adminUserId,
+                  requestContext = RequestContext.empty,
+                  request = RefuseProposalRequest(sendNotificationEmail = false, refusalReason = proposal.refusalReason)
+                )
+                .map(_ => proposal)
+            case ProposalStatus.Archived => Future.successful(proposal)
+          }
+        }
+        .mapAsync(5) { proposal =>
+          val votesVerified = proposal.votes.map(
+            v =>
+              UpdateVoteRequest(
+                key = v.key,
+                count = Some(v.count),
+                countVerified = Some(v.countVerified),
+                countSequence = Some(v.countSequence),
+                countSegment = Some(v.countSegment),
+                qualifications = v.qualifications.map(
+                  q =>
+                    UpdateQualificationRequest(
+                      key = q.key,
+                      count = Some(q.count),
+                      countVerified = Some(q.countVerified),
+                      countSequence = Some(q.countSequence),
+                      countSegment = Some(q.countSegment),
+                  )
+                )
+            )
+          )
+          proposal.status match {
+            case ProposalStatus.Accepted =>
+              proposalService
+                .updateVotes(
+                  proposalId = proposal.proposalId,
+                  moderator = adminUserId,
+                  requestContext = RequestContext.empty,
+                  updatedAt = proposal.updatedAt.getOrElse(DateHelper.now()),
+                  votesVerified = votesVerified
+                )
+                .map(_ => proposal.proposalId)
+            case _ => Future.successful(proposal.proposalId)
+          }
+        }
+        .runWith(Sink.seq)
+    }
 
     override def generate(maybeOperationId: Option[OperationId],
                           maybeQuestionId: Option[QuestionId],
@@ -109,13 +216,16 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent {
         case Some(user) => Future.successful(user)
         case None       => Future.failed(new IllegalStateException())
       }
-      for {
+      val ret = for {
         admin       <- futureAdmin
         operationId <- generateOperation(maybeOperationId, admin.userId)
         questionId  <- generateQuestion(maybeQuestionId, operationId)
-        usersIds    <- generateUsers(questionId)
-//        _           <- generateProposals(questionId, proposalFillMode, usersIds)
-      } yield Map("users" -> usersIds.size, "proposals" -> 0)
+        users       <- generateUsers(questionId)
+        question    <- questionService.getQuestion(questionId).map(_.get)
+        proposals   <- generateProposals(question, proposalFillMode, users, Seq.empty, admin.userId)
+      } yield Map("users" -> users.size, "proposals" -> proposals.size)
+      logger.info(s"generated: ${ret.toString}")
+      ret
     }
   }
 }

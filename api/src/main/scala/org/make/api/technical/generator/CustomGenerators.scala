@@ -240,7 +240,9 @@ object CustomGenerators {
   }
 
   object Mail {
-    def safe: Gen[String] = LoremIpsumGen.slug(maxLength = 50).map(name => s"$name@e-mail.cafe")
+    def safe: Gen[String] = LoremIpsumGen.slug(maxLength = 50).flatMap { name =>
+      GenReadableString.readableWord(20).map(tag => s"$name+$tag@e-mail.cafe")
+    }
     def make: Gen[String] = LoremIpsumGen.slug(maxLength = 50).map(name => s"yopmail+$name@make.org")
   }
 

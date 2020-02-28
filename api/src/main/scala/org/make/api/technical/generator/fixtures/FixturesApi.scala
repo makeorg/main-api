@@ -92,7 +92,7 @@ trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenti
                 fixturesService.generate(
                   maybeOperationId = request.operationId,
                   maybeQuestionId = request.questionId,
-                  proposalFillMode = request.fillMode.getOrElse(FillMode.Random)
+                  proposalFillMode = request.fillMode.getOrElse(FillMode.Big)
                 )
               ) { result =>
                 complete(StatusCodes.Created -> result)
@@ -110,7 +110,7 @@ case class GenerateFixturesRequest(
   operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "ad27fa8e-9cd4-4986-b1b4-7969c064322f")
   questionId: Option[QuestionId],
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "EMPTY,TINY,BIG,RANDOM")
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "EMPTY,TINY,BIG")
   fillMode: Option[FillMode]
 )
 object GenerateFixturesRequest {
@@ -131,7 +131,7 @@ object FillMode {
     )
 
   val modes: Map[String, FillMode] =
-    Map(Empty.shortName -> Empty, Tiny.shortName -> Tiny, Big.shortName -> Big, Random.shortName -> Random)
+    Map(Empty.shortName -> Empty, Tiny.shortName -> Tiny, Big.shortName -> Big)
 
   def matchMode(mode: String): Option[FillMode] = {
     modes.get(mode)
@@ -140,6 +140,5 @@ object FillMode {
   case object Empty extends FillMode { val shortName = "EMPTY" }
   case object Tiny extends FillMode { val shortName = "TINY" }
   case object Big extends FillMode { val shortName = "BIG" }
-  case object Random extends FillMode { val shortName = "RANDOM" }
 
 }

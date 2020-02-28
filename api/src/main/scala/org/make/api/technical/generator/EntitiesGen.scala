@@ -24,13 +24,14 @@ import java.time.ZonedDateTime
 import org.make.api.operation.CreateOperationOfQuestion
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.UserRegisterData
-import org.make.core.BusinessConfig
 import org.make.core.operation.{OperationId, OperationKind, OperationStatus, SimpleOperation}
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
-import org.make.core.proposal.Proposal
+import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.Role
+import org.make.core.tag.TagId
+import org.make.core.user.{Role, User, UserType}
+import org.make.core.{BusinessConfig, RequestContext, SlugHelper}
 import org.scalacheck.Gen
 
 object EntitiesGen extends DefaultIdGeneratorComponent {
@@ -147,5 +148,155 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
         publicProfile = publicProfile,
       )
 
-  def genProposal: Gen[Proposal] = ???
+  def genProposalVotes: Gen[Seq[Vote]] = {
+    def genCounts: Gen[(Int, Int, Int, Int)] =
+      for {
+        count         <- Gen.posNum[Int]
+        countVerified <- Gen.chooseNum[Int](0, count)
+        countSequence <- Gen.chooseNum[Int](0, count)
+        countSegment  <- Gen.chooseNum[Int](0, count)
+      } yield (count, countVerified, countSequence, countSegment)
+    for {
+      countsAgree                   <- genCounts
+      countsQualifLikeIt            <- genCounts
+      countsQualifDoable            <- genCounts
+      countsQualifPlatitudeAgree    <- genCounts
+      countsNeutral                 <- genCounts
+      countsQualifDoNotUnderstand   <- genCounts
+      countsQualifDoNotCare         <- genCounts
+      countsQualifNoOpinion         <- genCounts
+      countsDisagree                <- genCounts
+      countsQualifNoWay             <- genCounts
+      countsQualifImpossible        <- genCounts
+      countsQualifPlatitudeDisagree <- genCounts
+    } yield
+      Seq(
+        Vote(
+          key = VoteKey.Agree,
+          count = countsAgree._1,
+          countVerified = countsAgree._2,
+          countSequence = countsAgree._3,
+          countSegment = countsAgree._4,
+          qualifications = Seq(
+            Qualification(
+              QualificationKey.LikeIt,
+              countsQualifLikeIt._1,
+              countsQualifLikeIt._2,
+              countsQualifLikeIt._3,
+              countsQualifLikeIt._4
+            ),
+            Qualification(
+              QualificationKey.Doable,
+              countsQualifDoable._1,
+              countsQualifDoable._2,
+              countsQualifDoable._3,
+              countsQualifDoable._4
+            ),
+            Qualification(
+              QualificationKey.PlatitudeAgree,
+              countsQualifPlatitudeAgree._1,
+              countsQualifPlatitudeAgree._2,
+              countsQualifPlatitudeAgree._3,
+              countsQualifPlatitudeAgree._4
+            )
+          )
+        ),
+        Vote(
+          key = VoteKey.Neutral,
+          count = countsNeutral._1,
+          countVerified = countsNeutral._2,
+          countSequence = countsNeutral._3,
+          countSegment = countsNeutral._4,
+          qualifications = Seq(
+            Qualification(
+              QualificationKey.DoNotUnderstand,
+              countsQualifDoNotUnderstand._1,
+              countsQualifDoNotUnderstand._2,
+              countsQualifDoNotUnderstand._3,
+              countsQualifDoNotUnderstand._4
+            ),
+            Qualification(
+              QualificationKey.DoNotCare,
+              countsQualifDoNotCare._1,
+              countsQualifDoNotCare._2,
+              countsQualifDoNotCare._3,
+              countsQualifDoNotCare._4
+            ),
+            Qualification(
+              QualificationKey.NoOpinion,
+              countsQualifNoOpinion._1,
+              countsQualifNoOpinion._2,
+              countsQualifNoOpinion._3,
+              countsQualifNoOpinion._4
+            )
+          )
+        ),
+        Vote(
+          key = VoteKey.Disagree,
+          count = countsDisagree._1,
+          countVerified = countsDisagree._2,
+          countSequence = countsDisagree._3,
+          countSegment = countsDisagree._4,
+          qualifications = Seq(
+            Qualification(
+              QualificationKey.NoWay,
+              countsQualifNoWay._1,
+              countsQualifNoWay._2,
+              countsQualifNoWay._3,
+              countsQualifNoWay._4
+            ),
+            Qualification(
+              QualificationKey.Impossible,
+              countsQualifImpossible._1,
+              countsQualifImpossible._2,
+              countsQualifImpossible._3,
+              countsQualifImpossible._4
+            ),
+            Qualification(
+              QualificationKey.PlatitudeDisagree,
+              countsQualifPlatitudeDisagree._1,
+              countsQualifPlatitudeDisagree._2,
+              countsQualifPlatitudeDisagree._3,
+              countsQualifPlatitudeDisagree._4
+            )
+          )
+        )
+      )
+  }
+
+  def genProposal(question: Question, users: Seq[User], tagsIds: Seq[TagId]): Gen[Proposal] =
+    for {
+      content         <- CustomGenerators.LoremIpsumGen.sentence(maxLength = BusinessConfig.defaultProposalMaxLength)
+      author          <- Gen.oneOf(users.map(_.userId))
+      status          <- Gen.oneOf(ProposalStatus.statusMap.values.toSeq)
+      refusalReason   <- CustomGenerators.LoremIpsumGen.word
+      tags            <- Gen.someOf(tagsIds)
+      votes           <- genProposalVotes
+      organisationIds <- Gen.someOf(users.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId))
+      date            <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
+      initialProposal <- Gen.frequency((9, false), (1, true))
+      slug = SlugHelper(content)
+    } yield
+      Proposal(
+        proposalId = idGenerator.nextProposalId(),
+        slug = slug,
+        content = content,
+        author = author,
+        labels = Seq.empty,
+        status = status,
+        refusalReason = if (status == ProposalStatus.Refused) Some(refusalReason) else None,
+        tags = tags.toSeq,
+        votes = votes,
+        organisationIds = organisationIds.toSeq,
+        language = Some(question.language),
+        country = Some(question.country),
+        questionId = Some(question.questionId),
+        creationContext = RequestContext.empty,
+        idea = None,
+        operation = question.operationId,
+        createdAt = date,
+        updatedAt = date,
+        events = List.empty,
+        initialProposal = initialProposal
+      )
 }
