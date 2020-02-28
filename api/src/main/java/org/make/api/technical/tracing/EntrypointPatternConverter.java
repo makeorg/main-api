@@ -41,7 +41,7 @@ public class EntrypointPatternConverter extends LogEventPatternConverter {
 
     @Override
     public void format(LogEvent event, StringBuilder toAppendTo) {
-        Tracing.entrypoint().foreach(toAppendTo::append);
+        toAppendTo.append(Tracing.entrypoint().getOrElse(() -> "-"));
     }
 
 }
