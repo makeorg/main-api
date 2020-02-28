@@ -24,7 +24,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.core.personality.{Candidate, Personality, PersonalityId}
+import org.make.core.personality.{Candidate, Personality, PersonalityId, PersonalityRole}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches, _}
@@ -50,6 +50,20 @@ class AdminQuestionPersonalityApiTest
   )
 
   feature("post personality") {
+
+    when(
+      questionPersonalityService
+        .find(
+          start = any[Int],
+          end = any[Option[Int]],
+          sort = any[Option[String]],
+          order = any[Option[String]],
+          userId = any[Option[UserId]],
+          questionId = any[Option[QuestionId]],
+          personalityRole = any[Option[PersonalityRole]]
+        )
+    ).thenReturn(Future.successful(Seq.empty))
+
     scenario("post personality unauthenticated") {
       Post("/admin/question-personalities").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
@@ -80,10 +94,47 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("post scenario with wrong request") {
+    scenario("post personality with wrong request") {
       Post("/admin/question-personalities")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "questionId": "question-id"
+                                                                  |}""".stripMargin))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    scenario("personality already exists") {
+
+      when(
+        questionPersonalityService
+          .find(
+            start = any[Int],
+            end = any[Option[Int]],
+            sort = any[Option[String]],
+            order = any[Option[String]],
+            userId = matches(Some(UserId("user-id"))),
+            questionId = matches(Some(QuestionId("question-id"))),
+            personalityRole = any[Option[PersonalityRole]]
+          )
+      ).thenReturn(
+        Future.successful(
+          Seq(
+            Personality(
+              personalityId = PersonalityId("personality-id"),
+              userId = UserId("user-id"),
+              questionId = QuestionId("question-id"),
+              personalityRole = Candidate
+            )
+          )
+        )
+      )
+
+      Post("/admin/question-personalities")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+                                                                  | "userId": "user-id",
+                                                                  | "questionId": "question-id",
+                                                                  | "personalityRole": "CANDIDATE"
                                                                   |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
