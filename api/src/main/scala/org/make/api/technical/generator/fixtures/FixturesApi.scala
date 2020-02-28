@@ -39,8 +39,6 @@ import scala.annotation.meta.field
 @Api(value = "Fixtures")
 @Path(value = "/fixtures")
 trait FixturesApi extends Directives {
-  def emptyRoute: Route
-
   @ApiOperation(value = "generate-fixtures", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
@@ -55,7 +53,7 @@ trait FixturesApi extends Directives {
   @Path(value = "/generate")
   def generateFixtures: Route
 
-  def routes: Route
+  def routes: Route = generateFixtures
 }
 
 trait FixturesApiComponent {
@@ -72,17 +70,6 @@ trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenti
   override lazy val fixturesApi: FixturesApi = new DefaultFixturesApi
 
   class DefaultFixturesApi extends FixturesApi {
-    override def routes: Route = makeSettings.environment match {
-      case "production" => emptyRoute
-      case _            => generateFixtures
-    }
-
-    override def emptyRoute: Route = get {
-      path("fixtures") {
-        complete(StatusCodes.OK)
-      }
-    }
-
     override def generateFixtures: Route = post {
       path("fixtures" / "generate") {
         makeOperation("GenerateFixtures") { _ =>
@@ -92,7 +79,7 @@ trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenti
                 fixturesService.generate(
                   maybeOperationId = request.operationId,
                   maybeQuestionId = request.questionId,
-                  proposalFillMode = request.fillMode.getOrElse(FillMode.Big)
+                  proposalFillMode = request.fillMode
                 )
               ) { result =>
                 complete(StatusCodes.Created -> result)
@@ -131,13 +118,12 @@ object FillMode {
     )
 
   val modes: Map[String, FillMode] =
-    Map(Empty.shortName -> Empty, Tiny.shortName -> Tiny, Big.shortName -> Big)
+    Map(Tiny.shortName -> Tiny, Big.shortName -> Big)
 
   def matchMode(mode: String): Option[FillMode] = {
     modes.get(mode)
   }
 
-  case object Empty extends FillMode { val shortName = "EMPTY" }
   case object Tiny extends FillMode { val shortName = "TINY" }
   case object Big extends FillMode { val shortName = "BIG" }
 

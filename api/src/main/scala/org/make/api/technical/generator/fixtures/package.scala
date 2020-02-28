@@ -17,7 +17,7 @@
  *
  */
 
-package org.make.api.technical.generator.fixtures
+package org.make.api.technical.generator
 
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Parameters
@@ -26,8 +26,8 @@ import org.scalacheck.rng.Seed
 package object fixtures {
 
   implicit class RichGen[T](val self: Gen[T]) extends AnyVal {
-    def value: T = {
-      self.pureApply(Parameters.default, Seed.random())
+    def value(implicit parameters: Parameters = Parameters.default, seed: Seed = Seed.random()): T = {
+      self.pureApply(parameters, seed)
     }
   }
 }

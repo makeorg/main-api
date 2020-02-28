@@ -21,7 +21,6 @@ package org.make.api.technical.generator.fixtures
 
 import java.util.concurrent.Executors
 
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.operation.{
@@ -36,7 +35,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.user.{User, UserId}
 
 import scala.concurrent.{ExecutionContext, Future}
-import fixtures._
 import org.make.api.ActorSystemComponent
 import org.make.api.proposal.{
   ProposalServiceComponent,
@@ -55,7 +53,7 @@ import org.scalacheck.rng.Seed
 trait FixturesService {
   def generate(maybeOperationId: Option[OperationId],
                maybeQuestionId: Option[QuestionId],
-               proposalFillMode: FillMode): Future[Map[String, Int]]
+               proposalFillMode: Option[FillMode]): Future[Map[String, Int]]
 }
 
 trait FixturesServiceComponent {
@@ -73,11 +71,9 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
 
   class DefaultFixturesService extends FixturesService {
 
-    private implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-
-    private val httpThreads = 32
+    private val nThreads = 32
     implicit private val executionContext: ExecutionContext =
-      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
+      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(nThreads))
 
     def generateOperation(maybeOperationId: Option[OperationId], adminUserId: UserId): Future[OperationId] = {
       maybeOperationId match {
@@ -99,33 +95,39 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         case Some(questionId) => Future.successful(questionId)
         case None =>
           val parameters: CreateOperationOfQuestion = EntitiesGen.genCreateOperationOfQuestion(operationId).value
-          operationOfQuestionService.create(parameters).map(_.questionId)
+          operationOfQuestionService.create(parameters).map { question =>
+            logger.info(s"generated: question ${question.questionId}")
+            question.questionId
+          }
       }
     }
 
     def generateUsers(questionId: QuestionId): Future[Seq[User]] = {
-      val userDatas = Gen.listOf(EntitiesGen.genUserRegisterData(Some(questionId))).value
-      Source(userDatas.distinctBy(_.email))
-        .mapAsync(5) { data =>
+      val usersData = Gen.listOf(EntitiesGen.genUserRegisterData(Some(questionId))).value
+      logger.info(s"generating: ${usersData.size} users")
+      Source(usersData.distinctBy(_.email))
+        .mapAsync(16) { data =>
           userService.register(data, RequestContext.empty)
         }
         .runWith(Sink.seq)
     }
 
     def generateProposals(question: Question,
-                          mode: FillMode,
+                          mode: Option[FillMode],
                           users: Seq[User],
                           tagsIds: Seq[TagId],
                           adminUserId: UserId): Future[Seq[ProposalId]] = {
       val parameters: Parameters = mode match {
-        case FillMode.Empty => Parameters.default.withSize(0)
-        case FillMode.Tiny  => Parameters.default.withSize(20)
-        case FillMode.Big   => Parameters.default.withSize(2000)
+        case None                => Parameters.default.withSize(0)
+        case Some(FillMode.Tiny) => Parameters.default.withSize(20)
+        case Some(FillMode.Big)  => Parameters.default.withSize(2000)
       }
       val proposalsData =
         Gen.listOf(EntitiesGen.genProposal(question, users, tagsIds)).pureApply(parameters, Seed.random())
+      logger.info(s"generating: ${proposalsData.size} proposals")
+
       Source(proposalsData)
-        .mapAsync(5) { proposal =>
+        .mapAsync(16) { proposal =>
           proposalService
             .propose(
               user = users.find(_.userId == proposal.author).get,
@@ -137,7 +139,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
             )
             .map(proposalId => proposal.copy(proposalId = proposalId))
         }
-        .mapAsync(5) { proposal =>
+        .mapAsync(16) { proposal =>
           proposal.status match {
             case ProposalStatus.Pending => Future.successful(proposal)
             case ProposalStatus.Postponed =>
@@ -171,7 +173,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
             case ProposalStatus.Archived => Future.successful(proposal)
           }
         }
-        .mapAsync(5) { proposal =>
+        .mapAsync(16) { proposal =>
           val votesVerified = proposal.votes.map(
             v =>
               UpdateVoteRequest(
@@ -211,12 +213,12 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
 
     override def generate(maybeOperationId: Option[OperationId],
                           maybeQuestionId: Option[QuestionId],
-                          proposalFillMode: FillMode): Future[Map[String, Int]] = {
+                          proposalFillMode: Option[FillMode]): Future[Map[String, Int]] = {
       val futureAdmin: Future[User] = userService.getUserByEmail("admin@make.org").flatMap {
         case Some(user) => Future.successful(user)
         case None       => Future.failed(new IllegalStateException())
       }
-      val ret = for {
+      for {
         admin       <- futureAdmin
         operationId <- generateOperation(maybeOperationId, admin.userId)
         questionId  <- generateQuestion(maybeQuestionId, operationId)
@@ -224,8 +226,6 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         question    <- questionService.getQuestion(questionId).map(_.get)
         proposals   <- generateProposals(question, proposalFillMode, users, Seq.empty, admin.userId)
       } yield Map("users" -> users.size, "proposals" -> proposals.size)
-      logger.info(s"generated: ${ret.toString}")
-      ret
     }
   }
 }

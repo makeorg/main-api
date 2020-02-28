@@ -50,16 +50,7 @@ import org.make.api.partner.{
   DefaultPartnerServiceComponent,
   DefaultPersistentPartnerServiceComponent
 }
-import org.make.api.personality.{
-  AdminPersonalityApi,
-  AdminQuestionPersonalityApi,
-  DefaultAdminPersonalityApiComponent,
-  DefaultAdminQuestionPersonalityApiComponent,
-  DefaultPersistentQuestionPersonalityServiceComponent,
-  DefaultPersonalityApiComponent,
-  DefaultQuestionPersonalityServiceComponent,
-  PersonalityApi
-}
+import org.make.api.personality._
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.segment.DefaultSegmentServiceComponent
@@ -324,6 +315,12 @@ trait MakeApi
       }
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
+  private lazy val envDependentApiClasses: Set[Class[_]] =
+    makeSettings.environment match {
+      case "production" => Set.empty[Class[_]]
+      case _            => Set[Class[_]](classOf[FixturesApi])
+    }
+
   private lazy val apiClasses: Set[Class[_]] =
     Set(
       classOf[AdminActiveFeatureApi],
@@ -344,7 +341,6 @@ trait MakeApi
       classOf[ConfigurationsApi],
       classOf[CrmApi],
       classOf[ElasticSearchApi],
-      classOf[FixturesApi],
       classOf[HealthCheckApi],
       classOf[MigrationApi],
       classOf[ModerationIdeaApi],
@@ -367,7 +363,7 @@ trait MakeApi
       classOf[UserApi],
       classOf[ViewApi],
       classOf[WidgetApi]
-    )
+    ) ++ envDependentApiClasses
 
   private lazy val optionsCors: Route = options {
     corsHeaders() {
@@ -383,12 +379,18 @@ trait MakeApi
 
   private lazy val documentation = new MakeDocumentation(apiClasses, makeSettings.Http.ssl).routes
 
+  lazy val envDependantRoutes: Route =
+    makeSettings.environment match {
+      case "production" => swagger
+      case _            => swagger ~ fixturesApi.routes
+    }
+
   lazy val makeRoutes: Route =
     (documentation ~
-      swagger ~
       optionsCors ~
       optionsAuthorized ~
       buildRoutes ~
+      envDependantRoutes ~
 
       adminActiveFeatureApi.routes ~
       adminClientApi.routes ~
@@ -408,7 +410,6 @@ trait MakeApi
       configurationsApi.routes ~
       crmApi.routes ~
       elasticSearchApi.routes ~
-      fixturesApi.routes ~
       healthCheckApi.routes ~
       migrationApi.routes ~
       moderationIdeaApi.routes ~

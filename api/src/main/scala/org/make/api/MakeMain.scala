@@ -119,7 +119,6 @@ object MakeMain extends App with StrictLogging with MakeApi {
   actorSystem.actorOf(ShardedSessionHistory.props(userHistoryCoordinator, 1.second), "fake-session") ! PoisonPill
 
   // Ensure database stuff is initialized
-  // we should also check that the result is defined
   Await.result(userService.getUserByEmail("admin@make.org"), atMost = 20.seconds)
 
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher

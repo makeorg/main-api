@@ -23,6 +23,7 @@ import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField.{HOUR_OF_DAY, MINUTE_OF_HOUR, NANO_OF_SECOND, SECOND_OF_MINUTE}
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
+import java.util.Calendar
 
 trait DateHelper {
   def now(): ZonedDateTime
@@ -68,6 +69,12 @@ object DateHelper extends DateHelper {
   implicit class RichJavaTime(val self: ZonedDateTime) extends AnyVal {
     def toUTC: ZonedDateTime = {
       self.withZoneSameInstant(ZoneOffset.UTC)
+    }
+  }
+
+  implicit class RichCalendar(val self: Calendar) extends AnyVal {
+    def toZonedDateTime: ZonedDateTime = {
+      ZonedDateTime.ofInstant(self.toInstant, self.getTimeZone.toZoneId)
     }
   }
 
