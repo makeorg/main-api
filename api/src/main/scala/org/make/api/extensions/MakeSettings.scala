@@ -19,12 +19,12 @@
 
 package org.make.api.extensions
 
-import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{Actor, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters._
 
 class MakeSettings(config: Config) extends Extension {
 
@@ -94,7 +94,6 @@ object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
     new MakeSettings(system.settings.config.getConfig("make-api"))
 
   override def lookup(): ExtensionId[MakeSettings] = MakeSettings
-  override def get(system: ActorSystem): MakeSettings = super.get(system)
 }
 
 trait MakeSettingsExtension { self: Actor =>

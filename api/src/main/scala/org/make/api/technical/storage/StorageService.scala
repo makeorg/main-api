@@ -21,17 +21,17 @@ package org.make.api.technical.storage
 import java.io.{ByteArrayOutputStream, File, FileInputStream, InputStream}
 import java.net.URL
 
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
+import kamon.annotation.api.Trace
 import org.make.api.ActorSystemComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.DateHelper
 import org.make.core.user.{UserId, UserType}
 import org.make.swift.model.Bucket
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import kamon.annotation.api.Trace
+import scala.concurrent.Future
 
 trait StorageService {
 
