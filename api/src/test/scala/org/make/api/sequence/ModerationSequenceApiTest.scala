@@ -20,7 +20,7 @@
 package org.make.api.sequence
 
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCode, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.testkit.TestDuration
@@ -70,96 +70,124 @@ class ModerationSequenceApiTest
 
   val routes: Route = sealRoute(moderationSequenceApi.routes)
 
-  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("unknownSequence"))))
+  val sequenceConfiguration: SequenceConfiguration = SequenceConfiguration(
+    sequenceId = SequenceId("mySequence"),
+    questionId = QuestionId("myQuestion"),
+    newProposalsRatio = 0.5,
+    newProposalsVoteThreshold = 100,
+    testedProposalsEngagementThreshold = Some(0.8),
+    testedProposalsScoreThreshold = Some(0.0),
+    testedProposalsControversyThreshold = Some(0.0),
+    intraIdeaEnabled = true,
+    intraIdeaMinCount = 3,
+    intraIdeaProposalsRatio = .3
+  )
+
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("myQuestion"))))
     .thenReturn(Future.successful(None))
 
-  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("mySequence")))).thenReturn(
-    Future.successful(
-      Some(
-        SequenceConfiguration(
-          sequenceId = SequenceId("mySequence"),
-          questionId = QuestionId("myQuestion"),
-          newProposalsRatio = 0.5,
-          newProposalsVoteThreshold = 100,
-          testedProposalsEngagementThreshold = Some(0.8),
-          testedProposalsScoreThreshold = Some(0.0),
-          testedProposalsControversyThreshold = Some(0.0),
-          intraIdeaEnabled = true,
-          intraIdeaMinCount = 3,
-          intraIdeaProposalsRatio = .3
-        )
-      )
-    )
-  )
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("unknown"))))
+    .thenReturn(Future.successful(None))
+
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("mySequence"))))
+    .thenReturn(Future.successful(Some(sequenceConfiguration)))
+
+  when(sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(any[QuestionId]))
+    .thenReturn(Future.successful(None))
+
+  when(sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(matches(QuestionId("myQuestion"))))
+    .thenReturn(Future.successful(Some(sequenceConfiguration)))
 
   when(sequenceConfigurationService.setSequenceConfiguration(any[SequenceConfiguration]))
     .thenReturn(Future.successful(true))
 
   feature("get sequence configuration") {
-    scenario("set sequence config as user") {
-      Get("/moderation/sequences/mySequence/configuration")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
 
-    scenario("get sequence config as moderator") {
-      Get("/moderation/sequences/mySequence/configuration")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
+    def testSequenceConfigurationReadAccess(
+      by: String,
+      as: String,
+      id: String,
+      token: String,
+      expected: StatusCode
+    ): Unit =
+      scenario(s"get sequence config by $by id as $as") {
+        Get(s"/moderation/sequences/$id/configuration")
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(expected)
+        }
       }
-    }
 
-    scenario("get sequence config as admin") {
-      Get("/moderation/sequences/mySequence/configuration")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
+    testSequenceConfigurationReadAccess("sequence", "user", "mySequence", tokenCitizen, StatusCodes.Forbidden)
+    testSequenceConfigurationReadAccess("question", "user", "myQuestion", tokenCitizen, StatusCodes.Forbidden)
+    testSequenceConfigurationReadAccess("sequence", "moderator", "mySequence", tokenModerator, StatusCodes.Forbidden)
+    testSequenceConfigurationReadAccess("question", "moderator", "myQuestion", tokenModerator, StatusCodes.Forbidden)
+    testSequenceConfigurationReadAccess("sequence", "admin", "mySequence", tokenAdmin, StatusCodes.OK)
+    testSequenceConfigurationReadAccess("question", "admin", "myQuestion", tokenAdmin, StatusCodes.OK)
+    testSequenceConfigurationReadAccess("unknown", "admin", "unknown", tokenAdmin, StatusCodes.NotFound)
 
-    scenario("get unknown sequence config as admin") {
-      Get("/moderation/sequences/unknownSequence/unknownQuestion/configuration")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.NotFound)
-      }
-    }
   }
 
   feature("set sequence configuration") {
-    scenario("set sequence config as user") {
-      Put("/moderation/sequences/mySequence/myQuestion/configuration")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
 
-    scenario("set sequence config as moderator") {
-      Put("/moderation/sequences/mySequence/myQuestion/configuration")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
+    def testSequenceConfigurationWriteAccess(
+      by: String,
+      as: String,
+      id: String,
+      token: String,
+      expected: StatusCode,
+      payload: String = setSequenceConfigurationPayload
+    ): Unit =
+      scenario(s"set sequence config by $by id as $as") {
+        Put(s"/moderation/sequences/$id/configuration")
+          .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
+          .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
+          status should be(expected)
+        }
       }
-    }
 
-    scenario("set sequence config as admin") {
-      Put("/moderation/sequences/mySequence/myQuestion/configuration")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
+    // new route using only question id
+    testSequenceConfigurationWriteAccess("question", "user", "myQuestion", tokenCitizen, StatusCodes.Forbidden)
+    testSequenceConfigurationWriteAccess("question", "moderator", "myQuestion", tokenModerator, StatusCodes.Forbidden)
+    testSequenceConfigurationWriteAccess("question", "admin", "myQuestion", tokenAdmin, StatusCodes.OK)
+    testSequenceConfigurationWriteAccess(
+      "question",
+      "admin with wrong selectionAlgorithmName",
+      "myQuestion",
+      tokenAdmin,
+      StatusCodes.BadRequest,
+      setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid")
+    )
 
-    scenario("set sequence config as admin with wrong selectionAlgorithmName") {
-      Put("/moderation/sequences/mySequence/myQuestion/configuration")
-        .withEntity(
-          HttpEntity(ContentTypes.`application/json`, setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid"))
-        )
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-      }
-    }
+    // deprecated route using sequence and question id
+    testSequenceConfigurationWriteAccess(
+      "sequence and question",
+      "user",
+      "mySequence/myQuestion",
+      tokenCitizen,
+      StatusCodes.Forbidden
+    )
+    testSequenceConfigurationWriteAccess(
+      "sequence and question",
+      "moderator",
+      "mySequence/myQuestion",
+      tokenModerator,
+      StatusCodes.Forbidden
+    )
+    testSequenceConfigurationWriteAccess(
+      "sequence and question",
+      "admin",
+      "mySequence/myQuestion",
+      tokenAdmin,
+      StatusCodes.OK
+    )
+    testSequenceConfigurationWriteAccess(
+      "sequence and question",
+      "admin with wrong selectionAlgorithmName",
+      "mySequence/myQuestion",
+      tokenAdmin,
+      StatusCodes.BadRequest,
+      setSequenceConfigurationPayload.replaceFirst("Bandit", "invalid")
+    )
+
   }
 }

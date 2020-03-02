@@ -23,7 +23,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
-import org.make.api.operation.PersistentOperationOfQuestionService
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionService, SearchQuestionRequest}
 import org.make.api.technical.IdGeneratorComponent
@@ -31,10 +30,8 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApiTestBase}
 import org.make.core.RequestContext
-import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers
@@ -60,15 +57,13 @@ class WidgetApiTest
   override val ideaService: IdeaService = mock[IdeaService]
   override val widgetService: WidgetService = mock[WidgetService]
   override val persistentQuestionService: PersistentQuestionService = mock[PersistentQuestionService]
-  override val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
-    mock[PersistentOperationOfQuestionService]
 
   val routes: Route = sealRoute(widgetApi.routes)
 
   when(
     widgetService.startNewWidgetSequence(
       ArgumentMatchers.any[Option[UserId]],
-      ArgumentMatchers.any[SequenceId],
+      ArgumentMatchers.any[QuestionId],
       ArgumentMatchers.any[Option[Seq[TagId]]],
       ArgumentMatchers.any[Option[Int]],
       ArgumentMatchers.any[RequestContext]
@@ -77,42 +72,10 @@ class WidgetApiTest
 
   feature("start sequence by question slug") {
     val baseQuestion = Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "Slug ?", None)
-    val baseOperationOfQuestion = OperationOfQuestion(
-      QuestionId("question-id"),
-      OperationId("foo-operation-id"),
-      None,
-      None,
-      "Foo operation",
-      SequenceId("sequence-id"),
-      canPropose = true,
-      sequenceCardsConfiguration = SequenceCardsConfiguration(
-        introCard = IntroCard(enabled = true, title = None, description = None),
-        pushProposalCard = PushProposalCard(enabled = true),
-        signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-        finalCard = FinalCard(
-          enabled = true,
-          sharingEnabled = false,
-          title = None,
-          shareDescription = None,
-          learnMoreTitle = None,
-          learnMoreTextButton = None,
-          linkUrl = None
-        )
-      ),
-      aboutUrl = None,
-      metas = Metas(title = None, description = None, picture = None),
-      theme = QuestionTheme.default,
-      description = OperationOfQuestion.defaultDescription,
-      consultationImage = None,
-      descriptionImage = None,
-      displayResults = false
-    )
 
     scenario("valid question") {
       when(persistentQuestionService.find(ArgumentMatchers.any[SearchQuestionRequest]))
         .thenReturn(Future.successful(Seq(baseQuestion)))
-      when(persistentOperationOfQuestionService.getById(ArgumentMatchers.any[QuestionId]))
-        .thenReturn(Future.successful(Some(baseOperationOfQuestion)))
 
       Get("/widget/questions/slug/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)

@@ -25,7 +25,7 @@ import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceCom
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.RequestContext
-import org.make.core.sequence.SequenceId
+import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
@@ -38,7 +38,7 @@ trait WidgetServiceComponent {
 
 trait WidgetService {
   def startNewWidgetSequence(maybeUserId: Option[UserId],
-                             sequenceId: SequenceId,
+                             questionId: QuestionId,
                              tagsIds: Option[Seq[TagId]],
                              limit: Option[Int],
                              requestContext: RequestContext): Future[ProposalsResultSeededResponse]
@@ -60,7 +60,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
   class DefaultWidgetService extends WidgetService {
 
     override def startNewWidgetSequence(maybeUserId: Option[UserId],
-                                        sequenceId: SequenceId,
+                                        questionId: QuestionId,
                                         tagsIds: Option[Seq[TagId]],
                                         limit: Option[Int],
                                         requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
@@ -68,7 +68,7 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
       for {
         selectedProposals <- sequenceService.startNewSequence(
           maybeUserId = maybeUserId,
-          sequenceId = sequenceId,
+          questionId = questionId,
           includedProposals = Seq.empty,
           tagsIds = tagsIds,
           requestContext = requestContext

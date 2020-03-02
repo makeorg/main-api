@@ -505,7 +505,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now(),
           LogSessionStartSequenceEvent.action,
-          StartSequenceParameters(None, Some(SequenceId("some-random-sequence")), Seq.empty)
+          StartSequenceParameters(None, None, Some(SequenceId("some-random-sequence")), Seq.empty)
         )
       )
 
@@ -515,7 +515,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().plus(1, ChronoUnit.MINUTES),
           LogSessionStartSequenceEvent.action,
-          StartSequenceParameters(None, Some(SequenceId("some-random-sequence")), Seq.empty)
+          StartSequenceParameters(None, None, Some(SequenceId("some-random-sequence")), Seq.empty)
         )
       )
 
@@ -548,7 +548,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
         SessionAction(
           DateHelper.now().plus(2, ChronoUnit.MINUTES),
           LogSessionStartSequenceEvent.action,
-          StartSequenceParameters(None, Some(SequenceId("some-random-sequence")), Seq.empty)
+          StartSequenceParameters(None, None, Some(SequenceId("some-random-sequence")), Seq.empty)
         )
       )
       coordinator ! event3

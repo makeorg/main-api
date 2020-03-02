@@ -116,6 +116,7 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
           actionType = LogSessionStartSequenceEvent.action,
           arguments = StartSequenceParameters(
             slug = None,
+            questionId = None,
             sequenceId = Some(SequenceId("sequence-id")),
             includedProposals = Seq(ProposalId("proposalId1"), ProposalId("proposalId2"))
           )

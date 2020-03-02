@@ -40,7 +40,7 @@ import org.make.core.proposal.{
   SegmentSearchFilter,
   SequencePoolSearchFilter
 }
-import org.make.core.sequence._
+import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.user._
 import org.make.core.{proposal, DateHelper, RequestContext}
@@ -54,7 +54,7 @@ trait SequenceServiceComponent {
 
 trait SequenceService {
   def startNewSequence(maybeUserId: Option[UserId],
-                       sequenceId: SequenceId,
+                       questionId: QuestionId,
                        includedProposals: Seq[ProposalId],
                        tagsIds: Option[Seq[TagId]],
                        requestContext: RequestContext): Future[Option[SequenceResult]]
@@ -82,13 +82,13 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
   class DefaultSequenceService extends SequenceService {
 
     override def startNewSequence(maybeUserId: Option[UserId],
-                                  sequenceId: SequenceId,
+                                  questionId: QuestionId,
                                   includedProposals: Seq[ProposalId],
                                   tagsIds: Option[Seq[TagId]],
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
-      logStartSequenceUserHistory(None, Some(sequenceId), maybeUserId, includedProposals, requestContext)
+      logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
 
-      sequenceConfigurationService.getSequenceConfiguration(sequenceId).flatMap { sequenceConfiguration =>
+      sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).flatMap { sequenceConfiguration =>
         startSequence(maybeUserId, sequenceConfiguration, includedProposals, tagsIds, requestContext).flatMap {
           case Some(sequenceResult) if sequenceResult.proposals.size < sequenceConfiguration.sequenceSize =>
             fallbackEmptySequence(maybeUserId, sequenceConfiguration, sequenceResult.proposals, requestContext)
@@ -102,7 +102,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                       initialSequenceProposals: Seq[ProposalResponse],
                                       requestContext: RequestContext): Future[Option[SequenceResult]] = {
 
-      logger.warn(s"Sequence ${sequenceConfiguration.sequenceId.value} fallback for user ${requestContext.sessionId}")
+      logger.warn(s"Sequence fallback for user ${requestContext.sessionId} and question ${sequenceConfiguration.questionId}")
 
       for {
         selectedProposals <- elasticsearchProposalAPI
@@ -262,8 +262,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
-    private def logStartSequenceUserHistory(sequenceSlug: Option[String],
-                                            sequenceId: Option[SequenceId],
+    private def logStartSequenceUserHistory(questionId: Option[QuestionId],
                                             maybeUserId: Option[UserId],
                                             includedProposals: Seq[ProposalId],
                                             requestContext: RequestContext): Unit = {
@@ -277,7 +276,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               UserAction(
                 date = DateHelper.now(),
                 actionType = LogUserStartSequenceEvent.action,
-                arguments = StartSequenceParameters(sequenceSlug, sequenceId, includedProposals)
+                arguments = StartSequenceParameters(None, questionId, None, includedProposals)
               )
             )
           )
@@ -289,7 +288,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               SessionAction(
                 date = DateHelper.now(),
                 actionType = LogSessionStartSequenceEvent.action,
-                arguments = StartSequenceParameters(sequenceSlug, sequenceId, includedProposals)
+                arguments = StartSequenceParameters(None, questionId, None, includedProposals)
               )
             )
           )

@@ -50,12 +50,14 @@ trait ModerationSequenceApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SequenceConfiguration]))
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "sequenceId", paramType = "path", dataType = "string")))
-  @Path(value = "/{sequenceId}/configuration")
+  @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "questionIdOrSequenceId", paramType = "path", dataType = "string"))
+  )
+  @Path(value = "/{questionIdOrSequenceId}/configuration")
   def getModerationSequenceConfiguration: Route
 
   @ApiOperation(
-    value = "moderation-update-sequence-configuration",
+    value = "deprecated-moderation-update-sequence-configuration",
     httpMethod = "PUT",
     code = HttpCodes.OK,
     notes = "/!\\ You need to reindex proposals to apply these modifications.",
@@ -79,9 +81,35 @@ trait ModerationSequenceApi extends Directives {
     )
   )
   @Path(value = "/{sequenceId}/{questionId}/configuration")
+  def deprecatedPutSequenceConfiguration: Route
+
+  @ApiOperation(
+    value = "moderation-update-sequence-configuration",
+    httpMethod = "PUT",
+    code = HttpCodes.OK,
+    notes = "/!\\ You need to reindex proposals to apply these modifications.",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Boolean])))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.sequence.SequenceConfigurationRequest"
+      ),
+      new ApiImplicitParam(name = "questionId", paramType = "path", required = true, value = "", dataType = "string")
+    )
+  )
+  @Path(value = "/{questionId}/configuration")
   def putSequenceConfiguration: Route
 
-  def routes: Route = getModerationSequenceConfiguration ~ putSequenceConfiguration
+  def routes: Route = getModerationSequenceConfiguration ~ putSequenceConfiguration ~ deprecatedPutSequenceConfiguration
 
 }
 
@@ -110,24 +138,33 @@ trait DefaultModerationSequenceApiComponent
 
     override def getModerationSequenceConfiguration: Route = {
       get {
-        path("moderation" / "sequences" / moderationSequenceId / "configuration") { sequenceId =>
+        path("moderation" / "sequences" / Segment / "configuration") { id =>
           makeOperation("GetModerationSequenceConfiguration") { _ =>
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireAdminRole(auth.user) {
-                provideAsyncOrNotFound[SequenceConfiguration](
-                  sequenceConfigurationService.getPersistentSequenceConfiguration(sequenceId)
-                ) { complete(_) }
+                provideAsync(
+                  sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(QuestionId(id))
+                ) {
+                  case Some(result) =>
+                    complete(result)
+                  case _ =>
+                    provideAsyncOrNotFound[SequenceConfiguration](
+                      sequenceConfigurationService.getPersistentSequenceConfiguration(SequenceId(id))
+                    ) {
+                      complete(_)
+                    }
+                }
               }
             }
           }
         }
       }
     }
-    override def putSequenceConfiguration: Route = {
+    override def deprecatedPutSequenceConfiguration: Route = {
       put {
         path("moderation" / "sequences" / moderationSequenceId / questionId / "configuration") {
           (sequenceId, questionId) =>
-            makeOperation("PostSequenceConfiguration") { _ =>
+            makeOperation("DeprecatedPutSequenceConfiguration") { _ =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   decodeRequest {
@@ -147,6 +184,37 @@ trait DefaultModerationSequenceApiComponent
         }
       }
     }
+
+    override def putSequenceConfiguration: Route = {
+      put {
+        path("moderation" / "sequences" / questionId / "configuration") {
+          questionId =>
+            makeOperation("PutSequenceConfiguration") { _ =>
+              makeOAuth2 { auth: AuthInfo[UserRights] =>
+                requireAdminRole(auth.user) {
+                  decodeRequest {
+                    entity(as[SequenceConfigurationRequest]) {
+                      sequenceConfigurationRequest: SequenceConfigurationRequest =>
+                        provideAsyncOrNotFound(
+                          sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(questionId)
+                        ) { sequenceConfiguration =>
+                          provideAsync[Boolean](sequenceConfigurationService.setSequenceConfiguration(
+                            sequenceConfigurationRequest.toSequenceConfiguration(
+                              sequenceConfiguration.sequenceId, questionId
+                            )
+                          )) {
+                            complete(_)
+                          }
+                        }
+                    }
+                  }
+                }
+              }
+            }
+        }
+      }
+    }
+
   }
 
 }
