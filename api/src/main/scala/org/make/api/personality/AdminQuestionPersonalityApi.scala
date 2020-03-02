@@ -33,7 +33,7 @@ import org.make.core.auth.UserRights
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.{HttpCodes, ParameterExtractors, ValidationError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -161,8 +161,31 @@ trait DefaultAdminQuestionPersonalityApiComponent
               requireAdminRole(auth.user) {
                 decodeRequest {
                   entity(as[CreateQuestionPersonalityRequest]) { request =>
-                    onSuccess(questionPersonalityService.createPersonality(request)) { result =>
-                      complete(StatusCodes.Created -> PersonalityIdResponse(result.personalityId))
+                    provideAsync(
+                      questionPersonalityService.find(
+                        start = 0,
+                        end = None,
+                        sort = None,
+                        order = None,
+                        userId = Some(request.userId),
+                        questionId = Some(request.questionId),
+                        personalityRole = None
+                      )
+                    ) {
+                      case duplicates if duplicates.nonEmpty =>
+                        complete(
+                          StatusCodes.BadRequest -> ValidationError(
+                            "userId",
+                            "already_defined",
+                            Some(
+                              s"User with id : ${request.userId.value} is already defined as a personality for this question"
+                            )
+                          )
+                        )
+                      case _ =>
+                        onSuccess(questionPersonalityService.createPersonality(request)) { result =>
+                          complete(StatusCodes.Created -> PersonalityIdResponse(result.personalityId))
+                        }
                     }
                   }
                 }

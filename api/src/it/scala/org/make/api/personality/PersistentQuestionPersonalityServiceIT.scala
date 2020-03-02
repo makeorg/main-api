@@ -82,11 +82,13 @@ class PersistentQuestionPersonalityServiceIT
   feature("search personalities") {
     scenario("search all") {
       val futurePersonality = for {
+        _ <- persistentUserService.persist(user.copy(userId = UserId("user-id-2"), email = "test-2@make.org"))
+        _ <- persistentUserService.persist(user.copy(userId = UserId("user-id-3"), email = "test-3@make.org"))
         _ <- persistentQuestionPersonalityService.persist(
-          personality.copy(personalityId = PersonalityId("personality2"))
+          personality.copy(personalityId = PersonalityId("personality2"), userId = UserId("user-id-2"))
         )
         _ <- persistentQuestionPersonalityService.persist(
-          personality.copy(personalityId = PersonalityId("personality3"))
+          personality.copy(personalityId = PersonalityId("personality3"), userId = UserId("user-id-3"))
         )
         personalities <- persistentQuestionPersonalityService.find(
           start = 0,
@@ -107,11 +109,21 @@ class PersistentQuestionPersonalityServiceIT
     scenario("search by questionId") {
       val futurePersonality = for {
         _ <- persistentQuestionService.persist(question.copy(questionId = QuestionId("question2"), slug = "question-2"))
+        _ <- persistentUserService.persist(user.copy(userId = UserId("user-id-4"), email = "test-4@make.org"))
+        _ <- persistentUserService.persist(user.copy(userId = UserId("user-id-5"), email = "test-5@make.org"))
         _ <- persistentQuestionPersonalityService.persist(
-          personality.copy(personalityId = PersonalityId("personality4"), questionId = QuestionId("question2"))
+          personality.copy(
+            personalityId = PersonalityId("personality4"),
+            questionId = QuestionId("question2"),
+            userId = UserId("user-id-4")
+          )
         )
         _ <- persistentQuestionPersonalityService.persist(
-          personality.copy(personalityId = PersonalityId("personality5"), questionId = QuestionId("question2"))
+          personality.copy(
+            personalityId = PersonalityId("personality5"),
+            questionId = QuestionId("question2"),
+            userId = UserId("user-id-5")
+          )
         )
         personalities <- persistentQuestionPersonalityService.find(
           start = 0,
@@ -150,7 +162,8 @@ class PersistentQuestionPersonalityServiceIT
         _ <- persistentQuestionPersonalityService.persist(
           personality.copy(
             personalityId = PersonalityId("personality-count-2"),
-            questionId = QuestionId("question-for-count-personality-scenario")
+            questionId = QuestionId("question-for-count-personality-scenario"),
+            userId = UserId("user-id-2")
           )
         )
         count <- persistentQuestionPersonalityService.count(
