@@ -22,7 +22,7 @@ package org.make.api.extensions
 import java.sql.Connection
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.github.t3hnar.bcrypt._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
@@ -150,7 +150,4 @@ object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with Ext
 
   override def lookup(): ExtensionId[DatabaseConfiguration] =
     DatabaseConfiguration
-
-  override def get(system: ActorSystem): DatabaseConfiguration =
-    super.get(system)
 }

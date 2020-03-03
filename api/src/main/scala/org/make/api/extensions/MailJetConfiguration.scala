@@ -19,7 +19,7 @@
 
 package org.make.api.extensions
 
-import akka.actor.{Actor, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{Actor, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
 
@@ -52,7 +52,6 @@ object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with Exten
     new MailJetConfiguration(system.settings.config.getConfig("make-api.mail-jet"))
 
   override def lookup(): ExtensionId[MailJetConfiguration] = MailJetConfiguration
-  override def get(system: ActorSystem): MailJetConfiguration = super.get(system)
 }
 
 trait MailJetConfigurationComponent {

@@ -41,9 +41,9 @@ import org.make.api.technical.MakePersistentActor.StartShard
 import org.make.api.technical.{ClusterShardingMonitor, MemoryMonitoringActor}
 import org.make.api.userhistory.ShardedUserHistory
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.jdk.CollectionConverters._
 
 object MakeMain extends App with StrictLogging with MakeApi {
 
