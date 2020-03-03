@@ -33,7 +33,7 @@ class MakeDowningActor extends Actor with ActorLogging {
   val constructr = Coordination(context.system.name, context.system)
 
   override def preStart(): Unit = {
-    context.system.scheduler.schedule(10.seconds, 10.seconds, self, AutoDown)
+    context.system.scheduler.scheduleWithFixedDelay(10.seconds, 10.seconds, self, AutoDown)
   }
 
   override def receive: Receive = {

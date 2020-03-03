@@ -23,7 +23,6 @@ import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -126,8 +125,6 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
-  implicit private lazy val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-
   class DefaultMigrationApi extends MigrationApi {
     override def emptyRoute: Route =
       get {
@@ -146,10 +143,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       } yield new QuestionResolver(questions, operations)
     }
 
-    private def retrieveEventQuestion(
-      resolver: QuestionResolver,
-      event: UserHistoryEvent[_]
-    ): Future[Option[Question]] = {
+    private def retrieveEventQuestion(resolver: QuestionResolver,
+                                      event: UserHistoryEvent[_]): Future[Option[Question]] = {
       resolver.extractQuestionWithOperationFromRequestContext(event.requestContext) match {
         case Some(question) => Future.successful(Some(question))
         case None =>
@@ -170,10 +165,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
     }
 
-    private def resolveQuestionFromEvents(
-      questionResolver: QuestionResolver,
-      events: Seq[EventEnvelope]
-    ): Future[Option[Question]] = {
+    private def resolveQuestionFromEvents(questionResolver: QuestionResolver,
+                                          events: Seq[EventEnvelope]): Future[Option[Question]] = {
       val maybeRegistration: Option[LogRegisterCitizenEvent] = events
         .map(_.event)
         .collectFirst {
@@ -306,10 +299,11 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
 }
 
-final case class DeleteContactsRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean
-) {
+final case class DeleteContactsRequest(@(ApiModelProperty @field)(
+                                         dataType = "string",
+                                         example = "2019-07-11T11:21:40.508Z"
+                                       ) maxUpdatedAtBeforeDelete: ZonedDateTime,
+                                       @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean) {
   Validation.validate(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",

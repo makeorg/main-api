@@ -47,7 +47,6 @@ trait DefaultProposalIndexerServiceComponent
   override lazy val proposalIndexerService: DefaultProposalIndexerService = new DefaultProposalIndexerService
 
   class DefaultProposalIndexerService extends ProposalIndexerService {
-
     lazy val bufferSize: Int =
       elasticsearchConfiguration.entityBufferSize * elasticsearchConfiguration.entityBulkSize
     lazy val proposalIndexationQueue: SourceQueueWithComplete[ProposalId] =
@@ -62,7 +61,7 @@ trait DefaultProposalIndexerServiceComponent
         })
         .withAttributes(ActorAttributes.dispatcher(api.elasticsearchDispatcher))
         .toMat(Sink.ignore)(Keep.left)
-        .run()(ActorMaterializer()(actorSystem))
+        .run()
 
     override def offer(proposalId: ProposalId): Future[Unit] = {
       proposalIndexationQueue.offer(proposalId).flatMap {

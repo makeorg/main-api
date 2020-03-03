@@ -19,7 +19,6 @@
 
 package org.make.api.idea.topIdeaComments
 
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import org.make.api.ActorSystemComponent
 import org.make.api.question.{QuestionTopIdeaCommentsPersonalityResponse, QuestionTopIdeaCommentsResponse}
@@ -96,9 +95,8 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
     override def getCommentsWithPersonality(
       topIdeaIds: Seq[TopIdeaId]
     ): Future[Seq[QuestionTopIdeaCommentsResponse]] = {
-      implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
       Source
-        .fromFuture(
+        .future(
           persistentTopIdeaCommentService
             .search(start = 0, end = None, topIdeaIds = Some(topIdeaIds), personalityIds = None)
         )

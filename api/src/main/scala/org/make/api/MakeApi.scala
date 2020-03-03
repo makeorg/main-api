@@ -498,5 +498,5 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
 }
 
 trait ActorSystemComponent {
-  def actorSystem: ActorSystem
+  implicit def actorSystem: ActorSystem
 }

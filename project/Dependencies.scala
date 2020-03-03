@@ -21,14 +21,14 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.5.25"
+  private val akkaVersion = "2.6.3"
   private val akkaHttpVersion = "10.1.10"
   private val alpakkaVersion = "1.1.2"
   private val nettyVersion = "4.1.20.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.5.4"
   private val kamonVersion = "2.0.4"
-  private val kamonAkkaVersion = "2.0.0"
+  private val kamonAkkaVersion = "2.0.2"
   private val kamonAkkaHttpVersion = "2.0.1"
   private val kamonExecutorsVersion = "2.0.0"
   private val kamonScalaFuturesVersion = "2.0.1"
@@ -62,7 +62,7 @@ object Dependencies {
   val akkaPersistence: ModuleID = "com.typesafe.akka"       %% "akka-persistence-query" % akkaVersion
   val akkaPersistenceQuesry: ModuleID = "com.typesafe.akka" %% "akka-persistence"       % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
-    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.99")
+    ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.102")
       .exclude("io.netty", "netty-handler")
   val akkaSlf4j: ModuleID = "com.typesafe.akka" %% "akka-slf4j"               % akkaVersion
   val alpakka: ModuleID = "com.lightbend.akka"  %% "akka-stream-alpakka-file" % alpakkaVersion
@@ -82,7 +82,7 @@ object Dependencies {
     ("io.kamon" %% "kamon-akka-http" % kamonAkkaHttpVersion).exclude("ch.qos.logback", "logback-classic")
   val kamonSystemMetrics: ModuleID = "io.kamon" %% "kamon-system-metrics" % kamonSystemMetricsVersion
   val kamonPrometheus: ModuleID = "io.kamon"    %% "kamon-prometheus"     % kamonPrometheusVersion
-  val kamonAnnotations: ModuleID = "io.kamon"   %% "kamon-annotation" % "2.0.1"
+  val kamonAnnotations: ModuleID = "io.kamon"   %% "kamon-annotation"     % "2.0.1"
 
   val kanela: ModuleID = "io.kamon" % "kanela-agent" % kanelaVersion
 

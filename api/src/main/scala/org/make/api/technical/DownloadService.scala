@@ -25,7 +25,6 @@ import java.util.concurrent.Executors
 import akka.http.javadsl.model.headers.Accept
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.FileIO
 
 import scala.concurrent.duration.DurationInt
@@ -51,7 +50,6 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
   private val maxRedirectCount = 3
 
   class DefaultDownloadService extends DownloadService {
-    implicit lazy val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 
     implicit val ec: ExecutionContext =
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))

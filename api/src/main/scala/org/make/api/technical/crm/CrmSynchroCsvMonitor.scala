@@ -41,7 +41,7 @@ class CrmSynchroCsvMonitor(crmClient: CrmClient,
 
   override def preStart(): Unit = {
     jobIds.foreach(queue.enqueue)
-    context.system.scheduler.schedule(0.seconds, tickInterval, self, Tick)
+    context.system.scheduler.scheduleWithFixedDelay(0.seconds, tickInterval, self, Tick)
   }
 
   override def receive: Receive = {

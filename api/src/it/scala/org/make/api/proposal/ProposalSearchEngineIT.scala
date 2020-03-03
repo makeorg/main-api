@@ -27,7 +27,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import io.circe.syntax._
@@ -121,11 +120,10 @@ class ProposalSearchEngineIT
         ),
         proposal.id
       )
-    }.via(pool)
-      .runForeach {
-        case (Failure(e), id) => logger.error(s"Error when indexing proposal ${id.value}:", e)
-        case _                =>
-      }(ActorMaterializer())
+    }.via(pool).runForeach {
+      case (Failure(e), id) => logger.error(s"Error when indexing proposal ${id.value}:", e)
+      case _                =>
+    }
     Await.result(insertFutures, 150.seconds)
     logger.debug("Proposals indexed successfully.")
 

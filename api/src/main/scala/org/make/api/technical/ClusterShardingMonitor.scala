@@ -57,7 +57,7 @@ class ClusterShardingMonitor extends Actor with ActorLogging {
     region -> new ShardingGauges(region)
   }.toMap
 
-  context.system.scheduler.schedule(refreshInterval, refreshInterval, self, Monitor)
+  context.system.scheduler.scheduleWithFixedDelay(refreshInterval, refreshInterval, self, Monitor)
 
   implicit val timeout: Timeout = Timeout(statsTimeout * 2)
 

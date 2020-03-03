@@ -22,8 +22,7 @@ package org.make.api.technical
 import java.util
 import java.util.Properties
 
-import akka.actor.{Actor, ActorLogging}
-import akka.stream.ActorMaterializer
+import akka.actor.{Actor, ActorLogging, ActorSystem}
 import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.avro4s.RecordFormat
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
@@ -60,7 +59,7 @@ abstract class KafkaConsumerActor[T]
   def handleMessagesTimeout: FiniteDuration = 1.minute
 
   private var consumer: KafkaConsumer[String, T] = _
-  private implicit val materializer: ActorMaterializer = ActorMaterializer()(context)
+  private implicit val actorSystem: ActorSystem = context.system
 
   override def preStart(): Unit = {
     consumer = createConsumer()
