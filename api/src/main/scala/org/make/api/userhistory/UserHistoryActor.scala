@@ -65,8 +65,10 @@ class UserHistoryActor
         sender() ! SessionEventsInjected
       }
     case RequestVoteValues(_, values) => retrieveVoteValues(values)
-    case RequestUserVotedProposals(_, filterVotes, filterQualifications) =>
-      retrieveUserVotedProposals(filterVotes, filterQualifications)
+    case RequestUserVotedProposals(_, filterVotes, filterQualifications, proposalsIds) =>
+      retrieveUserVotedProposals(filterVotes, filterQualifications, proposalsIds, Int.MaxValue, 0)
+    case RequestUserVotedProposalsPaginate(_, filterVotes, filterQualifications, proposalsIds, limit, skip) =>
+      retrieveUserVotedProposals(filterVotes, filterQualifications, proposalsIds, limit, skip)
     case Snapshot => saveSnapshot()
     //TODO: remove
     case SnapshotUser(_) => saveSnapshot()
@@ -231,26 +233,36 @@ class UserHistoryActor
   }
 
   private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
-    sender() ! state
+    val voteValues: Map[ProposalId, VoteAndQualifications] = state
       .map(_.votesAndQualifications.filter {
         case (proposalId, _) => proposalIds.contains(proposalId)
       })
       .getOrElse(Map.empty)
+
+    sender() ! voteValues
   }
 
   private def retrieveUserVotedProposals(filterVotes: Option[Seq[VoteKey]],
-                                         filterQualifications: Option[Seq[QualificationKey]]): Unit = {
-    sender() ! state
+                                         filterQualifications: Option[Seq[QualificationKey]],
+                                         proposalsIds: Option[Seq[ProposalId]],
+                                         limit: Int,
+                                         skip: Int): Unit = {
+    val votedProposals: Seq[ProposalId] = state
       .map(_.votesAndQualifications.filter {
-        case (_, votesAndQualifications) =>
-          (filterVotes.isEmpty || filterVotes.forall(_.contains(votesAndQualifications.voteKey))) &&
+        case (proposalId, votesAndQualifications) =>
+          proposalsIds.forall(_.contains(proposalId)) &&
+            filterVotes.forall(_.contains(votesAndQualifications.voteKey)) &&
             (filterQualifications.isEmpty || filterQualifications.exists { qualifications =>
               votesAndQualifications.qualificationKeys.exists { case (value, _) => qualifications.contains(value) }
             }) && votesAndQualifications.trust.isTrusted
       })
       .getOrElse(Map.empty)
-      .keys
       .toSeq
+      .sortBy { case (_, votesAndQualifications) => votesAndQualifications.date }
+      .map { case (proposalId, _) => proposalId }
+      .slice(skip, limit)
+
+    sender() ! votedProposals
   }
 
 }
@@ -273,7 +285,15 @@ object UserHistoryActor {
   final case class RequestVoteValues(userId: UserId, proposalIds: Seq[ProposalId]) extends UserRelatedEvent
   final case class RequestUserVotedProposals(userId: UserId,
                                              filterVotes: Option[Seq[VoteKey]] = None,
-                                             filterQualifications: Option[Seq[QualificationKey]] = None)
+                                             filterQualifications: Option[Seq[QualificationKey]] = None,
+                                             proposalsIds: Option[Seq[ProposalId]] = None)
+      extends UserRelatedEvent
+  final case class RequestUserVotedProposalsPaginate(userId: UserId,
+                                                     filterVotes: Option[Seq[VoteKey]] = None,
+                                                     filterQualifications: Option[Seq[QualificationKey]] = None,
+                                                     proposalsIds: Option[Seq[ProposalId]] = None,
+                                                     limit: Int,
+                                                     skip: Int)
       extends UserRelatedEvent
   final case class InjectSessionEvents(userId: UserId, events: Seq[UserHistoryEvent[_]]) extends UserRelatedEvent
 

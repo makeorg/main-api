@@ -36,7 +36,7 @@ class ShardingActorTest(actorSystem: ActorSystem = TestHelper.defaultActorSystem
 
 object TestHelper {
   val halfNumberOfPorts: Int = 32768
-  private val counter = new AtomicInteger(halfNumberOfPorts)
+  val counter = new AtomicInteger(halfNumberOfPorts)
   def configuration: String = {
     val port = counter.getAndIncrement()
     s"""
