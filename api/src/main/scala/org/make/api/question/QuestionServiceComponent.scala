@@ -19,7 +19,6 @@
 
 package org.make.api.question
 
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.topIdeaComments.PersistentTopIdeaCommentServiceComponent
@@ -160,8 +159,6 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       )
     }
 
-    implicit private val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
-
     override def getQuestionPersonalities(
       start: Int,
       end: Option[Int],
@@ -169,7 +166,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       personalityRole: Option[PersonalityRole]
     ): Future[Seq[QuestionPersonalityResponse]] = {
       Source
-        .fromFuture(
+        .future(
           questionPersonalityService.find(
             start = start,
             end = end,

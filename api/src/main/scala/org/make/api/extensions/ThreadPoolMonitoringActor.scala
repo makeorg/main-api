@@ -33,7 +33,7 @@ class ThreadPoolMonitoringActor extends Actor {
   private var monitoredPools: Map[String, ExecutorWithGauges] = Map.empty
 
   override def preStart(): Unit = {
-    context.system.scheduler.schedule(1.second, 1.second, self, Monitor)
+    context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, Monitor)
   }
 
   override def receive: Receive = {

@@ -22,11 +22,10 @@ package org.make.api.userhistory
 import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ActorLogging, ActorRef, Stash}
+import akka.actor.{ActorLogging, ActorRef, ActorSystem, Stash}
 import akka.pattern.pipe
 import akka.persistence.SnapshotOffer
 import akka.persistence.query.EventEnvelope
-import akka.stream.ActorMaterializer
 import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.technical.{ActorReadJournalComponent, MakePersistentActor}
 import org.make.api.userhistory.UserHistoryActor._
@@ -200,7 +199,7 @@ class UserHistoryActor
   }
 
   def reloadState(): Unit = {
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
+    implicit val actorSystem: ActorSystem = context.system
     val newState: Option[UserVotesAndQualifications] = None
     userJournal
       .currentEventsByPersistenceId(this.persistenceId, 0, Long.MaxValue)

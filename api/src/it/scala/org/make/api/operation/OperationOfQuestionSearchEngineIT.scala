@@ -25,7 +25,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
 import io.circe.syntax._
 import org.make.api.docker.DockerElasticsearchService
@@ -221,11 +220,10 @@ class OperationOfQuestionSearchEngineIT
         ),
         operationOfQuestion.questionId
       )
-    }.via(pool)
-      .runForeach {
-        case (Failure(e), id) => logger.error(s"Error when indexing operation of question ${id.value}:", e)
-        case _                =>
-      }(ActorMaterializer())
+    }.via(pool).runForeach {
+      case (Failure(e), id) => logger.error(s"Error when indexing operation of question ${id.value}:", e)
+      case _                =>
+    }
     Await.result(insertFutures, 150.seconds)
     logger.debug("Operation of questions indexed successfully.")
 

@@ -28,7 +28,7 @@ import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source, SourceQueueWithComplete}
-import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
+import akka.stream.{ActorAttributes, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.syntax._
@@ -99,7 +99,6 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
 
     private lazy val bufferSize = mailJetConfiguration.httpBufferSize
 
-    private implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
     lazy val queue: SourceQueueWithComplete[(HttpRequest, Promise[HttpResponse])] = Source
       .queue[(HttpRequest, Promise[HttpResponse])](bufferSize = bufferSize, OverflowStrategy.backpressure)
       .via(httpFlow)

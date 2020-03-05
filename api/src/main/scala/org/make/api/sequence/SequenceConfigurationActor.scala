@@ -53,7 +53,7 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
   }
 
   override def preStart(): Unit = {
-    context.system.scheduler.schedule(0.seconds, 5.minutes, self, ReloadSequenceConfiguration)
+    context.system.scheduler.scheduleWithFixedDelay(0.seconds, 5.minutes, self, ReloadSequenceConfiguration)
   }
 
   override def receive: Receive = {

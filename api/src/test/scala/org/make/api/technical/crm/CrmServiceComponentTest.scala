@@ -75,7 +75,6 @@ import org.make.core.proposal.indexed.IndexedAuthor
 import org.make.core.proposal.indexed.IndexedScores
 import org.make.core.user.UserType
 
-
 import arbitraries._
 
 class CrmServiceComponentTest
@@ -215,7 +214,7 @@ class CrmServiceComponentTest
       .toArray
       .toIndexedSeq
 
-    Source(events.map(EventEnvelope(Offset.noOffset, user.userId.value, 0L, _)))
+    Source(events.map(EventEnvelope(Offset.noOffset, user.userId.value, 0L, _, DateHelper.now().toEpochSecond)))
   }
 
   when(mailJetConfiguration.url).thenReturn("http://localhost:1234")
@@ -294,13 +293,12 @@ class CrmServiceComponentTest
             proposal =>
               questionResolver.findQuestionWithOperation { question =>
                 proposal.questionId.contains(question.questionId)
-              }
+            }
           )
         )
     Future.successful(maybeQuestion)
   }
 
-  
   val defaultOperation: Operation = Operation(
     status = OperationStatus.Active,
     operationId = OperationId("default"),
@@ -411,7 +409,8 @@ class CrmServiceComponentTest
           postalCode = Some("75011")
         )
       )
-    )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
   )
 
   val userProposalEventEnvelope = EventEnvelope(
@@ -431,7 +430,8 @@ class CrmServiceComponentTest
         actionType = LogUserProposalEvent.action,
         arguments = UserProposal(content = "il faut proposer", theme = Some(ThemeId("my-theme")))
       )
-    )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
   )
 
   val userVoteEventEnvelope = EventEnvelope(
@@ -447,7 +447,8 @@ class CrmServiceComponentTest
         actionType = ProposalVoteAction.name,
         arguments = UserVote(proposalId = ProposalId("proposalId-gb"), voteKey = VoteKey.Neutral, trust = Trusted)
       )
-    )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
   )
 
   val userVoteEventEnvelope2 = EventEnvelope(
@@ -467,7 +468,8 @@ class CrmServiceComponentTest
         actionType = ProposalVoteAction.name,
         arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
-    )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
   )
 
   val userVoteEventEnvelope3 = EventEnvelope(
@@ -487,7 +489,8 @@ class CrmServiceComponentTest
         actionType = ProposalVoteAction.name,
         arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
-    )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
   )
 
   val userVoteEventEnvelope4 = EventEnvelope(
@@ -507,7 +510,8 @@ class CrmServiceComponentTest
         actionType = ProposalVoteAction.name,
         arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
-    )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
   )
 
   val userVoteEventEnvelope5 = EventEnvelope(
@@ -527,7 +531,8 @@ class CrmServiceComponentTest
         actionType = ProposalVoteAction.name,
         arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree, trust = Trusted)
       )
-    )
+    ),
+    timestamp = DateHelper.now().toEpochSecond
   )
 
   when(userJournal.currentEventsByPersistenceId(matches(fooUser.userId.value), any[Long], any[Long]))
@@ -1030,7 +1035,9 @@ class CrmServiceComponentTest
           Future.successful(users)
         } else {
           val failedUsers = users.filter(!_.operationActivity.contains(question.slug))
-          failedUsers.foreach(user => logger.error(s"user ${user.userId} has operation ${user.operationActivity}, failing test"))
+          failedUsers.foreach(
+            user => logger.error(s"user ${user.userId} has operation ${user.operationActivity}, failing test")
+          )
           fail()
         }
       }
@@ -1192,12 +1199,10 @@ class CrmServiceComponentTest
         Future.successful(SendCsvResponse(6L))
       )
 
-      def csvImportResponse(
-        jobId: Long,
-        dataId: Long,
-        errorCount: Int,
-        status: String
-      ): BasicCrmResponse[CsvImportResponse] = {
+      def csvImportResponse(jobId: Long,
+                            dataId: Long,
+                            errorCount: Int,
+                            status: String): BasicCrmResponse[CsvImportResponse] = {
         BasicCrmResponse[CsvImportResponse](
           count = 1,
           total = 1,
@@ -1415,7 +1420,10 @@ class CrmServiceComponentTest
       forAll { (message: SendEmail, succeed: Boolean) =>
         Given("an unreliable email provider")
         when(crmClient.sendEmail(matches(SendMessages(message)))(any[ExecutionContext]))
-          .thenReturn(if (succeed) Future.successful(SendEmailResponse(Nil)) else Future.failed(new Exception("Don't worry, this exception is fake")))
+          .thenReturn(
+            if (succeed) Future.successful(SendEmailResponse(Nil))
+            else Future.failed(new Exception("Don't worry, this exception is fake"))
+          )
         When("sending an email")
         crmService.sendEmail(message)
         Then("the message should be rescheduled if sending failed")

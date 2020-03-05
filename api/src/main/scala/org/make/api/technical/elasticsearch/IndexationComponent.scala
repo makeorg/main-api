@@ -81,8 +81,6 @@ trait DefaultIndexationComponent
 
     private lazy val client = elasticsearchClient.client
 
-    implicit private val mat: ActorMaterializer = ActorMaterializer()(actorSystem)
-
     private def reindexOrganisationsIfNeeded(needsReindex: Boolean): Future[Done] = {
       if (needsReindex) {
         logger.info("Reindexing organisations")

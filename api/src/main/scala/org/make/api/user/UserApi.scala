@@ -23,7 +23,6 @@ import java.time.LocalDate
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
-import akka.stream.ActorMaterializer
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
@@ -155,7 +154,9 @@ trait UserApi extends Directives {
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SocialLoginResponse])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[SocialLoginResponse]))
+  )
   def socialLogin: Route
 
   @Path(value = "/{userId}/votes")
@@ -702,15 +703,17 @@ trait DefaultUserApiComponent
                         requestContext,
                         request.clientId.getOrElse(ClientId(makeSettings.Authentication.defaultClientId))
                       )
-                      .flatMap { case (userId, social) =>
-                        sessionHistoryCoordinatorService
-                          .convertSession(requestContext.sessionId, userId, requestContext)
-                          .map(_ => (userId, social))
+                      .flatMap {
+                        case (userId, social) =>
+                          sessionHistoryCoordinatorService
+                            .convertSession(requestContext.sessionId, userId, requestContext)
+                            .map(_ => (userId, social))
                       }
-                  ) { case (userId, social) =>
-                    setMakeSecure(social.access_token, userId) {
-                      complete(StatusCodes.Created -> social)
-                    }
+                  ) {
+                    case (userId, social) =>
+                      setMakeSecure(social.access_token, userId) {
+                        complete(StatusCodes.Created -> social)
+                      }
                   }
                 }
               }
@@ -738,14 +741,12 @@ trait DefaultUserApiComponent
                 Symbol("skip").as[Int].?
               )
             ) {
-              (
-                votes: Option[Seq[VoteKey]],
-                qualifications: Option[Seq[QualificationKey]],
-                sort: Option[String],
-                order: Option[SortOrder],
-                limit: Option[Int],
-                skip: Option[Int]
-              ) =>
+              (votes: Option[Seq[VoteKey]],
+               qualifications: Option[Seq[QualificationKey]],
+               sort: Option[String],
+               order: Option[SortOrder],
+               limit: Option[Int],
+               skip: Option[Int]) =>
                 if (userAuth.user.userId != userId) {
                   complete(StatusCodes.Forbidden)
                 } else {
@@ -956,7 +957,6 @@ trait DefaultUserApiComponent
         makeOperation("ReloadAllUsersHistory") { _ =>
           makeOAuth2 { userAuth =>
             requireAdminRole(userAuth.user) {
-              implicit val materializer: ActorMaterializer = ActorMaterializer()(actorSystem)
               userJournal
                 .currentPersistenceIds()
                 .runForeach(id => userHistoryCoordinatorService.reloadHistory(UserId(id)))
@@ -1317,17 +1317,19 @@ trait DefaultUserApiComponent
                         )
 
                       provideAsync(userService.update(modifiedUser, requestContext)) { result =>
-                        complete(UserProfileResponse(
-                          firstName = result.firstName,
-                          lastName = result.lastName,
-                          dateOfBirth = result.profile.flatMap(_.dateOfBirth),
-                          avatarUrl = result.profile.flatMap(_.avatarUrl),
-                          profession = result.profile.flatMap(_.profession),
-                          description = result.profile.flatMap(_.description),
-                          postalCode = result.profile.flatMap(_.postalCode),
-                          optInNewsletter = result.profile.map(_.optInNewsletter).getOrElse(true),
-                          website = result.profile.flatMap(_.website)
-                        ))
+                        complete(
+                          UserProfileResponse(
+                            firstName = result.firstName,
+                            lastName = result.lastName,
+                            dateOfBirth = result.profile.flatMap(_.dateOfBirth),
+                            avatarUrl = result.profile.flatMap(_.avatarUrl),
+                            profession = result.profile.flatMap(_.profession),
+                            description = result.profile.flatMap(_.description),
+                            postalCode = result.profile.flatMap(_.postalCode),
+                            optInNewsletter = result.profile.map(_.optInNewsletter).getOrElse(true),
+                            website = result.profile.flatMap(_.website)
+                          )
+                        )
                       }
                     }
                   }

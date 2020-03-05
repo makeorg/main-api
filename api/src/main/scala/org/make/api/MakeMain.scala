@@ -27,7 +27,6 @@ import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.pattern.ask
-import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
@@ -120,7 +119,6 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   private val settings = MakeSettings(actorSystem)
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   val host = settings.Http.host
   val port = settings.Http.port

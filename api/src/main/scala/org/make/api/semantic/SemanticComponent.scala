@@ -22,14 +22,13 @@ package org.make.api.semantic
 import java.net.URL
 import java.util.concurrent.Executors
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
-import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
+import akka.stream.{ActorAttributes, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe._
@@ -106,7 +105,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
         case (Success(resp), p) => p.success(resp)
         case (Failure(e), p)    => p.failure(e)
       })(Keep.left)
-      .run()(ActorMaterializer()(actorSystem))
+      .run()
 
     private def doHttpCall(request: HttpRequest): Future[HttpResponse] = {
       val promise = Promise[HttpResponse]()
@@ -121,9 +120,6 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
             )
       }
     }
-
-    private implicit val system: ActorSystem = actorSystem
-    private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     override def indexProposal(indexedProposal: IndexedProposal): Future[Unit] = {
       Marshal(SemanticProposal(indexedProposal)).to[RequestEntity].flatMap { entity =>

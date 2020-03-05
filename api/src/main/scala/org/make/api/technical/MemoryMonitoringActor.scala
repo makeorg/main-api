@@ -34,7 +34,7 @@ class MemoryMonitoringActor extends Actor {
   val memoryTotal: Gauge = Kamon.gauge("jvm-memory-total").withoutTags()
 
   override def preStart(): Unit = {
-    context.system.scheduler.schedule(1.second, 1.second, self, Monitor)
+    context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, Monitor)
   }
 
   override def receive: Receive = {
