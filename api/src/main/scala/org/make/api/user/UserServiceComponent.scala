@@ -940,7 +940,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               requestContext = requestContext,
               action = UserAction(
                 date = eventDate,
-                actionType = LogUserAnonymizedEvent.action,
+                actionType = LogUserUploadedAvatarEvent.action,
                 arguments = UploadedAvatar(avatarUrl = avatarUrl)
               )
             )
