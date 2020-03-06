@@ -37,6 +37,7 @@ object Dependencies {
   private val circeVersion = "0.12.3"
   val kanelaVersion: String = "1.0.4"
   val swaggerUiVersion: String = "3.20.9"
+  private val refinedVersion: String = "0.9.12"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.11.0"
@@ -125,7 +126,7 @@ object Dependencies {
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"       %% "akka-testkit"             % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka" %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaCheck: ModuleID = "org.scalacheck"        %% "scalacheck"               % "1.14.0"        % "test"
+  val scalaCheck: ModuleID = "org.scalacheck"        %% "scalacheck"               % "1.14.0"        % "it,test"
   val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.8"         % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"   %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
   val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.24.5"        % "it,test"
@@ -143,6 +144,7 @@ object Dependencies {
   // apache math
   val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"
 
-  val refinedScala: ModuleID = "eu.timepit" %% "refined"       % "0.9.10"
-  val refinedCirce: ModuleID = "io.circe"   %% "circe-refined" % circeVersion
+  val refinedScala: ModuleID = "eu.timepit"      %% "refined"            % refinedVersion
+  val refinedCirce: ModuleID = "io.circe"        %% "circe-refined"      % circeVersion
+  val refinedScalaCheck: ModuleID = "eu.timepit" %% "refined-scalacheck" % refinedVersion % "it"
 }

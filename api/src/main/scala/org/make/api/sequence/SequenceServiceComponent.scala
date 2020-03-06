@@ -35,6 +35,7 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, SequencePool}
 import org.make.core.proposal.{
   ProposalId,
+  ProposalSearchFilter,
   QuestionSearchFilter,
   RandomAlgorithm,
   SegmentSearchFilter,
@@ -88,11 +89,19 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                                   requestContext: RequestContext): Future[Option[SequenceResult]] = {
       logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
 
-      sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).flatMap { sequenceConfiguration =>
-        startSequence(maybeUserId, sequenceConfiguration, includedProposals, tagsIds, requestContext).flatMap {
-          case Some(sequenceResult) if sequenceResult.proposals.size < sequenceConfiguration.sequenceSize =>
-            fallbackEmptySequence(maybeUserId, sequenceConfiguration, sequenceResult.proposals, requestContext)
-          case other => Future.successful(other)
+      futureVotedProposals(maybeUserId, requestContext).flatMap { proposalsVoted =>
+        sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).flatMap { sequenceConfiguration =>
+          startSequence(maybeUserId, sequenceConfiguration, includedProposals, proposalsVoted, tagsIds, requestContext).flatMap {
+            case Some(sequenceResult) if sequenceResult.proposals.size < sequenceConfiguration.sequenceSize =>
+              fallbackEmptySequence(
+                maybeUserId,
+                sequenceConfiguration,
+                sequenceResult.proposals,
+                proposalsVoted,
+                requestContext
+              )
+            case other => Future.successful(other)
+          }
         }
       }
     }
@@ -100,9 +109,14 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     private def fallbackEmptySequence(maybeUserId: Option[UserId],
                                       sequenceConfiguration: SequenceConfiguration,
                                       initialSequenceProposals: Seq[ProposalResponse],
+                                      proposalsVoted: Seq[ProposalId],
                                       requestContext: RequestContext): Future[Option[SequenceResult]] = {
 
-      logger.warn(s"Sequence fallback for user ${requestContext.sessionId} and question ${sequenceConfiguration.questionId}")
+      logger.warn(
+        s"Sequence fallback for user ${requestContext.sessionId} and question ${sequenceConfiguration.questionId}"
+      )
+
+      val proposalsToExclude: Seq[ProposalId] = proposalsVoted ++ initialSequenceProposals.map(_.id)
 
       for {
         selectedProposals <- elasticsearchProposalAPI
@@ -111,19 +125,20 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               filters = Some(
                 proposal.SearchFilters(question = Some(QuestionSearchFilter(Seq(sequenceConfiguration.questionId))))
               ),
+              excludes = Some(proposal.SearchFilters(proposal = Some(ProposalSearchFilter(proposalsToExclude)))),
               limit = Some(sequenceConfiguration.sequenceSize - initialSequenceProposals.size),
               sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.DESC)))
             )
           )
         sequenceVotes <- futureVotedProposalsAndVotes(maybeUserId, requestContext, selectedProposals.results.map(_.id))
-      } yield
+      } yield {
         Some(
           SequenceResult(
             id = sequenceConfiguration.sequenceId,
             title = "deprecated",
             slug = "deprecated",
-            proposals = selectedProposals.results
-              .map(indexed => {
+            proposals = (selectedProposals.results.map { indexed =>
+              {
                 val proposalKey =
                   SecurityHelper.generateProposalKeyHash(
                     indexed.id,
@@ -137,14 +152,17 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
                   sequenceVotes.get(indexed.id),
                   proposalKey
                 )
-              }) ++ initialSequenceProposals
+              }
+            } ++ initialSequenceProposals).distinctBy(_.id)
           )
         )
+      }
     }
 
     private def startSequence(maybeUserId: Option[UserId],
                               sequenceConfiguration: SequenceConfiguration,
                               includedProposalIds: Seq[ProposalId],
+                              proposalsVoted: Seq[ProposalId],
                               tagsIds: Option[Seq[TagId]],
                               requestContext: RequestContext): Future[Option[SequenceResult]] = {
 
@@ -207,12 +225,12 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         maybeSegment       <- segmentService.resolveSegment(requestContext)
         allNewProposals    <- futureNewProposalsPool(maybeSegment)
         allTestedProposals <- futureTestedProposalsPool(maybeSegment)
-        allVotes           <- futureVotedProposals(maybeUserId, requestContext)
-        userSegment        <- segmentService.resolveSegment(requestContext)
 
         newProposals = allNewProposals.groupBy(_.userId).values.map(_.head).toSeq
         testedProposals = allTestedProposals.groupBy(_.userId).values.map(_.head).toSeq
-        votes = allVotes.filter(id => newProposals.map(_.id).contains(id) || testedProposals.map(_.id).contains(id))
+        votes = proposalsVoted.filter(
+          id => newProposals.map(_.id).contains(id) || testedProposals.map(_.id).contains(id)
+        )
 
         selectedProposals = sequenceConfiguration.selectionAlgorithmName match {
           case SelectionAlgorithmName.Bandit =>
@@ -222,7 +240,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               newProposals = newProposals,
               testedProposals = testedProposals,
               votedProposals = votes,
-              userSegment = userSegment
+              userSegment = maybeSegment
             )
           case SelectionAlgorithmName.RoundRobin =>
             roundRobinSelectionAlgorithm.selectProposalsForSequence(
@@ -231,7 +249,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               newProposals = allNewProposals,
               testedProposals = allTestedProposals,
               votedProposals = votes,
-              userSegment = userSegment
+              userSegment = maybeSegment
             )
         }
         sequenceVotes <- futureVotedProposalsAndVotes(maybeUserId, requestContext, selectedProposals.map(_.id))

@@ -29,14 +29,13 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
 import com.sksamuel.elastic4s.searches.sort.SortOrder
+import eu.timepit.refined.auto._
+import eu.timepit.refined.scalacheck.numeric._
+import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.syntax._
-import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.api.docker.DockerElasticsearchService
-import org.make.api.technical.elasticsearch.{
-  DefaultElasticsearchClientComponent,
-  ElasticsearchConfiguration,
-  ElasticsearchConfigurationComponent
-}
+import org.make.api.technical.elasticsearch.{DefaultElasticsearchClientComponent, ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.common.indexed.Sort
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.proposal._
@@ -48,6 +47,7 @@ import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper}
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -63,6 +63,7 @@ class ProposalSearchEngineIT
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
+    with ScalaCheckDrivenPropertyChecks
     with ActorSystemComponent {
 
   override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
@@ -1561,6 +1562,21 @@ class ProposalSearchEngineIT
 
     }
 
+  }
+
+  feature("excludes proposals from search") {
+    scenario("proposals excluded should not be in the result") {
+      forAll { count: NonNegInt =>
+        val proposalsToExclude: Seq[ProposalId] = acceptedProposals.take(count).map(_.id)
+        val query =
+          SearchQuery(excludes = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalsToExclude)))))
+
+        whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
+          result.total should be(acceptedProposals.size - proposalsToExclude.size)
+          result.results.map(_.id) should contain noElementsOf proposalsToExclude
+        }
+      }
+    }
   }
 
   feature("saving new proposal") {

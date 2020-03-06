@@ -49,6 +49,7 @@ import org.make.core.user.{UserId, UserType}
   * @param sortAlgorithm algorithm used for sorting
   */
 case class SearchQuery(filters: Option[SearchFilters] = None,
+                       excludes: Option[SearchFilters] = None,
                        sort: Option[IndexedSort] = None,
                        limit: Option[Int] = None,
                        skip: Option[Int] = None,
@@ -185,35 +186,39 @@ object SearchFilters extends ElasticDsl {
     */
   def getSearchFilters(searchQuery: SearchQuery): Seq[Query] =
     Seq(
-      buildProposalSearchFilter(searchQuery),
-      buildInitialProposalSearchFilter(searchQuery),
-      buildTagsSearchFilter(searchQuery),
-      buildLabelsSearchFilter(searchQuery),
-      buildOperationSearchFilter(searchQuery),
-      buildTrendingSearchFilter(searchQuery),
+      buildProposalSearchFilter(searchQuery.filters),
+      buildInitialProposalSearchFilter(searchQuery.filters),
+      buildTagsSearchFilter(searchQuery.filters),
+      buildLabelsSearchFilter(searchQuery.filters),
+      buildOperationSearchFilter(searchQuery.filters),
+      buildTrendingSearchFilter(searchQuery.filters),
       buildContentSearchFilter(searchQuery),
-      buildStatusSearchFilter(searchQuery),
-      buildContextOperationSearchFilter(searchQuery),
-      buildContextSourceSearchFilter(searchQuery),
-      buildContextLocationSearchFilter(searchQuery),
-      buildContextQuestionSearchFilter(searchQuery),
-      buildSlugSearchFilter(searchQuery),
-      buildIdeaSearchFilter(searchQuery),
-      buildLanguageSearchFilter(searchQuery),
-      buildCountrySearchFilter(searchQuery),
-      buildUserSearchFilter(searchQuery),
-      buildQuestionSearchFilter(searchQuery),
-      buildMinVotesCountSearchFilter(searchQuery),
-      buildToEnrichSearchFilter(searchQuery),
-      buildMinScoreSearchFilter(searchQuery),
-      buildCreatedAtSearchFilter(searchQuery),
-      buildSequencePoolSearchFilter(searchQuery),
-      buildSequenceSegmentPoolSearchFilter(searchQuery),
-      buildOperationKindSearchFilter(searchQuery),
-      buildQuestionIsOpenSearchFilter(searchQuery),
-      buildSegmentSearchFilter(searchQuery),
-      buildUserTypesSearchFilter(searchQuery)
+      buildStatusSearchFilter(searchQuery.filters),
+      buildContextOperationSearchFilter(searchQuery.filters),
+      buildContextSourceSearchFilter(searchQuery.filters),
+      buildContextLocationSearchFilter(searchQuery.filters),
+      buildContextQuestionSearchFilter(searchQuery.filters),
+      buildSlugSearchFilter(searchQuery.filters),
+      buildIdeaSearchFilter(searchQuery.filters),
+      buildLanguageSearchFilter(searchQuery.filters),
+      buildCountrySearchFilter(searchQuery.filters),
+      buildUserSearchFilter(searchQuery.filters),
+      buildQuestionSearchFilter(searchQuery.filters),
+      buildMinVotesCountSearchFilter(searchQuery.filters),
+      buildToEnrichSearchFilter(searchQuery.filters),
+      buildMinScoreSearchFilter(searchQuery.filters),
+      buildCreatedAtSearchFilter(searchQuery.filters),
+      buildSequencePoolSearchFilter(searchQuery.filters),
+      buildSequenceSegmentPoolSearchFilter(searchQuery.filters),
+      buildOperationKindSearchFilter(searchQuery.filters),
+      buildQuestionIsOpenSearchFilter(searchQuery.filters),
+      buildSegmentSearchFilter(searchQuery.filters),
+      buildUserTypesSearchFilter(searchQuery.filters)
     ).flatten
+
+  def getExcludeFilters(searchQuery: SearchQuery): Seq[Query] = {
+    Seq(buildProposalSearchFilter(searchQuery.excludes)).flatten
+  }
 
   def getSort(searchQuery: SearchQuery): Option[FieldSort] =
     searchQuery.sort.flatMap { sort =>
@@ -230,8 +235,8 @@ object SearchFilters extends ElasticDsl {
     searchQuery.limit
       .getOrElse(10) // TODO get default value from configurations
 
-  def buildProposalSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildProposalSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.proposal match {
         case Some(ProposalSearchFilter(Seq(proposalId))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.id, proposalId.value))
@@ -242,8 +247,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildQuestionSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildQuestionSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.question match {
         case Some(QuestionSearchFilter(Seq(questionId))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionId, questionId.value))
@@ -254,8 +259,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildUserSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildUserSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.user match {
         case Some(UserSearchFilter(userId)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.userId, userId.value))
@@ -264,8 +269,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildInitialProposalSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildInitialProposalSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.initialProposal.map { initialProposal =>
         ElasticApi.termQuery(
           field = ProposalElasticsearchFieldNames.initialProposal,
@@ -275,8 +280,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildTagsSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildTagsSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.tags match {
         case Some(TagsSearchFilter(Seq(tagId))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, tagId.value))
@@ -287,8 +292,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildLabelsSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildLabelsSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.labels match {
         case Some(LabelsSearchFilter(labels)) =>
           Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labels.map(_.value)))
@@ -297,8 +302,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildOperationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildOperationSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.operation match {
         case Some(OperationSearchFilter(Seq(operationId))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operationId.value))
@@ -313,8 +318,8 @@ object SearchFilters extends ElasticDsl {
   }
 
   @Deprecated
-  def buildTrendingSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildTrendingSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.trending match {
         case Some(TrendingSearchFilter(trending)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, trending))
@@ -323,9 +328,9 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildContextOperationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildContextOperationSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
     val operationFilter: Option[Query] = for {
-      filters   <- searchQuery.filters
+      filters   <- filters
       context   <- filters.context
       operation <- context.operation
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextOperation, operation.value)
@@ -333,9 +338,9 @@ object SearchFilters extends ElasticDsl {
     operationFilter
   }
 
-  def buildContextSourceSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildContextSourceSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
     val sourceFilter: Option[Query] = for {
-      filters <- searchQuery.filters
+      filters <- filters
       context <- filters.context
       source  <- context.source
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextSource, source)
@@ -343,9 +348,9 @@ object SearchFilters extends ElasticDsl {
     sourceFilter
   }
 
-  def buildContextLocationSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildContextLocationSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
     val locationFilter: Option[Query] = for {
-      filters  <- searchQuery.filters
+      filters  <- filters
       context  <- filters.context
       location <- context.location
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextLocation, location)
@@ -353,9 +358,9 @@ object SearchFilters extends ElasticDsl {
     locationFilter
   }
 
-  def buildContextQuestionSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildContextQuestionSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
     val questionFilter: Option[Query] = for {
-      filters  <- searchQuery.filters
+      filters  <- filters
       context  <- filters.context
       question <- context.question
     } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextQuestion, question)
@@ -363,9 +368,9 @@ object SearchFilters extends ElasticDsl {
     questionFilter
   }
 
-  def buildSlugSearchFilter(searchQuery: SearchQuery): Option[Query] = {
+  def buildSlugSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
     val slugFilter: Option[Query] = for {
-      filters    <- searchQuery.filters
+      filters    <- filters
       slugFilter <- filters.slug
     } yield ElasticApi.termQuery(ProposalElasticsearchFieldNames.slug, slugFilter.slug)
 
@@ -437,8 +442,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildStatusSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    val query: Option[Query] = searchQuery.filters.flatMap {
+  def buildStatusSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    val query: Option[Query] = filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(proposalStatus)) =>
           ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, proposalStatus.shortName)
@@ -454,8 +459,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildIdeaSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildIdeaSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.idea match {
         case Some(IdeaSearchFilter(Seq(idea))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.ideaId, idea.value))
@@ -466,8 +471,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildLanguageSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildLanguageSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.language, language.value))
@@ -476,8 +481,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildCountrySearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildCountrySearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.country, country.value))
@@ -486,8 +491,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildMinVotesCountSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildMinVotesCountSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.minVotesCount match {
         case Some(MinVotesCountSearchFilter(minVotesCount)) =>
           Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(minVotesCount))
@@ -496,8 +501,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildToEnrichSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildToEnrichSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.toEnrich match {
         case Some(ToEnrichSearchFilter(toEnrich)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.toEnrich, toEnrich))
@@ -506,8 +511,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildMinScoreSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildMinScoreSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.minScore match {
         case Some(MinScoreSearchFilter(minScore)) =>
           Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.scoreUpperBound).gte(minScore))
@@ -516,8 +521,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildCreatedAtSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildCreatedAtSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.createdAt match {
         case Some(CreatedAtSearchFilter(maybeBefore, maybeAfter)) =>
           val createdAtRangeQuery: RangeQuery = ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.createdAt)
@@ -537,8 +542,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildSequencePoolSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildSequencePoolSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.sequencePool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool.shortName))
@@ -547,8 +552,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildSequenceSegmentPoolSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildSequenceSegmentPoolSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.sequenceSegmentPool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequenceSegmentPool, sequencePool.shortName))
@@ -558,8 +563,8 @@ object SearchFilters extends ElasticDsl {
   }
 
 //TODO: To avoid a pattern matching to precise, can't we just use `termsQuery` ?
-  def buildOperationKindSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildOperationKindSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.operationKinds match {
         case Some(OperationKindsSearchFilter(Seq(operationKind))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationKind, operationKind.shortName))
@@ -570,8 +575,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildQuestionIsOpenSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildQuestionIsOpenSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.questionIsOpen match {
         case Some(QuestionIsOpenSearchFilter(isOpen)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionIsOpen, isOpen))
@@ -580,8 +585,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildSegmentSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildSegmentSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.segment match {
         case Some(SegmentSearchFilter(segment)) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.segment, segment))
@@ -590,8 +595,8 @@ object SearchFilters extends ElasticDsl {
     }
   }
 
-  def buildUserTypesSearchFilter(searchQuery: SearchQuery): Option[Query] = {
-    searchQuery.filters.flatMap {
+  def buildUserTypesSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
+    filters.flatMap {
       _.userTypes match {
         case Some(UserTypesSearchFilter(Seq(userType))) =>
           Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorUserType, userType.shortName))

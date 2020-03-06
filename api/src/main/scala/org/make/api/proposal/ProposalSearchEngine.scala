@@ -121,8 +121,9 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     override def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult] = {
       // parse json string to build search query
       val searchFilters = SearchFilters.getSearchFilters(searchQuery)
+      val excludesFilters = SearchFilters.getExcludeFilters(searchQuery)
       var request: ElasticSearchRequest = searchWithType(proposalAlias)
-        .bool(BoolQuery(must = searchFilters))
+        .bool(BoolQuery(must = searchFilters, not = excludesFilters))
         .sortBy(SearchFilters.getSort(searchQuery))
         .from(SearchFilters.getSkipSearch(searchQuery))
 
