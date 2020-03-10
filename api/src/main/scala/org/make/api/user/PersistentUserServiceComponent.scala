@@ -677,8 +677,7 @@ trait DefaultPersistentUserServiceComponent
                 Some(sqls.notLike(userAlias.email, "yopmail+%@make.org"))
               )
             )
-            .orderBy(userAlias.createdAt)
-            .asc
+            .orderBy(userAlias.createdAt.asc, userAlias.email.asc)
             .limit(limit)
             .offset(offset)
 

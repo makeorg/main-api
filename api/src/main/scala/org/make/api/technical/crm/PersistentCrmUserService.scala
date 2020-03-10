@@ -109,8 +109,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
                     .map(unsubscribed => sqls.eq(PersistentCrmUser.alias.unsubscribeStatus, unsubscribed))
                 )
             )
-            .orderBy(PersistentCrmUser.alias.accountCreationDate)
-            .asc
+            .orderBy(PersistentCrmUser.alias.accountCreationDate.asc, PersistentCrmUser.alias.email.asc)
             .limit(numberPerPage)
             .offset(offset)
         }.map(PersistentCrmUser.apply()).list.apply()
