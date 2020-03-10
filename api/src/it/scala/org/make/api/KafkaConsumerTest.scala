@@ -30,7 +30,7 @@ trait KafkaConsumerTest[T] extends KafkaTest with AvroSerializers {
   def topic: String
   def format: RecordFormat[T]
   def schema: SchemaFor[T]
-  def producer: KafkaProducer[String, T] = createProducer(schema, format)
+  lazy val producer: KafkaProducer[String, T] = createProducer(schema, format)
 
   override def afterAll(): Unit = {
     producer.close()
