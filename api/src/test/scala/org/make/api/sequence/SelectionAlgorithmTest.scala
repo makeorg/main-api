@@ -766,7 +766,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
 
       proportions.size should be(3)
-      val confidenceInterval: Double = 0.015
+      val confidenceInterval: Double = 0.016
       proportions(testedProposals.head.id) should equal(0.88 +- confidenceInterval)
       proportions(testedProposals(1).id) should equal(0.11 +- confidenceInterval)
       proportions(testedProposals(2).id) should equal(0.01 +- confidenceInterval)
