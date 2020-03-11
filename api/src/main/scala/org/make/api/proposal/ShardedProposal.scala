@@ -26,11 +26,16 @@ import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 import org.make.api.technical.MakePersistentActor.{Snapshot, StartShard}
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object ShardedProposal {
-  def props(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService): Props =
-    Props(new ShardedProposal(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService))
+  def props(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration): Props =
+    Props(
+      new ShardedProposal(
+        sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
+        lockDuration = lockDuration
+      )
+    )
   val shardName: String = "proposal"
 
   case object StopProposal
@@ -50,8 +55,11 @@ object ShardedProposal {
   val queryJournal: String = "make-api.event-sourcing.proposals.query-journal"
 }
 
-class ShardedProposal(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService)
-    extends ProposalActor(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService) {
+class ShardedProposal(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration)
+    extends ProposalActor(
+      sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
+      lockDuration = lockDuration
+    ) {
 
   import ShardedProposal._
 

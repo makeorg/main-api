@@ -36,7 +36,7 @@ import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class CassandraHealthCheckActorIT
     extends TestKit(CassandraHealthCheckActorIT.actorSystem)
@@ -52,10 +52,16 @@ class CassandraHealthCheckActorIT
   override val cassandraExposedPort: Int = CassandraHealthCheckActorIT.cassandraExposedPort
   implicit val timeout: Timeout = TimeSettings.defaultTimeout.duration * 3
 
+  val LOCK_DURATION_MILLISECONDS: FiniteDuration = 42.milliseconds
+
   val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
 
   val coordinator: ActorRef =
-    system.actorOf(ProposalCoordinator.props(sessionHistoryCoordinatorService), ProposalCoordinator.name)
+    system.actorOf(
+      ProposalCoordinator
+        .props(sessionHistoryCoordinatorService, LOCK_DURATION_MILLISECONDS),
+      ProposalCoordinator.name
+    )
 
   feature("Check Cassandra status") {
     scenario("query proposal journal") {

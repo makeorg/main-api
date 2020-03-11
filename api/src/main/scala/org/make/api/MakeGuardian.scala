@@ -55,11 +55,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     )
 
     context.watch(
-      context.actorOf(
-        ProposalSupervisor
-          .props(makeApi),
-        ProposalSupervisor.name
-      )
+      context.actorOf(ProposalSupervisor.props(makeApi, makeApi.makeSettings.lockDuration), ProposalSupervisor.name)
     )
     context.watch(context.actorOf(UserSupervisor.props(makeApi), UserSupervisor.name))
 
@@ -116,8 +112,7 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
 
 object MakeGuardian {
   val name: String = "make-api"
-  def props(makeApi: MakeApi): Props =
-    Props(new MakeGuardian(makeApi))
+  def props(makeApi: MakeApi): Props = Props(new MakeGuardian(makeApi))
 
   case object Ping
   case object Pong

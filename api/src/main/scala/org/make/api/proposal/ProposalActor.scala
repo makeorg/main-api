@@ -25,7 +25,6 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import akka.actor.{ActorLogging, PoisonPill}
 import akka.persistence.SnapshotOffer
 import akka.util.Timeout
-import org.make.api.proposal.ProposalActor.Lock._
 import org.make.api.proposal.ProposalActor._
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
@@ -46,23 +45,26 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.util.{Failure, Success}
 
-class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService)
-    extends MakePersistentActor(classOf[ProposalState], classOf[ProposalEvent])
+class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration)
+    extends MakePersistentActor(classOf[Proposal], classOf[ProposalEvent])
     with ActorLogging {
 
   override def receiveRecover: Receive = {
-    case SnapshotOffer(_, snapshot: Proposal) => state = Some(ProposalState(snapshot))
-    case other                                => super.receiveRecover(other)
+    case SnapshotOffer(_, snapshot: ProposalState) => state = Some(snapshot.proposal)
+    case other                                     => super.receiveRecover(other)
   }
 
   implicit val timeout: Timeout = defaultTimeout
 
+  var lock: Option[ProposalLock] = None
+
   def proposalId: ProposalId = ProposalId(self.path.name)
 
   override def receiveCommand: Receive = {
-    case _: GetProposal                      => sender() ! state.map(_.proposal)
+    case _: GetProposal                      => sender() ! state
     case command: ViewProposalCommand        => onViewProposalCommand(command)
     case command: ProposeCommand             => onProposeCommand(command)
     case command: UpdateProposalCommand      => onUpdateProposalCommand(command)
@@ -82,7 +84,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
   }
 
   def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
-    state.map(_.proposal).foreach { proposal =>
+    state.foreach { proposal =>
       val changes = command.changes
       val modifiedContext =
         changes.creationContext.map { contextChanges =>
@@ -131,7 +133,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         )
       ) { event =>
         state = applyEvent(event)
-        sender() ! state.map(_.proposal)
+        sender() ! state
       }
     }
   }
@@ -153,12 +155,12 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           val originalSender = sender()
           logVoteEvent(event).onComplete {
             case Success(_) =>
-              originalSender ! Right(state.flatMap(_.proposal.votes.find(_.key == command.voteKey)))
+              originalSender ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
             case Failure(e) => originalSender ! Left(e)
           }
         }
       case Some(vote) if vote.voteKey == command.voteKey =>
-        sender() ! Right(state.flatMap(_.proposal.votes.find(_.key == command.voteKey)))
+        sender() ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
       case Some(vote) =>
         val unvoteEvent = ProposalUnvoted(
           id = proposalId,
@@ -183,7 +185,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           case _: ProposalVoted =>
             val originalSender = sender()
             logUnvoteEvent(unvoteEvent).flatMap(_ => logVoteEvent(voteEvent)).onComplete {
-              case Success(_) => originalSender ! Right(state.flatMap(_.proposal.votes.find(_.key == command.voteKey)))
+              case Success(_) => originalSender ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
               case Failure(e) => originalSender ! Left(e)
             }
           case _ =>
@@ -257,7 +259,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
 
   private def onUnvoteProposalCommand(command: UnvoteProposalCommand): Unit = {
     command.vote match {
-      case None => sender() ! Right(state.flatMap(_.proposal.votes.find(_.key == command.voteKey)))
+      case None => sender() ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
       case Some(vote) =>
         persistAndPublishEventAsync(
           ProposalUnvoted(
@@ -287,7 +289,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               )
             }
           }.onComplete {
-            case Success(_) => originalSender ! Right(state.flatMap(_.proposal.votes.find(_.key == command.voteKey)))
+            case Success(_) => originalSender ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
             case Failure(e) => originalSender ! Left(e)
           }
 
@@ -315,20 +317,20 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     command.vote match {
       case None =>
         val maybeQualification = state
-          .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+          .flatMap(_.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
 
         log.warning(s"Qualification was not increased: user hasn't voted on proposal. ${command.toString}")
         sender() ! Right(maybeQualification)
       case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
         val maybeQualification = state
-          .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+          .flatMap(_.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
         log.warning(s"Qualification was not increased: user has already qualified with this value. ${command.toString}")
         sender() ! Right(maybeQualification)
       case Some(vote) if !checkQualification(vote.voteKey, command.voteKey, command.qualificationKey) =>
         val maybeQualification = state
-          .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+          .flatMap(_.votes.find(_.key == command.voteKey))
           .flatMap(_.qualifications.find(_.key == command.qualificationKey))
         log.warning(s"Qualification was not increased: qualification doesn't belong to vote type. ${command.toString}")
         sender() ! Right(maybeQualification)
@@ -349,7 +351,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           logQualifyVoteEvent(event).onComplete {
             case Success(_) =>
               val maybeQualification = state
-                .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+                .flatMap(_.votes.find(_.key == command.voteKey))
                 .flatMap(_.qualifications.find(_.key == command.qualificationKey))
               originalSender ! Right(maybeQualification)
               if (maybeQualification.exists(_.count == 0)) {
@@ -366,7 +368,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
       case None =>
         sender() ! Right(
           state
-            .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+            .flatMap(_.votes.find(_.key == command.voteKey))
             .flatMap(_.qualifications.find(_.key == command.qualificationKey))
         )
       case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
@@ -386,7 +388,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             case Success(_) =>
               originalSender ! Right(
                 state
-                  .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+                  .flatMap(_.votes.find(_.key == command.voteKey))
                   .flatMap(_.qualifications.find(_.key == command.qualificationKey))
               )
             case Failure(e) => originalSender ! Left(e)
@@ -395,7 +397,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
       case _ =>
         sender() ! Right(
           state
-            .flatMap(_.proposal.votes.find(_.key == command.voteKey))
+            .flatMap(_.votes.find(_.key == command.voteKey))
             .flatMap(_.qualifications.find(_.key == command.qualificationKey))
         )
     }
@@ -406,7 +408,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     persistAndPublishEvent(
       ProposalViewed(id = proposalId, eventDate = DateHelper.now(), requestContext = command.requestContext)
     ) { _ =>
-      sender() ! state.map(_.proposal)
+      sender() ! state
     }
   }
 
@@ -445,7 +447,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
-          sender() ! state.map(_.proposal)
+          sender() ! state
         }
       case Right(None) => sender() ! None
       case Left(error) => sender() ! error
@@ -457,7 +459,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
-          sender() ! state.map(_.proposal)
+          sender() ! state
         }
       case Right(None) => sender() ! None
       case Left(error) => sender() ! error
@@ -468,10 +470,8 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     val maybeEvent = validateAcceptCommand(command)
     maybeEvent match {
       case Right(Some(event)) =>
-        persistAndPublishEvent(event) {
-          case _: ProposalAccepted =>
-            sender() ! state.map(_.proposal)
-          case _ => sender() ! state.map(_.proposal)
+        persistAndPublishEvent(event) { _ =>
+          sender() ! state
         }
       case Right(None) => sender() ! None
       case Left(error) => sender() ! error
@@ -483,7 +483,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
-          sender() ! state.map(_.proposal)
+          sender() ! state
         }
       case Right(None) => sender() ! None
       case Left(error) => sender() ! error
@@ -495,7 +495,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     maybeEvent match {
       case Right(Some(event)) =>
         persistAndPublishEvent(event) { _ =>
-          sender() ! state.map(_.proposal)
+          sender() ! state
         }
       case Right(None) => sender() ! None
       case Left(error) => sender() ! error
@@ -503,107 +503,106 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
   }
 
   private def onLockProposalCommand(command: LockProposalCommand): Unit = {
-    state match {
-      case None => sender() ! Right(None)
-      case Some(ProposalState(_, lock)) =>
-        lock match {
-          case Some(Lock(moderatorId, moderatorName, expirationDate))
-              if moderatorId != command.moderatorId && expirationDate.isAfter(DateHelper.now()) =>
-            sender() ! Left(
-              ValidationFailedError(
-                errors = Seq(ValidationError("moderatorName", "already_locked", Some(moderatorName)))
-              )
-            )
-          case _ =>
-            persistAndPublishEvent(
-              ProposalLocked(
-                id = proposalId,
-                moderatorId = command.moderatorId,
-                moderatorName = command.moderatorName,
-                eventDate = DateHelper.now(),
-                requestContext = command.requestContext
-              )
-            ) { event =>
-              sender() ! Right(Some(event.moderatorId))
-            }
+    (state, lock) match {
+      case (None, _) => sender() ! Right(None)
+      case (_, Some(ProposalLock(moderatorId, moderatorName, deadline)))
+          if moderatorId != command.moderatorId && deadline.hasTimeLeft =>
+        sender() ! Left(
+          ValidationFailedError(errors = Seq(ValidationError("moderatorName", "already_locked", Some(moderatorName))))
+        )
+      case (_, maybeLock) if maybeLock.forall(_.deadline.isOverdue()) =>
+        persistAndPublishEvent(
+          ProposalLocked(
+            id = proposalId,
+            moderatorId = command.moderatorId,
+            moderatorName = command.moderatorName,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext
+          )
+        ) { event =>
+          lock = Some(ProposalLock(event.moderatorId, event.moderatorName.getOrElse("<unknown>"), lockDuration.fromNow))
+          sender() ! Right(Some(event.moderatorId))
         }
+      case _ =>
+        lock = Some(
+          ProposalLock(command.moderatorId, command.moderatorName.getOrElse("<unknown>"), lockDuration.fromNow)
+        )
+        sender() ! Right(Some(command.moderatorId))
     }
   }
 
   private def validateUpdateCommand(
     command: UpdateProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state.map {
-      case ProposalState(proposal, _) =>
-        if (proposal.status != ProposalStatus.Accepted) {
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "proposalId",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
-                )
+    state match {
+      case Some(proposal) if proposal.status != ProposalStatus.Accepted =>
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "proposalId",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
               )
             )
           )
-        } else {
-          Right(
-            Some(
-              ProposalUpdated(
-                id = proposalId,
-                eventDate = DateHelper.now(),
-                requestContext = command.requestContext,
-                updatedAt = command.updatedAt,
-                moderator = Some(command.moderator),
-                edition = command.newContent.map { newContent =>
-                  ProposalEdition(proposal.content, newContent)
-                },
-                labels = command.labels,
-                tags = command.tags,
-                similarProposals = Seq.empty,
-                idea = command.idea,
-                operation = command.question.operationId.orElse(proposal.operation),
-                question = Some(command.question.questionId)
-              )
+        )
+      case Some(proposal) =>
+        Right(
+          Some(
+            ProposalUpdated(
+              id = proposalId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              updatedAt = command.updatedAt,
+              moderator = Some(command.moderator),
+              edition = command.newContent.map { newContent =>
+                ProposalEdition(proposal.content, newContent)
+              },
+              labels = command.labels,
+              tags = command.tags,
+              similarProposals = Seq.empty,
+              idea = command.idea,
+              operation = command.question.operationId.orElse(proposal.operation),
+              question = Some(command.question.questionId)
             )
           )
-        }
-    }.getOrElse(Right(None))
+        )
+      case None => Right(None)
+    }
   }
 
   private def validateUpdateVotesCommand(
     command: UpdateProposalVotesCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state.map {
-      case ProposalState(proposal, _) =>
-        if (proposal.status != ProposalStatus.Accepted) {
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "proposalId",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
-                )
+    state match {
+      case Some(proposal) if proposal.status != ProposalStatus.Accepted =>
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "proposalId",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
               )
             )
           )
-        } else {
-          Right(
-            Some(
-              ProposalVotesUpdated(
-                id = proposalId,
-                eventDate = DateHelper.now(),
-                requestContext = command.requestContext,
-                updatedAt = command.updatedAt,
-                moderator = Some(command.moderator),
-                newVotes = mergeVotes(proposal.votes, command.votes)
-              )
+        )
+      case Some(proposal) =>
+        Right(
+          Some(
+            ProposalVotesUpdated(
+              id = proposalId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              updatedAt = command.updatedAt,
+              moderator = Some(command.moderator),
+              newVotes = mergeVotes(proposal.votes, command.votes)
             )
           )
-        }
-    }.getOrElse(Right(None))
+        )
+      case None => Right(None)
+    }
   }
 
   private def mergeQualifications(proposalQualifications: Seq[Qualification],
@@ -646,164 +645,160 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
   private def validateAcceptCommand(
     command: AcceptProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state.map {
-      case ProposalState(proposal, _) =>
-        if (proposal.status == ProposalStatus.Archived) {
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "status",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is archived and cannot be validated")
-                )
+    state match {
+      case Some(proposal) if proposal.status == ProposalStatus.Archived =>
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "status",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is archived and cannot be validated")
               )
             )
           )
-        } else if (proposal.status == ProposalStatus.Accepted) {
-          // possible double request, ignore.
-          // other modifications should use the proposal update method
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "status",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is already validated")
-                )
+        )
+      case Some(proposal) if proposal.status == ProposalStatus.Accepted =>
+        // possible double request, ignore.
+        // other modifications should use the proposal update method
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "status",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is already validated")
               )
             )
           )
-        } else {
-          Right(
-            Some(
-              ProposalAccepted(
-                id = command.proposalId,
-                eventDate = DateHelper.now(),
-                requestContext = command.requestContext,
-                moderator = command.moderator,
-                edition = command.newContent.map { newContent =>
-                  ProposalEdition(proposal.content, newContent)
-                },
-                sendValidationEmail = command.sendNotificationEmail,
-                theme = None,
-                labels = command.labels,
-                tags = command.tags,
-                similarProposals = Seq.empty,
-                idea = command.idea,
-                operation = command.question.operationId.orElse(proposal.operation),
-                question = Some(command.question.questionId)
-              )
+        )
+      case Some(proposal) =>
+        Right(
+          Some(
+            ProposalAccepted(
+              id = command.proposalId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              moderator = command.moderator,
+              edition = command.newContent.map { newContent =>
+                ProposalEdition(proposal.content, newContent)
+              },
+              sendValidationEmail = command.sendNotificationEmail,
+              theme = None,
+              labels = command.labels,
+              tags = command.tags,
+              similarProposals = Seq.empty,
+              idea = command.idea,
+              operation = command.question.operationId.orElse(proposal.operation),
+              question = Some(command.question.questionId)
             )
           )
-        }
-    }.getOrElse(Right(None))
+        )
+      case None => Right(None)
+    }
   }
 
   private def validateRefuseCommand(
     command: RefuseProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state.map {
-      case ProposalState(proposal, _) =>
-        if (proposal.status == ProposalStatus.Archived) {
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "status",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is archived and cannot be refused")
-                )
+    state match {
+      case Some(proposal) if proposal.status == ProposalStatus.Archived =>
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "status",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is archived and cannot be refused")
               )
             )
           )
-        } else if (proposal.status == ProposalStatus.Refused) {
-          // possible double request, ignore.
-          // other modifications should use the proposal update command
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "status",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is already refused")
-                )
+        )
+      case Some(proposal) if proposal.status == ProposalStatus.Refused =>
+        // possible double request, ignore.
+        // other modifications should use the proposal update command
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "status",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is already refused")
               )
             )
           )
-        } else {
-          Right(
-            Some(
-              ProposalRefused(
-                id = command.proposalId,
-                eventDate = DateHelper.now(),
-                requestContext = command.requestContext,
-                moderator = command.moderator,
-                sendRefuseEmail = command.sendNotificationEmail,
-                refusalReason = command.refusalReason,
-                operation = proposal.operation
-              )
+        )
+      case Some(proposal) =>
+        Right(
+          Some(
+            ProposalRefused(
+              id = command.proposalId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              moderator = command.moderator,
+              sendRefuseEmail = command.sendNotificationEmail,
+              refusalReason = command.refusalReason,
+              operation = proposal.operation
             )
           )
-        }
-    }.getOrElse(Right(None))
+        )
+      case None => Right(None)
+    }
   }
 
   private def validatePostponeCommand(
     command: PostponeProposalCommand
   ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state.map {
-      case ProposalState(proposal, _) =>
-        if (proposal.status == ProposalStatus.Archived) {
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "status",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is archived and cannot be postponed")
-                )
+    state match {
+      case Some(proposal) if proposal.status == ProposalStatus.Archived =>
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "status",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is archived and cannot be postponed")
               )
             )
           )
-        } else if (proposal.status == ProposalStatus.Accepted || proposal.status == ProposalStatus.Refused) {
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "status",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is already moderated and cannot be postponed")
-                )
+        )
+      case Some(proposal) if proposal.status == ProposalStatus.Accepted || proposal.status == ProposalStatus.Refused =>
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "status",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is already moderated and cannot be postponed")
               )
             )
           )
-        } else if (proposal.status == ProposalStatus.Postponed) {
-          Left(
-            ValidationFailedError(
-              errors = Seq(
-                ValidationError(
-                  "status",
-                  "invalid_state",
-                  Some(s"Proposal ${command.proposalId.value} is already postponed")
-                )
+        )
+      case Some(proposal) if proposal.status == ProposalStatus.Postponed =>
+        Left(
+          ValidationFailedError(
+            errors = Seq(
+              ValidationError(
+                "status",
+                "invalid_state",
+                Some(s"Proposal ${command.proposalId.value} is already postponed")
               )
             )
           )
-        } else {
-          Right(
-            Some(
-              ProposalPostponed(
-                id = command.proposalId,
-                requestContext = command.requestContext,
-                moderator = command.moderator,
-                eventDate = DateHelper.now()
-              )
+        )
+      case Some(_) =>
+        Right(
+          Some(
+            ProposalPostponed(
+              id = command.proposalId,
+              requestContext = command.requestContext,
+              moderator = command.moderator,
+              eventDate = DateHelper.now()
             )
           )
-        }
-
-    }.getOrElse(Right(None))
+        )
+      case None => Right(None)
+    }
   }
 
   def onAnonymizeProposalCommand(command: AnonymizeProposalCommand): Unit = {
@@ -814,84 +809,76 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
 
   override def persistenceId: String = proposalId.value
 
-  override val applyEvent: PartialFunction[ProposalEvent, Option[ProposalState]] = {
+  override val applyEvent: PartialFunction[ProposalEvent, Option[Proposal]] = {
     case e: ProposalProposed =>
       Some(
-        ProposalState(
-          Proposal(
-            proposalId = e.id,
-            slug = e.slug,
-            author = e.userId,
-            createdAt = Some(e.eventDate),
-            updatedAt = None,
-            content = e.content,
-            status = ProposalStatus.Pending,
-            questionId = e.question,
-            creationContext = e.requestContext,
-            labels = Seq.empty,
-            votes = Seq(
-              Vote(
-                key = Agree,
-                count = 0,
-                countVerified = 0,
-                countSequence = 0,
-                countSegment = 0,
-                qualifications = Seq(
-                  Qualification(key = LikeIt, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-                  Qualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-                  Qualification(key = PlatitudeAgree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
-                )
-              ),
-              Vote(
-                key = Disagree,
-                count = 0,
-                countVerified = 0,
-                countSequence = 0,
-                countSegment = 0,
-                qualifications = Seq(
-                  Qualification(key = NoWay, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-                  Qualification(key = Impossible, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-                  Qualification(
-                    key = PlatitudeDisagree,
-                    count = 0,
-                    countVerified = 0,
-                    countSequence = 0,
-                    countSegment = 0
-                  )
-                )
-              ),
-              Vote(
-                key = Neutral,
-                count = 0,
-                countVerified = 0,
-                countSequence = 0,
-                countSegment = 0,
-                qualifications = Seq(
-                  Qualification(
-                    key = DoNotUnderstand,
-                    count = 0,
-                    countVerified = 0,
-                    countSequence = 0,
-                    countSegment = 0
-                  ),
-                  Qualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
-                  Qualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+        Proposal(
+          proposalId = e.id,
+          slug = e.slug,
+          author = e.userId,
+          createdAt = Some(e.eventDate),
+          updatedAt = None,
+          content = e.content,
+          status = ProposalStatus.Pending,
+          questionId = e.question,
+          creationContext = e.requestContext,
+          labels = Seq.empty,
+          votes = Seq(
+            Vote(
+              key = Agree,
+              count = 0,
+              countVerified = 0,
+              countSequence = 0,
+              countSegment = 0,
+              qualifications = Seq(
+                Qualification(key = LikeIt, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                Qualification(key = Doable, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                Qualification(key = PlatitudeAgree, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
+              )
+            ),
+            Vote(
+              key = Disagree,
+              count = 0,
+              countVerified = 0,
+              countSequence = 0,
+              countSegment = 0,
+              qualifications = Seq(
+                Qualification(key = NoWay, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                Qualification(key = Impossible, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                Qualification(
+                  key = PlatitudeDisagree,
+                  count = 0,
+                  countVerified = 0,
+                  countSequence = 0,
+                  countSegment = 0
                 )
               )
             ),
-            operation = e.operation,
-            events = List(
-              ProposalAction(
-                date = e.eventDate,
-                user = e.userId,
-                actionType = ProposalProposeAction.name,
-                arguments = Map("content" -> e.content)
+            Vote(
+              key = Neutral,
+              count = 0,
+              countVerified = 0,
+              countSequence = 0,
+              countSegment = 0,
+              qualifications = Seq(
+                Qualification(key = DoNotUnderstand, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                Qualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
+                Qualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
               )
-            ),
-            language = e.language,
-            country = e.country,
-            initialProposal = e.initialProposal
-          )
+            )
+          ),
+          operation = e.operation,
+          events = List(
+            ProposalAction(
+              date = e.eventDate,
+              user = e.userId,
+              actionType = ProposalProposeAction.name,
+              arguments = Map("content" -> e.content)
+            )
+          ),
+          language = e.language,
+          country = e.country,
+          initialProposal = e.initialProposal
         )
       )
     case e: ProposalUpdated              => state.map(applyProposalUpdated(_, e))
@@ -905,20 +892,11 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     case e: ProposalQualified            => state.map(applyProposalQualified(_, e))
     case e: ProposalUnqualified          => state.map(applyProposalUnqualified(_, e))
     case e: ProposalLocked               => state.map(applyProposalLocked(_, e))
-    case e: ProposalPatched              => state.map(_.copy(proposal = e.proposal))
+    case e: ProposalPatched              => Some(e.proposal)
     case _: DeprecatedEvent              => state
     case _: ProposalAnonymized =>
       state.map(
-        state =>
-          state.copy(
-            proposal = state.proposal
-              .copy(
-                content = "DELETE_REQUESTED",
-                slug = "delete-requested",
-                refusalReason = Some("other"),
-                status = Refused
-              )
-        )
+        _.copy(content = "DELETE_REQUESTED", slug = "delete-requested", refusalReason = Some("other"), status = Refused)
       )
     case _ => state
   }
@@ -934,16 +912,17 @@ object ProposalActor {
       DefaultJsonProtocol.jsonFormat2(ProposalState.apply)
   }
 
-  case class Lock(moderatorId: UserId,
-                  moderatorName: String,
-                  expirationDate: ZonedDateTime = DateHelper.now().plus(15, ChronoUnit.SECONDS))
+  @Deprecated
+  case class Lock(moderatorId: UserId, moderatorName: String, expirationDate: ZonedDateTime)
 
   object Lock {
-    implicit val LockFormatter: RootJsonFormat[Lock] =
+    implicit val lockFormatter: RootJsonFormat[Lock] =
       DefaultJsonProtocol.jsonFormat3(Lock.apply)
   }
 
-  def applyProposalUpdated(state: ProposalState, event: ProposalUpdated): ProposalState = {
+  case class ProposalLock(moderatorId: UserId, moderatorName: String, deadline: Deadline)
+
+  def applyProposalUpdated(state: Proposal, event: ProposalUpdated): Proposal = {
 
     val arguments: Map[String, String] = Map(
       "question" -> event.question.map(_.value).getOrElse(""),
@@ -965,26 +944,25 @@ object ProposalActor {
         actionType = ProposalUpdateAction.name,
         arguments = arguments
       )
-    var proposal =
-      state.proposal.copy(
+    val proposal =
+      state.copy(
         tags = event.tags,
         labels = event.labels,
-        events = action :: state.proposal.events,
+        events = action :: state.events,
         updatedAt = Some(event.eventDate),
         idea = event.idea,
         operation = event.operation,
         questionId = event.question
       )
 
-    proposal = event.edition match {
+    event.edition match {
       case None                                 => proposal
       case Some(ProposalEdition(_, newVersion)) => proposal.copy(content = newVersion, slug = SlugHelper(newVersion))
     }
-    state.copy(proposal = proposal, None)
   }
 
-  def applyProposalVotesVerifiedUpdated(state: ProposalState, event: ProposalVotesVerifiedUpdated): ProposalState = {
-    val votes = state.proposal.votes.map(vote => {
+  def applyProposalVotesVerifiedUpdated(state: Proposal, event: ProposalVotesVerifiedUpdated): Proposal = {
+    val votes = state.votes.map { vote =>
       val qualifications = vote.qualifications.map { qualification =>
         Qualification(
           qualification.key,
@@ -1005,17 +983,15 @@ object ProposalActor {
         countVerified = event.votesVerified.filter(_.key == vote.key).map(_.countVerified).sum,
         qualifications = qualifications,
       )
-    })
-    val proposal = state.proposal.copy(votes = votes)
-
-    state.copy(proposal = proposal, None)
+    }
+    state.copy(votes = votes)
   }
 
-  def applyProposalVotesUpdated(state: ProposalState, event: ProposalVotesUpdated): ProposalState = {
-    state.copy(proposal = state.proposal.copy(votes = event.newVotes))
+  def applyProposalVotesUpdated(state: Proposal, event: ProposalVotesUpdated): Proposal = {
+    state.copy(votes = event.newVotes)
   }
 
-  def applyProposalAccepted(state: ProposalState, event: ProposalAccepted): ProposalState = {
+  def applyProposalAccepted(state: Proposal, event: ProposalAccepted): Proposal = {
     val arguments: Map[String, String] = Map(
       "question" -> event.question.map(_.value).getOrElse(""),
       "tags" -> event.tags.map(_.value).mkString(", "),
@@ -1032,11 +1008,11 @@ object ProposalActor {
         actionType = ProposalAcceptAction.name,
         arguments = arguments
       )
-    var proposal =
-      state.proposal.copy(
+    val proposal =
+      state.copy(
         tags = event.tags,
         labels = event.labels,
-        events = action :: state.proposal.events,
+        events = action :: state.events,
         status = Accepted,
         updatedAt = Some(event.eventDate),
         idea = event.idea,
@@ -1044,14 +1020,13 @@ object ProposalActor {
         questionId = event.question
       )
 
-    proposal = event.edition match {
+    event.edition match {
       case None                                 => proposal
       case Some(ProposalEdition(_, newVersion)) => proposal.copy(content = newVersion, slug = SlugHelper(newVersion))
     }
-    state.copy(proposal = proposal, None)
   }
 
-  def applyProposalRefused(state: ProposalState, event: ProposalRefused): ProposalState = {
+  def applyProposalRefused(state: Proposal, event: ProposalRefused): Proposal = {
     val arguments: Map[String, String] =
       Map("refusalReason" -> event.refusalReason.getOrElse("")).filter {
         case (_, value) => !value.isEmpty
@@ -1059,83 +1034,73 @@ object ProposalActor {
     val action =
       ProposalAction(date = event.eventDate, user = event.moderator, actionType = "refuse", arguments = arguments)
     state.copy(
-      proposal = state.proposal.copy(
-        events = action :: state.proposal.events,
-        status = Refused,
-        refusalReason = event.refusalReason,
-        updatedAt = Some(event.eventDate)
-      ),
-      None
+      events = action :: state.events,
+      status = Refused,
+      refusalReason = event.refusalReason,
+      updatedAt = Some(event.eventDate)
     )
   }
 
-  def applyProposalPostponed(state: ProposalState, event: ProposalPostponed): ProposalState = {
+  def applyProposalPostponed(state: Proposal, event: ProposalPostponed): Proposal = {
     val action =
       ProposalAction(date = event.eventDate, user = event.moderator, actionType = "postpone", arguments = Map.empty)
+    state.copy(events = action :: state.events, status = Postponed, updatedAt = Some(event.eventDate))
+  }
+
+  def applyProposalVoted(state: Proposal, event: ProposalVoted): Proposal = {
     state.copy(
-      proposal = state.proposal
-        .copy(events = action :: state.proposal.events, status = Postponed, updatedAt = Some(event.eventDate)),
-      None
+      votes = state.votes.map {
+        case vote if vote.key == event.voteKey =>
+          var voteIncreased = vote.copy(count = vote.count + 1)
+          if (event.voteTrust.isInSegment) {
+            voteIncreased = voteIncreased.copy(countSegment = voteIncreased.countSegment + 1)
+          }
+          if (event.voteTrust.isInSequence) {
+            voteIncreased = voteIncreased.copy(countSequence = voteIncreased.countSequence + 1)
+          }
+          if (event.voteTrust.isTrusted) {
+            voteIncreased = voteIncreased.copy(countVerified = vote.countVerified + 1)
+          }
+          voteIncreased
+
+        case vote => vote
+      },
+      organisationIds = event.maybeOrganisationId match {
+        case Some(organisationId)
+            if !state.organisationIds
+              .exists(_.value == organisationId.value) =>
+          state.organisationIds :+ organisationId
+        case _ => state.organisationIds
+      }
     )
   }
 
-  def applyProposalVoted(state: ProposalState, event: ProposalVoted): ProposalState = {
+  def applyProposalUnvoted(state: Proposal, event: ProposalUnvoted): Proposal = {
     state.copy(
-      proposal = state.proposal.copy(
-        votes =
-          state.proposal.votes.map {
-            case vote if vote.key == event.voteKey =>
-              var voteIncreased = vote.copy(count = vote.count + 1)
-              if (event.voteTrust.isInSegment) {
-                voteIncreased = voteIncreased.copy(countSegment = voteIncreased.countSegment + 1)
-              }
-              if (event.voteTrust.isInSequence) {
-                voteIncreased = voteIncreased.copy(countSequence = voteIncreased.countSequence + 1)
-              }
-              if (event.voteTrust.isTrusted) {
-                voteIncreased = voteIncreased.copy(countVerified = vote.countVerified + 1)
-              }
-              voteIncreased
+      votes = state.votes.map {
+        case vote if vote.key == event.voteKey =>
+          var voteDecreased = vote.copy(count = vote.count - 1)
+          if (event.voteTrust.isInSegment) {
+            voteDecreased = voteDecreased.copy(countSegment = voteDecreased.countSegment - 1)
+          }
+          if (event.voteTrust.isInSequence) {
+            voteDecreased = voteDecreased.copy(countSequence = voteDecreased.countSequence - 1)
+          }
+          if (event.voteTrust.isTrusted) {
+            voteDecreased = voteDecreased.copy(countVerified = vote.countVerified - 1)
+          }
 
-            case vote => vote
-          },
-        organisationIds = event.maybeOrganisationId match {
-          case Some(organisationId)
-              if !state.proposal.organisationIds
-                .exists(_.value == organisationId.value) =>
-            state.proposal.organisationIds :+ organisationId
-          case _ => state.proposal.organisationIds
-        }
-      )
-    )
-  }
-
-  def applyProposalUnvoted(state: ProposalState, event: ProposalUnvoted): ProposalState = {
-    state.copy(
-      proposal =
-        state.proposal.copy(votes = state.proposal.votes.map {
-          case vote if vote.key == event.voteKey =>
-            var voteDecreased = vote.copy(count = vote.count - 1)
-            if (event.voteTrust.isInSegment) {
-              voteDecreased = voteDecreased.copy(countSegment = voteDecreased.countSegment - 1)
-            }
-            if (event.voteTrust.isInSequence) {
-              voteDecreased = voteDecreased.copy(countSequence = voteDecreased.countSequence - 1)
-            }
-            if (event.voteTrust.isTrusted) {
-              voteDecreased = voteDecreased.copy(countVerified = vote.countVerified - 1)
-            }
-
-            voteDecreased.copy(
-              qualifications = voteDecreased.qualifications
-                .map(qualification => applyUnqualifVote(qualification, event.selectedQualifications, event.voteTrust))
-            )
-          case vote => vote
-        }, organisationIds = event.maybeOrganisationId match {
-          case Some(organisationId) =>
-            state.proposal.organisationIds.filterNot(_.value == organisationId.value)
-          case _ => state.proposal.organisationIds
-        })
+          voteDecreased.copy(
+            qualifications = voteDecreased.qualifications
+              .map(qualification => applyUnqualifVote(qualification, event.selectedQualifications, event.voteTrust))
+          )
+        case vote => vote
+      },
+      organisationIds = event.maybeOrganisationId match {
+        case Some(organisationId) =>
+          state.organisationIds.filterNot(_.value == organisationId.value)
+        case _ => state.organisationIds
+      }
     )
   }
 
@@ -1160,8 +1125,8 @@ object ProposalActor {
     }
   }
 
-  def applyProposalQualified(state: ProposalState, event: ProposalQualified): ProposalState = {
-    state.copy(proposal = state.proposal.copy(votes = state.proposal.votes.map {
+  def applyProposalQualified(state: Proposal, event: ProposalQualified): Proposal = {
+    state.copy(votes = state.votes.map {
       case vote if vote.key == event.voteKey =>
         vote.copy(qualifications = vote.qualifications.map {
           case qualification if qualification.key == event.qualificationKey =>
@@ -1180,55 +1145,27 @@ object ProposalActor {
           case qualification => qualification
         })
       case vote => vote
-    }))
+    })
   }
 
-  def applyProposalUnqualified(state: ProposalState, event: ProposalUnqualified): ProposalState = {
-    state.copy(proposal = state.proposal.copy(votes = state.proposal.votes.map {
+  def applyProposalUnqualified(state: Proposal, event: ProposalUnqualified): Proposal = {
+    state.copy(votes = state.votes.map {
       case vote if vote.key == event.voteKey =>
         vote.copy(
           qualifications = vote.qualifications.map(applyUnqualifVote(_, Seq(event.qualificationKey), event.voteTrust))
         )
       case vote => vote
-    }))
+    })
   }
 
-  def applyProposalLocked(state: ProposalState, event: ProposalLocked): ProposalState = {
-    state.lock match {
-      case Some(Lock(moderatorId, _, _)) =>
-        val arguments: Map[String, String] =
-          Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter {
-            case (_, value) => !value.isEmpty
-          }
-        val action =
-          ProposalAction(date = event.eventDate, user = event.moderatorId, actionType = "lock", arguments = arguments)
-        val proposal = if (moderatorId != event.moderatorId) {
-          state.proposal.copy(events = action :: state.proposal.events, updatedAt = Some(event.eventDate))
-        } else {
-          state.proposal
-        }
-        state.copy(
-          proposal = proposal,
-          lock = Some(
-            Lock(
-              event.moderatorId,
-              event.moderatorName.getOrElse("<unknown>"),
-              event.eventDate.plus(15, ChronoUnit.SECONDS)
-            )
-          )
-        )
-      case None =>
-        val arguments: Map[String, String] =
-          Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter {
-            case (_, value) => !value.isEmpty
-          }
-        val action =
-          ProposalAction(date = event.eventDate, user = event.moderatorId, actionType = "lock", arguments = arguments)
-        state.copy(
-          proposal = state.proposal.copy(events = action :: state.proposal.events, updatedAt = Some(event.eventDate)),
-          lock = Some(Lock(event.moderatorId, event.moderatorName.getOrElse("<unknown>")))
-        )
-    }
+  def applyProposalLocked(state: Proposal, event: ProposalLocked): Proposal = {
+    val arguments: Map[String, String] =
+      Map("moderatorName" -> event.moderatorName.getOrElse("<unknown>")).filter {
+        case (_, value) => !value.isEmpty
+      }
+    val action =
+      ProposalAction(date = event.eventDate, user = event.moderatorId, actionType = "lock", arguments = arguments)
+    state.copy(events = action :: state.events, updatedAt = Some(event.eventDate))
   }
 
 }

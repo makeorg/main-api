@@ -19,11 +19,13 @@
 
 package org.make.api.extensions
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{Actor, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 import org.make.api.ActorSystemComponent
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.jdk.CollectionConverters._
 
 class MakeSettings(config: Config) extends Extension {
@@ -32,6 +34,8 @@ class MakeSettings(config: Config) extends Extension {
   val maxUserHistoryEvents: Int = config.getInt("max-user-history-events")
   val mandatoryConnection: Boolean = config.getBoolean("mandatory-connection")
   val defaultUserAnonymousParticipation: Boolean = config.getBoolean("default-user-anonymous-participation")
+  val lockDuration: FiniteDuration =
+    FiniteDuration(Duration(config.getString("lock-duration")).toMillis, TimeUnit.MILLISECONDS)
 
   object SessionCookie {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))

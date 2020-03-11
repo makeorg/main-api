@@ -23,16 +23,26 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 
+import scala.concurrent.duration.FiniteDuration
+
 object ProposalCoordinator {
-  def props(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService): Props =
-    Props(new ProposalCoordinator(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService))
+  def props(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService, lockDuration: FiniteDuration): Props =
+    Props(
+      new ProposalCoordinator(
+        sessionHistoryCoordinatorService = sessionHistoryCoordinatorService,
+        lockDuration = lockDuration
+      )
+    )
   val name: String = "proposal-coordinator"
 }
 
-class ProposalCoordinator(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService) extends Actor {
+class ProposalCoordinator(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
+                          lockDuration: FiniteDuration)
+    extends Actor {
   ClusterSharding(context.system).start(
     ShardedProposal.shardName,
-    ShardedProposal.props(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService),
+    ShardedProposal
+      .props(sessionHistoryCoordinatorService = sessionHistoryCoordinatorService, lockDuration = lockDuration),
     ClusterShardingSettings(context.system),
     ShardedProposal.extractEntityId,
     ShardedProposal.extractShardId

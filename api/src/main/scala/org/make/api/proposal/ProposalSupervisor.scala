@@ -36,7 +36,9 @@ import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
-class ProposalSupervisor(dependencies: ProposalSupervisorDependencies)
+import scala.concurrent.duration.FiniteDuration
+
+class ProposalSupervisor(dependencies: ProposalSupervisorDependencies, lockDuration: FiniteDuration)
     extends Actor
     with ActorLogging
     with ShortenedNames
@@ -47,7 +49,10 @@ class ProposalSupervisor(dependencies: ProposalSupervisorDependencies)
     context.watch(
       context.actorOf(
         ProposalCoordinator
-          .props(sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService),
+          .props(
+            sessionHistoryCoordinatorService = dependencies.sessionHistoryCoordinatorService,
+            lockDuration = lockDuration
+          ),
         ProposalCoordinator.name
       )
     )
@@ -115,6 +120,6 @@ object ProposalSupervisor {
     with SessionHistoryCoordinatorServiceComponent
 
   val name: String = "proposal"
-  def props(dependencies: ProposalSupervisorDependencies): Props =
-    Props(new ProposalSupervisor(dependencies))
+  def props(dependencies: ProposalSupervisorDependencies, lockDuration: FiniteDuration): Props =
+    Props(new ProposalSupervisor(dependencies, lockDuration))
 }
