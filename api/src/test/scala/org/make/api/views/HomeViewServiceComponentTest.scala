@@ -81,7 +81,7 @@ class HomeViewServiceComponentTest
     question = "question default ?",
     operationId = Some(defaultOperation.operationId)
   )
-  val defaultOperationOfQuestion = IndexedOperationOfQuestion(
+  val defaultOperationOfQuestion: IndexedOperationOfQuestion = IndexedOperationOfQuestion(
     questionId = defaultQuestion.questionId,
     operationId = defaultOperation.operationId,
     startDate = Some(now.minusDays(20)),
@@ -90,7 +90,7 @@ class HomeViewServiceComponentTest
     question = "",
     slug = "",
     description = "Description opeOfQue",
-    theme = QuestionTheme("#000000", "#000000", "#000000", "#000000"),
+    theme = QuestionTheme("#000000", "#000000", "#000000", "#000000", None, None),
     consultationImage = None,
     country = Country("FR"),
     language = Language("fr"),

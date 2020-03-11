@@ -267,8 +267,14 @@ class QuestionApiTest
       slug = "question-slug",
       startDate = None,
       endDate = None,
-      theme =
-        QuestionTheme(gradientStart = "#000000", gradientEnd = "#ffffff", color = "#424242", fontColor = "#242424"),
+      theme = QuestionTheme(
+        gradientStart = "#000000",
+        gradientEnd = "#ffffff",
+        color = "#424242",
+        fontColor = "#242424",
+        secondaryColor = Some("#848484"),
+        secondaryFontColor = Some("#848484")
+      ),
       description = "awesome description",
       consultationImage = None,
       country = Country("FR"),

@@ -646,6 +646,14 @@
             "fontColor": {
               "type": "text",
               "index": false
+            },
+            "secondaryColor": {
+              "type": "text",
+              "index": false
+            },
+            "secondaryFontColor": {
+              "type": "text",
+              "index": false
             }
           }
         },
