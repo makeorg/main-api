@@ -39,6 +39,7 @@ libraryDependencies ++= Seq(
   Dependencies.akkaStream,
   Dependencies.akkaPersistence,
   Dependencies.akkaHttp,
+  Dependencies.akkaHttp2Support,
   Dependencies.akkaHttpSwagger,
   Dependencies.akkaHttpCirce,
   Dependencies.akkaClusterSharding,

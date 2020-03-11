@@ -447,7 +447,7 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
       )
     case ConcurrentModification(message) => complete(StatusCodes.Conflict -> message)
     case TokenAlreadyRefreshed(message)  => complete(StatusCodes.PreconditionFailed -> message)
-    case _: EntityStreamSizeException    => complete(StatusCodes.RequestEntityTooLarge)
+    case _: EntityStreamSizeException    => complete(StatusCodes.PayloadTooLarge)
     case e: ClientAccessUnauthorizedException =>
       complete(StatusCodes.Forbidden -> ValidationError("authentication", "forbidden", Some(e.getMessage)))
     case e =>

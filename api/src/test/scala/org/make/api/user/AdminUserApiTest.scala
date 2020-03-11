@@ -1021,7 +1021,7 @@ class AdminUserApiTest
       )
       Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(maxUploadFileSize.toInt + 1))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.RequestEntityTooLarge)
+        status should be(StatusCodes.PayloadTooLarge)
       }
     }
 
