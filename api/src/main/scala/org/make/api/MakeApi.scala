@@ -86,6 +86,13 @@ import org.make.api.technical.generator.fixtures.{
   FixturesApi
 }
 import org.make.api.technical.healthcheck._
+import org.make.api.technical.job.{
+  DefaultJobApiComponent,
+  DefaultJobCoordinatorServiceComponent,
+  JobApi,
+  JobCoordinator,
+  JobCoordinatorComponent
+}
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage._
@@ -155,6 +162,8 @@ trait MakeApi
     with DefaultIdeaSearchEngineComponent
     with DefaultIdeaServiceComponent
     with DefaultIndexationComponent
+    with DefaultJobApiComponent
+    with DefaultJobCoordinatorServiceComponent
     with DefaultMailJetConfigurationComponent
     with DefaultMailJetTemplateConfigurationComponent
     with DefaultMakeDataHandlerComponent
@@ -246,6 +255,7 @@ trait MakeApi
     with DefaultWidgetApiComponent
     with DefaultWidgetServiceComponent
     with HealthCheckComponent
+    with JobCoordinatorComponent
     with MakeAuthentication
     with MakeDBExecutionContextComponent
     with ProposalCoordinatorComponent
@@ -273,6 +283,13 @@ trait MakeApi
       .actorSelection(actorSystem / MakeGuardian.name / SessionHistoryCoordinator.name)
       .resolveOne()(Timeout(10.seconds)),
     atMost = 10.seconds
+  )
+
+  override lazy val jobCoordinator: ActorRef = Await.result(
+    actorSystem
+      .actorSelection(actorSystem / MakeGuardian.name / s"${JobCoordinator.name}-backoff")
+      .resolveOne()(Timeout(5.seconds)),
+    atMost = 5.seconds
   )
 
   override lazy val sequenceConfigurationActor: ActorRef = Await.result(
@@ -348,6 +365,7 @@ trait MakeApi
       classOf[CrmApi],
       classOf[ElasticSearchApi],
       classOf[HealthCheckApi],
+      classOf[JobApi],
       classOf[MigrationApi],
       classOf[ModerationIdeaApi],
       classOf[ModerationOperationApi],
@@ -418,6 +436,7 @@ trait MakeApi
       crmApi.routes ~
       elasticSearchApi.routes ~
       healthCheckApi.routes ~
+      jobApi.routes ~
       migrationApi.routes ~
       moderationIdeaApi.routes ~
       moderationOperationApi.routes ~

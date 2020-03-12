@@ -28,10 +28,12 @@ import org.make.api.sequence.SequenceConfigurationActor
 import org.make.api.sessionhistory.SessionHistoryCoordinator
 import org.make.api.technical.crm._
 import org.make.api.technical.healthcheck.HealthCheckSupervisor
+import org.make.api.technical.job.JobCoordinator
 import org.make.api.technical.tracking.TrackingProducerActor
 import org.make.api.technical.{DeadLettersListenerActor, MakeDowningActor}
 import org.make.api.user.UserSupervisor
 import org.make.api.userhistory.UserHistoryCoordinator
+import org.make.core.job.Job
 
 class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
   override def preStart(): Unit = {
@@ -102,6 +104,12 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
     }
 
     context.watch(context.actorOf(HealthCheckSupervisor.props, HealthCheckSupervisor.name))
+
+    context.watch {
+      val (props, name) =
+        MakeBackoffSupervisor.propsAndName(JobCoordinator.props(Job.defaultHeartRate), JobCoordinator.name)
+      context.actorOf(props, name)
+    }
   }
 
   override def receive: Receive = {

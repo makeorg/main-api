@@ -67,6 +67,8 @@ trait CirceFormatters {
     val r: Decoder[Either[A, B]] = b.map(Right.apply)
     l.or(r)
   }
+
+  implicit def stringValueEncoder[A <: StringValue]: Encoder[A] = a => Json.fromString(a.value)
 }
 
 // object CirceFormatters extends CirceFormatters

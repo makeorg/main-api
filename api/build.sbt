@@ -63,6 +63,8 @@ libraryDependencies ++= Seq(
   Dependencies.elastic4s,
   Dependencies.elastic4sHttp,
   Dependencies.elastic4sCirce,
+  Dependencies.enumeratum,
+  Dependencies.enumeratumCirce,
   Dependencies.akkaHttpTest,
   Dependencies.akkaPersistenceInMemory,
   Dependencies.akkaTest,
@@ -76,8 +78,6 @@ libraryDependencies ++= Seq(
   Dependencies.apacheMath,
   Dependencies.staminaTestKit,
   Dependencies.alpakka,
-  Dependencies.refinedScala,
-  Dependencies.refinedCirce,
   Dependencies.refinedScalaCheck,
   Dependencies.scalaCheck
 )

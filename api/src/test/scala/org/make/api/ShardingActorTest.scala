@@ -60,6 +60,10 @@ object TestHelper {
        |}
        |make-api {
        |  event-sourcing {
+       |    jobs {
+       |      read-journal = $${inmemory-journal}
+       |      snapshot-store = $${inmemory-snapshot-store}
+       |    }
        |    proposals {
        |      read-journal = $${inmemory-journal}
        |      snapshot-store = $${inmemory-snapshot-store}

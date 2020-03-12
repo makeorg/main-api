@@ -27,6 +27,8 @@ libraryDependencies ++= Seq(
   Dependencies.elastic4sHttp,
   Dependencies.avro4s,
   Dependencies.circeGeneric,
+  Dependencies.refinedCirce,
+  Dependencies.refinedScala,
   Dependencies.stamina,
   Dependencies.slugify,
   Dependencies.jsoup
