@@ -21,6 +21,7 @@ package org.make.core
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField.{HOUR_OF_DAY, MINUTE_OF_HOUR, NANO_OF_SECOND, SECOND_OF_MINUTE}
+import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 trait DateHelper {
@@ -33,7 +34,7 @@ object DateHelper extends DateHelper {
   private val utc = ZoneOffset.UTC
 
   def now(): ZonedDateTime = {
-    ZonedDateTime.now(utc)
+    ZonedDateTime.now(utc).truncatedTo(ChronoUnit.MILLIS)
   }
 
   val dateFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()

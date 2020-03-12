@@ -23,7 +23,7 @@ enablePlugins(UniversalPlugin)
 enablePlugins(JavaServerAppPackaging)
 enablePlugins(DockerPlugin)
 
-dockerBaseImage := "makeorg/centos-java:latest"
+dockerBaseImage := "azul/zulu-openjdk-centos:13"
 // Open 4k for jmx and 9k for http
 dockerExposedPorts := Seq(4000, 9000)
 dockerRepository := Some("nexus.prod.makeorg.tech")
@@ -51,12 +51,7 @@ dockerCmd := Seq(
   "-J-XX:MaxGCPauseMillis=100",
   "-J-XX:MaxMetaspaceSize=1G",
   "-J-XX:MetaspaceSize=1G",
-  "-J-XX:+PrintGCDetails",
-  "-J-XX:+PrintGCDateStamps",
-  "-J-Xloggc:/var/run/gc/%t-gc.log",
-  "-J-XX:GCLogFileSize=5M",
-  "-J-XX:+PrintGCCause",
-  "-J-XX:+UseGCLogFileRotation"
+  "-J-Xlog:gc*=debug:file=/var/run/gc/%t-gc.log:utc,uptime,level,tags:filesize=5M"
 )
 
 publishLocal := {
