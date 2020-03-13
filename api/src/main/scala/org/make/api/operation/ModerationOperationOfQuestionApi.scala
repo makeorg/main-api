@@ -453,12 +453,18 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   consultationImage: Option[String Refined Url],
                                                   descriptionImage: Option[String Refined Url]) {
   validate(
-    validateUserInput("question", question, None),
-    validateUserInput("description", description, None),
-    validateColor("gradientStart", theme.gradientStart, None),
-    validateColor("gradientEnd", theme.gradientEnd, None),
-    validateColor("color", theme.color, None),
-    validateColor("fontColor", theme.fontColor, None)
+    Seq(
+      validateUserInput("question", question, None),
+      validateUserInput("description", description, None),
+      validateColor("gradientStart", theme.gradientStart, None),
+      validateColor("gradientEnd", theme.gradientEnd, None),
+      validateColor("color", theme.color, None),
+      validateColor("fontColor", theme.fontColor, None)
+    ) ++
+      theme.secondaryColor
+        .fold(Seq.empty[Requirement])(color => Seq(validateColor("secondaryColor", color, None))) ++
+      theme.secondaryFontColor
+        .fold(Seq.empty[Requirement])(color => Seq(validateColor("secondaryFontColor", color, None))): _*
   )
 }
 

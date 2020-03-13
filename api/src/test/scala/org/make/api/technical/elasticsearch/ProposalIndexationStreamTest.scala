@@ -111,7 +111,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
             sequenceCardsConfiguration = emptySequenceConfiguration,
             aboutUrl = None,
             metas = Metas(None, None, None),
-            theme = QuestionTheme("", "", "", ""),
+            theme = QuestionTheme("", "", "", "", None, None),
             description = "description",
             consultationImage = None,
             descriptionImage = None,
