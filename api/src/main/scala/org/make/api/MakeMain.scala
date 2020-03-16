@@ -43,6 +43,8 @@ import org.make.api.userhistory.ShardedUserHistory
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters._
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.HttpConnectionContext
 
 object MakeMain extends App with StrictLogging with MakeApi {
 
@@ -125,7 +127,12 @@ object MakeMain extends App with StrictLogging with MakeApi {
   val port = settings.Http.port
 
   val bindingFuture: Future[ServerBinding] =
-    Http().bindAndHandle(makeRoutes, host, port)
+    Http().bindAndHandleAsync(
+      handler = Route.asyncHandler(makeRoutes),
+      interface = host,
+      port = port,
+      connectionContext = HttpConnectionContext()
+    )
 
   bindingFuture.map { serverBinding =>
     logger.info(s"Make API bound to ${serverBinding.localAddress} ")

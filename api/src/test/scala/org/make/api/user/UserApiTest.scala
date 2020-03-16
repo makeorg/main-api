@@ -1624,7 +1624,7 @@ class UserApiTest
       )
       Post("/user/sylvain-user-id/upload-avatar", entityOfSize(maxUploadFileSize.toInt + 1))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
-        status should be(StatusCodes.RequestEntityTooLarge)
+        status should be(StatusCodes.PayloadTooLarge)
       }
     }
 
