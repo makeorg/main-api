@@ -27,12 +27,15 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.make.api.extensions.KafkaConfigurationExtension
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Using
+import scala.util.Success
+import scala.util.Failure
 
 class KafkaHealthCheckActor extends HealthCheck with KafkaConfigurationExtension {
 
   override val techno: String = "kafka"
 
-  private val client = {
+  private def createClient() = {
     val properties = new Properties
     properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfiguration.connectionString)
     AdminClient.create(properties)
@@ -42,21 +45,25 @@ class KafkaHealthCheckActor extends HealthCheck with KafkaConfigurationExtension
 
     val promise = Promise[String]
 
-    client
-      .describeCluster(new DescribeClusterOptions().timeoutMs(kafkaConfiguration.pollTimeout.toInt))
-      .clusterId()
-      .whenComplete((_, throwable) => {
-        if (throwable != null) {
-          promise.failure(throwable)
-        } else {
-          promise.success("OK")
-        }
-      })
+    Using(createClient()) { client =>
+      client
+        .describeCluster(new DescribeClusterOptions().timeoutMs(kafkaConfiguration.pollTimeout.toInt))
+        .clusterId()
+        .whenComplete((_, throwable) => {
+          if (throwable != null) {
+            promise.failure(throwable)
+          } else {
+            promise.success("OK")
+          }
+        })
 
-    promise.future
+      promise.future
+    } match {
+      case Success(result) => result
+      case Failure(e)      => Future.failed(e)
+    }
 
   }
-
 }
 
 object KafkaHealthCheckActor extends HealthCheckActorDefinition {
