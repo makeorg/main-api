@@ -62,7 +62,8 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         resendRegistration = TemplateId("resend-registration-id"),
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
-        forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id")
+        forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id"),
+        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id")
       )
 
       waitForCompletion(persistentQuestionService.persist(createQuestion(questionId)))
@@ -101,7 +102,8 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         resendRegistration = TemplateId("resend-registration-id"),
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
-        forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id")
+        forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id"),
+        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id")
       )
 
       val insertDependencies = for {
@@ -147,7 +149,8 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         resendRegistration = TemplateId("resend-registration-id"),
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
-        forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id")
+        forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id"),
+        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id")
       )
       val crmTemplates2 =
         crmTemplates1.copy(crmTemplatesId = CrmTemplatesId("template-id-2"), questionId = Some(questionId2))

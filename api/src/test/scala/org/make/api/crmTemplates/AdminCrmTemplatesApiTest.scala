@@ -56,7 +56,8 @@ class AdminCrmTemplatesApiTest
     resendRegistration = TemplateId("56785"),
     proposalAcceptedOrganisation = TemplateId("56786"),
     proposalRefusedOrganisation = TemplateId("56787"),
-    forgottenPasswordOrganisation = TemplateId("56788")
+    forgottenPasswordOrganisation = TemplateId("56788"),
+    organisationEmailChangeConfirmation = TemplateId("56788")
   )
 
   val validCrmTemplates = CrmTemplates(
@@ -71,7 +72,8 @@ class AdminCrmTemplatesApiTest
     resendRegistration = TemplateId("12345"),
     proposalAcceptedOrganisation = TemplateId("12346"),
     proposalRefusedOrganisation = TemplateId("12347"),
-    forgottenPasswordOrganisation = TemplateId("12348")
+    forgottenPasswordOrganisation = TemplateId("12348"),
+    organisationEmailChangeConfirmation = TemplateId("12348")
   )
 
   when(crmTemplatesService.createCrmTemplates(ArgumentMatchers.any[CreateCrmTemplates])).thenAnswer { invocation =>

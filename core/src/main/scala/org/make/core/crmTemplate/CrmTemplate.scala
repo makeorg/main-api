@@ -34,7 +34,8 @@ case class CrmTemplates(crmTemplatesId: CrmTemplatesId,
                         resendRegistration: TemplateId,
                         proposalAcceptedOrganisation: TemplateId,
                         proposalRefusedOrganisation: TemplateId,
-                        forgottenPasswordOrganisation: TemplateId)
+                        forgottenPasswordOrganisation: TemplateId,
+                        organisationEmailChangeConfirmation: TemplateId)
 object CrmTemplates {
   object MonitoringCategory {
     val account = "account"

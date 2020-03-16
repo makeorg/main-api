@@ -61,7 +61,8 @@ class CrmTemplatesServiceTest
           resendRegistration = TemplateId("123456"),
           proposalAcceptedOrganisation = TemplateId("123456"),
           proposalRefusedOrganisation = TemplateId("123456"),
-          forgottenPasswordOrganisation = TemplateId("123456")
+          forgottenPasswordOrganisation = TemplateId("123456"),
+          organisationEmailChangeConfirmation = TemplateId("123456")
         )
       )
 
@@ -81,7 +82,8 @@ class CrmTemplatesServiceTest
               resendRegistration = TemplateId("123456"),
               proposalAcceptedOrganisation = TemplateId("123456"),
               proposalRefusedOrganisation = TemplateId("123456"),
-              forgottenPasswordOrganisation = TemplateId("123456")
+              forgottenPasswordOrganisation = TemplateId("123456"),
+              organisationEmailChangeConfirmation = TemplateId("123456")
             )
           )
         )
@@ -103,7 +105,8 @@ class CrmTemplatesServiceTest
           resendRegistration = TemplateId("123456"),
           proposalAcceptedOrganisation = TemplateId("123456"),
           proposalRefusedOrganisation = TemplateId("123456"),
-          forgottenPasswordOrganisation = TemplateId("123456")
+          forgottenPasswordOrganisation = TemplateId("123456"),
+          organisationEmailChangeConfirmation = TemplateId("123456")
         )
       )
 
@@ -125,7 +128,8 @@ class CrmTemplatesServiceTest
         resendRegistration = TemplateId("123456"),
         proposalAcceptedOrganisation = TemplateId("123456"),
         proposalRefusedOrganisation = TemplateId("123456"),
-        forgottenPasswordOrganisation = TemplateId("123456")
+        forgottenPasswordOrganisation = TemplateId("123456"),
+        organisationEmailChangeConfirmation = TemplateId("123456")
       )
       Mockito
         .when(persistentCrmTemplatesService.getById(CrmTemplatesId("id")))
@@ -145,7 +149,8 @@ class CrmTemplatesServiceTest
           resendRegistration = TemplateId("123456"),
           proposalAcceptedOrganisation = TemplateId("123456"),
           proposalRefusedOrganisation = TemplateId("123456"),
-          forgottenPasswordOrganisation = TemplateId("123456")
+          forgottenPasswordOrganisation = TemplateId("123456"),
+          organisationEmailChangeConfirmation = TemplateId("123456")
         )
       )
 
@@ -168,7 +173,8 @@ class CrmTemplatesServiceTest
       resendRegistration = TemplateId("123456"),
       proposalAcceptedOrganisation = TemplateId("123456"),
       proposalRefusedOrganisation = TemplateId("123456"),
-      forgottenPasswordOrganisation = TemplateId("123456")
+      forgottenPasswordOrganisation = TemplateId("123456"),
+      organisationEmailChangeConfirmation = TemplateId("123456")
     )
 
     scenario("find crmTemplates from CrmTemplatesId with questionId and locale fallback") {

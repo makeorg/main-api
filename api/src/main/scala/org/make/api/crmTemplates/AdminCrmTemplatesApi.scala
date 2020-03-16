@@ -206,6 +206,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                               .orElse(defaultTemplate.map(_.proposalRefusedOrganisation))
                             forgottenPasswordOrganisation <- request.forgottenPasswordOrganisation
                               .orElse(defaultTemplate.map(_.forgottenPasswordOrganisation))
+                            organisationEmailChangeConfirmation <- request.organisationEmailChangeConfirmation
+                              .orElse(defaultTemplate.map(_.organisationEmailChangeConfirmation))
                           } yield {
                             CreateCrmTemplates(
                               questionId = question.map(_.questionId),
@@ -218,7 +220,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                               resendRegistration,
                               proposalAcceptedOrganisation,
                               proposalRefusedOrganisation,
-                              forgottenPasswordOrganisation
+                              forgottenPasswordOrganisation,
+                              organisationEmailChangeConfirmation
                             )
                           }
                           crmTemplates match {
@@ -270,6 +273,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                             .orElse(defaultTemplate.map(_.proposalRefusedOrganisation))
                           forgottenPasswordOrganisation <- request.forgottenPasswordOrganisation
                             .orElse(defaultTemplate.map(_.forgottenPasswordOrganisation))
+                          organisationEmailChangeConfirmation <- request.organisationEmailChangeConfirmation
+                            .orElse(defaultTemplate.map(_.organisationEmailChangeConfirmation))
                         } yield {
                           UpdateCrmTemplates(
                             crmTemplatesId = crmTemplatesId,
@@ -281,7 +286,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                             resendRegistration,
                             proposalAcceptedOrganisation,
                             proposalRefusedOrganisation,
-                            forgottenPasswordOrganisation
+                            forgottenPasswordOrganisation,
+                            organisationEmailChangeConfirmation
                           )
                         }
                         crmTemplates match {
@@ -328,6 +334,11 @@ trait DefaultAdminCrmTemplatesApiComponent
           .requirePresent(
             fieldName = "forgottenPasswordOrganisation",
             fieldValue = request.forgottenPasswordOrganisation
+          ),
+        Validation
+          .requirePresent(
+            fieldName = "organisationEmailChangeConfirmation",
+            fieldValue = request.organisationEmailChangeConfirmation
           )
       )
     }
