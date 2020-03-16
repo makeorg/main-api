@@ -23,17 +23,35 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
+import org.make.api.technical.ActorProtocol
 import org.make.core._
+import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
+import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
 
-trait UserRelatedEvent {
+trait UserHistoryActorProtocol extends ActorProtocol
+
+trait VotedProposals {
+  val proposals: Seq[ProposalId]
+}
+trait VotesValues {
+  val votesValues: Map[ProposalId, VoteAndQualifications]
+}
+
+case class UserHistoryEnvelope[T <: UserPersistentEvent](userId: UserId, command: T) extends UserRelatedEvent
+
+trait UserRelatedEvent extends UserHistoryActorProtocol {
   def userId: UserId
 }
 
-sealed trait UserEvent extends UserRelatedEvent {
+trait UserPersistentEvent {
+  def userId: UserId
+}
+
+sealed trait UserEvent extends UserPersistentEvent {
   def connectedUserId: Option[UserId]
   def eventDate: ZonedDateTime
   def requestContext: RequestContext

@@ -21,6 +21,7 @@ package org.make.api.sessionhistory
 
 import java.time.ZonedDateTime
 
+import org.make.api.technical.ActorProtocol
 import org.make.api.userhistory._
 import org.make.core.SprayJsonFormatters._
 import org.make.core.history.HistoryActions.VoteTrust
@@ -42,11 +43,17 @@ object SessionAction {
     )
 }
 
-trait SessionRelatedEvent {
+trait SessionHistoryActorProtocol extends ActorProtocol
+
+trait SessionRelatedEvent extends SessionHistoryActorProtocol {
   def sessionId: SessionId
 }
 
-sealed trait SessionHistoryEvent[T] extends SessionRelatedEvent with MakeSerializable with Product {
+case class SessionHistoryEnvelope[T <: SessionHistoryEvent[_]](sessionId: SessionId, command: T)
+    extends SessionRelatedEvent
+
+sealed trait SessionHistoryEvent[T] extends MakeSerializable {
+  def sessionId: SessionId
   def requestContext: RequestContext
   def action: SessionAction[T]
 }
@@ -273,9 +280,7 @@ object SessionTransformed {
     DefaultJsonProtocol.jsonFormat(SessionTransformed.apply, "sessionId", "context", "action")
 }
 
-case class ProposalLockValue(voteKey: Option[VoteKey], qualifications: Seq[QualificationKey])
-
-sealed trait LockVoteAction
+sealed trait LockVoteAction extends SessionHistoryActorProtocol
 
 case object Vote extends LockVoteAction
 case class ChangeQualifications(key: Seq[QualificationKey]) extends LockVoteAction
@@ -287,8 +292,8 @@ case class ReleaseProposalForVote(sessionId: SessionId, proposalId: ProposalId) 
 case class ReleaseProposalForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey)
     extends SessionRelatedEvent
 
-case object LockAcquired
-case object LockAlreadyAcquired
+case object LockAcquired extends SessionHistoryActorProtocol
+case object LockAlreadyAcquired extends SessionHistoryActorProtocol
 
 sealed trait SessionHistoryAction extends SessionRelatedEvent
 

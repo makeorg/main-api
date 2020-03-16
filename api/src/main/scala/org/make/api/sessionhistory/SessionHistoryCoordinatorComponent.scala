@@ -27,6 +27,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
 import org.make.api.technical.{StreamUtils, TimeSettings}
+import org.make.api.userhistory.{VotedProposals, VotesValues}
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey}
@@ -75,17 +76,17 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
     }
 
     override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
-      (sessionHistoryCoordinator ? command).map(_ => ())
+      (sessionHistoryCoordinator ? SessionHistoryEnvelope(command.sessionId, command)).map(_ => ())
     }
 
     override def logHistory(command: SessionHistoryEvent[_]): Unit = {
-      sessionHistoryCoordinator ! command
+      sessionHistoryCoordinator ! SessionHistoryEnvelope(command.sessionId, command)
     }
 
     override def retrieveVoteAndQualifications(
       request: RequestSessionVoteValues
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
-      (sessionHistoryCoordinator ? request).mapTo[Map[ProposalId, VoteAndQualifications]]
+      (sessionHistoryCoordinator ? request).mapTo[VotesValues].map(_.votesValues)
     }
 
     override def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit] = {
@@ -106,11 +107,14 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
           Source(proposalsIds)
             .sliding(proposalsPerPage, proposalsPerPage)
             .mapAsync(5) { someProposalsIds =>
-              (sessionHistoryCoordinator ? requestPaginate(Some(someProposalsIds))).mapTo[Seq[ProposalId]]
+              (sessionHistoryCoordinator ? requestPaginate(Some(someProposalsIds)))
+                .mapTo[VotedProposals]
+                .map(_.proposals)
             }
             .mapConcat(identity)
             .runWith(Sink.seq)
-        case _ => (sessionHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[Seq[ProposalId]]
+        case _ =>
+          (sessionHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[VotedProposals].map(_.proposals)
       }
     }
 

@@ -119,6 +119,6 @@ abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[Sta
 
 object MakePersistentActor {
 
-  case object Snapshot
-  case class StartShard(shardId: String)
+  case object Snapshot extends ActorProtocol
+  case class StartShard(shardId: String) extends ActorProtocol
 }

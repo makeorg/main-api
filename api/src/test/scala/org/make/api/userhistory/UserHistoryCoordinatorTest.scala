@@ -28,7 +28,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues, UserVotedProposals}
 import org.make.api.{ActorSystemComponent, ShardingActorTest, TestHelper}
 import org.make.core.history.HistoryActions
 import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
@@ -44,6 +44,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 class UserHistoryCoordinatorTest
@@ -153,7 +154,8 @@ class UserHistoryCoordinatorTest
       val requestVotesNotPaginated =
         RequestUserVotedProposals(userId = userId, proposalsIds = Some(userVotes.map(_.proposalId)))
       implicit val timeout: util.Timeout = TimeSettings.defaultTimeout
-      val failedAllVotes = (userHistoryCoordinator ? requestVotesNotPaginated).mapTo[Seq[ProposalId]]
+      val failedAllVotes =
+        (userHistoryCoordinator ? requestVotesNotPaginated).mapTo[UserVotedProposals].map(_.proposals)
       whenReady(failedAllVotes.failed, Timeout(6.seconds)) { exception =>
         logger.info("Previous thrown exception 'oversized payload' was expected.")
         exception shouldBe a[AskTimeoutException]

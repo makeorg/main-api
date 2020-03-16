@@ -23,11 +23,22 @@ import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.extensions.MakeSettingsExtension
-import org.make.api.sessionhistory.SessionHistoryActor.{SessionClosed, SessionHistory}
+import org.make.api.sessionhistory.SessionHistoryActor.{
+  SessionClosed,
+  SessionHistory,
+  SessionVotedProposals,
+  SessionVotesValues
+}
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
-import org.make.api.userhistory.UserHistoryActor._
-import org.make.api.userhistory.{UserConnectedEvent, UserHistoryEvent}
+import org.make.api.userhistory.UserHistoryActor.{
+  InjectSessionEvents,
+  LogAcknowledged,
+  RequestUserVotedProposals,
+  RequestVoteValues,
+  _
+}
+import org.make.api.userhistory._
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
 import org.make.core.session._
@@ -63,11 +74,11 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
 
   override def receiveCommand: Receive = {
     case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
-    case command: TransactionalSessionHistoryEvent[_] =>
+    case SessionHistoryEnvelope(_, command: TransactionalSessionHistoryEvent[_]) =>
       persistEvent(command) { _ =>
         sender() ! LogAcknowledged
       }
-    case command: TransferableToUser[_] =>
+    case SessionHistoryEnvelope(_, command: TransferableToUser[_]) =>
       persistEvent(command) { _ =>
         ()
       }
@@ -178,7 +189,8 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
         context.become(closed(newUserId))
       }
       sender() ! LogAcknowledged
-    case command: TransferableToUser[_] => userHistoryCoordinator.forward(command.toUserHistoryEvent(userId))
+    case SessionHistoryEnvelope(_, command: TransferableToUser[_]) =>
+      userHistoryCoordinator.forward(UserHistoryEnvelope(userId, command.toUserHistoryEvent(userId)))
     case RequestSessionVotedProposals(_, proposalsIds) =>
       userHistoryCoordinator.forward(RequestUserVotedProposals(userId = userId, proposalsIds = proposalsIds))
     case RequestSessionVotedProposalsPaginate(_, proposalsIds, limit, skip) =>
@@ -241,7 +253,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       case (proposalId, _) if proposalsIds.forall(_.contains(proposalId)) => proposalId
     }.slice(skip, limit)
 
-    sender() ! votedProposals
+    sender() ! SessionVotedProposals(votedProposals)
   }
 
   private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
@@ -256,7 +268,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
         )
     }
 
-    sender() ! voteAndQualifications
+    sender() ! SessionVotesValues(voteAndQualifications)
   }
 
   private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = state.toSeq.flatMap(_.events).flatMap {
@@ -356,7 +368,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
   override val applyEvent: PartialFunction[SessionHistoryEvent[_], Option[SessionHistory]] = {
     case transformed: SessionTransformed =>
       state.map(_.copy(events = List(transformed))).orElse(Some(SessionHistory(List(transformed))))
-    case event =>
+    case event: SessionHistoryEvent[_] =>
       state.map { s =>
         s.copy(events = (event :: s.events).take(maxEvents))
       }.orElse(Some(SessionHistory(List(event))))
@@ -370,6 +382,12 @@ object SessionHistoryActor {
     implicit val persister: RootJsonFormat[SessionHistory] = DefaultJsonProtocol.jsonFormat1(SessionHistory.apply)
   }
 
-  final case class SessionClosed(sender: ActorRef)
+  final case class SessionClosed(sender: ActorRef) extends SessionHistoryActorProtocol
 
+  final case class SessionVotedProposals(proposals: Seq[ProposalId])
+      extends SessionHistoryActorProtocol
+      with VotedProposals
+  final case class SessionVotesValues(votesValues: Map[ProposalId, VoteAndQualifications])
+      extends SessionHistoryActorProtocol
+      with VotesValues
 }

@@ -27,14 +27,9 @@ import akka.persistence.inmemory.extension.{InMemorySnapshotStorage, StorageExte
 import akka.persistence.serialization.{Snapshot, SnapshotSerializer}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
-import org.make.api.userhistory.UserHistoryActor.{
-  LogAcknowledged,
-  RequestUserVotedProposals,
-  RequestVoteValues,
-  UserHistory
-}
+import org.make.api.userhistory.UserHistoryActor._
 import org.make.api.userhistory.{LogUserVoteEvent, _}
-import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
+import org.make.core.history.HistoryActions.Trusted
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
@@ -53,22 +48,23 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
   feature("Vote retrieval") {
     scenario("no vote history") {
       coordinator ! RequestVoteValues(UserId("no-vote-history"), Seq(ProposalId("proposal1")))
-      expectMsg(Map.empty)
+      expectMsg(UserVotesValues(Map.empty))
     }
 
     scenario("vote on proposal") {
       val userId = UserId("vote-on-proposal")
       val proposalId = ProposalId("proposal1")
-      coordinator ! LogUserVoteEvent(
+      val event = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "vote", UserVote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId).voteKey shouldBe VoteKey.Agree
       response(proposalId).qualificationKeys shouldBe Map.empty
     }
@@ -76,30 +72,32 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
     scenario("vote then unvote proposal") {
       val userId = UserId("vote-then-unvote-proposal")
       val proposalId = ProposalId("proposal1")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserUnvoteEvent(
+      val event2 = LogUserUnvoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "unvote", UserUnvote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
-      expectMsg(Map.empty)
+      expectMsg(UserVotesValues(Map.empty))
     }
 
     scenario("vote then unvote then vote proposal") {
       val userId = UserId("vote-then-unvote-then-vote-proposal")
       val proposalId = ProposalId("proposal1")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -108,10 +106,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserVote(proposalId, VoteKey.Disagree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserUnvoteEvent(
+      val event2 = LogUserUnvoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -120,19 +119,21 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserUnvote(proposalId, VoteKey.Disagree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserVoteEvent(
+      val event3 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "vote", UserVote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event3)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId).voteKey shouldBe VoteKey.Agree
       response(proposalId).qualificationKeys shouldBe Map.empty
     }
@@ -140,24 +141,26 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
     scenario("vote then one qualification proposal") {
       val userId = UserId("vote-then-one-qualification-proposal")
       val proposalId = ProposalId("proposal1")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event2 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now(), "qualification", UserQualification(proposalId, QualificationKey.LikeIt, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId).voteKey shouldBe VoteKey.Agree
       response(proposalId).qualificationKeys shouldBe Map(QualificationKey.LikeIt -> Trusted)
     }
@@ -165,15 +168,16 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
     scenario("vote then two qualifications proposal") {
       val userId = UserId("vote-then-two-qualification-proposal")
       val proposalId = ProposalId("proposal1")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(10, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event2 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -182,10 +186,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event3 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -194,11 +199,12 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.PlatitudeAgree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event3)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId).voteKey shouldBe VoteKey.Agree
       response(proposalId).qualificationKeys shouldBe Map(
         QualificationKey.LikeIt -> Trusted,
@@ -209,15 +215,16 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
     scenario("vote then three qualification proposal") {
       val userId = UserId("vote-then-three-qualification-proposal")
       val proposalId = ProposalId("proposal1")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event2 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -226,10 +233,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event3 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -238,10 +246,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.Doable, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event3)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event4 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -250,11 +259,12 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.PlatitudeAgree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event4)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId).voteKey shouldBe VoteKey.Agree
       response(proposalId).qualificationKeys shouldBe Map(
         QualificationKey.LikeIt -> Trusted,
@@ -266,15 +276,16 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
     scenario("vote then qualif then unqualif then requalif proposal") {
       val userId = UserId("vote-then-qualif-then-unqualif-then-requalif-proposal")
       val proposalId = ProposalId("proposal1")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(DateHelper.now().minus(15, ChronoUnit.SECONDS), "vote", UserVote(proposalId, VoteKey.Agree, Trusted))
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event2 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -283,10 +294,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event3 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -295,10 +307,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.Doable, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event3)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserUnqualificationEvent(
+      val event4 = LogUserUnqualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -307,10 +320,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserUnqualification(proposalId, QualificationKey.LikeIt, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event4)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event5 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -319,11 +333,12 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId, QualificationKey.PlatitudeAgree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event5)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId).voteKey shouldBe VoteKey.Agree
       response(proposalId).qualificationKeys shouldBe Map(
         QualificationKey.Doable -> Trusted,
@@ -336,7 +351,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       val proposalId1 = ProposalId("proposal1")
       val proposalId2 = ProposalId("proposal2")
       val proposalId3 = ProposalId("proposal3")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -345,10 +360,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserVote(proposalId1, VoteKey.Agree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserVoteEvent(
+      val event2 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -357,10 +373,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserVote(proposalId2, VoteKey.Disagree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserVoteEvent(
+      val event3 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -369,11 +386,12 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserVote(proposalId3, VoteKey.Neutral, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event3)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId1, proposalId2, proposalId3))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId1).voteKey shouldBe VoteKey.Agree
       response(proposalId1).qualificationKeys shouldBe Map.empty
       response(proposalId2).voteKey shouldBe VoteKey.Disagree
@@ -387,7 +405,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       val proposalId1 = ProposalId("proposal1")
       val proposalId2 = ProposalId("proposal2")
       val proposalId3 = ProposalId("proposal3")
-      coordinator ! LogUserVoteEvent(
+      val event1 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -396,10 +414,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserVote(proposalId1, VoteKey.Agree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event1)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event2 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -408,10 +427,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId1, QualificationKey.Doable, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event2)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserVoteEvent(
+      val event3 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -420,10 +440,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserVote(proposalId2, VoteKey.Disagree, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event3)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event4 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -432,10 +453,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId2, QualificationKey.Impossible, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event4)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserQualificationEvent(
+      val event5 = LogUserQualificationEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -444,10 +466,11 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserQualification(proposalId2, QualificationKey.NoWay, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event5)
 
       expectMsg(LogAcknowledged)
 
-      coordinator ! LogUserVoteEvent(
+      val event6 = LogUserVoteEvent(
         userId,
         RequestContext.empty,
         UserAction(
@@ -456,11 +479,12 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
           UserVote(proposalId3, VoteKey.Neutral, Trusted)
         )
       )
+      coordinator ! UserHistoryEnvelope(userId, event6)
 
       expectMsg(LogAcknowledged)
 
       coordinator ! RequestVoteValues(userId, Seq(proposalId1, proposalId2, proposalId3))
-      val response = expectMsgType[Map[ProposalId, VoteAndQualifications]]
+      val response = expectMsgType[UserVotesValues].votesValues
       response(proposalId1).voteKey shouldBe VoteKey.Agree
       response(proposalId1).qualificationKeys shouldBe Map(QualificationKey.Doable -> Trusted)
       response(proposalId2).voteKey shouldBe VoteKey.Disagree
@@ -472,6 +496,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       response(proposalId3).qualificationKeys shouldBe Map.empty
     }
   }
+
   feature("recover from old snapshot") {
 
     scenario("empty user history") {
@@ -484,7 +509,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       expectMsg(Success(""))
 
       coordinator ! RequestUserVotedProposals(UserId("empty-user-history"))
-      expectMsg(Seq.empty[ProposalId])
+      expectMsg(UserVotedProposals(Seq.empty[ProposalId]))
     }
 
     scenario("user history with a vote") {
@@ -505,7 +530,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       expectMsg(Success(""))
 
       coordinator ! RequestUserVotedProposals(UserId("user-history-with-vote"))
-      expectMsg(Seq(ProposalId("voted")))
+      expectMsg(UserVotedProposals(Seq(ProposalId("voted"))))
     }
   }
 
@@ -630,7 +655,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       expectMsg(Success(""))
 
       coordinator ! RequestUserVotedProposals(UserId("1"), filterVotes = None, filterQualifications = None)
-      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      val foundProposals: Seq[ProposalId] = expectMsgType[UserVotedProposals](3.seconds).proposals
       foundProposals.toSet == Set(proposal1, proposal2, proposal3, proposal4, proposal5, proposal6) shouldBe true
     }
 
@@ -646,7 +671,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterVotes = Some(Seq(VoteKey.Agree)),
         filterQualifications = None
       )
-      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      val foundProposals: Seq[ProposalId] = expectMsgType[UserVotedProposals](3.seconds).proposals
       foundProposals.toSet == Set(proposal1, proposal3, proposal5, proposal6) shouldBe true
     }
 
@@ -662,7 +687,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterVotes = None,
         filterQualifications = Some(Seq(QualificationKey.LikeIt, QualificationKey.NoWay))
       )
-      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      val foundProposals: Seq[ProposalId] = expectMsgType[UserVotedProposals](3.seconds).proposals
       foundProposals.toSet.diff(Set(proposal1, proposal2, proposal3, proposal4, proposal6)) shouldBe Set.empty
     }
 
@@ -678,7 +703,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterVotes = Some(Seq(VoteKey.Agree, VoteKey.Neutral)),
         filterQualifications = Some(Seq(QualificationKey.LikeIt, QualificationKey.NoWay))
       )
-      val foundProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      val foundProposals: Seq[ProposalId] = expectMsgType[UserVotedProposals](3.seconds).proposals
       foundProposals.toSet.diff(Set(proposal1, proposal3, proposal6)) shouldBe Set.empty
 
       coordinator ! RequestUserVotedProposals(
@@ -686,7 +711,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
         filterVotes = Some(Seq(VoteKey.Agree, VoteKey.Disagree)),
         filterQualifications = Some(Seq(QualificationKey.NoWay))
       )
-      val foundOtherProposals: Seq[ProposalId] = expectMsgType[Seq[ProposalId]](3.seconds)
+      val foundOtherProposals: Seq[ProposalId] = expectMsgType[UserVotedProposals](3.seconds).proposals
       foundOtherProposals.toSet.diff(Set(proposal3, proposal4, proposal6)) shouldBe Set.empty
     }
 
