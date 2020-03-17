@@ -40,7 +40,7 @@ import org.make.api.feature._
 import org.make.api.idea._
 import org.make.api.idea.topIdeaComments.{
   DefaultPersistentTopIdeaCommentServiceComponent,
-  DefaultTopIdeaCommentServiceComponent,
+  DefaultTopIdeaCommentServiceComponent
 }
 import org.make.api.operation._
 import org.make.api.organisation._
@@ -50,16 +50,7 @@ import org.make.api.partner.{
   DefaultPartnerServiceComponent,
   DefaultPersistentPartnerServiceComponent
 }
-import org.make.api.personality.{
-  AdminPersonalityApi,
-  AdminQuestionPersonalityApi,
-  DefaultAdminPersonalityApiComponent,
-  DefaultAdminQuestionPersonalityApiComponent,
-  DefaultPersistentQuestionPersonalityServiceComponent,
-  DefaultPersonalityApiComponent,
-  DefaultQuestionPersonalityServiceComponent,
-  PersonalityApi
-}
+import org.make.api.personality._
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.segment.DefaultSegmentServiceComponent
@@ -88,6 +79,11 @@ import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchConfigurationComponent,
   DefaultIndexationComponent,
   ElasticSearchApi
+}
+import org.make.api.technical.generator.fixtures.{
+  DefaultFixturesApiComponent,
+  DefaultFixturesServiceComponent,
+  FixturesApi
 }
 import org.make.api.technical.healthcheck._
 import org.make.api.technical.monitoring.DefaultMonitoringService
@@ -146,6 +142,8 @@ trait MakeApi
     with DefaultFacebookApiComponent
     with DefaultFeaturedOperationServiceComponent
     with DefaultFeatureServiceComponent
+    with DefaultFixturesApiComponent
+    with DefaultFixturesServiceComponent
     with DefaultGoogleApiComponent
     with DefaultHomeViewServiceComponent
     with DefaultViewApiComponent
@@ -317,6 +315,12 @@ trait MakeApi
       }
     } ~ getFromResourceDirectory(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}")
 
+  private lazy val envDependentApiClasses: Set[Class[_]] =
+    makeSettings.environment match {
+      case "production" => Set.empty[Class[_]]
+      case _            => Set[Class[_]](classOf[FixturesApi])
+    }
+
   private lazy val apiClasses: Set[Class[_]] =
     Set(
       classOf[AdminActiveFeatureApi],
@@ -359,7 +363,7 @@ trait MakeApi
       classOf[UserApi],
       classOf[ViewApi],
       classOf[WidgetApi]
-    )
+    ) ++ envDependentApiClasses
 
   private lazy val optionsCors: Route = options {
     corsHeaders() {
@@ -375,12 +379,18 @@ trait MakeApi
 
   private lazy val documentation = new MakeDocumentation(apiClasses, makeSettings.Http.ssl).routes
 
+  lazy val envDependantRoutes: Route =
+    makeSettings.environment match {
+      case "production" => swagger
+      case _            => swagger ~ fixturesApi.routes
+    }
+
   lazy val makeRoutes: Route =
     (documentation ~
-      swagger ~
       optionsCors ~
       optionsAuthorized ~
       buildRoutes ~
+      envDependantRoutes ~
 
       adminActiveFeatureApi.routes ~
       adminClientApi.routes ~

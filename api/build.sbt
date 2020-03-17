@@ -78,7 +78,8 @@ libraryDependencies ++= Seq(
   Dependencies.alpakka,
   Dependencies.refinedScala,
   Dependencies.refinedCirce,
-  Dependencies.refinedScalaCheck
+  Dependencies.refinedScalaCheck,
+  Dependencies.scalaCheck
 )
 
 libraryDependencies += {
