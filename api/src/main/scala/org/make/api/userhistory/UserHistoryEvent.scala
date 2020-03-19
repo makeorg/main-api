@@ -83,14 +83,15 @@ object UserHistoryEvent {
           case Seq(JsString("LogUserCreateSequenceEvent"))       => json.convertTo[LogUserCreateSequenceEvent]
           case Seq(JsString("LogUserRemoveProposalsSequenceEvent")) =>
             json.convertTo[LogUserRemoveProposalsSequenceEvent]
-          case Seq(JsString("LogUserUpdateSequenceEvent"))   => json.convertTo[LogUserUpdateSequenceEvent]
-          case Seq(JsString("LogUserSearchSequencesEvent"))  => json.convertTo[LogUserSearchSequencesEvent]
-          case Seq(JsString("LogUserStartSequenceEvent"))    => json.convertTo[LogUserStartSequenceEvent]
-          case Seq(JsString("LogUserAnonymizedEvent"))       => json.convertTo[LogUserAnonymizedEvent]
-          case Seq(JsString("LogUserOptInNewsletterEvent"))  => json.convertTo[LogUserOptInNewsletterEvent]
-          case Seq(JsString("LogUserOptOutNewsletterEvent")) => json.convertTo[LogUserOptOutNewsletterEvent]
-          case Seq(JsString("LogUserConnectedEvent"))        => json.convertTo[LogUserConnectedEvent]
-          case Seq(JsString("LogUserUploadedAvatarEvent"))   => json.convertTo[LogUserUploadedAvatarEvent]
+          case Seq(JsString("LogUserUpdateSequenceEvent"))       => json.convertTo[LogUserUpdateSequenceEvent]
+          case Seq(JsString("LogUserSearchSequencesEvent"))      => json.convertTo[LogUserSearchSequencesEvent]
+          case Seq(JsString("LogUserStartSequenceEvent"))        => json.convertTo[LogUserStartSequenceEvent]
+          case Seq(JsString("LogUserAnonymizedEvent"))           => json.convertTo[LogUserAnonymizedEvent]
+          case Seq(JsString("LogUserOptInNewsletterEvent"))      => json.convertTo[LogUserOptInNewsletterEvent]
+          case Seq(JsString("LogUserOptOutNewsletterEvent"))     => json.convertTo[LogUserOptOutNewsletterEvent]
+          case Seq(JsString("LogUserConnectedEvent"))            => json.convertTo[LogUserConnectedEvent]
+          case Seq(JsString("LogUserUploadedAvatarEvent"))       => json.convertTo[LogUserUploadedAvatarEvent]
+          case Seq(JsString("LogOrganisationEmailChangedEvent")) => json.convertTo[LogOrganisationEmailChangedEvent]
         }
       }
 
@@ -119,6 +120,7 @@ object UserHistoryEvent {
           case event: LogUserOptOutNewsletterEvent        => event.toJson
           case event: LogUserConnectedEvent               => event.toJson
           case event: LogUserUploadedAvatarEvent          => event.toJson
+          case event: LogOrganisationEmailChangedEvent    => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -592,7 +594,7 @@ final case class UserUpdatedOptIn(newOptIn: Boolean) {
 object UserUpdatedOptIn {
   val actionType: String = "user-updated-opt-in"
 
-  implicit val userAnonymized: RootJsonFormat[UserUpdatedOptIn] =
+  implicit val userUpdatedOptIn: RootJsonFormat[UserUpdatedOptIn] =
     DefaultJsonProtocol.jsonFormat1(UserUpdatedOptIn.apply)
 }
 
@@ -618,7 +620,7 @@ final case class UserHasConnected() {
 case object UserHasConnected {
   val actionType: String = "user-connected"
 
-  implicit val userAnonymized: RootJsonFormat[UserHasConnected] =
+  implicit val userHasConnected: RootJsonFormat[UserHasConnected] =
     DefaultJsonProtocol.jsonFormat0(UserHasConnected.apply _)
 }
 
@@ -644,6 +646,32 @@ final case class UploadedAvatar(avatarUrl: String) {
 case object UploadedAvatar {
   val actionType: String = "uploaded-avatar"
 
-  implicit val userAnonymized: RootJsonFormat[UploadedAvatar] =
+  implicit val uploadedAvatar: RootJsonFormat[UploadedAvatar] =
     DefaultJsonProtocol.jsonFormat1(UploadedAvatar.apply)
+}
+
+final case class LogOrganisationEmailChangedEvent(userId: UserId,
+                                                  requestContext: RequestContext,
+                                                  action: UserAction[OrganisationEmailChanged])
+    extends UserHistoryEvent[OrganisationEmailChanged] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogOrganisationEmailChangedEvent {
+  val action: String = "organisation-email-changed"
+
+  implicit val logOrganisationEmailChangedEvent: RootJsonFormat[LogOrganisationEmailChangedEvent] =
+    DefaultJsonProtocol.jsonFormat(LogOrganisationEmailChangedEvent.apply, "userId", "context", "action")
+
+}
+
+final case class OrganisationEmailChanged(oldEmail: String, newEmail: String) {
+  def version(): Int = MakeSerializable.V1
+}
+
+case object OrganisationEmailChanged {
+  val actionType: String = "email-changed"
+
+  implicit val organisationEmailChanged: RootJsonFormat[OrganisationEmailChanged] =
+    DefaultJsonProtocol.jsonFormat2(OrganisationEmailChanged.apply)
 }

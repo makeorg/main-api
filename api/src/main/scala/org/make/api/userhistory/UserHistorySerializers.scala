@@ -367,6 +367,9 @@ object UserHistorySerializers extends SprayJsonFormatters {
   private val logUserUploadedAvatarEventSerializer: JsonPersister[LogUserUploadedAvatarEvent, V1] =
     json.persister[LogUserUploadedAvatarEvent]("user-uploaded-avatar")
 
+  private val logOrganisationEmailChangedEventSerializer: JsonPersister[LogOrganisationEmailChangedEvent, V1] =
+    json.persister[LogOrganisationEmailChangedEvent]("organisation-email-changed")
+
   val defaultVoteDate: ZonedDateTime = ZonedDateTime.parse("2018-10-10T00:00:00Z")
   private val userVotesAndQualifications: JsonPersister[UserVotesAndQualifications, V3] =
     json.persister[UserVotesAndQualifications, V3](
@@ -422,6 +425,7 @@ object UserHistorySerializers extends SprayJsonFormatters {
       logUserOptInNewsletterEventSerializer,
       logUserOptOutNewsletterEventSerializer,
       logUserConnectedEventSerializer,
-      logUserUploadedAvatarEventSerializer
+      logUserUploadedAvatarEventSerializer,
+      logOrganisationEmailChangedEventSerializer
     )
 }

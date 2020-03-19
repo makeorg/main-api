@@ -24,10 +24,19 @@ import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal._
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
-import org.make.api.user.{PersistentUserServiceComponent, UserServiceComponent}
-import org.make.api.userhistory.{OrganisationInitializationEvent, OrganisationRegisteredEvent, OrganisationUpdatedEvent}
+import org.make.api.user.{
+  PersistentUserServiceComponent,
+  PersistentUserToAnonymizeServiceComponent,
+  UserServiceComponent
+}
+import org.make.api.userhistory.{
+  OrganisationEmailChangedEvent,
+  OrganisationInitializationEvent,
+  OrganisationRegisteredEvent,
+  OrganisationUpdatedEvent,
+  UserHistoryCoordinatorServiceComponent
+}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions
 import org.make.core.operation.OperationKind
@@ -61,7 +70,10 @@ trait OrganisationService extends ShortenedNames {
              language: Option[Language]): Future[OrganisationSearchResult]
   def searchWithQuery(query: OrganisationSearchQuery): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
-  def update(organisation: User, mayebEmail: Option[String], requestContext: RequestContext): Future[UserId]
+  def update(organisation: User,
+             moderatorId: Option[UserId],
+             oldEmail: String,
+             requestContext: RequestContext): Future[UserId]
   def getVotedProposals(organisationId: UserId,
                         maybeUserId: Option[UserId],
                         filterVotes: Option[Seq[VoteKey]],
@@ -95,7 +107,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     with UserHistoryCoordinatorServiceComponent
     with ProposalServiceComponent
     with ProposalSearchEngineComponent
-    with OrganisationSearchEngineComponent =>
+    with OrganisationSearchEngineComponent
+    with PersistentUserToAnonymizeServiceComponent =>
 
   override lazy val organisationService: OrganisationService = new DefaultOrganisationService
 
@@ -278,26 +291,60 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       } yield {}
     }
 
+    private def updateOrganisationEmail(organisation: User,
+                                        moderatorId: Option[UserId],
+                                        newEmail: Option[String],
+                                        oldEmail: String,
+                                        requestContext: RequestContext): Future[Unit] = {
+      newEmail match {
+        case Some(email) =>
+          persistentUserToAnonymizeService.create(oldEmail).map { _ =>
+            eventBusService.publish(
+              OrganisationEmailChangedEvent(
+                connectedUserId = moderatorId,
+                userId = organisation.userId,
+                requestContext = requestContext,
+                country = organisation.country,
+                language = organisation.language,
+                eventDate = DateHelper.now(),
+                oldEmail = oldEmail,
+                newEmail = email
+              )
+            )
+          }
+        case None => Future.successful {}
+      }
+    }
+
     override def update(organisation: User,
-                        maybeEmail: Option[String],
+                        moderatorId: Option[UserId],
+                        oldEmail: String,
                         requestContext: RequestContext): Future[UserId] = {
+
+      val newEmail: Option[String] = organisation.email match {
+        case email if email.toLowerCase == oldEmail.toLowerCase => None
+        case email                                              => Some(email)
+      }
+
       for {
-        emailExists <- updateMailExists(maybeEmail.map(_.toLowerCase))
+        emailExists <- updateMailExists(newEmail.map(_.toLowerCase))
         _           <- verifyEmail(organisation.email.toLowerCase, emailExists)
         update <- persistentUserService.modifyOrganisation(organisation).flatMap {
           case Right(orga) =>
-            updateProposalsFromOrganisation(orga.userId, requestContext).flatMap { _ =>
-              eventBusService.publish(
-                OrganisationUpdatedEvent(
-                  connectedUserId = Some(orga.userId),
-                  userId = orga.userId,
-                  requestContext = requestContext,
-                  country = orga.country,
-                  language = orga.language,
-                  eventDate = DateHelper.now()
+            updateOrganisationEmail(organisation, moderatorId, newEmail, oldEmail, requestContext).flatMap { _ =>
+              updateProposalsFromOrganisation(orga.userId, requestContext).flatMap { _ =>
+                eventBusService.publish(
+                  OrganisationUpdatedEvent(
+                    connectedUserId = Some(orga.userId),
+                    userId = orga.userId,
+                    requestContext = requestContext,
+                    country = orga.country,
+                    language = orga.language,
+                    eventDate = DateHelper.now()
+                  )
                 )
-              )
-              Future.successful(orga.userId)
+                Future.successful(orga.userId)
+              }
             }
           case Left(e) => Future.failed(e)
         }

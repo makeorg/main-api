@@ -52,6 +52,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       case event: UserValidatedAccountEvent       => doNothing(event)
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
+      case event: OrganisationEmailChangedEvent   => handleOrganisationEmailChangedEvent(event)
       case event: OrganisationInitializationEvent => doNothing(event)
       case event: UserUpdatedOptInNewsletterEvent => handleUserUpdatedOptInNewsletterEvent(event)
       case event: UserAnonymizedEvent             => handleUserAnonymizedEvent(event)
@@ -146,6 +147,22 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
           date = event.eventDate,
           actionType = LogUserAnonymizedEvent.action,
           arguments = UserAnonymized(userId = event.userId, adminId = event.adminId)
+        )
+      )
+    )
+
+    Future.successful {}
+  }
+
+  def handleOrganisationEmailChangedEvent(event: OrganisationEmailChangedEvent): Future[Unit] = {
+    userHistoryCoordinatorService.logHistory(
+      LogOrganisationEmailChangedEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogOrganisationEmailChangedEvent.action,
+          arguments = OrganisationEmailChanged(oldEmail = event.oldEmail, newEmail = event.newEmail)
         )
       )
     )

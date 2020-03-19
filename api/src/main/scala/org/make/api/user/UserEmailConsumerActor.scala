@@ -49,6 +49,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case event: ResendValidationEmailEvent      => handleResendValidationEmailEvent(event)
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
+      case event: OrganisationEmailChangedEvent   => handleOrganisationEmailChangedEvent(event)
       case event: OrganisationInitializationEvent => doNothing(event)
       case event: UserUpdatedOptInNewsletterEvent => doNothing(event)
       case event: UserAnonymizedEvent             => doNothing(event)
@@ -101,6 +102,20 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
         )
       case Some(user) =>
         sendMailPublisherService.publishForgottenPassword(user, event.country, event.language, event.requestContext)
+      case None => Future.successful {}
+    }
+  }
+
+  private def handleOrganisationEmailChangedEvent(event: OrganisationEmailChangedEvent): Future[Unit] = {
+    getUserWithValidEmail(event.userId).flatMap {
+      case Some(organisation) =>
+        sendMailPublisherService.publishOrganisationEmailChanged(
+          organisation,
+          event.country,
+          event.language,
+          event.requestContext,
+          event.newEmail
+        )
       case None => Future.successful {}
     }
   }

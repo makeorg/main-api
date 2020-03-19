@@ -208,8 +208,10 @@ class ModerationOrganisationApiTest
       When("I want to update an organisation")
       Then("I should get a OK status")
       when(organisationService.getOrganisation(any[UserId])).thenReturn(Future.successful(Some(fakeOrganisation)))
-      when(organisationService.update(any[User], any[Option[String]], any[RequestContext]))
-        .thenReturn(Future.successful(fakeOrganisation.userId))
+      when(
+        organisationService
+          .update(any[User], any[Option[UserId]], any[String], any[RequestContext])
+      ).thenReturn(Future.successful(fakeOrganisation.userId))
       Put("/moderation/organisations/ABCD")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"organisationName": "orga"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
