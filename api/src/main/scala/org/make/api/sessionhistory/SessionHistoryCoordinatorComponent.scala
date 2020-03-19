@@ -94,7 +94,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
 
     private def retrieveVotedProposalsPage(request: RequestSessionVotedProposals,
                                            offset: Int): Future[Seq[ProposalId]] = {
-      def requestPaginate(proposalsIds: Option[Seq[ProposalId]] = request.proposalsIds) =
+      def requestPaginate(proposalsIds: Option[Seq[ProposalId]]) =
         RequestSessionVotedProposalsPaginate(
           sessionId = request.sessionId,
           proposalsIds = proposalsIds,
@@ -110,7 +110,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
             }
             .mapConcat(identity)
             .runWith(Sink.seq)
-        case _ => (sessionHistoryCoordinator ? requestPaginate()).mapTo[Seq[ProposalId]]
+        case _ => (sessionHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[Seq[ProposalId]]
       }
     }
 
