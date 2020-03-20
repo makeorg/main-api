@@ -70,6 +70,7 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
         proposalAcceptedOrganisation = entity.proposalAcceptedOrganisation,
         proposalRefusedOrganisation = entity.proposalRefusedOrganisation,
         forgottenPasswordOrganisation = entity.forgottenPasswordOrganisation,
+        organisationEmailChangeConfirmation = entity.organisationEmailChangeConfirmation
       )
       persistentCrmTemplatesService.persist(crmTemplates)
     }
@@ -88,7 +89,8 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
                 resendRegistration = entity.resendRegistration,
                 proposalAcceptedOrganisation = entity.proposalAcceptedOrganisation,
                 proposalRefusedOrganisation = entity.proposalRefusedOrganisation,
-                forgottenPasswordOrganisation = entity.forgottenPasswordOrganisation
+                forgottenPasswordOrganisation = entity.forgottenPasswordOrganisation,
+                organisationEmailChangeConfirmation = entity.organisationEmailChangeConfirmation
               )
             )
             .map(Some.apply)
@@ -137,7 +139,8 @@ final case class CreateCrmTemplates(questionId: Option[QuestionId],
                                     resendRegistration: TemplateId,
                                     proposalAcceptedOrganisation: TemplateId,
                                     proposalRefusedOrganisation: TemplateId,
-                                    forgottenPasswordOrganisation: TemplateId) {
+                                    forgottenPasswordOrganisation: TemplateId,
+                                    organisationEmailChangeConfirmation: TemplateId) {
   validate(
     validateField(
       "registration",
@@ -180,6 +183,12 @@ final case class CreateCrmTemplates(questionId: Option[QuestionId],
       "forgottenPasswordOrganisation",
       "invalid_content",
       Try(forgottenPasswordOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "organisationEmailChangeConfirmation",
+      "invalid_content",
+      Try(organisationEmailChangeConfirmation.value.toInt).isSuccess,
       "TemplateId must be of type Int"
     )
   )
@@ -194,7 +203,8 @@ final case class UpdateCrmTemplates(crmTemplatesId: CrmTemplatesId,
                                     resendRegistration: TemplateId,
                                     proposalAcceptedOrganisation: TemplateId,
                                     proposalRefusedOrganisation: TemplateId,
-                                    forgottenPasswordOrganisation: TemplateId) {
+                                    forgottenPasswordOrganisation: TemplateId,
+                                    organisationEmailChangeConfirmation: TemplateId) {
   validate(
     validateField(
       "registration",
@@ -237,6 +247,12 @@ final case class UpdateCrmTemplates(crmTemplatesId: CrmTemplatesId,
       "forgottenPasswordOrganisation",
       "invalid_content",
       Try(forgottenPasswordOrganisation.value.toInt).isSuccess,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "organisationEmailChangeConfirmation",
+      "invalid_content",
+      Try(organisationEmailChangeConfirmation.value.toInt).isSuccess,
       "TemplateId must be of type Int"
     )
   )

@@ -38,6 +38,7 @@ trait CrmTemplatesRequest {
   val proposalAcceptedOrganisation: Option[TemplateId]
   val proposalRefusedOrganisation: Option[TemplateId]
   val forgottenPasswordOrganisation: Option[TemplateId]
+  val organisationEmailChangeConfirmation: Option[TemplateId]
 }
 
 final case class CreateTemplatesRequest(
@@ -53,7 +54,10 @@ final case class CreateTemplatesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "123456") resendRegistration: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: Option[TemplateId],
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId]
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") organisationEmailChangeConfirmation: Option[
+    TemplateId
+  ]
 ) extends CrmTemplatesRequest {
   def getLocale: Option[String] =
     for {
@@ -83,7 +87,10 @@ final case class UpdateTemplatesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "123456") resendRegistration: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: Option[TemplateId],
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId]
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: Option[TemplateId],
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") organisationEmailChangeConfirmation: Option[
+    TemplateId
+  ]
 ) extends CrmTemplatesRequest
 
 object UpdateTemplatesRequest {
@@ -114,7 +121,8 @@ final case class CrmTemplatesResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "123456") resendRegistration: TemplateId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAcceptedOrganisation: TemplateId,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalRefusedOrganisation: TemplateId,
-  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: TemplateId
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") forgottenPasswordOrganisation: TemplateId,
+  @(ApiModelProperty @field)(dataType = "string", example = "123456") organisationEmailChangeConfirmation: TemplateId
 )
 
 object CrmTemplatesResponse {
@@ -134,6 +142,7 @@ object CrmTemplatesResponse {
       resendRegistration = crmTemplates.resendRegistration,
       proposalAcceptedOrganisation = crmTemplates.proposalAcceptedOrganisation,
       proposalRefusedOrganisation = crmTemplates.proposalRefusedOrganisation,
-      forgottenPasswordOrganisation = crmTemplates.forgottenPasswordOrganisation
+      forgottenPasswordOrganisation = crmTemplates.forgottenPasswordOrganisation,
+      organisationEmailChangeConfirmation = crmTemplates.organisationEmailChangeConfirmation
     )
 }
