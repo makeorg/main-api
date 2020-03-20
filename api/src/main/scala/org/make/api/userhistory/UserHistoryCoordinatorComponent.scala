@@ -21,14 +21,23 @@ package org.make.api.userhistory
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
-import org.make.api.technical.TimeSettings
-import org.make.api.userhistory.UserHistoryActor.{ReloadState, RequestUserVotedProposals, RequestVoteValues}
+import org.make.api.ActorSystemComponent
+import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.technical.{StreamUtils, TimeSettings}
+import org.make.api.userhistory.UserHistoryActor.{
+  ReloadState,
+  RequestUserVotedProposals,
+  RequestUserVotedProposalsPaginate,
+  RequestVoteValues
+}
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
 import org.make.core.user._
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait UserHistoryCoordinatorComponent {
   def userHistoryCoordinator: ActorRef
@@ -36,6 +45,7 @@ trait UserHistoryCoordinatorComponent {
 
 trait UserHistoryCoordinatorService {
   def logHistory(command: UserHistoryEvent[_]): Unit
+  def logTransactionalHistory(command: TransactionalUserHistoryEvent[_]): Future[Unit]
   def retrieveVoteAndQualifications(request: RequestVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
   def retrieveVotedProposals(request: RequestUserVotedProposals): Future[Seq[ProposalId]]
   def reloadHistory(userId: UserId): Unit
@@ -46,17 +56,22 @@ trait UserHistoryCoordinatorServiceComponent {
 }
 
 trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinatorServiceComponent {
-  self: UserHistoryCoordinatorComponent =>
+  self: UserHistoryCoordinatorComponent with ActorSystemComponent with MakeSettingsComponent =>
 
   override lazy val userHistoryCoordinatorService: UserHistoryCoordinatorService =
     new DefaultUserHistoryCoordinatorService
 
   class DefaultUserHistoryCoordinatorService extends UserHistoryCoordinatorService {
 
+    private val proposalsPerPage: Int = makeSettings.maxHistoryProposalsPerPage
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     override def logHistory(command: UserHistoryEvent[_]): Unit = {
       userHistoryCoordinator ! command
+    }
+
+    override def logTransactionalHistory(command: TransactionalUserHistoryEvent[_]): Future[Unit] = {
+      (userHistoryCoordinator ? command).map(_ => ())
     }
 
     override def retrieveVoteAndQualifications(
@@ -65,8 +80,34 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
       (userHistoryCoordinator ? request).mapTo[Map[ProposalId, VoteAndQualifications]]
     }
 
+    private def retrieveVotedProposalsPage(request: RequestUserVotedProposals, offset: Int): Future[Seq[ProposalId]] = {
+      def requestPaginate(proposalsIds: Option[Seq[ProposalId]]) =
+        RequestUserVotedProposalsPaginate(
+          userId = request.userId,
+          filterVotes = request.filterVotes,
+          filterQualifications = request.filterQualifications,
+          proposalsIds = proposalsIds,
+          limit = offset + proposalsPerPage,
+          skip = offset
+        )
+      request.proposalsIds match {
+        case Some(proposalsIds) if proposalsIds.size > proposalsPerPage =>
+          Source(proposalsIds)
+            .sliding(proposalsPerPage, proposalsPerPage)
+            .mapAsync(5) { someProposalsIds =>
+              (userHistoryCoordinator ? requestPaginate(Some(someProposalsIds))).mapTo[Seq[ProposalId]]
+            }
+            .mapConcat(identity)
+            .runWith(Sink.seq)
+        case _ => (userHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[Seq[ProposalId]]
+      }
+    }
+
     override def retrieveVotedProposals(request: RequestUserVotedProposals): Future[Seq[ProposalId]] = {
-      (userHistoryCoordinator ? request).mapTo[Seq[ProposalId]]
+      StreamUtils
+        .asyncPageToPageSource(retrieveVotedProposalsPage(request, _))
+        .mapConcat(identity)
+        .runWith(Sink.seq)
     }
 
     override def reloadHistory(userId: UserId): Unit = {

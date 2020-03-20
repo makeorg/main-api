@@ -297,7 +297,13 @@ final case class GetSessionHistory(sessionId: SessionId) extends SessionHistoryA
 final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq[ProposalId])
     extends SessionRelatedEvent
 
-final case class RequestSessionVotedProposals(sessionId: SessionId) extends SessionRelatedEvent
+final case class RequestSessionVotedProposals(sessionId: SessionId, proposalsIds: Option[Seq[ProposalId]] = None)
+    extends SessionRelatedEvent
+final case class RequestSessionVotedProposalsPaginate(sessionId: SessionId,
+                                                      proposalsIds: Option[Seq[ProposalId]] = None,
+                                                      limit: Int,
+                                                      skip: Int)
+    extends SessionRelatedEvent
 final case class UserConnected(sessionId: SessionId, userId: UserId, requestContext: RequestContext)
     extends SessionHistoryAction
 

@@ -26,12 +26,7 @@ import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.sessionhistory.SessionHistoryActor.{SessionClosed, SessionHistory}
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
-import org.make.api.userhistory.UserHistoryActor.{
-  InjectSessionEvents,
-  LogAcknowledged,
-  RequestUserVotedProposals,
-  RequestVoteValues
-}
+import org.make.api.userhistory.UserHistoryActor._
 import org.make.api.userhistory.{UserConnectedEvent, UserHistoryEvent}
 import org.make.core.history.HistoryActions._
 import org.make.core.proposal.{ProposalId, QualificationKey}
@@ -76,8 +71,10 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       persistEvent(command) { _ =>
         ()
       }
-    case RequestSessionVoteValues(_, proposalIds) => retrieveVoteValues(proposalIds)
-    case RequestSessionVotedProposals(_)          => retrieveVotedProposals()
+    case RequestSessionVoteValues(_, proposalIds)      => retrieveVoteValues(proposalIds)
+    case RequestSessionVotedProposals(_, proposalsIds) => retrieveVotedProposals(proposalsIds, Int.MaxValue, 0)
+    case RequestSessionVotedProposalsPaginate(_, proposalsIds, limit, skip) =>
+      retrieveVotedProposals(proposalsIds, limit, skip)
     case UserConnected(_, userId, requestContext) => transformSession(userId, requestContext)
     case Snapshot                                 => saveSnapshot()
     case StopSession(_)                           => self ! PoisonPill
@@ -181,8 +178,13 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
         context.become(closed(newUserId))
       }
       sender() ! LogAcknowledged
-    case command: TransferableToUser[_]  => userHistoryCoordinator.forward(command.toUserHistoryEvent(userId))
-    case RequestSessionVotedProposals(_) => userHistoryCoordinator.forward(RequestUserVotedProposals(userId))
+    case command: TransferableToUser[_] => userHistoryCoordinator.forward(command.toUserHistoryEvent(userId))
+    case RequestSessionVotedProposals(_, proposalsIds) =>
+      userHistoryCoordinator.forward(RequestUserVotedProposals(userId = userId, proposalsIds = proposalsIds))
+    case RequestSessionVotedProposalsPaginate(_, proposalsIds, limit, skip) =>
+      userHistoryCoordinator.forward(
+        RequestUserVotedProposalsPaginate(userId = userId, proposalsIds = proposalsIds, limit = limit, skip = skip)
+      )
     case RequestSessionVoteValues(_, proposalIds) =>
       userHistoryCoordinator.forward(RequestVoteValues(userId, proposalIds))
     case command: SessionHistoryAction =>
@@ -232,13 +234,18 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case event => context.become(transforming(userId, pendingEvents :+ sender() -> event, requestContext))
   }
 
-  private def retrieveVotedProposals(): Unit = {
-    sender() ! voteByProposalId(voteActions()).keys.toSeq
+  private def retrieveVotedProposals(proposalsIds: Option[Seq[ProposalId]], limit: Int, skip: Int): Unit = {
+    val votedProposals: Seq[ProposalId] = voteByProposalId(voteActions()).toSeq.sortBy {
+      case (_, votesAndQualifications) => votesAndQualifications.date
+    }.collect {
+      case (proposalId, _) if proposalsIds.forall(_.contains(proposalId)) => proposalId
+    }.slice(skip, limit)
+
+    sender() ! votedProposals
   }
 
   private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
     val voteRelatedActions: Seq[VoteRelatedAction] = actions(proposalIds)
-
     val voteAndQualifications: Map[ProposalId, VoteAndQualifications] = voteByProposalId(voteRelatedActions).map {
       case (proposalId, voteAction) =>
         proposalId -> VoteAndQualifications(
@@ -248,6 +255,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
           voteAction.trust
         )
     }
+
     sender() ! voteAndQualifications
   }
 

@@ -21,9 +21,12 @@ package org.make.api.sessionhistory
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
+import org.make.api.ActorSystemComponent
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
-import org.make.api.technical.TimeSettings
+import org.make.api.technical.{StreamUtils, TimeSettings}
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.{ProposalId, QualificationKey}
@@ -57,13 +60,14 @@ trait SessionHistoryCoordinatorServiceComponent {
 case class ConcurrentModification(message: String) extends Exception(message)
 
 trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoordinatorServiceComponent {
-  self: SessionHistoryCoordinatorComponent =>
+  self: SessionHistoryCoordinatorComponent with ActorSystemComponent with MakeSettingsComponent =>
 
   override lazy val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService =
     new DefaultSessionHistoryCoordinatorService
 
   class DefaultSessionHistoryCoordinatorService extends SessionHistoryCoordinatorService {
 
+    private val proposalsPerPage: Int = makeSettings.maxHistoryProposalsPerPage
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
@@ -88,9 +92,35 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).map(_ => {})
     }
 
-    override def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]] = {
-      (sessionHistoryCoordinator ? request).mapTo[Seq[ProposalId]]
+    private def retrieveVotedProposalsPage(request: RequestSessionVotedProposals,
+                                           offset: Int): Future[Seq[ProposalId]] = {
+      def requestPaginate(proposalsIds: Option[Seq[ProposalId]]) =
+        RequestSessionVotedProposalsPaginate(
+          sessionId = request.sessionId,
+          proposalsIds = proposalsIds,
+          limit = offset + proposalsPerPage,
+          skip = offset
+        )
+      request.proposalsIds match {
+        case Some(proposalsIds) if proposalsIds.size > proposalsPerPage =>
+          Source(proposalsIds)
+            .sliding(proposalsPerPage, proposalsPerPage)
+            .mapAsync(5) { someProposalsIds =>
+              (sessionHistoryCoordinator ? requestPaginate(Some(someProposalsIds))).mapTo[Seq[ProposalId]]
+            }
+            .mapConcat(identity)
+            .runWith(Sink.seq)
+        case _ => (sessionHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[Seq[ProposalId]]
+      }
     }
+
+    override def retrieveVotedProposals(request: RequestSessionVotedProposals): Future[Seq[ProposalId]] = {
+      StreamUtils
+        .asyncPageToPageSource(retrieveVotedProposalsPage(request, _))
+        .mapConcat(identity)
+        .runWith(Sink.seq)
+    }
+
     override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
       (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
         case LockAcquired => Future.successful {}

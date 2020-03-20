@@ -36,6 +36,7 @@ class MakeSettings(config: Config) extends Extension {
   val defaultUserAnonymousParticipation: Boolean = config.getBoolean("default-user-anonymous-participation")
   val lockDuration: FiniteDuration =
     FiniteDuration(Duration(config.getString("lock-duration")).toMillis, TimeUnit.MILLISECONDS)
+  val maxHistoryProposalsPerPage: Int = config.getInt("max-history-proposals-per-page")
 
   object SessionCookie {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))
@@ -93,6 +94,7 @@ class MakeSettings(config: Config) extends Extension {
 
   val environment: String = config.getString("environment")
 }
+
 object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): MakeSettings =
     new MakeSettings(system.settings.config.getConfig("make-api"))
