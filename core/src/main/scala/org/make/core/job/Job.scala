@@ -82,6 +82,10 @@ object Job {
   final case class JobId(value: String) extends StringValue
 
   object JobId {
+
+    val Reindex: JobId = JobId("Reindex")
+    val SyncCrmData: JobId = JobId("SyncCrmData")
+
     implicit val jobIdFormatter: JsonFormat[JobId] = new JsonFormat[JobId] {
       override def read(json: JsValue): JobId = json match {
         case JsString(s) => JobId(s)

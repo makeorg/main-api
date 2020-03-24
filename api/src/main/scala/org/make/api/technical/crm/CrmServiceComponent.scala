@@ -32,9 +32,10 @@ import akka.persistence.query.EventEnvelope
 import akka.stream._
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 import akka.stream.scaladsl.{Sink, Source}
-import akka.util.ByteString
+import akka.util.{ByteString, Timeout}
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+import eu.timepit.refined.auto._
 import io.circe.Decoder
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
@@ -43,11 +44,14 @@ import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.RichFutures._
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
 import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
-import org.make.api.technical.{EventBusServiceComponent, ReadJournalComponent, StreamUtils}
+import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
+import org.make.api.technical.job.JobCoordinatorServiceComponent
+import org.make.api.technical.{EventBusServiceComponent, ReadJournalComponent, StreamUtils, TimeSettings}
 import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
 import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
 import org.make.core.Validation.emailRegex
+import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.question.Question
 import org.make.core.user.{User, UserId, UserType}
 
@@ -63,7 +67,7 @@ trait CrmService {
   def synchronizeList(formattedDate: String, list: CrmList, csvDirectory: Path): Future[Done]
   def createCrmUsers(): Future[Unit]
   def anonymize(): Future[Unit]
-  def synchronizeContactsWithCrm(): Future[Unit]
+  def synchronizeContactsWithCrm(): Future[JobAcceptance]
   def getUsersMailFromList(listId: Option[String] = None,
                            sort: Option[String] = None,
                            order: Option[String] = None,
@@ -90,7 +94,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with PersistentCrmUserServiceComponent
     with CrmClientComponent
     with EventBusServiceComponent
-    with ErrorAccumulatingCirceSupport =>
+    with ErrorAccumulatingCirceSupport
+    with JobCoordinatorServiceComponent =>
 
   override lazy val crmService: DefaultCrmService = new DefaultCrmService
 
@@ -114,6 +119,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     private val dateFormatter: DateTimeFormatter =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC)
     private val dayDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("ddMMyyyy").withZone(ZoneOffset.UTC)
+
+    private implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     override def sendEmail(message: SendEmail): Future[SendEmailResponse] = {
       val messages = SendMessages(message)
@@ -209,40 +216,48 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    override def synchronizeContactsWithCrm(): Future[Unit] = {
+    override def synchronizeContactsWithCrm(): Future[JobAcceptance] = {
       val startTime: Long = System.currentTimeMillis()
       val synchronizationTime = DateHelper.now().format(dateFormatter)
 
-      val crmSynchronization =
-        for {
-          _ <- createCrmUsers()
-          _ <- initializeDirectories()
-          _ <- synchronizeList(
-            formattedDate = synchronizationTime,
-            list = CrmList.OptIn,
-            csvDirectory = CrmList.OptIn.targetDirectory(baseCsvDirectory)
-          )
-          _ <- synchronizeList(
-            formattedDate = synchronizationTime,
-            list = CrmList.OptOut,
-            csvDirectory = CrmList.OptOut.targetDirectory(baseCsvDirectory)
-          )
-          _ <- synchronizeList(
-            formattedDate = synchronizationTime,
-            list = CrmList.HardBounce,
-            csvDirectory = CrmList.HardBounce.targetDirectory(baseCsvDirectory)
-          )
-          _ <- anonymize()
-        } yield {}
+      jobCoordinatorService.start(SyncCrmData) { report =>
+        val crmSynchronization =
+          for {
+            _ <- createCrmUsers()
+            _ <- report(49D)
+            _ <- initializeDirectories()
+            _ <- report(50D)
+            _ <- synchronizeList(
+              formattedDate = synchronizationTime,
+              list = CrmList.OptIn,
+              csvDirectory = CrmList.OptIn.targetDirectory(baseCsvDirectory)
+            )
+            _ <- report(65D)
+            _ <- synchronizeList(
+              formattedDate = synchronizationTime,
+              list = CrmList.OptOut,
+              csvDirectory = CrmList.OptOut.targetDirectory(baseCsvDirectory)
+            )
+            _ <- report(80D)
+            _ <- synchronizeList(
+              formattedDate = synchronizationTime,
+              list = CrmList.HardBounce,
+              csvDirectory = CrmList.HardBounce.targetDirectory(baseCsvDirectory)
+            )
+            _ <- report(95D)
+            _ <- anonymize()
+          } yield {}
 
-      crmSynchronization.onComplete {
-        case Failure(exception) =>
-          logger.error(s"Mailjet synchro failed:", exception)
-        case Success(_) =>
-          logger.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
+        crmSynchronization.onComplete {
+          case Failure(exception) =>
+            logger.error(s"Mailjet synchro failed:", exception)
+          case Success(_) =>
+            logger.info(s"Mailjet synchro succeeded in ${System.currentTimeMillis() - startTime}ms")
+        }
+
+        crmSynchronization
       }
 
-      crmSynchronization
     }
 
     private def fileSizeTriggerCreator(csvDirectory: Path): () => ByteString => Option[Path] = () => {

@@ -36,6 +36,7 @@ import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, ReadJournalComponent}
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
+import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.user.{
   PersistentUserToAnonymizeService,
   PersistentUserToAnonymizeServiceComponent,
@@ -92,6 +93,7 @@ class CrmServiceComponentTest
     with CrmClientComponent
     with PersistentCrmUserServiceComponent
     with EventBusServiceComponent
+    with JobCoordinatorServiceComponent
     with ScalaCheckDrivenPropertyChecks
     with PrivateMethodTester {
 
@@ -116,6 +118,7 @@ class CrmServiceComponentTest
   override val persistentCrmUserService: PersistentCrmUserService = mock[PersistentCrmUserService]
   override val eventBusService: EventBusService = mock[EventBusService]
   override val proposalService: ProposalService = mock[ProposalService]
+  override val jobCoordinatorService: JobCoordinatorService = mock[JobCoordinatorService]
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
   when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")

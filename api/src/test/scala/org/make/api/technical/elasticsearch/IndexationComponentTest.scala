@@ -39,6 +39,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.ReadJournalComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
+import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.user._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
@@ -74,7 +75,8 @@ class IndexationComponentTest
     with OperationOfQuestionServiceComponent
     with QuestionServiceComponent
     with PersistentOperationOfQuestionServiceComponent
-    with SegmentServiceComponent {
+    with SegmentServiceComponent
+    with JobCoordinatorServiceComponent {
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
@@ -103,6 +105,7 @@ class IndexationComponentTest
     mock[PersistentOperationOfQuestionService]
 
   override val tagService: TagService = mock[TagService]
+  override val jobCoordinatorService: JobCoordinatorService = mock[JobCoordinatorService]
 
 //  val indexName = "make-index"
   when(elasticsearchConfiguration.ideaAliasName).thenReturn("idea")
