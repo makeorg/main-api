@@ -1,0 +1,3 @@
+INSERT INTO personality_role (id, name) VALUES ('0c3cbbf4-42c1-4801-b08a-d0e60d136041', 'CANDIDATE') ON CONFLICT DO NOTHING;
+
+COMMIT;

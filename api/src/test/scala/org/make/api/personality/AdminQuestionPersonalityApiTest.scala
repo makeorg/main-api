@@ -24,7 +24,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.core.personality.{Candidate, Personality, PersonalityId, PersonalityRole}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.{eq => matches, _}
@@ -35,10 +35,12 @@ import scala.concurrent.Future
 class AdminQuestionPersonalityApiTest
     extends MakeApiTestBase
     with DefaultAdminQuestionPersonalityApiComponent
+    with PersonalityRoleServiceComponent
     with QuestionPersonalityServiceComponent
     with MakeDataHandlerComponent {
 
   override val questionPersonalityService: QuestionPersonalityService = mock[QuestionPersonalityService]
+  override val personalityRoleService: PersonalityRoleService = mock[PersonalityRoleService]
 
   val routes: Route = sealRoute(adminQuestionPersonalityApi.routes)
 
@@ -46,7 +48,7 @@ class AdminQuestionPersonalityApiTest
     personalityId = PersonalityId("personality-id"),
     userId = UserId("user-id"),
     questionId = QuestionId("question-id"),
-    personalityRole = Candidate
+    personalityRoleId = PersonalityRoleId("candidate")
   )
 
   feature("post personality") {
@@ -60,7 +62,7 @@ class AdminQuestionPersonalityApiTest
           order = any[Option[String]],
           userId = any[Option[UserId]],
           questionId = any[Option[QuestionId]],
-          personalityRole = any[Option[PersonalityRole]]
+          personalityRoleId = any[Option[PersonalityRoleId]]
         )
     ).thenReturn(Future.successful(Seq.empty))
 
@@ -87,7 +89,7 @@ class AdminQuestionPersonalityApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "userId": "user-id",
                                                                   | "questionId": "question-id",
-                                                                  | "personalityRole": "CANDIDATE"
+                                                                  | "personalityRoleId": "candidate"
                                                                   |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.Created
@@ -115,7 +117,7 @@ class AdminQuestionPersonalityApiTest
             order = any[Option[String]],
             userId = matches(Some(UserId("user-id"))),
             questionId = matches(Some(QuestionId("question-id"))),
-            personalityRole = any[Option[PersonalityRole]]
+            personalityRoleId = any[Option[PersonalityRoleId]]
           )
       ).thenReturn(
         Future.successful(
@@ -124,7 +126,7 @@ class AdminQuestionPersonalityApiTest
               personalityId = PersonalityId("personality-id"),
               userId = UserId("user-id"),
               questionId = QuestionId("question-id"),
-              personalityRole = Candidate
+              personalityRoleId = PersonalityRoleId("candidate")
             )
           )
         )
@@ -134,7 +136,7 @@ class AdminQuestionPersonalityApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "userId": "user-id",
                                                                   | "questionId": "question-id",
-                                                                  | "personalityRole": "CANDIDATE"
+                                                                  | "personalityRoleId": "candidate"
                                                                   |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
@@ -168,7 +170,7 @@ class AdminQuestionPersonalityApiTest
       Put("/admin/question-personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "userId": "user-id",
-                                                                  | "personalityRole": "CANDIDATE"
+                                                                  | "personalityRoleId": "candidate"
                                                                   |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
@@ -178,7 +180,7 @@ class AdminQuestionPersonalityApiTest
     scenario("put personality with wrong request") {
       Put("/admin/question-personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
-                                                                  | "personalityRole": "CANDIDATE"
+                                                                  | "personalityRoleId": "candidate"
                                                                   |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
@@ -194,7 +196,7 @@ class AdminQuestionPersonalityApiTest
       Put("/admin/question-personalities/not-found")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "userId": "user-id",
-                                                                  | "personalityRole": "CANDIDATE"
+                                                                  | "personalityRoleId": "candidate"
                                                                   |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
@@ -226,11 +228,24 @@ class AdminQuestionPersonalityApiTest
           end = None,
           sort = None,
           order = None,
-          personalityRole = None
+          personalityRoleId = None
         )
       ).thenReturn(Future.successful(Seq(personality)))
-      when(questionPersonalityService.count(userId = None, questionId = None, personalityRole = None))
+      when(questionPersonalityService.count(userId = None, questionId = None, personalityRoleId = None))
         .thenReturn(Future.successful(1))
+      when(
+        personalityRoleService.find(
+          start = 0,
+          end = None,
+          sort = None,
+          order = None,
+          roleIds = Some(Seq(PersonalityRoleId("candidate"))),
+          name = None
+        )
+      ).thenReturn(
+          Future
+            .successful(Seq(PersonalityRole(personalityRoleId = PersonalityRoleId("candidate"), name = "CANDIDATE")))
+        )
 
       Get("/admin/question-personalities")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -257,6 +272,11 @@ class AdminQuestionPersonalityApiTest
 
       when(questionPersonalityService.getPersonality(matches(PersonalityId("personality-id"))))
         .thenReturn(Future.successful(Some(personality)))
+      when(personalityRoleService.getPersonalityRole(personality.personalityRoleId))
+        .thenReturn(
+          Future
+            .successful(Some(PersonalityRole(personalityRoleId = PersonalityRoleId("candidate"), name = "CANDIDATE")))
+        )
 
       Get("/admin/question-personalities/personality-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {

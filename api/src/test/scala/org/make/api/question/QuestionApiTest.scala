@@ -35,6 +35,7 @@ import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentS
 import org.make.api.operation._
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.{PartnerService, PartnerServiceComponent}
+import org.make.api.personality.{PersonalityRoleService, PersonalityRoleServiceComponent}
 import org.make.api.proposal._
 import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
@@ -45,6 +46,7 @@ import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, OperationOfQuestion, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
+import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
@@ -78,7 +80,8 @@ class QuestionApiTest
     with ProposalSearchEngineComponent
     with TagServiceComponent
     with ProposalServiceComponent
-    with TopIdeaCommentServiceComponent {
+    with TopIdeaCommentServiceComponent
+    with PersonalityRoleServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val sequenceService: SequenceService = mock[SequenceService]
@@ -91,6 +94,7 @@ class QuestionApiTest
   override val tagService: TagService = mock[TagService]
   override val proposalService: ProposalService = mock[ProposalService]
   override val topIdeaCommentService: TopIdeaCommentService = mock[TopIdeaCommentService]
+  override val personalityRoleService: PersonalityRoleService = mock[PersonalityRoleService]
 
   val routes: Route = sealRoute(questionApi.routes)
 
@@ -544,6 +548,12 @@ class QuestionApiTest
 
   feature("get question personalities") {
     scenario("bad request") {
+
+      when(
+        personalityRoleService
+          .find(start = 0, end = None, sort = None, order = None, roleIds = None, name = Some("WRONG"))
+      ).thenReturn(Future.successful(Seq.empty))
+
       Get("/questions/question-id/personalities?personalityRole=WRONG") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
@@ -555,9 +565,11 @@ class QuestionApiTest
           start = 0,
           end = None,
           questionId = QuestionId("question-id"),
-          personalityRole = None
+          personalityRoleId = None
         )
       ).thenReturn(Future.successful(Seq.empty))
+      when(personalityRoleService.find(start = 0, end = None, sort = None, order = None, roleIds = None, name = None))
+        .thenReturn(Future.successful(Seq(PersonalityRole(PersonalityRoleId("candidate"), "CANDIDATE"))))
 
       Get("/questions/question-id/personalities") ~> routes ~> check {
         status should be(StatusCodes.OK)
