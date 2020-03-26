@@ -38,12 +38,13 @@ object CustomGenerators {
     def words: Gen[Seq[String]] = Gen.someOf(loremIpsumWords).map(_.toSeq)
     def words(n: Int): Gen[Seq[String]] = Gen.listOfN(n, word).map(_.toSeq)
 
-    def sentence(maxLength: Option[PosInt] = None): Gen[String] = words.map { sen =>
-      val ret = sen.mkString("", " ", ".").capitalize
-      maxLength.collect {
-        case length if length < ret.length => ret.take(ret.take(length).lastIndexOf(" ")).appendedAll(".")
-      }.getOrElse(ret)
-    }
+    def sentence(maxLength: Option[PosInt] = None): Gen[String] =
+      Gen.atLeastOne(loremIpsumWords).map(_.toSeq).map { sen =>
+        val ret = sen.mkString("", " ", ".").capitalize
+        maxLength.collect {
+          case length if length < ret.length => ret.take(ret.take(length).lastIndexOf(" ")).appendedAll(".")
+        }.getOrElse(ret)
+      }
     def sentences(n: Int, maxLength: Option[PosInt] = None): Gen[List[String]] = Gen.listOfN(n, sentence(maxLength))
 
     def slug(maxLength: Option[PosInt] = None): Gen[String] = sentence(maxLength).map(SlugHelper.apply)
