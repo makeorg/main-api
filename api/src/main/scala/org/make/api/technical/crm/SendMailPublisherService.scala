@@ -58,6 +58,11 @@ trait SendMailPublisherService {
                                            country: Country,
                                            language: Language,
                                            requestContext: RequestContext): Future[Unit]
+  def publishOrganisationEmailChanged(organisation: User,
+                                      country: Country,
+                                      language: Language,
+                                      requestContext: RequestContext,
+                                      newEmail: String): Future[Unit]
   def publishAcceptProposal(proposalId: ProposalId,
                             maybeQuestionId: Option[QuestionId],
                             maybeOperationId: Option[OperationId],
@@ -387,6 +392,33 @@ trait DefaultSendMailPublisherServiceComponent
                 "source" -> requestContext.source.getOrElse("")
               )
             ),
+            customCampaign = None,
+            monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+          )
+        )
+      }
+
+      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+        publishSendEmail(crmTemplates)
+      })
+    }
+
+    override def publishOrganisationEmailChanged(organisation: User,
+                                                 country: Country,
+                                                 language: Language,
+                                                 requestContext: RequestContext,
+                                                 newEmail: String): Future[Unit] = {
+      val locale = getLocale(country, language)
+      val questionId = requestContext.questionId
+      def publishSendEmail(crmTemplates: CrmTemplates): Unit = {
+        eventBusService.publish(
+          SendEmail.create(
+            templateId = Some(crmTemplates.organisationEmailChangeConfirmation.value.toInt),
+            recipients = Seq(Recipient(email = organisation.email, name = organisation.fullName)),
+            from = Some(
+              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+            ),
+            variables = Some(Map("email" -> newEmail)),
             customCampaign = None,
             monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
           )

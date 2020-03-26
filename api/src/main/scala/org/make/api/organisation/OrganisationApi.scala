@@ -143,7 +143,11 @@ trait OrganisationApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.organisation.OrganisationProfileRequest")
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.organisation.OrganisationProfileRequest"
+      )
     )
   )
   @Path(value = "/{userId}/profile")
@@ -218,13 +222,11 @@ trait DefaultOrganisationApiComponent
                 Symbol("language").as[Language].?
               )
             ) {
-              (
-                organisationIds: Option[Seq[UserId]],
-                organisationName: Option[String],
-                slug: Option[String],
-                country: Option[Country],
-                language: Option[Language]
-              ) =>
+              (organisationIds: Option[Seq[UserId]],
+               organisationName: Option[String],
+               slug: Option[String],
+               country: Option[Country],
+               language: Option[Language]) =>
                 provideAsync(organisationService.search(organisationName, slug, organisationIds, country, language)) {
                   results =>
                     complete(OrganisationsSearchResultResponse.fromOrganisationSearchResult(results))
@@ -295,14 +297,12 @@ trait DefaultOrganisationApiComponent
                     Symbol("skip").as[Int].?
                   )
                 ) {
-                  (
-                    votes: Option[Seq[VoteKey]],
-                    qualifications: Option[Seq[QualificationKey]],
-                    sort: Option[String],
-                    order: Option[SortOrder],
-                    limit: Option[Int],
-                    skip: Option[Int]
-                  ) =>
+                  (votes: Option[Seq[VoteKey]],
+                   qualifications: Option[Seq[QualificationKey]],
+                   sort: Option[String],
+                   order: Option[SortOrder],
+                   limit: Option[Int],
+                   skip: Option[Int]) =>
                     val defaultSort = Some("createdAt")
                     val defaultOrder = Some(Desc)
                     onSuccess(
@@ -349,7 +349,15 @@ trait DefaultOrganisationApiComponent
                       val modifiedOrganisation =
                         organisation.copy(profile = modifiedProfile, organisationName = Some(request.organisationName))
 
-                      provideAsync(organisationService.update(modifiedOrganisation, None, requestContext)) { _ =>
+                      provideAsync(
+                        organisationService
+                          .update(
+                            organisation = modifiedOrganisation,
+                            moderatorId = None,
+                            oldEmail = modifiedOrganisation.email,
+                            requestContext = requestContext
+                          )
+                      ) { _ =>
                         complete(
                           OrganisationProfileResponse(
                             organisationName = modifiedOrganisation.organisationName,

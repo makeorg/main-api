@@ -34,9 +34,15 @@ import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGene
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
-import org.make.api.userhistory.{OrganisationInitializationEvent, OrganisationRegisteredEvent, OrganisationUpdatedEvent}
+import org.make.api.userhistory.{
+  OrganisationEmailChangedEvent,
+  OrganisationInitializationEvent,
+  OrganisationRegisteredEvent,
+  OrganisationUpdatedEvent,
+  UserHistoryCoordinatorService,
+  UserHistoryCoordinatorServiceComponent
+}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
-import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
@@ -73,7 +79,8 @@ class OrganisationServiceTest
     with ProposalServiceComponent
     with EventBusServiceComponent
     with ProposalSearchEngineComponent
-    with OrganisationSearchEngineComponent {
+    with OrganisationSearchEngineComponent
+    with PersistentUserToAnonymizeServiceComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val userService: UserService = mock[UserService]
@@ -83,6 +90,8 @@ class OrganisationServiceTest
   override val proposalService: ProposalService = mock[ProposalService]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
+  override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
+    mock[PersistentUserToAnonymizeService]
 
   class MatchRegisterEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
     override def matches(argument: AnyRef): Boolean =
@@ -253,12 +262,16 @@ class OrganisationServiceTest
   }
 
   feature("update organisation") {
-    scenario("successfully update an organisation by changing the name and avatar") {
+    scenario("successfully update an organisation with an email update") {
+
+      val oldEmail = returnedOrganisation.email
+      val updatedOrganisation = returnedOrganisation.copy(email = "new-email@example.com")
+
       Mockito.reset(eventBusService)
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
       Mockito
         .when(persistentUserService.modifyOrganisation(any[User]))
-        .thenReturn(Future.successful(Right(returnedOrganisation)))
+        .thenReturn(Future.successful(Right(updatedOrganisation)))
       Mockito
         .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
         .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
@@ -274,15 +287,20 @@ class OrganisationServiceTest
       Mockito
         .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
+      Mockito
+        .when(persistentUserToAnonymizeService.create(oldEmail))
+        .thenReturn(Future.successful({}))
 
       val futureOrganisation =
-        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
+        organisationService.update(updatedOrganisation, None, oldEmail, RequestContext.empty)
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisation =>
         organisation shouldBe a[UserId]
       }
       verify(eventBusService, times(1))
-        .publish(ArgumentMatchers.any[OrganisationUpdatedEvent])
+        .publish(ArgumentMatchers.any(classOf[OrganisationEmailChangedEvent]))
+      verify(eventBusService, times(1))
+        .publish(ArgumentMatchers.any(classOf[OrganisationUpdatedEvent]))
     }
 
     scenario("successfully update an organisation without changing anything") {
@@ -298,7 +316,7 @@ class OrganisationServiceTest
         .thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
 
       val futureOrganisation =
-        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
+        organisationService.update(returnedOrganisation, None, returnedOrganisation.email, RequestContext.empty)
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { organisation =>
         organisation shouldBe a[UserId]
@@ -309,7 +327,7 @@ class OrganisationServiceTest
       Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
 
       val futureOrganisation =
-        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
+        organisationService.update(returnedOrganisation, None, returnedOrganisation.email, RequestContext.empty)
 
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
     }
@@ -320,7 +338,7 @@ class OrganisationServiceTest
         .thenReturn(Future.successful(Left(UpdateFailed())))
 
       val futureOrganisation =
-        organisationService.update(returnedOrganisation, Some(returnedOrganisation.email), RequestContext.empty)
+        organisationService.update(returnedOrganisation, None, returnedOrganisation.email, RequestContext.empty)
 
       RecoverMethods.recoverToSucceededIf[UpdateFailed](futureOrganisation)
     }

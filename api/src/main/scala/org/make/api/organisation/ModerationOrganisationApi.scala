@@ -180,21 +180,17 @@ trait DefaultModerationOrganisationApiComponent
                 decodeRequest {
                   entity(as[ModerationUpdateOrganisationRequest]) { request: ModerationUpdateOrganisationRequest =>
                     provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-                      val maybeEmail = request.email match {
-                        case Some(email) if email.toLowerCase == organisation.email => None
-                        case email                                                  => email
-                      }
-
                       onSuccess(
                         organisationService
                           .update(
-                            organisation.copy(
+                            organisation = organisation.copy(
                               organisationName = Some(request.organisationName.value),
-                              email = maybeEmail.getOrElse(organisation.email).toLowerCase,
+                              email = request.email.getOrElse(organisation.email).toLowerCase,
                               profile = request.profile.flatMap(_.toProfile)
                             ),
-                            maybeEmail,
-                            requestContext
+                            moderatorId = Some(auth.user.userId),
+                            oldEmail = organisation.email,
+                            requestContext = requestContext
                           )
                       ) { organisationId =>
                         complete(StatusCodes.OK -> OrganisationIdResponse(organisationId))

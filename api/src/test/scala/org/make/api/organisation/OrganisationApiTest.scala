@@ -95,7 +95,10 @@ class OrganisationApiTest
     .thenReturn(Future.successful(None))
 
   Mockito
-    .when(organisationService.update(any[User], any[Option[String]], any[RequestContext]))
+    .when(
+      organisationService
+        .update(any[User], any[Option[UserId]], any[String], any[RequestContext])
+    )
     .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0).userId))
 
   val proposalsList = ProposalsResultSeededResponse(
