@@ -47,7 +47,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
   def genSimpleOperation: Gen[SimpleOperation] =
     for {
       status               <- Gen.oneOf(OperationStatus.statusMap.values.toSeq)
-      slug                 <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(256))
+      slug                 <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(20))
       allowedSources       <- CustomGenerators.LoremIpsumGen.words
       (_, defaultLanguage) <- genCountryLanguage
       operationKind        <- Gen.oneOf(OperationKind.kindMap.values.toSeq)
@@ -273,7 +273,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
   def genProposal(question: Question, users: Seq[User], tagsIds: Seq[TagId]): Gen[Proposal] = {
     val maxLength: Option[PosInt] = RefType.applyRef[PosInt](BusinessConfig.defaultProposalMaxLength).toOption
     for {
-      content         <- CustomGenerators.LoremIpsumGen.sentence(maxLength = maxLength)
+      content         <- CustomGenerators.LoremIpsumGen.sentence(maxLength).map(sentence => s"Il faut ${sentence.toLowerCase}")
       author          <- Gen.oneOf(users.map(_.userId))
       status          <- Gen.oneOf(ProposalStatus.statusMap.values.toSeq)
       refusalReason   <- CustomGenerators.LoremIpsumGen.word
