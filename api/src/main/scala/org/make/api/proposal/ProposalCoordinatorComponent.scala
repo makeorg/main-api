@@ -26,7 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.{ActorTimeoutException, TimeSettings}
 import org.make.core.proposal._
 import org.make.core.user.UserId
-import org.make.core.{RequestContext, ValidationFailedError}
+import org.make.core.{RequestContext, ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -88,130 +88,121 @@ trait DefaultProposalCoordinatorServiceComponent extends ProposalCoordinatorServ
 
     override def getProposal(proposalId: ProposalId): Future[Option[Proposal]] = {
       val command = GetProposal(proposalId, RequestContext.empty)
-      (proposalCoordinator ? command).mapTo[Option[Proposal]].recoverWith(recover(command))
+      (proposalCoordinator ? command).map {
+        case ProposalEnveloppe(proposal) => Some(proposal)
+        case ProposalNotFound            => None
+      }.recoverWith(recover(command))
     }
 
     override def viewProposal(proposalId: ProposalId, requestContext: RequestContext): Future[Option[Proposal]] = {
       val command = ViewProposalCommand(proposalId, requestContext)
-      (proposalCoordinator ? command).mapTo[Option[Proposal]].recoverWith(recover(command))
+      (proposalCoordinator ? command).map {
+        case ProposalEnveloppe(proposal) => Some(proposal)
+        case ProposalNotFound            => None
+      }.recoverWith(recover(command))
     }
 
     override def propose(command: ProposeCommand): Future[ProposalId] = {
-      (proposalCoordinator ? command).mapTo[ProposalId].recoverWith(recover(command))
+      (proposalCoordinator ? command).mapTo[CreatedProposalId].map(_.proposalId).recoverWith(recover(command))
     }
 
     override def update(command: UpdateProposalCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command)
-        .flatMap[Option[Proposal]] {
-          case error: ValidationFailedError => Future.failed(error)
-          case None                         => Future.successful(None)
-          case Some(proposal) =>
-            Future.successful(Some(proposal.asInstanceOf[Proposal]))
-          case _ => Future.successful(None)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case InvalidStateError(message) =>
+          Future.failed(ValidationFailedError(errors = Seq(ValidationError("status", "invalid_state", Some(message)))))
+        case UpdatedProposal(proposal) => Future.successful(Some(proposal))
+        case ProposalNotFound          => Future.successful(None)
+      }.recoverWith(recover(command))
     }
 
     override def updateVotes(command: UpdateProposalVotesCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command)
-        .flatMap[Option[Proposal]] {
-          case error: ValidationFailedError => Future.failed(error)
-          case None                         => Future.successful(None)
-          case Some(proposal) =>
-            Future.successful(Some(proposal.asInstanceOf[Proposal]))
-          case _ => Future.successful(None)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case InvalidStateError(message) =>
+          Future.failed(ValidationFailedError(errors = Seq(ValidationError("status", "invalid_state", Some(message)))))
+        case UpdatedProposal(proposal) => Future.successful(Some(proposal))
+        case ProposalNotFound          => Future.successful(None)
+      }.recoverWith(recover(command))
     }
 
     override def accept(command: AcceptProposalCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command)
-        .flatMap[Option[Proposal]] {
-          case error: ValidationFailedError => Future.failed(error)
-          case None                         => Future.successful(None)
-          case Some(proposal) =>
-            Future.successful(Some(proposal.asInstanceOf[Proposal]))
-          case _ => Future.successful(None)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case InvalidStateError(message) =>
+          Future.failed(ValidationFailedError(errors = Seq(ValidationError("status", "invalid_state", Some(message)))))
+        case ModeratedProposal(proposal) => Future.successful(Some(proposal))
+        case ProposalNotFound            => Future.successful(None)
+      }.recoverWith(recover(command))
     }
 
     override def refuse(command: RefuseProposalCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command)
-        .flatMap[Option[Proposal]] {
-          case error: ValidationFailedError => Future.failed(error)
-          case None                         => Future.successful(None)
-          case Some(proposal) =>
-            Future.successful(Some(proposal.asInstanceOf[Proposal]))
-          case _ => Future.successful(None)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case InvalidStateError(message) =>
+          Future.failed(ValidationFailedError(errors = Seq(ValidationError("status", "invalid_state", Some(message)))))
+        case ModeratedProposal(proposal) => Future.successful(Some(proposal))
+        case ProposalNotFound            => Future.successful(None)
+      }.recoverWith(recover(command))
     }
 
     override def postpone(command: PostponeProposalCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command)
-        .flatMap[Option[Proposal]] {
-          case error: ValidationFailedError => Future.failed(error)
-          case None                         => Future.successful(None)
-          case Some(proposal) =>
-            Future.successful(Some(proposal.asInstanceOf[Proposal]))
-          case _ => Future.successful(None)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case InvalidStateError(message) =>
+          Future.failed(ValidationFailedError(errors = Seq(ValidationError("status", "invalid_state", Some(message)))))
+        case ModeratedProposal(proposal) => Future.successful(Some(proposal))
+        case ProposalNotFound            => Future.successful(None)
+      }.recoverWith(recover(command))
     }
 
     override def vote(command: VoteProposalCommand): Future[Option[Vote]] = {
-      (proposalCoordinator ? command)
-        .mapTo[Either[Exception, Option[Vote]]]
-        .flatMap {
-          case Right(success) => Future.successful(success)
-          case Left(e)        => Future.failed(e)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case ProposalVote(vote) => Future.successful(Some(vote))
+        case VoteNotFound       => Future.successful(None)
+        case ProposalNotFound   => Future.successful(None)
+        case VoteError(error)   => Future.failed(error)
+      }.recoverWith(recover(command))
     }
 
     override def unvote(command: UnvoteProposalCommand): Future[Option[Vote]] = {
-      (proposalCoordinator ? command)
-        .mapTo[Either[Exception, Option[Vote]]]
-        .flatMap {
-          case Right(success) => Future.successful(success)
-          case Left(e)        => Future.failed(e)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case ProposalVote(vote) => Future.successful(Some(vote))
+        case VoteNotFound       => Future.successful(None)
+        case ProposalNotFound   => Future.successful(None)
+        case VoteError(error)   => Future.failed(error)
+      }.recoverWith(recover(command))
     }
 
     override def qualification(command: QualifyVoteCommand): Future[Option[Qualification]] = {
-      (proposalCoordinator ? command)
-        .mapTo[Either[Exception, Option[Qualification]]]
-        .flatMap {
-          case Right(success) => Future.successful(success)
-          case Left(e)        => Future.failed(e)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case ProposalQualification(qualification) => Future.successful(Some(qualification))
+        case QualificationNotFound                => Future.successful(None)
+        case ProposalNotFound                     => Future.successful(None)
+        case QualificationError(error)            => Future.failed(error)
+      }.recoverWith(recover(command))
     }
 
     override def unqualification(command: UnqualifyVoteCommand): Future[Option[Qualification]] = {
-      (proposalCoordinator ? command)
-        .mapTo[Either[Exception, Option[Qualification]]]
-        .flatMap {
-          case Right(success) => Future.successful(success)
-          case Left(e)        => Future.failed(e)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case ProposalQualification(qualification) => Future.successful(Some(qualification))
+        case QualificationNotFound                => Future.successful(None)
+        case ProposalNotFound                     => Future.successful(None)
+        case QualificationError(error)            => Future.failed(error)
+      }.recoverWith(recover(command))
     }
 
     override def lock(command: LockProposalCommand): Future[Option[UserId]] = {
-      (proposalCoordinator ? command)
-        .mapTo[Either[Exception, Option[UserId]]]
-        .flatMap {
-          case Right(success) => Future.successful(success)
-          case Left(e)        => Future.failed(e)
-        }
-        .recoverWith(recover(command))
+      (proposalCoordinator ? command).flatMap {
+        case AlreadyLockedBy(moderatorName) =>
+          Future.failed(
+            ValidationFailedError(errors = Seq(ValidationError("moderatorName", "already_locked", Some(moderatorName))))
+          )
+        case Locked(moderatorId) => Future.successful(Some(moderatorId))
+        case ProposalNotFound    => Future.successful(None)
+      }.recoverWith(recover(command))
     }
 
     override def patch(command: PatchProposalCommand): Future[Option[Proposal]] = {
-      (proposalCoordinator ? command).mapTo[Option[Proposal]]
+      (proposalCoordinator ? command).map {
+        case UpdatedProposal(proposal) => Some(proposal)
+        case ProposalNotFound          => None
+      }
     }
 
     override def anonymize(command: AnonymizeProposalCommand): Unit = {

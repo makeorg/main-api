@@ -24,7 +24,7 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.make.api.docker.DockerCassandraService
-import org.make.api.proposal.{ProposalCoordinator, ProposeCommand}
+import org.make.api.proposal.{CreatedProposalId, ProposalCoordinator, ProposeCommand}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorService
 import org.make.api.technical.TimeSettings
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
@@ -91,7 +91,7 @@ class CassandraHealthCheckActorIT
         initialProposal = false
       )
 
-      expectMsgType[ProposalId](1.minute)
+      expectMsgType[CreatedProposalId](1.minute)
 
       When("I send a message to check the status of cassandra")
       healthCheckCassandra ! CheckStatus

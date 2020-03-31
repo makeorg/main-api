@@ -368,6 +368,9 @@ object ProposalSerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update(Symbol("requestContext") / Symbol("customData") ! set[Map[String, String]](Map.empty)))
     )
 
+  private val proposalSerializer: JsonPersister[Proposal, V1] =
+    persister[Proposal]("proposal-entity")
+
   val serializers: Seq[JsonPersister[_, _]] =
     Seq(
       proposalProposedSerializer,
@@ -390,6 +393,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       proposalPatchedSerializer,
       proposalAnonymizedSerializer,
       proposalAddedToOperationSerializer,
-      proposalRemovedFromOperationSerializer
+      proposalRemovedFromOperationSerializer,
+      proposalSerializer
     )
 }

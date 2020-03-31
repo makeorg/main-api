@@ -21,16 +21,19 @@ package org.make.api.proposal
 
 import java.time.ZonedDateTime
 
+import org.make.api.technical.ActorProtocol
 import org.make.core.RequestContext
 import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.idea.IdeaId
-import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
+import org.make.core.proposal._
 import org.make.core.question.Question
 import org.make.core.reference.LabelId
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 
-sealed trait ProposalCommand {
+sealed trait ProposalActorProtocol extends ActorProtocol
+
+sealed trait ProposalCommand extends ProposalActorProtocol {
   def proposalId: ProposalId
   def requestContext: RequestContext
 }
@@ -139,3 +142,23 @@ final case class PatchProposalCommand(proposalId: ProposalId,
 
 final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext: RequestContext = RequestContext.empty)
     extends ProposalCommand
+
+// Responses
+
+sealed trait ProposalActorResponse extends ProposalActorProtocol
+
+final case class ProposalEnveloppe(proposal: Proposal) extends ProposalActorResponse
+final case class CreatedProposalId(proposalId: ProposalId) extends ProposalActorResponse
+final case class UpdatedProposal(proposal: Proposal) extends ProposalActorResponse
+final case class ModeratedProposal(proposal: Proposal) extends ProposalActorResponse
+final case class ProposalVote(vote: Vote) extends ProposalActorResponse
+final case class ProposalQualification(qualification: Qualification) extends ProposalActorResponse
+final case class Locked(moderatorId: UserId) extends ProposalActorResponse
+
+final case class InvalidStateError(message: String) extends ProposalActorResponse
+case object ProposalNotFound extends ProposalActorResponse
+case object VoteNotFound extends ProposalActorResponse
+final case class VoteError(error: Throwable) extends ProposalActorResponse
+case object QualificationNotFound extends ProposalActorResponse
+final case class QualificationError(error: Throwable) extends ProposalActorResponse
+final case class AlreadyLockedBy(moderatorName: String) extends ProposalActorResponse
