@@ -267,37 +267,38 @@ trait DefaultAdminPersonalityApiComponent
               requireAdminRole(userAuth.user) {
                 decodeRequest {
                   entity(as[UpdatePersonalityRequest]) { request: UpdatePersonalityRequest =>
-                    provideAsyncOrNotFound(userService.getUser(userId)) { user =>
-                      val lowerCasedEmail: String = request.email.getOrElse(user.email).toLowerCase()
+                    provideAsyncOrNotFound(userService.getUser(userId)) { personality =>
+                      val lowerCasedEmail: String = request.email.getOrElse(personality.email).toLowerCase()
                       provideAsync(userService.getUserByEmail(lowerCasedEmail)) { maybeUser =>
                         maybeUser.foreach { userToCheck =>
                           Validation.validate(
                             Validation.validateField(
                               field = "email",
                               "already_registered",
-                              condition = userToCheck.userId.value == user.userId.value,
+                              condition = userToCheck.userId.value == personality.userId.value,
                               message = s"Email $lowerCasedEmail already exists"
                             )
                           )
                         }
                         onSuccess(
-                          userService.update(
-                            user.copy(
+                          userService.updatePersonality(
+                            personality = personality.copy(
                               email = lowerCasedEmail,
-                              firstName = request.firstName.orElse(user.firstName),
-                              lastName = request.lastName.orElse(user.lastName),
-                              country = request.country.getOrElse(user.country),
-                              language = request.language.getOrElse(user.language),
-                              profile = user.profile
+                              firstName = request.firstName.orElse(personality.firstName),
+                              lastName = request.lastName.orElse(personality.lastName),
+                              country = request.country.getOrElse(personality.country),
+                              language = request.language.getOrElse(personality.language),
+                              profile = personality.profile
                                 .map(
                                   _.copy(
-                                    avatarUrl = request.avatarUrl.orElse(user.profile.flatMap(_.avatarUrl)),
-                                    description = request.description.orElse(user.profile.flatMap(_.description)),
-                                    gender = request.gender.orElse(user.profile.flatMap(_.gender)),
-                                    genderName = request.genderName.orElse(user.profile.flatMap(_.genderName)),
+                                    avatarUrl = request.avatarUrl.orElse(personality.profile.flatMap(_.avatarUrl)),
+                                    description = request.description.orElse(personality.profile.flatMap(_.description)),
+                                    gender = request.gender.orElse(personality.profile.flatMap(_.gender)),
+                                    genderName = request.genderName.orElse(personality.profile.flatMap(_.genderName)),
                                     politicalParty =
-                                      request.politicalParty.orElse(user.profile.flatMap(_.politicalParty)),
-                                    website = request.website.map(_.value).orElse(user.profile.flatMap(_.website))
+                                      request.politicalParty.orElse(personality.profile.flatMap(_.politicalParty)),
+                                    website =
+                                      request.website.map(_.value).orElse(personality.profile.flatMap(_.website))
                                   )
                                 )
                                 .orElse(
@@ -311,6 +312,8 @@ trait DefaultAdminPersonalityApiComponent
                                   )
                                 )
                             ),
+                            moderatorId = Some(userAuth.user.userId),
+                            oldEmail = personality.email.toLowerCase,
                             requestContext
                           )
                         ) { user: User =>

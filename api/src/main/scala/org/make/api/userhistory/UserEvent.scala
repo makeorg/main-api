@@ -79,6 +79,20 @@ object UserEventWrapper extends AvroSerializers {
     RecordFormat[UserEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }
 
+@AvroSortPriority(16)
+case class PersonalityEmailChangedEvent(override val connectedUserId: Option[UserId] = None,
+                                        @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
+                                          UserEvent.defaultDate,
+                                        override val userId: UserId,
+                                        override val requestContext: RequestContext,
+                                        @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+                                        @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
+                                        oldEmail: String,
+                                        newEmail: String)
+    extends UserEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
 @AvroSortPriority(15)
 final case class ResetPasswordEvent(override val connectedUserId: Option[UserId] = None,
                                     @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =

@@ -50,6 +50,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
       case event: OrganisationEmailChangedEvent   => handleOrganisationEmailChangedEvent(event)
+      case event: PersonalityEmailChangedEvent    => handlePersonalityEmailChangedEvent(event)
       case event: OrganisationInitializationEvent => doNothing(event)
       case event: UserUpdatedOptInNewsletterEvent => doNothing(event)
       case event: UserAnonymizedEvent             => doNothing(event)
@@ -109,12 +110,26 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   private def handleOrganisationEmailChangedEvent(event: OrganisationEmailChangedEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
       case Some(organisation) =>
-        sendMailPublisherService.publishOrganisationEmailChanged(
-          organisation,
-          event.country,
-          event.language,
-          event.requestContext,
-          event.newEmail
+        sendMailPublisherService.publishEmailChanged(
+          user = organisation,
+          country = event.country,
+          language = event.language,
+          requestContext = event.requestContext,
+          newEmail = event.newEmail
+        )
+      case None => Future.successful {}
+    }
+  }
+
+  private def handlePersonalityEmailChangedEvent(event: PersonalityEmailChangedEvent): Future[Unit] = {
+    getUserWithValidEmail(event.userId).flatMap {
+      case Some(personality) =>
+        sendMailPublisherService.publishEmailChanged(
+          user = personality,
+          country = event.country,
+          language = event.language,
+          requestContext = event.requestContext,
+          newEmail = event.newEmail
         )
       case None => Future.successful {}
     }

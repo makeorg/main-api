@@ -58,11 +58,11 @@ trait SendMailPublisherService {
                                            country: Country,
                                            language: Language,
                                            requestContext: RequestContext): Future[Unit]
-  def publishOrganisationEmailChanged(organisation: User,
-                                      country: Country,
-                                      language: Language,
-                                      requestContext: RequestContext,
-                                      newEmail: String): Future[Unit]
+  def publishEmailChanged(user: User,
+                          country: Country,
+                          language: Language,
+                          requestContext: RequestContext,
+                          newEmail: String): Future[Unit]
   def publishAcceptProposal(proposalId: ProposalId,
                             maybeQuestionId: Option[QuestionId],
                             maybeOperationId: Option[OperationId],
@@ -403,18 +403,18 @@ trait DefaultSendMailPublisherServiceComponent
       })
     }
 
-    override def publishOrganisationEmailChanged(organisation: User,
-                                                 country: Country,
-                                                 language: Language,
-                                                 requestContext: RequestContext,
-                                                 newEmail: String): Future[Unit] = {
+    override def publishEmailChanged(user: User,
+                                     country: Country,
+                                     language: Language,
+                                     requestContext: RequestContext,
+                                     newEmail: String): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       def publishSendEmail(crmTemplates: CrmTemplates): Unit = {
         eventBusService.publish(
           SendEmail.create(
             templateId = Some(crmTemplates.organisationEmailChangeConfirmation.value.toInt),
-            recipients = Seq(Recipient(email = organisation.email, name = organisation.fullName)),
+            recipients = Seq(Recipient(email = user.email, name = user.displayName)),
             from = Some(
               Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
             ),

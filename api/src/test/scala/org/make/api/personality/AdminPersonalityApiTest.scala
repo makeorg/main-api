@@ -120,7 +120,7 @@ class AdminPersonalityApiTest
 
       when(
         userService
-          .update(any[User], any[RequestContext])
+          .updatePersonality(any[User], any[Option[UserId]], any[String], any[RequestContext])
       ).thenReturn(Future.successful(personality))
 
       Put("/admin/personalities/personality-id")

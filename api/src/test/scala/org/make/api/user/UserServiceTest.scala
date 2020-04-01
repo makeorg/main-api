@@ -303,21 +303,22 @@ class UserServiceTest
         RequestContext.empty
       )
 
-      whenReady(futureUser, Timeout(2.seconds)) { case (user, accountCreation) =>
-        user shouldBe a[User]
-        user.email should be(info.email.getOrElse(""))
-        user.firstName should be(info.firstName)
-        user.profile.get.facebookId should be(info.facebookId)
-        user.profile.flatMap(_.registerQuestionId) should be(Some(QuestionId("question")))
-        accountCreation should be(true)
+      whenReady(futureUser, Timeout(2.seconds)) {
+        case (user, accountCreation) =>
+          user shouldBe a[User]
+          user.email should be(info.email.getOrElse(""))
+          user.firstName should be(info.firstName)
+          user.profile.get.facebookId should be(info.facebookId)
+          user.profile.flatMap(_.registerQuestionId) should be(Some(QuestionId("question")))
+          accountCreation should be(true)
 
-        verify(eventBusService, times(1))
-          .publish(ArgumentMatchers.argThat[AnyRef] {
-            case event: UserRegisteredEvent => event.userId == returnedUser.userId
-            case _                          => false
-          })
+          verify(eventBusService, times(1))
+            .publish(ArgumentMatchers.argThat[AnyRef] {
+              case event: UserRegisteredEvent => event.userId == returnedUser.userId
+              case _                          => false
+            })
 
-        verify(persistentUserService).persist(ArgumentMatchers.argThat[User](!_.anonymousParticipation))
+          verify(persistentUserService).persist(ArgumentMatchers.argThat[User](!_.anonymousParticipation))
       }
     }
 
@@ -372,20 +373,21 @@ class UserServiceTest
       val futureUserWithGender =
         userService.createOrUpdateUserFromSocial(infoWithGender, Some("127.0.0.1"), None, RequestContext.empty)
 
-      whenReady(futureUserWithGender, Timeout(2.seconds)) { case (user, accountCreation) =>
-        user shouldBe a[User]
-        user.email should be(infoWithGender.email.getOrElse(""))
-        user.firstName should be(infoWithGender.firstName)
-        user.profile.get.facebookId should be(infoWithGender.facebookId)
-        user.profile.get.gender should be(Some(Female))
-        user.profile.get.genderName should be(Some("female"))
-        accountCreation should be(true)
+      whenReady(futureUserWithGender, Timeout(2.seconds)) {
+        case (user, accountCreation) =>
+          user shouldBe a[User]
+          user.email should be(infoWithGender.email.getOrElse(""))
+          user.firstName should be(infoWithGender.firstName)
+          user.profile.get.facebookId should be(infoWithGender.facebookId)
+          user.profile.get.gender should be(Some(Female))
+          user.profile.get.genderName should be(Some("female"))
+          accountCreation should be(true)
 
-        verify(eventBusService, times(1))
-          .publish(ArgumentMatchers.argThat[AnyRef] {
-            case event: UserRegisteredEvent => event.userId == returnedUserWithGender.userId
-            case _                          => false
-          })
+          verify(eventBusService, times(1))
+            .publish(ArgumentMatchers.argThat[AnyRef] {
+              case event: UserRegisteredEvent => event.userId == returnedUserWithGender.userId
+              case _                          => false
+            })
       }
     }
 
@@ -438,15 +440,16 @@ class UserServiceTest
       Mockito.when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
       val futureUser = userService.createOrUpdateUserFromSocial(info, Some("NEW 127.0.0.1"), None, RequestContext.empty)
 
-      whenReady(futureUser, Timeout(2.seconds)) { case (user, accountCreation) =>
-        user shouldBe a[User]
-        user.email should be(info.email.getOrElse(""))
-        user.firstName should be(info.firstName)
-        user.profile.get.facebookId should be(info.facebookId)
-        accountCreation should be(false)
+      whenReady(futureUser, Timeout(2.seconds)) {
+        case (user, accountCreation) =>
+          user shouldBe a[User]
+          user.email should be(info.email.getOrElse(""))
+          user.firstName should be(info.firstName)
+          user.profile.get.facebookId should be(info.facebookId)
+          accountCreation should be(false)
 
-        verify(persistentUserService, times(1)).updateSocialUser(ArgumentMatchers.any[User])
-        user.lastIp should be(Some("NEW 127.0.0.1"))
+          verify(persistentUserService, times(1)).updateSocialUser(ArgumentMatchers.any[User])
+          user.lastIp should be(Some("NEW 127.0.0.1"))
 
       }
     }
@@ -501,12 +504,13 @@ class UserServiceTest
 
       val futureUser = userService.createOrUpdateUserFromSocial(info, returnedUser.lastIp, None, RequestContext.empty)
 
-      whenReady(futureUser, Timeout(2.seconds)) { case (user, accountCreation) =>
-        user shouldBe a[User]
-        user.email should be(info.email.getOrElse(""))
-        user.firstName should be(info.firstName)
-        user.profile.get.facebookId should be(info.facebookId)
-        accountCreation should be(false)
+      whenReady(futureUser, Timeout(2.seconds)) {
+        case (user, accountCreation) =>
+          user shouldBe a[User]
+          user.email should be(info.email.getOrElse(""))
+          user.firstName should be(info.firstName)
+          user.profile.get.facebookId should be(info.facebookId)
+          accountCreation should be(false)
       }
     }
 
@@ -810,6 +814,27 @@ class UserServiceTest
       whenReady(futureUser, Timeout(3.seconds)) { result =>
         result shouldBe a[User]
       }
+    }
+  }
+
+  feature("update personality user") {
+    scenario("update a personality") {
+      Given("a personality")
+      When("I update fields")
+      Then("fields are updated into user")
+
+      val futureUser = userService.updatePersonality(
+        personality = fooUser.copy(email = "fooUpdated@example.com"),
+        moderatorId = Some(UserId("moderaor-id")),
+        oldEmail = fooUser.email,
+        requestContext = RequestContext.empty
+      )
+
+      whenReady(futureUser, Timeout(3.seconds)) { user =>
+        user.email should be("fooUpdated@example.com")
+      }
+      verify(eventBusService, times(1))
+        .publish(ArgumentMatchers.any(classOf[PersonalityEmailChangedEvent]))
     }
   }
 
