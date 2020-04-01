@@ -194,16 +194,18 @@ trait DefaultOrganisationApiComponent
     override def getOrganisationProfile: Route = {
       get {
         path("organisations" / organisationId / "profile") { organisationId =>
-          provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
-            complete(
-              OrganisationProfileResponse(
-                organisationName = organisation.organisationName,
-                avatarUrl = organisation.profile.flatMap(_.avatarUrl),
-                description = organisation.profile.flatMap(_.description),
-                website = organisation.profile.flatMap(_.website),
-                optInNewsletter = organisation.profile.map(_.optInNewsletter).getOrElse(true)
+          makeOperation("GetOrganisationProfile") { _ =>
+            provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { organisation =>
+              complete(
+                OrganisationProfileResponse(
+                  organisationName = organisation.organisationName,
+                  avatarUrl = organisation.profile.flatMap(_.avatarUrl),
+                  description = organisation.profile.flatMap(_.description),
+                  website = organisation.profile.flatMap(_.website),
+                  optInNewsletter = organisation.profile.map(_.optInNewsletter).getOrElse(true)
+                )
               )
-            )
+            }
           }
         }
       }
