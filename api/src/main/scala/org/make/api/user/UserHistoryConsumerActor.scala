@@ -53,6 +53,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       case event: OrganisationRegisteredEvent     => doNothing(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
       case event: OrganisationEmailChangedEvent   => handleOrganisationEmailChangedEvent(event)
+      case event: PersonalityEmailChangedEvent    => handlePersonalityEmailChangedEvent(event)
       case event: OrganisationInitializationEvent => doNothing(event)
       case event: UserUpdatedOptInNewsletterEvent => handleUserUpdatedOptInNewsletterEvent(event)
       case event: UserAnonymizedEvent             => handleUserAnonymizedEvent(event)
@@ -101,7 +102,9 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
             )
           )
         )
-        userService.update(user.copy(lastConnection = event.eventDate), event.requestContext).map(_ => ())
+        userService
+          .update(user.copy(lastConnection = event.eventDate), event.requestContext)
+          .map(_ => ())
       case None =>
         log.warning("User not found after UserConnectedEvent: ", event)
         Future.successful {}
@@ -163,6 +166,22 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
           date = event.eventDate,
           actionType = LogOrganisationEmailChangedEvent.action,
           arguments = OrganisationEmailChanged(oldEmail = event.oldEmail, newEmail = event.newEmail)
+        )
+      )
+    )
+
+    Future.successful {}
+  }
+
+  def handlePersonalityEmailChangedEvent(event: PersonalityEmailChangedEvent): Future[Unit] = {
+    userHistoryCoordinatorService.logHistory(
+      LogPersonalityEmailChangedEvent(
+        userId = event.userId,
+        requestContext = event.requestContext,
+        action = UserAction(
+          date = event.eventDate,
+          actionType = LogPersonalityEmailChangedEvent.action,
+          arguments = PersonalityEmailChanged(oldEmail = event.oldEmail, newEmail = event.newEmail)
         )
       )
     )

@@ -80,6 +80,10 @@ trait UserService extends ShortenedNames {
   def registerPersonality(personalityRegisterData: PersonalityRegisterData,
                           requestContext: RequestContext): Future[User]
   def update(user: User, requestContext: RequestContext): Future[User]
+  def updatePersonality(personality: User,
+                        moderatorId: Option[UserId],
+                        oldEmail: String,
+                        requestContext: RequestContext): Future[User]
   def createOrUpdateUserFromSocial(userInfo: UserInfo,
                                    clientIp: Option[String],
                                    questionId: Option[QuestionId],
@@ -721,6 +725,49 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def update(user: User, requestContext: RequestContext): Future[User] = {
       for {
         updatedUser <- persistentUserService.updateUser(user)
+        _           <- updateProposalVotedByOrganisation(updatedUser)
+        _           <- updateProposalsSubmitByUser(updatedUser, requestContext)
+      } yield updatedUser
+    }
+
+    private def updatePersonalityEmail(personality: User,
+                                       moderatorId: Option[UserId],
+                                       newEmail: Option[String],
+                                       oldEmail: String,
+                                       requestContext: RequestContext): Future[Unit] = {
+      newEmail match {
+        case Some(email) =>
+          persistentUserToAnonymizeService.create(oldEmail).map { _ =>
+            eventBusService.publish(
+              PersonalityEmailChangedEvent(
+                connectedUserId = moderatorId,
+                userId = personality.userId,
+                requestContext = requestContext,
+                country = personality.country,
+                language = personality.language,
+                eventDate = DateHelper.now(),
+                oldEmail = oldEmail,
+                newEmail = email
+              )
+            )
+          }
+        case None => Future.successful {}
+      }
+    }
+
+    override def updatePersonality(personality: User,
+                                   moderatorId: Option[UserId],
+                                   oldEmail: String,
+                                   requestContext: RequestContext): Future[User] = {
+
+      val newEmail: Option[String] = personality.email match {
+        case email if email.toLowerCase == oldEmail.toLowerCase => None
+        case email                                              => Some(email)
+      }
+
+      for {
+        updatedUser <- persistentUserService.updateUser(personality)
+        _           <- updatePersonalityEmail(updatedUser, moderatorId, newEmail, oldEmail, requestContext)
         _           <- updateProposalVotedByOrganisation(updatedUser)
         _           <- updateProposalsSubmitByUser(updatedUser, requestContext)
       } yield updatedUser

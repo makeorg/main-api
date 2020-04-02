@@ -92,6 +92,7 @@ object UserHistoryEvent {
           case Seq(JsString("LogUserConnectedEvent"))            => json.convertTo[LogUserConnectedEvent]
           case Seq(JsString("LogUserUploadedAvatarEvent"))       => json.convertTo[LogUserUploadedAvatarEvent]
           case Seq(JsString("LogOrganisationEmailChangedEvent")) => json.convertTo[LogOrganisationEmailChangedEvent]
+          case Seq(JsString("LogPersonalityEmailChangedEvent"))  => json.convertTo[LogPersonalityEmailChangedEvent]
         }
       }
 
@@ -121,6 +122,7 @@ object UserHistoryEvent {
           case event: LogUserConnectedEvent               => event.toJson
           case event: LogUserUploadedAvatarEvent          => event.toJson
           case event: LogOrganisationEmailChangedEvent    => event.toJson
+          case event: LogPersonalityEmailChangedEvent     => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -665,6 +667,21 @@ object LogOrganisationEmailChangedEvent {
 
 }
 
+final case class LogPersonalityEmailChangedEvent(userId: UserId,
+                                                 requestContext: RequestContext,
+                                                 action: UserAction[PersonalityEmailChanged])
+    extends UserHistoryEvent[PersonalityEmailChanged] {
+  override val protagonist: Protagonist = Citizen
+}
+
+object LogPersonalityEmailChangedEvent {
+  val action: String = "organisation-email-changed"
+
+  implicit val logPersonalityEmailChangedEvent: RootJsonFormat[LogPersonalityEmailChangedEvent] =
+    DefaultJsonProtocol.jsonFormat(LogPersonalityEmailChangedEvent.apply, "userId", "context", "action")
+
+}
+
 final case class OrganisationEmailChanged(oldEmail: String, newEmail: String) {
   def version(): Int = MakeSerializable.V1
 }
@@ -674,4 +691,15 @@ case object OrganisationEmailChanged {
 
   implicit val organisationEmailChanged: RootJsonFormat[OrganisationEmailChanged] =
     DefaultJsonProtocol.jsonFormat2(OrganisationEmailChanged.apply)
+}
+
+final case class PersonalityEmailChanged(oldEmail: String, newEmail: String) {
+  def version(): Int = MakeSerializable.V1
+}
+
+case object PersonalityEmailChanged {
+  val actionType: String = "email-changed"
+
+  implicit val personalityEmailChanged: RootJsonFormat[PersonalityEmailChanged] =
+    DefaultJsonProtocol.jsonFormat2(PersonalityEmailChanged.apply)
 }
