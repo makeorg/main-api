@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,6 @@
  *
  */
 
-package org.make.core
+package org.make.api.technical
 
-trait MakeSerializable extends Serializable with Product
-
-object MakeSerializable {
-  val V1: Int = 1
-  val V2: Int = 2
-  val V3: Int = 3
-  val V4: Int = 4
-  val V5: Int = 5
-}
+trait ActorProtocol extends Serializable

@@ -36,8 +36,8 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.proposal.ProposalId
 import org.make.core.user._
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait UserHistoryCoordinatorComponent {
   def userHistoryCoordinator: ActorRef
@@ -67,17 +67,17 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     override def logHistory(command: UserHistoryEvent[_]): Unit = {
-      userHistoryCoordinator ! command
+      userHistoryCoordinator ! UserHistoryEnvelope(command.userId, command)
     }
 
     override def logTransactionalHistory(command: TransactionalUserHistoryEvent[_]): Future[Unit] = {
-      (userHistoryCoordinator ? command).map(_ => ())
+      (userHistoryCoordinator ? UserHistoryEnvelope(command.userId, command)).map(_ => ())
     }
 
     override def retrieveVoteAndQualifications(
       request: RequestVoteValues
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
-      (userHistoryCoordinator ? request).mapTo[Map[ProposalId, VoteAndQualifications]]
+      (userHistoryCoordinator ? request).mapTo[VotesValues].map(_.votesValues)
     }
 
     private def retrieveVotedProposalsPage(request: RequestUserVotedProposals, offset: Int): Future[Seq[ProposalId]] = {
@@ -95,11 +95,14 @@ trait DefaultUserHistoryCoordinatorServiceComponent extends UserHistoryCoordinat
           Source(proposalsIds)
             .sliding(proposalsPerPage, proposalsPerPage)
             .mapAsync(5) { someProposalsIds =>
-              (userHistoryCoordinator ? requestPaginate(Some(someProposalsIds))).mapTo[Seq[ProposalId]]
+              (userHistoryCoordinator ? requestPaginate(Some(someProposalsIds)))
+                .mapTo[VotedProposals]
+                .map(_.proposals)
             }
             .mapConcat(identity)
             .runWith(Sink.seq)
-        case _ => (userHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[Seq[ProposalId]]
+        case _ =>
+          (userHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[VotedProposals].map(_.proposals)
       }
     }
 

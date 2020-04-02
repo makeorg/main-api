@@ -72,11 +72,11 @@ class UserHistoryActor
     case Snapshot => saveSnapshot()
     //TODO: remove
     case SnapshotUser(_) => saveSnapshot()
-    case command: TransactionalUserHistoryEvent[_] =>
+    case UserHistoryEnvelope(_, command: TransactionalUserHistoryEvent[_]) =>
       persistEvent(command) { _ =>
         sender() ! LogAcknowledged
       }
-    case command: UserHistoryEvent[_] =>
+    case UserHistoryEnvelope(_, command: UserHistoryEvent[_]) =>
       persistEvent(command) { _ =>
         ()
       }
@@ -233,13 +233,13 @@ class UserHistoryActor
   }
 
   private def retrieveVoteValues(proposalIds: Seq[ProposalId]): Unit = {
-    val voteValues: Map[ProposalId, VoteAndQualifications] = state
+    val votesValues: Map[ProposalId, VoteAndQualifications] = state
       .map(_.votesAndQualifications.filter {
         case (proposalId, _) => proposalIds.contains(proposalId)
       })
       .getOrElse(Map.empty)
 
-    sender() ! voteValues
+    sender() ! UserVotesValues(votesValues)
   }
 
   private def retrieveUserVotedProposals(filterVotes: Option[Seq[VoteKey]],
@@ -262,7 +262,7 @@ class UserHistoryActor
       .map { case (proposalId, _) => proposalId }
       .slice(skip, limit)
 
-    sender() ! votedProposals
+    sender() ! UserVotedProposals(votedProposals)
   }
 
 }
@@ -299,10 +299,16 @@ object UserHistoryActor {
 
   case class ReloadState(userId: UserId) extends UserRelatedEvent
 
-  case object SessionEventsInjected
+  case object SessionEventsInjected extends UserHistoryActorProtocol
 
-  case object LogAcknowledged
+  case object LogAcknowledged extends UserHistoryActorProtocol
 
   case class MigrationCompletedWithNewState(newState: Option[UserVotesAndQualifications])
-  case class MigrationFailure(e: Throwable)
+      extends UserHistoryActorProtocol
+  case class MigrationFailure(e: Throwable) extends UserHistoryActorProtocol
+
+  final case class UserVotedProposals(proposals: Seq[ProposalId]) extends UserHistoryActorProtocol with VotedProposals
+  final case class UserVotesValues(votesValues: Map[ProposalId, VoteAndQualifications])
+      extends UserHistoryActorProtocol
+      with VotesValues
 }

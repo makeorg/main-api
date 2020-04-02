@@ -54,7 +54,7 @@ sealed trait Protagonist
 case object Moderator extends Protagonist
 case object Citizen extends Protagonist
 
-sealed trait UserHistoryEvent[T] extends UserRelatedEvent with MakeSerializable with Product {
+sealed trait UserHistoryEvent[T] extends UserPersistentEvent with MakeSerializable {
   def requestContext: RequestContext
   def action: UserAction[T]
   def protagonist: Protagonist
