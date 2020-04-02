@@ -82,10 +82,10 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
   def genCreateOperationOfQuestion(operationId: OperationId): Gen[CreateOperationOfQuestion] =
     for {
       date                <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
-      operationTitle      <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(512))
+      operationTitle      <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
       slug                <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(30))
       (country, language) <- genCountryLanguage
-      question            <- CustomGenerators.LoremIpsumGen.sentence()
+      question            <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
       consultationImage   <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
     } yield
       CreateOperationOfQuestion(
