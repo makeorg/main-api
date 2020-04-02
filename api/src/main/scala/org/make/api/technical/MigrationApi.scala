@@ -60,9 +60,9 @@ import org.make.api.userhistory.LogUserProposalEvent
 import akka.stream.scaladsl.Source
 import org.make.core.profile.Profile
 import org.make.core.RequestContext
-import akka.persistence.query.EventEnvelope
 import org.make.core.user.UserId
 import org.make.api.userhistory.LogRegisterCitizenEvent
+import org.make.core.session.SessionId
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -143,8 +143,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       } yield new QuestionResolver(questions, operations)
     }
 
-    private def retrieveEventQuestion(resolver: QuestionResolver,
-                                      event: UserHistoryEvent[_]): Future[Option[Question]] = {
+    private def retrieveEventQuestion(
+      resolver: QuestionResolver,
+      event: UserHistoryEvent[_]
+    ): Future[Option[Question]] = {
       resolver.extractQuestionWithOperationFromRequestContext(event.requestContext) match {
         case Some(question) => Future.successful(Some(question))
         case None =>
@@ -165,39 +167,42 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
     }
 
-    private def resolveQuestionFromEvents(questionResolver: QuestionResolver,
-                                          events: Seq[EventEnvelope]): Future[Option[Question]] = {
-      val maybeRegistration: Option[LogRegisterCitizenEvent] = events
-        .map(_.event)
-        .collectFirst {
-          case e: LogRegisterCitizenEvent => e
+    private def resolveQuestionFromEvents(
+      questionResolver: QuestionResolver,
+      events: Seq[UserHistoryEvent[_]]
+    ): Future[Option[Question]] = {
+        val maybeRegistration: Option[LogRegisterCitizenEvent] = events
+          .collectFirst {
+            case e: LogRegisterCitizenEvent => e
+          }
+
+        maybeRegistration match {
+          case None =>
+            val maybeSession: Option[SessionId] = events
+              .sortBy(_.action.date.toString())
+              .headOption
+              .map(_.requestContext.sessionId)
+
+            val registerSessionEvents = events
+              .filter(event => maybeSession.contains(event.requestContext.sessionId))
+              .sortBy(_.action.date)
+
+            Source(registerSessionEvents)
+              .mapAsync(1)(retrieveEventQuestion(questionResolver, _))
+              .collect {
+                case Some(question) => question
+              }
+              .runWith(Sink.headOption[Question])
+
+          case Some(_) =>
+            Future.successful(None)
         }
-
-      maybeRegistration match {
-        case None => Future.successful(None)
-        case Some(userRegisteredEvent) =>
-          questionResolver
-            .extractQuestionWithOperationFromRequestContext(userRegisteredEvent.requestContext)
-            .map(question => Future.successful(Some(question)))
-            .getOrElse {
-              val registerSessionEvents = events
-                .map(_.event.asInstanceOf[UserHistoryEvent[_]])
-                .filter(_.requestContext.sessionId == userRegisteredEvent.requestContext.sessionId)
-                .sortBy(_.action.date)
-
-              Source(registerSessionEvents)
-                .mapAsync(1)(retrieveEventQuestion(questionResolver, _))
-                .collect {
-                  case Some(question) => question
-                }
-                .runWith(Sink.headOption[Question])
-            }
-      }
     }
 
-    private def listEvents(userId: UserId) = {
+    private def listEvents(userId: UserId): Future[Seq[UserHistoryEvent[_]]] = {
       userJournal
         .currentEventsByPersistenceId(userId.value, 0L, Long.MaxValue)
+        .map(_.event.asInstanceOf[UserHistoryEvent[_]])
         .runWith(Sink.seq)
     }
 
@@ -226,6 +231,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                       userService.findUsersForCrmSynchro(None, None, _, mailJetConfiguration.userListBatchSize)
                     )
                     .mapConcat(identity)
+                    .filter(_.profile.flatMap(_.registerQuestionId).isEmpty)
                     .mapAsync(1) { user =>
                       val updatedUserCount = for {
                         events        <- listEvents(user.userId)
@@ -299,11 +305,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
 }
 
-final case class DeleteContactsRequest(@(ApiModelProperty @field)(
-                                         dataType = "string",
-                                         example = "2019-07-11T11:21:40.508Z"
-                                       ) maxUpdatedAtBeforeDelete: ZonedDateTime,
-                                       @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean) {
+final case class DeleteContactsRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean
+) {
   Validation.validate(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",

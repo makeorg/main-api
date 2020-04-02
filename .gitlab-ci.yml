@@ -33,6 +33,13 @@ tests-coverage:
   stage: build
   tags:
     - docker
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - stuck_or_timeout_failure
+      - api_failure
   before_script:
     - mkdir -p /var/lib/docker
     - mount -t tmpfs -o size=12G tmpfs /var/lib/docker
@@ -56,6 +63,13 @@ build-image:
   stage: build
   tags:
     - docker
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - stuck_or_timeout_failure
+      - api_failure
   before_script:
     - export IMAGE_VERSION=`git rev-parse --short=10 HEAD`
     - mkdir -p /var/lib/docker
