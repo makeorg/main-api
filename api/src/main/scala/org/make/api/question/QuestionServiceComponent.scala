@@ -30,7 +30,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeRandom}
 import org.make.api.user.UserServiceComponent
 import org.make.core.idea.{TopIdea, TopIdeaId}
 import org.make.core.operation.OperationId
-import org.make.core.personality.PersonalityRole
+import org.make.core.personality.PersonalityRoleId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
@@ -53,7 +53,7 @@ trait QuestionService {
   def getQuestionPersonalities(start: Int,
                                end: Option[Int],
                                questionId: QuestionId,
-                               personalityRole: Option[PersonalityRole]): Future[Seq[QuestionPersonalityResponse]]
+                               personalityRoleId: Option[PersonalityRoleId]): Future[Seq[QuestionPersonalityResponse]]
   def getPartners(questionId: QuestionId,
                   organisationIds: Seq[UserId],
                   sortAlgorithm: Option[OrganisationSortAlgorithm],
@@ -163,7 +163,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       start: Int,
       end: Option[Int],
       questionId: QuestionId,
-      personalityRole: Option[PersonalityRole]
+      personalityRoleId: Option[PersonalityRoleId]
     ): Future[Seq[QuestionPersonalityResponse]] = {
       Source
         .future(
@@ -174,7 +174,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
             order = None,
             userId = None,
             questionId = Some(questionId),
-            personalityRole = personalityRole
+            personalityRoleId = personalityRoleId
           )
         )
         .mapConcat(identity)

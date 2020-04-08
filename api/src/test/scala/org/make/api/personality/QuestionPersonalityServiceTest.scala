@@ -29,7 +29,7 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.core.idea._
 import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
-import org.make.core.personality.{Candidate, Personality, PersonalityId}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
@@ -64,7 +64,7 @@ class QuestionPersonalityServiceTest
     personalityId = PersonalityId("personality"),
     userId = UserId("user-id"),
     questionId = QuestionId("question"),
-    personalityRole = Candidate
+    personalityRoleId = PersonalityRoleId("candidate")
   )
 
   feature("create personality") {
@@ -77,7 +77,7 @@ class QuestionPersonalityServiceTest
           request = CreateQuestionPersonalityRequest(
             userId = UserId("user-id"),
             questionId = QuestionId("question"),
-            personalityRole = Candidate
+            personalityRoleId = PersonalityRoleId("candidate")
           )
         ),
         Timeout(2.seconds)
@@ -96,7 +96,10 @@ class QuestionPersonalityServiceTest
       whenReady(
         questionPersonalityService.updatePersonality(
           personalityId = PersonalityId("not-found"),
-          UpdateQuestionPersonalityRequest(userId = UserId("user-id"), personalityRole = Candidate)
+          UpdateQuestionPersonalityRequest(
+            userId = UserId("user-id"),
+            personalityRoleId = PersonalityRoleId("candidate")
+          )
         ),
         Timeout(2.seconds)
       ) { personality =>
@@ -117,7 +120,10 @@ class QuestionPersonalityServiceTest
       whenReady(
         questionPersonalityService.updatePersonality(
           personalityId = PersonalityId("personality"),
-          UpdateQuestionPersonalityRequest(userId = UserId("update-user"), personalityRole = Candidate)
+          UpdateQuestionPersonalityRequest(
+            userId = UserId("update-user"),
+            personalityRoleId = PersonalityRoleId("candidate")
+          )
         ),
         Timeout(2.seconds)
       ) { personality =>
@@ -185,8 +191,18 @@ class QuestionPersonalityServiceTest
       ).thenReturn(
         Future.successful(
           Seq(
-            Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
-            Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
+            Personality(
+              PersonalityId("one"),
+              UserId("personality-id"),
+              QuestionId("question-id-one"),
+              personalityRoleId = PersonalityRoleId("candidate")
+            ),
+            Personality(
+              PersonalityId("two"),
+              UserId("personality-id"),
+              QuestionId("question-id-two"),
+              personalityRoleId = PersonalityRoleId("candidate")
+            )
           )
         )
       )
@@ -333,8 +349,18 @@ class QuestionPersonalityServiceTest
 
       val personalities =
         Seq(
-          Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
-          Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
+          Personality(
+            PersonalityId("one"),
+            UserId("personality-id"),
+            QuestionId("question-id-one"),
+            personalityRoleId = PersonalityRoleId("candidate")
+          ),
+          Personality(
+            PersonalityId("two"),
+            UserId("personality-id"),
+            QuestionId("question-id-two"),
+            personalityRoleId = PersonalityRoleId("candidate")
+          )
         )
 
       whenReady(questionPersonalityService.getPersonalitiesOpinionsByQuestions(personalities), Timeout(2.seconds)) {

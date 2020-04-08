@@ -33,6 +33,7 @@ import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
+import org.make.api.personality.PersonalityRoleServiceComponent
 import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent, ProposalsResultResponse}
 import org.make.api.sequence.{SequenceResult, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
@@ -45,7 +46,7 @@ import org.make.core.idea.TopIdeaId
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
-import org.make.core.personality.PersonalityRole
+import org.make.core.personality.PersonalityRoleId
 import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
@@ -166,10 +167,10 @@ trait QuestionApi extends Directives {
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(
-        name = "personalityRole",
+        name = "personalityRoleId",
         paramType = "query",
         dataType = "string",
-        allowableValues = "CANDIDATE"
+        example = "0c3cbbf4-42c1-4801-b08a-d0e60d136041"
       ),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
@@ -239,7 +240,8 @@ trait DefaultQuestionApiComponent
     with ProposalSearchEngineComponent
     with TagServiceComponent
     with ProposalServiceComponent
-    with TopIdeaCommentServiceComponent =>
+    with TopIdeaCommentServiceComponent
+    with PersonalityRoleServiceComponent =>
 
   override lazy val questionApi: QuestionApi = new DefaultQuestionApi
 
@@ -532,23 +534,39 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "personalities") { questionId =>
           makeOperation("GetQuestionPersonalities") { _ =>
-            parameters(
-              (Symbol("personalityRole").as[PersonalityRole].?, Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)
-            ) { (personalityRole: Option[PersonalityRole], limit: Option[Int], skip: Option[Int]) =>
-              provideAsync(
-                questionService.getQuestionPersonalities(
-                  start = skip.getOrElse(0),
-                  end = limit,
-                  questionId = questionId,
-                  personalityRole = personalityRole
-                )
-              ) { questionPersonalities =>
-                val response = QuestionPersonalityResponseWithTotal(
-                  total = questionPersonalities.size,
-                  results = questionPersonalities.sortBy(_.lastName)
-                )
-                complete(response)
-              }
+            parameters((Symbol("personalityRole").as[String].?, Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)) {
+              (personalityRole: Option[String], limit: Option[Int], skip: Option[Int]) =>
+                provideAsync(
+                  personalityRoleService
+                    .find(start = 0, end = None, sort = None, order = None, roleIds = None, name = personalityRole)
+                ) { roles =>
+                  val personalityRoleId: Option[PersonalityRoleId] = roles match {
+                    case Seq(role) if personalityRole.nonEmpty => Some(role.personalityRoleId)
+                    case _                                     => None
+                  }
+                  Validation.validate(
+                    Validation.validateField(
+                      field = "personalityRole",
+                      key = "invalid_content",
+                      condition = personalityRole.forall(_ => personalityRoleId.isDefined),
+                      message = s"$personalityRole is not a valid personality role"
+                    )
+                  )
+                  provideAsync(
+                    questionService.getQuestionPersonalities(
+                      start = skip.getOrElse(0),
+                      end = limit,
+                      questionId = questionId,
+                      personalityRoleId = personalityRoleId
+                    )
+                  ) { questionPersonalities =>
+                    val response = QuestionPersonalityResponseWithTotal(
+                      total = questionPersonalities.size,
+                      results = questionPersonalities.sortBy(_.lastName)
+                    )
+                    complete(response)
+                  }
+                }
             }
           }
         }

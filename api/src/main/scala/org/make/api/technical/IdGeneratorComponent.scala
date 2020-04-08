@@ -28,7 +28,7 @@ import org.make.core.feature.{ActiveFeatureId, FeatureId}
 import org.make.core.idea.{IdeaId, TopIdeaCommentId, TopIdeaId}
 import org.make.core.operation.{CurrentOperationId, FeaturedOperationId, OperationId}
 import org.make.core.partner.PartnerId
-import org.make.core.personality.PersonalityId
+import org.make.core.personality.{PersonalityId, PersonalityRoleFieldId, PersonalityRoleId}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
@@ -61,6 +61,8 @@ trait IdGenerator {
   def nextPersonalityId(): PersonalityId = PersonalityId(nextId())
   def nextTopIdeaId(): TopIdeaId = TopIdeaId(nextId())
   def nextTopIdeaCommentId(): TopIdeaCommentId = TopIdeaCommentId(nextId())
+  def nextPersonalityRoleId(): PersonalityRoleId = PersonalityRoleId(nextId())
+  def nextPersonalityRoleFieldId(): PersonalityRoleFieldId = PersonalityRoleFieldId(nextId())
 
   def nextId(): String
 }

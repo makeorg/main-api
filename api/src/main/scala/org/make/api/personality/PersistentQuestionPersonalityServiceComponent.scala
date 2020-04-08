@@ -24,7 +24,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.personality.DefaultPersistentQuestionPersonalityServiceComponent.PersistentPersonality
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
-import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 import scalikejdbc._
@@ -45,10 +45,10 @@ trait PersistentQuestionPersonalityService {
            order: Option[String],
            userId: Option[UserId],
            questionId: Option[QuestionId],
-           personalityRole: Option[PersonalityRole]): Future[Seq[Personality]]
+           personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]]
   def count(userId: Option[UserId],
             questionId: Option[QuestionId],
-            personalityRole: Option[PersonalityRole]): Future[Int]
+            personalityRoleId: Option[PersonalityRoleId]): Future[Int]
   def delete(personalityId: PersonalityId): Future[Unit]
 }
 
@@ -74,7 +74,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
               column.id -> personality.personalityId.value,
               column.userId -> personality.userId.value,
               column.questionId -> personality.questionId.value,
-              column.personalityRole -> personality.personalityRole.shortName
+              column.personalityRoleId -> personality.personalityRoleId.value
             )
         }.execute().apply()
       }).map(_ => personality)
@@ -88,7 +88,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
             .set(
               column.userId -> personality.userId.value,
               column.questionId -> personality.questionId.value,
-              column.personalityRole -> personality.personalityRole.shortName
+              column.personalityRoleId -> personality.personalityRoleId.value
             )
             .where(sqls.eq(column.id, personality.personalityId.value))
         }.execute().apply()
@@ -112,7 +112,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
                       order: Option[String],
                       userId: Option[UserId],
                       questionId: Option[QuestionId],
-                      personalityRole: Option[PersonalityRole]): Future[Seq[Personality]] = {
+                      personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
@@ -120,9 +120,9 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
             .from(PersistentPersonality.as(personalityAlias))
             .where(
               sqls.toAndConditionOpt(
-                userId.map(userId         => sqls.eq(personalityAlias.userId, userId.value)),
-                questionId.map(questionId => sqls.eq(personalityAlias.questionId, questionId.value)),
-                personalityRole.map(role  => sqls.eq(personalityAlias.personalityRole, role.shortName))
+                userId.map(userId          => sqls.eq(personalityAlias.userId, userId.value)),
+                questionId.map(questionId  => sqls.eq(personalityAlias.questionId, questionId.value)),
+                personalityRoleId.map(role => sqls.eq(personalityAlias.personalityRoleId, role.value))
               )
             )
 
@@ -145,7 +145,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
     def count(userId: Option[UserId],
               questionId: Option[QuestionId],
-              personalityRole: Option[PersonalityRole]): Future[Int] = {
+              personalityRoleId: Option[PersonalityRoleId]): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
         withSQL {
@@ -153,9 +153,9 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
             .from(PersistentPersonality.as(personalityAlias))
             .where(
               sqls.toAndConditionOpt(
-                questionId.map(questionId => sqls.eq(personalityAlias.questionId, questionId.value)),
-                userId.map(userId         => sqls.eq(personalityAlias.userId, userId.value)),
-                personalityRole.map(role  => sqls.eq(personalityAlias.personalityRole, role.shortName))
+                questionId.map(questionId  => sqls.eq(personalityAlias.questionId, questionId.value)),
+                userId.map(userId          => sqls.eq(personalityAlias.userId, userId.value)),
+                personalityRoleId.map(role => sqls.eq(personalityAlias.personalityRoleId, role.value))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
@@ -177,20 +177,20 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
 object DefaultPersistentQuestionPersonalityServiceComponent {
 
-  case class PersistentPersonality(id: String, userId: String, questionId: String, personalityRole: String) {
+  case class PersistentPersonality(id: String, userId: String, questionId: String, personalityRoleId: String) {
     def toPersonality: Personality = {
       Personality(
         personalityId = PersonalityId(id),
         userId = UserId(userId),
         questionId = QuestionId(questionId),
-        personalityRole = PersonalityRole.roleMap(personalityRole)
+        personalityRoleId = PersonalityRoleId(personalityRoleId)
       )
     }
   }
 
   object PersistentPersonality extends SQLSyntaxSupport[PersistentPersonality] with ShortenedNames with StrictLogging {
     override val columnNames: Seq[String] =
-      Seq("id", "user_id", "question_id", "personality_role")
+      Seq("id", "user_id", "question_id", "personality_role_id")
 
     override val tableName: String = "personality"
 
@@ -203,7 +203,7 @@ object DefaultPersistentQuestionPersonalityServiceComponent {
         id = resultSet.string(personalityResultName.id),
         userId = resultSet.string(personalityResultName.userId),
         questionId = resultSet.string(personalityResultName.questionId),
-        personalityRole = resultSet.string(personalityResultName.personalityRole)
+        personalityRoleId = resultSet.string(personalityResultName.personalityRoleId)
       )
     }
   }

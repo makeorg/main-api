@@ -30,7 +30,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 import org.make.core.{HttpCodes, ParameterExtractors, ValidationError}
@@ -145,7 +145,8 @@ trait DefaultAdminQuestionPersonalityApiComponent
     with MakeDataHandlerComponent
     with SessionHistoryCoordinatorServiceComponent
     with IdGeneratorComponent
-    with MakeSettingsComponent =>
+    with MakeSettingsComponent
+    with PersonalityRoleServiceComponent =>
 
   override lazy val adminQuestionPersonalityApi: AdminQuestionPersonalityApi = new DefaultAdminQuestionPersonalityApi
 
@@ -169,7 +170,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                         order = None,
                         userId = Some(request.userId),
                         questionId = Some(request.questionId),
-                        personalityRole = None
+                        personalityRoleId = None
                       )
                     ) {
                       case duplicates if duplicates.nonEmpty =>
@@ -229,7 +230,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                 Symbol("_order").?,
                 Symbol("userId").as[UserId].?,
                 Symbol("questionId").as[QuestionId].?,
-                Symbol("personalityRole").as[PersonalityRole].?
+                Symbol("personalityRoleId").as[PersonalityRoleId].?
               )
             ) {
               (start: Option[Int],
@@ -238,21 +239,37 @@ trait DefaultAdminQuestionPersonalityApiComponent
                order: Option[String],
                userId: Option[UserId],
                questionId: Option[QuestionId],
-               personalityRole: Option[PersonalityRole]) =>
+               personalityRoleId: Option[PersonalityRoleId]) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     provideAsync(
                       questionPersonalityService
-                        .find(start.getOrElse(0), end, sort, order, userId, questionId, personalityRole)
-                    ) { result =>
-                      provideAsync(questionPersonalityService.count(userId, questionId, personalityRole)) { count =>
-                        complete(
-                          (
-                            StatusCodes.OK,
-                            List(`X-Total-Count`(count.toString)),
-                            result.map(QuestionPersonalityResponse.apply)
+                        .find(start.getOrElse(0), end, sort, order, userId, questionId, personalityRoleId)
+                    ) { personalities =>
+                      provideAsync(questionPersonalityService.count(userId, questionId, personalityRoleId)) { count =>
+                        provideAsync(
+                          personalityRoleService.find(
+                            start = 0,
+                            end = None,
+                            sort = None,
+                            order = None,
+                            roleIds = Some(personalities.map(_.personalityRoleId)),
+                            name = None
                           )
-                        )
+                        ) { personalityRoles =>
+                          val result = personalities.map { personality =>
+                            personalityRoles
+                              .find(role => role.personalityRoleId == personality.personalityRoleId) match {
+                              case Some(personalityRole) =>
+                                QuestionPersonalityResponse(personality, personalityRole)
+                              case None =>
+                                throw new IllegalStateException(
+                                  s"Unable to find the personality role with id ${personality.personalityRoleId}"
+                                )
+                            }
+                          }
+                          complete((StatusCodes.OK, List(`X-Total-Count`(count.toString)), result))
+                        }
                       }
                     }
                   }
@@ -270,7 +287,12 @@ trait DefaultAdminQuestionPersonalityApiComponent
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireAdminRole(auth.user) {
                 provideAsyncOrNotFound(questionPersonalityService.getPersonality(personalityId)) { personality =>
-                  complete(QuestionPersonalityResponse(personality))
+                  provideAsync(personalityRoleService.getPersonalityRole(personality.personalityRoleId)) {
+                    case None =>
+                      throw new IllegalStateException(s"Personality with the id $personalityId does not exist")
+                    case Some(personalityRole) =>
+                      complete(QuestionPersonalityResponse(personality, personalityRole))
+                  }
                 }
               }
             }
@@ -302,8 +324,8 @@ final case class CreateQuestionPersonalityRequest(
   userId: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "6a90575f-f625-4025-a485-8769e8a26967")
   questionId: QuestionId,
-  @(ApiModelProperty @field)(dataType = "string", example = "CANDIDATE")
-  personalityRole: PersonalityRole
+  @(ApiModelProperty @field)(dataType = "string", example = "0c3cbbf4-42c1-4801-b08a-d0e60d136041")
+  personalityRoleId: PersonalityRoleId
 )
 
 object CreateQuestionPersonalityRequest {
@@ -313,8 +335,8 @@ object CreateQuestionPersonalityRequest {
 final case class UpdateQuestionPersonalityRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   userId: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "CANDIDATE")
-  personalityRole: PersonalityRole
+  @(ApiModelProperty @field)(dataType = "string", example = "0c3cbbf4-42c1-4801-b08a-d0e60d136041")
+  personalityRoleId: PersonalityRoleId
 )
 
 object UpdateQuestionPersonalityRequest {
@@ -326,16 +348,17 @@ final case class QuestionPersonalityResponse(
   id: PersonalityId,
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   userId: UserId,
-  @(ApiModelProperty @field)(dataType = "string", example = "CANDIDATE")
-  personalityRole: PersonalityRole
+  @(ApiModelProperty @field)(dataType = "string", example = "0c3cbbf4-42c1-4801-b08a-d0e60d136041")
+  personalityRoleId: PersonalityRoleId
 )
 
 object QuestionPersonalityResponse {
-  def apply(personality: Personality): QuestionPersonalityResponse = QuestionPersonalityResponse(
-    id = personality.personalityId,
-    userId = personality.userId,
-    personalityRole = personality.personalityRole
-  )
+  def apply(personality: Personality, personalityRole: PersonalityRole): QuestionPersonalityResponse =
+    QuestionPersonalityResponse(
+      id = personality.personalityId,
+      userId = personality.userId,
+      personalityRoleId = personalityRole.personalityRoleId
+    )
 
   implicit val decoder: Decoder[QuestionPersonalityResponse] = deriveDecoder[QuestionPersonalityResponse]
   implicit val encoder: Encoder[QuestionPersonalityResponse] = deriveEncoder[QuestionPersonalityResponse]

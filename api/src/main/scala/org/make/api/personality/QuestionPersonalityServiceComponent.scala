@@ -23,13 +23,7 @@ import org.make.api.idea.TopIdeaServiceComponent
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
 import org.make.api.operation.OperationOfQuestionServiceComponent
 import org.make.api.proposal.ProposalSearchEngineComponent
-import org.make.api.question.{
-  AvatarsAndProposalsCount,
-  QuestionServiceComponent,
-  QuestionTopIdeaWithAvatarResponse,
-  SimpleQuestionResponse,
-  SimpleQuestionWordingResponse
-}
+import org.make.api.question._
 import org.make.api.technical.{IdGeneratorComponent, MakeRandom, ShortenedNames}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaComment}
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
@@ -38,7 +32,7 @@ import org.make.core.operation.{
   OperationOfQuestionSearchQuery,
   QuestionIdsSearchFilter
 }
-import org.make.core.personality.{Personality, PersonalityId, PersonalityRole}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.user.UserId
 
@@ -57,10 +51,10 @@ trait QuestionPersonalityService extends ShortenedNames {
            order: Option[String],
            userId: Option[UserId],
            questionId: Option[QuestionId],
-           personalityRole: Option[PersonalityRole]): Future[Seq[Personality]]
+           personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]]
   def count(userId: Option[UserId],
             questionId: Option[QuestionId],
-            personalityRole: Option[PersonalityRole]): Future[Int]
+            personalityRoleId: Option[PersonalityRoleId]): Future[Int]
   def createPersonality(request: CreateQuestionPersonalityRequest): Future[Personality]
   def updatePersonality(personalityId: PersonalityId,
                         request: UpdateQuestionPersonalityRequest): Future[Option[Personality]]
@@ -91,7 +85,7 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
         personalityId = idGenerator.nextPersonalityId(),
         userId = request.userId,
         questionId = request.questionId,
-        personalityRole = request.personalityRole
+        personalityRoleId = request.personalityRoleId
       )
       persistentQuestionPersonalityService.persist(personality)
     }
@@ -101,7 +95,7 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
       persistentQuestionPersonalityService.getById(personalityId).flatMap {
         case Some(personality) =>
           persistentQuestionPersonalityService
-            .modify(personality.copy(userId = request.userId, personalityRole = request.personalityRole))
+            .modify(personality.copy(userId = request.userId, personalityRoleId = request.personalityRoleId))
             .map(Some.apply)
         case None => Future.successful(None)
       }
@@ -113,14 +107,14 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
                       order: Option[String],
                       userId: Option[UserId],
                       questionId: Option[QuestionId],
-                      personalityRole: Option[PersonalityRole]): Future[Seq[Personality]] = {
-      persistentQuestionPersonalityService.find(start, end, sort, order, userId, questionId, personalityRole)
+                      personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]] = {
+      persistentQuestionPersonalityService.find(start, end, sort, order, userId, questionId, personalityRoleId)
     }
 
     override def count(userId: Option[UserId],
                        questionId: Option[QuestionId],
-                       personalityRole: Option[PersonalityRole]): Future[Int] = {
-      persistentQuestionPersonalityService.count(userId, questionId, personalityRole)
+                       personalityRoleId: Option[PersonalityRoleId]): Future[Int] = {
+      persistentQuestionPersonalityService.count(userId, questionId, personalityRoleId)
     }
 
     override def deletePersonality(personalityId: PersonalityId): Future[Unit] = {

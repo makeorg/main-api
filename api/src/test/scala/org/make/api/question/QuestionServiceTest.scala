@@ -15,7 +15,7 @@ import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
-import org.make.core.personality.{Candidate, Personality, PersonalityId}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
@@ -58,13 +58,13 @@ class QuestionServiceTest
       personalityId = PersonalityId("personality-1"),
       userId = UserId("user-1"),
       questionId = QuestionId("question-id"),
-      personalityRole = Candidate
+      personalityRoleId = PersonalityRoleId("candidate")
     ),
     Personality(
       personalityId = PersonalityId("personality-2"),
       userId = UserId("user-2"),
       questionId = QuestionId("question-id"),
-      personalityRole = Candidate
+      personalityRoleId = PersonalityRoleId("candidate")
     )
   )
 
@@ -81,7 +81,7 @@ class QuestionServiceTest
           order = None,
           userId = None,
           questionId = Some(QuestionId("question-id")),
-          personalityRole = None
+          personalityRoleId = None
         )
       ).thenReturn(Future.successful(personalities))
       when(userService.getPersonality(UserId("user-1"))).thenReturn(Future.successful(Some(user1)))
@@ -92,7 +92,7 @@ class QuestionServiceTest
           start = 0,
           end = None,
           questionId = QuestionId("question-id"),
-          personalityRole = None
+          personalityRoleId = None
         ),
         Timeout(3.seconds)
       ) { questionPersonalities =>
@@ -316,20 +316,20 @@ class QuestionServiceTest
       when(
         persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("top-idea-id-no-proposal"), QuestionId("question-id"))
       ).thenReturn(
-          Future.successful(
-            Some(
-              TopIdea(
-                TopIdeaId("top-idea-id-no-proposal"),
-                IdeaId("idea-id"),
-                QuestionId("question-id"),
-                name = "name",
-                label = "label",
-                TopIdeaScores(0, 0, 0),
-                42
-              )
+        Future.successful(
+          Some(
+            TopIdea(
+              TopIdeaId("top-idea-id-no-proposal"),
+              IdeaId("idea-id"),
+              QuestionId("question-id"),
+              name = "name",
+              label = "label",
+              TopIdeaScores(0, 0, 0),
+              42
             )
           )
         )
+      )
 
       when(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-id")), 1337))
         .thenReturn(Future.successful(Map.empty))

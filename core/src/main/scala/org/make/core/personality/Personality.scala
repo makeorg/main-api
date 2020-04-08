@@ -19,6 +19,7 @@
 
 package org.make.core.personality
 
+import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
 import org.make.core.question.QuestionId
@@ -28,7 +29,7 @@ import spray.json.{JsString, JsValue, JsonFormat}
 case class Personality(personalityId: PersonalityId,
                        userId: UserId,
                        questionId: QuestionId,
-                       personalityRole: PersonalityRole)
+                       personalityRoleId: PersonalityRoleId)
 
 case class PersonalityId(value: String) extends StringValue
 
@@ -50,33 +51,86 @@ object PersonalityId {
   }
 }
 
-sealed trait PersonalityRole { def shortName: String }
+case class PersonalityRole(personalityRoleId: PersonalityRoleId, name: String)
 
-object PersonalityRole {
-  val roleMap: Map[String, PersonalityRole] =
-    Map(Candidate.shortName -> Candidate)
+case class PersonalityRoleField(personalityRoleFieldId: PersonalityRoleFieldId,
+                                personalityRoleId: PersonalityRoleId,
+                                name: String,
+                                fieldType: FieldType,
+                                required: Boolean)
 
-  implicit lazy val personalityRoleEncoder: Encoder[PersonalityRole] = (role: PersonalityRole) =>
-    Json.fromString(role.shortName)
+case class PersonalityRoleFieldId(value: String) extends StringValue
 
-  implicit lazy val personalityRoleDecoder: Decoder[PersonalityRole] =
-    Decoder.decodeString.emap { value: String =>
-      roleMap.get(value) match {
-        case Some(kind) => Right(kind)
-        case None       => Left(s"$value is not a operation kind")
+object PersonalityRoleFieldId {
+  implicit lazy val personalityRoleFieldIdEncoder: Encoder[PersonalityRoleFieldId] =
+    (a: PersonalityRoleFieldId) => Json.fromString(a.value)
+  implicit lazy val personalityRoleFieldIdDecoder: Decoder[PersonalityRoleFieldId] =
+    Decoder.decodeString.map(PersonalityRoleFieldId(_))
+
+  implicit val personalityRoleFieldIdFormatter: JsonFormat[PersonalityRoleFieldId] =
+    new JsonFormat[PersonalityRoleFieldId] {
+      override def read(json: JsValue): PersonalityRoleFieldId = json match {
+        case JsString(s) => PersonalityRoleFieldId(s)
+        case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+      }
+
+      override def write(obj: PersonalityRoleFieldId): JsValue = {
+        JsString(obj.value)
       }
     }
+}
 
-  implicit val personalityRoleFormatted: JsonFormat[PersonalityRole] = new JsonFormat[PersonalityRole] {
-    override def read(json: JsValue): PersonalityRole = json match {
-      case JsString(s) => PersonalityRole.roleMap(s)
+case class PersonalityRoleId(value: String) extends StringValue
+
+object PersonalityRoleId {
+  implicit lazy val personalityRoleIdEncoder: Encoder[PersonalityRoleId] =
+    (a: PersonalityRoleId) => Json.fromString(a.value)
+  implicit lazy val personalityRoleIdDecoder: Decoder[PersonalityRoleId] =
+    Decoder.decodeString.map(PersonalityRoleId(_))
+
+  implicit val personalityRoleIdFormatter: JsonFormat[PersonalityRoleId] = new JsonFormat[PersonalityRoleId] {
+    override def read(json: JsValue): PersonalityRoleId = json match {
+      case JsString(s) => PersonalityRoleId(s)
       case other       => throw new IllegalArgumentException(s"Unable to convert $other")
     }
 
-    override def write(obj: PersonalityRole): JsValue = {
-      JsString(obj.shortName)
+    override def write(obj: PersonalityRoleId): JsValue = {
+      JsString(obj.value)
     }
   }
 }
 
-case object Candidate extends PersonalityRole { override val shortName: String = "CANDIDATE" }
+sealed trait FieldType {
+  val shortName: String
+}
+
+object FieldType extends StrictLogging {
+
+  val defaultFieldType: FieldType = StringType
+
+  implicit lazy val fieldTypeEncoder: Encoder[FieldType] = (fieldType: FieldType) =>
+    Json.fromString(fieldType.shortName)
+  implicit lazy val fieldTypeDecoder: Decoder[FieldType] = Decoder.decodeString.emap(
+    fieldType => FieldType.matchFieldType(fieldType).map(Right.apply).getOrElse(Left(s"$fieldType is not a field type"))
+  )
+
+  val fieldTypes: Map[String, FieldType] =
+    Map(StringType.shortName -> StringType, IntType.shortName -> IntType, BooleanType.shortName -> BooleanType)
+
+  def matchFieldType(fieldType: String): Option[FieldType] = {
+    fieldTypes.get(fieldType)
+  }
+
+  case object StringType extends FieldType {
+    override val shortName: String = "STRING"
+  }
+
+  case object IntType extends FieldType {
+    override val shortName: String = "INT"
+  }
+
+  case object BooleanType extends FieldType {
+    override val shortName: String = "BOOLEAN"
+  }
+
+}

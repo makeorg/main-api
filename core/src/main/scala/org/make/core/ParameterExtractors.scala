@@ -28,8 +28,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.partner.PartnerKind
-import org.make.core.personality.PersonalityRole
-import org.make.core.personality.PersonalityRole.roleMap
+import org.make.core.personality.{FieldType, PersonalityRoleId}
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.question.{QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, LabelId, Language}
@@ -174,17 +173,6 @@ trait ParameterExtractors {
       )
     }
 
-  implicit val personalityRoleFromStringUnmarshaller: Unmarshaller[String, PersonalityRole] = {
-    Unmarshaller.strict[String, PersonalityRole] { value =>
-      roleMap.getOrElse(
-        value,
-        throw ValidationFailedError(
-          Seq(ValidationError("personalityRole", "invalid_value", Some(s"$value is not a valid personality role")))
-        )
-      )
-    }
-  }
-
   implicit val userTypeFromStringUnmarshaller: Unmarshaller[String, UserType] = {
     Unmarshaller.strict[String, UserType] { value =>
       UserType.userTypes.getOrElse(
@@ -206,5 +194,21 @@ trait ParameterExtractors {
       )
     }
   }
+
+  implicit val personalityRoleIdFromStringUnmarshaller: Unmarshaller[String, PersonalityRoleId] =
+    Unmarshaller.strict[String, PersonalityRoleId] { role =>
+      PersonalityRoleId(role)
+    }
+
+  implicit val fieldTypeFromStringUnmarshaller: Unmarshaller[String, FieldType] =
+    Unmarshaller.strict[String, FieldType] { fieldType =>
+      FieldType
+        .matchFieldType(fieldType)
+        .getOrElse(
+          throw ValidationFailedError(
+            Seq(ValidationError("fieldType", "invalid_value", Some(s"$fieldType is not a valid field type")))
+          )
+        )
+    }
 
 }

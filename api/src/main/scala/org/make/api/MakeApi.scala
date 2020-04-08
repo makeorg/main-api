@@ -121,6 +121,7 @@ trait MakeApi
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminPartnerApiComponent
     with DefaultAdminPersonalityApiComponent
+    with DefaultAdminPersonalityRoleApiComponent
     with DefaultAdminProposalApiComponent
     with DefaultAdminQuestionPersonalityApiComponent
     with DefaultAdminTopIdeaApiComponent
@@ -191,6 +192,8 @@ trait MakeApi
     with DefaultPersistentOperationOfQuestionServiceComponent
     with DefaultPersistentOperationServiceComponent
     with DefaultPersistentPartnerServiceComponent
+    with DefaultPersistentPersonalityRoleServiceComponent
+    with DefaultPersistentPersonalityRoleFieldServiceComponent
     with DefaultPersistentQuestionPersonalityServiceComponent
     with DefaultPersistentQuestionServiceComponent
     with DefaultPersistentSequenceConfigurationServiceComponent
@@ -203,6 +206,8 @@ trait MakeApi
     with DefaultPersistentUserToAnonymizeServiceComponent
     with DefaultQuestionPersonalityServiceComponent
     with DefaultPersonalityApiComponent
+    with DefaultPersonalityRoleServiceComponent
+    with DefaultPersonalityRoleFieldServiceComponent
     with DefaultProposalApiComponent
     with DefaultProposalCoordinatorServiceComponent
     with DefaultProposalIndexerServiceComponent
@@ -252,36 +257,36 @@ trait MakeApi
   override lazy val proposalCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
-      .resolveOne()(Timeout(5.seconds)),
-    atMost = 5.seconds
+      .resolveOne()(Timeout(10.seconds)),
+    atMost = 10.seconds
   )
 
   override lazy val userHistoryCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / UserHistoryCoordinator.name)
-      .resolveOne()(Timeout(5.seconds)),
-    atMost = 5.seconds
+      .resolveOne()(Timeout(10.seconds)),
+    atMost = 10.seconds
   )
 
   override lazy val sessionHistoryCoordinator: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / SessionHistoryCoordinator.name)
-      .resolveOne()(Timeout(5.seconds)),
-    atMost = 5.seconds
+      .resolveOne()(Timeout(10.seconds)),
+    atMost = 10.seconds
   )
 
   override lazy val sequenceConfigurationActor: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / SequenceConfigurationActor.name)
-      .resolveOne()(Timeout(5.seconds)),
-    atMost = 5.seconds
+      .resolveOne()(Timeout(10.seconds)),
+    atMost = 10.seconds
   )
 
   override lazy val healthCheckSupervisor: ActorRef = Await.result(
     actorSystem
       .actorSelection(actorSystem / MakeGuardian.name / HealthCheckSupervisor.name)
-      .resolveOne()(Timeout(5.seconds)),
-    atMost = 5.seconds
+      .resolveOne()(Timeout(10.seconds)),
+    atMost = 10.seconds
   )
 
   override lazy val readExecutionContext: EC = actorSystem.extension(DatabaseConfiguration).readThreadPool
@@ -332,6 +337,7 @@ trait MakeApi
       classOf[AdminIdeaMappingApi],
       classOf[AdminPartnerApi],
       classOf[AdminPersonalityApi],
+      classOf[AdminPersonalityRoleApi],
       classOf[AdminQuestionPersonalityApi],
       classOf[AdminProposalApi],
       classOf[AdminTopIdeaApi],
@@ -401,6 +407,7 @@ trait MakeApi
       adminIdeaMappingApi.routes ~
       adminPartnerApi.routes ~
       adminPersonalityApi.routes ~
+      adminPersonalityRoleApi.routes ~
       adminProposalApi.routes ~
       adminQuestionPersonalityApi.routes ~
       adminTopIdeaApi.routes ~

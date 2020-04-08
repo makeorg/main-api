@@ -23,7 +23,7 @@ import org.make.api.DatabaseTest
 import org.make.api.TestUtilsIT
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
-import org.make.core.personality.{Candidate, Personality, PersonalityId}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
@@ -35,14 +35,15 @@ class PersistentQuestionPersonalityServiceIT
     extends DatabaseTest
     with DefaultPersistentQuestionPersonalityServiceComponent
     with DefaultPersistentQuestionServiceComponent
-    with DefaultPersistentUserServiceComponent {
+    with DefaultPersistentUserServiceComponent
+    with DefaultPersistentPersonalityRoleServiceComponent {
 
   override protected val cockroachExposedPort: Int = 40019
 
   val personality: Personality = Personality(
     personalityId = PersonalityId("personality"),
     userId = UserId("user-id"),
-    personalityRole = Candidate,
+    personalityRoleId = PersonalityRoleId("candidate"),
     questionId = QuestionId("question")
   )
 
@@ -60,8 +61,11 @@ class PersistentQuestionPersonalityServiceIT
   feature("get personality by id") {
     scenario("get existing personality") {
       val futurePersonality = for {
-        _           <- persistentQuestionService.persist(question)
-        _           <- persistentUserService.persist(user)
+        _ <- persistentQuestionService.persist(question)
+        _ <- persistentUserService.persist(user)
+        _ <- persistentPersonalityRoleService.persist(
+          PersonalityRole(PersonalityRoleId("candidate"), name = "CANDIDATE_TEST")
+        )
         _           <- persistentQuestionPersonalityService.persist(personality)
         personality <- persistentQuestionPersonalityService.getById(PersonalityId("personality"))
       } yield personality
@@ -97,7 +101,7 @@ class PersistentQuestionPersonalityServiceIT
           order = None,
           userId = None,
           questionId = None,
-          personalityRole = None
+          personalityRoleId = None
         )
       } yield personalities
 
@@ -132,7 +136,7 @@ class PersistentQuestionPersonalityServiceIT
           order = None,
           userId = None,
           questionId = Some(QuestionId("question2")),
-          personalityRole = None
+          personalityRoleId = None
         )
       } yield personalities
 
@@ -169,7 +173,7 @@ class PersistentQuestionPersonalityServiceIT
         count <- persistentQuestionPersonalityService.count(
           userId = None,
           questionId = Some(QuestionId("question-for-count-personality-scenario")),
-          personalityRole = None
+          personalityRoleId = None
         )
       } yield count
 

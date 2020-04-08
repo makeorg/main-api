@@ -29,7 +29,7 @@ import org.make.api.user.{UserResponse, UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
 import org.make.core.idea._
-import org.make.core.personality.{Candidate, Personality, PersonalityId}
+import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
@@ -356,8 +356,18 @@ class PersonalityApiTest
       ).thenReturn(
         Future.successful(
           Seq(
-            Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
-            Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
+            Personality(
+              PersonalityId("one"),
+              UserId("personality-id"),
+              QuestionId("question-id-one"),
+              PersonalityRoleId("candidate")
+            ),
+            Personality(
+              PersonalityId("two"),
+              UserId("personality-id"),
+              QuestionId("question-id-two"),
+              PersonalityRoleId("candidate")
+            )
           )
         )
       )
@@ -369,13 +379,13 @@ class PersonalityApiTest
                 personalityId = PersonalityId("one"),
                 userId = UserId("personality-id"),
                 questionId = QuestionId("question-id-one"),
-                personalityRole = Candidate
+                personalityRoleId = PersonalityRoleId("candidate")
               ),
               Personality(
                 personalityId = PersonalityId("two"),
                 userId = UserId("personality-id"),
                 questionId = QuestionId("question-id-two"),
-                personalityRole = Candidate
+                personalityRoleId = PersonalityRoleId("candidate")
               )
             )
           )
@@ -403,8 +413,18 @@ class PersonalityApiTest
       ).thenReturn(
         Future.successful(
           Seq(
-            Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
-            Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
+            Personality(
+              PersonalityId("one"),
+              UserId("personality-id"),
+              QuestionId("question-id-one"),
+              PersonalityRoleId("candidate")
+            ),
+            Personality(
+              PersonalityId("two"),
+              UserId("personality-id"),
+              QuestionId("question-id-two"),
+              PersonalityRoleId("candidate")
+            )
           )
         )
       )
@@ -413,8 +433,18 @@ class PersonalityApiTest
           .getPersonalitiesOpinionsByQuestions(
             ArgumentMatchers.eq(
               Seq(
-                Personality(PersonalityId("one"), UserId("personality-id"), QuestionId("question-id-one"), Candidate),
-                Personality(PersonalityId("two"), UserId("personality-id"), QuestionId("question-id-two"), Candidate)
+                Personality(
+                  PersonalityId("one"),
+                  UserId("personality-id"),
+                  QuestionId("question-id-one"),
+                  PersonalityRoleId("candidate")
+                ),
+                Personality(
+                  PersonalityId("two"),
+                  UserId("personality-id"),
+                  QuestionId("question-id-two"),
+                  PersonalityRoleId("candidate")
+                )
               )
             )
           )
