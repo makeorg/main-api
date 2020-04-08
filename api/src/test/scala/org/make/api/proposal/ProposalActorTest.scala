@@ -37,7 +37,7 @@ import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
-import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.{DateHelper, RequestContext}
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.GivenWhenThen
 import org.scalatestplus.mockito.MockitoSugar
@@ -166,7 +166,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     scenario("Initialize the state if it was empty") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
 
       And("a newly proposed Proposal")
 
@@ -180,14 +180,16 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsg(proposalId)
+      expectMsg(CreatedProposalId(proposalId))
 
       Then("have the proposal state after proposal")
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
       expectMsg(
-        Some(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
+        ProposalEnveloppe(
+          newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr)
+        )
       )
 
       And("recover its state after having been kill")
@@ -198,14 +200,16 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
       expectMsg(
-        Some(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
+        ProposalEnveloppe(
+          newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr)
+        )
       )
     }
 
     scenario("Initialize the state for a proposal from Italy") {
       Given("an empty state")
       coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
 
       And("a newly proposed Proposal")
       coordinator ! ProposeCommand(
@@ -218,14 +222,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsg(proposalItalyId)
+      expectMsg(CreatedProposalId(proposalItalyId))
 
       Then("have the proposal state after proposal")
 
       coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
 
       expectMsg(
-        Some(
+        ProposalEnveloppe(
           newProposal(
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
@@ -242,7 +246,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
 
       expectMsg(
-        Some(
+        ProposalEnveloppe(
           newProposal(
             proposalId = proposalItalyId,
             content = "This is an italian proposal",
@@ -258,19 +262,19 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     scenario("Fail if ProposalId doesn't exists") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
 
       When("a asking for a fake ProposalId")
       coordinator ! ViewProposalCommand(ProposalId("fake"), RequestContext.empty)
 
       Then("returns None")
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
     }
 
     scenario("Return the state if valid") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
 
       When("a new Proposal is proposed")
       coordinator ! ProposeCommand(
@@ -283,12 +287,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsg(proposalId)
+      expectMsg(CreatedProposalId(proposalId))
 
       Then("returns the state")
       coordinator ! ViewProposalCommand(proposalId, RequestContext.empty)
       expectMsg(
-        Some(newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr))
+        ProposalEnveloppe(
+          newProposal(proposalId = proposalId, content = "This is a proposal", question = questionOnNothingFr)
+        )
       )
     }
   }
@@ -310,7 +316,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
 
     }
 
@@ -327,10 +333,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("to-be-moderated-changing-text")))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -347,7 +350,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the accepted proposal with modified content")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept given proposal"))
+      val response: Proposal = expectMsgType[ModeratedProposal].proposal
 
       response.proposalId should be(ProposalId("to-be-moderated-changing-text"))
       response.events.length should be(2)
@@ -375,10 +378,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("to-be-moderated")))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -395,7 +395,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the accepted proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept given proposal"))
+      val response: Proposal = expectMsgType[ModeratedProposal].proposal
 
       response.proposalId should be(ProposalId("to-be-moderated"))
       response.events.length should be(2)
@@ -423,10 +423,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -443,7 +440,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the accepted proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept given proposal"))
+      val response: Proposal = expectMsgType[ModeratedProposal].proposal
 
       response.proposalId should be(proposalId)
       response.events.length should be(2)
@@ -470,10 +467,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("to-be-moderated-2")))
 
       coordinator ! AcceptProposalCommand(
         proposalId = ProposalId("to-be-moderated-2"),
@@ -487,7 +481,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnNothingFr
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal].proposal
 
       When("I re-validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -503,10 +497,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("status")
-      error.errors.head.message should be(Some("Proposal to-be-moderated-2 is already validated"))
-
+      val error = expectMsgType[InvalidStateError]
+      error.message should be("Proposal to-be-moderated-2 is already validated")
     }
 
     scenario("validate a proposal and set the idea") {
@@ -524,10 +516,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I validate the proposal")
       coordinator ! AcceptProposalCommand(
@@ -541,7 +530,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         idea = Some(idea),
         question = questionOnTheme
       )
-      val validatedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      val validatedProposal: Proposal = expectMsgType[ModeratedProposal].proposal
 
       Then("I should have an idea present")
       validatedProposal.proposalId should be(proposalId)
@@ -550,7 +539,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       When("I search for the proposal")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
-      val searchedProposal: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to search"))
+      val searchedProposal: Proposal = expectMsgType[ProposalEnveloppe].proposal
 
       Then("I should have idea present")
       searchedProposal.proposalId should be(proposalId)
@@ -571,7 +560,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
     }
 
     scenario("refuse an existing proposal with a refuse reason") {
@@ -587,10 +576,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("to-be-moderated")))
 
       When("I refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -603,7 +589,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the refused proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to refuse given proposal"))
+      val response: Proposal = expectMsgType[ModeratedProposal].proposal
 
       response.proposalId should be(ProposalId("to-be-moderated"))
       response.events.length should be(2)
@@ -628,10 +614,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("to-be-moderated")))
 
       When("I refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -644,7 +627,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the refused proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to refuse given proposal"))
+      val response: Proposal = expectMsgType[ModeratedProposal].proposal
 
       response.proposalId should be(ProposalId("to-be-moderated"))
       response.events.length should be(2)
@@ -669,10 +652,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("to-be-moderated-2")))
 
       coordinator ! RefuseProposalCommand(
         proposalId = ProposalId("to-be-moderated-2"),
@@ -682,7 +662,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         refusalReason = Some("my reason")
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       When("I re-refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -694,9 +674,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("status")
-      error.errors.head.message should be(Some("Proposal to-be-moderated-2 is already refused"))
+      val error = expectMsgType[InvalidStateError]
+      error.message should be("Proposal to-be-moderated-2 is already refused")
     }
   }
 
@@ -711,7 +690,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
     }
 
     scenario("postpone a pending proposal") {
@@ -727,10 +706,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("to-be-postponed")))
 
       When("i postpone the proposal")
       coordinator ! PostponeProposalCommand(
@@ -741,7 +717,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the postponed proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to postpone given proposal"))
+      val response: Proposal = expectMsgType[ModeratedProposal].proposal
 
       response.proposalId should be(ProposalId("to-be-postponed"))
       response.events.length should be(2)
@@ -765,10 +741,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("proposal-to-be-refused")))
 
       coordinator ! RefuseProposalCommand(
         proposalId = ProposalId("proposal-to-be-refused"),
@@ -778,7 +751,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         refusalReason = Some("good reason")
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       When("I try to postpone the proposal")
       coordinator ! PostponeProposalCommand(
@@ -788,11 +761,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("status")
-      error.errors.head.message should be(
-        Some("Proposal proposal-to-be-refused is already moderated and cannot be postponed")
-      )
+      val error = expectMsgType[InvalidStateError]
+      error.message should be("Proposal proposal-to-be-refused is already moderated and cannot be postponed")
     }
 
     scenario("postpone a postponed proposal shouldn't do nothing") {
@@ -808,10 +778,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(ProposalId("proposal-to-be-postponed")))
 
       coordinator ! PostponeProposalCommand(
         proposalId = ProposalId("proposal-to-be-postponed"),
@@ -819,7 +786,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       When("I try to re-postpone the proposal")
       coordinator ! PostponeProposalCommand(
@@ -829,9 +796,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive an error")
-      val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("status")
-      error.errors.head.message should be(Some("Proposal proposal-to-be-postponed is already postponed"))
+      val error = expectMsgType[InvalidStateError]
+      error.message should be("Proposal proposal-to-be-postponed is already postponed")
     }
   }
 
@@ -840,7 +806,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     scenario("Fail if ProposalId doesn't exists") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
 
       When("I want to update a non existant proposal")
       coordinator ! UpdateProposalCommand(
@@ -856,7 +822,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive 'None' since nothing is found")
-      expectMsg(None)
+      expectMsg(ProposalNotFound)
     }
 
     scenario("Update a validated Proposal") {
@@ -871,10 +837,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -889,7 +852,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+      expectMsgType[ModeratedProposal]
 
       And("I update this Proposal")
       coordinator ! UpdateProposalCommand(
@@ -906,7 +869,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+      val response: Proposal = expectMsgType[UpdatedProposal].proposal
 
       response.proposalId should be(ProposalId("updateCommand"))
       response.content should be("This content must be changed")
@@ -931,10 +894,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -949,7 +909,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+      expectMsgType[ModeratedProposal]
 
       And("I update this Proposal")
       coordinator ! UpdateProposalCommand(
@@ -966,7 +926,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+      val response: Proposal = expectMsgType[UpdatedProposal].proposal
 
       response.proposalId should be(ProposalId("updateCommand"))
       response.content should be("This content must be changed")
@@ -991,10 +951,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -1009,7 +966,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+      expectMsgType[ModeratedProposal]
 
       And("I update this Proposal")
       coordinator ! UpdateProposalCommand(
@@ -1026,7 +983,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+      val response: Proposal = expectMsgType[UpdatedProposal].proposal
 
       response.proposalId should be(ProposalId("updateCommand"))
       response.content should be("This content must be changed")
@@ -1051,10 +1008,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I update the proposal")
       coordinator ! UpdateProposalCommand(
@@ -1070,9 +1024,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive a ValidationFailedError")
-      val error = expectMsgType[ValidationFailedError]
-      error.errors.head.field should be("proposalId")
-      error.errors.head.message should be(Some("Proposal updateCommand is not accepted and cannot be updated"))
+      val error = expectMsgType[InvalidStateError]
+      error.message should be("Proposal updateCommand is not accepted and cannot be updated")
     }
   }
 
@@ -1092,8 +1045,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("The proposal should not be seen as locked")
-      expectMsg(Right(None))
-
+      expectMsg(ProposalNotFound)
     }
 
     scenario("lock an unlocked proposal") {
@@ -1109,10 +1061,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       And("a moderator Mod")
       val moderatorMod = UserId("mod")
@@ -1126,7 +1075,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive the moderatorId")
-      expectMsg(Right(Some(moderatorMod)))
+      expectMsg(Locked(moderatorMod))
     }
 
     scenario("expand the time a proposal is locked by yourself") {
@@ -1142,10 +1091,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       And("a moderator Mod")
       val moderatorMod = UserId("mod")
@@ -1158,7 +1104,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         moderatorName = Some("Mod"),
         requestContext = RequestContext.empty
       )
-      expectMsg(Right(Some(moderatorMod)))
+      expectMsg(Locked(moderatorMod))
 
       And("I lock the proposal again after 10 milli sec")
       coordinator ! LockProposalCommand(
@@ -1169,7 +1115,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("I should receive the moderatorId")
-      expectMsg(Right(Some(moderatorMod)))
+      expectMsg(Locked(moderatorMod))
     }
 
     scenario("fail to lock a proposal already locked by someone else") {
@@ -1189,10 +1135,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
@@ -1201,7 +1144,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty
       )
 
-      expectMsg(Right(Some(moderatorMod1)))
+      expectMsg(Locked(moderatorMod1))
 
       When("Mod2 tries to lock the proposal")
       coordinator ! LockProposalCommand(
@@ -1212,7 +1155,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("Mod2 fails to lock the proposal")
-      expectMsg(Left(ValidationFailedError(Seq(ValidationError("moderatorName", "already_locked", Some("Mod1"))))))
+      expectMsg(AlreadyLockedBy("Mod1"))
     }
 
     scenario("lock a proposal after lock deadline was reached") {
@@ -1232,10 +1175,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
@@ -1244,7 +1184,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty
       )
 
-      expectMsg(Right(Some(moderatorMod1)))
+      expectMsg(Locked(moderatorMod1))
 
       When("Mod2 waits enough time")
       Thread.sleep(150)
@@ -1257,7 +1197,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
 
       Then("Mod2 succeeds to lock the proposal")
-      expectMsg(Right(Some(moderatorMod2)))
+      expectMsg(Locked(moderatorMod2))
     }
 
     scenario("lock a proposal and try to vote after") {
@@ -1276,10 +1216,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! LockProposalCommand(
         proposalId = proposalId,
@@ -1288,7 +1225,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         requestContext = RequestContext.empty
       )
 
-      expectMsg(Right(Some(moderator)))
+      expectMsg(Locked(moderator))
 
       val voteAgree = Vote(
         key = VoteKey.Agree,
@@ -1313,7 +1250,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsg(Right(Some(voteAgree)))
+      expectMsg(ProposalVote(voteAgree))
 
       val voteDisagree = Vote(
         key = VoteKey.Disagree,
@@ -1343,7 +1280,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsg(Right(Some(voteDisagree)))
+      expectMsg(ProposalVote(voteDisagree))
     }
   }
 
@@ -1360,38 +1297,39 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsg(proposalId)
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsgType[Option[Proposal]]
+      expectMsgType[ProposalEnveloppe]
 
       coordinator ! PatchProposalCommand(
         proposalId,
         UserId("1234"),
-        PatchProposalRequest(creationContext = Some(
-          PatchRequestContext(
-            requestId = Some("my-request-id"),
-            sessionId = Some(SessionId("session-id")),
-            visitorId = Some(VisitorId("visitor-id")),
-            externalId = Some("external-id"),
-            country = Some(Country("BE")),
-            language = Some(Language("nl")),
-            operation = None /*Some("my-operation")*/, // TODO: use Operation
-            source = Some("my-source"),
-            location = Some("my-location"),
-            question = Some("my-question"),
-            hostname = Some("my-hostname"),
-            ipAddress = Some("1.2.3.4"),
-            getParameters = Some(Map("parameter" -> "value")),
-            userAgent = Some("my-user-agent")
+        PatchProposalRequest(
+          creationContext = Some(
+            PatchRequestContext(
+              requestId = Some("my-request-id"),
+              sessionId = Some(SessionId("session-id")),
+              visitorId = Some(VisitorId("visitor-id")),
+              externalId = Some("external-id"),
+              country = Some(Country("BE")),
+              language = Some(Language("nl")),
+              operation = None /*Some("my-operation")*/, // TODO: use Operation
+              source = Some("my-source"),
+              location = Some("my-location"),
+              question = Some("my-question"),
+              hostname = Some("my-hostname"),
+              ipAddress = Some("1.2.3.4"),
+              getParameters = Some(Map("parameter" -> "value")),
+              userAgent = Some("my-user-agent")
+            )
           )
-        )
         ),
         RequestContext.empty
       )
 
-      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+      val proposal: Proposal = expectMsgType[UpdatedProposal].proposal
       proposal.creationContext should be(
         RequestContext(
           currentTheme = None,
@@ -1429,11 +1367,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsg(proposalId)
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsgType[Option[Proposal]]
+      expectMsgType[ProposalEnveloppe]
 
       coordinator ! PatchProposalCommand(
         proposalId,
@@ -1452,7 +1390,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         RequestContext.empty
       )
 
-      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+      val proposal: Proposal = expectMsgType[UpdatedProposal].proposal
 
       proposal.slug should be("some-custom-slug")
       proposal.content should be("some content different from the slug")
@@ -1478,11 +1416,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsg(proposalId)
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      expectMsgType[Option[Proposal]]
+      expectMsgType[ProposalEnveloppe]
 
       coordinator ! PatchProposalCommand(
         proposalId,
@@ -1498,7 +1436,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         RequestContext.empty
       )
 
-      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+      val proposal: Proposal = expectMsgType[UpdatedProposal].proposal
 
       proposal.slug should be("some-custom-slug")
       proposal.content should be("This is a proposal")
@@ -1529,13 +1467,13 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsg(proposalId)
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AnonymizeProposalCommand(proposalId)
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      val proposal: Proposal = expectMsgType[Option[Proposal]].get
+      val proposal: Proposal = expectMsgType[ProposalEnveloppe].proposal
 
       proposal.slug should be("delete-requested")
       proposal.content should be("DELETE_REQUESTED")
@@ -1558,10 +1496,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -1576,7 +1511,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+      expectMsgType[ModeratedProposal].proposal
 
       And("I update the verified votes for the Proposal")
       val votesVerified = Seq(
@@ -1628,7 +1563,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive the updated proposal")
 
-      val response: Proposal = expectMsgType[Option[Proposal]].getOrElse(fail("unable to update given proposal"))
+      val response: Proposal = expectMsgType[UpdatedProposal].proposal
 
       response.proposalId should be(ProposalId("updateCommand"))
       val voteAgree = response.votes.find(vote => vote.key == VoteKey.Agree)
@@ -1646,7 +1581,6 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.votes.filter(vote => vote.key == VoteKey.Disagree).head.countVerified should be(24)
       response.votes.filter(vote => vote.key == VoteKey.Neutral).head.countVerified should be(36)
     }
-
   }
 
   feature("update verified votes on refused proposal") {
@@ -1663,10 +1597,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       When("I accept the proposal")
       coordinator ! RefuseProposalCommand(
@@ -1677,7 +1608,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         refusalReason = None
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to accept"))
+      expectMsgType[ModeratedProposal]
 
       And("I update the verified votes for the Proposal")
       val votesVerified = Seq(
@@ -1720,10 +1651,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
       Then("I should receive an error")
 
-      expectMsgType[Exception]
-
+      expectMsg(InvalidStateError(s"Proposal ${proposalId.value} is not accepted and cannot be updated"))
     }
-
   }
 
   feature("vote on proposal") {
@@ -1739,10 +1668,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1754,11 +1680,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
-      response.isDefined should be(true)
-      response.get.key should be(VoteKey.Agree)
-      response.get.count should be(1)
-      response.get.countVerified should be(1)
+      val response = expectMsgType[ProposalVote].vote
+      response.key should be(VoteKey.Agree)
+      response.count should be(1)
+      response.countVerified should be(1)
     }
 
     scenario("vote on a new proposal with the wrong proposalKey") {
@@ -1772,10 +1697,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1787,11 +1709,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Troll
       )
 
-      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
-      response.isDefined should be(true)
-      response.get.key should be(VoteKey.Agree)
-      response.get.count should be(1)
-      response.get.countVerified should be(0)
+      val response = expectMsgType[ProposalVote].vote
+      response.key should be(VoteKey.Agree)
+      response.count should be(1)
+      response.countVerified should be(0)
     }
   }
 
@@ -1808,10 +1729,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1823,7 +1741,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      expectMsgType[ProposalVote]
 
       coordinator ! UnvoteProposalCommand(
         proposalId,
@@ -1835,11 +1753,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
-      response.isDefined should be(true)
-      response.get.key should be(VoteKey.Agree)
-      response.get.count should be(0)
-      response.get.countVerified should be(0)
+      val response = expectMsgType[ProposalVote].vote
+      response.key should be(VoteKey.Agree)
+      response.count should be(0)
+      response.countVerified should be(0)
     }
 
     scenario("vote on a new proposal with the wrong proposalKey") {
@@ -1853,10 +1770,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1868,7 +1782,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      expectMsgType[ProposalVote]
 
       coordinator ! UnvoteProposalCommand(
         proposalId,
@@ -1880,11 +1794,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Troll
       )
 
-      val response = expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
-      response.isDefined should be(true)
-      response.get.key should be(VoteKey.Agree)
-      response.get.count should be(0)
-      response.get.countVerified should be(0)
+      val response = expectMsgType[ProposalVote].vote
+      response.key should be(VoteKey.Agree)
+      response.count should be(0)
+      response.countVerified should be(0)
     }
   }
 
@@ -1901,10 +1814,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1916,7 +1826,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      expectMsgType[ProposalVote]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -1928,11 +1838,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
-      response.isDefined should be(true)
-      response.get.key should be(QualificationKey.LikeIt)
-      response.get.count should be(1)
-      response.get.countVerified should be(1)
+      val response = expectMsgType[ProposalQualification].qualification
+      response.key should be(QualificationKey.LikeIt)
+      response.count should be(1)
+      response.countVerified should be(1)
     }
 
     scenario("qualify on a new proposal with the wrong proposalKey") {
@@ -1946,10 +1855,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -1961,7 +1867,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Troll
       )
 
-      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      expectMsgType[ProposalVote]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -1973,11 +1879,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Troll
       )
 
-      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
-      response.isDefined should be(true)
-      response.get.key should be(QualificationKey.LikeIt)
-      response.get.count should be(1)
-      response.get.countVerified should be(0)
+      val response = expectMsgType[ProposalQualification].qualification
+      response.key should be(QualificationKey.LikeIt)
+      response.count should be(1)
+      response.countVerified should be(0)
     }
   }
 
@@ -1994,10 +1899,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -2009,7 +1911,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      expectMsgType[ProposalVote]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -2021,7 +1923,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+      expectMsgType[ProposalQualification]
 
       coordinator ! UnqualifyVoteCommand(
         proposalId,
@@ -2033,11 +1935,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
-      response.isDefined should be(true)
-      response.get.key should be(QualificationKey.LikeIt)
-      response.get.count should be(0)
-      response.get.countVerified should be(0)
+      val response = expectMsgType[ProposalQualification].qualification
+      response.key should be(QualificationKey.LikeIt)
+      response.count should be(0)
+      response.countVerified should be(0)
     }
 
     scenario("unqualify on a new proposal with the wrong proposalKey") {
@@ -2051,10 +1952,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! VoteProposalCommand(
         proposalId,
@@ -2066,7 +1964,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsgType[Right[Exception, Option[Vote]]].getOrElse(fail("unable to vote"))
+      expectMsgType[ProposalVote]
 
       coordinator ! QualifyVoteCommand(
         proposalId,
@@ -2078,7 +1976,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Trusted
       )
 
-      expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
+      expectMsgType[ProposalQualification]
 
       coordinator ! UnqualifyVoteCommand(
         proposalId,
@@ -2090,17 +1988,16 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         voteTrust = Troll
       )
 
-      val response = expectMsgType[Right[Exception, Option[Qualification]]].getOrElse(fail("unable to qualify"))
-      response.isDefined should be(true)
-      response.get.key should be(QualificationKey.LikeIt)
-      response.get.count should be(0)
-      response.get.countVerified should be(1)
+      val response = expectMsgType[ProposalQualification].qualification
+      response.key should be(QualificationKey.LikeIt)
+      response.count should be(0)
+      response.countVerified should be(1)
     }
   }
 
   feature("troll detection on votes") {
     scenario("vote and unvote as a troll") {
-      val proposalId = ProposalId("vote and unvote as a troll")
+      val proposalId = ProposalId("vote_and_unvote_as_a_troll")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2112,10 +2009,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2129,13 +2023,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(0)
@@ -2149,9 +2041,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
         Troll
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2159,7 +2049,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("trusted vote and unvote as a troll") {
-      val proposalId = ProposalId("trusted vote and unvote as a troll")
+      val proposalId = ProposalId("trusted_vote_and_unvote_as_a_troll")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2171,10 +2061,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2188,13 +2075,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2208,16 +2093,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
         Troll
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
     }
 
     scenario("vote as a troll and trusted unvote") {
-      val proposalId = ProposalId("vote as a troll and trusted unvote")
+      val proposalId = ProposalId("vote_as_a_troll_and_trusted_unvote")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2229,10 +2112,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2246,13 +2126,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(0)
@@ -2266,16 +2144,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
         Troll
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
     }
 
     scenario("trusted vote and troll revote") {
-      val proposalId = ProposalId("trusted vote and troll revote")
+      val proposalId = ProposalId("trusted_vote_and_troll_revote")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2287,10 +2163,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2304,13 +2177,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2324,18 +2195,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
         Troll
       )
-      val revote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to revote"))
-        .getOrElse(fail("unable to revote"))
+      val revote = expectMsgType[ProposalVote].vote
 
       revote.count should be(1)
       revote.countVerified should be(0)
 
       coordinator ! GetProposal(proposalId, RequestContext.empty)
 
-      val maybeVotedProposal = expectMsgType[Option[Proposal]]
-      maybeVotedProposal should be(defined)
-      val votedProposal = maybeVotedProposal.get
+      val votedProposal = expectMsgType[ProposalEnveloppe].proposal
       val proposalAgree = votedProposal.votes.find(_.key == VoteKey.Agree)
       proposalAgree should be(defined)
       proposalAgree.map(_.count) should be(Some(0))
@@ -2351,7 +2218,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   feature("troll detection on qualifications") {
     scenario("qualify and unqualify as a troll") {
-      val proposalId = ProposalId("qualify and unqualify as a troll")
+      val proposalId = ProposalId("qualify_and_unqualify_as_a_troll")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2363,10 +2230,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2380,13 +2244,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2401,9 +2263,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -2418,16 +2278,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
     }
 
     scenario("trusted qualify and unqualify as a troll") {
-      val proposalId = ProposalId("trusted qualify and unqualify as a troll")
+      val proposalId = ProposalId("trusted_qualify_and_unqualify_as_a_troll")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2439,10 +2297,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2456,13 +2311,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2477,9 +2330,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Trusted
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -2494,16 +2345,14 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
     }
 
     scenario("qualify as a troll and trusted unqualify") {
-      val proposalId = ProposalId("qualify as a troll and trusted unqualify")
+      val proposalId = ProposalId("qualify_as_a_troll_and_trusted_unqualify")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2515,10 +2364,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2532,13 +2378,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2553,9 +2397,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -2570,9 +2412,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Trusted
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -2581,7 +2421,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   feature("votes in sequence") {
     scenario("vote and devote in sequence") {
-      val proposalId = ProposalId("vote and devote in sequence")
+      val proposalId = ProposalId("vote_and_devote_in_sequence")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2593,10 +2433,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2610,13 +2447,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2632,9 +2467,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
         Sequence
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2643,7 +2476,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("vote in sequence, devote out of it") {
-      val proposalId = ProposalId("vote in sequence, devote out of it")
+      val proposalId = ProposalId("vote_in_sequence_then_devote_out_of_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2655,10 +2488,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2672,13 +2502,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2694,9 +2522,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Sequence)),
         Troll
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2705,7 +2531,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("vote out of sequence, devote in it") {
-      val proposalId = ProposalId("vote out of sequence, devote in it")
+      val proposalId = ProposalId("vote_out_of_sequence_then_devote_in_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2717,10 +2543,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2734,13 +2557,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Troll)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(0)
@@ -2756,9 +2577,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Troll)),
         Sequence
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2769,7 +2588,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   feature("votes in segment") {
     scenario("vote and devote in segment") {
-      val proposalId = ProposalId("vote and devote in sequence")
+      val proposalId = ProposalId("vote_and_devote_in_sequence")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2781,10 +2600,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2798,13 +2614,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2820,9 +2634,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
         Segment
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2831,7 +2643,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("vote in segment, devote out of it") {
-      val proposalId = ProposalId("vote in segment, devote out of it")
+      val proposalId = ProposalId("vote_in_segment_then_devote_out_of_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2843,10 +2655,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2860,13 +2669,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2882,9 +2689,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Segment)),
         Troll
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2893,7 +2698,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("vote out of segment, devote in it") {
-      val proposalId = ProposalId("vote out of segment, devote in it")
+      val proposalId = ProposalId("vote_out_of_segment_then_devote_in_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2905,10 +2710,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2922,13 +2724,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Trusted)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -2944,9 +2744,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Some(VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)),
         Segment
       )
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -2957,7 +2755,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   feature("qualifications in sequence") {
     scenario("qualify and unqualify in sequence") {
-      val proposalId = ProposalId("qualify and unqualify in sequence")
+      val proposalId = ProposalId("qualify_and_unqualify_in_sequence")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -2969,10 +2767,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -2986,13 +2781,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3009,9 +2802,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Sequence
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3028,9 +2819,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Sequence
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3039,7 +2828,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("qualify in sequence and unqualify out of it") {
-      val proposalId = ProposalId("qualify in sequence and unqualify out of it")
+      val proposalId = ProposalId("qualify_in_sequence_and_unqualify_out_of_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -3051,10 +2840,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3068,13 +2854,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3091,9 +2875,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Sequence
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3110,9 +2892,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3121,7 +2901,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("qualify in sequence and unvote") {
-      val proposalId = ProposalId("qualify in sequence and unvote")
+      val proposalId = ProposalId("qualify_in_sequence_and_unvote")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -3133,10 +2913,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3150,13 +2927,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3173,9 +2948,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Sequence
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3192,9 +2965,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -3210,7 +2981,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("qualify out of sequence and unqualify in it") {
-      val proposalId = ProposalId("qualify out of sequence and unqualify in it")
+      val proposalId = ProposalId("qualify_out_of_sequence_and_unqualify_in_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -3222,10 +2993,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3239,13 +3007,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Sequence)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3262,9 +3028,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -3281,9 +3045,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Sequence
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3294,7 +3056,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   feature("qualifications in segment") {
     scenario("qualify and unqualify in segment") {
-      val proposalId = ProposalId("qualify and unqualify in segment")
+      val proposalId = ProposalId("qualify_and_unqualify_in_segment")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -3306,10 +3068,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3323,13 +3082,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3346,9 +3103,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Segment
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3365,9 +3120,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Segment
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3376,7 +3129,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("qualify in segment and unqualify out of it") {
-      val proposalId = ProposalId("qualify in segment and unqualify out of it")
+      val proposalId = ProposalId("qualify_in_segment_and_unqualify_out_of_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -3388,10 +3141,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3405,13 +3155,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3428,9 +3176,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Segment
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3447,9 +3193,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)
@@ -3458,7 +3202,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("qualify in segment and unvote") {
-      val proposalId = ProposalId("qualify in segment and unvote")
+      val proposalId = ProposalId("qualify_in_segment_and_unvote")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -3470,10 +3214,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3487,13 +3228,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3510,9 +3249,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Segment
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(1)
@@ -3529,9 +3266,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val unvote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to unvote"))
-        .getOrElse(fail("unable to unvote"))
+      val unvote = expectMsgType[ProposalVote].vote
 
       unvote.count should be(0)
       unvote.countVerified should be(0)
@@ -3547,7 +3282,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
 
     scenario("qualify out of segment and unqualify in it") {
-      val proposalId = ProposalId("qualify out of segment and unqualify in it")
+      val proposalId = ProposalId("qualify_out_of_segment_and_unqualify_in_it")
 
       coordinator ! ProposeCommand(
         proposalId,
@@ -3559,10 +3294,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         initialProposal = false
       )
 
-      expectMsgPF[Unit]() {
-        case None => fail("Proposal was not correctly proposed")
-        case _    => // ok
-      }
+      expectMsg(CreatedProposalId(proposalId))
 
       coordinator ! AcceptProposalCommand(
         proposalId = proposalId,
@@ -3576,13 +3308,11 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         question = questionOnTheme
       )
 
-      expectMsgType[Option[Proposal]].getOrElse(fail("unable to propose"))
+      expectMsgType[ModeratedProposal]
 
       coordinator ! VoteProposalCommand(proposalId, None, RequestContext.empty, VoteKey.Agree, None, None, Segment)
 
-      val vote = expectMsgType[Either[Exception, Option[Vote]]]
-        .getOrElse(fail("unable to vote"))
-        .getOrElse(fail("unable to vote"))
+      val vote = expectMsgType[ProposalVote].vote
 
       vote.count should be(1)
       vote.countVerified should be(1)
@@ -3599,9 +3329,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Troll
       )
 
-      val qualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to qualify"))
-        .getOrElse(fail("unable to qualify"))
+      val qualification = expectMsgType[ProposalQualification].qualification
 
       qualification.count should be(1)
       qualification.countVerified should be(0)
@@ -3618,9 +3346,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
         Segment
       )
 
-      val unqualification = expectMsgType[Either[Exception, Option[Qualification]]]
-        .getOrElse(fail("unable to unqualify"))
-        .getOrElse(fail("unable to unqualify"))
+      val unqualification = expectMsgType[ProposalQualification].qualification
 
       unqualification.count should be(0)
       unqualification.countVerified should be(0)

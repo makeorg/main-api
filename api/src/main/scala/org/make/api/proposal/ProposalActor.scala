@@ -22,7 +22,7 @@ package org.make.api.proposal
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
-import akka.actor.{ActorLogging, PoisonPill}
+import akka.actor.{ActorLogging, ActorRef, PoisonPill}
 import akka.persistence.SnapshotOffer
 import akka.util.Timeout
 import org.make.api.proposal.ProposalActor._
@@ -42,7 +42,6 @@ import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.{Deadline, FiniteDuration}
@@ -64,7 +63,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
   def proposalId: ProposalId = ProposalId(self.path.name)
 
   override def receiveCommand: Receive = {
-    case _: GetProposal                      => sender() ! state
+    case _: GetProposal                      => onGetProposal()
     case command: ViewProposalCommand        => onViewProposalCommand(command)
     case command: ProposeCommand             => onProposeCommand(command)
     case command: UpdateProposalCommand      => onUpdateProposalCommand(command)
@@ -83,8 +82,33 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     case _: KillProposalShard                => self ! PoisonPill
   }
 
+  def getStateOrSendProposalNotFound(senderRef: ActorRef = sender())(work: Proposal => Unit): Unit = {
+    state match {
+      case None           => senderRef ! ProposalNotFound
+      case Some(proposal) => work(proposal)
+    }
+  }
+
+  def getStateOrSendVoteNotFound(voteKey: VoteKey, senderRef: ActorRef = sender())(work: Vote => Unit): Unit = {
+    state.flatMap(_.votes.find(_.key == voteKey)) match {
+      case None       => senderRef ! VoteNotFound
+      case Some(vote) => work(vote)
+    }
+  }
+
+  def getStateOrSendQualificationNotFound(voteKey: VoteKey,
+                                          qualificationKey: QualificationKey,
+                                          senderRef: ActorRef = sender())(work: Qualification => Unit): Unit = {
+    state.flatMap(_.votes.find(_.key == voteKey).flatMap(_.qualifications.find(_.key == qualificationKey))) match {
+      case None                => senderRef ! QualificationNotFound
+      case Some(qualification) => work(qualification)
+    }
+  }
+
+  def onGetProposal(): Unit = getStateOrSendProposalNotFound()(sender() ! ProposalEnveloppe(_))
+
   def onPatchProposalCommand(command: PatchProposalCommand): Unit = {
-    state.foreach { proposal =>
+    getStateOrSendProposalNotFound() { proposal =>
       val changes = command.changes
       val modifiedContext =
         changes.creationContext.map { contextChanges =>
@@ -131,18 +155,51 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           proposal = modifiedProposal,
           eventDate = DateHelper.now()
         )
-      ) { event =>
-        state = applyEvent(event)
-        sender() ! state
+      ) { _ =>
+        getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))
       }
     }
   }
 
   private def onVoteProposalCommand(command: VoteProposalCommand): Unit = {
-    command.vote match {
-      case None =>
-        persistAndPublishEventAsync(
-          ProposalVoted(
+    getStateOrSendProposalNotFound() { _ =>
+      command.vote match {
+        // User hasn't voted on proposal yet
+        case None =>
+          persistAndPublishEventAsync(
+            ProposalVoted(
+              id = proposalId,
+              maybeUserId = command.maybeUserId,
+              eventDate = DateHelper.now(),
+              maybeOrganisationId = command.maybeOrganisationId,
+              requestContext = command.requestContext,
+              voteKey = command.voteKey,
+              voteTrust = command.voteTrust
+            )
+          ) { event =>
+            val originalSender = sender()
+            logVoteEvent(event).onComplete {
+              case Success(_) =>
+                getStateOrSendVoteNotFound(command.voteKey, originalSender)(originalSender ! ProposalVote(_))
+              case Failure(e) => originalSender ! VoteError(e)
+            }
+          }
+        // User has already voted on this proposal with this vote key (e.g.: double click)
+        case Some(vote) if vote.voteKey == command.voteKey =>
+          getStateOrSendVoteNotFound(command.voteKey)(sender() ! ProposalVote(_))
+        // User has already voted with another key. Behaviour: first, unvote previous vote then, revote with new key
+        case Some(vote) =>
+          val unvoteEvent = ProposalUnvoted(
+            id = proposalId,
+            maybeUserId = command.maybeUserId,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext,
+            voteKey = vote.voteKey,
+            maybeOrganisationId = command.maybeOrganisationId,
+            voteTrust = vote.trust,
+            selectedQualifications = vote.qualificationKeys.keys.toSeq
+          )
+          val voteEvent = ProposalVoted(
             id = proposalId,
             maybeUserId = command.maybeUserId,
             eventDate = DateHelper.now(),
@@ -151,45 +208,17 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             voteKey = command.voteKey,
             voteTrust = command.voteTrust
           )
-        ) { event =>
-          val originalSender = sender()
-          logVoteEvent(event).onComplete {
-            case Success(_) =>
-              originalSender ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
-            case Failure(e) => originalSender ! Left(e)
+          persistAndPublishEventsAsync(Seq(unvoteEvent, voteEvent)) {
+            case _: ProposalVoted =>
+              val originalSender = sender()
+              logUnvoteEvent(unvoteEvent).flatMap(_ => logVoteEvent(voteEvent)).onComplete {
+                case Success(_) =>
+                  getStateOrSendVoteNotFound(command.voteKey, originalSender)(originalSender ! ProposalVote(_))
+                case Failure(e) => originalSender ! VoteError(e)
+              }
+            case _ =>
           }
-        }
-      case Some(vote) if vote.voteKey == command.voteKey =>
-        sender() ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
-      case Some(vote) =>
-        val unvoteEvent = ProposalUnvoted(
-          id = proposalId,
-          maybeUserId = command.maybeUserId,
-          eventDate = DateHelper.now(),
-          requestContext = command.requestContext,
-          voteKey = vote.voteKey,
-          maybeOrganisationId = command.maybeOrganisationId,
-          voteTrust = vote.trust,
-          selectedQualifications = vote.qualificationKeys.keys.toSeq
-        )
-        val voteEvent = ProposalVoted(
-          id = proposalId,
-          maybeUserId = command.maybeUserId,
-          eventDate = DateHelper.now(),
-          maybeOrganisationId = command.maybeOrganisationId,
-          requestContext = command.requestContext,
-          voteKey = command.voteKey,
-          voteTrust = command.voteTrust
-        )
-        persistAndPublishEventsAsync(immutable.Seq(unvoteEvent, voteEvent)) {
-          case _: ProposalVoted =>
-            val originalSender = sender()
-            logUnvoteEvent(unvoteEvent).flatMap(_ => logVoteEvent(voteEvent)).onComplete {
-              case Success(_) => originalSender ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
-              case Failure(e) => originalSender ! Left(e)
-            }
-          case _ =>
-        }
+      }
     }
   }
 
@@ -258,44 +287,48 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
   }
 
   private def onUnvoteProposalCommand(command: UnvoteProposalCommand): Unit = {
-    command.vote match {
-      case None => sender() ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
-      case Some(vote) =>
-        persistAndPublishEventAsync(
-          ProposalUnvoted(
-            id = proposalId,
-            maybeUserId = command.maybeUserId,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext,
-            voteKey = vote.voteKey,
-            maybeOrganisationId = command.maybeOrganisationId,
-            selectedQualifications = vote.qualificationKeys.keys.toSeq,
-            voteTrust = vote.trust
-          )
-        ) { event =>
-          val originalSender = sender()
-          logUnvoteEvent(event).flatMap { _ =>
-            Future.traverse(event.selectedQualifications) { qualification =>
-              logRemoveVoteQualificationEvent(
-                ProposalUnqualified(
-                  event.id,
-                  maybeUserId = event.maybeUserId,
-                  eventDate = event.eventDate,
-                  requestContext = event.requestContext,
-                  voteKey = event.voteKey,
-                  qualificationKey = qualification,
-                  voteTrust = vote.qualificationKeys.getOrElse(qualification, event.voteTrust)
+    getStateOrSendProposalNotFound() { _ =>
+      command.vote match {
+        // User hasn't voted on proposal yet
+        case None =>
+          getStateOrSendVoteNotFound(command.voteKey)(sender() ! ProposalVote(_))
+        // User voted on this proposal so we unvote whatever voted key
+        case Some(vote) =>
+          persistAndPublishEventAsync(
+            ProposalUnvoted(
+              id = proposalId,
+              maybeUserId = command.maybeUserId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              voteKey = vote.voteKey,
+              maybeOrganisationId = command.maybeOrganisationId,
+              selectedQualifications = vote.qualificationKeys.keys.toSeq,
+              voteTrust = vote.trust
+            )
+          ) { event =>
+            val originalSender = sender()
+            logUnvoteEvent(event).flatMap { _ =>
+              Future.traverse(event.selectedQualifications) { qualification =>
+                logRemoveVoteQualificationEvent(
+                  ProposalUnqualified(
+                    event.id,
+                    maybeUserId = event.maybeUserId,
+                    eventDate = event.eventDate,
+                    requestContext = event.requestContext,
+                    voteKey = event.voteKey,
+                    qualificationKey = qualification,
+                    voteTrust = vote.qualificationKeys.getOrElse(qualification, event.voteTrust)
+                  )
                 )
-              )
+              }
+            }.onComplete {
+              case Success(_) =>
+                getStateOrSendVoteNotFound(command.voteKey, originalSender)(originalSender ! ProposalVote(_))
+              case Failure(e) => originalSender ! VoteError(e)
             }
-          }.onComplete {
-            case Success(_) => originalSender ! Right(state.flatMap(_.votes.find(_.key == command.voteKey)))
-            case Failure(e) => originalSender ! Left(e)
           }
-
-        }
+      }
     }
-
   }
 
   private def checkQualification(voteKey: VoteKey,
@@ -314,92 +347,97 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
   }
 
   private def onQualificationProposalCommand(command: QualifyVoteCommand): Unit = {
-    command.vote match {
-      case None =>
-        val maybeQualification = state
-          .flatMap(_.votes.find(_.key == command.voteKey))
-          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-
-        log.warning(s"Qualification was not increased: user hasn't voted on proposal. ${command.toString}")
-        sender() ! Right(maybeQualification)
-      case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
-        val maybeQualification = state
-          .flatMap(_.votes.find(_.key == command.voteKey))
-          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        log.warning(s"Qualification was not increased: user has already qualified with this value. ${command.toString}")
-        sender() ! Right(maybeQualification)
-      case Some(vote) if !checkQualification(vote.voteKey, command.voteKey, command.qualificationKey) =>
-        val maybeQualification = state
-          .flatMap(_.votes.find(_.key == command.voteKey))
-          .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        log.warning(s"Qualification was not increased: qualification doesn't belong to vote type. ${command.toString}")
-        sender() ! Right(maybeQualification)
-      case Some(vote) =>
-        val resolvedTrust = if (!vote.trust.isTrusted) { vote.trust } else { command.voteTrust }
-        persistAndPublishEventAsync(
-          ProposalQualified(
-            id = proposalId,
-            maybeUserId = command.maybeUserId,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext,
-            voteKey = command.voteKey,
-            qualificationKey = command.qualificationKey,
-            voteTrust = resolvedTrust
-          )
-        ) { event =>
-          val originalSender = sender()
-          logQualifyVoteEvent(event).onComplete {
-            case Success(_) =>
-              val maybeQualification = state
-                .flatMap(_.votes.find(_.key == command.voteKey))
-                .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-              originalSender ! Right(maybeQualification)
-              if (maybeQualification.exists(_.count == 0)) {
-                log.warning(s"Qualification returned a 0 value for an unknown reason. ${command.toString}")
-              }
-            case Failure(e) => Left(e)
+    getStateOrSendProposalNotFound() { _ =>
+      command.vote match {
+        // User hasn't voted on proposal yet
+        case None =>
+          log.warning(s"Qualification was not increased: user hasn't voted on proposal. ${command.toString}")
+          getStateOrSendQualificationNotFound(command.voteKey, command.qualificationKey) {
+            sender() ! ProposalQualification(_)
           }
-        }
+        // User already qualified this qualification key on this proposal (e.g.: double click)
+        case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
+          log.warning(
+            s"Qualification was not increased: user has already qualified with this value. ${command.toString}"
+          )
+          getStateOrSendQualificationNotFound(command.voteKey, command.qualificationKey) {
+            sender() ! ProposalQualification(_)
+          }
+        // Qualificication doesn't belong to user's vote.
+        case Some(vote) if !checkQualification(vote.voteKey, command.voteKey, command.qualificationKey) =>
+          log.warning(
+            s"Qualification was not increased: qualification doesn't belong to vote type. ${command.toString}"
+          )
+          getStateOrSendQualificationNotFound(command.voteKey, command.qualificationKey) {
+            sender() ! ProposalQualification(_)
+          }
+        // User qualifies correctly
+        case Some(vote) =>
+          val resolvedTrust = if (!vote.trust.isTrusted) { vote.trust } else { command.voteTrust }
+          persistAndPublishEventAsync(
+            ProposalQualified(
+              id = proposalId,
+              maybeUserId = command.maybeUserId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              voteKey = command.voteKey,
+              qualificationKey = command.qualificationKey,
+              voteTrust = resolvedTrust
+            )
+          ) { event =>
+            val originalSender = sender()
+            logQualifyVoteEvent(event).onComplete {
+              case Success(_) =>
+                getStateOrSendQualificationNotFound(command.voteKey, command.qualificationKey, originalSender) {
+                  qualification =>
+                    if (qualification.count == 0) {
+                      log.warning(s"Qualification returned a 0 value for an unknown reason. ${command.toString}")
+                    }
+                    originalSender ! ProposalQualification(qualification)
+                }
+              case Failure(e) => QualificationError(e)
+            }
+          }
+      }
     }
   }
 
   private def onUnqualificationProposalCommand(command: UnqualifyVoteCommand): Unit = {
-    command.vote match {
-      case None =>
-        sender() ! Right(
-          state
-            .flatMap(_.votes.find(_.key == command.voteKey))
-            .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        )
-      case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
-        persistAndPublishEventAsync(
-          ProposalUnqualified(
-            id = proposalId,
-            maybeUserId = command.maybeUserId,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext,
-            voteKey = command.voteKey,
-            qualificationKey = command.qualificationKey,
-            voteTrust = vote.qualificationKeys.getOrElse(command.qualificationKey, command.voteTrust)
-          )
-        ) { event =>
-          val originalSender = sender()
-          logRemoveVoteQualificationEvent(event).onComplete {
-            case Success(_) =>
-              originalSender ! Right(
-                state
-                  .flatMap(_.votes.find(_.key == command.voteKey))
-                  .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-              )
-            case Failure(e) => originalSender ! Left(e)
+    getStateOrSendProposalNotFound() { _ =>
+      command.vote match {
+        // User hasn't voted on proposal yet
+        case None =>
+          getStateOrSendQualificationNotFound(command.voteKey, command.qualificationKey) {
+            sender() ! ProposalQualification(_)
           }
-        }
-      case _ =>
-        sender() ! Right(
-          state
-            .flatMap(_.votes.find(_.key == command.voteKey))
-            .flatMap(_.qualifications.find(_.key == command.qualificationKey))
-        )
+        // User has voted and qualified this proposal
+        case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
+          persistAndPublishEventAsync(
+            ProposalUnqualified(
+              id = proposalId,
+              maybeUserId = command.maybeUserId,
+              eventDate = DateHelper.now(),
+              requestContext = command.requestContext,
+              voteKey = command.voteKey,
+              qualificationKey = command.qualificationKey,
+              voteTrust = vote.qualificationKeys.getOrElse(command.qualificationKey, command.voteTrust)
+            )
+          ) { event =>
+            val originalSender = sender()
+            logRemoveVoteQualificationEvent(event).onComplete {
+              case Success(_) =>
+                getStateOrSendQualificationNotFound(command.voteKey, command.qualificationKey, originalSender) {
+                  originalSender ! ProposalQualification(_)
+                }
+              case Failure(e) => originalSender ! QualificationError(e)
+            }
+          }
+        // User has voted on this proposal but hasn't qualified with the unqualify key
+        case _ =>
+          getStateOrSendQualificationNotFound(command.voteKey, command.qualificationKey) {
+            sender() ! ProposalQualification(_)
+          }
+      }
     }
 
   }
@@ -408,7 +446,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     persistAndPublishEvent(
       ProposalViewed(id = proposalId, eventDate = DateHelper.now(), requestContext = command.requestContext)
     ) { _ =>
-      sender() ! state
+      getStateOrSendProposalNotFound()(sender() ! ProposalEnveloppe(_))
     }
   }
 
@@ -437,171 +475,164 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         initialProposal = command.initialProposal
       )
     ) { _ =>
-      sender() ! proposalId
+      sender() ! CreatedProposalId(proposalId)
     }
 
   }
 
   private def onUpdateProposalCommand(command: UpdateProposalCommand): Unit = {
-    val maybeEvent = validateUpdateCommand(command)
-    maybeEvent match {
-      case Right(Some(event)) =>
+    getStateOrSendProposalNotFound() {
+      case proposal if proposal.status != ProposalStatus.Accepted =>
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
+      case proposal =>
+        val event =
+          ProposalUpdated(
+            id = proposalId,
+            eventDate = DateHelper.now(),
+            requestContext = command.requestContext,
+            updatedAt = command.updatedAt,
+            moderator = Some(command.moderator),
+            edition = command.newContent.map { newContent =>
+              ProposalEdition(proposal.content, newContent)
+            },
+            labels = command.labels,
+            tags = command.tags,
+            similarProposals = Seq.empty,
+            idea = command.idea,
+            operation = command.question.operationId.orElse(proposal.operation),
+            question = Some(command.question.questionId)
+          )
         persistAndPublishEvent(event) { _ =>
-          sender() ! state
+          getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))
         }
-      case Right(None) => sender() ! None
-      case Left(error) => sender() ! error
     }
   }
 
   private def onUpdateProposalVotesCommand(command: UpdateProposalVotesCommand): Unit = {
-    val maybeEvent = validateUpdateVotesCommand(command)
-    maybeEvent match {
-      case Right(Some(event)) =>
+    getStateOrSendProposalNotFound() {
+      case proposal if proposal.status != ProposalStatus.Accepted =>
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
+      case proposal =>
+        val event = ProposalVotesUpdated(
+          id = proposalId,
+          eventDate = DateHelper.now(),
+          requestContext = command.requestContext,
+          updatedAt = command.updatedAt,
+          moderator = Some(command.moderator),
+          newVotes = mergeVotes(proposal.votes, command.votes)
+        )
         persistAndPublishEvent(event) { _ =>
-          sender() ! state
+          getStateOrSendProposalNotFound()(sender() ! UpdatedProposal(_))
         }
-      case Right(None) => sender() ! None
-      case Left(error) => sender() ! error
     }
   }
 
   private def onAcceptProposalCommand(command: AcceptProposalCommand): Unit = {
-    val maybeEvent = validateAcceptCommand(command)
-    maybeEvent match {
-      case Right(Some(event)) =>
+    getStateOrSendProposalNotFound() {
+      case proposal if proposal.status == ProposalStatus.Archived =>
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is archived and cannot be validated")
+      case proposal if proposal.status == ProposalStatus.Accepted =>
+        // possible double request, ignore.
+        // other modifications should use the proposal update method
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is already validated")
+      case proposal =>
+        val event = ProposalAccepted(
+          id = command.proposalId,
+          eventDate = DateHelper.now(),
+          requestContext = command.requestContext,
+          moderator = command.moderator,
+          edition = command.newContent.map { newContent =>
+            ProposalEdition(proposal.content, newContent)
+          },
+          sendValidationEmail = command.sendNotificationEmail,
+          theme = None,
+          labels = command.labels,
+          tags = command.tags,
+          similarProposals = Seq.empty,
+          idea = command.idea,
+          operation = command.question.operationId.orElse(proposal.operation),
+          question = Some(command.question.questionId)
+        )
         persistAndPublishEvent(event) { _ =>
-          sender() ! state
+          getStateOrSendProposalNotFound()(sender() ! ModeratedProposal(_))
         }
-      case Right(None) => sender() ! None
-      case Left(error) => sender() ! error
     }
   }
 
   private def onRefuseProposalCommand(command: RefuseProposalCommand): Unit = {
-    val maybeEvent = validateRefuseCommand(command)
-    maybeEvent match {
-      case Right(Some(event)) =>
+    getStateOrSendProposalNotFound() {
+      case proposal if proposal.status == ProposalStatus.Archived =>
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is archived and cannot be refused")
+      case proposal if proposal.status == ProposalStatus.Refused =>
+        // possible double request, ignore.
+        // other modifications should use the proposal update command
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is already refused")
+      case proposal =>
+        val event = ProposalRefused(
+          id = command.proposalId,
+          eventDate = DateHelper.now(),
+          requestContext = command.requestContext,
+          moderator = command.moderator,
+          sendRefuseEmail = command.sendNotificationEmail,
+          refusalReason = command.refusalReason,
+          operation = proposal.operation
+        )
         persistAndPublishEvent(event) { _ =>
-          sender() ! state
+          getStateOrSendProposalNotFound()(sender() ! ModeratedProposal(_))
         }
-      case Right(None) => sender() ! None
-      case Left(error) => sender() ! error
     }
   }
 
   private def onPostponeProposalCommand(command: PostponeProposalCommand): Unit = {
-    val maybeEvent = validatePostponeCommand(command)
-    maybeEvent match {
-      case Right(Some(event)) =>
+    getStateOrSendProposalNotFound() {
+      case proposal if proposal.status == ProposalStatus.Archived =>
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is archived and cannot be postponed")
+      case proposal if proposal.status == ProposalStatus.Accepted || proposal.status == ProposalStatus.Refused =>
+        sender() ! InvalidStateError(
+          s"Proposal ${command.proposalId.value} is already moderated and cannot be postponed"
+        )
+      case proposal if proposal.status == ProposalStatus.Postponed =>
+        sender() ! InvalidStateError(s"Proposal ${command.proposalId.value} is already postponed")
+      case _ =>
+        val event =
+          ProposalPostponed(
+            id = command.proposalId,
+            requestContext = command.requestContext,
+            moderator = command.moderator,
+            eventDate = DateHelper.now()
+          )
         persistAndPublishEvent(event) { _ =>
-          sender() ! state
+          getStateOrSendProposalNotFound()(sender() ! ModeratedProposal(_))
         }
-      case Right(None) => sender() ! None
-      case Left(error) => sender() ! error
     }
   }
 
   private def onLockProposalCommand(command: LockProposalCommand): Unit = {
-    (state, lock) match {
-      case (None, _) => sender() ! Right(None)
-      case (_, Some(ProposalLock(moderatorId, moderatorName, deadline)))
-          if moderatorId != command.moderatorId && deadline.hasTimeLeft =>
-        sender() ! Left(
-          ValidationFailedError(errors = Seq(ValidationError("moderatorName", "already_locked", Some(moderatorName))))
-        )
-      case (_, maybeLock) if maybeLock.forall(_.deadline.isOverdue()) =>
-        persistAndPublishEvent(
-          ProposalLocked(
-            id = proposalId,
-            moderatorId = command.moderatorId,
-            moderatorName = command.moderatorName,
-            eventDate = DateHelper.now(),
-            requestContext = command.requestContext
-          )
-        ) { event =>
-          lock = Some(ProposalLock(event.moderatorId, event.moderatorName.getOrElse("<unknown>"), lockDuration.fromNow))
-          sender() ! Right(Some(event.moderatorId))
-        }
-      case _ =>
-        lock = Some(
-          ProposalLock(command.moderatorId, command.moderatorName.getOrElse("<unknown>"), lockDuration.fromNow)
-        )
-        sender() ! Right(Some(command.moderatorId))
-    }
-  }
+    getStateOrSendProposalNotFound() { _ =>
+      lock match {
+        case Some(ProposalLock(moderatorId, moderatorName, deadline))
+            if moderatorId != command.moderatorId && deadline.hasTimeLeft =>
+          sender() ! AlreadyLockedBy(moderatorName)
 
-  private def validateUpdateCommand(
-    command: UpdateProposalCommand
-  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state match {
-      case Some(proposal) if proposal.status != ProposalStatus.Accepted =>
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "proposalId",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
-              )
-            )
-          )
-        )
-      case Some(proposal) =>
-        Right(
-          Some(
-            ProposalUpdated(
+        case maybeLock if maybeLock.forall(_.deadline.isOverdue()) =>
+          persistAndPublishEvent(
+            ProposalLocked(
               id = proposalId,
+              moderatorId = command.moderatorId,
+              moderatorName = command.moderatorName,
               eventDate = DateHelper.now(),
-              requestContext = command.requestContext,
-              updatedAt = command.updatedAt,
-              moderator = Some(command.moderator),
-              edition = command.newContent.map { newContent =>
-                ProposalEdition(proposal.content, newContent)
-              },
-              labels = command.labels,
-              tags = command.tags,
-              similarProposals = Seq.empty,
-              idea = command.idea,
-              operation = command.question.operationId.orElse(proposal.operation),
-              question = Some(command.question.questionId)
+              requestContext = command.requestContext
             )
-          )
-        )
-      case None => Right(None)
-    }
-  }
-
-  private def validateUpdateVotesCommand(
-    command: UpdateProposalVotesCommand
-  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state match {
-      case Some(proposal) if proposal.status != ProposalStatus.Accepted =>
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "proposalId",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is not accepted and cannot be updated")
-              )
-            )
-          )
-        )
-      case Some(proposal) =>
-        Right(
-          Some(
-            ProposalVotesUpdated(
-              id = proposalId,
-              eventDate = DateHelper.now(),
-              requestContext = command.requestContext,
-              updatedAt = command.updatedAt,
-              moderator = Some(command.moderator),
-              newVotes = mergeVotes(proposal.votes, command.votes)
-            )
-          )
-        )
-      case None => Right(None)
+          ) { event =>
+            lock =
+              Some(ProposalLock(event.moderatorId, event.moderatorName.getOrElse("<unknown>"), lockDuration.fromNow))
+            sender() ! Locked(event.moderatorId)
+          }
+        case _ =>
+          lock =
+            Some(ProposalLock(command.moderatorId, command.moderatorName.getOrElse("<unknown>"), lockDuration.fromNow))
+          sender() ! Locked(command.moderatorId)
+      }
     }
   }
 
@@ -639,165 +670,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             qualifications = mergeQualifications(vote.qualifications, updatedVote.qualifications)
           )
       }
-    }
-  }
-
-  private def validateAcceptCommand(
-    command: AcceptProposalCommand
-  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state match {
-      case Some(proposal) if proposal.status == ProposalStatus.Archived =>
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "status",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is archived and cannot be validated")
-              )
-            )
-          )
-        )
-      case Some(proposal) if proposal.status == ProposalStatus.Accepted =>
-        // possible double request, ignore.
-        // other modifications should use the proposal update method
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "status",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is already validated")
-              )
-            )
-          )
-        )
-      case Some(proposal) =>
-        Right(
-          Some(
-            ProposalAccepted(
-              id = command.proposalId,
-              eventDate = DateHelper.now(),
-              requestContext = command.requestContext,
-              moderator = command.moderator,
-              edition = command.newContent.map { newContent =>
-                ProposalEdition(proposal.content, newContent)
-              },
-              sendValidationEmail = command.sendNotificationEmail,
-              theme = None,
-              labels = command.labels,
-              tags = command.tags,
-              similarProposals = Seq.empty,
-              idea = command.idea,
-              operation = command.question.operationId.orElse(proposal.operation),
-              question = Some(command.question.questionId)
-            )
-          )
-        )
-      case None => Right(None)
-    }
-  }
-
-  private def validateRefuseCommand(
-    command: RefuseProposalCommand
-  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state match {
-      case Some(proposal) if proposal.status == ProposalStatus.Archived =>
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "status",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is archived and cannot be refused")
-              )
-            )
-          )
-        )
-      case Some(proposal) if proposal.status == ProposalStatus.Refused =>
-        // possible double request, ignore.
-        // other modifications should use the proposal update command
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "status",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is already refused")
-              )
-            )
-          )
-        )
-      case Some(proposal) =>
-        Right(
-          Some(
-            ProposalRefused(
-              id = command.proposalId,
-              eventDate = DateHelper.now(),
-              requestContext = command.requestContext,
-              moderator = command.moderator,
-              sendRefuseEmail = command.sendNotificationEmail,
-              refusalReason = command.refusalReason,
-              operation = proposal.operation
-            )
-          )
-        )
-      case None => Right(None)
-    }
-  }
-
-  private def validatePostponeCommand(
-    command: PostponeProposalCommand
-  ): Either[ValidationFailedError, Option[ProposalEvent]] = {
-    state match {
-      case Some(proposal) if proposal.status == ProposalStatus.Archived =>
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "status",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is archived and cannot be postponed")
-              )
-            )
-          )
-        )
-      case Some(proposal) if proposal.status == ProposalStatus.Accepted || proposal.status == ProposalStatus.Refused =>
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "status",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is already moderated and cannot be postponed")
-              )
-            )
-          )
-        )
-      case Some(proposal) if proposal.status == ProposalStatus.Postponed =>
-        Left(
-          ValidationFailedError(
-            errors = Seq(
-              ValidationError(
-                "status",
-                "invalid_state",
-                Some(s"Proposal ${command.proposalId.value} is already postponed")
-              )
-            )
-          )
-        )
-      case Some(_) =>
-        Right(
-          Some(
-            ProposalPostponed(
-              id = command.proposalId,
-              requestContext = command.requestContext,
-              moderator = command.moderator,
-              eventDate = DateHelper.now()
-            )
-          )
-        )
-      case None => Right(None)
     }
   }
 
