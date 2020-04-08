@@ -51,7 +51,7 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.userhistory.UserHistoryEvent
 import org.make.core.user.User
 import org.make.core.question.Question
-import org.make.api.proposal.ProposalServiceComponent
+import org.make.api.proposal.{ProposalCoordinatorComponent, ProposalServiceComponent, SnapshotProposal}
 import org.make.api.userhistory.LogUserVoteEvent
 import org.make.api.userhistory.LogUserUnvoteEvent
 import org.make.api.userhistory.LogUserQualificationEvent
@@ -62,6 +62,7 @@ import org.make.core.profile.Profile
 import org.make.core.RequestContext
 import org.make.core.user.UserId
 import org.make.api.userhistory.LogRegisterCitizenEvent
+import org.make.core.proposal.ProposalId
 import org.make.core.session.SessionId
 
 @Api(value = "Migrations")
@@ -100,7 +101,22 @@ trait MigrationApi extends Directives {
   @Path(value = "/upload-all-avatars")
   def uploadAllAvatars: Route
 
-  def routes: Route = setProperSignUpOperation ~ uploadAllAvatars
+  @ApiOperation(
+    value = "snapshot-all-proposals",
+    httpMethod = "POST",
+    code = HttpCodes.OK,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @Path(value = "/snapshot-all-proposals")
+  def snapshotAllProposals: Route
+
+  def routes: Route = setProperSignUpOperation ~ uploadAllAvatars ~ snapshotAllProposals
 }
 
 trait MigrationApiComponent {
@@ -121,7 +137,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with QuestionServiceComponent
     with EventBusServiceComponent
     with StorageConfigurationComponent
-    with ProposalServiceComponent =>
+    with ProposalServiceComponent
+    with ProposalCoordinatorComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
 
@@ -143,10 +160,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       } yield new QuestionResolver(questions, operations)
     }
 
-    private def retrieveEventQuestion(
-      resolver: QuestionResolver,
-      event: UserHistoryEvent[_]
-    ): Future[Option[Question]] = {
+    private def retrieveEventQuestion(resolver: QuestionResolver,
+                                      event: UserHistoryEvent[_]): Future[Option[Question]] = {
       resolver.extractQuestionWithOperationFromRequestContext(event.requestContext) match {
         case Some(question) => Future.successful(Some(question))
         case None =>
@@ -167,36 +182,33 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
     }
 
-    private def resolveQuestionFromEvents(
-      questionResolver: QuestionResolver,
-      events: Seq[UserHistoryEvent[_]]
-    ): Future[Option[Question]] = {
-        val maybeRegistration: Option[LogRegisterCitizenEvent] = events
-          .collectFirst {
-            case e: LogRegisterCitizenEvent => e
-          }
+    private def resolveQuestionFromEvents(questionResolver: QuestionResolver,
+                                          events: Seq[UserHistoryEvent[_]]): Future[Option[Question]] = {
+      val maybeRegistration: Option[LogRegisterCitizenEvent] = events.collectFirst {
+        case e: LogRegisterCitizenEvent => e
+      }
 
-        maybeRegistration match {
-          case None =>
-            val maybeSession: Option[SessionId] = events
-              .sortBy(_.action.date.toString())
-              .headOption
-              .map(_.requestContext.sessionId)
+      maybeRegistration match {
+        case None =>
+          val maybeSession: Option[SessionId] = events
+            .sortBy(_.action.date.toString())
+            .headOption
+            .map(_.requestContext.sessionId)
 
-            val registerSessionEvents = events
-              .filter(event => maybeSession.contains(event.requestContext.sessionId))
-              .sortBy(_.action.date)
+          val registerSessionEvents = events
+            .filter(event => maybeSession.contains(event.requestContext.sessionId))
+            .sortBy(_.action.date)
 
-            Source(registerSessionEvents)
-              .mapAsync(1)(retrieveEventQuestion(questionResolver, _))
-              .collect {
-                case Some(question) => question
-              }
-              .runWith(Sink.headOption[Question])
+          Source(registerSessionEvents)
+            .mapAsync(1)(retrieveEventQuestion(questionResolver, _))
+            .collect {
+              case Some(question) => question
+            }
+            .runWith(Sink.headOption[Question])
 
-          case Some(_) =>
-            Future.successful(None)
-        }
+        case Some(_) =>
+          Future.successful(None)
+      }
     }
 
     private def listEvents(userId: UserId): Future[Seq[UserHistoryEvent[_]]] = {
@@ -301,14 +313,31 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
       }
     }
+
+    override def snapshotAllProposals: Route = post {
+      path("migrations" / "snapshot-all-proposals") {
+        makeOperation("SnapshotAllProposals") { requestContext =>
+          makeOAuth2 { userAuth =>
+            requireAdminRole(userAuth.user) {
+              proposalJournal.currentPersistenceIds().runForeach { proposalIdValue =>
+                proposalCoordinator ! SnapshotProposal(ProposalId(proposalIdValue), requestContext)
+              }
+              complete(StatusCodes.NoContent)
+            }
+          }
+        }
+
+      }
+    }
   }
 
 }
 
-final case class DeleteContactsRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean
-) {
+final case class DeleteContactsRequest(@(ApiModelProperty @field)(
+                                         dataType = "string",
+                                         example = "2019-07-11T11:21:40.508Z"
+                                       ) maxUpdatedAtBeforeDelete: ZonedDateTime,
+                                       @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean) {
   Validation.validate(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",

@@ -79,6 +79,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     case command: PatchProposalCommand       => onPatchProposalCommand(command)
     case command: AnonymizeProposalCommand   => onAnonymizeProposalCommand(command)
     case Snapshot                            => saveSnapshot()
+    case _: SnapshotProposal                 => saveSnapshot()
     case _: KillProposalShard                => self ! PoisonPill
   }
 
