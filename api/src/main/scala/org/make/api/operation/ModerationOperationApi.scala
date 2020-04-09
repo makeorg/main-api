@@ -244,12 +244,12 @@ trait DefaultModerationOperationApiComponent
           makeOperation("ModerationGetOperations") { _ =>
             parameters(
               (
-                Symbol("_start").as[Int].?,
-                Symbol("_end").as[Int].?,
-                Symbol("_sort").?,
-                Symbol("_order").?,
-                Symbol("slug").?,
-                Symbol("operationKind").as[immutable.Seq[OperationKind]].?
+                "_start".as[Int].?,
+                "_end".as[Int].?,
+                "_sort".?,
+                "_order".?,
+                "slug".?,
+                "operationKind".as[immutable.Seq[OperationKind]].?
               )
             ) {
               (start: Option[Int],

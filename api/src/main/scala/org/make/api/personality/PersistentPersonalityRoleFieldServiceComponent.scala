@@ -67,7 +67,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
 
     override def persist(personalityRoleField: PersonalityRoleField): Future[PersonalityRoleField] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentPersonalityRoleField)
@@ -84,7 +84,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
 
     override def modify(personalityRoleField: PersonalityRoleField): Future[PersonalityRoleField] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentPersonalityRoleField)
             .set(
@@ -100,7 +100,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
     override def getById(personalityRoleFieldId: PersonalityRoleFieldId,
                          personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRoleField]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentPersonalityRoleField.as(personalityRoleFieldAlias))
@@ -122,7 +122,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
                       maybeFieldType: Option[FieldType],
                       maybeRequired: Option[Boolean]): Future[Seq[PersonalityRoleField]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
             .from(PersistentPersonalityRoleField.as(personalityRoleFieldAlias))
@@ -155,7 +155,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
               maybeFieldType: Option[FieldType],
               maybeRequired: Option[Boolean]): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentPersonalityRoleField.as(personalityRoleFieldAlias))
@@ -175,7 +175,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
 
     override def delete(personalityRoleFieldId: PersonalityRoleFieldId): Future[Unit] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentPersonalityRoleField)
             .where(sqls.eq(column.id, personalityRoleFieldId.value))

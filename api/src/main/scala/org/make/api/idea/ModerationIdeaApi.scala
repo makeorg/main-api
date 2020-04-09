@@ -176,14 +176,7 @@ trait DefaultModerationIdeaApiComponent
       get {
         path("moderation" / "ideas") {
           parameters(
-            (
-              Symbol("name").?,
-              Symbol("questionId").as[QuestionId].?,
-              Symbol("_end").as[Int].?,
-              Symbol("_start").as[Int].?,
-              Symbol("_sort").?,
-              Symbol("_order").?
-            )
+            ("name".?, "questionId".as[QuestionId].?, "_end".as[Int].?, "_start".as[Int].?, "_sort".?, "_order".?)
           ) { (name, questionId, limit, skip, sort, order) =>
             makeOperation("GetAllIdeas") { requestContext =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>

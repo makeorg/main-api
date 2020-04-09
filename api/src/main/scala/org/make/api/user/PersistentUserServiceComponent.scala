@@ -397,7 +397,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def getFollowedUsers(userId: UserId): Future[Seq[String]] = {
       implicit val cxt: EC = readExecutionContext
-      val futureUserFollowed = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futureUserFollowed = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(FollowedUsers.as(followedUsersAlias))
@@ -412,7 +412,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def get(uuid: UserId): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -425,7 +425,7 @@ trait DefaultPersistentUserServiceComponent
 
     def findAllByUserIds(ids: Seq[UserId]): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUsers = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -438,7 +438,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findByEmailAndPassword(email: String, password: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -453,7 +453,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -468,7 +468,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findByUserIdAndUserType(userId: UserId, userType: UserType): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -481,7 +481,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findByEmail(email: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -496,7 +496,7 @@ trait DefaultPersistentUserServiceComponent
                                                  password: String,
                                                  validityReconnectToken: Int): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -520,7 +520,7 @@ trait DefaultPersistentUserServiceComponent
                                 maybeRole: Option[Role],
                                 maybeUserType: Option[UserType]): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
             .from(PersistentUser.as(userAlias))
@@ -562,13 +562,12 @@ trait DefaultPersistentUserServiceComponent
 
     override def findAllOrganisations(): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
-            select
-              .from(PersistentUser.as(userAlias))
-              .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
-          }.map(PersistentUser.apply()).list.apply
+      val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentUser.as(userAlias))
+            .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
+        }.map(PersistentUser.apply()).list.apply
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
@@ -581,41 +580,40 @@ trait DefaultPersistentUserServiceComponent
                                    order: Option[String],
                                    organisationName: Option[String]): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
-            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
-              select
-                .from(PersistentUser.as(userAlias))
-                .where(
-                  sqls
-                    .eq(userAlias.userType, UserType.UserTypeOrganisation.shortName)
-                    .and(
-                      organisationName.map(
-                        organisationName =>
-                          sqls.like(
-                            sqls.lower(userAlias.organisationName),
-                            s"%${organisationName.replace("%", "\\%").toLowerCase}%"
-                        )
+      val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            select
+              .from(PersistentUser.as(userAlias))
+              .where(
+                sqls
+                  .eq(userAlias.userType, UserType.UserTypeOrganisation.shortName)
+                  .and(
+                    organisationName.map(
+                      organisationName =>
+                        sqls.like(
+                          sqls.lower(userAlias.organisationName),
+                          s"%${organisationName.replace("%", "\\%").toLowerCase}%"
                       )
                     )
-                )
+                  )
+              )
 
-            val queryOrdered = (sort, order) match {
-              case (Some(field), Some("DESC")) if PersistentUser.columnNames.contains(field) =>
-                query.orderBy(userAlias.field(field)).desc.offset(start)
-              case (Some(field), _) if PersistentUser.columnNames.contains(field) =>
-                query.orderBy(userAlias.field(field)).asc.offset(start)
-              case (Some(field), _) =>
-                logger.warn(s"Unsupported filter '$field'")
-                query.orderBy(userAlias.email).asc.offset(start)
-              case (_, _) => query.orderBy(userAlias.organisationName).asc.offset(start)
-            }
-            end match {
-              case Some(limit) => queryOrdered.limit(limit)
-              case None        => queryOrdered.limit(defaultLimit)
-            }
-          }.map(PersistentUser.apply()).list.apply
+          val queryOrdered = (sort, order) match {
+            case (Some(field), Some("DESC")) if PersistentUser.columnNames.contains(field) =>
+              query.orderBy(userAlias.field(field)).desc.offset(start)
+            case (Some(field), _) if PersistentUser.columnNames.contains(field) =>
+              query.orderBy(userAlias.field(field)).asc.offset(start)
+            case (Some(field), _) =>
+              logger.warn(s"Unsupported filter '$field'")
+              query.orderBy(userAlias.email).asc.offset(start)
+            case (_, _) => query.orderBy(userAlias.organisationName).asc.offset(start)
+          }
+          end match {
+            case Some(limit) => queryOrdered.limit(limit)
+            case None        => queryOrdered.limit(defaultLimit)
+          }
+        }.map(PersistentUser.apply()).list.apply
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
@@ -623,7 +621,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -637,7 +635,7 @@ trait DefaultPersistentUserServiceComponent
     override def findUserByUserIdAndVerificationToken(userId: UserId,
                                                       verificationToken: String): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUser = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -650,7 +648,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findUserIdByEmail(email: String): Future[Option[UserId]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUserId = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUserId = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(userAlias.result.uuid)
             .from(PersistentUser.as(userAlias))
@@ -666,7 +664,7 @@ trait DefaultPersistentUserServiceComponent
                                         offset: Int,
                                         limit: Int): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUsers = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -689,7 +687,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findUsersWithoutRegisterQuestion: Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUsers = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -702,7 +700,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def emailExists(email: String): Future[Boolean] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(count(userAlias.email))
             .from(PersistentUser.as(userAlias))
@@ -713,7 +711,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def verificationTokenExists(verificationToken: String): Future[Boolean] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(count(userAlias.verificationToken))
             .from(PersistentUser.as(userAlias))
@@ -724,7 +722,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def resetTokenExists(resetToken: String): Future[Boolean] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(count(userAlias.resetToken))
             .from(PersistentUser.as(userAlias))
@@ -735,7 +733,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def persist(user: User): Future[User] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentUser)
@@ -794,7 +792,7 @@ trait DefaultPersistentUserServiceComponent
     override def modifyOrganisation(organisation: User): Future[Either[UpdateFailed, User]] = {
       implicit val ctx: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(
@@ -824,7 +822,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateUser(user: User): Future[User] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(
@@ -889,7 +887,7 @@ trait DefaultPersistentUserServiceComponent
                                       resetToken: String,
                                       resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.resetToken -> resetToken, column.resetTokenExpiresAt -> resetTokenExpiresAt)
@@ -906,7 +904,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updatePassword(userId: UserId, resetToken: Option[String], hashedPassword: String): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           val query = update(PersistentUser)
             .set(column.hashedPassword -> hashedPassword, column.resetToken -> None, column.resetTokenExpiresAt -> None)
@@ -932,7 +930,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def validateEmail(verificationToken: String): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(
@@ -950,7 +948,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.optInNewsletter -> optInNewsletter)
@@ -964,7 +962,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateIsHardBounce(userId: UserId, isHardBounce: Boolean): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.isHardBounce -> isHardBounce)
@@ -978,7 +976,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(
@@ -995,7 +993,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.optInNewsletter -> optInNewsletter)
@@ -1009,7 +1007,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.isHardBounce -> isHardBounce)
@@ -1023,7 +1021,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(
@@ -1040,7 +1038,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def updateSocialUser(user: User): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(
@@ -1070,7 +1068,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit] = {
       implicit val cxt: EC = readExecutionContext
-      val futureUserFollowed = Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      val futureUserFollowed = Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(FollowedUsers.as(followedUsersAlias))
@@ -1087,7 +1085,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def followUser(followedUserId: UserId, userId: UserId): Future[Unit] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(FollowedUsers)
@@ -1102,7 +1100,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(FollowedUsers)
@@ -1117,7 +1115,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def countOrganisations(organisationName: Option[String]): Future[Int] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentUser.as(userAlias))
@@ -1144,7 +1142,7 @@ trait DefaultPersistentUserServiceComponent
                                  maybeRole: Option[Role],
                                  maybeUserType: Option[UserType]): Future[Int] = {
       implicit val ctx: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentUser.as(userAlias))
@@ -1163,7 +1161,7 @@ trait DefaultPersistentUserServiceComponent
 
     override def findAllByEmail(emails: Seq[String]): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentUsers = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentUsers = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
@@ -1178,7 +1176,7 @@ trait DefaultPersistentUserServiceComponent
                                       reconnectToken: String,
                                       reconnectTokenCreatedAt: ZonedDateTime): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentUser)
             .set(column.reconnectToken -> reconnectToken, column.reconnectTokenCreatedAt -> reconnectTokenCreatedAt)

@@ -81,8 +81,8 @@ class DatabaseConfiguration(override protected val configuration: Config)
 
   ExecutorInstrumentation.instrument(writeExecutor, "db-write-executor")
 
-  ConnectionPool.add(Symbol("READ"), new DataSourceConnectionPool(dataSource = readDatasource))
-  ConnectionPool.add(Symbol("WRITE"), new DataSourceConnectionPool(dataSource = writeDatasource))
+  ConnectionPool.add("READ", new DataSourceConnectionPool(dataSource = readDatasource))
+  ConnectionPool.add("WRITE", new DataSourceConnectionPool(dataSource = writeDatasource))
 
   GlobalSettings.loggingSQLErrors = true
   GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(

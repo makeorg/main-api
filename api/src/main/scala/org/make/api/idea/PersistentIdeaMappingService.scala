@@ -60,7 +60,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
   class DefaultPersistentIdeaMappingService extends PersistentIdeaMappingService with StrictLogging {
     override def persist(mapping: IdeaMapping): Future[IdeaMapping] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentIdeaMapping)
@@ -84,7 +84,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
                       solutionTypeTagId: Option[TagIdOrNone],
                       ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
             select
@@ -125,7 +125,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
 
     override def get(id: IdeaMappingId): Future[Option[IdeaMapping]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentIdeaMapping] {
           select
             .from(PersistentIdeaMapping.as(PersistentIdeaMapping.alias))
@@ -136,7 +136,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
 
     override def updateMapping(mapping: IdeaMapping): Future[Option[IdeaMapping]] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentIdeaMapping)
             .set(
@@ -156,7 +156,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
                        solutionTypeTagId: Option[TagIdOrNone],
                        ideaId: Option[IdeaId]): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentIdeaMapping] {
           select(sqls.count)
             .from(PersistentIdeaMapping.as(PersistentIdeaMapping.alias))

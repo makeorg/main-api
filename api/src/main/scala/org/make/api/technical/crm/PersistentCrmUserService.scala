@@ -52,7 +52,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
 
     override def persist(users: Seq[PersistentCrmUser]): Future[Seq[PersistentCrmUser]] = {
       implicit val cxt: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         users.foreach {
           user =>
             withSQL {
@@ -97,7 +97,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
                       offset: Int,
                       numberPerPage: Int): Future[Seq[PersistentCrmUser]] = {
       implicit val cxt: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select.all
             .from(PersistentCrmUser.as(PersistentCrmUser.alias))
@@ -118,7 +118,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
 
     override def truncateCrmUsers(): Future[Unit] = {
       implicit val cxt: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         SQL(s"truncate table ${PersistentCrmUser.tableName}").execute.apply()
       })
     }

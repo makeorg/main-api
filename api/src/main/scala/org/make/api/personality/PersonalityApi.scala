@@ -274,7 +274,7 @@ trait DefaultPersonalityApiComponent
     override def getPersonalityOpinions: Route = get {
       path("personalities" / userId / "opinions") { userId =>
         makeOperation("GetPersonalityOpinions") { _ =>
-          parameters(Symbol("questionId").as[QuestionId].?) { maybeQuestionId: Option[QuestionId] =>
+          parameters("questionId".as[QuestionId].?) { maybeQuestionId: Option[QuestionId] =>
             provideAsyncOrNotFound(userService.getPersonality(userId)) { _ =>
               provideAsync(
                 questionPersonalityService

@@ -81,7 +81,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                         operationKind: Option[Seq[OperationKind]],
                         openAt: Option[ZonedDateTime]): Future[scala.Seq[OperationOfQuestion]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentOperationOfQuestion] {
           val query: scalikejdbc.PagingSQLBuilder[PersistentOperationOfQuestion] = select
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
@@ -131,7 +131,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
     override def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           val now = DateHelper.now()
           insert
@@ -181,7 +181,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
     override def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           val now = DateHelper.now()
           update(PersistentOperationOfQuestion)
@@ -227,7 +227,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
     override def getById(id: QuestionId): Future[Option[OperationOfQuestion]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentOperationOfQuestion] {
           select
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
@@ -238,7 +238,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
     override def find(operationId: Option[OperationId]): Future[Seq[OperationOfQuestion]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentOperationOfQuestion] {
           select
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
@@ -254,7 +254,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
     override def delete(questionId: QuestionId): Future[Unit] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentOperationOfQuestion)
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, questionId.value))
@@ -266,7 +266,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                        operationIds: Option[Seq[OperationId]],
                        openAt: Option[ZonedDateTime]): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentOperationOfQuestion] {
           select(sqls.count)
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))

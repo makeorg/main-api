@@ -332,14 +332,14 @@ trait DefaultModerationQuestionComponent
         makeOperation("ModerationSearchQuestion") { _ =>
           parameters(
             (
-              Symbol("slug").?,
-              Symbol("operationId").as[OperationId].?,
-              Symbol("country").as[Country].?,
-              Symbol("language").as[Language].?,
-              Symbol("_start").as[Int].?,
-              Symbol("_end").as[Int].?,
-              Symbol("_sort").?,
-              Symbol("_order").?
+              "slug".?,
+              "operationId".as[OperationId].?,
+              "country".as[Country].?,
+              "language".as[Language].?,
+              "_start".as[Int].?,
+              "_end".as[Int].?,
+              "_sort".?,
+              "_order".?
             )
           ) { (maybeSlug, operationId, country, language, start, end, sort, order) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>

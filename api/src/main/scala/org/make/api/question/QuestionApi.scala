@@ -353,18 +353,18 @@ trait DefaultQuestionApiComponent
         makeOperation("GetQuestionDetails") { _ =>
           parameters(
             (
-              Symbol("questionIds").as[immutable.Seq[QuestionId]].?,
-              Symbol("questionContent").?,
-              Symbol("description").?,
-              Symbol("startDate").as[ZonedDateTime].?,
-              Symbol("endDate").as[ZonedDateTime].?,
-              Symbol("operationKinds").as[immutable.Seq[OperationKind]].?,
-              Symbol("language").as[Language].?,
-              Symbol("country").as[Country].?,
-              Symbol("limit").as[Int].?,
-              Symbol("skip").as[Int].?,
-              Symbol("sort").?,
-              Symbol("order").?
+              "questionIds".as[immutable.Seq[QuestionId]].?,
+              "questionContent".?,
+              "description".?,
+              "startDate".as[ZonedDateTime].?,
+              "endDate".as[ZonedDateTime].?,
+              "operationKinds".as[immutable.Seq[OperationKind]].?,
+              "language".as[Language].?,
+              "country".as[Country].?,
+              "limit".as[Int].?,
+              "skip".as[Int].?,
+              "sort".?,
+              "order".?
             )
           ) {
             (questionIds: Option[Seq[QuestionId]],
@@ -443,7 +443,7 @@ trait DefaultQuestionApiComponent
     override def getPopularTags: Route = get {
       path("questions" / questionId / "popular-tags") { questionId =>
         makeOperation("GetQuestionPopularTags") { _ =>
-          parameters((Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)) { (limit: Option[Int], skip: Option[Int]) =>
+          parameters(("limit".as[Int].?, "skip".as[Int].?)) { (limit: Option[Int], skip: Option[Int]) =>
             provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
               val offset = skip.getOrElse(0)
               val size = limit.map(_ + offset).getOrElse(Int.MaxValue)
@@ -461,7 +461,7 @@ trait DefaultQuestionApiComponent
     override def getTopProposals: Route = get {
       path("questions" / questionId / "top-proposals") { questionId =>
         makeOperation("GetTopProposals") { requestContext =>
-          parameters((Symbol("limit").as[Int].?, Symbol("mode").as[TopProposalsMode].?)) {
+          parameters(("limit".as[Int].?, "mode".as[TopProposalsMode].?)) {
             (limit: Option[Int], mode: Option[TopProposalsMode]) =>
               optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
                 provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
@@ -487,12 +487,7 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "partners") { questionId =>
         makeOperation("GetQuestionPartners") { _ =>
           parameters(
-            (
-              Symbol("sortAlgorithm").as[String].?,
-              Symbol("partnerKind").as[PartnerKind].?,
-              Symbol("limit").as[Int].?,
-              Symbol("skip").as[Int].?
-            )
+            ("sortAlgorithm".as[String].?, "partnerKind".as[PartnerKind].?, "limit".as[Int].?, "skip".as[Int].?)
           ) {
             (sortAlgorithm: Option[String], partnerKind: Option[PartnerKind], limit: Option[Int], skip: Option[Int]) =>
               provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
@@ -535,7 +530,7 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "personalities") { questionId =>
           makeOperation("GetQuestionPersonalities") { _ =>
-            parameters((Symbol("personalityRole").as[String].?, Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)) {
+            parameters(("personalityRole".as[String].?, "limit".as[Int].?, "skip".as[Int].?)) {
               (personalityRole: Option[String], limit: Option[Int], skip: Option[Int]) =>
                 provideAsync(
                   personalityRoleService
@@ -578,7 +573,7 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "top-ideas") { questionId =>
           makeOperation("GetQuestionTopIdeas") { _ =>
-            parameters((Symbol("limit").as[Int].?, Symbol("skip").as[Int].?, Symbol("seed").as[Int].?)) {
+            parameters(("limit".as[Int].?, "skip".as[Int].?, "seed".as[Int].?)) {
               (limit: Option[Int], skip: Option[Int], seed: Option[Int]) =>
                 provideAsync(
                   questionService
@@ -596,7 +591,7 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "top-ideas" / topIdeaId) { (questionId, topIdeaId) =>
           makeOperation("GetQuestionTopIdea") { _ =>
-            parameters(Symbol("seed").as[Int].?) { (seed: Option[Int]) =>
+            parameters("seed".as[Int].?) { (seed: Option[Int]) =>
               provideAsyncOrNotFound(questionService.getTopIdea(topIdeaId, questionId, seed)) { topIdeaResult =>
                 provideAsync(
                   topIdeaCommentService

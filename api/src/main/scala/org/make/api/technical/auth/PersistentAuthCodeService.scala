@@ -55,7 +55,7 @@ trait DefaultPersistentAuthCodeServiceComponent extends PersistentAuthCodeServic
 
     override def persist(authCode: AuthCode): Future[AuthCode] = {
       implicit val cxt: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentAuthCode)
@@ -74,7 +74,7 @@ trait DefaultPersistentAuthCodeServiceComponent extends PersistentAuthCodeServic
 
     override def findByCode(code: String): Future[Option[AuthCode]] = {
       implicit val cxt: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentAuthCode.as(alias))
@@ -85,7 +85,7 @@ trait DefaultPersistentAuthCodeServiceComponent extends PersistentAuthCodeServic
 
     override def deleteByCode(code: String): Future[Unit] = {
       implicit val cxt: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentAuthCode.as(alias))

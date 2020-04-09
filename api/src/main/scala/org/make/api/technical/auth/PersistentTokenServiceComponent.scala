@@ -131,7 +131,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
     override def findByRefreshToken(token: String): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB(Symbol("READ")).retryableTx {
+      val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           val userAlias = PersistentUser.userAlias
           val clientAlias = PersistentClient.clientAlias
@@ -160,7 +160,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
     override def get(accessToken: String): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB(Symbol("READ")).retryableTx {
+      val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           val userAlias = PersistentUser.userAlias
           val clientAlias = PersistentClient.clientAlias
@@ -180,7 +180,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
     override def findByUserId(userId: UserId): Future[Option[Token]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentToken = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentToken = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentToken.as(tokenAlias))
@@ -200,7 +200,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
     override def persist(token: Token): Future[Token] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentToken)
@@ -220,7 +220,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
     override def deleteByAccessToken(accessToken: String): Future[Int] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentToken.as(tokenAlias))
@@ -232,7 +232,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
     override def deleteByUserId(userId: UserId): Future[Int] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentToken.as(tokenAlias))

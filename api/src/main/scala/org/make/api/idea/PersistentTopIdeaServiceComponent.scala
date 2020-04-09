@@ -62,7 +62,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
     override def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTopIdea = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentTopIdea = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTopIdea.as(topIdeaAlias))
@@ -75,7 +75,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
     override def getByIdAndQuestionId(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[TopIdea]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTopIdea = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentTopIdea = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTopIdea.as(topIdeaAlias))
@@ -95,7 +95,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
                         name: Option[String]): Future[Seq[TopIdea]] = {
       implicit val context: EC = readExecutionContext
 
-      val futurePersistentTopIdeas = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentTopIdeas = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.PagingSQLBuilder[PersistentTopIdea] = select
             .from(PersistentTopIdea.as(topIdeaAlias))
@@ -129,7 +129,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
     override def persist(topIdea: TopIdea): Future[TopIdea] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentTopIdea)
@@ -150,7 +150,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
     override def modify(topIdea: TopIdea): Future[TopIdea] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentTopIdea)
             .set(
@@ -173,7 +173,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
     override def remove(topIdeaId: TopIdeaId): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentTopIdea.as(topIdeaAlias))
@@ -185,7 +185,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
     override def count(ideaId: Option[IdeaId], questionId: Option[QuestionId], name: Option[String]): Future[Int] = {
       implicit val context: EC = readExecutionContext
 
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentTopIdea.as(topIdeaAlias))

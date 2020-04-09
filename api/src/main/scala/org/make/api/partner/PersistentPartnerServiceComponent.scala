@@ -65,7 +65,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
     override def persist(partner: Partner): Future[Partner] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentPartner)
@@ -85,7 +85,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
     override def modify(partner: Partner): Future[Partner] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentPartner)
             .set(
@@ -104,7 +104,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
     override def getById(partnerId: PartnerId): Future[Option[Partner]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentPartner.as(partnerAlias))
@@ -121,7 +121,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
                       organisationId: Option[UserId],
                       partnerKind: Option[PartnerKind]): Future[Seq[Partner]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
             .from(PersistentPartner.as(partnerAlias))
@@ -154,7 +154,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
                        organisationId: Option[UserId],
                        partnerKind: Option[PartnerKind]): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentPartner.as(partnerAlias))
@@ -171,7 +171,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
     override def delete(partnerId: PartnerId): Future[Unit] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentPartner)
             .where(sqls.eq(PersistentPartner.column.id, partnerId.value))

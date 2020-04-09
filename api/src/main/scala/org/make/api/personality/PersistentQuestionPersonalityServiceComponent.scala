@@ -66,7 +66,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
     override def persist(personality: Personality): Future[Personality] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentPersonality)
@@ -82,7 +82,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
     override def modify(personality: Personality): Future[Personality] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentPersonality)
             .set(
@@ -97,7 +97,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
     override def getById(personalityId: PersonalityId): Future[Option[Personality]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentPersonality.as(personalityAlias))
@@ -114,7 +114,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
                       questionId: Option[QuestionId],
                       personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
             .from(PersistentPersonality.as(personalityAlias))
@@ -147,7 +147,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
               questionId: Option[QuestionId],
               personalityRoleId: Option[PersonalityRoleId]): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentPersonality.as(personalityAlias))
@@ -164,7 +164,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
     override def delete(personalityId: PersonalityId): Future[Unit] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentPersonality)
             .where(sqls.eq(PersistentPersonality.column.id, personalityId.value))

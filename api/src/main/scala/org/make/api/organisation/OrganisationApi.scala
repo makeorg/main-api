@@ -217,11 +217,11 @@ trait DefaultOrganisationApiComponent
           makeOperation("GetOrganisations") { _ =>
             parameters(
               (
-                Symbol("organisationIds").as[immutable.Seq[UserId]].?,
-                Symbol("organisationName").as[String].?,
-                Symbol("slug").as[String].?,
-                Symbol("country").as[Country].?,
-                Symbol("language").as[Language].?
+                "organisationIds".as[immutable.Seq[UserId]].?,
+                "organisationName".as[String].?,
+                "slug".as[String].?,
+                "country".as[Country].?,
+                "language".as[Language].?
               )
             ) {
               (organisationIds: Option[Seq[UserId]],
@@ -243,40 +243,39 @@ trait DefaultOrganisationApiComponent
         path("organisations" / organisationId / "proposals") { organisationId =>
           makeOperation("GetOrganisationProposals") { requestContext =>
             optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
-              parameters(
-                (Symbol("sort").?, Symbol("order").as[SortOrder].?, Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)
-              ) { (sort: Option[String], order: Option[SortOrder], limit: Option[Int], skip: Option[Int]) =>
-                provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
-                  val defaultSort = Some("createdAt")
-                  val defaultOrder = Some(Desc)
-                  provideAsync(
-                    proposalService.searchForUser(
-                      optionalUserAuth.map(_.user.userId),
-                      SearchQuery(
-                        filters = Some(
-                          SearchFilters(
-                            user = Some(UserSearchFilter(organisationId)),
-                            operationKinds = Some(
-                              OperationKindsSearchFilter(
-                                Seq(
-                                  OperationKind.GreatCause,
-                                  OperationKind.PublicConsultation,
-                                  OperationKind.BusinessConsultation
+              parameters(("sort".?, "order".as[SortOrder].?, "limit".as[Int].?, "skip".as[Int].?)) {
+                (sort: Option[String], order: Option[SortOrder], limit: Option[Int], skip: Option[Int]) =>
+                  provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
+                    val defaultSort = Some("createdAt")
+                    val defaultOrder = Some(Desc)
+                    provideAsync(
+                      proposalService.searchForUser(
+                        optionalUserAuth.map(_.user.userId),
+                        SearchQuery(
+                          filters = Some(
+                            SearchFilters(
+                              user = Some(UserSearchFilter(organisationId)),
+                              operationKinds = Some(
+                                OperationKindsSearchFilter(
+                                  Seq(
+                                    OperationKind.GreatCause,
+                                    OperationKind.PublicConsultation,
+                                    OperationKind.BusinessConsultation
+                                  )
                                 )
                               )
                             )
-                          )
+                          ),
+                          sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                          limit = limit,
+                          skip = skip
                         ),
-                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
-                        limit = limit,
-                        skip = skip
-                      ),
-                      requestContext
-                    )
-                  ) { listProposals =>
-                    complete(listProposals)
+                        requestContext
+                      )
+                    ) { listProposals =>
+                      complete(listProposals)
+                    }
                   }
-                }
               }
             }
           }
@@ -291,12 +290,12 @@ trait DefaultOrganisationApiComponent
               provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
                 parameters(
                   (
-                    Symbol("votes").as[immutable.Seq[VoteKey]].?,
-                    Symbol("qualifications").as[immutable.Seq[QualificationKey]].?,
-                    Symbol("sort").?,
-                    Symbol("order").as[SortOrder].?,
-                    Symbol("limit").as[Int].?,
-                    Symbol("skip").as[Int].?
+                    "votes".as[immutable.Seq[VoteKey]].?,
+                    "qualifications".as[immutable.Seq[QualificationKey]].?,
+                    "sort".?,
+                    "order".as[SortOrder].?,
+                    "limit".as[Int].?,
+                    "skip".as[Int].?
                   )
                 ) {
                   (votes: Option[Seq[VoteKey]],

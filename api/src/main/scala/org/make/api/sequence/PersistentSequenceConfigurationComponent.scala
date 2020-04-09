@@ -63,7 +63,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
 
     private def findOne(name: SQLSyntax, value: StringValue) = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentTag = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentSequenceConfiguration.as(alias))
@@ -83,7 +83,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     override def findAll(): Future[Seq[SequenceConfiguration]] = {
       implicit val context: EC = readExecutionContext
 
-      val futurePersistentSequenceConfig = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentSequenceConfig = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentSequenceConfiguration.as(alias))
@@ -95,7 +95,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
 
     def insertConfig(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentSequenceConfiguration)
@@ -130,7 +130,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
 
     def updateConfig(sequenceConfig: SequenceConfiguration): Future[Int] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentSequenceConfiguration)
             .set(
@@ -176,7 +176,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     }
     override def delete(questionId: QuestionId): Future[Unit] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentSequenceConfiguration)
             .where(sqls.eq(PersistentSequenceConfiguration.column.questionId, questionId.value))
