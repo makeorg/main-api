@@ -251,7 +251,6 @@ case class OrganisationInitializationEvent(
   override def version(): Int = MakeSerializable.V1
 }
 
-//TODO: remove
 case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
 
 @AvroSortPriority(6)

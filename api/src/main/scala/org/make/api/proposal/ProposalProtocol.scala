@@ -143,6 +143,8 @@ final case class PatchProposalCommand(proposalId: ProposalId,
 final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext: RequestContext = RequestContext.empty)
     extends ProposalCommand
 
+final case class SnapshotProposal(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
+
 // Responses
 
 sealed trait ProposalActorResponse extends ProposalActorProtocol
