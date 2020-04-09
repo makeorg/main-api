@@ -155,6 +155,21 @@ class PersonalityApiTest
         response.politicalParty should contain("Les saucisses masquées")
       }
     }
+
+    scenario("bad request") {
+
+      val invalidEntity = """
+                     |{
+                     |  "firstName": "Morteau"
+                     |}
+                """.stripMargin
+
+      Put(s"/personalities/${returnedPersonality.userId.value}/profile")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenPersonalityCitizen)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, invalidEntity)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
   }
 
   feature("create top idea comment for personality") {

@@ -22,14 +22,14 @@ package org.make.api.organisation
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
+import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.boolean.And
 import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.string.Url
-import eu.timepit.refined.W
-import io.circe.refined._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import io.circe.refined._
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -380,7 +380,16 @@ final case class OrganisationProfileRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url],
   optInNewsletter: Boolean
-)
+) {
+  private val maxDescriptionLength = 450
+
+  validateOptional(
+    Some(requireNonEmpty("organisationName", organisationName, Some("organisationName should not be an empty string"))),
+    Some(validateUserInput("firstName", organisationName, None)),
+    description.map(value => maxLength("description", maxDescriptionLength, value)),
+    Some(validateOptionalUserInput("description", description, None))
+  )
+}
 
 object OrganisationProfileRequest {
   implicit val encoder: Encoder[OrganisationProfileRequest] = deriveEncoder[OrganisationProfileRequest]

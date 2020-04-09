@@ -1796,5 +1796,20 @@ class UserApiTest
 
       }
     }
+
+    scenario("bad request") {
+
+      val invalidEntity = """{
+                     |  "lastName": "new-lastname"
+      }""".stripMargin
+
+      Put(s"/user/${sylvain.userId.value}/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, invalidEntity))
+        .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+
+      }
+    }
   }
 }
