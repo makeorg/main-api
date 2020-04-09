@@ -178,6 +178,7 @@ trait TestUtils {
 
   private val defaultAuthor: IndexedAuthor = IndexedAuthor(
     firstName = Some("firstname"),
+    displayName = Some("firstname"),
     organisationName = None,
     organisationSlug = None,
     postalCode = Some("12345"),

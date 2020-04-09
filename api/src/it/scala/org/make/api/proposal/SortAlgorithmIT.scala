@@ -148,6 +148,7 @@ class SortAlgorithmIT
     context = None,
     author = IndexedAuthor(
       firstName = None,
+      displayName = None,
       organisationName = None,
       organisationSlug = None,
       postalCode = None,

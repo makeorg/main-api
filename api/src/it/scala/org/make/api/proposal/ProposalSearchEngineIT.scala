@@ -34,7 +34,11 @@ import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.syntax._
 import org.make.api.docker.DockerElasticsearchService
-import org.make.api.technical.elasticsearch.{DefaultElasticsearchClientComponent, ElasticsearchConfiguration, ElasticsearchConfigurationComponent}
+import org.make.api.technical.elasticsearch.{
+  DefaultElasticsearchClientComponent,
+  ElasticsearchConfiguration,
+  ElasticsearchConfigurationComponent
+}
 import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.common.indexed.Sort
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
@@ -196,6 +200,7 @@ class ProposalSearchEngineIT
     ),
     author = IndexedAuthor(
       firstName = None,
+      displayName = None,
       organisationName = None,
       organisationSlug = None,
       postalCode = None,
@@ -286,6 +291,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Craig"),
+        displayName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("92876"),
@@ -363,6 +369,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Valerie"),
+        displayName = Some("Valerie"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
@@ -442,6 +449,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Valerie"),
+        displayName = Some("Valerie"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
@@ -519,6 +527,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Jennifer"),
+        displayName = Some("Jennifer"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("40734"),
@@ -596,6 +605,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Laura"),
+        displayName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
@@ -673,6 +683,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Laura"),
+        displayName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
@@ -748,6 +759,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Laura"),
+        displayName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
@@ -823,6 +835,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Laura"),
+        displayName = Some("Laura"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("43324"),
@@ -905,6 +918,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Ronald"),
+        displayName = Some("Ronald"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
@@ -984,6 +998,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Jennifer"),
+        displayName = Some("Jennifer"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("81966"),
@@ -1063,6 +1078,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = None,
+        displayName = Some("organisation"),
         organisationName = Some("organisation"),
         organisationSlug = Some("orga"),
         postalCode = Some("40734"),
@@ -1142,6 +1158,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Jennifer - Personality"),
+        displayName = Some("Jennifer - Personality"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("81966"),
@@ -1219,6 +1236,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Craig"),
+        displayName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("40734"),
@@ -1296,6 +1314,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Valerie"),
+        displayName = Some("Valerie"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("92876"),
@@ -1374,6 +1393,7 @@ class ProposalSearchEngineIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Craig"),
+        displayName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("41556"),
@@ -1573,7 +1593,7 @@ class ProposalSearchEngineIT
 
         whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
           result.total should be(acceptedProposals.size - proposalsToExclude.size)
-          result.results.map(_.id) should contain noElementsOf proposalsToExclude
+          (result.results.map(_.id) should contain).noElementsOf(proposalsToExclude)
         }
       }
     }

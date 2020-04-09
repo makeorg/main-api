@@ -582,15 +582,18 @@ class UserApiTest
         )
         .thenReturn(
           Future.successful(
-            (UserId("12347"), SocialLoginResponse(
-              TokenResponse(
-                token_type = "Bearer",
-                access_token = "access_token",
-                expires_in = expiresInSecond,
-                refresh_token = "refresh_token"
-              ),
-              false
-            ))
+            (
+              UserId("12347"),
+              SocialLoginResponse(
+                TokenResponse(
+                  token_type = "Bearer",
+                  access_token = "access_token",
+                  expires_in = expiresInSecond,
+                  refresh_token = "refresh_token"
+                ),
+                false
+              )
+            )
           )
         )
       val request =
@@ -638,15 +641,18 @@ class UserApiTest
         )
         .thenReturn(
           Future.successful(
-            (UserId("12347"), SocialLoginResponse(
-              TokenResponse(
-                token_type = "Bearer",
-                access_token = "access_token",
-                expires_in = expiresInSecond,
-                refresh_token = "refresh_token"
-              ),
-              false
-            ))
+            (
+              UserId("12347"),
+              SocialLoginResponse(
+                TokenResponse(
+                  token_type = "Bearer",
+                  access_token = "access_token",
+                  expires_in = expiresInSecond,
+                  refresh_token = "refresh_token"
+                ),
+                false
+              )
+            )
           )
         )
       val request =
@@ -971,6 +977,7 @@ class UserApiTest
       labels = Seq.empty,
       author = IndexedAuthor(
         firstName = Some("Paul"),
+        displayName = Some("Paul"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("11111"),
@@ -1103,6 +1110,7 @@ class UserApiTest
       labels = Seq.empty,
       author = IndexedAuthor(
         firstName = sylvain.firstName,
+        displayName = sylvain.displayName,
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("11111"),

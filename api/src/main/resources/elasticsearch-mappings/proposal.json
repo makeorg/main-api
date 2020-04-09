@@ -1140,6 +1140,10 @@
               "type": "text",
               "index": true
             },
+            "displayName": {
+              "type": "text",
+              "index": false
+            },
             "organisationSlug": {
               "type": "keyword",
               "index": true

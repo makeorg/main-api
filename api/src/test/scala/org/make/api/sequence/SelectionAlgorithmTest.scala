@@ -113,6 +113,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       labels = Seq.empty,
       author = IndexedAuthor(
         firstName = None,
+        displayName = None,
         organisationName = None,
         organisationSlug = None,
         postalCode = None,
@@ -194,6 +195,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       labels = Seq.empty,
       author = IndexedAuthor(
         firstName = None,
+        displayName = None,
         organisationName = None,
         organisationSlug = None,
         postalCode = None,

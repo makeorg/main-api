@@ -105,6 +105,7 @@ class ProposalSearchEngineTest
     labels = Seq.empty,
     author = IndexedAuthor(
       firstName = Some("Boogie"),
+      displayName = Some("Boogie"),
       organisationName = None,
       organisationSlug = None,
       postalCode = Some("11111"),

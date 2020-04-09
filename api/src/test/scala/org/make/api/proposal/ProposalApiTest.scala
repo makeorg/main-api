@@ -159,6 +159,7 @@ class ProposalApiTest
     labels = Seq.empty,
     author = AuthorResponse(
       firstName = None,
+      displayName = None,
       organisationName = None,
       organisationSlug = None,
       postalCode = None,
