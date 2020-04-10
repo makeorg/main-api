@@ -21,17 +21,18 @@ package org.make.api.question
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
 import org.make.api.technical.DatabaseTransactions.RichDatabase
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import scalikejdbc.{ResultName, WrappedResultSet, _}
+import scalikejdbc._
 
 import scala.concurrent.Future
 
@@ -58,14 +59,14 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
   class DefaultPersistentQuestionService extends PersistentQuestionService with ShortenedNames with StrictLogging {
 
     private val column = PersistentQuestion.column
-    private val questionAlias = PersistentQuestion.questionAlias
+    private val questionAlias = PersistentQuestion.alias
 
     override def find(request: SearchQuestionRequest): Future[Seq[Question]] = {
 
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.ConditionSQLBuilder[WrappedResultSet] = select
+          val query: scalikejdbc.ConditionSQLBuilder[PersistentQuestion] = select
             .from(PersistentQuestion.as(questionAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -77,17 +78,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )
             )
-
-          sortOrderQuery(
-            start = request.skip.getOrElse(0),
-            end = request.limit,
-            order = request.order,
-            sort = request.sort,
-            query = query,
-            columns = PersistentQuestion.columnNames,
-            alias = questionAlias,
-            defaultSort = questionAlias.question
-          )
+          sortOrderQuery(request.skip.getOrElse(0), request.limit, request.sort, request.order, query)
         }.map(PersistentQuestion.apply()).list().apply()
       }).map(_.map(_.toQuestion))
 
@@ -228,7 +219,10 @@ object DefaultPersistentQuestionServiceComponent {
     }
   }
 
-  object PersistentQuestion extends SQLSyntaxSupport[PersistentQuestion] with ShortenedNames with StrictLogging {
+  implicit object PersistentQuestion
+      extends PersistentCompanion[PersistentQuestion, Question]
+      with ShortenedNames
+      with StrictLogging {
 
     override val columnNames: Seq[String] =
       Seq(
@@ -245,9 +239,11 @@ object DefaultPersistentQuestionServiceComponent {
 
     override val tableName: String = "question"
 
-    lazy val questionAlias: SyntaxProvider[PersistentQuestion] = syntax("question")
+    override lazy val alias: SyntaxProvider[PersistentQuestion] = syntax("question")
 
-    private lazy val resultName: ResultName[PersistentQuestion] = questionAlias.resultName
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.question)
+
+    private lazy val resultName: ResultName[PersistentQuestion] = alias.resultName
 
     def apply(
       questionResultName: ResultName[PersistentQuestion] = resultName

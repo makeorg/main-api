@@ -19,11 +19,13 @@
 
 package org.make.api.feature
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.feature.DefaultPersistentActiveFeatureServiceComponent.PersistentActiveFeature
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
 import scalikejdbc._
@@ -57,7 +59,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
       with ShortenedNames
       with StrictLogging {
 
-    private val activeFeatureAlias = PersistentActiveFeature.activeFeatureAlias
+    private val activeFeatureAlias = PersistentActiveFeature.alias
 
     private val column = PersistentActiveFeature.column
 
@@ -110,7 +112,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
       val futurePersistentActiveFeatures: Future[List[PersistentActiveFeature]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           withSQL {
-            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            val query: scalikejdbc.PagingSQLBuilder[PersistentActiveFeature] =
               select
                 .from(PersistentActiveFeature.as(activeFeatureAlias))
                 .where(
@@ -118,21 +120,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
                     maybeQuestionId.map(questionId => sqls.eq(activeFeatureAlias.questionId, questionId.value))
                   )
                 )
-
-            val queryOrdered = (sort, order) match {
-              case (Some(field), Some("DESC")) if PersistentActiveFeature.columnNames.contains(field) =>
-                query.orderBy(activeFeatureAlias.field(field)).desc.offset(start)
-              case (Some(field), _) if PersistentActiveFeature.columnNames.contains(field) =>
-                query.orderBy(activeFeatureAlias.field(field)).asc.offset(start)
-              case (Some(field), _) =>
-                logger.warn(s"Unsupported filter '$field'")
-                query.orderBy(activeFeatureAlias.id).asc.offset(start)
-              case (_, _) => query.orderBy(activeFeatureAlias.id).asc.offset(start)
-            }
-            end match {
-              case Some(limit) => queryOrdered.limit(limit)
-              case None        => queryOrdered
-            }
+            sortOrderQuery(start, end, sort, order, query)
           }.map(PersistentActiveFeature.apply()).list.apply
       })
 
@@ -168,8 +156,8 @@ object DefaultPersistentActiveFeatureServiceComponent {
       )
   }
 
-  object PersistentActiveFeature
-      extends SQLSyntaxSupport[PersistentActiveFeature]
+  implicit object PersistentActiveFeature
+      extends PersistentCompanion[PersistentActiveFeature, ActiveFeature]
       with ShortenedNames
       with StrictLogging {
 
@@ -177,12 +165,12 @@ object DefaultPersistentActiveFeatureServiceComponent {
 
     override val tableName: String = "active_feature"
 
-    lazy val activeFeatureAlias
-      : QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentActiveFeature], PersistentActiveFeature] =
-      syntax("active_feature")
+    override lazy val alias: SyntaxProvider[PersistentActiveFeature] = syntax("active_feature")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.id)
 
     def apply(
-      activeFeatureResultName: ResultName[PersistentActiveFeature] = activeFeatureAlias.resultName
+      activeFeatureResultName: ResultName[PersistentActiveFeature] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentActiveFeature = {
       PersistentActiveFeature.apply(
         id = resultSet.string(activeFeatureResultName.id),

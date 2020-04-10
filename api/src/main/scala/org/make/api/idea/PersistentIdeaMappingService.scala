@@ -18,10 +18,13 @@
  */
 
 package org.make.api.idea
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.idea.DefaultPersistentIdeaMappingServiceComponent.PersistentIdeaMapping
 import org.make.api.technical.DatabaseTransactions.RichDatabase
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.idea.IdeaId
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
@@ -86,7 +89,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+          val query: scalikejdbc.PagingSQLBuilder[PersistentIdeaMapping] =
             select
               .from(PersistentIdeaMapping.as(PersistentIdeaMapping.alias))
               .where(
@@ -103,22 +106,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
                   ideaId.map(idea => sqls.eq(PersistentIdeaMapping.column.ideaId, idea.value))
                 )
               )
-
-          val queryOrdered = (sort, order) match {
-            case (Some(field), Some("DESC")) if PersistentIdeaMapping.columnNames.contains(field) =>
-              query.orderBy(PersistentIdeaMapping.alias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentIdeaMapping.columnNames.contains(field) =>
-              query.orderBy(PersistentIdeaMapping.alias.field(field)).asc.offset(start)
-            case (Some(field), _) =>
-              logger.warn(s"Unsupported filter '$field'")
-              query.orderBy(PersistentIdeaMapping.alias.questionId, PersistentIdeaMapping.alias.id).asc.offset(start)
-            case (_, _) =>
-              query.orderBy(PersistentIdeaMapping.alias.questionId, PersistentIdeaMapping.alias.id).asc.offset(start)
-          }
-          end match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered
-          }
+          sortOrderQuery(start, end, sort, order, query)
         }.map(PersistentIdeaMapping.apply()).list().apply()
       }).map(_.map(_.toIdeaMapping))
     }
@@ -181,36 +169,46 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
   }
 }
 
-final case class PersistentIdeaMapping(id: String,
-                                       questionId: String,
-                                       stakeTagId: Option[String],
-                                       solutionTypeTagId: Option[String],
-                                       ideaId: String) {
-  def toIdeaMapping: IdeaMapping =
-    IdeaMapping(
-      IdeaMappingId(id),
-      QuestionId(questionId),
-      stakeTagId.map(TagId.apply),
-      solutionTypeTagId.map(TagId.apply),
-      IdeaId(ideaId)
-    )
-}
+object DefaultPersistentIdeaMappingServiceComponent {
 
-object PersistentIdeaMapping extends SQLSyntaxSupport[PersistentIdeaMapping] with ShortenedNames with StrictLogging {
-  override val columnNames: Seq[String] = Seq("id", "question_id", "stake_tag_id", "solution_type_tag_id", "idea_id")
-  override val tableName: String = "idea_mapping"
+  final case class PersistentIdeaMapping(
+    id: String,
+    questionId: String,
+    stakeTagId: Option[String],
+    solutionTypeTagId: Option[String],
+    ideaId: String
+  ) {
+    def toIdeaMapping: IdeaMapping =
+      IdeaMapping(
+        IdeaMappingId(id),
+        QuestionId(questionId),
+        stakeTagId.map(TagId.apply),
+        solutionTypeTagId.map(TagId.apply),
+        IdeaId(ideaId)
+      )
+  }
 
-  lazy val alias: SyntaxProvider[PersistentIdeaMapping] = syntax("ideaMapping")
+  implicit object PersistentIdeaMapping
+      extends PersistentCompanion[PersistentIdeaMapping, IdeaMapping]
+      with ShortenedNames
+      with StrictLogging {
 
-  def apply(
-    resultName: ResultName[PersistentIdeaMapping] = alias.resultName
-  )(resultSet: WrappedResultSet): PersistentIdeaMapping = {
-    PersistentIdeaMapping(
-      id = resultSet.string(resultName.id),
-      questionId = resultSet.string(resultName.questionId),
-      stakeTagId = resultSet.stringOpt(resultName.stakeTagId),
-      solutionTypeTagId = resultSet.stringOpt(resultName.solutionTypeTagId),
-      ideaId = resultSet.string(resultName.ideaId)
-    )
+    override val columnNames: Seq[String] = Seq("id", "question_id", "stake_tag_id", "solution_type_tag_id", "idea_id")
+    override val tableName: String = "idea_mapping"
+
+    override lazy val alias: SyntaxProvider[PersistentIdeaMapping] = syntax("ideaMapping")
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.id)
+
+    def apply(
+      resultName: ResultName[PersistentIdeaMapping] = alias.resultName
+    )(resultSet: WrappedResultSet): PersistentIdeaMapping = {
+      PersistentIdeaMapping(
+        id = resultSet.string(resultName.id),
+        questionId = resultSet.string(resultName.questionId),
+        stakeTagId = resultSet.stringOpt(resultName.stakeTagId),
+        solutionTypeTagId = resultSet.stringOpt(resultName.solutionTypeTagId),
+        ideaId = resultSet.string(resultName.ideaId)
+      )
+    }
   }
 }

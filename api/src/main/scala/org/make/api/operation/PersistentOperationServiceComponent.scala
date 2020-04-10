@@ -21,17 +21,20 @@ package org.make.api.operation
 
 import java.time.{LocalDate, ZonedDateTime}
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion
+import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion.FlatQuestionWithDetails
 import org.make.api.operation.DefaultPersistentOperationServiceComponent.{
   PersistentOperation,
   PersistentOperationAction
 }
-import org.make.api.operation.PersistentOperationOfQuestion.FlatQuestionWithDetails
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.reference.{Country, Language}
@@ -72,10 +75,10 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
   class DefaultPersistentOperationService extends PersistentOperationService with ShortenedNames with StrictLogging {
 
-    private val operationAlias = PersistentOperation.operationAlias
+    private val operationAlias = PersistentOperation.alias
     private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
     private val operationActionAlias = PersistentOperationAction.operationActionAlias
-    private val questionAlias = PersistentQuestion.questionAlias
+    private val questionAlias = PersistentQuestion.alias
 
     private val column = PersistentOperation.column
     private val operationActionColumn = PersistentOperationAction.column
@@ -143,26 +146,11 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           withSQL {
-            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            val query: scalikejdbc.PagingSQLBuilder[PersistentOperation] =
               select
                 .from(PersistentOperation.as(operationAlias))
                 .where(operationWhereOpts(slug, operationKinds, None, None))
-
-            val queryOrdered = (sort, order.map(_.toUpperCase)) match {
-              case (Some(field), Some("DESC")) if PersistentOperation.columnNames.contains(field) =>
-                query.orderBy(operationAlias.field(field)).desc.offset(start)
-              case (Some(field), _) if PersistentOperation.columnNames.contains(field) =>
-                query.orderBy(operationAlias.field(field)).asc.offset(start)
-              case (Some(field), _) =>
-                logger.warn(s"Unsupported filter '$field'")
-                query.orderBy(operationAlias.slug).asc.offset(start)
-              case (_, _) => query.orderBy(operationAlias.slug).asc.offset(start)
-            }
-            end match {
-              case Some(limit) => queryOrdered.limit(limit)
-              case None        => queryOrdered
-            }
-
+            sortOrderQuery(start, end, sort, order, query)
           }.map(PersistentOperation.apply()).list.apply()
       })
 
@@ -390,16 +378,22 @@ object DefaultPersistentOperationServiceComponent {
     }
   }
 
-  object PersistentOperation extends SQLSyntaxSupport[PersistentOperation] with ShortenedNames with StrictLogging {
+  implicit object PersistentOperation
+      extends PersistentCompanion[PersistentOperation, Operation]
+      with ShortenedNames
+      with StrictLogging {
+
     override val columnNames: Seq[String] =
       Seq("uuid", "status", "slug", "default_language", "allowed_sources", "operation_kind", "created_at", "updated_at")
 
     override val tableName: String = "operation"
 
-    lazy val operationAlias: SyntaxProvider[PersistentOperation] = syntax("op")
+    override lazy val alias: SyntaxProvider[PersistentOperation] = syntax("op")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.slug)
 
     def apply(
-      operationResultName: ResultName[PersistentOperation] = operationAlias.resultName
+      operationResultName: ResultName[PersistentOperation] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentOperation = {
       PersistentOperation.apply(
         uuid = resultSet.string(operationResultName.uuid),

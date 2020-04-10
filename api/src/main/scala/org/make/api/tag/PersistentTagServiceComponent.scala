@@ -21,12 +21,14 @@ package org.make.api.tag
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent.PersistentTag
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent.PersistentTagType
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -74,7 +76,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
   class DefaultPersistentTagService extends PersistentTagService with ShortenedNames with StrictLogging {
 
-    private val tagAlias = PersistentTag.tagAlias
+    private val tagAlias = PersistentTag.alias
     private val tagTypeAlias = PersistentTagType.tagTypeAlias
 
     private val column = PersistentTag.column
@@ -284,7 +286,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
 
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+          val query: scalikejdbc.PagingSQLBuilder[PersistentTag] =
             select
               .from(PersistentTag.as(tagAlias))
               .leftJoin(PersistentTagType.as(tagTypeAlias))
@@ -313,20 +315,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                 )
               )
 
-          val queryOrdered = (sort, order) match {
-            case (Some(field), Some("DESC")) if PersistentTag.columnNames.contains(field) =>
-              query.orderBy(tagAlias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentTag.columnNames.contains(field) =>
-              query.orderBy(tagAlias.field(field)).asc.offset(start)
-            case (Some(field), _) =>
-              logger.warn(s"Unsupported filter '$field'")
-              query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
-            case (_, _) => query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
-          }
-          end match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered
-          }
+          sortOrderQuery(start, end, sort, order, query)
         }.map(PersistentTag.apply()).list.apply
       })
 
@@ -384,7 +373,7 @@ object DefaultPersistentTagServiceComponent {
       )
   }
 
-  object PersistentTag extends SQLSyntaxSupport[PersistentTag] with ShortenedNames with StrictLogging {
+  implicit object PersistentTag extends PersistentCompanion[PersistentTag, Tag] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] = Seq(
       "id",
@@ -402,10 +391,12 @@ object DefaultPersistentTagServiceComponent {
 
     override val tableName: String = "tag"
 
-    lazy val tagAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentTag], PersistentTag] = syntax("tag")
+    override lazy val alias: SyntaxProvider[PersistentTag] = syntax("tag")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.weight, alias.label)
 
     def apply(
-      tagResultName: ResultName[PersistentTag] = tagAlias.resultName
+      tagResultName: ResultName[PersistentTag] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentTag = {
       PersistentTag.apply(
         id = resultSet.string(tagResultName.id),

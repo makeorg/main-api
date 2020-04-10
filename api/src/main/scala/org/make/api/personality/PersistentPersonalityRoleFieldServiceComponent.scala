@@ -19,11 +19,12 @@
 
 package org.make.api.personality
 
+import cats.data.NonEmptyList
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.personality.DefaultPersistentPersonalityRoleFieldServiceComponent.PersistentPersonalityRoleField
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.personality.{FieldType, PersonalityRoleField, PersonalityRoleFieldId, PersonalityRoleId}
 import scalikejdbc._
 
@@ -61,7 +62,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
 
   class DefaultPersistentPersonalityRoleFieldService extends PersistentPersonalityRoleFieldService with ShortenedNames {
 
-    private val personalityRoleFieldAlias = PersistentPersonalityRoleField.personalityRoleFieldAlias
+    private val personalityRoleFieldAlias = PersistentPersonalityRoleField.alias
 
     private val column = PersistentPersonalityRoleField.column
 
@@ -124,7 +125,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
+          val query: scalikejdbc.PagingSQLBuilder[PersistentPersonalityRoleField] = select
             .from(PersistentPersonalityRoleField.as(personalityRoleFieldAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -136,17 +137,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
                 maybeRequired.map(required   => sqls.eq(personalityRoleFieldAlias.required, required))
               )
             )
-
-          sortOrderQuery[PersistentPersonalityRoleField](
-            start = start,
-            end = end,
-            sort = sort,
-            order = order,
-            query = query,
-            columns = PersistentPersonalityRoleField.columnNames,
-            alias = personalityRoleFieldAlias,
-            defaultSort = personalityRoleFieldAlias.name
-          )
+          sortOrderQuery(start = start, end = end, sort = sort, order = order, query = query)
         }.map(PersistentPersonalityRoleField.apply()).list().apply()
       }).map(_.map(_.toPersonalityRoleField))
     }
@@ -207,18 +198,19 @@ object DefaultPersistentPersonalityRoleFieldServiceComponent {
     }
   }
 
-  object PersistentPersonalityRoleField extends SQLSyntaxSupport[PersistentPersonalityRoleField] {
+  implicit object PersistentPersonalityRoleField
+      extends PersistentCompanion[PersistentPersonalityRoleField, PersonalityRoleField] {
     override val columnNames: Seq[String] =
       Seq("id", "personality_role_id", "name", "field_type", "required")
 
     override val tableName: String = "personality_role_field"
 
-    lazy val personalityRoleFieldAlias: SyntaxProvider[PersistentPersonalityRoleField] = syntax(
-      "personality_role_field"
-    )
+    override lazy val alias: SyntaxProvider[PersistentPersonalityRoleField] = syntax("personality_role_field")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
 
     def apply(
-      personalityResultName: ResultName[PersistentPersonalityRoleField] = personalityRoleFieldAlias.resultName
+      personalityResultName: ResultName[PersistentPersonalityRoleField] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentPersonalityRoleField = {
       PersistentPersonalityRoleField.apply(
         id = resultSet.string(personalityResultName.id),

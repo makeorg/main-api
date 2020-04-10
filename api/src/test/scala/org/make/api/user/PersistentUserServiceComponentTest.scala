@@ -38,7 +38,7 @@ class PersistentUserServiceComponentTest
   override val writeExecutionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   val rs: WrappedResultSet = mock[WrappedResultSet]
-  val roles: String = PersistentUser.userAlias.resultName.roles.value
+  val roles: String = PersistentUser.alias.resultName.roles.value
   Mockito.when(rs.string(ArgumentMatchers.eq(roles))).thenReturn("ROLE_ADMIN,ROLE_MODERATOR")
   Mockito.when(rs.stringOpt(ArgumentMatchers.any[String])).thenReturn(None)
   Mockito.when(rs.arrayOpt(ArgumentMatchers.any[String])).thenReturn(None)
@@ -74,8 +74,8 @@ class PersistentUserServiceComponentTest
           |    - karma_level: None
           |    """.stripMargin)
 
-      val avatarUrl = PersistentUser.userAlias.resultName.avatarUrl.value
-      val karmaLevel = PersistentUser.userAlias.resultName.karmaLevel.value
+      val avatarUrl = PersistentUser.alias.resultName.avatarUrl.value
+      val karmaLevel = PersistentUser.alias.resultName.karmaLevel.value
 
       Mockito.when(rs.stringOpt(ArgumentMatchers.eq(avatarUrl))).thenReturn(Some(exampleUrl))
       Mockito.when(rs.intOpt(ArgumentMatchers.eq(karmaLevel))).thenReturn(None)
