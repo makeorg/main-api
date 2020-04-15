@@ -498,6 +498,7 @@ class OrganisationServiceTest
           labels = Seq.empty,
           author = IndexedAuthor(
             firstName = Some(id.value),
+            displayName = Some(id.value),
             organisationName = None,
             organisationSlug = None,
             postalCode = None,

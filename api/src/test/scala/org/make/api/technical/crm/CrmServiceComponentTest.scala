@@ -884,6 +884,7 @@ class CrmServiceComponentTest
           labels = Seq.empty,
           author = IndexedAuthor(
             firstName = None,
+            displayName = None,
             organisationName = None,
             organisationSlug = None,
             postalCode = None,
@@ -928,6 +929,7 @@ class CrmServiceComponentTest
           labels = Seq.empty,
           author = IndexedAuthor(
             firstName = None,
+            displayName = None,
             organisationName = None,
             organisationSlug = None,
             postalCode = None,

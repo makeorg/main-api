@@ -45,6 +45,7 @@ final case class ModerationProposalAuthorResponse(
   userId: UserId,
   firstName: Option[String],
   lastName: Option[String],
+  displayName: Option[String],
   postalCode: Option[String],
   @(ApiModelProperty @field)(dataType = "int")
   age: Option[Int],
@@ -60,6 +61,7 @@ object ModerationProposalAuthorResponse {
         userId = user.userId,
         firstName = None,
         lastName = None,
+        displayName = None,
         postalCode = None,
         age = None,
         avatarUrl = None,
@@ -71,6 +73,7 @@ object ModerationProposalAuthorResponse {
         userId = user.userId,
         firstName = user.firstName,
         lastName = user.lastName,
+        displayName = user.displayName,
         postalCode = user.profile.flatMap(_.postalCode),
         age = user.profile
           .flatMap(_.dateOfBirth)
@@ -149,6 +152,7 @@ object ProposalIdResponse {
 }
 
 final case class AuthorResponse(firstName: Option[String],
+                                displayName: Option[String],
                                 organisationName: Option[String],
                                 organisationSlug: Option[String],
                                 postalCode: Option[String],
@@ -165,6 +169,7 @@ object AuthorResponse {
     if (author.anonymousParticipation) {
       AuthorResponse(
         firstName = None,
+        displayName = None,
         organisationName = None,
         organisationSlug = None,
         postalCode = None,
@@ -175,6 +180,7 @@ object AuthorResponse {
     } else {
       AuthorResponse(
         firstName = author.firstName,
+        displayName = author.displayName,
         organisationName = author.organisationName,
         organisationSlug = author.organisationSlug,
         postalCode = author.postalCode,

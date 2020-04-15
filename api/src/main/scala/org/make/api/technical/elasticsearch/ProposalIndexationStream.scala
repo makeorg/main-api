@@ -317,6 +317,7 @@ trait ProposalIndexationStream
       labels = proposal.labels.map(_.value),
       author = IndexedAuthor(
         firstName = user.firstName,
+        displayName = user.displayName,
         organisationName = user.organisationName,
         organisationSlug = user.organisationName.map(name => SlugHelper(name)),
         postalCode = user.profile.flatMap(_.postalCode),

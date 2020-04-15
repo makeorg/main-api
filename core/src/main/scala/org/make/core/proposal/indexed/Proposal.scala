@@ -218,6 +218,7 @@ object IndexedGetParameters {
 }
 
 final case class IndexedAuthor(firstName: Option[String],
+                               displayName: Option[String],
                                organisationName: Option[String],
                                organisationSlug: Option[String],
                                postalCode: Option[String],

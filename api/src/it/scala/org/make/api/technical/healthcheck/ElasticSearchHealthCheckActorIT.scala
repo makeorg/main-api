@@ -122,6 +122,7 @@ class ElasticSearchHealthCheckActorIT
       labels = Seq(),
       author = IndexedAuthor(
         firstName = Some("Craig"),
+        displayName = Some("Craig"),
         organisationName = None,
         organisationSlug = None,
         postalCode = Some("92876"),

@@ -332,6 +332,7 @@ class DefaultAdminProposalApiComponentTest
         UserId("Georges RR Martin"),
         firstName = Some("Georges"),
         lastName = Some("Martin"),
+        displayName = Some("Georges Martin"),
         organisationName = None,
         postalCode = None,
         age = None,

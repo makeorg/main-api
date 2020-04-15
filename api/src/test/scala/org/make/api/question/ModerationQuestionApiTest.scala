@@ -281,6 +281,7 @@ class ModerationQuestionApiTest
                 labels = Seq.empty,
                 author = IndexedAuthor(
                   firstName = None,
+                  displayName = None,
                   organisationName = None,
                   organisationSlug = None,
                   postalCode = None,
@@ -335,6 +336,7 @@ class ModerationQuestionApiTest
                 UserId("Georges RR Martin"),
                 firstName = Some("Georges"),
                 lastName = Some("Martin"),
+                displayName = Some("Georges Martin"),
                 organisationName = None,
                 postalCode = None,
                 age = None,
