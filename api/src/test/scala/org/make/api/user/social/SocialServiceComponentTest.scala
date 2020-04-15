@@ -90,7 +90,7 @@ class SocialServiceComponentTest
         iat = Some("123456789"),
         exp = None,
         name = Some("google user"),
-        picture = "picture_url/photo.jpg",
+        picture = Some("picture_url/photo.jpg"),
         givenName = Some("google"),
         familyName = Some("user"),
         local = None,
@@ -179,7 +179,7 @@ class SocialServiceComponentTest
         iat = Some("123456789"),
         exp = None,
         name = Some("google user"),
-        picture = "picture_url",
+        picture = Some("picture_url"),
         givenName = None,
         familyName = None,
         local = None,
@@ -268,7 +268,7 @@ class SocialServiceComponentTest
         iat = Some("333333"),
         exp = None,
         name = Some("google user"),
-        picture = "picture_url",
+        picture = None,
         givenName = Some("google"),
         familyName = Some("user"),
         local = None,
@@ -322,13 +322,14 @@ class SocialServiceComponentTest
         )
 
       Then("my program should return a token response")
-      whenReady(futureTokenResposnse, Timeout(2.seconds)) { case (id, socialLoginResponse) =>
-        id should be(userId)
-        socialLoginResponse shouldBe a[SocialLoginResponse]
-        socialLoginResponse.access_token should be(accessTokenValue)
-        socialLoginResponse.refresh_token should be(refreshTokenValue)
-        socialLoginResponse.token_type should be("Bearer")
-        socialLoginResponse.account_creation should be(false)
+      whenReady(futureTokenResposnse, Timeout(2.seconds)) {
+        case (id, socialLoginResponse) =>
+          id should be(userId)
+          socialLoginResponse shouldBe a[SocialLoginResponse]
+          socialLoginResponse.access_token should be(accessTokenValue)
+          socialLoginResponse.refresh_token should be(refreshTokenValue)
+          socialLoginResponse.token_type should be("Bearer")
+          socialLoginResponse.account_creation should be(false)
       }
     }
 
@@ -576,13 +577,14 @@ class SocialServiceComponentTest
         )
 
       Then("my program should return a token response")
-      whenReady(futureTokenResposnse, Timeout(2.seconds)) { case (id, socialLoginResponse) =>
-        id should be(userId)
-        socialLoginResponse shouldBe a[SocialLoginResponse]
-        socialLoginResponse.access_token should be(accessTokenValue)
-        socialLoginResponse.refresh_token should be(refreshTokenValue)
-        socialLoginResponse.token_type should be("Bearer")
-        socialLoginResponse.account_creation should be(false)
+      whenReady(futureTokenResposnse, Timeout(2.seconds)) {
+        case (id, socialLoginResponse) =>
+          id should be(userId)
+          socialLoginResponse shouldBe a[SocialLoginResponse]
+          socialLoginResponse.access_token should be(accessTokenValue)
+          socialLoginResponse.refresh_token should be(refreshTokenValue)
+          socialLoginResponse.token_type should be("Bearer")
+          socialLoginResponse.account_creation should be(false)
       }
     }
 
