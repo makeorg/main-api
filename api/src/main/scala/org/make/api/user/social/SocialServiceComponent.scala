@@ -80,7 +80,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               country = country.value,
               language = language.value,
               googleId = googleUserInfo.iat,
-              picture = Option(googleUserInfo.pictureUrl),
+              picture = googleUserInfo.pictureUrl,
               domain = googleUserInfo.hd
             )
         case FACEBOOK_PROVIDER =>
@@ -93,7 +93,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
               country = country.value,
               language = language.value,
               facebookId = Some(facebookUserInfo.id),
-              picture = Option(facebookUserInfo.picture)
+              picture = Option(facebookUserInfo.pictureUrl)
             )
         case _ => Future.failed(new Exception(s"Social login failed: undefined provider $provider"))
       }
@@ -125,15 +125,18 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
           )
         )
       } yield {
-        (user.userId, SocialLoginResponse(
-          token = TokenResponse(
-            "Bearer",
-            accessToken.token,
-            accessToken.expiresIn.getOrElse(1L),
-            accessToken.refreshToken.getOrElse("")
-          ),
-          accountCreation = accountCreation
-        ))
+        (
+          user.userId,
+          SocialLoginResponse(
+            token = TokenResponse(
+              "Bearer",
+              accessToken.token,
+              accessToken.expiresIn.getOrElse(1L),
+              accessToken.refreshToken.getOrElse("")
+            ),
+            accountCreation = accountCreation
+          )
+        )
       }
     }
 
