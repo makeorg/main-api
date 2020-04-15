@@ -208,7 +208,7 @@ trait DefaultPersonalityApiComponent
                             description = request.description,
                             optInNewsletter = request.optInNewsletter,
                             website = request.website.map(_.value),
-                            politicalParty = Some(request.politicalParty)
+                            politicalParty = request.politicalParty
                           )
                         )
 
@@ -330,7 +330,7 @@ final case class PersonalityProfileRequest(
   optInNewsletter: Boolean,
   @(ApiModelProperty @field)(dataType = "string", example = "https://make.org")
   website: Option[String Refined Url],
-  politicalParty: String
+  politicalParty: Option[String]
 ) {
   private val maxDescriptionLength = 450
 
@@ -341,7 +341,7 @@ final case class PersonalityProfileRequest(
     Some(validateUserInput("lastName", lastName, None)),
     Some(validateOptionalUserInput("description", description, None)),
     description.map(value => maxLength("description", maxDescriptionLength, value)),
-    Some(validateUserInput("politicalParty", politicalParty, None))
+    Some(validateOptionalUserInput("politicalParty", politicalParty, None))
   )
 }
 
