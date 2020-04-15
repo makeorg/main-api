@@ -81,12 +81,13 @@ class CassandraHealthCheckActorIT
         createdAt = DateHelper.now(),
         content = "This is a proposal",
         question = Question(
-          QuestionId("fake-question"),
-          "fake-question",
+          questionId = QuestionId("fake-question"),
+          slug = "fake-question",
           country = Country("FR"),
           language = Language("fr"),
           question = "fake question",
-          None
+          shortTitle = None,
+          operationId = None
         ),
         initialProposal = false
       )

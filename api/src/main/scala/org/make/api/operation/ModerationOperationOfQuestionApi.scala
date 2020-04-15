@@ -26,6 +26,7 @@ import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
+import eu.timepit.refined.collection.MaxSize
 import io.circe.refined._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
@@ -36,7 +37,7 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.Validation.{validate, validateColor, validateField, validateUserInput}
+import org.make.core.Validation.{validate, validateColor, validateField, validateOptionalUserInput, validateUserInput}
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.operation._
@@ -344,7 +345,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
                     provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
                       operationOfQuestion =>
-                        val updatedQuestion = question.copy(question = request.question)
+                        val updatedQuestion =
+                          question.copy(question = request.question, shortTitle = request.shortTitle.map(_.value))
                         val updatedSequenceCardsConfiguration =
                           request.sequenceCardsConfiguration.copy(
                             pushProposalCard = PushProposalCard(
@@ -419,6 +421,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         country = body.country,
                         language = body.language,
                         question = body.question,
+                        shortTitle = body.shortTitle,
                         consultationImage = body.consultationImage
                       )
                     )
@@ -443,6 +446,7 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
                                                   endDate: Option[ZonedDateTime],
                                                   question: String,
+                                                  shortTitle: Option[String Refined MaxSize[30]],
                                                   canPropose: Boolean,
                                                   sequenceCardsConfiguration: SequenceCardsConfiguration,
                                                   aboutUrl: Option[String],
@@ -452,9 +456,11 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   displayResults: Boolean,
                                                   consultationImage: Option[String Refined Url],
                                                   descriptionImage: Option[String Refined Url]) {
+
   validate(
     Seq(
       validateUserInput("question", question, None),
+      validateOptionalUserInput("shortTitle", shortTitle.map(_.value), None),
       validateUserInput("description", description, None),
       validateColor("gradientStart", theme.gradientStart, None),
       validateColor("gradientEnd", theme.gradientEnd, None),
@@ -487,12 +493,14 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   question: String,
+  shortTitle: Option[String],
   questionSlug: String,
   consultationImage: Option[String]
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),
     validateUserInput("question", question, None),
+    validateOptionalUserInput("shortTitle", shortTitle, None),
     validateUserInput("questionSlug", questionSlug, None),
     validateField(
       "consultationImage",
@@ -523,6 +531,7 @@ final case class OperationOfQuestionResponse(
   operationTitle: String,
   slug: String,
   question: String,
+  shortTitle: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -552,6 +561,7 @@ object OperationOfQuestionResponse extends CirceFormatters {
       landingSequenceId = operationOfQuestion.landingSequenceId,
       slug = question.slug,
       question = question.question,
+      shortTitle = question.shortTitle,
       country = question.country,
       language = question.language,
       canPropose = operationOfQuestion.canPropose,

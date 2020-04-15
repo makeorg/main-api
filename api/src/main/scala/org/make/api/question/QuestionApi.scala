@@ -306,6 +306,7 @@ trait DefaultQuestionApiComponent
               questionId = question.questionId,
               questionSlug = question.slug,
               question = question.question,
+              shortTitle = question.shortTitle,
               operationTitle = operationOfQuestion.operationTitle,
               country = question.country,
               language = question.language,

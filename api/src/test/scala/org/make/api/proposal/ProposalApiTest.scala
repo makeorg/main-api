@@ -77,6 +77,7 @@ class ProposalApiTest
               country = invocation.getArgument[Country](2),
               language = invocation.getArgument[Language](3),
               question = "my question",
+              shortTitle = None,
               operationId = invocation.getArgument[Option[OperationId]](1)
             )
           )
@@ -92,6 +93,7 @@ class ProposalApiTest
           country = Country("FR"),
           language = Language("fr"),
           question = "my question",
+          shortTitle = None,
           operationId = Some(OperationId("operation"))
         )
       )

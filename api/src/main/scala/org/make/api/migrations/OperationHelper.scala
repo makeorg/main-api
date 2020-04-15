@@ -63,6 +63,7 @@ trait OperationHelper {
           slug = configuration.slug,
           language = configuration.language,
           question = configuration.question,
+          shortTitle = configuration.shortTitle,
           operationId = Some(operation.operationId)
         )
       )

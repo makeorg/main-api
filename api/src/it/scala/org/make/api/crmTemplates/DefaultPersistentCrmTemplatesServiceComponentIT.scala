@@ -43,6 +43,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
     country = Country("FR"),
     language = Language("fr"),
     question = id.value,
+    shortTitle = None,
     operationId = None
   )
 

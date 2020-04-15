@@ -38,6 +38,7 @@ case class ModerationQuestionResponse(
   id: QuestionId,
   slug: String,
   question: String,
+  shortTitle: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -49,6 +50,7 @@ object ModerationQuestionResponse {
     id = question.questionId,
     slug = question.slug,
     question = question.question,
+    shortTitle = question.shortTitle,
     country = question.country,
     language = question.language
   )
@@ -179,6 +181,7 @@ case class QuestionDetailsResponse(
   operationId: OperationId,
   wording: WordingResponse,
   question: String,
+  shortTitle: Option[String],
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
@@ -221,6 +224,7 @@ object QuestionDetailsResponse extends CirceFormatters {
       metas = operationOfQuestion.metas
     ),
     question = question.question,
+    shortTitle = question.shortTitle,
     slug = question.slug,
     country = question.country,
     language = question.language,
@@ -250,6 +254,7 @@ final case class QuestionOfOperationResponse(
   questionId: QuestionId,
   questionSlug: String,
   question: String,
+  shortTitle: Option[String],
   operationTitle: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,

@@ -104,6 +104,7 @@ class QuestionApiTest
     country = Country("FR"),
     language = Language("fr"),
     question = "the question",
+    shortTitle = None,
     operationId = Some(OperationId("operationid"))
   )
   val baseOperation = Operation(

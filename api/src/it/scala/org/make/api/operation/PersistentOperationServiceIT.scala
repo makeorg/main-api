@@ -130,6 +130,7 @@ class PersistentOperationServiceIT
           language = Language("fr"),
           slug = "hello-fr",
           question = "ça va ?",
+          shortTitle = None,
           operationId = Some(operationId)
         ),
         details = OperationOfQuestion(
@@ -170,6 +171,7 @@ class PersistentOperationServiceIT
           language = Language("en"),
           slug = "hello-gb",
           question = "how are you ?",
+          shortTitle = None,
           operationId = Some(operationId)
         ),
         details = OperationOfQuestion(

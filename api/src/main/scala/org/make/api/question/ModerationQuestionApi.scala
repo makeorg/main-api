@@ -155,31 +155,6 @@ trait ModerationQuestionApi extends Directives {
   def getQuestion: Route
 
   @ApiOperation(
-    value = "post-question",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    authorizations = Array(
-      new Authorization(
-        value = "MakeApi",
-        scopes = Array(
-          new AuthorizationScope(scope = "admin", description = "BO Admin"),
-          new AuthorizationScope(scope = "moderator", description = "BO Moderator")
-        )
-      )
-    )
-  )
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.question.CreateQuestionRequest")
-    )
-  )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ModerationQuestionResponse]))
-  )
-  @Path(value = "/")
-  def createQuestion: Route
-
-  @ApiOperation(
     value = "upload-operation-consultation-image",
     httpMethod = "POST",
     code = HttpCodes.OK,
@@ -202,7 +177,7 @@ trait ModerationQuestionApi extends Directives {
   def uploadQuestionImage: Route
 
   def routes: Route =
-    listQuestions ~ getQuestion ~ createQuestion ~ addInitialProposal ~ refuseInitialProposals ~ uploadQuestionImage
+    listQuestions ~ getQuestion ~ addInitialProposal ~ refuseInitialProposals ~ uploadQuestionImage
 
 }
 
@@ -396,33 +371,6 @@ trait DefaultModerationQuestionComponent
         }
       }
     }
-
-    override def createQuestion: Route =
-      post {
-        path("moderation" / "questions") {
-          makeOperation("ModerationCreateQuestion") { _ =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireAdminRole(userAuth.user) {
-                decodeRequest {
-                  entity(as[CreateQuestionRequest]) { request =>
-                    provideAsync(
-                      questionService
-                        .createQuestion(
-                          country = request.country,
-                          language = request.language,
-                          question = request.question,
-                          slug = request.slug
-                        )
-                    ) { question =>
-                      complete(ModerationQuestionResponse(question))
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
 
     override def uploadQuestionImage: Route = {
       post {

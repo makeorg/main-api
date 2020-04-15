@@ -20,6 +20,7 @@
 package org.make.api.technical
 
 import scalikejdbc.WrappedResultSet
+import scalikejdbc.interpolation.SQLSyntax
 
 object PersistentServiceUtils {
 
@@ -29,12 +30,13 @@ object PersistentServiceUtils {
                         order: Option[String],
                         query: scalikejdbc.PagingSQLBuilder[WrappedResultSet],
                         columns: Seq[String],
-                        alias: scalikejdbc.SyntaxProvider[T]): scalikejdbc.PagingSQLBuilder[WrappedResultSet] = {
+                        alias: scalikejdbc.SyntaxProvider[T],
+                        defaultSort: SQLSyntax): scalikejdbc.PagingSQLBuilder[WrappedResultSet] = {
     val queryOrdered = (sort, order) match {
       case (Some(field), Some("DESC")) if columns.contains(field) =>
         query.orderBy(alias.field(field)).desc.offset(start)
       case (Some(field), _) if columns.contains(field) => query.orderBy(alias.field(field)).asc.offset(start)
-      case (_, _)                                      => query.orderBy(alias.name).asc.offset(start)
+      case (_, _)                                      => query.orderBy(defaultSort).asc.offset(start)
     }
 
     end match {

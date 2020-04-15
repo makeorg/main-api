@@ -87,6 +87,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
             questionId = QuestionId("question"),
             slug = "question",
             question = "question",
+            shortTitle = None,
             country = Country("FR"),
             language = Language("fr"),
             operationId = Some(OperationId("operation"))

@@ -212,8 +212,8 @@ class QuestionPersonalityServiceTest
       ).thenReturn(
         Future.successful(
           Seq(
-            Question(QuestionId("question-id-one"), "slug", Country("FR"), Language("fr"), "question", None),
-            Question(QuestionId("question-id-two"), "slug", Country("FR"), Language("fr"), "question", None)
+            Question(QuestionId("question-id-one"), "slug", Country("FR"), Language("fr"), "question", None, None),
+            Question(QuestionId("question-id-two"), "slug", Country("FR"), Language("fr"), "question", None, None)
           )
         )
       )

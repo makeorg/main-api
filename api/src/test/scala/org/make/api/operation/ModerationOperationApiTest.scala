@@ -119,6 +119,7 @@ class ModerationOperationApiTest
           questionId = QuestionId("first-question-id"),
           slug = "first-operation-BR",
           question = "first question?",
+          shortTitle = None,
           operationId = Some(OperationId("firstOperation"))
         ),
         details = OperationOfQuestion(

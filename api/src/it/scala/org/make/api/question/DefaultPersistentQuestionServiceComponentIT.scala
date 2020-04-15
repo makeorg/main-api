@@ -40,6 +40,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("FR"),
         language = Language("fr"),
         question = "some question",
+        shortTitle = None,
         operationId = Some(OperationId("my-operation-id"))
       )
 
@@ -68,6 +69,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("aa"),
         question = "some question1",
+        shortTitle = None,
         operationId = None
       )
 
@@ -77,6 +79,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("bb"),
         question = "some question2",
+        shortTitle = None,
         operationId = None
       )
 
@@ -86,6 +89,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("BB"),
         language = Language("aa"),
         question = "some question3",
+        shortTitle = None,
         operationId = None
       )
 
@@ -95,6 +99,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("BB"),
         language = Language("bb"),
         question = "some question4",
+        shortTitle = None,
         operationId = None
       )
 
@@ -172,6 +177,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("aa"),
         question = "some question",
+        shortTitle = None,
         operationId = None
       )
 
@@ -181,6 +187,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("bb"),
         question = "some question",
+        shortTitle = None,
         operationId = None
       )
 
@@ -216,6 +223,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("aa"),
         question = "some question 1",
+        shortTitle = None,
         operationId = None
       )
       val question2 = Question(
@@ -224,6 +232,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("AA"),
         language = Language("bb"),
         question = "some question 2",
+        shortTitle = None,
         operationId = None
       )
 
@@ -260,6 +269,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         country = Country("FR"),
         language = Language("fr"),
         question = "some question ?",
+        shortTitle = None,
         operationId = Some(OperationId("operation-id"))
       )
 
@@ -280,7 +290,8 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
             slug = "question-updated",
             country = Country("GB"),
             language = Language("en"),
-            question = "new question ?"
+            question = "new question ?",
+            shortTitle = Some("new short title"),
           )
         ),
         Timeout(5.seconds)
@@ -290,6 +301,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         question.country should be(Country("GB"))
         question.language should be(Language("en"))
         question.question should be("new question ?")
+        question.shortTitle should be(Some("new short title"))
         question.operationId should be(Some(OperationId("operation-id")))
       }
     }

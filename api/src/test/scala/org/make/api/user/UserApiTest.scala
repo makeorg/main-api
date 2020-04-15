@@ -240,7 +240,8 @@ class UserApiTest
               slug = "the-question",
               country = Country("FR"),
               language = Language("fr"),
-              question = "question ?"
+              question = "question ?",
+              shortTitle = None
             )
           )
         )

@@ -49,7 +49,11 @@ trait QuestionService {
                    language: Language): Future[Option[Question]]
   def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]]
   def countQuestion(request: SearchQuestionRequest): Future[Int]
-  def createQuestion(country: Country, language: Language, question: String, slug: String): Future[Question]
+  def createQuestion(country: Country,
+                     language: Language,
+                     question: String,
+                     shortTitle: Option[String],
+                     slug: String): Future[Question]
   def getQuestionPersonalities(start: Int,
                                end: Option[Int],
                                questionId: QuestionId,
@@ -146,6 +150,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     override def createQuestion(country: Country,
                                 language: Language,
                                 question: String,
+                                shortTitle: Option[String],
                                 slug: String): Future[Question] = {
       persistentQuestionService.persist(
         Question(
@@ -154,6 +159,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
           country = country,
           language = language,
           question = question,
+          shortTitle = shortTitle,
           operationId = None
         )
       )

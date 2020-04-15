@@ -165,6 +165,7 @@ class DefaultAdminProposalApiComponentTest
         Country("GB"),
         Language("en"),
         "To be or not to be ?",
+        None,
         None
       )
       when(proposalCoordinatorService.getProposal(ProposalId("counts-123")))

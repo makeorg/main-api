@@ -30,6 +30,7 @@ case class Question(questionId: QuestionId,
                     country: Country,
                     language: Language,
                     question: String,
+                    shortTitle: Option[String],
                     operationId: Option[OperationId]) {
   def getLocale: String = s"${language.value.toLowerCase}_${country.value.toUpperCase}"
 }

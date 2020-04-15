@@ -65,6 +65,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
+    shortTitle = None,
     operationId = None
   )
 
@@ -74,6 +75,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = Country("FR"),
     language = Language("fr"),
     question = "some unsolved question",
+    shortTitle = None,
     operationId = None
   )
 
@@ -83,6 +85,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     country = Country("IT"),
     language = Language("it"),
     question = "some unsolved question",
+    shortTitle = None,
     operationId = None
   )
 
@@ -1462,6 +1465,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
           country = Country("FR"),
           language = Language("fr"),
           question = "my question",
+          shortTitle = None,
           operationId = None
         ),
         initialProposal = false
