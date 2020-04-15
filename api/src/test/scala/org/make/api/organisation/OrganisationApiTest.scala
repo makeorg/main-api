@@ -556,5 +556,18 @@ class OrganisationApiTest
       }
     }
 
+    scenario("bad request") {
+      val invalidModification = """{
+        |  "optInNewsletter": false
+        |}""".stripMargin
+
+      Put("/organisations/make-org/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, invalidModification))
+        .withHeaders(Authorization(OAuth2BearerToken(makeToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
   }
 }

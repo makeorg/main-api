@@ -35,6 +35,15 @@ import scala.annotation.meta.field
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
 import io.circe.refined._
+import org.make.core.Validation.{
+  maxLength,
+  requireNonEmpty,
+  validateAge,
+  validateOptional,
+  validateOptionalUserInput,
+  validatePostalCode,
+  validateUserInput
+}
 
 case class UserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55") userId: UserId,
@@ -112,46 +121,57 @@ object CurrentUserResponse {
   implicit val decoder: Decoder[CurrentUserResponse] = deriveDecoder[CurrentUserResponse]
 }
 
-case class UserProfileResponse(
-  firstName: Option[String],
-  lastName: Option[String],
-  dateOfBirth: Option[LocalDate],
-  avatarUrl: Option[String],
-  profession: Option[String],
-  description: Option[String],
-  postalCode: Option[String],
-  optInNewsletter: Boolean,
-  website: Option[String]
-)
+case class UserProfileResponse(firstName: Option[String],
+                               lastName: Option[String],
+                               dateOfBirth: Option[LocalDate],
+                               avatarUrl: Option[String],
+                               profession: Option[String],
+                               description: Option[String],
+                               postalCode: Option[String],
+                               optInNewsletter: Boolean,
+                               website: Option[String])
 
 object UserProfileResponse {
   implicit val encoder: Encoder[UserProfileResponse] = deriveEncoder[UserProfileResponse]
   implicit val decoder: Decoder[UserProfileResponse] = deriveDecoder[UserProfileResponse]
 }
 
-case class UserProfileRequest(
-  firstName: String,
-  lastName: Option[String],
-  dateOfBirth: Option[LocalDate],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.jpg")
-  avatarUrl: Option[String Refined Url],
-  profession: Option[String],
-  description: Option[String],
-  postalCode: Option[String],
-  optInNewsletter: Boolean,
-  @(ApiModelProperty @field)(dataType = "string", example = "https://make.org")
-  website: Option[String Refined Url]
-)
+case class UserProfileRequest(firstName: String,
+                              lastName: Option[String],
+                              dateOfBirth: Option[LocalDate],
+                              @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.jpg")
+                              avatarUrl: Option[String Refined Url],
+                              profession: Option[String],
+                              description: Option[String],
+                              postalCode: Option[String],
+                              optInNewsletter: Boolean,
+                              @(ApiModelProperty @field)(dataType = "string", example = "https://make.org")
+                              website: Option[String Refined Url]) {
+  private val maxDescriptionLength = 450
+
+  validateOptional(
+    Some(requireNonEmpty("firstName", firstName, Some("firstName should not be an empty string"))),
+    Some(validateUserInput("firstName", firstName, None)),
+    lastName.map(value => requireNonEmpty("lastName", value, Some("firstName should not be an empty string"))),
+    Some(validateOptionalUserInput("lastName", lastName, None)),
+    Some(validateOptionalUserInput("profession", profession, None)),
+    description.map(value => maxLength("description", maxDescriptionLength, value)),
+    Some(validateOptionalUserInput("description", description, None)),
+    postalCode.map(value => validatePostalCode("postalCode", value, None)),
+    Some(validateAge("dateOfBirth", dateOfBirth))
+  )
+}
 
 object UserProfileRequest {
   implicit val encoder: Encoder[UserProfileRequest] = deriveEncoder[UserProfileRequest]
   implicit val decoder: Decoder[UserProfileRequest] = deriveDecoder[UserProfileRequest]
 }
 
-case class MailingErrorLogResponse(
-  error: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]") date: ZonedDateTime
-)
+case class MailingErrorLogResponse(error: String,
+                                   @(ApiModelProperty @field)(
+                                     dataType = "string",
+                                     example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]"
+                                   ) date: ZonedDateTime)
 
 object MailingErrorLogResponse extends CirceFormatters {
   implicit val encoder: Encoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
@@ -206,13 +226,11 @@ object ProfileResponse extends CirceFormatters {
   }
 }
 
-final case class SocialLoginResponse(
-  token_type: String,
-  access_token: String,
-  expires_in: Long,
-  refresh_token: String,
-  account_creation: Boolean
-)
+final case class SocialLoginResponse(token_type: String,
+                                     access_token: String,
+                                     expires_in: Long,
+                                     refresh_token: String,
+                                     account_creation: Boolean)
 
 object SocialLoginResponse {
 

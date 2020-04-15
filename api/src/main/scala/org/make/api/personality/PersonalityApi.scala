@@ -23,23 +23,24 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
+import io.circe.refined._
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.TopIdeaServiceComponent
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
+import org.make.api.question.{QuestionTopIdeaWithAvatarResponse, SimpleQuestionResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.{UserResponse, UserServiceComponent}
+import org.make.core.Validation._
 import org.make.core._
-import org.make.core.idea.{CommentQualificationKey, CommentVoteKey, TopIdeaComment, TopIdeaCommentId, TopIdeaId}
+import org.make.core.idea._
 import org.make.core.profile.Profile
-import org.make.core.user.{User, UserId}
-import io.circe.refined._
-import org.make.api.question.{QuestionTopIdeaWithAvatarResponse, SimpleQuestionResponse}
 import org.make.core.question.QuestionId
+import org.make.core.user.{User, UserId}
 
 import scala.annotation.meta.field
 
@@ -330,7 +331,19 @@ final case class PersonalityProfileRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "https://make.org")
   website: Option[String Refined Url],
   politicalParty: String
-)
+) {
+  private val maxDescriptionLength = 450
+
+  validateOptional(
+    Some(requireNonEmpty("firstName", firstName, Some("firstName should not be an empty string"))),
+    Some(validateUserInput("firstName", firstName, None)),
+    Some(requireNonEmpty("lastName", lastName, Some("firstName should not be an empty string"))),
+    Some(validateUserInput("lastName", lastName, None)),
+    Some(validateOptionalUserInput("description", description, None)),
+    description.map(value => maxLength("description", maxDescriptionLength, value)),
+    Some(validateUserInput("politicalParty", politicalParty, None))
+  )
+}
 
 object PersonalityProfileRequest {
   implicit val encoder: Encoder[PersonalityProfileRequest] = deriveEncoder[PersonalityProfileRequest]
