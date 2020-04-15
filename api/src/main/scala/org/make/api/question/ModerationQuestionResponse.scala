@@ -259,7 +259,8 @@ final case class QuestionOfOperationResponse(
   startDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "2020-01-08T17:23:00.000Z")
   endDate: Option[ZonedDateTime],
-  theme: QuestionThemeResponse
+  theme: QuestionThemeResponse,
+  displayResults: Boolean
 )
 
 object QuestionOfOperationResponse {

@@ -311,7 +311,8 @@ trait DefaultQuestionApiComponent
               language = question.language,
               startDate = operationOfQuestion.startDate,
               endDate = operationOfQuestion.endDate,
-              theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme)
+              theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme),
+              displayResults = operationOfQuestion.displayResults
             )
           }.sortBy(_.questionSlug)
         }
