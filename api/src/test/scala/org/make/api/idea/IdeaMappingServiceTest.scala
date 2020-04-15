@@ -200,9 +200,15 @@ class IdeaMappingServiceTest
         .thenReturn(
           Future.successful(
             Seq(
-              TagType(TagTypeId("stake-type-id"), "Stake", TagTypeDisplay.Displayed, 70),
-              TagType(TagTypeId("solution-type-id"), "Solution type", TagTypeDisplay.Displayed, 50),
-              TagType(TagTypeId("other-type-id"), "Other", TagTypeDisplay.Displayed, 30)
+              TagType(TagTypeId("stake-type-id"), "Stake", TagTypeDisplay.Displayed, 70, requiredForEnrichment = false),
+              TagType(
+                TagTypeId("solution-type-id"),
+                "Solution type",
+                TagTypeDisplay.Displayed,
+                50,
+                requiredForEnrichment = false
+              ),
+              TagType(TagTypeId("other-type-id"), "Other", TagTypeDisplay.Displayed, 30, requiredForEnrichment = false)
             )
           )
         )

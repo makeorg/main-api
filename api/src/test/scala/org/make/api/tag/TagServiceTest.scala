@@ -319,7 +319,11 @@ class TagServiceTest
 
       Mockito
         .when(tagTypeService.getTagType(ArgumentMatchers.any[TagTypeId]))
-        .thenReturn(Future.successful(Some(TagType(TagTypeId("tagTypeId"), "", TagTypeDisplay.Displayed))))
+        .thenReturn(
+          Future.successful(
+            Some(TagType(TagTypeId("tagTypeId"), "", TagTypeDisplay.Displayed, requiredForEnrichment = false))
+          )
+        )
 
       Mockito
         .when(
@@ -364,7 +368,16 @@ class TagServiceTest
       Mockito
         .when(persistentTagTypeService.findAll())
         .thenReturn(
-          Future.successful(Seq(TagType(TagTypeId("stake"), label = "stake", display = TagTypeDisplay.Displayed)))
+          Future.successful(
+            Seq(
+              TagType(
+                TagTypeId("stake"),
+                label = "stake",
+                display = TagTypeDisplay.Displayed,
+                requiredForEnrichment = false
+              )
+            )
+          )
         )
 
       Mockito

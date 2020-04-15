@@ -188,7 +188,10 @@ trait DefaultModerationTagTypeApiComponent
               decodeRequest {
                 entity(as[CreateTagTypeRequest]) { request: CreateTagTypeRequest =>
                   Validation.validate(Validation.validateUserInput("label", request.label, None))
-                  onSuccess(tagTypeService.createTagType(request.label, request.display, request.weight)) { tagType =>
+                  onSuccess(
+                    tagTypeService
+                      .createTagType(request.label, request.display, request.weight, request.requiredForEnrichment)
+                  ) { tagType =>
                     complete(StatusCodes.Created -> TagTypeResponse(tagType))
                   }
                 }
@@ -208,7 +211,13 @@ trait DefaultModerationTagTypeApiComponent
                 entity(as[UpdateTagTypeRequest]) { request: UpdateTagTypeRequest =>
                   Validation.validate(Validation.validateUserInput("label", request.label, None))
                   provideAsyncOrNotFound(
-                    tagTypeService.updateTagType(moderationTagTypeId, request.label, request.display, request.weight)
+                    tagTypeService.updateTagType(
+                      moderationTagTypeId,
+                      request.label,
+                      request.display,
+                      request.weight,
+                      request.requiredForEnrichment
+                    )
                   ) { tagType =>
                     complete(TagTypeResponse(tagType))
                   }
@@ -260,7 +269,8 @@ case class CreateTagTypeRequest(
   label: String,
   @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
   display: TagTypeDisplay,
-  weight: Int
+  weight: Int,
+  requiredForEnrichment: Boolean
 )
 
 object CreateTagTypeRequest {
@@ -271,7 +281,8 @@ case class UpdateTagTypeRequest(
   label: String,
   @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
   display: TagTypeDisplay,
-  weight: Int
+  weight: Int,
+  requiredForEnrichment: Boolean
 )
 
 object UpdateTagTypeRequest {

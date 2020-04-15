@@ -39,20 +39,25 @@ class ModerationTagTypeApiTest
   val routes: Route = sealRoute(moderationTagTypeApi.routes)
 
   feature("create a tagType") {
-    val validTagType = TagType(TagTypeId("valid-tag-type"), "valid TagType", TagTypeDisplay.Hidden)
+    val validTagType =
+      TagType(TagTypeId("valid-tag-type"), "valid TagType", TagTypeDisplay.Hidden, requiredForEnrichment = false)
 
     when(
       tagTypeService
         .createTagType(
           ArgumentMatchers.eq(validTagType.label),
           ArgumentMatchers.eq(validTagType.display),
-          ArgumentMatchers.eq(validTagType.weight)
+          ArgumentMatchers.eq(validTagType.weight),
+          ArgumentMatchers.eq(false)
         )
     ).thenReturn(Future.successful(validTagType))
 
     scenario("unauthorize unauthenticated") {
       Post("/moderation/tag-types").withEntity(
-        HttpEntity(ContentTypes.`application/json`, """{"label": "valid TagType", "display":"HIDDEN"}""")
+        HttpEntity(
+          ContentTypes.`application/json`,
+          """{"label": "valid TagType", "display":"HIDDEN", "requiredForEnrichment": false}"""
+        )
       ) ~>
         routes ~> check {
         status should be(StatusCodes.Unauthorized)
@@ -61,7 +66,12 @@ class ModerationTagTypeApiTest
 
     scenario("forbid authenticated citizen") {
       Post("/moderation/tag-types")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"label": "valid TagType", "display":"HIDDEN"}"""))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"label": "valid TagType", "display":"HIDDEN", "requiredForEnrichment": false}"""
+          )
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -70,7 +80,10 @@ class ModerationTagTypeApiTest
     scenario("allow authenticated moderator") {
       Post("/moderation/tag-types")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"label": "valid TagType", "display":"HIDDEN", "weight": 0}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"label": "valid TagType", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": false}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Created)
@@ -79,7 +92,8 @@ class ModerationTagTypeApiTest
   }
 
   feature("read a tagType") {
-    val helloWorldTagType = TagType(TagTypeId("hello-tag-type"), "hello tag type", TagTypeDisplay.Displayed)
+    val helloWorldTagType =
+      TagType(TagTypeId("hello-tag-type"), "hello tag type", TagTypeDisplay.Displayed, requiredForEnrichment = false)
 
     when(tagTypeService.getTagType(ArgumentMatchers.eq(helloWorldTagType.tagTypeId)))
       .thenReturn(Future.successful(Some(helloWorldTagType)))
@@ -119,8 +133,10 @@ class ModerationTagTypeApiTest
   }
 
   feature("update a tagType") {
-    val helloWorldTagType = TagType(TagTypeId("hello-tag-type"), "hello tag type", TagTypeDisplay.Displayed)
-    val newHelloWorldTagType = TagType(TagTypeId("hello-tag-type"), "new label", TagTypeDisplay.Hidden)
+    val helloWorldTagType =
+      TagType(TagTypeId("hello-tag-type"), "hello tag type", TagTypeDisplay.Displayed, requiredForEnrichment = false)
+    val newHelloWorldTagType =
+      TagType(TagTypeId("hello-tag-type"), "new label", TagTypeDisplay.Hidden, requiredForEnrichment = true)
 
     when(tagTypeService.getTagType(ArgumentMatchers.eq(helloWorldTagType.tagTypeId)))
       .thenReturn(Future.successful(Some(helloWorldTagType)))
@@ -129,7 +145,8 @@ class ModerationTagTypeApiTest
         ArgumentMatchers.eq(TagTypeId("fake-tag-type")),
         ArgumentMatchers.any[String],
         ArgumentMatchers.any[TagTypeDisplay],
-        ArgumentMatchers.any[Int]
+        ArgumentMatchers.any[Int],
+        ArgumentMatchers.any[Boolean]
       )
     ).thenReturn(Future.successful(None))
     when(
@@ -137,13 +154,17 @@ class ModerationTagTypeApiTest
         ArgumentMatchers.eq(helloWorldTagType.tagTypeId),
         ArgumentMatchers.eq("new label"),
         ArgumentMatchers.eq(TagTypeDisplay.Hidden),
-        ArgumentMatchers.any[Int]
+        ArgumentMatchers.any[Int],
+        ArgumentMatchers.eq(true)
       )
     ).thenReturn(Future.successful(Some(newHelloWorldTagType)))
 
     scenario("unauthorize unauthenticated") {
       Put("/moderation/tag-types/hello-tag-type").withEntity(
-        HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN"}""")
+        HttpEntity(
+          ContentTypes.`application/json`,
+          """{"label": "new label", "display":"HIDDEN", "requiredForEnrichment": true}"""
+        )
       ) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -151,7 +172,12 @@ class ModerationTagTypeApiTest
 
     scenario("forbid authenticated citizen") {
       Put("/moderation/tag-types/hello-tag-type")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN"}"""))
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"label": "new label", "display":"HIDDEN", "requiredForEnrichment": true}"""
+          )
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -160,7 +186,10 @@ class ModerationTagTypeApiTest
     scenario("allow authenticated moderator on existing tag type") {
       Put("/moderation/tag-types/hello-tag-type")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN", "weight": 0}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -174,7 +203,10 @@ class ModerationTagTypeApiTest
     scenario("not found and allow authenticated moderator on a non existing tag type") {
       Put("/moderation/tag-types/fake-tag-type")
         .withEntity(
-          HttpEntity(ContentTypes.`application/json`, """{"label": "new label", "display":"HIDDEN", "weight": 0}""")
+          HttpEntity(
+            ContentTypes.`application/json`,
+            """{"label": "new label", "display":"HIDDEN", "weight": 0, "requiredForEnrichment": true}"""
+          )
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)

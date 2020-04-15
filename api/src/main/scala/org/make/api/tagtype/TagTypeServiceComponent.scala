@@ -31,13 +31,17 @@ trait TagTypeServiceComponent {
 
 trait TagTypeService {
   def getTagType(tagTypeId: TagTypeId): Future[Option[TagType]]
-  def createTagType(label: String, display: TagTypeDisplay, weight: Int): Future[TagType]
-  def findAll(): Future[Seq[TagType]]
+  def createTagType(label: String,
+                    display: TagTypeDisplay,
+                    weight: Int,
+                    requiredForEnrichment: Boolean): Future[TagType]
+  def findAll(requiredForEnrichmentFilter: Option[Boolean] = None): Future[Seq[TagType]]
   def findByTagTypeIds(tagIds: Seq[TagTypeId]): Future[Seq[TagType]]
   def updateTagType(tagTypeId: TagTypeId,
                     newTagTypeLabel: String,
                     newTagTypeDisplay: TagTypeDisplay,
-                    newTagTypeWeight: Int): Future[Option[TagType]]
+                    newTagTypeWeight: Int,
+                    requiredForEnrichment: Boolean): Future[Option[TagType]]
 }
 
 trait DefaultTagTypeServiceComponent extends TagTypeServiceComponent {
@@ -51,14 +55,23 @@ trait DefaultTagTypeServiceComponent extends TagTypeServiceComponent {
       persistentTagTypeService.get(slug)
     }
 
-    override def createTagType(label: String, display: TagTypeDisplay, weight: Int): Future[TagType] = {
+    override def createTagType(label: String,
+                               display: TagTypeDisplay,
+                               weight: Int,
+                               requiredForEnrichment: Boolean): Future[TagType] = {
       persistentTagTypeService.persist(
-        TagType(tagTypeId = idGenerator.nextTagTypeId(), label = label, display = display, weight = weight)
+        TagType(
+          tagTypeId = idGenerator.nextTagTypeId(),
+          label = label,
+          display = display,
+          weight = weight,
+          requiredForEnrichment = requiredForEnrichment
+        )
       )
     }
 
-    override def findAll(): Future[Seq[TagType]] = {
-      persistentTagTypeService.findAll()
+    override def findAll(requiredForEnrichmentFilter: Option[Boolean] = None): Future[Seq[TagType]] = {
+      persistentTagTypeService.findAll(requiredForEnrichmentFilter)
     }
 
     override def findByTagTypeIds(tagIds: Seq[TagTypeId]): Future[Seq[TagType]] = {
@@ -68,11 +81,19 @@ trait DefaultTagTypeServiceComponent extends TagTypeServiceComponent {
     override def updateTagType(tagTypeId: TagTypeId,
                                newTagTypeLabel: String,
                                newTagTypeDisplay: TagTypeDisplay,
-                               newTagTypeWeight: Int): Future[Option[TagType]] = {
+                               newTagTypeWeight: Int,
+                               requiredForEnrichment: Boolean): Future[Option[TagType]] = {
       getTagType(tagTypeId).flatMap {
         case Some(tagType) =>
           persistentTagTypeService
-            .update(tagType.copy(label = newTagTypeLabel, display = newTagTypeDisplay, weight = newTagTypeWeight))
+            .update(
+              tagType.copy(
+                label = newTagTypeLabel,
+                display = newTagTypeDisplay,
+                weight = newTagTypeWeight,
+                requiredForEnrichment = requiredForEnrichment
+              )
+            )
         case None => Future.successful(None)
       }
     }

@@ -306,17 +306,17 @@ class PersistentTagServiceIT
 
   feature("Search tags") {
     val tagTypeFirst: TagType =
-      TagType(tagTypeId = TagTypeId("first"), label = "First", display = TagTypeDisplay.Displayed)
+      TagType(TagTypeId("first"), label = "First", display = TagTypeDisplay.Displayed, requiredForEnrichment = true)
     val tagTypeSecond: TagType =
-      TagType(tagTypeId = TagTypeId("second"), label = "Second", display = TagTypeDisplay.Hidden)
+      TagType(TagTypeId("second"), label = "Second", display = TagTypeDisplay.Hidden, requiredForEnrichment = true)
     val tagTypeThird: TagType =
-      TagType(tagTypeId = TagTypeId("third"), label = "Third", display = TagTypeDisplay.Hidden)
+      TagType(TagTypeId("third"), label = "Third", display = TagTypeDisplay.Hidden, requiredForEnrichment = true)
     val tagTypeFourth: TagType =
-      TagType(tagTypeId = TagTypeId("fourth"), label = "Fourth", display = TagTypeDisplay.Hidden)
+      TagType(TagTypeId("fourth"), label = "Fourth", display = TagTypeDisplay.Hidden, requiredForEnrichment = false)
     val tagTypeSeventh: TagType =
-      TagType(tagTypeId = TagTypeId("seventh"), label = "Seventh", display = TagTypeDisplay.Hidden)
-    val tagTypeHeighth: TagType =
-      TagType(tagTypeId = TagTypeId("heighth"), label = "Heighth", display = TagTypeDisplay.Displayed)
+      TagType(TagTypeId("seventh"), label = "Seventh", display = TagTypeDisplay.Hidden, requiredForEnrichment = false)
+    val tagTypeEighth: TagType =
+      TagType(TagTypeId("eighth"), label = "Eighth", display = TagTypeDisplay.Displayed, requiredForEnrichment = true)
     val operationIdFirst: OperationId = OperationId("opefirst")
     val questionFirst = questionForOperation(operationIdFirst)
     val operationIdSecond: OperationId = OperationId("opesecond")
@@ -383,7 +383,7 @@ class PersistentTagServiceIT
         language = Language("br")
       )
     val calliope: Tag =
-      targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeHeighth.tagTypeId, label = "calliopelabel")
+      targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeEighth.tagTypeId, label = "calliopelabel")
 
     scenario("Search tags by label") {
 
@@ -392,7 +392,7 @@ class PersistentTagServiceIT
       When("I search tags by label 'calliope'")
 
       val futureTagListResultByLabel: Future[Seq[Tag]] = for {
-        _ <- persistentTagTypeService.persist(tagTypeHeighth)
+        _ <- persistentTagTypeService.persist(tagTypeEighth)
         _ <- persistentTagService.persist(calliope)
         result <- persistentTagService.find(
           start = 0,
@@ -567,9 +567,9 @@ class PersistentTagServiceIT
 
   feature("count tags") {
     val fooTagType: TagType =
-      TagType(tagTypeId = TagTypeId("foo"), label = "Foo", display = TagTypeDisplay.Displayed)
+      TagType(TagTypeId("foo"), label = "Foo", display = TagTypeDisplay.Displayed, requiredForEnrichment = false)
     val barTagType: TagType =
-      TagType(tagTypeId = TagTypeId("bar"), label = "Bar", display = TagTypeDisplay.Displayed)
+      TagType(TagTypeId("bar"), label = "Bar", display = TagTypeDisplay.Displayed, requiredForEnrichment = false)
     val fooOperationId: OperationId = OperationId("fooOperation")
     val fooThemeId: ThemeId = ThemeId("fooTheme")
 

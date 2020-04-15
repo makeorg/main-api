@@ -35,14 +35,19 @@ class PersistentTagTypeServiceIT
   override protected val cockroachExposedPort: Int = 40009
 
   def newTagType(label: String): TagType =
-    TagType(tagTypeId = idGenerator.nextTagTypeId(), label = label, display = TagTypeDisplay.Displayed)
+    TagType(
+      tagTypeId = idGenerator.nextTagTypeId(),
+      label = label,
+      display = TagTypeDisplay.Displayed,
+      requiredForEnrichment = false
+    )
 
   val stark: TagType = newTagType("Stark")
 
   val targaryen: TagType = newTagType("Targaryen")
   val lannister: TagType = newTagType("Lannister")
-  val bolton: TagType = newTagType("Bolton")
-  val greyjoy: TagType = newTagType("Greyjoy")
+  val bolton: TagType = newTagType("Bolton").copy(requiredForEnrichment = true)
+  val greyjoy: TagType = newTagType("Greyjoy").copy(requiredForEnrichment = true)
 
   val tully: TagType = newTagType("Tully")
 
@@ -98,6 +103,13 @@ class PersistentTagTypeServiceIT
         case (persisted, found) =>
           Then("result should contain a list of tagTypes of targaryen, lannister, bolton and greyjoy.")
           found.forall(persisted.contains) should be(true)
+      }
+
+      When("""I retrieve the tagTypes list of requiredForEnrichment""")
+      whenReady(persistentTagTypeService.findAll(requiredForEnrichment = Some(true)), Timeout(3.seconds)) { found =>
+        Then("result should contain a list of tagTypes of bolton and greyjoy only.")
+        found.size shouldBe 2
+        found.map(_.tagTypeId).toSet shouldBe Set(bolton.tagTypeId, greyjoy.tagTypeId)
       }
     }
   }
