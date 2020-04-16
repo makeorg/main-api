@@ -39,7 +39,7 @@ trait PersistentTagTypeServiceComponent {
 
 trait PersistentTagTypeService {
   def get(tagTypeId: TagTypeId): Future[Option[TagType]]
-  def findAll(): Future[Seq[TagType]]
+  def findAll(requiredForEnrichment: Option[Boolean] = None): Future[Seq[TagType]]
   def findAllFromIds(tagTypesIds: Seq[TagTypeId]): Future[Seq[TagType]]
   def persist(tagType: TagType): Future[TagType]
   def update(tagType: TagType): Future[Option[TagType]]
@@ -69,13 +69,14 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
       futurePersistentTagType.map(_.map(_.toTagType))
     }
 
-    override def findAll(): Future[Seq[TagType]] = {
+    override def findAll(requiredForEnrichment: Option[Boolean] = None): Future[Seq[TagType]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentTagTypes: Future[List[PersistentTagType]] = Future(NamedDB(Symbol("READ")).retryableTx {
         implicit session =>
           withSQL {
             select
               .from(PersistentTagType.as(tagTypeAlias))
+              .where(requiredForEnrichment.map(required => sqls.eq(tagTypeAlias.requiredForEnrichment, required)))
               .orderBy(tagTypeAlias.weightType)
               .desc
           }.map(PersistentTagType.apply()).list.apply
@@ -112,6 +113,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               column.label -> tagType.label,
               column.display -> tagType.display.shortName,
               column.weightType -> tagType.weight,
+              column.requiredForEnrichment -> tagType.requiredForEnrichment,
               column.createdAt -> DateHelper.now,
               column.updatedAt -> DateHelper.now
             )
@@ -129,6 +131,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               column.label -> tagType.label,
               column.display -> tagType.display.shortName,
               column.weightType -> tagType.weight,
+              column.requiredForEnrichment -> tagType.requiredForEnrichment,
               column.updatedAt -> DateHelper.now
             )
             .where(
@@ -178,14 +181,22 @@ object DefaultPersistentTagTypeServiceComponent {
                                display: TagTypeDisplay,
                                weightType: Int,
                                createdAt: ZonedDateTime,
-                               updatedAt: ZonedDateTime) {
+                               updatedAt: ZonedDateTime,
+                               requiredForEnrichment: Boolean) {
     def toTagType: TagType =
-      TagType(tagTypeId = TagTypeId(id), label = label, display = display, weight = weightType)
+      TagType(
+        tagTypeId = TagTypeId(id),
+        label = label,
+        display = display,
+        weight = weightType,
+        requiredForEnrichment = requiredForEnrichment
+      )
   }
 
   object PersistentTagType extends SQLSyntaxSupport[PersistentTagType] with ShortenedNames with StrictLogging {
 
-    override val columnNames: Seq[String] = Seq("id", "label", "display", "weight_type", "created_at", "updated_at")
+    override val columnNames: Seq[String] =
+      Seq("id", "label", "display", "weight_type", "created_at", "updated_at", "required_for_enrichment")
 
     override val tableName: String = "tag_type"
 
@@ -200,7 +211,8 @@ object DefaultPersistentTagTypeServiceComponent {
         display = TagTypeDisplay.matchTagTypeDisplayOrDefault(resultSet.string(tagTypeResultName.display)),
         weightType = resultSet.int(tagTypeResultName.weightType),
         createdAt = resultSet.zonedDateTime(tagTypeResultName.createdAt),
-        updatedAt = resultSet.zonedDateTime(tagTypeResultName.updatedAt)
+        updatedAt = resultSet.zonedDateTime(tagTypeResultName.updatedAt),
+        requiredForEnrichment = resultSet.boolean(tagTypeResultName.requiredForEnrichment)
       )
     }
   }

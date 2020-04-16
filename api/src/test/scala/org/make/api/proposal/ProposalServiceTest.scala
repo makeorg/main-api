@@ -138,9 +138,9 @@ class ProposalServiceTest
     .thenReturn(
       Future.successful(
         Seq(
-          TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed),
-          TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed),
-          TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed)
+          TagType(TagTypeId("stake"), "stake", TagTypeDisplay.Displayed, requiredForEnrichment = true),
+          TagType(TagTypeId("solution-type"), "Solution Type", TagTypeDisplay.Displayed, requiredForEnrichment = false),
+          TagType(TagTypeId("other"), "Other", TagTypeDisplay.Displayed, requiredForEnrichment = false)
         )
       )
     )
@@ -2598,12 +2598,13 @@ class ProposalServiceTest
       val userId = UserId("proposal found")
       val date = DateHelper.now().minusHours(5)
 
-      val query = SearchQuery(filters = Some(
-        SearchFilters(
-          user = Some(UserSearchFilter(userId)),
-          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+      val query = SearchQuery(
+        filters = Some(
+          SearchFilters(
+            user = Some(UserSearchFilter(userId)),
+            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+          )
         )
-      )
       )
 
       Mockito
