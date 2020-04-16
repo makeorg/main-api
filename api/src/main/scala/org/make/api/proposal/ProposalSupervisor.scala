@@ -20,19 +20,10 @@
 package org.make.api.proposal
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
-import org.make.api.crmTemplates.CrmTemplatesServiceComponent
-import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalSupervisor.ProposalSupervisorDependencies
-import org.make.api.question.QuestionServiceComponent
-import org.make.api.segment.SegmentServiceComponent
-import org.make.api.semantic.SemanticComponent
-import org.make.api.sequence.{SequenceConfigurationComponent, SequenceServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.crm.SendMailPublisherServiceComponent
-import org.make.api.user.UserServiceComponent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{kafkaDispatcher, MakeBackoffSupervisor}
 
@@ -85,7 +76,7 @@ class ProposalSupervisor(dependencies: ProposalSupervisorDependencies, lockDurat
     context.watch {
       val (props, name) = MakeBackoffSupervisor.propsAndName(
         ProposalConsumerActor
-          .props(proposalCoordinatorService, dependencies)
+          .props(dependencies.proposalIndexerService)
           .withDispatcher(kafkaDispatcher),
         ProposalConsumerActor.name
       )
@@ -101,23 +92,11 @@ class ProposalSupervisor(dependencies: ProposalSupervisorDependencies, lockDurat
 
 object ProposalSupervisor {
 
-  type ProposalSupervisorDependencies = CrmTemplatesServiceComponent
-    with UserServiceComponent
-    with OrganisationServiceComponent
-    with ProposalSearchEngineComponent
-    with ProposalIndexerServiceComponent
-    with QuestionServiceComponent
-    with SemanticComponent
-    with SendMailPublisherServiceComponent
-    with SequenceConfigurationComponent
-    with OperationServiceComponent
-    with OperationOfQuestionServiceComponent
-    with CrmTemplatesServiceComponent
-    with SequenceServiceComponent
-    with TagServiceComponent
-    with SegmentServiceComponent
-    with UserHistoryCoordinatorServiceComponent
-    with SessionHistoryCoordinatorServiceComponent
+  type ProposalSupervisorDependencies =
+    ProposalIndexerServiceComponent
+      with SendMailPublisherServiceComponent
+      with UserHistoryCoordinatorServiceComponent
+      with SessionHistoryCoordinatorServiceComponent
 
   val name: String = "proposal"
   def props(dependencies: ProposalSupervisorDependencies, lockDuration: FiniteDuration): Props =

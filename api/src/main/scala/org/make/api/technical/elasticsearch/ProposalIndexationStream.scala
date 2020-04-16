@@ -24,12 +24,13 @@ import java.time.{LocalDate, ZonedDateTime}
 
 import akka.stream.FlowShape
 import akka.stream.scaladsl.GraphDSL.Implicits._
-import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition}
+import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Sink, Source}
 import akka.{Done, NotUsed}
 import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.ActorSystemComponent
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
@@ -44,9 +45,10 @@ import org.make.api.segment.SegmentServiceComponent
 import org.make.api.semantic.SemanticComponent
 import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationComponent}
 import org.make.api.tag.TagServiceComponent
+import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
-import org.make.core.proposal.{Proposal, ProposalId, SearchFilters, SearchQuery, TagsSearchFilter}
+import org.make.core.proposal._
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
   IndexedAuthor,
@@ -61,7 +63,7 @@ import org.make.core.proposal.indexed.{
 }
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagType}
 import org.make.core.user.User
 import org.make.core.{DateHelper, SlugHelper}
 
@@ -78,6 +80,8 @@ trait ProposalIndexationStream
     with OperationServiceComponent
     with QuestionServiceComponent
     with TagServiceComponent
+    with TagTypeServiceComponent
+    with ActorSystemComponent
     with ProposalSearchEngineComponent
     with SequenceConfigurationComponent
     with SemanticComponent
@@ -157,28 +161,32 @@ trait ProposalIndexationStream
     case None             => Future.successful[Option[Question]](None)
   }
 
-  private def getSelectedStakeTag(tags: Seq[TagId]): Future[Option[IndexedTag]] = {
-    tagService.retrieveIndexedStakeTags(tags).flatMap {
-      case Seq()         => Future.successful(None)
-      case Seq(stakeTag) => Future.successful(Some(stakeTag))
-      case stakeTags =>
-        Future
-          .traverse(stakeTags) { tag =>
-            elasticsearchProposalAPI
-              .countProposals(SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(tag.tagId)))))))
-              .map { count =>
-                tag -> count
+  private def getSelectedStakeTag(tags: Seq[Tag], tagTypes: Seq[TagType]): Future[Option[IndexedTag]] = {
+    tagTypes.find(_.label.toLowerCase == "stake") match {
+      case None => Future.failed(new IllegalStateException("Unable to find stake tag types"))
+      case Some(stakeTypeTag) =>
+        val stakeTags: Seq[Tag] = tags.filter(_.tagTypeId.value == stakeTypeTag.tagTypeId.value)
+        tagService.retrieveIndexedTags(stakeTags, Seq(stakeTypeTag)) match {
+          case Seq()         => Future.successful(None)
+          case Seq(stakeTag) => Future.successful(Some(stakeTag))
+          case indexedTags =>
+            Source(indexedTags)
+              .mapAsync(5) { tag =>
+                elasticsearchProposalAPI
+                  .countProposals(
+                    SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(tag.tagId))))))
+                  )
+                  .map(tag -> _)
               }
-          }
-          .map { mapCount =>
-            Some(mapCount.sortBy {
-              case (tag, count) => (count * -1, tag.label)
-            }).map {
-              case tags => tags.head
-            }.map {
-              case (tag, _) => tag
-            }
-          }
+              .runWith(Sink.seq)
+              .map {
+                _.sortBy {
+                  case (tag, count) => (count * -1, tag.label)
+                }.collectFirst {
+                  case (tag, _) => tag
+                }
+              }
+        }
     }
   }
 
@@ -187,14 +195,14 @@ trait ProposalIndexationStream
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal         <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user             <- OptionT(userService.getUser(proposal.author))
-      tags             <- OptionT(tagService.retrieveIndexedTags(proposal.tags))
-      selectedStakeTag <- OptionT(getSelectedStakeTag(proposal.tags).map(Option(_)))
+      tags             <- OptionT(tagService.findByTagIds(proposal.tags).map(Option.apply))
+      tagTypes         <- OptionT(tagTypeService.findAll().map(Option.apply))
+      selectedStakeTag <- OptionT(getSelectedStakeTag(tags, tagTypes).map(Option.apply))
       organisationInfos <- OptionT(
-        Future
-          .traverse(proposal.organisationIds) { organisationId =>
-            organisationService.getOrganisation(organisationId)
-          }
-          .map[Option[Seq[User]]](organisations => Some(organisations.flatten))
+        Source(proposal.organisationIds)
+          .mapAsync(5)(organisationService.getOrganisation)
+          .runWith(Sink.seq)
+          .map(organisations => Option(organisations.flatten))
       )
       question            <- OptionT(getQuestion(proposal.questionId))
       operationOfQuestion <- OptionT(operationOfQuestionService.findByQuestionId(question.questionId))
@@ -205,6 +213,10 @@ trait ProposalIndexationStream
       // in order to insert this in this for-comprehension correctly we need to transform the Future[Option[String]]
       // into a Future[Option[Option[String]]] since we want to keep an Option[String] in the end.
       segment <- OptionT(segmentService.resolveSegment(proposal.creationContext).map(Option(_)))
+
+      indexedTags = tagService.retrieveIndexedTags(tags, tagTypes)
+      requiredTagTypesIds = tagTypes.collect { case TagType(id, _, _, _, true) => id }
+      hasAllRequiredTagTypes = requiredTagTypesIds.forall(tags.map(_.tagTypeId).contains)
     } yield {
       createIndexedProposal(
         proposal,
@@ -212,7 +224,8 @@ trait ProposalIndexationStream
         sequenceConfiguration,
         user,
         organisationInfos,
-        tags,
+        indexedTags,
+        hasAllRequiredTagTypes,
         selectedStakeTag,
         question,
         operationOfQuestion,
@@ -229,6 +242,7 @@ trait ProposalIndexationStream
                                     user: User,
                                     organisationInfos: Seq[User],
                                     tags: Seq[IndexedTag],
+                                    hasAllRequiredTagTypes: Boolean,
                                     selectedStakeTag: Option[IndexedTag],
                                     question: Question,
                                     operationOfQuestion: OperationOfQuestion,
@@ -243,6 +257,8 @@ trait ProposalIndexationStream
     val segmentScore = segment.map { _ =>
       ScoreCounts.fromSegmentVotes(proposal.votes)
     }.getOrElse(ScoreCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+    val toEnrich: Boolean = proposal.status == Accepted && !hasAllRequiredTagTypes
 
     IndexedProposal(
       id = proposal.proposalId,
@@ -260,7 +276,7 @@ trait ProposalIndexationStream
       votesVerifiedCount = proposal.votes.map(_.countVerified).sum,
       votesSequenceCount = proposal.votes.map(_.countSequence).sum,
       votesSegmentCount = proposal.votes.map(_.countSegment).sum,
-      toEnrich = proposal.status == Accepted && (proposal.idea.isEmpty || proposal.tags.isEmpty),
+      toEnrich = toEnrich,
       scores = IndexedScores(
         engagement = regularScore.engagement(),
         agreement = regularScore.agreement(),

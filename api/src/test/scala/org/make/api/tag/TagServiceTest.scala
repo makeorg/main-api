@@ -25,7 +25,7 @@ import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceC
 import org.make.api.technical.{DefaultIdGeneratorComponent, EventBusService, EventBusServiceComponent}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.SearchQuery
-import org.make.core.proposal.indexed.ProposalsSearchResult
+import org.make.core.proposal.indexed.{IndexedTag, ProposalsSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId, _}
@@ -358,56 +358,52 @@ class TagServiceTest
 
   }
 
-  feature("retrieve stake tag") {
-    scenario("error") {
-      Mockito.when(persistentTagTypeService.findAll()).thenReturn(Future.successful(Seq.empty))
-
-      whenReady(tagService.retrieveIndexedStakeTags(Seq.empty).failed, Timeout(3.seconds)) { res =>
-        res should be(a[IllegalStateException])
-      }
-    }
-
-    scenario("1 stake tag") {
-      Mockito
-        .when(persistentTagTypeService.findAll())
-        .thenReturn(
-          Future.successful(
-            Seq(
-              TagType(
-                TagTypeId("stake"),
-                label = "stake",
-                display = TagTypeDisplay.Displayed,
-                requiredForEnrichment = false
-              )
-            )
-          )
+  feature("retrieve indexed tags") {
+    scenario("indexed tags") {
+      val tagTypes: Seq[TagType] = Seq(
+        TagType(TagTypeId("stake"), label = "stake", display = TagTypeDisplay.Displayed, requiredForEnrichment = true)
+      )
+      val tags: Seq[Tag] = Seq(
+        Tag(
+          tagId = TagId("tag-stake"),
+          label = "tag with stake tagType",
+          display = TagDisplay.Inherit,
+          tagTypeId = TagTypeId("stake"),
+          weight = 0,
+          operationId = None,
+          questionId = None,
+          country = Country("FR"),
+          language = Language("fr")
+        ),
+        Tag(
+          tagId = TagId("tag-no-stake"),
+          label = "tag without tagType",
+          display = TagDisplay.Inherit,
+          tagTypeId = TagTypeId("other"),
+          weight = 0,
+          operationId = None,
+          questionId = None,
+          country = Country("FR"),
+          language = Language("fr")
+        ),
+        Tag(
+          tagId = TagId("tag-display-not-inherited"),
+          label = "tag display not inherited",
+          display = TagDisplay.Displayed,
+          tagTypeId = TagTypeId("other"),
+          weight = 0,
+          operationId = None,
+          questionId = None,
+          country = Country("FR"),
+          language = Language("fr")
         )
+      )
 
-      Mockito
-        .when(tagService.findByTagIds(Seq(TagId("tag-1"))))
-        .thenReturn(
-          Future.successful(
-            Seq(
-              Tag(
-                tagId = TagId("tag-1"),
-                label = "tag 1",
-                display = TagDisplay.Inherit,
-                tagTypeId = TagTypeId("stake"),
-                weight = 0,
-                operationId = None,
-                questionId = None,
-                country = Country("FR"),
-                language = Language("fr")
-              )
-            )
-          )
-        )
-
-      whenReady(tagService.retrieveIndexedStakeTags(Seq(TagId("tag-1"))), Timeout(3.seconds)) { res =>
-        res.head.label should be("tag 1")
-        res.head.display should be(true)
-      }
+      val indexedTags: Seq[IndexedTag] = tagService.retrieveIndexedTags(tags, tagTypes)
+      indexedTags.size shouldBe 3
+      indexedTags.exists(tagStake   => tagStake.tagId == TagId("tag-stake") && tagStake.display)
+      indexedTags.exists(tagNoStake => tagNoStake.tagId == TagId("tag-no-stake") && !tagNoStake.display)
+      indexedTags.exists(tagDisplay => tagDisplay.tagId == TagId("tag-display-not-inherited") && tagDisplay.display)
     }
   }
-
 }

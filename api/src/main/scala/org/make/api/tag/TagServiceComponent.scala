@@ -64,8 +64,7 @@ trait TagService extends ShortenedNames {
                 weight: Float,
                 question: Question,
                 requestContext: RequestContext = RequestContext.empty): Future[Option[Tag]]
-  def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]]
-  def retrieveIndexedStakeTags(tags: Seq[TagId]): Future[Seq[IndexedTag]]
+  def retrieveIndexedTags(tags: Seq[Tag], tagTypes: Seq[TagType]): Seq[IndexedTag]
   def find(start: Int = 0,
            end: Option[Int] = None,
            sort: Option[String] = None,
@@ -126,55 +125,20 @@ trait DefaultTagServiceComponent
       persistentTagService.persist(tag)
     }
 
-    override def retrieveIndexedTags(tags: Seq[TagId]): Future[Option[Seq[IndexedTag]]] = {
-      val tagTypes: Future[Seq[TagType]] = persistentTagTypeService.findAll()
-
-      tagTypes.flatMap { tagTypes =>
-        tagService
-          .findByTagIds(tags)
-          .map { tags =>
-            Some(tags.map { tag =>
-              if (tag.display == TagDisplay.Inherit) {
-                val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
-                IndexedTag(
-                  tagId = tag.tagId,
-                  label = tag.label,
-                  display = tagType.nonEmpty && tagType.headOption
-                    .map(_.display.shortName)
-                    .contains(TagDisplay.Displayed.shortName)
-                )
-              } else {
-                IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
-              }
-            })
-          }
-      }
-    }
-
-    override def retrieveIndexedStakeTags(tags: Seq[TagId]): Future[Seq[IndexedTag]] = {
-      val stake: Future[Option[TagType]] =
-        persistentTagTypeService.findAll().map(_.find(_.label.toLowerCase == "stake"))
-
-      stake.flatMap {
-        case Some(stake) => Future.successful(stake)
-        case None        => Future.failed(new IllegalStateException("Unable to find stake tag types"))
-      }.flatMap { stake =>
-        tagService
-          .findByTagIds(tags)
-          .map { tags =>
-            tags.filter(_.tagTypeId.value == stake.tagTypeId.value).map { tag =>
-              if (tag.display == TagDisplay.Inherit) {
-                IndexedTag(
-                  tagId = tag.tagId,
-                  label = tag.label,
-                  display = stake.display.shortName
-                    .contains(TagDisplay.Displayed.shortName)
-                )
-              } else {
-                IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
-              }
-            }
-          }
+    override def retrieveIndexedTags(tags: Seq[Tag], tagTypes: Seq[TagType]): Seq[IndexedTag] = {
+      tags.map { tag =>
+        if (tag.display == TagDisplay.Inherit) {
+          val tagType: Seq[TagType] = tagTypes.filter(tagType => tagType.tagTypeId == tag.tagTypeId)
+          IndexedTag(
+            tagId = tag.tagId,
+            label = tag.label,
+            display = tagType.nonEmpty && tagType.headOption
+              .map(_.display.shortName)
+              .contains(TagDisplay.Displayed.shortName)
+          )
+        } else {
+          IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
+        }
       }
     }
 

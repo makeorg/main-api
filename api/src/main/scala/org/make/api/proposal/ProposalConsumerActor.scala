@@ -23,44 +23,17 @@ import akka.actor.{ActorLogging, Props}
 import akka.util.Timeout
 import com.sksamuel.avro4s.RecordFormat
 import org.make.api.extensions.KafkaConfigurationExtension
-import org.make.api.operation.{
-  OperationOfQuestionService,
-  OperationOfQuestionServiceComponent,
-  OperationService,
-  OperationServiceComponent
-}
-import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent}
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.api.segment.{SegmentService, SegmentServiceComponent}
-import org.make.api.semantic.{SemanticComponent, SemanticService}
-import org.make.api.sequence.{SequenceConfigurationComponent, SequenceConfigurationService, SequenceServiceComponent}
-import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.KafkaConsumerActor
-import org.make.api.technical.elasticsearch.ProposalIndexationStream
-import org.make.api.user.{UserService, UserServiceComponent}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
-                            override val proposalCoordinatorService: ProposalCoordinatorService,
-                            override val userService: UserService,
-                            override val organisationService: OrganisationService,
-                            override val operationOfQuestionService: OperationOfQuestionService,
-                            override val operationService: OperationService,
-                            override val questionService: QuestionService,
-                            override val tagService: TagService,
-                            override val semanticService: SemanticService,
-                            override val elasticsearchProposalAPI: ProposalSearchEngine,
-                            override val sequenceConfigurationService: SequenceConfigurationService,
-                            override val segmentService: SegmentService)
+class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService)
     extends KafkaConsumerActor[ProposalEventWrapper]
     with KafkaConfigurationExtension
-    with ActorLogging
-    with ProposalIndexationStream
-    with SegmentServiceComponent {
+    with ActorLogging {
 
   override protected lazy val kafkaTopic: String = ProposalProducerActor.topicKey
   override protected val format: RecordFormat[ProposalEventWrapper] = ProposalEventWrapper.recordFormat
@@ -95,7 +68,7 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
   def onCreateOrUpdate(event: ProposalEvent): Future[Unit] = {
     proposalIndexerService.offer(event.id).recover {
       case ex =>
-        logger.error(s"Error presenting proposal to indexation queue: ${ex.getMessage}")
+        log.error(s"Error presenting proposal to indexation queue: ${ex.getMessage}")
     }
   }
 
@@ -103,37 +76,8 @@ class ProposalConsumerActor(proposalIndexerService: ProposalIndexerService,
 }
 
 object ProposalConsumerActor {
-  type ProposalConsumerActorDependencies =
-    UserServiceComponent
-      with OrganisationServiceComponent
-      with TagServiceComponent
-      with SequenceServiceComponent
-      with SemanticComponent
-      with ProposalSearchEngineComponent
-      with ProposalIndexerServiceComponent
-      with SequenceConfigurationComponent
-      with OperationOfQuestionServiceComponent
-      with OperationServiceComponent
-      with QuestionServiceComponent
-      with SegmentServiceComponent
-
-  def props(proposalCoordinatorService: ProposalCoordinatorService,
-            dependencies: ProposalConsumerActorDependencies): Props =
-    Props(
-      new ProposalConsumerActor(
-        dependencies.proposalIndexerService,
-        proposalCoordinatorService,
-        dependencies.userService,
-        dependencies.organisationService,
-        dependencies.operationOfQuestionService,
-        dependencies.operationService,
-        dependencies.questionService,
-        dependencies.tagService,
-        dependencies.semanticService,
-        dependencies.elasticsearchProposalAPI,
-        dependencies.sequenceConfigurationService,
-        dependencies.segmentService
-      )
-    )
+  def props(proposalIndexerService: ProposalIndexerService): Props = {
+    Props(new ProposalConsumerActor(proposalIndexerService))
+  }
   val name: String = "proposal-consumer"
 }
