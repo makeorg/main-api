@@ -216,15 +216,7 @@ trait DefaultAdminFeatureApiComponent
       get {
         path("admin" / "features") {
           makeOperation("AdminSearchFeature") { _ =>
-            parameters(
-              (
-                Symbol("_start").as[Int].?,
-                Symbol("_end").as[Int].?,
-                Symbol("_sort").?,
-                Symbol("_order").?,
-                Symbol("slug").?
-              )
-            ) {
+            parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "slug".?)) {
               (start: Option[Int],
                end: Option[Int],
                sort: Option[String],

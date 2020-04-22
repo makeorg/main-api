@@ -62,7 +62,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
     override def get(featureId: FeatureId): Future[Option[Feature]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentFeature = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentFeature = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentFeature.as(featureAlias))
@@ -75,7 +75,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
     def findBySlug(slug: String): Future[Seq[Feature]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB(Symbol("READ")).retryableTx {
+      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           withSQL {
             select
@@ -89,7 +89,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
     override def persist(feature: Feature): Future[Feature] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentFeature)
@@ -100,7 +100,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
     override def update(feature: Feature): Future[Option[Feature]] = {
       implicit val ctx: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           scalikejdbc
             .update(PersistentFeature)
@@ -115,7 +115,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
     override def remove(featureId: FeatureId): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentFeature.as(featureAlias))
@@ -126,7 +126,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
     override def findAll(): Future[Seq[Feature]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB(Symbol("READ")).retryableTx {
+      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           withSQL {
             select
@@ -140,7 +140,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
     override def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB(Symbol("READ")).retryableTx {
+      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           withSQL {
             select
@@ -160,7 +160,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
                       maybeSlug: Option[String]): Future[Seq[Feature]] = {
       implicit val context: EC = readExecutionContext
 
-      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB(Symbol("READ")).retryableTx {
+      val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           withSQL {
 
@@ -192,7 +192,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
     override def count(maybeSlug: Option[String]): Future[Int] = {
       implicit val context: EC = readExecutionContext
 
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
 
           select(sqls.count)

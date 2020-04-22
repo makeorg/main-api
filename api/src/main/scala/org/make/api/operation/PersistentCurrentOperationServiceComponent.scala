@@ -55,7 +55,7 @@ trait DefaultPersistentCurrentOperationServiceComponent extends PersistentCurren
 
     override def getById(currentOperationId: CurrentOperationId): Future[Option[CurrentOperation]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           selectFrom(PersistentCurrentOperation.as(currentOperationAlias))
             .where(sqls.eq(column.id, currentOperationId.value))
@@ -65,7 +65,7 @@ trait DefaultPersistentCurrentOperationServiceComponent extends PersistentCurren
 
     override def getAll: Future[Seq[CurrentOperation]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           selectFrom(PersistentCurrentOperation.as(currentOperationAlias))
         }.map(PersistentCurrentOperation.apply()).list().apply()
@@ -74,7 +74,7 @@ trait DefaultPersistentCurrentOperationServiceComponent extends PersistentCurren
 
     override def persist(currentOperation: CurrentOperation): Future[CurrentOperation] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentCurrentOperation)
@@ -95,7 +95,7 @@ trait DefaultPersistentCurrentOperationServiceComponent extends PersistentCurren
 
     override def modify(currentOperation: CurrentOperation): Future[CurrentOperation] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentCurrentOperation)
             .set(
@@ -115,7 +115,7 @@ trait DefaultPersistentCurrentOperationServiceComponent extends PersistentCurren
 
     override def delete(currentOperationId: CurrentOperationId): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentCurrentOperation).where(sqls.eq(column.id, currentOperationId.value))
         }.execute().apply()

@@ -62,7 +62,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
     override def find(request: SearchQuestionRequest): Future[Seq[Question]] = {
 
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.ConditionSQLBuilder[WrappedResultSet] = select
             .from(PersistentQuestion.as(questionAlias))
@@ -101,7 +101,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
     override def count(request: SearchQuestionRequest): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentQuestion.as(questionAlias))
@@ -120,7 +120,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
     override def getById(questionId: QuestionId): Future[Option[Question]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentQuestion.as(questionAlias))
@@ -131,7 +131,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
     override def getByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentQuestion.as(questionAlias))
@@ -146,7 +146,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
     override def getByIds(questionIds: Seq[QuestionId]): Future[Seq[Question]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentQuestion.as(questionAlias))
@@ -157,7 +157,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
     override def persist(question: Question): Future[Question] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           val now = DateHelper.now()
           insert
@@ -178,7 +178,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
     override def modify(question: Question): Future[Question] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           val now = DateHelper.now()
           update(PersistentQuestion)
@@ -197,7 +197,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
     override def delete(questionId: QuestionId): Future[Unit] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentQuestion)
             .where(sqls.eq(PersistentQuestion.column.questionId, questionId.value))

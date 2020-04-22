@@ -179,13 +179,13 @@ trait DefaultAdminTopIdeaApiComponent
       path("admin" / "top-ideas") {
         parameters(
           (
-            Symbol("_start").as[Int].?,
-            Symbol("_end").as[Int].?,
-            Symbol("_sort").?,
-            Symbol("_order").?,
-            Symbol("ideaId").as[IdeaId].?,
-            Symbol("questionId").as[QuestionId].?,
-            Symbol("name").?
+            "_start".as[Int].?,
+            "_end".as[Int].?,
+            "_sort".?,
+            "_order".?,
+            "ideaId".as[IdeaId].?,
+            "questionId".as[QuestionId].?,
+            "name".?
           )
         ) {
           (start: Option[Int],

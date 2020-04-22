@@ -314,7 +314,7 @@ trait MakeApi
 
   private lazy val swagger: Route =
     path("swagger") {
-      parameters(Symbol("url").?) {
+      parameters("url".?) {
         case None => redirect(Uri("/swagger?url=/api-docs/swagger.json"), StatusCodes.PermanentRedirect)
         case _    => getFromResource(s"META-INF/resources/webjars/swagger-ui/${BuildInfo.swaggerUiVersion}/index.html")
       }

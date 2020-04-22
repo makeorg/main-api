@@ -178,13 +178,13 @@ trait DefaultAdminPartnerApiComponent
           makeOperation("ModerationGetPartners") { _ =>
             parameters(
               (
-                Symbol("_start").as[Int].?,
-                Symbol("_end").as[Int].?,
-                Symbol("_sort").?,
-                Symbol("_order").?,
-                Symbol("questionId").as[QuestionId].?,
-                Symbol("organisationId").as[UserId].?,
-                Symbol("partnerKind").as[PartnerKind].?
+                "_start".as[Int].?,
+                "_end".as[Int].?,
+                "_sort".?,
+                "_order".?,
+                "questionId".as[QuestionId].?,
+                "organisationId".as[UserId].?,
+                "partnerKind".as[PartnerKind].?
               )
             ) {
               (start: Option[Int],

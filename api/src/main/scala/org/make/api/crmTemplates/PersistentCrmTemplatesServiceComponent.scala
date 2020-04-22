@@ -61,7 +61,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
 
     override def persist(crmTemplates: CrmTemplates): Future[CrmTemplates] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentCrmTemplates)
@@ -86,7 +86,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
 
     override def modify(crmTemplates: CrmTemplates): Future[CrmTemplates] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentCrmTemplates)
             .set(
@@ -110,7 +110,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
 
     override def getById(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentCrmTemplates.as(crmTemplatesAlias))
@@ -124,7 +124,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
                       questionId: Option[QuestionId],
                       locale: Option[String]): Future[Seq[CrmTemplates]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           val query: scalikejdbc.ConditionSQLBuilder[WrappedResultSet] = select
             .from(PersistentCrmTemplates.as(crmTemplatesAlias))
@@ -144,7 +144,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
 
     override def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select(sqls.count)
             .from(PersistentCrmTemplates.as(crmTemplatesAlias))

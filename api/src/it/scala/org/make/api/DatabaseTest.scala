@@ -65,8 +65,8 @@ trait DatabaseTest extends ItMakeTest with DockerCockroachService with MakeDBExe
     connection.prepareStatement(s"CREATE DATABASE $databaseName").execute()
     connection.close()
 
-    ConnectionPool.add(Symbol("WRITE"), new DataSourceConnectionPool(dataSource))
-    ConnectionPool.add(Symbol("READ"), new DataSourceConnectionPool(dataSource))
+    ConnectionPool.add("WRITE", new DataSourceConnectionPool(dataSource))
+    ConnectionPool.add("READ", new DataSourceConnectionPool(dataSource))
 
     Thread.sleep(1.second.toMillis)
 

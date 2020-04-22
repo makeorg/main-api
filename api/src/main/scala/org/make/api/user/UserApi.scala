@@ -733,12 +733,12 @@ trait DefaultUserApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             parameters(
               (
-                Symbol("votes").as[immutable.Seq[VoteKey]].?,
-                Symbol("qualifications").as[immutable.Seq[QualificationKey]].?,
-                Symbol("sort").?,
-                Symbol("order").as[SortOrder].?,
-                Symbol("limit").as[Int].?,
-                Symbol("skip").as[Int].?
+                "votes".as[immutable.Seq[VoteKey]].?,
+                "qualifications".as[immutable.Seq[QualificationKey]].?,
+                "sort".?,
+                "order".as[SortOrder].?,
+                "limit".as[Int].?,
+                "skip".as[Int].?
               )
             ) {
               (votes: Option[Seq[VoteKey]],
@@ -976,37 +976,36 @@ trait DefaultUserApiComponent
       path("user" / userId / "proposals") { userId: UserId =>
         makeOperation("UserProposals") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            parameters(
-              (Symbol("sort").?, Symbol("order").as[SortOrder].?, Symbol("limit").as[Int].?, Symbol("skip").as[Int].?)
-            ) { (sort: Option[String], order: Option[SortOrder], limit: Option[Int], skip: Option[Int]) =>
-              val connectedUserId: UserId = userAuth.user.userId
-              if (connectedUserId != userId) {
-                complete(StatusCodes.Forbidden)
-              } else {
-                val defaultSort = Some("createdAt")
-                val defaultOrder = Some(Desc)
-                provideAsync(
-                  proposalService.searchForUser(
-                    userId = Some(userId),
-                    query = SearchQuery(
-                      filters = Some(
-                        SearchFilters(
-                          user = Some(UserSearchFilter(userId = userId)),
-                          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.filter { status =>
-                            status != ProposalStatus.Archived
-                          }.toSeq))
-                        )
+            parameters(("sort".?, "order".as[SortOrder].?, "limit".as[Int].?, "skip".as[Int].?)) {
+              (sort: Option[String], order: Option[SortOrder], limit: Option[Int], skip: Option[Int]) =>
+                val connectedUserId: UserId = userAuth.user.userId
+                if (connectedUserId != userId) {
+                  complete(StatusCodes.Forbidden)
+                } else {
+                  val defaultSort = Some("createdAt")
+                  val defaultOrder = Some(Desc)
+                  provideAsync(
+                    proposalService.searchForUser(
+                      userId = Some(userId),
+                      query = SearchQuery(
+                        filters = Some(
+                          SearchFilters(
+                            user = Some(UserSearchFilter(userId = userId)),
+                            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.filter { status =>
+                              status != ProposalStatus.Archived
+                            }.toSeq))
+                          )
+                        ),
+                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                        limit = limit,
+                        skip = skip
                       ),
-                      sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
-                      limit = limit,
-                      skip = skip
-                    ),
-                    requestContext = requestContext
-                  )
-                ) { proposalsSearchResult =>
-                  complete(proposalsSearchResult)
+                      requestContext = requestContext
+                    )
+                  ) { proposalsSearchResult =>
+                    complete(proposalsSearchResult)
+                  }
                 }
-              }
             }
           }
         }

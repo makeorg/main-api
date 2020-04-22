@@ -91,19 +91,18 @@ trait DefaultOperationApiComponent
     override def getOperations: Route = {
       get {
         path("operations") {
-          parameters((Symbol("slug").?, Symbol("country").as[Country].?, Symbol("openAt").as[LocalDate].?)) {
-            (slug, country, openAt) =>
-              makeOperation("GetOperations") { requestContext =>
-                provideAsync(
-                  operationService
-                    .find(slug = slug, country = country, maybeSource = requestContext.source, openAt = openAt)
-                ) { result =>
-                  provideAsync(tagService.findByQuestionIds(result.flatMap(_.questions).map(_.question.questionId))) {
-                    tags =>
-                      complete(result.map(operation => OperationResponse(operation, tags)))
-                  }
+          parameters(("slug".?, "country".as[Country].?, "openAt".as[LocalDate].?)) { (slug, country, openAt) =>
+            makeOperation("GetOperations") { requestContext =>
+              provideAsync(
+                operationService
+                  .find(slug = slug, country = country, maybeSource = requestContext.source, openAt = openAt)
+              ) { result =>
+                provideAsync(tagService.findByQuestionIds(result.flatMap(_.questions).map(_.question.questionId))) {
+                  tags =>
+                    complete(result.map(operation => OperationResponse(operation, tags)))
                 }
               }
+            }
           }
         }
       }

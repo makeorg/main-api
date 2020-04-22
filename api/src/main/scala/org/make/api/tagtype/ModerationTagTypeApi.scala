@@ -232,30 +232,23 @@ trait DefaultModerationTagTypeApiComponent
     override def moderationListTagTypes: Route = get {
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
-          parameters(
-            (
-              Symbol("_start").as[Int].?,
-              Symbol("_end").as[Int].?,
-              Symbol("_sort").?,
-              Symbol("_order").?,
-              Symbol("label").?
-            )
-          ) { (start, end, _, _, label_filter) =>
-            makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-              requireModerationRole(userAuth.user) {
-                onSuccess(tagTypeService.findAll()) { tagTypes =>
-                  //TODO: define the sort in the persistence layer
-                  val filteredTagTypes = tagTypes.filter(t => label_filter.forall(t.label.contains(_)))
-                  complete(
-                    (
-                      StatusCodes.OK,
-                      List(`X-Total-Count`(filteredTagTypes.size.toString)),
-                      filteredTagTypes.slice(start.getOrElse(0), end.getOrElse(10)).map(TagTypeResponse.apply)
+          parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "label".?)) {
+            (start, end, _, _, label_filter) =>
+              makeOAuth2 { userAuth: AuthInfo[UserRights] =>
+                requireModerationRole(userAuth.user) {
+                  onSuccess(tagTypeService.findAll()) { tagTypes =>
+                    //TODO: define the sort in the persistence layer
+                    val filteredTagTypes = tagTypes.filter(t => label_filter.forall(t.label.contains(_)))
+                    complete(
+                      (
+                        StatusCodes.OK,
+                        List(`X-Total-Count`(filteredTagTypes.size.toString)),
+                        filteredTagTypes.slice(start.getOrElse(0), end.getOrElse(10)).map(TagTypeResponse.apply)
+                      )
                     )
-                  )
+                  }
                 }
               }
-            }
           }
         }
       }

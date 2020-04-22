@@ -81,7 +81,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def findByQuestion(questionId: QuestionId): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentTag = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
@@ -94,7 +94,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def findByQuestions(questionIds: Seq[QuestionId]): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentTag = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
@@ -107,7 +107,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def get(tagId: TagId): Future[Option[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentTag = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentTag.as(tagAlias))
@@ -120,13 +120,12 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def findAll(): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
-            select
-              .from(PersistentTag.as(tagAlias))
-              .orderBy(tagAlias.weight, tagAlias.label)
-          }.map(PersistentTag.apply()).list.apply
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .orderBy(tagAlias.weight, tagAlias.label)
+        }.map(PersistentTag.apply()).list.apply
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -135,13 +134,12 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     override def findAllFromIds(tagsIds: Seq[TagId]): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
       val uniqueTagsIds: Seq[String] = tagsIds.distinct.map(_.value)
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
-            select
-              .from(PersistentTag.as(tagAlias))
-              .where(sqls.in(tagAlias.id, uniqueTagsIds))
-          }.map(PersistentTag.apply()).list.apply
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .where(sqls.in(tagAlias.id, uniqueTagsIds))
+        }.map(PersistentTag.apply()).list.apply
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -149,24 +147,23 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def findAllDisplayed(): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
-            select
-              .from(PersistentTag.as(tagAlias))
-              .leftJoin(PersistentTagType.as(tagTypeAlias))
-              .on(tagAlias.tagTypeId, tagTypeAlias.id)
-              .where(
-                sqls
-                  .eq(tagAlias.display, TagDisplay.Displayed.shortName)
-                  .or(
-                    sqls
-                      .eq(tagAlias.display, TagDisplay.Inherit.shortName)
-                      .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
-                  )
-              )
-              .orderBy(tagAlias.weight, tagAlias.label)
-          }.map(PersistentTag.apply()).list.apply
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .leftJoin(PersistentTagType.as(tagTypeAlias))
+            .on(tagAlias.tagTypeId, tagTypeAlias.id)
+            .where(
+              sqls
+                .eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                .or(
+                  sqls
+                    .eq(tagAlias.display, TagDisplay.Inherit.shortName)
+                    .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+                )
+            )
+            .orderBy(tagAlias.weight, tagAlias.label)
+        }.map(PersistentTag.apply()).list.apply
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -175,13 +172,12 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     def findByLabel(label: String): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
       val preparedLabel: String = label.replace("%", "\\%")
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
-            select
-              .from(PersistentTag.as(tagAlias))
-              .where(sqls.eq(tagAlias.label, preparedLabel))
-          }.map(PersistentTag.apply()).list.apply
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .where(sqls.eq(tagAlias.label, preparedLabel))
+        }.map(PersistentTag.apply()).list.apply
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -190,13 +186,12 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     def findByLabelLike(partialLabel: String): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
       val preparedPartialLabel: String = partialLabel.replace("%", "\\%")
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
-            select
-              .from(PersistentTag.as(tagAlias))
-              .where(sqls.like(tagAlias.label, s"%$preparedPartialLabel%"))
-          }.map(PersistentTag.apply()).list.apply
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentTag.as(tagAlias))
+            .where(sqls.like(tagAlias.label, s"%$preparedPartialLabel%"))
+        }.map(PersistentTag.apply()).list.apply
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -205,7 +200,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     override def persist(tag: Tag): Future[Tag] = {
       implicit val context: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentTag)
@@ -229,7 +224,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     override def update(tag: Tag): Future[Option[Tag]] = {
       implicit val ctx: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           scalikejdbc
             .update(PersistentTag)
@@ -256,7 +251,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
     override def remove(tagId: TagId): Future[Int] = {
       implicit val context: EC = writeExecutionContext
-      val result: Future[Int] = Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      val result: Future[Int] = Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           delete
             .from(PersistentTag.as(tagAlias))
@@ -286,55 +281,53 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                       persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
 
-      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB(Symbol("READ")).retryableTx {
-        implicit session =>
-          withSQL {
+      val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
 
-            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
-              select
-                .from(PersistentTag.as(tagAlias))
-                .leftJoin(PersistentTagType.as(tagTypeAlias))
-                .on(tagAlias.tagTypeId, tagTypeAlias.id)
-                .where(
-                  sqls.toAndConditionOpt(
-                    persistentTagFilter.label
-                      .map(
-                        label =>
-                          sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
-                      ),
-                    persistentTagFilter.tagTypeId.map(tagTypeId   => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
-                    persistentTagFilter.questionId.map(questionId => sqls.eq(tagAlias.questionId, questionId.value)),
-                    if (onlyDisplayed) {
-                      Some(
-                        sqls
-                          .eq(tagAlias.display, TagDisplay.Displayed.shortName)
-                          .or(
-                            sqls
-                              .eq(tagAlias.display, TagDisplay.Inherit.shortName)
-                              .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
-                          )
-                      )
-                    } else {
-                      None
-                    }
-                  )
+          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            select
+              .from(PersistentTag.as(tagAlias))
+              .leftJoin(PersistentTagType.as(tagTypeAlias))
+              .on(tagAlias.tagTypeId, tagTypeAlias.id)
+              .where(
+                sqls.toAndConditionOpt(
+                  persistentTagFilter.label
+                    .map(
+                      label => sqls.like(sqls"lower(${tagAlias.label})", s"%${label.toLowerCase.replace("%", "\\%")}%")
+                    ),
+                  persistentTagFilter.tagTypeId.map(tagTypeId   => sqls.eq(tagAlias.tagTypeId, tagTypeId.value)),
+                  persistentTagFilter.questionId.map(questionId => sqls.eq(tagAlias.questionId, questionId.value)),
+                  if (onlyDisplayed) {
+                    Some(
+                      sqls
+                        .eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                        .or(
+                          sqls
+                            .eq(tagAlias.display, TagDisplay.Inherit.shortName)
+                            .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+                        )
+                    )
+                  } else {
+                    None
+                  }
                 )
+              )
 
-            val queryOrdered = (sort, order) match {
-              case (Some(field), Some("DESC")) if PersistentTag.columnNames.contains(field) =>
-                query.orderBy(tagAlias.field(field)).desc.offset(start)
-              case (Some(field), _) if PersistentTag.columnNames.contains(field) =>
-                query.orderBy(tagAlias.field(field)).asc.offset(start)
-              case (Some(field), _) =>
-                logger.warn(s"Unsupported filter '$field'")
-                query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
-              case (_, _) => query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
-            }
-            end match {
-              case Some(limit) => queryOrdered.limit(limit)
-              case None        => queryOrdered
-            }
-          }.map(PersistentTag.apply()).list.apply
+          val queryOrdered = (sort, order) match {
+            case (Some(field), Some("DESC")) if PersistentTag.columnNames.contains(field) =>
+              query.orderBy(tagAlias.field(field)).desc.offset(start)
+            case (Some(field), _) if PersistentTag.columnNames.contains(field) =>
+              query.orderBy(tagAlias.field(field)).asc.offset(start)
+            case (Some(field), _) =>
+              logger.warn(s"Unsupported filter '$field'")
+              query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
+            case (_, _) => query.orderBy(tagAlias.weight, tagAlias.label).asc.offset(start)
+          }
+          end match {
+            case Some(limit) => queryOrdered.limit(limit)
+            case None        => queryOrdered
+          }
+        }.map(PersistentTag.apply()).list.apply
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -343,7 +336,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     override def count(persistentTagFilter: PersistentTagFilter): Future[Int] = {
       implicit val context: EC = readExecutionContext
 
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
 
           select(sqls.count)

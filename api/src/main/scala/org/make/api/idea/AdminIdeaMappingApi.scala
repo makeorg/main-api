@@ -246,14 +246,14 @@ trait DefaultAdminIdeaMappingApiComponent
       path("admin" / "idea-mappings") {
         parameters(
           (
-            Symbol("_start").as[Int].?,
-            Symbol("_end").as[Int].?,
-            Symbol("_sort").?,
-            Symbol("_order").?,
-            Symbol("questionId").as[QuestionId].?,
-            Symbol("stakeTagId").as[TagIdOrNone].?,
-            Symbol("solutionTypeTagId").as[TagIdOrNone].?,
-            Symbol("ideaId").as[IdeaId].?,
+            "_start".as[Int].?,
+            "_end".as[Int].?,
+            "_sort".?,
+            "_order".?,
+            "questionId".as[QuestionId].?,
+            "stakeTagId".as[TagIdOrNone].?,
+            "solutionTypeTagId".as[TagIdOrNone].?,
+            "ideaId".as[IdeaId].?,
           )
         ) {
           (start: Option[Int],

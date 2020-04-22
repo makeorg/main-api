@@ -55,7 +55,7 @@ trait DefaultPersistentFeaturedOperationServiceComponent extends PersistentFeatu
 
     override def getById(featuredOperationId: FeaturedOperationId): Future[Option[FeaturedOperation]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           selectFrom(PersistentFeaturedOperation.as(featuredOperationAlias))
             .where(sqls.eq(column.id, featuredOperationId.value))
@@ -65,7 +65,7 @@ trait DefaultPersistentFeaturedOperationServiceComponent extends PersistentFeatu
 
     override def getAll: Future[Seq[FeaturedOperation]] = {
       implicit val context: EC = readExecutionContext
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           selectFrom(PersistentFeaturedOperation.as(featuredOperationAlias))
         }.map(PersistentFeaturedOperation.apply()).list().apply()
@@ -74,7 +74,7 @@ trait DefaultPersistentFeaturedOperationServiceComponent extends PersistentFeatu
 
     override def persist(featuredOperation: FeaturedOperation): Future[FeaturedOperation] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentFeaturedOperation)
@@ -98,7 +98,7 @@ trait DefaultPersistentFeaturedOperationServiceComponent extends PersistentFeatu
 
     override def modify(featuredOperation: FeaturedOperation): Future[FeaturedOperation] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentFeaturedOperation)
             .set(
@@ -121,7 +121,7 @@ trait DefaultPersistentFeaturedOperationServiceComponent extends PersistentFeatu
 
     override def delete(featuredOperationId: FeaturedOperationId): Future[Unit] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentFeaturedOperation).where(sqls.eq(column.id, featuredOperationId.value))
         }.execute().apply()

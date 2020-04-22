@@ -61,7 +61,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
     override def findOne(ideaId: IdeaId): Future[Option[Idea]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentIdea = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentIdea = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentIdea.as(ideaAlias))
@@ -74,7 +74,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
     override def findOneByName(questionId: QuestionId, name: String): Future[Option[Idea]] = {
       implicit val context: EC = readExecutionContext
-      val futurePersistentIdea = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentIdea = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentIdea.as(ideaAlias))
@@ -88,7 +88,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
     override def findAll(ideaFilters: IdeaFiltersRequest): Future[Seq[Idea]] = {
       implicit val context: EC = readExecutionContext
 
-      val futurePersistentIdeas = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentIdeas = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentIdea.as(ideaAlias))
@@ -105,7 +105,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
     def findAllByIdeaIds(ids: Seq[IdeaId]): Future[Seq[Idea]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentIdeas = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentIdeas = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentIdea.as(ideaAlias))
@@ -118,7 +118,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
     override def persist(idea: Idea): Future[Idea] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentIdea)
@@ -140,7 +140,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
     override def modify(ideaId: IdeaId, name: String, status: IdeaStatus): Future[Int] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentIdea)
             .set(column.name -> name, column.updatedAt -> DateHelper.now, column.status -> status.shortName)
@@ -154,7 +154,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
     override def updateIdea(idea: Idea): Future[Int] = {
       implicit val context: EC = writeExecutionContext
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentIdea)
             .set(

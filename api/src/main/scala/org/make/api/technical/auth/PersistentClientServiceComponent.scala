@@ -132,7 +132,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
     override def get(clientId: ClientId): Future[Option[Client]] = {
       implicit val cxt: EC = readExecutionContext
-      val futureClient = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futureClient = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentClient.as(clientAlias))
@@ -145,7 +145,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
     override def findByClientIdAndSecret(clientId: String, secret: Option[String]): Future[Option[Client]] = {
       implicit val cxt: EC = readExecutionContext
-      val futurePersistentClient = Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      val futurePersistentClient = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
           select
             .from(PersistentClient.as(clientAlias))
@@ -164,7 +164,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
     override def persist(client: Client): Future[Client] = {
       implicit val ctx: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           insert
             .into(PersistentClient)
@@ -190,7 +190,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
     override def update(client: Client): Future[Option[Client]] = {
       implicit val ctx: EC = writeExecutionContext
       val nowDate: ZonedDateTime = DateHelper.now()
-      Future(NamedDB(Symbol("WRITE")).retryableTx { implicit session =>
+      Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           scalikejdbc
             .update(PersistentClient)
@@ -221,7 +221,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
     override def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]] = {
       implicit val context: EC = readExecutionContext
 
-      val futurePersistentClients: Future[List[PersistentClient]] = Future(NamedDB(Symbol("READ")).retryableTx {
+      val futurePersistentClients: Future[List[PersistentClient]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
           withSQL {
 
@@ -249,7 +249,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
     override def count(name: Option[String]): Future[Int] = {
       implicit val context: EC = readExecutionContext
 
-      Future(NamedDB(Symbol("READ")).retryableTx { implicit session =>
+      Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
 
           select(sqls.count)
