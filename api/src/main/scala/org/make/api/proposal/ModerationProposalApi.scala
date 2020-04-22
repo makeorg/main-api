@@ -340,7 +340,9 @@ trait ModerationProposalApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TagsForProposalResponse]))
   )
-  @Path(value = "/{proposalId}/predicted-tags")
+  @Path(value = "/{proposalId}/tags")
+  def getTagsForProposal: Route
+
   def getPredictedTagsForProposal: Route
 
   def routes: Route =
@@ -354,6 +356,7 @@ trait ModerationProposalApi extends Directives {
       changeProposalsIdea ~
       getModerationProposal ~
       nextProposalToModerate ~
+      getTagsForProposal ~
       getPredictedTagsForProposal
 }
 
@@ -820,6 +823,24 @@ trait DefaultModerationProposalApiComponent
                         complete(proposal)
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    override def getTagsForProposal: Route = get {
+      path("moderation" / "proposals" / moderationProposalId / "tags") { moderationProposalId =>
+        makeOperation("GetTagsForProposal") { _ =>
+          makeOAuth2 { user =>
+            requireModerationRole(user.user) {
+              provideAsyncOrNotFound(proposalCoordinatorService.getProposal(moderationProposalId)) { proposal =>
+                requireRightsOnQuestion(user.user, proposal.questionId) {
+                  provideAsync(proposalService.getTagsForProposal(proposal)) { tagsForProposalResponse =>
+                    complete(tagsForProposalResponse)
                   }
                 }
               }
