@@ -31,6 +31,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
+import org.make.core.job.Job.JobId.Reindex
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -81,20 +82,27 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
   class DefaultElasticSearchApi extends ElasticSearchApi {
     def reindex: Route = post {
       path("technical" / "elasticsearch" / "reindex") {
-        makeOperation("Reindex") { _ =>
+        makeOperation(Reindex.value) { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[ReindexRequest]) { request: ReindexRequest =>
                   makeOperation("ReindexingData") { _ =>
                     // Do not wait until the reindexation job is over to give an answer
-                    indexationService.reindexData(
-                      Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
-                      Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
-                      Seq(request.forceAll, request.forceProposals).flatten.contains(true),
-                      Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
-                    )
-                    complete(StatusCodes.Accepted)
+                    provideAsync(
+                      indexationService.reindexData(
+                        Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
+                        Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
+                        Seq(request.forceAll, request.forceProposals).flatten.contains(true),
+                        Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
+                      )
+                    ) { acceptance =>
+                      if (acceptance.isAccepted) {
+                        complete(StatusCodes.Accepted)
+                      } else {
+                        complete(StatusCodes.Conflict)
+                      }
+                    }
                   }
                 }
               }

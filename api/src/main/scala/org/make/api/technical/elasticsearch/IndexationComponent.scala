@@ -22,15 +22,20 @@ package org.make.api.technical.elasticsearch
 import akka.Done
 import akka.stream._
 import akka.stream.scaladsl._
+import akka.util.Timeout
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import com.typesafe.scalalogging.StrictLogging
+import eu.timepit.refined.auto._
 import org.make.api.ActorSystemComponent
 import org.make.api.idea._
 import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
-import org.make.api.technical.ReadJournalComponent
+import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
+import org.make.api.technical.job.JobCoordinatorServiceComponent
+import org.make.api.technical.{ReadJournalComponent, TimeSettings}
 import org.make.core.idea.Idea
+import org.make.core.job.Job.JobId.Reindex
 import org.make.core.operation.OperationOfQuestion
 import org.make.core.proposal.ProposalId
 import org.make.core.user.User
@@ -53,7 +58,7 @@ trait IndexationService {
   def reindexData(forceIdeas: Boolean,
                   forceOrganisations: Boolean,
                   forceProposals: Boolean,
-                  forceOperationOfQuestions: Boolean): Future[Done]
+                  forceOperationOfQuestions: Boolean): Future[JobAcceptance]
   def indicesToReindex(forceIdeas: Boolean,
                        forceOrganisations: Boolean,
                        forceProposals: Boolean,
@@ -72,6 +77,7 @@ trait DefaultIndexationComponent
     with ElasticsearchClientComponent
     with StrictLogging
     with ActorSystemComponent
+    with JobCoordinatorServiceComponent
     with ReadJournalComponent
     with PersistentOperationOfQuestionServiceComponent =>
 
@@ -80,6 +86,8 @@ trait DefaultIndexationComponent
   class DefaultIndexationService extends IndexationService {
 
     private lazy val client = elasticsearchClient.client
+
+    private implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     private def reindexOrganisationsIfNeeded(needsReindex: Boolean): Future[Done] = {
       if (needsReindex) {
@@ -143,33 +151,34 @@ trait DefaultIndexationComponent
     override def reindexData(forceIdeas: Boolean,
                              forceOrganisations: Boolean,
                              forceProposals: Boolean,
-                             forceOperationOfQuestions: Boolean): Future[Done] = {
-      logger.info(s"Elasticsearch Reindexation")
-      indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceOperationOfQuestions).flatMap {
-        indicesNotUpToDate =>
-          // !mandatory: run organisation indexation before proposals and not in parallel
-          reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
-            .map(_ => indicesNotUpToDate)
-            .recoverWith {
-              case e =>
-                logger.error("Organisations indexation failed", e)
-                Future.successful(indicesNotUpToDate)
-            }
-      }.flatMap { indicesNotUpToDate =>
-        val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
-        val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
-        val futureOperationOfQuestionsIndexation =
-          reindexOperationOfQuestionsIfNeeded(indicesNotUpToDate.contains(IndexOperationOfQuestions))
+                             forceOperationOfQuestions: Boolean): Future[JobAcceptance] =
+      jobCoordinatorService.start(Reindex) { report =>
+        logger.info(s"Elasticsearch Reindexation")
+        indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceOperationOfQuestions).flatMap {
+          indicesNotUpToDate =>
+            // !mandatory: run organisation indexation before proposals and not in parallel
+            reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
+              .map(_ => indicesNotUpToDate)
+              .recoverWith {
+                case e =>
+                  logger.error("Organisations indexation failed", e)
+                  Future.successful(indicesNotUpToDate)
+              }
+        }.flatMap { indicesNotUpToDate =>
+          report(25D).map(_ => indicesNotUpToDate)
+        }.flatMap { indicesNotUpToDate =>
+          val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
+          val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
+          val futureOperationOfQuestionsIndexation =
+            reindexOperationOfQuestionsIfNeeded(indicesNotUpToDate.contains(IndexOperationOfQuestions))
 
-        for {
-          _ <- futureIdeasIndexation
-          _ <- futureProposalsIndexation
-          _ <- futureOperationOfQuestionsIndexation
-        } yield Done
-      }.flatMap { _ =>
-        Future.successful(Done)
+          for {
+            _ <- futureIdeasIndexation
+            _ <- futureProposalsIndexation
+            _ <- futureOperationOfQuestionsIndexation
+          } yield ()
+        }
       }
-    }
 
     override def indicesToReindex(forceIdeas: Boolean,
                                   forceOrganisations: Boolean,

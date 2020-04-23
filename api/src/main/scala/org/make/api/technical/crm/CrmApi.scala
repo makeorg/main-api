@@ -32,6 +32,7 @@ import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent
 import org.make.api.technical.crm.CrmList.{HardBounce, OptIn, OptOut}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
+import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.{DateHelper, HttpCodes, Validation}
 import scalaoauth2.provider.AuthInfo
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -208,11 +209,16 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
         makeOperation("CrmSynchro") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireAdminRole(auth.user) {
-              makeOperation("SyncCrmData") { _ =>
+              makeOperation(SyncCrmData.value) { _ =>
                 // The future will take a lot of time to complete,
                 // so it's better to leave it in the background
-                crmService.synchronizeContactsWithCrm()
-                complete(StatusCodes.Accepted)
+                provideAsync(crmService.synchronizeContactsWithCrm()) { acceptance =>
+                  if (acceptance.isAccepted) {
+                    complete(StatusCodes.Accepted)
+                  } else {
+                    complete(StatusCodes.Conflict)
+                  }
+                }
               }
             }
           }

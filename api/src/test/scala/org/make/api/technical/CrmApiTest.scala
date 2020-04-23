@@ -29,6 +29,7 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.technical.auth._
 import org.make.api.technical.crm._
+import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.core.session.VisitorId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
@@ -177,7 +178,7 @@ class CrmApiTest
   }
 
   feature("crm synchro") {
-    when(crmService.synchronizeContactsWithCrm()).thenReturn(Future.successful(()))
+    when(crmService.synchronizeContactsWithCrm()).thenReturn(Future.successful(JobAcceptance(true)))
     scenario("admin triggers sync") {
       implicit val timeout: RouteTestTimeout = RouteTestTimeout(15.seconds.dilated)
 

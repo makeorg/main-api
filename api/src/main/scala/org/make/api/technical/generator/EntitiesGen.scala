@@ -20,9 +20,13 @@
 package org.make.api.technical.generator
 
 import eu.timepit.refined.api.RefType
+import eu.timepit.refined.scalacheck.numeric._
+import java.time.temporal.ChronoUnit
 import org.make.api.operation.CreateOperationOfQuestion
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.UserRegisterData
+import org.make.core.job.Job
+import org.make.core.job.Job.{JobId, JobStatus}
 import org.make.core.operation.{OperationId, OperationKind, OperationStatus, SimpleOperation}
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -35,6 +39,8 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.make.core.DateHelper._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.numeric.PosInt
+
+import scala.concurrent.duration.FiniteDuration
 
 object EntitiesGen extends DefaultIdGeneratorComponent {
 
@@ -310,6 +316,22 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
         initialProposal = initialProposal
       )
   }
+
+  val genJob: Gen[Job] = {
+    val genJobStatus: Gen[JobStatus] = Gen.oneOf(
+      Arbitrary.arbitrary[Job.Progress].map(JobStatus.Running.apply),
+      Arbitrary.arbitrary[Option[String]].map(JobStatus.Finished.apply)
+    )
+    for {
+      id        <- Gen.uuid
+      status    <- genJobStatus
+      createdAt <- Gen.option(CustomGenerators.Time.zonedDateTime)
+      update <- Arbitrary
+        .arbitrary[Option[FiniteDuration]]
+        .map(_.flatMap(u => createdAt.map(_.plusNanos(u.toNanos).truncatedTo(ChronoUnit.MILLIS))))
+    } yield Job(JobId(id.toString), status, createdAt, update)
+  }
+
 }
 
 final case class Counts(count: Int, verified: Int, sequence: Int, segment: Int)

@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2020 Make.org
+ *  Copyright (C) 2018 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -19,4 +19,18 @@
 
 package org.make.api.technical
 
-trait ActorProtocol extends Product with Serializable
+import akka.util.Timeout
+import org.scalatest.matchers.Matcher
+import org.scalatest.{Assertion, Matchers}
+
+import scala.concurrent.{Await, Future}
+
+package object job {
+
+  implicit class FutureShould[A](val f: Future[A]) extends Matchers {
+    def will(matcher: Matcher[A])(implicit timeout: Timeout): Assertion = {
+      Await.result(f, timeout.duration) should matcher
+    }
+  }
+
+}

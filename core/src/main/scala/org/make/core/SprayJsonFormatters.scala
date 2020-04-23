@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
 import com.sksamuel.elastic4s.searches.sort.SortOrder
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json._
 
 trait SprayJsonFormatters {
 
@@ -77,4 +77,18 @@ trait SprayJsonFormatters {
 
 }
 
-object SprayJsonFormatters extends SprayJsonFormatters
+object SprayJsonFormatters extends SprayJsonFormatters {
+
+  object syntax {
+
+    implicit class JsFieldSyntax(val key: String) extends AnyVal {
+      def :=[A: JsonWriter](a: A): JsField = key -> a.toJson
+    }
+
+    implicit class JsonReaderSyntax(val json: JsValue) extends AnyVal {
+      def as[A](implicit reader: JsonReader[A]): A = reader.read(json)
+    }
+
+  }
+
+}
