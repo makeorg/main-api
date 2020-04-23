@@ -743,6 +743,7 @@ class ProposalServiceTest
           country = Country("FR"),
           language = Language("fr"),
           question = "how to create initial proposals?",
+          shortTitle = None,
           operationId = None
         )
 
@@ -958,6 +959,7 @@ class ProposalServiceTest
       country = Country("FR"),
       language = Language("fr"),
       question = "question",
+      shortTitle = None,
       operationId = None
     )
 
@@ -1138,6 +1140,7 @@ class ProposalServiceTest
         Country("FR"),
         Language("fr"),
         "how to update a proposal?",
+        shortTitle = None,
         None
       )
 
@@ -1200,6 +1203,7 @@ class ProposalServiceTest
         Country("FR"),
         Language("fr"),
         "how to update a proposal?",
+        shortTitle = None,
         None
       )
 
@@ -1323,6 +1327,7 @@ class ProposalServiceTest
         Country("FR"),
         Language("fr"),
         "how to update a proposal?",
+        shortTitle = None,
         None
       )
 
@@ -1377,6 +1382,7 @@ class ProposalServiceTest
       country = Country("FR"),
       language = Language("fr"),
       question = "question",
+      shortTitle = None,
       operationId = None
     )
 
@@ -2501,6 +2507,7 @@ class ProposalServiceTest
       questionId = QuestionId("some-question"),
       slug = "some-question",
       question = "?",
+      shortTitle = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = Some(OperationId("who cares?"))
@@ -2549,6 +2556,7 @@ class ProposalServiceTest
       questionId = QuestionId("some-question"),
       slug = "some-question",
       question = "?",
+      shortTitle = None,
       country = Country("FR"),
       language = Language("fr"),
       operationId = Some(OperationId("who cares?"))

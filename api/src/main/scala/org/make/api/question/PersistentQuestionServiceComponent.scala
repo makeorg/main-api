@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
 import org.make.api.technical.DatabaseTransactions.RichDatabase
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
@@ -77,23 +78,16 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
               )
             )
 
-          val queryOrdered = (request.sort, request.order) match {
-            case (Some(field), Some("DESC")) if !PersistentQuestion.columnNames.contains(field) =>
-              logger.warn(s"Unsupported filter '$field'")
-              query
-            case (Some(field), Some("DESC")) => query.orderBy(questionAlias.field(field)).desc
-            case (Some(field), _)            => query.orderBy(questionAlias.field(field)).asc
-            case _                           => query
-          }
-
-          val queryOrderedWithLimit = (request.skip, request.limit) match {
-            case (Some(skip), Some(limit)) => queryOrdered.offset(skip).limit(limit)
-            case (_, Some(limit))          => queryOrdered.limit(limit)
-            case (Some(skip), _)           => queryOrdered.offset(skip)
-            case _                         => queryOrdered
-          }
-
-          queryOrderedWithLimit
+          sortOrderQuery(
+            start = request.skip.getOrElse(0),
+            end = request.limit,
+            order = request.order,
+            sort = request.sort,
+            query = query,
+            columns = PersistentQuestion.columnNames,
+            alias = questionAlias,
+            defaultSort = questionAlias.question
+          )
         }.map(PersistentQuestion.apply()).list().apply()
       }).map(_.map(_.toQuestion))
 
@@ -168,6 +162,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
               column.createdAt -> now,
               column.updatedAt -> now,
               column.question -> question.question,
+              column.shortTitle -> question.shortTitle,
               column.country -> question.country.value,
               column.language -> question.language.value,
               column.operationId -> question.operationId.map(_.value)
@@ -187,6 +182,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
               PersistentQuestion.column.language -> question.language.value,
               PersistentQuestion.column.question -> question.question,
               PersistentQuestion.column.slug -> question.slug,
+              PersistentQuestion.column.shortTitle -> question.shortTitle,
               PersistentQuestion.column.operationId -> question.operationId.map(_.value),
               PersistentQuestion.column.updatedAt -> now
             )
@@ -213,6 +209,7 @@ object DefaultPersistentQuestionServiceComponent {
                                 country: String,
                                 language: String,
                                 question: String,
+                                shortTitle: Option[String],
                                 slug: String,
                                 createdAt: ZonedDateTime,
                                 updatedAt: ZonedDateTime,
@@ -225,7 +222,8 @@ object DefaultPersistentQuestionServiceComponent {
         country = Country(this.country),
         language = Language(this.language),
         question = this.question,
-        operationId = this.operationId.map(OperationId(_)),
+        shortTitle = this.shortTitle,
+        operationId = this.operationId.map(OperationId(_))
       )
     }
   }
@@ -233,7 +231,17 @@ object DefaultPersistentQuestionServiceComponent {
   object PersistentQuestion extends SQLSyntaxSupport[PersistentQuestion] with ShortenedNames with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("question_id", "country", "language", "question", "created_at", "updated_at", "operation_id", "slug")
+      Seq(
+        "question_id",
+        "country",
+        "language",
+        "question",
+        "created_at",
+        "updated_at",
+        "operation_id",
+        "slug",
+        "short_title"
+      )
 
     override val tableName: String = "question"
 
@@ -251,6 +259,7 @@ object DefaultPersistentQuestionServiceComponent {
         country = resultSet.string(questionResultName.country),
         language = resultSet.string(questionResultName.language),
         question = resultSet.string(questionResultName.question),
+        shortTitle = resultSet.stringOpt(questionResultName.shortTitle),
         createdAt = resultSet.zonedDateTime(questionResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(questionResultName.updatedAt),
         operationId = resultSet.stringOpt(questionResultName.operationId)

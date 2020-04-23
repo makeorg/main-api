@@ -48,6 +48,7 @@ class PersistentTopIdeaCommentServiceIT
     country = Country("FR"),
     language = Language("fr"),
     question = "question ?",
+    shortTitle = None,
     operationId = None
   )
 

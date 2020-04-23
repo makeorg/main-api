@@ -138,6 +138,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "what's that?",
+          shortTitle = None,
           operationId = None
         )
       )
@@ -225,6 +226,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           language = Language("fr"),
           slug = "question-1",
           question = "Est-ce que ?",
+          shortTitle = None,
           operationId = request.maybeOperationIds.flatMap(_.headOption)
         ),
         Question(
@@ -233,6 +235,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           language = Language("en"),
           slug = "question-2",
           question = "Is it?",
+          shortTitle = None,
           operationId = request.maybeOperationIds.flatMap(_.headOption)
         )
       )
@@ -248,6 +251,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         country = Country("FR"),
         language = Language("fr"),
         question = questionId.value,
+        shortTitle = None,
         operationId = None
       )
     })
@@ -452,6 +456,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             country = Country("FR"),
             language = Language("fr"),
             question = "how to save the world?",
+            shortTitle = None,
             questionSlug = "make-the-world-great-again",
             consultationImage = Some("https://example.com/image")
           ).asJson.toString()
@@ -493,6 +498,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             endDate = None,
             canPropose = true,
             question = "question ?",
+            shortTitle = None,
             sequenceCardsConfiguration = SequenceCardsConfiguration(
               introCard = IntroCard(enabled = true, title = None, description = None),
               pushProposalCard = PushProposalCard(enabled = true),
@@ -554,6 +560,46 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         val errors = entityAs[Seq[ValidationError]]
         errors.size should be(1)
         errors.head.field shouldBe "gradientStart"
+      }
+    }
+
+    scenario("update with bad shortTitle") {
+
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          ContentTypes.`application/json`,
+          """{
+           | "startDate": "2018-12-01T10:15:30.000Z",
+           | "canPropose": true,
+           | "question": "question ?",
+           | "shortTitle": "Il s'agit d'un short title de plus de 30 charactères !",
+           | "sequenceCardsConfiguration": {
+           |   "introCard": { "enabled": true },
+           |   "pushProposalCard": { "enabled": true },
+           |   "signUpCard": { "enabled": true },
+           |   "finalCard": {
+           |     "enabled": true,
+           |     "sharingEnabled": false
+           |   }
+           | },
+           | "metas": { "title": "metas" },
+           | "theme": {
+           |   "gradientStart": "#000000",
+           |   "gradientEnd": "#000000",
+           |   "color": "#000000",
+           |   "fontColor": "#000000"
+           | },
+           | "description": "description",
+           | "displayResults": false,
+           | "consultationImage": "https://example"
+          }""".stripMargin
+        ) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size should be(1)
+        errors.head.field shouldBe "shortTitle"
       }
     }
 

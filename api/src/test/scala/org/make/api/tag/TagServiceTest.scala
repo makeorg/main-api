@@ -108,7 +108,8 @@ class TagServiceTest
           operationId = None,
           country = Country("FR"),
           language = Language("fr"),
-          question = "new question"
+          question = "new question",
+          shortTitle = None
         ),
         display = TagDisplay.Inherit
       )
@@ -289,7 +290,8 @@ class TagServiceTest
           operationId = None,
           country = Country("FR"),
           language = Language("fr"),
-          question = "Fake Question"
+          question = "Fake Question",
+          shortTitle = None
         )
       )
 
@@ -344,7 +346,8 @@ class TagServiceTest
           operationId = None,
           country = Country("FR"),
           language = Language("fr"),
-          question = "Fake Question"
+          question = "Fake Question",
+          shortTitle = None
         )
       )
 

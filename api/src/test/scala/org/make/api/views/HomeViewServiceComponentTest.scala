@@ -79,6 +79,7 @@ class HomeViewServiceComponentTest
     language = Language("fr"),
     country = Country("FR"),
     question = "question default ?",
+    shortTitle = None,
     operationId = Some(defaultOperation.operationId)
   )
   val defaultOperationOfQuestion: IndexedOperationOfQuestion = IndexedOperationOfQuestion(

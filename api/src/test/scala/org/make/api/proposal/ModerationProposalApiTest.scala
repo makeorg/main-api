@@ -592,6 +592,7 @@ class ModerationProposalApiTest
               country = Country("FR"),
               language = Language("fr"),
               question = "",
+              shortTitle = None,
               operationId = None
             )
           )
@@ -854,6 +855,7 @@ class ModerationProposalApiTest
             country = Country("FR"),
             language = Language("fr"),
             question = "",
+            shortTitle = None,
             operationId = Some(OperationId("vff"))
           )
         )
@@ -870,6 +872,7 @@ class ModerationProposalApiTest
               country = Country("FR"),
               language = Language("fr"),
               question = "",
+              shortTitle = None,
               operationId = Some(OperationId("mieux-vivre-ensemble"))
             )
           )

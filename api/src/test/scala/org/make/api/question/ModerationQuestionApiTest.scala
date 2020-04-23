@@ -90,12 +90,13 @@ class ModerationQuestionApiTest
   )
   val baseQuestion =
     Question(
-      QuestionId("question-id"),
-      "slug",
-      Country("FR"),
-      Language("fr"),
-      "Slug ?",
-      Some(OperationId("operation-id"))
+      questionId = QuestionId("question-id"),
+      slug = "slug",
+      country = Country("FR"),
+      language = Language("fr"),
+      question = "Slug ?",
+      shortTitle = None,
+      operationId = Some(OperationId("operation-id"))
     )
   val baseOperationOfQuestion = OperationOfQuestion(
     QuestionId("question-id"),
@@ -185,55 +186,6 @@ class ModerationQuestionApiTest
       Get(uri("not-found"))
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
-      }
-    }
-  }
-
-  feature("create question") {
-    val uri = "/moderation/questions"
-    val request =
-      """
-        |{
-        | "question": "question",
-        | "country": "FR",
-        | "language": "fr",
-        | "slug": "question-slug"
-        |}
-      """.stripMargin
-
-    when(questionService.createQuestion(any[Country], any[Language], any[String], any[String]))
-      .thenReturn(Future.successful(baseQuestion))
-
-    scenario("authenticated create question") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
-        status should be(StatusCodes.OK)
-      }
-    }
-    scenario("unauthorized create question") {
-      Post(uri)
-        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
-        status should be(StatusCodes.Unauthorized)
-      }
-    }
-    scenario("forbidden create question (citizen)") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-    scenario("forbidden create question (moderator)") {
-      Post(uri)
-        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator)))
-        .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
-        status should be(StatusCodes.Forbidden)
-      }
-    }
-    scenario("bad request create question") {
-      Post(uri).withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
       }
     }
   }

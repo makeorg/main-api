@@ -74,6 +74,7 @@ final case class CreateOperationOfQuestion(operationId: OperationId,
                                            country: Country,
                                            language: Language,
                                            question: String,
+                                           shortTitle: Option[String],
                                            consultationImage: Option[String])
 
 final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]] = None,
@@ -184,6 +185,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         country = parameters.country,
         language = parameters.language,
         question = parameters.question,
+        shortTitle = parameters.shortTitle,
         operationId = Some(parameters.operationId)
       )
 

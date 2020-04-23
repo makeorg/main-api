@@ -110,6 +110,7 @@ class AdminTopIdeaApiTest
                 country = Country("FR"),
                 language = Language("fr"),
                 question = "question ?",
+                shortTitle = None,
                 operationId = None
               )
             )
@@ -153,6 +154,7 @@ class AdminTopIdeaApiTest
                 country = Country("FR"),
                 language = Language("fr"),
                 question = "question ?",
+                shortTitle = None,
                 operationId = None
               )
             )
@@ -306,6 +308,7 @@ class AdminTopIdeaApiTest
                 country = Country("FR"),
                 language = Language("fr"),
                 question = "question ?",
+                shortTitle = None,
                 operationId = None
               )
             )

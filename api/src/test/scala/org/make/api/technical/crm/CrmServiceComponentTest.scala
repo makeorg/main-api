@@ -234,6 +234,7 @@ class CrmServiceComponentTest
     country = Country("FR"),
     language = Language("fr"),
     question = "question ?",
+    shortTitle = None,
     operationId = Some(OperationId("999-99-99"))
   )
 
@@ -243,6 +244,7 @@ class CrmServiceComponentTest
     country = Country("GB"),
     language = Language("en"),
     question = "question ?",
+    shortTitle = None,
     operationId = Some(OperationId("888-88-88"))
   )
 
@@ -252,6 +254,7 @@ class CrmServiceComponentTest
     country = Country("IT"),
     language = Language("it"),
     question = "question ?",
+    shortTitle = None,
     operationId = Some(OperationId("777-77-77"))
   )
 
@@ -653,12 +656,13 @@ class CrmServiceComponentTest
         Future.successful(
           Seq(
             Question(
-              QuestionId("question-id"),
-              "question",
-              Country("FR"),
-              Language("fr"),
-              "question ?",
-              Some(OperationId("999-99-99"))
+              questionId = QuestionId("question-id"),
+              slug = "question",
+              country = Country("FR"),
+              language = Language("fr"),
+              question = "question ?",
+              shortTitle = None,
+              operationId = Some(OperationId("999-99-99"))
             )
           )
         )
@@ -673,6 +677,7 @@ class CrmServiceComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "200-20-11",
+          shortTitle = None,
           operationId = Some(OperationId("200-20-11"))
         ),
         Question(
@@ -681,6 +686,7 @@ class CrmServiceComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "345-34-89",
+          shortTitle = None,
           operationId = Some(OperationId("345-34-89"))
         ),
         Question(
@@ -689,6 +695,7 @@ class CrmServiceComponentTest
           country = Country("FR"),
           language = Language("fr"),
           question = "999-99-99",
+          shortTitle = None,
           operationId = Some(OperationId("999-99-99"))
         )
       )
@@ -810,12 +817,13 @@ class CrmServiceComponentTest
       val operationId = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
 
       val question = Question(
-        QuestionId("7d2ba29b-d503-44b8-98a0-5b9ae8b8bc69"),
-        "my-question",
-        Country("FR"),
-        Language("fr"),
-        "Comment sauver le monde ?",
-        Some(operationId)
+        questionId = QuestionId("7d2ba29b-d503-44b8-98a0-5b9ae8b8bc69"),
+        slug = "my-question",
+        country = Country("FR"),
+        language = Language("fr"),
+        question = "Comment sauver le monde ?",
+        shortTitle = None,
+        operationId = Some(operationId)
       )
       val resolver = new QuestionResolver(Seq(question), Map())
 
@@ -840,20 +848,22 @@ class CrmServiceComponentTest
       val questions =
         Seq(
           Question(
-            questionId1,
-            "question-1",
-            Country("FR"),
-            Language("fr"),
-            "Comment sauver le monde ?",
-            Some(operationId1)
+            questionId = questionId1,
+            slug = "question-1",
+            country = Country("FR"),
+            language = Language("fr"),
+            question = "Comment sauver le monde ?",
+            shortTitle = None,
+            operationId = Some(operationId1)
           ),
           Question(
-            questionId2,
-            "question-2",
-            Country("FR"),
-            Language("fr"),
-            "Comment resauver le monde ?",
-            Some(OperationId("who cares?"))
+            questionId = questionId2,
+            slug = "question-2",
+            country = Country("FR"),
+            language = Language("fr"),
+            question = "Comment resauver le monde ?",
+            shortTitle = None,
+            operationId = Some(OperationId("who cares?"))
           )
         )
 
@@ -993,12 +1003,13 @@ class CrmServiceComponentTest
       val operationId = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
 
       val question = Question(
-        QuestionId("7d2ba29b-d503-44b8-98a0-5b9ae8b8bc69"),
-        "my-question",
-        Country("FR"),
-        Language("fr"),
-        "Comment sauver le monde ?",
-        Some(operationId)
+        questionId = QuestionId("7d2ba29b-d503-44b8-98a0-5b9ae8b8bc69"),
+        slug = "my-question",
+        country = Country("FR"),
+        language = Language("fr"),
+        question = "Comment sauver le monde ?",
+        shortTitle = None,
+        operationId = Some(operationId)
       )
 
       when(operationService.findSimple()).thenReturn(
@@ -1071,7 +1082,15 @@ class CrmServiceComponentTest
     scenario("get by id") {
       val questionId = QuestionId("my-question")
       val question =
-        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("toto")))
+        Question(
+          questionId = questionId,
+          slug = "my-question",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "?",
+          shortTitle = None,
+          operationId = Some(OperationId("toto"))
+        )
       val resolver = new QuestionResolver(Seq(question), Map.empty)
 
       val result = resolver.extractQuestionWithOperationFromRequestContext(
@@ -1088,7 +1107,15 @@ class CrmServiceComponentTest
     scenario("get by operation") {
       val questionId = QuestionId("my-question")
       val question =
-        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")))
+        Question(
+          questionId = questionId,
+          slug = "my-question",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "?",
+          shortTitle = None,
+          operationId = Some(OperationId("my-operation"))
+        )
       val resolver = new QuestionResolver(Seq(question), Map.empty)
 
       resolver.extractQuestionWithOperationFromRequestContext(
@@ -1126,7 +1153,15 @@ class CrmServiceComponentTest
     scenario("get by operation slug") {
       val questionId = QuestionId("my-question")
       val question =
-        Question(questionId, "my-question", Country("FR"), Language("fr"), "?", Some(OperationId("my-operation")))
+        Question(
+          questionId = questionId,
+          slug = "my-question",
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "?",
+          shortTitle = None,
+          operationId = Some(OperationId("my-operation"))
+        )
       val resolver = new QuestionResolver(Seq(question), Map("my-operation-slug" -> OperationId("my-operation")))
 
       resolver.extractQuestionWithOperationFromRequestContext(

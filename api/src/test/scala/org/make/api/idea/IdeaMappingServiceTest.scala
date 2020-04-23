@@ -393,6 +393,7 @@ class IdeaMappingServiceTest
               country = Country("FR"),
               language = Language("fr"),
               question = "my question ?",
+              shortTitle = None,
               operationId = None
             )
           )
@@ -448,6 +449,7 @@ class IdeaMappingServiceTest
               country = Country("FR"),
               language = Language("fr"),
               question = "my question ?",
+              shortTitle = None,
               operationId = None
             )
           )

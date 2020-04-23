@@ -109,7 +109,16 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
                 maybeRoleIds.map(roleIds => sqls.in(personalityRoleAlias.id, roleIds.map(_.value)))
               )
             )
-          sortOrderQuery(start, end, sort, order, query, PersistentPersonalityRole.columnNames, personalityRoleAlias)
+          sortOrderQuery(
+            start = start,
+            end = end,
+            sort = sort,
+            order = order,
+            query = query,
+            columns = PersistentPersonalityRole.columnNames,
+            alias = personalityRoleAlias,
+            defaultSort = personalityRoleAlias.name
+          )
         }.map(PersistentPersonalityRole.apply()).list().apply()
       }).map(_.map(_.toPersonalityRole))
     }

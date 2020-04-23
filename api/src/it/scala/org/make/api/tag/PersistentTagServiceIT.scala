@@ -63,7 +63,8 @@ class PersistentTagServiceIT
       operationId = Some(operationId),
       country = country,
       language = language,
-      question = operationId.value
+      question = operationId.value,
+      shortTitle = None
     )
   }
 
@@ -76,7 +77,8 @@ class PersistentTagServiceIT
       operationId = None,
       country = country,
       language = language,
-      question = themeId.value
+      question = themeId.value,
+      shortTitle = None
     )
   }
 

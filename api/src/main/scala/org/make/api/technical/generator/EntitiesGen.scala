@@ -69,6 +69,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       slug                <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(30))
       (country, language) <- genCountryLanguage
       question            <- CustomGenerators.LoremIpsumGen.sentence()
+      shortTitle          <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(30))
     } yield
       Question(
         questionId = idGenerator.nextQuestionId(),
@@ -76,6 +77,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
         country = country,
         language = language,
         question = question,
+        shortTitle = Some(shortTitle),
         operationId = operationId
       )
 
@@ -83,6 +85,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
     for {
       date                <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
       operationTitle      <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
+      shortTitle          <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(30))
       slug                <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(30))
       (country, language) <- genCountryLanguage
       question            <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
@@ -97,6 +100,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
         country = country,
         language = language,
         question = question,
+        shortTitle = Some(shortTitle),
         consultationImage = Some(consultationImage)
       )
 

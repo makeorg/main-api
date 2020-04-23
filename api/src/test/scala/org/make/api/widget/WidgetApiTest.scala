@@ -71,7 +71,16 @@ class WidgetApiTest
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
 
   feature("start sequence by question slug") {
-    val baseQuestion = Question(QuestionId("question-id"), "slug", Country("FR"), Language("fr"), "Slug ?", None)
+    val baseQuestion =
+      Question(
+        questionId = QuestionId("question-id"),
+        slug = "slug",
+        country = Country("FR"),
+        language = Language("fr"),
+        question = "Slug ?",
+        shortTitle = None,
+        operationId = None
+      )
 
     scenario("valid question") {
       when(persistentQuestionService.find(ArgumentMatchers.any[SearchQuestionRequest]))

@@ -51,12 +51,13 @@ class ModerationTagApiTest
     Future.successful(
       Some(
         Question(
-          QuestionId("1234-1234-1234-1234"),
+          questionId = QuestionId("1234-1234-1234-1234"),
           slug = "my-question",
-          Country("FR"),
-          Language("fr"),
-          "?",
-          Some(OperationId("1234-1234-1234-1234"))
+          country = Country("FR"),
+          language = Language("fr"),
+          question = "?",
+          shortTitle = None,
+          operationId = Some(OperationId("1234-1234-1234-1234"))
         )
       )
     )

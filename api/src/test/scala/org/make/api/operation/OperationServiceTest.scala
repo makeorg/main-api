@@ -86,6 +86,7 @@ class OperationServiceTest
           language = Language("fr"),
           slug = "foo-BR",
           question = "foo BR?",
+          shortTitle = None,
           operationId = Some(OperationId("foo"))
         ),
         details = OperationOfQuestion(
@@ -126,6 +127,7 @@ class OperationServiceTest
           language = Language("en"),
           slug = "foo-GB",
           question = "foo GB?",
+          shortTitle = None,
           operationId = Some(OperationId("foo"))
         ),
         details = OperationOfQuestion(

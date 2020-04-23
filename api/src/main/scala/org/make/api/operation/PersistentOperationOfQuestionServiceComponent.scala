@@ -389,6 +389,7 @@ object PersistentOperationOfQuestion
                                            country: String,
                                            language: String,
                                            question: String,
+                                           shortTitle: Option[String],
                                            slug: String,
                                            operationId: String,
                                            startDate: Option[ZonedDateTime],
@@ -432,6 +433,7 @@ object PersistentOperationOfQuestion
           language = Language(language),
           slug = slug,
           question = question,
+          shortTitle = shortTitle,
           operationId = Some(OperationId(operationId))
         ),
         details = OperationOfQuestion(
@@ -498,6 +500,7 @@ object PersistentOperationOfQuestion
         country = country,
         language = language,
         question = question,
+        shortTitle = resultSet.stringOpt(questionAlias.shortTitle),
         slug = questionSlug,
         operationId = operationId,
         startDate = resultSet.zonedDateTimeOpt(operationOfQuestionAlias.startDate),

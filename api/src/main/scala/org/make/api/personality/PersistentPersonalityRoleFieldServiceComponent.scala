@@ -144,7 +144,8 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
             order = order,
             query = query,
             columns = PersistentPersonalityRoleField.columnNames,
-            alias = personalityRoleFieldAlias
+            alias = personalityRoleFieldAlias,
+            defaultSort = personalityRoleFieldAlias.name
           )
         }.map(PersistentPersonalityRoleField.apply()).list().apply()
       }).map(_.map(_.toPersonalityRoleField))

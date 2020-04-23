@@ -52,6 +52,7 @@ object CreateOperation {
                                          language: Language,
                                          slug: String,
                                          question: String,
+                                         shortTitle: Option[String],
                                          title: String,
                                          startDate: Option[ZonedDateTime],
                                          endDate: Option[ZonedDateTime],
