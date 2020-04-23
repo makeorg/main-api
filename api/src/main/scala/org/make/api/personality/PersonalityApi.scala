@@ -337,7 +337,7 @@ final case class PersonalityProfileRequest(
   validateOptional(
     Some(requireNonEmpty("firstName", firstName, Some("firstName should not be an empty string"))),
     Some(validateUserInput("firstName", firstName, None)),
-    Some(requireNonEmpty("lastName", lastName, Some("firstName should not be an empty string"))),
+    Some(requireNonEmpty("lastName", lastName, Some("lastName should not be an empty string"))),
     Some(validateUserInput("lastName", lastName, None)),
     Some(validateOptionalUserInput("description", description, None)),
     description.map(value => maxLength("description", maxDescriptionLength, value)),

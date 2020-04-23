@@ -152,7 +152,7 @@ case class UserProfileRequest(firstName: String,
   validateOptional(
     Some(requireNonEmpty("firstName", firstName, Some("firstName should not be an empty string"))),
     Some(validateUserInput("firstName", firstName, None)),
-    lastName.map(value => requireNonEmpty("lastName", value, Some("firstName should not be an empty string"))),
+    lastName.map(value => requireNonEmpty("lastName", value, Some("lastName should not be an empty string"))),
     Some(validateOptionalUserInput("lastName", lastName, None)),
     Some(validateOptionalUserInput("profession", profession, None)),
     description.map(value => maxLength("description", maxDescriptionLength, value)),
