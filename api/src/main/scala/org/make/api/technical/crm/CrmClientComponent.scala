@@ -136,7 +136,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"manageContactList failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.ManageContactListException(code, response))
           }
       }
     }
@@ -158,7 +158,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"send csv failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.SendCsvException(code, response))
           }
       }
     }
@@ -182,7 +182,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"csv import failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.CsvImportException(code, response))
           }
       }
     }
@@ -205,7 +205,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"monitor csv import failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.MonitorCsvImportException(code, response))
           }
       }
     }
@@ -241,7 +241,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"send email failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.SendEmailException(code, response))
           }
       }
     }
@@ -281,7 +281,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"getUsersInformationMailFromList failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.GetUsersInformationMailFromListException(code, response))
           }
       }
     }
@@ -304,7 +304,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"getContactsProperties failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.GetContactsPropertiesException(code, response))
           }
       }
     }
@@ -326,7 +326,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"manageContactListJobDetails failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.ManageContactListJobDetailsException(code, response))
           }
       }
     }
@@ -348,7 +348,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"getUsersMailFromList failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.GetUsersMailFromListException(code, response))
           }
       }
     }
@@ -369,7 +369,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case HttpResponse(code, _, entity, _) =>
           Unmarshal(entity).to[String].flatMap { response =>
-            Future.failed(CrmClientException(s"delete user failed with status $code: $response"))
+            Future.failed(CrmClientException.RequestException.DeleteUserException(code, response))
           }
       }
     }
@@ -384,8 +384,8 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
           }
         case _ => Future.successful(false)
       }.recoverWith {
-        case CrmClientException(message) =>
-          logger.error(message)
+        case e: CrmClientException =>
+          logger.error(e.message)
           Future.successful(false)
         case e => Future.failed(e)
       }
@@ -395,11 +395,9 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       val promise = Promise[HttpResponse]()
       queue.offer((request, promise)).flatMap {
         case QueueOfferResult.Enqueued    => promise.future
-        case QueueOfferResult.Dropped     => Future.failed(CrmClientException("Queue overflowed. Try again later."))
+        case QueueOfferResult.Dropped     => Future.failed(CrmClientException.QueueException.QueueOverflowed)
         case QueueOfferResult.Failure(ex) => Future.failed(ex)
-        case QueueOfferResult.QueueClosed =>
-          Future
-            .failed(CrmClientException("Queue was closed (pool shut down) while running the request. Try again later."))
+        case QueueOfferResult.QueueClosed => Future.failed(CrmClientException.QueueException.QueueClosed)
       }
     }
   }
@@ -562,4 +560,55 @@ object MailjetProperty {
   implicit val decoder: Decoder[MailjetProperty] = Decoder.forProduct2("Name", "Value")(MailjetProperty.apply)
 }
 
-case class CrmClientException(message: String) extends Exception(message)
+sealed abstract class CrmClientException(val message: String) extends Exception(message) with Product with Serializable
+
+object CrmClientException {
+
+  sealed abstract class QueueException(message: String) extends CrmClientException(message)
+
+  sealed abstract class RequestException(action: String, code: StatusCode, response: String)
+      extends CrmClientException(s"$action failed with status $code: $response")
+
+  object QueueException {
+
+    case object QueueOverflowed extends QueueException("Queue overflowed. Try again later.")
+
+    case object QueueClosed
+        extends QueueException("Queue was closed (pool shut down) while running the request. Try again later.")
+
+  }
+
+  object RequestException {
+
+    case class ManageContactListException(code: StatusCode, response: String)
+        extends RequestException("manageContactList", code, response)
+
+    case class SendCsvException(code: StatusCode, response: String) extends RequestException("send csv", code, response)
+
+    case class CsvImportException(code: StatusCode, response: String)
+        extends RequestException("csv import", code, response)
+
+    case class MonitorCsvImportException(code: StatusCode, response: String)
+        extends RequestException("monitor csv import", code, response)
+
+    case class SendEmailException(code: StatusCode, response: String)
+        extends RequestException("send email", code, response)
+
+    case class GetUsersInformationMailFromListException(code: StatusCode, response: String)
+        extends RequestException("getUsersInformationMailFromList", code, response)
+
+    case class GetContactsPropertiesException(code: StatusCode, response: String)
+        extends RequestException("getContactsProperties", code, response)
+
+    case class ManageContactListJobDetailsException(code: StatusCode, response: String)
+        extends RequestException("manageContactListJobDetails", code, response)
+
+    case class GetUsersMailFromListException(code: StatusCode, response: String)
+        extends RequestException("getUsersMailFromList", code, response)
+
+    case class DeleteUserException(code: StatusCode, response: String)
+        extends RequestException("manageContactList", code, response)
+
+  }
+
+}

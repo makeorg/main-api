@@ -28,6 +28,7 @@ import java.util.concurrent.{Executors, ThreadFactory}
 import java.util.stream.Collectors
 
 import akka.{Done, NotUsed}
+import akka.http.scaladsl.model.StatusCodes
 import akka.persistence.query.EventEnvelope
 import akka.stream._
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
@@ -131,8 +132,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           logger.info(s"Sent email $messages with reponse $response")
         case Failure(e) =>
           logger.error(s"Sent email $messages failed", e)
-          actorSystem.scheduler.scheduleOnce(mailJetConfiguration.delayBeforeResend) {
-            eventBusService.publish(message)
+          e match {
+            case CrmClientException.RequestException.SendEmailException(StatusCodes.BadRequest, _) =>
+            case _ =>
+              actorSystem.scheduler.scheduleOnce(mailJetConfiguration.delayBeforeResend) {
+                eventBusService.publish(message)
+              }
           }
       }
 
@@ -155,8 +160,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           )
         }
         .recoverWith {
-          case CrmClientException(message) =>
-            logger.error(message)
+          case e: CrmClientException =>
+            logger.error(e.message)
             Future.successful(GetUsersMail(0, 0, Seq.empty))
           case e => Future.failed(e)
         }
@@ -179,8 +184,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
             .deleteContactById(obsoleteContactId)
             .map(_ => 1)
             .recoverWith {
-              case CrmClientException(message) =>
-                logger.error(message)
+              case e: CrmClientException =>
+                logger.error(e.message)
                 Future.successful(0)
               case e => Future.failed(e)
             }

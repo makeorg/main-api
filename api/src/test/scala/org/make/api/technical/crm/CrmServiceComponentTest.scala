@@ -26,6 +26,7 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
 import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
@@ -1457,17 +1458,26 @@ class CrmServiceComponentTest
   feature("Resend emails on error") {
 
     scenario("sending email randomly fails") {
-      forAll { (message: SendEmail, succeed: Boolean) =>
+      forAll { (message: SendEmail, outcome: Either[Boolean, Unit]) =>
         Given("an unreliable email provider")
         when(crmClient.sendEmail(matches(SendMessages(message)))(any[ExecutionContext]))
-          .thenReturn(
-            if (succeed) Future.successful(SendEmailResponse(Nil))
-            else Future.failed(new Exception("Don't worry, this exception is fake"))
-          )
+          .thenReturn(outcome match {
+            case Left(clientError) =>
+              Future.failed(
+                CrmClientException.RequestException.SendEmailException(
+                  if (clientError) StatusCodes.BadRequest else StatusCodes.InternalServerError,
+                  "Don't worry, this exception is fake"
+                )
+              )
+            case Right(_) => Future.successful(SendEmailResponse(Nil))
+          })
         When("sending an email")
         crmService.sendEmail(message)
         Then("the message should be rescheduled if sending failed")
-        verify(eventBusService, new After(1000, times(if (succeed) 0 else 1))).publish(matches(message))
+        verify(eventBusService, new After(1000, times(outcome match {
+          case Left(false) => 1
+          case _           => 0
+        }))).publish(matches(message))
       }
     }
 
