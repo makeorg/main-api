@@ -64,6 +64,7 @@ import org.make.core.user.UserId
 import org.make.api.userhistory.LogRegisterCitizenEvent
 import org.make.core.proposal.ProposalId
 import org.make.core.session.SessionId
+import java.time.temporal.ChronoUnit
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -160,8 +161,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       } yield new QuestionResolver(questions, operations)
     }
 
-    private def retrieveEventQuestion(resolver: QuestionResolver,
-                                      event: UserHistoryEvent[_]): Future[Option[Question]] = {
+    private def retrieveEventQuestion(
+      resolver: QuestionResolver,
+      event: UserHistoryEvent[_]
+    ): Future[Option[Question]] = {
       resolver.extractQuestionWithOperationFromRequestContext(event.requestContext) match {
         case Some(question) => Future.successful(Some(question))
         case None =>
@@ -182,8 +185,11 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
     }
 
-    private def resolveQuestionFromEvents(questionResolver: QuestionResolver,
-                                          events: Seq[UserHistoryEvent[_]]): Future[Option[Question]] = {
+    private def resolveQuestionFromEvents(
+      questionResolver: QuestionResolver,
+      events: Seq[UserHistoryEvent[_]],
+      userCreationDate: Option[ZonedDateTime]
+    ): Future[Option[Question]] = {
       val maybeRegistration: Option[LogRegisterCitizenEvent] = events.collectFirst {
         case e: LogRegisterCitizenEvent => e
       }
@@ -191,6 +197,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       maybeRegistration match {
         case None =>
           val maybeSession: Option[SessionId] = events
+            .filter(
+              // Ignore events that are too far away from the creation date
+              event => userCreationDate.exists(date => Math.abs(ChronoUnit.DAYS.between(date, event.action.date)) < 2)
+            )
             .sortBy(_.action.date.toString())
             .headOption
             .map(_.requestContext.sessionId)
@@ -247,7 +257,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                     .mapAsync(1) { user =>
                       val updatedUserCount = for {
                         events        <- listEvents(user.userId)
-                        maybeQuestion <- resolveQuestionFromEvents(questionResolver, events)
+                        maybeQuestion <- resolveQuestionFromEvents(questionResolver, events, user.createdAt)
                         count         <- updateUserIfNeeded(user, maybeQuestion)
                       } yield count
 
@@ -333,11 +343,10 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 
 }
 
-final case class DeleteContactsRequest(@(ApiModelProperty @field)(
-                                         dataType = "string",
-                                         example = "2019-07-11T11:21:40.508Z"
-                                       ) maxUpdatedAtBeforeDelete: ZonedDateTime,
-                                       @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean) {
+final case class DeleteContactsRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean
+) {
   Validation.validate(
     Validation.validateField(
       "maxUpdatedAtBeforeDelete",
