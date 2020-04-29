@@ -18,11 +18,14 @@
  */
 
 package org.make.api.crmTemplates
+
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.crmTemplates.DefaultPersistentCrmTemplatesServiceComponent.PersistentCrmTemplates
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
 import org.make.core.question.QuestionId
 import scalikejdbc._
@@ -55,7 +58,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
       with ShortenedNames
       with StrictLogging {
 
-    private val crmTemplatesAlias = PersistentCrmTemplates.crmTemplatesAlias
+    private val crmTemplatesAlias = PersistentCrmTemplates.alias
 
     private val column = PersistentCrmTemplates.column
 
@@ -126,7 +129,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.ConditionSQLBuilder[WrappedResultSet] = select
+          val query: scalikejdbc.ConditionSQLBuilder[PersistentCrmTemplates] = select
             .from(PersistentCrmTemplates.as(crmTemplatesAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -134,10 +137,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
                 locale.map(locale         => sqls.eq(crmTemplatesAlias.locale, locale))
               )
             )
-          end match {
-            case None        => query.offset(start)
-            case Some(limit) => query.offset(start).limit(limit)
-          }
+          sortOrderQuery(start, end, None, None, query)
         }.map(PersistentCrmTemplates.apply()).list().apply()
       }).map(_.map(_.toCrmTemplates))
     }
@@ -195,8 +195,8 @@ object DefaultPersistentCrmTemplatesServiceComponent {
       )
   }
 
-  object PersistentCrmTemplates
-      extends SQLSyntaxSupport[PersistentCrmTemplates]
+  implicit object PersistentCrmTemplates
+      extends PersistentCompanion[PersistentCrmTemplates, CrmTemplates]
       with ShortenedNames
       with StrictLogging {
 
@@ -218,13 +218,12 @@ object DefaultPersistentCrmTemplatesServiceComponent {
 
     override val tableName: String = "crm_templates"
 
-    lazy val crmTemplatesAlias
-      : QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentCrmTemplates], PersistentCrmTemplates] = syntax(
-      "crmTemplates"
-    )
+    override lazy val alias: SyntaxProvider[PersistentCrmTemplates] = syntax("crmTemplates")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.id)
 
     def apply(
-      crmTemplatesResultName: ResultName[PersistentCrmTemplates] = crmTemplatesAlias.resultName
+      crmTemplatesResultName: ResultName[PersistentCrmTemplates] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentCrmTemplates = {
       PersistentCrmTemplates.apply(
         id = resultSet.string(crmTemplatesResultName.id),

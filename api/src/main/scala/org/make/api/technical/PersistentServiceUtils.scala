@@ -19,24 +19,23 @@
 
 package org.make.api.technical
 
-import scalikejdbc.WrappedResultSet
-import scalikejdbc.interpolation.SQLSyntax
+import scalikejdbc.PagingSQLBuilder
 
 object PersistentServiceUtils {
 
-  def sortOrderQuery[T](start: Int,
-                        end: Option[Int],
-                        sort: Option[String],
-                        order: Option[String],
-                        query: scalikejdbc.PagingSQLBuilder[WrappedResultSet],
-                        columns: Seq[String],
-                        alias: scalikejdbc.SyntaxProvider[T],
-                        defaultSort: SQLSyntax): scalikejdbc.PagingSQLBuilder[WrappedResultSet] = {
+  def sortOrderQuery[Persistent, Model](
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    query: PagingSQLBuilder[Persistent]
+  )(implicit companion: PersistentCompanion[Persistent, Model]): PagingSQLBuilder[Persistent] = {
     val queryOrdered = (sort, order) match {
-      case (Some(field), Some("DESC")) if columns.contains(field) =>
-        query.orderBy(alias.field(field)).desc.offset(start)
-      case (Some(field), _) if columns.contains(field) => query.orderBy(alias.field(field)).asc.offset(start)
-      case (_, _)                                      => query.orderBy(defaultSort).asc.offset(start)
+      case (Some(field), Some("DESC")) if companion.columnNames.contains(field) =>
+        query.orderBy(companion.alias.field(field)).desc.offset(start)
+      case (Some(field), _) if companion.columnNames.contains(field) =>
+        query.orderBy(companion.alias.field(field)).asc.offset(start)
+      case (_, _) => query.orderBy(companion.defaultSortColumns.toList: _*).asc.offset(start)
     }
 
     end match {

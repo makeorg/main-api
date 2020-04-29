@@ -19,11 +19,13 @@
 
 package org.make.api.idea
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.DefaultPersistentTopIdeaServiceComponent.PersistentTopIdea
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.question.QuestionId
 import scalikejdbc._
@@ -57,7 +59,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
   class DefaultPersistentTopIdeaService extends PersistentTopIdeaService with ShortenedNames with StrictLogging {
 
-    private val topIdeaAlias = PersistentTopIdea.topIdeaAlias
+    private val topIdeaAlias = PersistentTopIdea.alias
     private val column = PersistentTopIdea.column
 
     override def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]] = {
@@ -107,20 +109,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
               )
             )
 
-          val queryOrdered = (sort, order.map(_.toUpperCase)) match {
-            case (Some(field), Some("DESC")) if PersistentTopIdea.columnNames.contains(field) =>
-              query.orderBy(topIdeaAlias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentTopIdea.columnNames.contains(field) =>
-              query.orderBy(topIdeaAlias.field(field)).asc.offset(start)
-            case (Some(field), _) =>
-              logger.warn(s"Unsupported filter '$field'")
-              query.orderBy(topIdeaAlias.weight).asc.offset(start)
-            case (_, _) => query.orderBy(topIdeaAlias.weight).desc.offset(start)
-          }
-          end match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered
-          }
+          sortOrderQuery(start, end, sort, order, query)
         }.map(PersistentTopIdea.apply()).list.apply
       })
 
@@ -226,7 +215,10 @@ object DefaultPersistentTopIdeaServiceComponent {
       )
   }
 
-  object PersistentTopIdea extends SQLSyntaxSupport[PersistentTopIdea] with ShortenedNames with StrictLogging {
+  implicit object PersistentTopIdea
+      extends PersistentCompanion[PersistentTopIdea, TopIdea]
+      with ShortenedNames
+      with StrictLogging {
 
     override val columnNames: Seq[String] =
       Seq(
@@ -243,10 +235,12 @@ object DefaultPersistentTopIdeaServiceComponent {
 
     override val tableName: String = "top_idea"
 
-    lazy val topIdeaAlias: SyntaxProvider[PersistentTopIdea] = syntax("top_idea")
+    override lazy val alias: SyntaxProvider[PersistentTopIdea] = syntax("top_idea")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.weight)
 
     def apply(
-      topIdeaResultName: ResultName[PersistentTopIdea] = topIdeaAlias.resultName
+      topIdeaResultName: ResultName[PersistentTopIdea] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentTopIdea = {
       PersistentTopIdea.apply(
         id = resultSet.string(topIdeaResultName.id),

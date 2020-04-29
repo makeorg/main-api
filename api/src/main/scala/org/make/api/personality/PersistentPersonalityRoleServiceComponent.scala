@@ -19,11 +19,12 @@
 
 package org.make.api.personality
 
+import cats.data.NonEmptyList
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.personality.DefaultPersistentPersonalityRoleServiceComponent.PersistentPersonalityRole
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
 import scalikejdbc._
 
@@ -55,7 +56,7 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
 
   class DefaultPersistentPersonalityRoleService extends PersistentPersonalityRoleService with ShortenedNames {
 
-    private val personalityRoleAlias = PersistentPersonalityRole.personalityRoleAlias
+    private val personalityRoleAlias = PersistentPersonalityRole.alias
 
     private val column = PersistentPersonalityRole.column
 
@@ -101,7 +102,7 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
+          val query: scalikejdbc.PagingSQLBuilder[PersistentPersonalityRole] = select
             .from(PersistentPersonalityRole.as(personalityRoleAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -109,16 +110,7 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
                 maybeRoleIds.map(roleIds => sqls.in(personalityRoleAlias.id, roleIds.map(_.value)))
               )
             )
-          sortOrderQuery(
-            start = start,
-            end = end,
-            sort = sort,
-            order = order,
-            query = query,
-            columns = PersistentPersonalityRole.columnNames,
-            alias = personalityRoleAlias,
-            defaultSort = personalityRoleAlias.name
-          )
+          sortOrderQuery(start, end, sort, order, query)
         }.map(PersistentPersonalityRole.apply()).list().apply()
       }).map(_.map(_.toPersonalityRole))
     }
@@ -160,16 +152,18 @@ object DefaultPersistentPersonalityRoleServiceComponent {
     }
   }
 
-  object PersistentPersonalityRole extends SQLSyntaxSupport[PersistentPersonalityRole] {
+  implicit object PersistentPersonalityRole extends PersistentCompanion[PersistentPersonalityRole, PersonalityRole] {
     override val columnNames: Seq[String] =
       Seq("id", "name")
 
     override val tableName: String = "personality_role"
 
-    lazy val personalityRoleAlias: SyntaxProvider[PersistentPersonalityRole] = syntax("personality_role")
+    override lazy val alias: SyntaxProvider[PersistentPersonalityRole] = syntax("personality_role")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
 
     def apply(
-      personalityResultName: ResultName[PersistentPersonalityRole] = personalityRoleAlias.resultName
+      personalityResultName: ResultName[PersistentPersonalityRole] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentPersonalityRole = {
       PersistentPersonalityRole.apply(
         id = resultSet.string(personalityResultName.id),

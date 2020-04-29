@@ -96,8 +96,8 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
 
     def apply(
       tokenResultName: ResultName[PersistentToken] = tokenAlias.resultName,
-      userResultName: ResultName[PersistentUser] = PersistentUser.userAlias.resultName,
-      clientResultName: ResultName[PersistentClient] = PersistentClient.clientAlias.resultName
+      userResultName: ResultName[PersistentUser] = PersistentUser.alias.resultName,
+      clientResultName: ResultName[PersistentClient] = PersistentClient.alias.resultName
     )(resultSet: WrappedResultSet): PersistentToken = {
       val persistentUser = PersistentUser(userResultName)(resultSet)
       val persistentClient = PersistentClient(clientResultName)(resultSet)
@@ -133,8 +133,8 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
-          val userAlias = PersistentUser.userAlias
-          val clientAlias = PersistentClient.clientAlias
+          val userAlias = PersistentUser.alias
+          val clientAlias = PersistentClient.alias
           withSQL {
             val req: scalikejdbc.SQLBuilder[PersistentUser] = select
               .from(PersistentToken.as(tokenAlias))
@@ -162,8 +162,8 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
       implicit val cxt: EC = readExecutionContext
       val futurePersistentToken: Future[Option[PersistentToken]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
-          val userAlias = PersistentUser.userAlias
-          val clientAlias = PersistentClient.clientAlias
+          val userAlias = PersistentUser.alias
+          val clientAlias = PersistentClient.alias
           withSQL {
             select
               .from(PersistentToken.as(tokenAlias))
@@ -184,10 +184,10 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
         withSQL {
           select
             .from(PersistentToken.as(tokenAlias))
-            .innerJoin(PersistentUser.as(PersistentUser.userAlias))
-            .on(PersistentUser.userAlias.uuid, tokenAlias.makeUserUuid)
-            .innerJoin(PersistentClient.as(PersistentClient.clientAlias))
-            .on(PersistentClient.clientAlias.uuid, tokenAlias.clientUuid)
+            .innerJoin(PersistentUser.as(PersistentUser.alias))
+            .on(PersistentUser.alias.uuid, tokenAlias.makeUserUuid)
+            .innerJoin(PersistentClient.as(PersistentClient.alias))
+            .on(PersistentClient.alias.uuid, tokenAlias.clientUuid)
             .where(sqls.eq(tokenAlias.makeUserUuid, userId.value))
             .orderBy(tokenAlias.updatedAt)
             .desc

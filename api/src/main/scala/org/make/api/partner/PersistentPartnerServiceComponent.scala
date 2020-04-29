@@ -19,11 +19,13 @@
 
 package org.make.api.partner
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.partner.DefaultPersistentPartnerServiceComponent.PersistentPartner
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
@@ -59,7 +61,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
   class DefaultPersistentPartnerService extends PersistentPartnerService with ShortenedNames {
 
-    private val partnerAlias = PersistentPartner.partnerAlias
+    private val partnerAlias = PersistentPartner.alias
 
     private val column = PersistentPartner.column
 
@@ -123,7 +125,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
+          val query: scalikejdbc.PagingSQLBuilder[PersistentPartner] = select
             .from(PersistentPartner.as(partnerAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -133,19 +135,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
               )
             )
 
-          val queryOrdered = (sort, order) match {
-            case (Some(field), Some("DESC")) if PersistentPartner.columnNames.contains(field) =>
-              query.orderBy(partnerAlias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentPartner.columnNames.contains(field) =>
-              query.orderBy(partnerAlias.field(field)).asc.offset(start)
-            case (Some(_), _) =>
-              query.orderBy(partnerAlias.name).asc.offset(start)
-            case (_, _) => query.orderBy(partnerAlias.name).asc.offset(start)
-          }
-          end match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered
-          }
+          sortOrderQuery(start, end, sort, order, query)
         }.map(PersistentPartner.apply()).list().apply()
       }).map(_.map(_.toPartner))
     }
@@ -206,16 +196,22 @@ object DefaultPersistentPartnerServiceComponent {
     }
   }
 
-  object PersistentPartner extends SQLSyntaxSupport[PersistentPartner] with ShortenedNames with StrictLogging {
+  implicit object PersistentPartner
+      extends PersistentCompanion[PersistentPartner, Partner]
+      with ShortenedNames
+      with StrictLogging {
+
     override val columnNames: Seq[String] =
       Seq("id", "name", "logo", "link", "organisation_id", "partner_kind", "question_id", "weight")
 
     override val tableName: String = "partner"
 
-    lazy val partnerAlias: SyntaxProvider[PersistentPartner] = syntax("partner")
+    override lazy val alias: SyntaxProvider[PersistentPartner] = syntax("partner")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.name)
 
     def apply(
-      partnerResultName: ResultName[PersistentPartner] = partnerAlias.resultName
+      partnerResultName: ResultName[PersistentPartner] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentPartner = {
       PersistentPartner.apply(
         id = resultSet.string(partnerResultName.id),

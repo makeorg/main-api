@@ -21,11 +21,13 @@ package org.make.api.user
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
+import cats.data.NonEmptyList
 import com.github.t3hnar.bcrypt._
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
 import org.make.core.DateHelper
@@ -167,7 +169,10 @@ object PersistentUserServiceComponent {
     }
   }
 
-  object PersistentUser extends SQLSyntaxSupport[PersistentUser] with ShortenedNames with StrictLogging {
+  implicit object PersistentUser
+      extends PersistentCompanion[PersistentUser, User]
+      with ShortenedNames
+      with StrictLogging {
 
     private val profileColumnNames: Seq[String] = Seq(
       "date_of_birth",
@@ -226,10 +231,12 @@ object PersistentUserServiceComponent {
 
     override val tableName: String = "make_user"
 
-    lazy val userAlias: SyntaxProvider[PersistentUser] = syntax("u")
+    override lazy val alias: SyntaxProvider[PersistentUser] = syntax("u")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.email)
 
     def apply(
-      userResultName: ResultName[PersistentUser] = userAlias.resultName
+      userResultName: ResultName[PersistentUser] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentUser = {
       PersistentUser.apply(
         uuid = resultSet.string(userResultName.uuid),
@@ -388,12 +395,12 @@ trait DefaultPersistentUserServiceComponent
 
   class DefaultPersistentUserService extends PersistentUserService {
 
-    private val userAlias = PersistentUser.userAlias
+    private val userAlias = PersistentUser.alias
     private val followedUsersAlias = FollowedUsers.followedUsersAlias
     private val column = PersistentUser.column
     private val followedUsersColumn = FollowedUsers.column
 
-    private val defaultLimit = 10
+    private val defaultLimit = Some(10)
 
     override def getFollowedUsers(userId: UserId): Future[Seq[String]] = {
       implicit val cxt: EC = readExecutionContext
@@ -522,7 +529,7 @@ trait DefaultPersistentUserServiceComponent
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
+          val query: scalikejdbc.PagingSQLBuilder[PersistentUser] = select
             .from(PersistentUser.as(userAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -540,20 +547,7 @@ trait DefaultPersistentUserServiceComponent
               )
             )
 
-          val queryOrdered = (sort, order) match {
-            case (Some(field), Some("DESC")) if PersistentUser.columnNames.contains(field) =>
-              query.orderBy(userAlias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentUser.columnNames.contains(field) =>
-              query.orderBy(userAlias.field(field)).asc.offset(start)
-            case (Some(field), _) =>
-              logger.warn(s"Unsupported filter '$field'")
-              query.orderBy(userAlias.email).asc.offset(start)
-            case (_, _) => query.orderBy(userAlias.email).asc.offset(start)
-          }
-          limit match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered.limit(defaultLimit)
-          }
+          sortOrderQuery(start, limit.orElse(defaultLimit), sort, order, query)
         }.map(PersistentUser.apply()).list.apply
       })
 
@@ -582,7 +576,7 @@ trait DefaultPersistentUserServiceComponent
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+          val query: scalikejdbc.PagingSQLBuilder[PersistentUser] =
             select
               .from(PersistentUser.as(userAlias))
               .where(
@@ -599,20 +593,7 @@ trait DefaultPersistentUserServiceComponent
                   )
               )
 
-          val queryOrdered = (sort, order) match {
-            case (Some(field), Some("DESC")) if PersistentUser.columnNames.contains(field) =>
-              query.orderBy(userAlias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentUser.columnNames.contains(field) =>
-              query.orderBy(userAlias.field(field)).asc.offset(start)
-            case (Some(field), _) =>
-              logger.warn(s"Unsupported filter '$field'")
-              query.orderBy(userAlias.email).asc.offset(start)
-            case (_, _) => query.orderBy(userAlias.organisationName).asc.offset(start)
-          }
-          end match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered.limit(defaultLimit)
-          }
+          sortOrderQuery(start, end.orElse(defaultLimit), sort.orElse(Some("organisationName")), order, query)
         }.map(PersistentUser.apply()).list.apply
       })
 

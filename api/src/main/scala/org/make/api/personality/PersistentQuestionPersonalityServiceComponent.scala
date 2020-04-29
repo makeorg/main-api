@@ -19,11 +19,13 @@
 
 package org.make.api.personality
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.personality.DefaultPersistentQuestionPersonalityServiceComponent.PersistentPersonality
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
@@ -60,7 +62,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
   class DefaultPersistentQuestionPersonalityService extends PersistentQuestionPersonalityService with ShortenedNames {
 
-    private val personalityAlias = PersistentPersonality.personalityAlias
+    private val personalityAlias = PersistentPersonality.alias
 
     private val column = PersistentPersonality.column
 
@@ -116,7 +118,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
-          val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] = select
+          val query: scalikejdbc.PagingSQLBuilder[PersistentPersonality] = select
             .from(PersistentPersonality.as(personalityAlias))
             .where(
               sqls.toAndConditionOpt(
@@ -126,19 +128,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
               )
             )
 
-          val queryOrdered = (sort, order) match {
-            case (Some(field), Some("DESC")) if PersistentPersonality.columnNames.contains(field) =>
-              query.orderBy(personalityAlias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentPersonality.columnNames.contains(field) =>
-              query.orderBy(personalityAlias.field(field)).asc.offset(start)
-            case (Some(_), _) =>
-              query.orderBy(personalityAlias.id).asc.offset(start)
-            case (_, _) => query.orderBy(personalityAlias.id).asc.offset(start)
-          }
-          end match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered
-          }
+          sortOrderQuery(start, end, sort, order, query)
         }.map(PersistentPersonality.apply()).list().apply()
       }).map(_.map(_.toPersonality))
     }
@@ -188,16 +178,22 @@ object DefaultPersistentQuestionPersonalityServiceComponent {
     }
   }
 
-  object PersistentPersonality extends SQLSyntaxSupport[PersistentPersonality] with ShortenedNames with StrictLogging {
+  implicit object PersistentPersonality
+      extends PersistentCompanion[PersistentPersonality, Personality]
+      with ShortenedNames
+      with StrictLogging {
+
     override val columnNames: Seq[String] =
       Seq("id", "user_id", "question_id", "personality_role_id")
 
     override val tableName: String = "personality"
 
-    lazy val personalityAlias: SyntaxProvider[PersistentPersonality] = syntax("personality")
+    override lazy val alias: SyntaxProvider[PersistentPersonality] = syntax("personality")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.id)
 
     def apply(
-      personalityResultName: ResultName[PersistentPersonality] = personalityAlias.resultName
+      personalityResultName: ResultName[PersistentPersonality] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentPersonality = {
       PersistentPersonality.apply(
         id = resultSet.string(personalityResultName.id),

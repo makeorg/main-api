@@ -20,12 +20,15 @@
 package org.make.api.operation
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
+import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion
 import org.make.api.operation.DefaultPersistentOperationServiceComponent.PersistentOperation
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
@@ -70,7 +73,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       with StrictLogging {
 
     private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
-    private val operationAlias = PersistentOperation.operationAlias
+    private val operationAlias = PersistentOperation.alias
 
     override def search(start: Int,
                         end: Option[Int],
@@ -111,20 +114,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               )
             )
 
-          val queryOrdered = (sort, order.map(_.toUpperCase)) match {
-            case (Some(field), Some("DESC")) if PersistentOperationOfQuestion.columnNames.contains(field) =>
-              query.orderBy(operationOfQuestionAlias.field(field)).desc.offset(start)
-            case (Some(field), _) if PersistentOperationOfQuestion.columnNames.contains(field) =>
-              query.orderBy(operationOfQuestionAlias.field(field)).asc.offset(start)
-            case (Some(field), _) =>
-              logger.warn(s"Unsupported filter '$field'")
-              query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
-            case (_, _) => query.orderBy(operationOfQuestionAlias.operationTitle).asc.offset(start)
-          }
-          end match {
-            case Some(limit) => queryOrdered.limit(limit)
-            case None        => queryOrdered
-          }
+          sortOrderQuery(start, end, sort, order, query)
         }.map(PersistentOperationOfQuestion(operationOfQuestionAlias.resultName)).list().apply()
       }).map(_.map(_.toOperationOfQuestion))
     }
@@ -296,206 +286,211 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
 
 }
 
-final case class PersistentOperationOfQuestion(questionId: String,
-                                               operationId: String,
-                                               startDate: Option[ZonedDateTime],
-                                               endDate: Option[ZonedDateTime],
-                                               operationTitle: String,
-                                               landingSequenceId: String,
-                                               createdAt: ZonedDateTime,
-                                               updatedAt: ZonedDateTime,
-                                               canPropose: Boolean,
-                                               introCardEnabled: Boolean,
-                                               introCardTitle: Option[String],
-                                               introCardDescription: Option[String],
-                                               pushProposalCardEnabled: Boolean,
-                                               signupCardEnabled: Boolean,
-                                               signupCardTitle: Option[String],
-                                               signupCardNextCta: Option[String],
-                                               finalCardEnabled: Boolean,
-                                               finalCardSharingEnabled: Boolean,
-                                               finalCardTitle: Option[String],
-                                               finalCardShareDescription: Option[String],
-                                               finalCardLearnMoreTitle: Option[String],
-                                               finalCardLearnMoreButton: Option[String],
-                                               finalCardLinkUrl: Option[String],
-                                               aboutUrl: Option[String],
-                                               metaTitle: Option[String],
-                                               metaDescription: Option[String],
-                                               metaPicture: Option[String],
-                                               gradientStart: String,
-                                               gradientEnd: String,
-                                               color: String,
-                                               fontColor: String,
-                                               secondaryColor: Option[String],
-                                               secondaryFontColor: Option[String],
-                                               description: String,
-                                               consultationImage: Option[String],
-                                               descriptionImage: Option[String],
-                                               displayResults: Boolean) {
-  def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
-    questionId = QuestionId(this.questionId),
-    operationId = OperationId(this.operationId),
-    startDate = this.startDate,
-    endDate = this.endDate,
-    operationTitle = this.operationTitle,
-    landingSequenceId = SequenceId(this.landingSequenceId),
-    canPropose = this.canPropose,
-    sequenceCardsConfiguration = SequenceCardsConfiguration(
-      introCard = IntroCard(
-        enabled = this.introCardEnabled,
-        title = this.introCardTitle,
-        description = this.introCardDescription
-      ),
-      pushProposalCard = PushProposalCard(enabled = this.pushProposalCardEnabled),
-      signUpCard = SignUpCard(
-        enabled = this.signupCardEnabled,
-        title = this.signupCardTitle,
-        nextCtaText = this.signupCardNextCta
-      ),
-      finalCard = FinalCard(
-        enabled = this.finalCardEnabled,
-        sharingEnabled = this.finalCardSharingEnabled,
-        title = this.finalCardTitle,
-        shareDescription = this.finalCardShareDescription,
-        learnMoreTitle = this.finalCardLearnMoreTitle,
-        learnMoreTextButton = this.finalCardLearnMoreButton,
-        linkUrl = this.finalCardLinkUrl
-      )
-    ),
-    aboutUrl = this.aboutUrl,
-    metas = Metas(title = this.metaTitle, description = this.metaDescription, picture = this.metaPicture),
-    theme = QuestionTheme(
-      gradientStart = this.gradientStart,
-      gradientEnd = this.gradientEnd,
-      color = this.color,
-      fontColor = this.fontColor,
-      secondaryColor = this.secondaryColor,
-      secondaryFontColor = this.secondaryFontColor
-    ),
-    description = this.description,
-    consultationImage = this.consultationImage,
-    descriptionImage = this.descriptionImage,
-    displayResults = this.displayResults
-  )
-}
+object DefaultPersistentOperationOfQuestionServiceComponent {
 
-object PersistentOperationOfQuestion
-    extends SQLSyntaxSupport[PersistentOperationOfQuestion]
-    with ShortenedNames
-    with StrictLogging {
-
-  final case class FlatQuestionWithDetails(questionId: String,
-                                           country: String,
-                                           language: String,
-                                           question: String,
-                                           shortTitle: Option[String],
-                                           slug: String,
-                                           operationId: String,
-                                           startDate: Option[ZonedDateTime],
-                                           endDate: Option[ZonedDateTime],
-                                           operationTitle: String,
-                                           landingSequenceId: String,
-                                           canPropose: Boolean,
-                                           introCardEnabled: Boolean,
-                                           introCardTitle: Option[String],
-                                           introCardDescription: Option[String],
-                                           pushProposalCardEnabled: Boolean,
-                                           signupCardEnabled: Boolean,
-                                           signupCardTitle: Option[String],
-                                           signupCardNextCta: Option[String],
-                                           finalCardEnabled: Boolean,
-                                           finalCardSharingEnabled: Boolean,
-                                           finalCardTitle: Option[String],
-                                           finalCardShareDescription: Option[String],
-                                           finalCardLearnMoreTitle: Option[String],
-                                           finalCardLearnMoreButton: Option[String],
-                                           finalCardLinkUrl: Option[String],
-                                           aboutUrl: Option[String],
-                                           metaTitle: Option[String],
-                                           metaDescription: Option[String],
-                                           metaPicture: Option[String],
-                                           gradientStart: String,
-                                           gradientEnd: String,
-                                           color: String,
-                                           fontColor: String,
-                                           secondaryColor: Option[String],
-                                           secondaryFontColor: Option[String],
-                                           description: String,
-                                           consultationImage: Option[String],
-                                           descriptionImage: Option[String],
-                                           displayResults: Boolean) {
-    def toQuestionAndDetails: QuestionWithDetails = {
-      QuestionWithDetails(
-        question = Question(
-          questionId = QuestionId(questionId),
-          country = Country(country),
-          language = Language(language),
-          slug = slug,
-          question = question,
-          shortTitle = shortTitle,
-          operationId = Some(OperationId(operationId))
+  final case class PersistentOperationOfQuestion(
+    questionId: String,
+    operationId: String,
+    startDate: Option[ZonedDateTime],
+    endDate: Option[ZonedDateTime],
+    operationTitle: String,
+    landingSequenceId: String,
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime,
+    canPropose: Boolean,
+    introCardEnabled: Boolean,
+    introCardTitle: Option[String],
+    introCardDescription: Option[String],
+    pushProposalCardEnabled: Boolean,
+    signupCardEnabled: Boolean,
+    signupCardTitle: Option[String],
+    signupCardNextCta: Option[String],
+    finalCardEnabled: Boolean,
+    finalCardSharingEnabled: Boolean,
+    finalCardTitle: Option[String],
+    finalCardShareDescription: Option[String],
+    finalCardLearnMoreTitle: Option[String],
+    finalCardLearnMoreButton: Option[String],
+    finalCardLinkUrl: Option[String],
+    aboutUrl: Option[String],
+    metaTitle: Option[String],
+    metaDescription: Option[String],
+    metaPicture: Option[String],
+    gradientStart: String,
+    gradientEnd: String,
+    color: String,
+    fontColor: String,
+    secondaryColor: Option[String],
+    secondaryFontColor: Option[String],
+    description: String,
+    consultationImage: Option[String],
+    descriptionImage: Option[String],
+    displayResults: Boolean
+  ) {
+    def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
+      questionId = QuestionId(this.questionId),
+      operationId = OperationId(this.operationId),
+      startDate = this.startDate,
+      endDate = this.endDate,
+      operationTitle = this.operationTitle,
+      landingSequenceId = SequenceId(this.landingSequenceId),
+      canPropose = this.canPropose,
+      sequenceCardsConfiguration = SequenceCardsConfiguration(
+        introCard = IntroCard(
+          enabled = this.introCardEnabled,
+          title = this.introCardTitle,
+          description = this.introCardDescription
         ),
-        details = OperationOfQuestion(
-          questionId = QuestionId(questionId),
-          operationId = OperationId(operationId),
-          startDate = startDate,
-          endDate = endDate,
-          operationTitle = operationTitle,
-          landingSequenceId = SequenceId(landingSequenceId),
-          canPropose = canPropose,
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard =
-              IntroCard(enabled = introCardEnabled, title = introCardTitle, description = introCardDescription),
-            pushProposalCard = PushProposalCard(enabled = pushProposalCardEnabled),
-            signUpCard =
-              SignUpCard(enabled = signupCardEnabled, title = signupCardTitle, nextCtaText = signupCardNextCta),
-            finalCard = FinalCard(
-              enabled = finalCardEnabled,
-              sharingEnabled = finalCardSharingEnabled,
-              title = finalCardTitle,
-              shareDescription = finalCardShareDescription,
-              learnMoreTitle = finalCardLearnMoreTitle,
-              learnMoreTextButton = finalCardLearnMoreButton,
-              linkUrl = finalCardLinkUrl
-            )
-          ),
-          aboutUrl = aboutUrl,
-          metas = Metas(title = metaTitle, description = metaDescription, picture = metaPicture),
-          theme = QuestionTheme(
-            gradientStart = this.gradientStart,
-            gradientEnd = this.gradientEnd,
-            color = this.color,
-            fontColor = this.fontColor,
-            secondaryColor = this.secondaryColor,
-            secondaryFontColor = this.secondaryFontColor
-          ),
-          description = this.description,
-          consultationImage = this.consultationImage,
-          descriptionImage = this.descriptionImage,
-          displayResults = this.displayResults
+        pushProposalCard = PushProposalCard(enabled = this.pushProposalCardEnabled),
+        signUpCard = SignUpCard(
+          enabled = this.signupCardEnabled,
+          title = this.signupCardTitle,
+          nextCtaText = this.signupCardNextCta
+        ),
+        finalCard = FinalCard(
+          enabled = this.finalCardEnabled,
+          sharingEnabled = this.finalCardSharingEnabled,
+          title = this.finalCardTitle,
+          shareDescription = this.finalCardShareDescription,
+          learnMoreTitle = this.finalCardLearnMoreTitle,
+          learnMoreTextButton = this.finalCardLearnMoreButton,
+          linkUrl = this.finalCardLinkUrl
         )
-      )
-
-    }
+      ),
+      aboutUrl = this.aboutUrl,
+      metas = Metas(title = this.metaTitle, description = this.metaDescription, picture = this.metaPicture),
+      theme = QuestionTheme(
+        gradientStart = this.gradientStart,
+        gradientEnd = this.gradientEnd,
+        color = this.color,
+        fontColor = this.fontColor,
+        secondaryColor = this.secondaryColor,
+        secondaryFontColor = this.secondaryFontColor
+      ),
+      description = this.description,
+      consultationImage = this.consultationImage,
+      descriptionImage = this.descriptionImage,
+      displayResults = this.displayResults
+    )
   }
 
-  def withQuestion(
-    questionAlias: ResultName[PersistentQuestion],
-    operationOfQuestionAlias: ResultName[PersistentOperationOfQuestion]
-  )(resultSet: WrappedResultSet): Option[FlatQuestionWithDetails] = {
+  implicit object PersistentOperationOfQuestion
+      extends PersistentCompanion[PersistentOperationOfQuestion, OperationOfQuestion]
+      with ShortenedNames
+      with StrictLogging {
 
-    for {
-      country           <- resultSet.stringOpt(questionAlias.country)
-      language          <- resultSet.stringOpt(questionAlias.language)
-      questionId        <- resultSet.stringOpt(operationOfQuestionAlias.questionId)
-      questionSlug      <- resultSet.stringOpt(questionAlias.slug)
-      operationId       <- resultSet.stringOpt(operationOfQuestionAlias.operationId)
-      question          <- resultSet.stringOpt(questionAlias.question)
-      landingSequenceId <- resultSet.stringOpt(operationOfQuestionAlias.landingSequenceId)
-      operationTitle    <- resultSet.stringOpt(operationOfQuestionAlias.operationTitle)
-    } yield
-      FlatQuestionWithDetails(
+    final case class FlatQuestionWithDetails(
+      questionId: String,
+      country: String,
+      language: String,
+      question: String,
+      shortTitle: Option[String],
+      slug: String,
+      operationId: String,
+      startDate: Option[ZonedDateTime],
+      endDate: Option[ZonedDateTime],
+      operationTitle: String,
+      landingSequenceId: String,
+      canPropose: Boolean,
+      introCardEnabled: Boolean,
+      introCardTitle: Option[String],
+      introCardDescription: Option[String],
+      pushProposalCardEnabled: Boolean,
+      signupCardEnabled: Boolean,
+      signupCardTitle: Option[String],
+      signupCardNextCta: Option[String],
+      finalCardEnabled: Boolean,
+      finalCardSharingEnabled: Boolean,
+      finalCardTitle: Option[String],
+      finalCardShareDescription: Option[String],
+      finalCardLearnMoreTitle: Option[String],
+      finalCardLearnMoreButton: Option[String],
+      finalCardLinkUrl: Option[String],
+      aboutUrl: Option[String],
+      metaTitle: Option[String],
+      metaDescription: Option[String],
+      metaPicture: Option[String],
+      gradientStart: String,
+      gradientEnd: String,
+      color: String,
+      fontColor: String,
+      secondaryColor: Option[String],
+      secondaryFontColor: Option[String],
+      description: String,
+      consultationImage: Option[String],
+      descriptionImage: Option[String],
+      displayResults: Boolean
+    ) {
+      def toQuestionAndDetails: QuestionWithDetails = {
+        QuestionWithDetails(
+          question = Question(
+            questionId = QuestionId(questionId),
+            country = Country(country),
+            language = Language(language),
+            slug = slug,
+            question = question,
+            shortTitle = shortTitle,
+            operationId = Some(OperationId(operationId))
+          ),
+          details = OperationOfQuestion(
+            questionId = QuestionId(questionId),
+            operationId = OperationId(operationId),
+            startDate = startDate,
+            endDate = endDate,
+            operationTitle = operationTitle,
+            landingSequenceId = SequenceId(landingSequenceId),
+            canPropose = canPropose,
+            sequenceCardsConfiguration = SequenceCardsConfiguration(
+              introCard =
+                IntroCard(enabled = introCardEnabled, title = introCardTitle, description = introCardDescription),
+              pushProposalCard = PushProposalCard(enabled = pushProposalCardEnabled),
+              signUpCard =
+                SignUpCard(enabled = signupCardEnabled, title = signupCardTitle, nextCtaText = signupCardNextCta),
+              finalCard = FinalCard(
+                enabled = finalCardEnabled,
+                sharingEnabled = finalCardSharingEnabled,
+                title = finalCardTitle,
+                shareDescription = finalCardShareDescription,
+                learnMoreTitle = finalCardLearnMoreTitle,
+                learnMoreTextButton = finalCardLearnMoreButton,
+                linkUrl = finalCardLinkUrl
+              )
+            ),
+            aboutUrl = aboutUrl,
+            metas = Metas(title = metaTitle, description = metaDescription, picture = metaPicture),
+            theme = QuestionTheme(
+              gradientStart = this.gradientStart,
+              gradientEnd = this.gradientEnd,
+              color = this.color,
+              fontColor = this.fontColor,
+              secondaryColor = this.secondaryColor,
+              secondaryFontColor = this.secondaryFontColor
+            ),
+            description = this.description,
+            consultationImage = this.consultationImage,
+            descriptionImage = this.descriptionImage,
+            displayResults = this.displayResults
+          )
+        )
+
+      }
+    }
+
+    def withQuestion(
+      questionAlias: ResultName[PersistentQuestion],
+      operationOfQuestionAlias: ResultName[PersistentOperationOfQuestion]
+    )(resultSet: WrappedResultSet): Option[FlatQuestionWithDetails] = {
+
+      for {
+        country           <- resultSet.stringOpt(questionAlias.country)
+        language          <- resultSet.stringOpt(questionAlias.language)
+        questionId        <- resultSet.stringOpt(operationOfQuestionAlias.questionId)
+        questionSlug      <- resultSet.stringOpt(questionAlias.slug)
+        operationId       <- resultSet.stringOpt(operationOfQuestionAlias.operationId)
+        question          <- resultSet.stringOpt(questionAlias.question)
+        landingSequenceId <- resultSet.stringOpt(operationOfQuestionAlias.landingSequenceId)
+        operationTitle    <- resultSet.stringOpt(operationOfQuestionAlias.operationTitle)
+      } yield FlatQuestionWithDetails(
         questionId = questionId,
         country = country,
         language = language,
@@ -537,94 +532,97 @@ object PersistentOperationOfQuestion
         descriptionImage = resultSet.stringOpt(operationOfQuestionAlias.descriptionImage),
         displayResults = resultSet.boolean(operationOfQuestionAlias.displayResults)
       )
-  }
+    }
 
-  override val columnNames: Seq[String] =
-    Seq(
-      "question_id",
-      "operation_id",
-      "start_date",
-      "end_date",
-      "operation_title",
-      "landing_sequence_id",
-      "created_at",
-      "updated_at",
-      "can_propose",
-      "intro_card_enabled",
-      "intro_card_title",
-      "intro_card_description",
-      "push_proposal_card_enabled",
-      "signup_card_enabled",
-      "signup_card_title",
-      "signup_card_next_cta",
-      "final_card_enabled",
-      "final_card_sharing_enabled",
-      "final_card_title",
-      "final_card_share_description",
-      "final_card_learn_more_title",
-      "final_card_learn_more_button",
-      "final_card_link_url",
-      "about_url",
-      "meta_title",
-      "meta_description",
-      "meta_picture",
-      "gradient_start",
-      "gradient_end",
-      "color",
-      "font_color",
-      "secondary_color",
-      "secondary_font_color",
-      "description",
-      "consultation_image",
-      "description_image",
-      "display_results"
-    )
+    override val columnNames: Seq[String] =
+      Seq(
+        "question_id",
+        "operation_id",
+        "start_date",
+        "end_date",
+        "operation_title",
+        "landing_sequence_id",
+        "created_at",
+        "updated_at",
+        "can_propose",
+        "intro_card_enabled",
+        "intro_card_title",
+        "intro_card_description",
+        "push_proposal_card_enabled",
+        "signup_card_enabled",
+        "signup_card_title",
+        "signup_card_next_cta",
+        "final_card_enabled",
+        "final_card_sharing_enabled",
+        "final_card_title",
+        "final_card_share_description",
+        "final_card_learn_more_title",
+        "final_card_learn_more_button",
+        "final_card_link_url",
+        "about_url",
+        "meta_title",
+        "meta_description",
+        "meta_picture",
+        "gradient_start",
+        "gradient_end",
+        "color",
+        "font_color",
+        "secondary_color",
+        "secondary_font_color",
+        "description",
+        "consultation_image",
+        "description_image",
+        "display_results"
+      )
 
-  override val tableName: String = "operation_of_question"
+    override val tableName: String = "operation_of_question"
 
-  lazy val alias: SyntaxProvider[PersistentOperationOfQuestion] = syntax("operationOfquestion")
+    override lazy val alias: SyntaxProvider[PersistentOperationOfQuestion] = syntax("operationOfquestion")
 
-  def apply(
-    resultName: ResultName[PersistentOperationOfQuestion] = alias.resultName
-  )(resultSet: WrappedResultSet): PersistentOperationOfQuestion = {
-    PersistentOperationOfQuestion(
-      questionId = resultSet.string(resultName.questionId),
-      operationId = resultSet.string(resultName.operationId),
-      startDate = resultSet.zonedDateTimeOpt(resultName.startDate),
-      endDate = resultSet.zonedDateTimeOpt(resultName.endDate),
-      operationTitle = resultSet.string(resultName.operationTitle),
-      landingSequenceId = resultSet.string(resultName.landingSequenceId),
-      createdAt = resultSet.zonedDateTime(resultName.createdAt),
-      updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
-      canPropose = resultSet.boolean(resultName.canPropose),
-      introCardEnabled = resultSet.boolean(resultName.introCardEnabled),
-      introCardTitle = resultSet.stringOpt(resultName.introCardTitle),
-      introCardDescription = resultSet.stringOpt(resultName.introCardDescription),
-      pushProposalCardEnabled = resultSet.boolean(resultName.pushProposalCardEnabled),
-      signupCardEnabled = resultSet.boolean(resultName.signupCardEnabled),
-      signupCardTitle = resultSet.stringOpt(resultName.signupCardTitle),
-      signupCardNextCta = resultSet.stringOpt(resultName.signupCardNextCta),
-      finalCardEnabled = resultSet.boolean(resultName.finalCardEnabled),
-      finalCardSharingEnabled = resultSet.boolean(resultName.finalCardSharingEnabled),
-      finalCardTitle = resultSet.stringOpt(resultName.finalCardTitle),
-      finalCardShareDescription = resultSet.stringOpt(resultName.finalCardShareDescription),
-      finalCardLearnMoreTitle = resultSet.stringOpt(resultName.finalCardLearnMoreTitle),
-      finalCardLearnMoreButton = resultSet.stringOpt(resultName.finalCardLearnMoreButton),
-      finalCardLinkUrl = resultSet.stringOpt(resultName.finalCardLinkUrl),
-      aboutUrl = resultSet.stringOpt(resultName.aboutUrl),
-      metaTitle = resultSet.stringOpt(resultName.metaTitle),
-      metaDescription = resultSet.stringOpt(resultName.metaDescription),
-      metaPicture = resultSet.stringOpt(resultName.metaPicture),
-      gradientStart = resultSet.string(resultName.gradientStart),
-      gradientEnd = resultSet.string(resultName.gradientEnd),
-      color = resultSet.string(resultName.color),
-      fontColor = resultSet.string(resultName.fontColor),
-      secondaryColor = resultSet.stringOpt(resultName.secondaryColor),
-      secondaryFontColor = resultSet.stringOpt(resultName.secondaryFontColor),
-      description = resultSet.string(resultName.description),
-      consultationImage = resultSet.stringOpt(resultName.consultationImage),
-      descriptionImage = resultSet.stringOpt(resultName.descriptionImage),
-      displayResults = resultSet.boolean(resultName.displayResults)
-    )
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.operationTitle)
+
+    def apply(
+      resultName: ResultName[PersistentOperationOfQuestion] = alias.resultName
+    )(resultSet: WrappedResultSet): PersistentOperationOfQuestion = {
+      PersistentOperationOfQuestion(
+        questionId = resultSet.string(resultName.questionId),
+        operationId = resultSet.string(resultName.operationId),
+        startDate = resultSet.zonedDateTimeOpt(resultName.startDate),
+        endDate = resultSet.zonedDateTimeOpt(resultName.endDate),
+        operationTitle = resultSet.string(resultName.operationTitle),
+        landingSequenceId = resultSet.string(resultName.landingSequenceId),
+        createdAt = resultSet.zonedDateTime(resultName.createdAt),
+        updatedAt = resultSet.zonedDateTime(resultName.updatedAt),
+        canPropose = resultSet.boolean(resultName.canPropose),
+        introCardEnabled = resultSet.boolean(resultName.introCardEnabled),
+        introCardTitle = resultSet.stringOpt(resultName.introCardTitle),
+        introCardDescription = resultSet.stringOpt(resultName.introCardDescription),
+        pushProposalCardEnabled = resultSet.boolean(resultName.pushProposalCardEnabled),
+        signupCardEnabled = resultSet.boolean(resultName.signupCardEnabled),
+        signupCardTitle = resultSet.stringOpt(resultName.signupCardTitle),
+        signupCardNextCta = resultSet.stringOpt(resultName.signupCardNextCta),
+        finalCardEnabled = resultSet.boolean(resultName.finalCardEnabled),
+        finalCardSharingEnabled = resultSet.boolean(resultName.finalCardSharingEnabled),
+        finalCardTitle = resultSet.stringOpt(resultName.finalCardTitle),
+        finalCardShareDescription = resultSet.stringOpt(resultName.finalCardShareDescription),
+        finalCardLearnMoreTitle = resultSet.stringOpt(resultName.finalCardLearnMoreTitle),
+        finalCardLearnMoreButton = resultSet.stringOpt(resultName.finalCardLearnMoreButton),
+        finalCardLinkUrl = resultSet.stringOpt(resultName.finalCardLinkUrl),
+        aboutUrl = resultSet.stringOpt(resultName.aboutUrl),
+        metaTitle = resultSet.stringOpt(resultName.metaTitle),
+        metaDescription = resultSet.stringOpt(resultName.metaDescription),
+        metaPicture = resultSet.stringOpt(resultName.metaPicture),
+        gradientStart = resultSet.string(resultName.gradientStart),
+        gradientEnd = resultSet.string(resultName.gradientEnd),
+        color = resultSet.string(resultName.color),
+        fontColor = resultSet.string(resultName.fontColor),
+        secondaryColor = resultSet.stringOpt(resultName.secondaryColor),
+        secondaryFontColor = resultSet.stringOpt(resultName.secondaryFontColor),
+        description = resultSet.string(resultName.description),
+        consultationImage = resultSet.stringOpt(resultName.consultationImage),
+        descriptionImage = resultSet.stringOpt(resultName.descriptionImage),
+        displayResults = resultSet.boolean(resultName.displayResults)
+      )
+    }
   }
 }

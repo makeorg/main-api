@@ -19,11 +19,13 @@
 
 package org.make.api.feature
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.feature.DefaultPersistentFeatureServiceComponent.PersistentFeature
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.feature.{Feature, FeatureId}
 import scalikejdbc._
 
@@ -56,7 +58,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
   class DefaultPersistentFeatureService extends PersistentFeatureService with ShortenedNames with StrictLogging {
 
-    private val featureAlias = PersistentFeature.featureAlias
+    private val featureAlias = PersistentFeature.alias
 
     private val column = PersistentFeature.column
 
@@ -164,25 +166,12 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
         implicit session =>
           withSQL {
 
-            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            val query: scalikejdbc.PagingSQLBuilder[PersistentFeature] =
               select
                 .from(PersistentFeature.as(featureAlias))
                 .where(sqls.toAndConditionOpt(maybeSlug.map(slug => sqls.eq(featureAlias.slug, slug))))
 
-            val queryOrdered = (sort, order) match {
-              case (Some(field), Some("DESC")) if PersistentFeature.columnNames.contains(field) =>
-                query.orderBy(featureAlias.field(field)).desc.offset(start)
-              case (Some(field), _) if PersistentFeature.columnNames.contains(field) =>
-                query.orderBy(featureAlias.field(field)).asc.offset(start)
-              case (Some(field), _) =>
-                logger.warn(s"Unsupported filter '$field'")
-                query.orderBy(featureAlias.slug).asc.offset(start)
-              case (_, _) => query.orderBy(featureAlias.slug).asc.offset(start)
-            }
-            end match {
-              case Some(limit) => queryOrdered.limit(limit)
-              case None        => queryOrdered
-            }
+            sortOrderQuery(start, end, sort, order, query)
           }.map(PersistentFeature.apply()).list.apply
       })
 
@@ -211,18 +200,21 @@ object DefaultPersistentFeatureServiceComponent {
       Feature(featureId = FeatureId(id), slug = slug, name = name)
   }
 
-  object PersistentFeature extends SQLSyntaxSupport[PersistentFeature] with ShortenedNames with StrictLogging {
+  implicit object PersistentFeature
+      extends PersistentCompanion[PersistentFeature, Feature]
+      with ShortenedNames
+      with StrictLogging {
 
     override val columnNames: Seq[String] = Seq("id", "slug", "name")
 
     override val tableName: String = "feature"
 
-    lazy val featureAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentFeature], PersistentFeature] = syntax(
-      "feature"
-    )
+    override lazy val alias: SyntaxProvider[PersistentFeature] = syntax("feature")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.slug)
 
     def apply(
-      featureResultName: ResultName[PersistentFeature] = featureAlias.resultName
+      featureResultName: ResultName[PersistentFeature] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentFeature = {
       PersistentFeature.apply(
         id = resultSet.string(featureResultName.id),

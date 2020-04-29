@@ -21,11 +21,13 @@ package org.make.api.technical.auth
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.user.{Role, UserId}
@@ -69,7 +71,10 @@ object PersistentClientServiceComponent {
       )
   }
 
-  object PersistentClient extends SQLSyntaxSupport[PersistentClient] with ShortenedNames with StrictLogging {
+  implicit object PersistentClient
+      extends PersistentCompanion[PersistentClient, Client]
+      with ShortenedNames
+      with StrictLogging {
 
     override val columnNames: Seq[String] =
       Seq(
@@ -88,10 +93,12 @@ object PersistentClientServiceComponent {
 
     override val tableName: String = "oauth_client"
 
-    lazy val clientAlias: QuerySQLSyntaxProvider[SQLSyntaxSupport[PersistentClient], PersistentClient] = syntax("c")
+    override lazy val alias: SyntaxProvider[PersistentClient] = syntax("c")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.uuid)
 
     def apply(
-      clientResultName: ResultName[PersistentClient] = clientAlias.resultName
+      clientResultName: ResultName[PersistentClient] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentClient = {
       PersistentClient(
         uuid = resultSet.string(clientResultName.uuid),
@@ -127,7 +134,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
 
   class DefaultPersistentClientService extends PersistentClientService with ShortenedNames with StrictLogging {
 
-    private val clientAlias = PersistentClient.clientAlias
+    private val clientAlias = PersistentClient.alias
     private val column = PersistentClient.column
 
     override def get(clientId: ClientId): Future[Option[Client]] = {
@@ -225,7 +232,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
         implicit session =>
           withSQL {
 
-            val query: scalikejdbc.PagingSQLBuilder[WrappedResultSet] =
+            val query: scalikejdbc.PagingSQLBuilder[PersistentClient] =
               select
                 .from(PersistentClient.as(clientAlias))
                 .where(
@@ -234,12 +241,8 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
                       .map(n => sqls.like(sqls"lower(${clientAlias.name})", s"%${n.toLowerCase.replace("%", "\\%")}%"))
                   )
                 )
-                .offset(start)
 
-            end match {
-              case Some(limit) => query.limit(limit)
-              case None        => query
-            }
+            sortOrderQuery(start, end, None, None, query)
           }.map(PersistentClient.apply()).list.apply
       })
 
