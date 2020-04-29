@@ -1043,12 +1043,17 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     override def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse] = {
       proposal.questionId.map { questionId =>
-        def futurePredictedTags: Future[GetPredictedTagsResponse] =
-          semanticService.getPredictedTagsForProposal(proposal).recover {
-            case error: Exception =>
-              logger.error("", error)
-              GetPredictedTagsResponse(Seq.empty, "")
+        def futurePredictedTags: Future[GetPredictedTagsResponse] = {
+          if (proposal.tags.isEmpty) {
+            semanticService.getPredictedTagsForProposal(proposal).recover {
+              case error: Exception =>
+                logger.error("", error)
+                GetPredictedTagsResponse.none
+            }
+          } else {
+            Future.successful(GetPredictedTagsResponse.none)
           }
+        }
         val futureTags: Future[(Seq[Tag], GetPredictedTagsResponse)] = for {
           questionTags  <- tagService.findByQuestionId(questionId)
           predictedTags <- futurePredictedTags

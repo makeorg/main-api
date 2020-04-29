@@ -880,16 +880,6 @@ class ProposalServiceTest
       Mockito
         .when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
-      Mockito
-        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(
-          Future.successful(
-            GetPredictedTagsResponse(
-              tags = Seq(PredictedTag(TagId("id-3"), TagTypeId("tag-type"), "some-label", "tag-type-label", 0d)),
-              modelName = "auto"
-            )
-          )
-        )
 
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
@@ -910,7 +900,9 @@ class ProposalServiceTest
 
         tag1.predicted shouldBe false
         tag2.predicted shouldBe false
-        tag3.predicted shouldBe true
+        tag3.predicted shouldBe false
+
+        tagsWithModel.modelName should be("none")
       }
     }
     scenario("proposal without question") {
@@ -926,7 +918,7 @@ class ProposalServiceTest
         .thenReturn(Future.successful(Seq.empty))
       Mockito
         .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
-        .thenReturn(Future.successful(GetPredictedTagsResponse(Seq.empty, "auto")))
+        .thenReturn(Future.successful(GetPredictedTagsResponse.none))
 
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
@@ -937,15 +929,33 @@ class ProposalServiceTest
     scenario("semantic fails to return a result") {
       Mockito
         .when(tagService.findByQuestionId(any[QuestionId]))
-        .thenReturn(Future.successful(Seq.empty))
+        .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
       Mockito
         .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
         .thenReturn(Future.failed(new RuntimeException("This is an expected exception.")))
 
       val result: Future[TagsForProposalResponse] =
-        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq(TagId("id-2"))))
-      whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
-        tagsForProposal.tags.isEmpty shouldBe true
+        proposalService.getTagsForProposal(proposal(Some(QuestionId("question-id")), Seq.empty))
+      whenReady(result, Timeout(5.seconds)) { tagsWithModel =>
+        val tagsForProposal = tagsWithModel.tags
+        tagsForProposal.size should be(3)
+        tagsForProposal.exists(_.id == TagId("id-1")) shouldBe true
+        tagsForProposal.exists(_.id == TagId("id-2")) shouldBe true
+        tagsForProposal.exists(_.id == TagId("id-3")) shouldBe true
+
+        val tag1 = tagsForProposal.find(_.id == TagId("id-1")).get
+        val tag2 = tagsForProposal.find(_.id == TagId("id-2")).get
+        val tag3 = tagsForProposal.find(_.id == TagId("id-3")).get
+
+        tag1.checked shouldBe false
+        tag2.checked shouldBe false
+        tag3.checked shouldBe false
+
+        tag1.predicted shouldBe false
+        tag2.predicted shouldBe false
+        tag3.predicted shouldBe false
+
+        tagsWithModel.modelName should be("none")
       }
     }
   }

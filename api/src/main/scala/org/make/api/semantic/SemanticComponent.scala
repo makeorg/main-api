@@ -200,7 +200,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
           logger.warn(
             s"Cannot get predicted tags for proposal ${proposal.proposalId} because question or language is missing"
           )
-          Future.successful(GetPredictedTagsResponse(Seq.empty, "none"))
+          Future.successful(GetPredictedTagsResponse.none)
       }
     }
 
@@ -336,4 +336,6 @@ case class GetPredictedTagsResponse(tags: Seq[PredictedTag], modelName: String)
 
 object GetPredictedTagsResponse {
   implicit val decoder: Decoder[GetPredictedTagsResponse] = deriveDecoder[GetPredictedTagsResponse]
+
+  val none = GetPredictedTagsResponse(Seq.empty, "none")
 }

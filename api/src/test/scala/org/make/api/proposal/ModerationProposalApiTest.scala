@@ -1042,12 +1042,12 @@ class ModerationProposalApiTest
 
   feature("get predicted tags for proposal") {
     scenario("unauthorized user") {
-      Get("/moderation/proposals/123456/predicted-tags") ~> routes ~> check {
+      Get("/moderation/proposals/123456/tags") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
     scenario("forbidden citizen") {
-      Get("/moderation/proposals/123456/predicted-tags")
+      Get("/moderation/proposals/123456/tags")
         .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -1072,7 +1072,7 @@ class ModerationProposalApiTest
             )
           )
         )
-      Get("/moderation/proposals/123456/predicted-tags")
+      Get("/moderation/proposals/123456/tags")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val results: TagsForProposalResponse = entityAs[TagsForProposalResponse]
@@ -1101,7 +1101,7 @@ class ModerationProposalApiTest
             )
           )
         )
-      Get("/moderation/proposals/123456/predicted-tags")
+      Get("/moderation/proposals/123456/tags")
         .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -1110,7 +1110,7 @@ class ModerationProposalApiTest
       when(proposalCoordinatorService.getProposal(any[ProposalId]))
         .thenReturn(Future.successful(None))
 
-      Get("/moderation/proposals/invalid/predicted-tags")
+      Get("/moderation/proposals/invalid/tags")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
