@@ -21,6 +21,7 @@ package org.make.api.technical.elasticsearch
 
 import java.time.ZonedDateTime
 
+import akka.actor.ActorSystem
 import org.make.api.MakeUnitTest
 import org.make.api.operation.{OperationOfQuestionService, OperationService}
 import org.make.api.organisation.OrganisationService
@@ -30,15 +31,17 @@ import org.make.api.segment.SegmentService
 import org.make.api.semantic.SemanticService
 import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationService}
 import org.make.api.tag.TagService
+import org.make.api.tagtype.TagTypeService
 import org.make.api.user.UserService
 import org.make.core.RequestContext
+import org.make.core.idea.IdeaId
 import org.make.core.operation._
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedTag
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.TagId
+import org.make.core.tag._
 import org.make.core.user.UserId
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -49,6 +52,7 @@ import scala.concurrent.duration.DurationInt
 class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationStream {
   override val segmentService: SegmentService = mock[SegmentService]
   override val tagService: TagService = mock[TagService]
+  override val tagTypeService: TagTypeService = mock[TagTypeService]
   override val semanticService: SemanticService = mock[SemanticService]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val organisationService: OrganisationService = mock[OrganisationService]
@@ -58,6 +62,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val userService: UserService = mock[UserService]
   override val questionService: QuestionService = mock[QuestionService]
+  override lazy val actorSystem: ActorSystem = ActorSystem()
 
   private val emptySequenceConfiguration = SequenceCardsConfiguration(
     IntroCard(enabled = false, title = None, description = None),
@@ -151,34 +156,79 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
     .thenReturn(Future.successful(SequenceConfiguration.default))
 
   feature("Get proposal") {
+    val tagTypeStake =
+      TagType(TagTypeId("stake"), label = "stake", display = TagTypeDisplay.Displayed, requiredForEnrichment = true)
+    val tagTypes: Seq[TagType] = Seq(
+      tagTypeStake,
+      TagType(TagTypeId("target"), label = "target", display = TagTypeDisplay.Hidden, requiredForEnrichment = false),
+      TagType(TagTypeId("actor"), label = "actor", display = TagTypeDisplay.Displayed, requiredForEnrichment = true),
+    )
+    val tagStake = Tag(
+      tagId = TagId("stake-1"),
+      label = "stake tag",
+      display = TagDisplay.Inherit,
+      tagTypeId = TagTypeId("stake"),
+      weight = 0,
+      operationId = None,
+      questionId = None,
+      country = Country("FR"),
+      language = Language("fr")
+    )
+    val tagTarget = Tag(
+      tagId = TagId("target-1"),
+      label = "target tag",
+      display = TagDisplay.Inherit,
+      tagTypeId = TagTypeId("target"),
+      weight = 0,
+      operationId = None,
+      questionId = None,
+      country = Country("FR"),
+      language = Language("fr")
+    )
+    val tagActor = Tag(
+      tagId = TagId("actor-1"),
+      label = "actor tag",
+      display = TagDisplay.Inherit,
+      tagTypeId = TagTypeId("actor"),
+      weight = 0,
+      operationId = None,
+      questionId = None,
+      country = Country("FR"),
+      language = Language("fr")
+    )
+
     scenario("proposal without votes and multiple stake tag") {
       val id = ProposalId("proposal-without-votes")
+      val tags = Seq(tagStake, tagStake.copy(tagId = TagId("stake-2")), tagActor, tagTarget)
 
       Mockito
         .when(proposalCoordinatorService.getProposal(id))
-        .thenReturn(Future.successful(Some(proposal(id, tags = Seq(TagId("tag-1"), TagId("tag-2"))))))
+        .thenReturn(Future.successful(Some(proposal(id, tags = tags.map(_.tagId), idea = Some(IdeaId("idea-id"))))))
 
       Mockito
-        .when(tagService.retrieveIndexedTags(Seq(TagId("tag-1"), TagId("tag-2"))))
+        .when(tagService.findByTagIds(tags.map(_.tagId)))
+        .thenReturn(Future.successful(tags))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypes))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(tags, tagTypes))
         .thenReturn(
-          Future.successful(
-            Some(
-              Seq(
-                IndexedTag(tagId = TagId("tag-1"), label = "tag 1", display = true),
-                IndexedTag(tagId = TagId("tag-2"), label = "tag 2", display = true)
-              )
-            )
+          Seq(
+            IndexedTag(tagId = TagId("stake-1"), label = "stake tag 1", display = true),
+            IndexedTag(tagId = TagId("stake-2"), label = "stake tag 2", display = true),
+            IndexedTag(tagId = TagId("actor-1"), label = "actor tag", display = true)
           )
         )
 
       Mockito
-        .when(tagService.retrieveIndexedStakeTags(Seq(TagId("tag-1"), TagId("tag-2"))))
+        .when(tagService.retrieveIndexedTags(tags.filter(_.tagTypeId == TagTypeId("stake")), Seq(tagTypeStake)))
         .thenReturn(
-          Future.successful(
-            Seq(
-              IndexedTag(tagId = TagId("tag-1"), label = "tag 1", display = true),
-              IndexedTag(tagId = TagId("tag-2"), label = "tag 2", display = true)
-            )
+          Seq(
+            IndexedTag(tagId = TagId("stake-1"), label = "stake tag 1", display = true),
+            IndexedTag(tagId = TagId("stake-2"), label = "stake tag 2", display = true)
           )
         )
 
@@ -186,19 +236,19 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
         .when(
           elasticsearchProposalAPI
             .countProposals(
-              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("tag-1")))))))
+              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("stake-1")))))))
             )
         )
-        .thenReturn(Future.successful(42))
+        .thenReturn(Future.successful(42L))
 
       Mockito
         .when(
           elasticsearchProposalAPI
             .countProposals(
-              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("tag-2")))))))
+              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("stake-2")))))))
             )
         )
-        .thenReturn(Future.successful(21))
+        .thenReturn(Future.successful(21L))
 
       whenReady(getIndexedProposal(id), Timeout(2.seconds)) { result =>
         result should be(defined)
@@ -216,7 +266,8 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
         proposal.author.organisationSlug should be(empty)
         proposal.author.anonymousParticipation should be(false)
 
-        proposal.selectedStakeTag.map(_.tagId) should be(Some(TagId("tag-1")))
+        proposal.selectedStakeTag.map(_.tagId) should be(Some(tagStake.tagId))
+        proposal.toEnrich shouldBe false
       }
     }
 
@@ -225,15 +276,23 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
 
       Mockito
         .when(proposalCoordinatorService.getProposal(id))
-        .thenReturn(Future.successful(Some(proposal(id, tags = Seq(TagId("tag-1"))))))
+        .thenReturn(Future.successful(Some(proposal(id, tags = Seq(tagStake.tagId), idea = Some(IdeaId("idea-id"))))))
 
       Mockito
-        .when(tagService.retrieveIndexedTags(Seq(TagId("tag-1"))))
-        .thenReturn(Future.successful(Some(Seq(IndexedTag(tagId = TagId("tag-1"), label = "tag 1", display = true)))))
+        .when(tagService.findByTagIds(Seq(tagStake.tagId)))
+        .thenReturn(Future.successful(Seq(tagStake)))
 
       Mockito
-        .when(tagService.retrieveIndexedStakeTags(Seq(TagId("tag-1"))))
-        .thenReturn(Future.successful(Seq(IndexedTag(tagId = TagId("tag-1"), label = "tag 1", display = true))))
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypes))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(Seq(tagStake), tagTypes))
+        .thenReturn(Seq(IndexedTag(tagId = TagId("stake-1"), label = "stake tag", display = true)))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(Seq(tagStake), Seq(tagTypeStake)))
+        .thenReturn(Seq(IndexedTag(tagId = TagId("stake-1"), label = "stake tag", display = true)))
 
       whenReady(getIndexedProposal(id), Timeout(2.seconds)) { result =>
         result should be(defined)
@@ -251,7 +310,8 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
         proposal.author.organisationSlug should be(empty)
         proposal.author.anonymousParticipation should be(false)
 
-        proposal.selectedStakeTag.map(_.tagId) should be(Some(TagId("tag-1")))
+        proposal.selectedStakeTag.map(_.tagId) should be(Some(tagStake.tagId))
+        proposal.toEnrich shouldBe true
       }
     }
 
@@ -260,15 +320,23 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
 
       Mockito
         .when(proposalCoordinatorService.getProposal(id))
-        .thenReturn(Future.successful(Some(proposal(id, tags = Seq.empty))))
+        .thenReturn(Future.successful(Some(proposal(id, tags = Seq.empty, idea = Some(IdeaId("idea-id"))))))
 
       Mockito
-        .when(tagService.retrieveIndexedTags(Seq.empty))
-        .thenReturn(Future.successful(Some(Seq.empty)))
-
-      Mockito
-        .when(tagService.retrieveIndexedStakeTags(Seq.empty))
+        .when(tagService.findByTagIds(Seq.empty))
         .thenReturn(Future.successful(Seq.empty))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypes))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(Seq.empty, tagTypes))
+        .thenReturn(Seq.empty)
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(Seq.empty, Seq(tagTypeStake)))
+        .thenReturn(Seq.empty)
 
       whenReady(getIndexedProposal(id), Timeout(2.seconds)) { result =>
         result should be(defined)
@@ -287,61 +355,41 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
         proposal.author.anonymousParticipation should be(false)
 
         proposal.selectedStakeTag.map(_.tagId) should be(None)
+        proposal.toEnrich shouldBe true
       }
     }
 
     scenario("proposal with multiple stake tag with same proposals count") {
       val id = ProposalId("proposal-without-votes")
-
+      val tags = Seq(tagStake, tagStake.copy(tagId = TagId("stake-2")), tagActor, tagTarget)
       Mockito
         .when(proposalCoordinatorService.getProposal(id))
+        .thenReturn(Future.successful(Some(proposal(id, tags = tags.map(_.tagId), idea = Some(IdeaId("idea-id"))))))
+
+      Mockito
+        .when(tagService.findByTagIds(tags.map(_.tagId)))
+        .thenReturn(Future.successful(tags))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypes))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(tags, tagTypes))
         .thenReturn(
-          Future.successful(
-            Some(
-              proposal(
-                id,
-                tags =
-                  Seq(TagId("Hôpitaux"), TagId("Sécurité"), TagId("Transports"), TagId("déchets"), TagId("solidarité"))
-              )
-            )
+          Seq(
+            IndexedTag(tagId = TagId("stake-1"), label = "stake tag 1", display = true),
+            IndexedTag(tagId = TagId("stake-2"), label = "stake tag 2", display = true),
+            IndexedTag(tagId = TagId("actor-1"), label = "actor tag", display = true)
           )
         )
 
       Mockito
-        .when(
-          tagService.retrieveIndexedTags(
-            Seq(TagId("Hôpitaux"), TagId("Sécurité"), TagId("Transports"), TagId("déchets"), TagId("solidarité"))
-          )
-        )
+        .when(tagService.retrieveIndexedTags(tags.filter(_.tagId.value.contains("stake")), Seq(tagTypeStake)))
         .thenReturn(
-          Future.successful(
-            Some(
-              Seq(
-                IndexedTag(tagId = TagId("Hôpitaux"), label = "Hôpitaux", display = true),
-                IndexedTag(tagId = TagId("Sécurité"), label = "Sécurité", display = true),
-                IndexedTag(tagId = TagId("Transports"), label = "Transports", display = true),
-                IndexedTag(tagId = TagId("déchets"), label = "déchets", display = true),
-                IndexedTag(tagId = TagId("solidarité"), label = "solidarité", display = true)
-              )
-            )
-          )
-        )
-
-      Mockito
-        .when(
-          tagService.retrieveIndexedStakeTags(
-            Seq(TagId("Hôpitaux"), TagId("Sécurité"), TagId("Transports"), TagId("déchets"), TagId("solidarité"))
-          )
-        )
-        .thenReturn(
-          Future.successful(
-            Seq(
-              IndexedTag(tagId = TagId("Hôpitaux"), label = "Hôpitaux", display = true),
-              IndexedTag(tagId = TagId("Sécurité"), label = "Sécurité", display = true),
-              IndexedTag(tagId = TagId("Transports"), label = "Transports", display = true),
-              IndexedTag(tagId = TagId("déchets"), label = "déchets", display = true),
-              IndexedTag(tagId = TagId("solidarité"), label = "solidarité", display = true)
-            )
+          Seq(
+            IndexedTag(tagId = TagId("stake-1"), label = "stake tag 1", display = true),
+            IndexedTag(tagId = TagId("stake-2"), label = "stake tag 2", display = true)
           )
         )
 
@@ -349,46 +397,19 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
         .when(
           elasticsearchProposalAPI
             .countProposals(
-              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("Hôpitaux")))))))
+              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("stake-1")))))))
             )
         )
-        .thenReturn(Future.successful(16))
+        .thenReturn(Future.successful(42L))
 
       Mockito
         .when(
           elasticsearchProposalAPI
             .countProposals(
-              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("Sécurité")))))))
+              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("stake-2")))))))
             )
         )
-        .thenReturn(Future.successful(42))
-
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .countProposals(
-              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("Transports")))))))
-            )
-        )
-        .thenReturn(Future.successful(21))
-
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .countProposals(
-              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("déchets")))))))
-            )
-        )
-        .thenReturn(Future.successful(42))
-
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .countProposals(
-              SearchQuery(filters = Some(SearchFilters(tags = Some(TagsSearchFilter(Seq(TagId("solidarité")))))))
-            )
-        )
-        .thenReturn(Future.successful(21))
+        .thenReturn(Future.successful(42L))
 
       whenReady(getIndexedProposal(id), Timeout(2.seconds)) { result =>
         result should be(defined)
@@ -406,17 +427,56 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
         proposal.author.organisationSlug should be(empty)
         proposal.author.anonymousParticipation should be(false)
 
-        proposal.selectedStakeTag.map(_.tagId) should be(Some(TagId("Sécurité")))
+        proposal.selectedStakeTag.map(_.tagId) should be(Some(TagId("stake-1")))
+        proposal.toEnrich shouldBe false
+      }
+    }
+
+    scenario("fails as stake tagType doesn't exist") {
+      val id = ProposalId("proposal-without-votes")
+      val tagTypesWithoutStake = tagTypes.filterNot(_.tagTypeId.value == "stake")
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(id))
+        .thenReturn(Future.successful(Some(proposal(id, tags = Seq.empty, idea = Some(IdeaId("idea-id"))))))
+
+      Mockito
+        .when(tagService.findByTagIds(Seq.empty))
+        .thenReturn(Future.successful(Seq.empty))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypesWithoutStake))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(Seq.empty, tagTypesWithoutStake))
+        .thenReturn(Seq.empty)
+
+      whenReady(getIndexedProposal(id).failed, Timeout(2.seconds)) { exception =>
+        exception shouldBe a[IllegalStateException]
+        exception.getMessage shouldBe "Unable to find stake tag types"
       }
     }
 
     scenario("anonymous participation") {
       val id = ProposalId("anonymous-participation")
       val author = UserId("anonymous-participation-author")
+      val tags = Seq(tagStake, tagActor)
 
       Mockito
         .when(proposalCoordinatorService.getProposal(id))
-        .thenReturn(Future.successful(Some(proposal(id, author = author, tags = Seq(TagId("tag-1"), TagId("tag-2"))))))
+        .thenReturn(
+          Future
+            .successful(Some(proposal(id, author = author, tags = tags.map(_.tagId), idea = Some(IdeaId("idea-id")))))
+        )
+
+      Mockito
+        .when(tagService.findByTagIds(tags.map(_.tagId)))
+        .thenReturn(Future.successful(tags))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypes))
 
       Mockito
         .when(userService.getUser(author))
@@ -431,19 +491,33 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
         proposal.author.organisationSlug should be(empty)
         proposal.author.anonymousParticipation should be(true)
 
+        proposal.toEnrich shouldBe false
       }
     }
 
     scenario("segmented proposal") {
       val id = ProposalId("segmented proposal")
       val requestContext = RequestContext.empty.copy(customData = Map("segmented" -> "true"))
+      val tags = Seq(tagStake, tagActor)
 
       Mockito
         .when(proposalCoordinatorService.getProposal(id))
         .thenReturn(
           Future
-            .successful(Some(proposal(id, requestContext = requestContext, tags = Seq(TagId("tag-1"), TagId("tag-2")))))
+            .successful(
+              Some(
+                proposal(id, requestContext = requestContext, tags = tags.map(_.tagId), idea = Some(IdeaId("idea-id")))
+              )
+            )
         )
+
+      Mockito
+        .when(tagService.findByTagIds(tags.map(_.tagId)))
+        .thenReturn(Future.successful(tags))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypes))
 
       Mockito
         .when(segmentService.resolveSegment(requestContext))
