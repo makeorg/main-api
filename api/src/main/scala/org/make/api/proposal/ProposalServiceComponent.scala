@@ -1004,17 +1004,37 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ModerationProposalResponse]] = {
             availableProposals match {
               case Nil => Future.successful(None)
-              case head :: tail =>
-                getModerationProposalById(head).flatMap { proposal =>
-                  if ((proposal.exists(_.status != Pending) && !toEnrich) || (toEnrich && proposal
-                        .exists(p => p.tags.nonEmpty && p.idea.isDefined))) {
-                    recursiveLock(tail)
-                  } else {
-                    proposalCoordinatorService
-                      .lock(LockProposalCommand(head, moderator, user.flatMap(_.fullName), requestContext))
-                      .map(_ => proposal)
-                      .recoverWith { case _ => recursiveLock(tail) }
-                  }
+              case currentProposalId :: otherProposalIds =>
+                getModerationProposalById(currentProposalId).flatMap {
+                  // If, for some reason, the proposal is not found in event sourcing, ignore it
+                  case None => recursiveLock(otherProposalIds)
+                  case Some(proposal) =>
+                    val isValid: Future[Boolean] = if (toEnrich) {
+                      for {
+                        tags     <- tagService.findByTagIds(proposal.tags)
+                        tagTypes <- tagTypeService.findAll(requiredForEnrichmentFilter = Some(true))
+                      } yield {
+                        Proposal.needsEnrichment(proposal.status, tagTypes, tags.map(_.tagTypeId))
+                      }
+                    } else {
+                      Future.successful(proposal.status == Pending)
+                    }
+
+                    isValid.flatMap {
+                      case false => recursiveLock(otherProposalIds)
+                      case true =>
+                        proposalCoordinatorService
+                          .lock(
+                            LockProposalCommand(
+                              proposal.proposalId,
+                              moderator,
+                              user.flatMap(_.fullName),
+                              requestContext
+                            )
+                          )
+                          .map(_ => Some(proposal))
+                          .recoverWith { case _ => recursiveLock(otherProposalIds) }
+                    }
                 }
             }
           }

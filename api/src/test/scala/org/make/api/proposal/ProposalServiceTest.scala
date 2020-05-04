@@ -42,7 +42,7 @@ import org.make.core.history.HistoryActions._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
-import org.make.core.proposal.ProposalStatus.Pending
+import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
 import org.make.core.proposal.QualificationKey.{
   DoNotCare,
   DoNotUnderstand,
@@ -149,7 +149,7 @@ class ProposalServiceTest
     .when(tagService.findByTagIds(Seq.empty))
     .thenReturn(Future.successful(Seq.empty))
 
-  val moderatorId = UserId("moderator-id")
+  val moderatorId: UserId = UserId("moderator-id")
 
   private val moderator = TestUtils.user(
     id = moderatorId,
@@ -198,20 +198,22 @@ class ProposalServiceTest
           status = Some(StatusSearchFilter(Seq(ProposalStatus.Pending)))
         )
       ),
-      sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC))),
+      sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.Asc))),
       limit = Some(50),
       sortAlgorithm = Some(B2BFirstAlgorithm)
     )
 
     scenario("no proposal matching criteria") {
 
+      val question = "next proposal to moderate - no proposal matching criteria"
+
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery("vff")))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
 
       whenReady(
         proposalService.searchAndLockProposalToModerate(
-          QuestionId("vff"),
+          QuestionId(question),
           moderatorId,
           RequestContext.empty,
           toEnrich = false,
@@ -222,180 +224,80 @@ class ProposalServiceTest
       ) { maybeProposal =>
         maybeProposal should be(None)
       }
-
     }
-    scenario("no proposal can be locked") {
 
-      val defaultProposal =
-        Proposal(
-          proposalId = ProposalId("unlockable-1"),
-          slug = "unlockable-1",
-          content = "unlockable-1",
-          author = UserId("user-unlockable-1"),
-          labels = Seq.empty,
-          status = ProposalStatus.Pending,
-          refusalReason = None,
-          tags = Seq.empty,
-          votes = Seq.empty,
-          language = Some(Language("fr")),
-          country = Some(Country("FR")),
-          creationContext = RequestContext.empty,
-          idea = None,
-          operation = Some(OperationId("unlockable")),
-          createdAt = None,
-          updatedAt = None,
-          events = Nil
+    scenario("no proposal can be locked") {
+      val question = "next proposal to moderate - no proposal can be locked"
+
+      val proposal1 =
+        proposal(
+          id = ProposalId(s"$question-unlockable-1"),
+          author = UserId(s"$question-user-unlockable-1"),
+          status = Pending
+        )
+      val proposal2 =
+        proposal(
+          id = ProposalId(s"$question-unlockable-2"),
+          author = UserId(s"$question-user-unlockable-2"),
+          status = Pending
+        )
+      val proposal3 =
+        proposal(
+          id = ProposalId(s"$question-unlockable-3"),
+          author = UserId(s"$question-user-unlockable-3"),
+          status = Pending
+        )
+      val proposal4 =
+        proposal(
+          id = ProposalId(s"$question-unlockable-4"),
+          author = UserId(s"$question-user-unlockable-4"),
+          status = Pending
         )
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery("no-proposal-to-lock")))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
               ProposalsSearchResult(
-                total = 2,
+                total = 4,
                 results = Seq(
-                  indexedProposal(ProposalId("unlockable-1")),
-                  indexedProposal(ProposalId("unlockable-2")),
-                  indexedProposal(ProposalId("unlockable-3")),
-                  indexedProposal(ProposalId("unlockable-4"))
+                  indexedProposal(proposal1.proposalId),
+                  indexedProposal(proposal2.proposalId),
+                  indexedProposal(proposal3.proposalId),
+                  indexedProposal(proposal4.proposalId)
                 )
               )
             )
         )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(
-                ProposalId("unlockable-1"),
-                moderator.userId,
-                moderator.fullName,
-                RequestContext.empty
+      Seq(proposal1, proposal2, proposal3, proposal4).foreach { proposal =>
+        Mockito
+          .when(
+            proposalCoordinatorService.lock(
+              matches(
+                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
               )
             )
           )
-        )
-        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+          .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(
-                ProposalId("unlockable-2"),
-                moderator.userId,
-                moderator.fullName,
-                RequestContext.empty
-              )
-            )
-          )
-        )
-        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+        Mockito
+          .when(proposalCoordinatorService.getProposal(proposal.proposalId))
+          .thenReturn(Future.successful(Some(proposal)))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(
-                ProposalId("unlockable-3"),
-                moderator.userId,
-                moderator.fullName,
-                RequestContext.empty
-              )
-            )
-          )
-        )
-        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
-
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(
-                ProposalId("unlockable-4"),
-                moderator.userId,
-                moderator.fullName,
-                RequestContext.empty
-              )
-            )
-          )
-        )
-        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
-
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-1")))
-        .thenReturn(Future.successful(Some(defaultProposal)))
-
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-2")))
-        .thenReturn(
-          Future.successful(
-            Some(
-              defaultProposal.copy(
-                proposalId = ProposalId("unlockable-2"),
-                slug = "unlockable-2",
-                content = "unlockable-2",
-                author = UserId("user-unlockable-2")
-              )
-            )
-          )
-        )
-
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-3")))
-        .thenReturn(
-          Future.successful(
-            Some(
-              defaultProposal.copy(
-                proposalId = ProposalId("unlockable-3"),
-                slug = "unlockable-3",
-                content = "unlockable-3",
-                author = UserId("user-unlockable-3")
-              )
-            )
-          )
-        )
-
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("unlockable-4")))
-        .thenReturn(
-          Future.successful(
-            Some(
-              defaultProposal.copy(
-                proposalId = ProposalId("unlockable-4"),
-                slug = "unlockable-4",
-                content = "unlockable-4",
-                author = UserId("user-unlockable-4")
-              )
-            )
-          )
-        )
+        Mockito
+          .when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+      }
 
       Mockito
         .when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
-      Mockito
-        .when(userService.getUser(UserId("user-unlockable-1")))
-        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-1")))))
-
-      Mockito
-        .when(userService.getUser(UserId("user-unlockable-2")))
-        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-2")))))
-
-      Mockito
-        .when(userService.getUser(UserId("user-unlockable-3")))
-        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-3")))))
-
-      Mockito
-        .when(userService.getUser(UserId("user-unlockable-4")))
-        .thenReturn(Future.successful(Some(user(UserId("user-unlockable-4")))))
-
       whenReady(
         proposalService.searchAndLockProposalToModerate(
-          questionId = QuestionId("no-proposal-to-lock"),
+          questionId = QuestionId(question),
           moderatorId,
           RequestContext.empty,
           toEnrich = false,
@@ -410,17 +312,27 @@ class ProposalServiceTest
     }
 
     scenario("second proposal can be locked") {
+      val question = "next proposal to moderate - second proposal can be locked"
+
+      val unlockable = proposal(
+        id = ProposalId(s"$question-unlockable"),
+        author = UserId(s"$question-user-unlockable"),
+        status = Pending
+      )
+
+      val lockable =
+        proposal(id = ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Pending)
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery("lock-second")))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
               ProposalsSearchResult(
-                total = 2,
+                total = 4,
                 results = Seq(
-                  indexedProposal(ProposalId("unlockable")),
-                  indexedProposal(ProposalId("lockable")),
+                  indexedProposal(unlockable.proposalId),
+                  indexedProposal(lockable.proposalId),
                   indexedProposal(ProposalId("ignored-1")),
                   indexedProposal(ProposalId("ignored-2"))
                 )
@@ -432,7 +344,7 @@ class ProposalServiceTest
         .when(
           proposalCoordinatorService.lock(
             matches(
-              LockProposalCommand(ProposalId("unlockable"), moderator.userId, moderator.fullName, RequestContext.empty)
+              LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
             )
           )
         )
@@ -442,83 +354,29 @@ class ProposalServiceTest
         .when(
           proposalCoordinatorService.lock(
             matches(
-              LockProposalCommand(ProposalId("lockable"), moderator.userId, moderator.fullName, RequestContext.empty)
+              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
             )
           )
         )
         .thenReturn(Future.successful(Some(moderatorId)))
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(matches(ProposalId("unlockable"))))
-        .thenReturn(
-          Future.successful(
-            Some(
-              Proposal(
-                proposalId = ProposalId("unlockable"),
-                slug = "unlockable",
-                content = "unlockable",
-                author = UserId("user-unlockable"),
-                labels = Seq.empty,
-                status = ProposalStatus.Pending,
-                refusalReason = None,
-                tags = Seq.empty,
-                votes = Seq.empty,
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
-                creationContext = RequestContext.empty,
-                idea = None,
-                operation = Some(OperationId("unlockable")),
-                createdAt = None,
-                updatedAt = None,
-                events = Nil
-              )
-            )
-          )
-        )
+      Seq(unlockable, lockable).foreach { proposal =>
+        Mockito
+          .when(proposalCoordinatorService.getProposal(matches(proposal.proposalId)))
+          .thenReturn(Future.successful(Some(proposal)))
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("lockable")))
-        .thenReturn(
-          Future.successful(
-            Some(
-              Proposal(
-                proposalId = ProposalId("lockable"),
-                slug = "lockable",
-                content = "lockable",
-                author = UserId("user-lockable"),
-                labels = Seq.empty,
-                status = ProposalStatus.Pending,
-                refusalReason = None,
-                tags = Seq.empty,
-                votes = Seq.empty,
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
-                creationContext = RequestContext.empty,
-                idea = None,
-                operation = Some(OperationId("lock-second")),
-                createdAt = None,
-                updatedAt = None,
-                events = Nil
-              )
-            )
-          )
-        )
+        Mockito
+          .when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+      }
 
       Mockito
         .when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
-      Mockito
-        .when(userService.getUser(UserId("user-unlockable")))
-        .thenReturn(Future.successful(Some(user(UserId("user-unlockable")))))
-
-      Mockito
-        .when(userService.getUser(UserId("user-lockable")))
-        .thenReturn(Future.successful(Some(user(UserId("user-lockable")))))
-
       whenReady(
         proposalService.searchAndLockProposalToModerate(
-          QuestionId("lock-second"),
+          QuestionId(question),
           moderatorId,
           RequestContext.empty,
           toEnrich = false,
@@ -527,70 +385,119 @@ class ProposalServiceTest
         ),
         Timeout(3.seconds)
       ) { maybeProposal =>
-        maybeProposal.isDefined should be(true)
-        maybeProposal.get.proposalId should be(ProposalId("lockable"))
+        maybeProposal should be(defined)
+        maybeProposal.map(_.proposalId) should contain(lockable.proposalId)
+      }
+    }
+
+    scenario("first proposal is already moderated") {
+      val question = "next proposal to moderate - first proposal is already moderated"
+
+      val moderated = proposal(
+        id = ProposalId(s"$question-moderated"),
+        author = UserId(s"$question-user-moderated"),
+        status = Accepted
+      )
+
+      val lockable =
+        proposal(id = ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Pending)
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 4,
+                results = Seq(
+                  indexedProposal(moderated.proposalId),
+                  indexedProposal(lockable.proposalId),
+                  indexedProposal(ProposalId("ignored-1")),
+                  indexedProposal(ProposalId("ignored-2"))
+                )
+              )
+            )
+        )
+
+      Seq(moderated, lockable).foreach { proposal =>
+        Mockito
+          .when(proposalCoordinatorService.getProposal(matches(proposal.proposalId)))
+          .thenReturn(Future.successful(Some(proposal)))
+
+        Mockito
+          .when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+
+        Mockito
+          .when(
+            proposalCoordinatorService.lock(
+              matches(
+                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+              )
+            )
+          )
+          .thenReturn(Future.successful(Some(moderatorId)))
+      }
+
+      Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      whenReady(
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId(question),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = false,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal should be(defined)
+        maybeProposal.map(_.proposalId) should contain(lockable.proposalId)
       }
 
     }
 
     scenario("first proposal can be locked") {
+      val question = "next proposal to moderate - first proposal can be locked"
+
+      val lockable =
+        proposal(id = ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Pending)
 
       Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery("lock-first")))
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
-            .successful(ProposalsSearchResult(total = 2, results = Seq(indexedProposal(ProposalId("lockable")))))
+            .successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(lockable.proposalId))))
         )
 
       Mockito
         .when(
           proposalCoordinatorService.lock(
             matches(
-              LockProposalCommand(ProposalId("lockable"), moderator.userId, moderator.fullName, RequestContext.empty)
+              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
             )
           )
         )
         .thenReturn(Future.successful(Some(moderatorId)))
 
       Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("lockable")))
-        .thenReturn(
-          Future.successful(
-            Some(
-              Proposal(
-                proposalId = ProposalId("lockable"),
-                slug = "lockable",
-                content = "lockable",
-                author = UserId("user-lockable"),
-                labels = Seq.empty,
-                status = ProposalStatus.Pending,
-                refusalReason = None,
-                tags = Seq.empty,
-                votes = Seq.empty,
-                language = Some(Language("fr")),
-                country = Some(Country("FR")),
-                creationContext = RequestContext.empty,
-                idea = None,
-                operation = Some(OperationId("lock-second")),
-                createdAt = None,
-                updatedAt = None,
-                events = Nil
-              )
-            )
-          )
-        )
+        .when(proposalCoordinatorService.getProposal(lockable.proposalId))
+        .thenReturn(Future.successful(Some(lockable)))
 
       Mockito
         .when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
       Mockito
-        .when(userService.getUser(UserId("user-lockable")))
-        .thenReturn(Future.successful(Some(user(UserId("user-lockable")))))
+        .when(userService.getUser(lockable.author))
+        .thenReturn(Future.successful(Some(user(lockable.author))))
 
       whenReady(
         proposalService.searchAndLockProposalToModerate(
-          QuestionId("lock-first"),
+          QuestionId(question),
           moderatorId,
           RequestContext.empty,
           toEnrich = false,
@@ -599,8 +506,378 @@ class ProposalServiceTest
         ),
         Timeout(3.seconds)
       ) { maybeProposal =>
-        maybeProposal.isDefined should be(true)
-        maybeProposal.get.proposalId should be(ProposalId("lockable"))
+        maybeProposal should be(defined)
+        maybeProposal.map(_.proposalId) should contain(lockable.proposalId)
+      }
+
+    }
+  }
+
+  feature("next proposal to enrich") {
+
+    def searchQuery(question: String): SearchQuery = SearchQuery(
+      filters = Some(
+        SearchFilters(
+          question = Some(QuestionSearchFilter(Seq(QuestionId(question)))),
+          status = Some(StatusSearchFilter(Seq(ProposalStatus.Accepted))),
+          toEnrich = Some(ToEnrichSearchFilter(true))
+        )
+      ),
+      sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.Asc))),
+      limit = Some(50),
+      sortAlgorithm = Some(B2BFirstAlgorithm)
+    )
+
+    val stake: TagType = TagType(
+      tagTypeId = TagTypeId("stake"),
+      label = "stake haché",
+      display = TagTypeDisplay.Displayed,
+      requiredForEnrichment = true
+    )
+    val otherTagType: TagType = TagType(
+      tagTypeId = TagTypeId("other"),
+      label = "other",
+      display = TagTypeDisplay.Displayed,
+      requiredForEnrichment = false
+    )
+
+    val tagTypes = Seq(stake, otherTagType)
+
+    Mockito
+      .when(tagTypeService.findAll(requiredForEnrichmentFilter = Some(true)))
+      .thenReturn(Future.successful(tagTypes))
+
+    Mockito
+      .when(tagService.findByTagIds(Seq.empty[TagId]))
+      .thenReturn(Future.successful(Seq.empty[Tag]))
+
+    scenario("no proposal matching criteria") {
+      val question = "next proposal to enrich - no proposal matching criteria"
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
+
+      whenReady(
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId(question),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = true,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal should be(None)
+      }
+    }
+
+    scenario("no proposal can be locked") {
+      val question = "next proposal to enrich - no proposal can be locked"
+
+      val proposal1 = proposal(
+        ProposalId(s"$question-unlockable-1"),
+        author = UserId(s"$question-user-unlockable-1"),
+        status = Accepted
+      )
+      val proposal2 = proposal(
+        ProposalId(s"$question-unlockable-2"),
+        author = UserId(s"$question-user-unlockable-2"),
+        status = Accepted
+      )
+      val proposal3 = proposal(
+        ProposalId(s"$question-unlockable-3"),
+        author = UserId(s"$question-user-unlockable-3"),
+        status = Accepted
+      )
+      val proposal4 = proposal(
+        ProposalId(s"$question-unlockable-4"),
+        author = UserId(s"$question-user-unlockable-4"),
+        status = Accepted
+      )
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 4,
+                results = Seq(
+                  indexedProposal(proposal1.proposalId),
+                  indexedProposal(proposal2.proposalId),
+                  indexedProposal(proposal3.proposalId),
+                  indexedProposal(proposal4.proposalId)
+                )
+              )
+            )
+        )
+
+      Seq(proposal1, proposal2, proposal3, proposal4).foreach { proposal =>
+        Mockito
+          .when(proposalCoordinatorService.getProposal(proposal.proposalId))
+          .thenReturn(Future.successful(Some(proposal)))
+
+        Mockito
+          .when(
+            proposalCoordinatorService.lock(
+              matches(
+                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+              )
+            )
+          )
+          .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+
+        Mockito
+          .when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+
+      }
+
+      Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      whenReady(
+        proposalService.searchAndLockProposalToModerate(
+          questionId = QuestionId(question),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = true,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal should be(None)
+      }
+
+    }
+
+    scenario("second proposal can be locked") {
+      val question = "next proposal to enrich - second proposal can be locked"
+
+      val unlockable =
+        proposal(
+          ProposalId(s"$question - unlockable"),
+          author = UserId(s"$question-user-unlockable"),
+          status = Accepted
+        )
+      val lockable =
+        proposal(ProposalId(s"$question - lockable"), author = UserId(s"$question-user-lockable"), status = Accepted)
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 4,
+                results = Seq(
+                  indexedProposal(unlockable.proposalId),
+                  indexedProposal(lockable.proposalId),
+                  indexedProposal(ProposalId("ignored-1")),
+                  indexedProposal(ProposalId("ignored-2"))
+                )
+              )
+            )
+        )
+
+      Mockito
+        .when(
+          proposalCoordinatorService.lock(
+            matches(
+              LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+            )
+          )
+        )
+        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+
+      Mockito
+        .when(
+          proposalCoordinatorService.lock(
+            matches(
+              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+            )
+          )
+        )
+        .thenReturn(Future.successful(Some(moderatorId)))
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(matches(unlockable.proposalId)))
+        .thenReturn(Future.successful(Some(unlockable)))
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(lockable.proposalId))
+        .thenReturn(Future.successful(Some(lockable)))
+
+      Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      Seq(lockable, unlockable).foreach { proposal =>
+        Mockito
+          .when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+      }
+
+      whenReady(
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId(question),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = true,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal should be(defined)
+        maybeProposal.map(_.proposalId) should contain(lockable.proposalId)
+      }
+
+    }
+
+    scenario("first proposal is already enriched") {
+      val question = "next proposal to enrich - first proposal is already enriched"
+
+      val tagId = TagId("a-stake-tag")
+      val enriched =
+        proposal(
+          ProposalId(s"$question - enriched"),
+          author = UserId(s"$question-user-enriched"),
+          status = Accepted,
+          tags = Seq(tagId)
+        )
+      val lockable =
+        proposal(ProposalId(s"$question - lockable"), author = UserId(s"$question-user-lockable"), status = Accepted)
+
+      Mockito
+        .when(tagService.findByTagIds(Seq(tagId)))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              Tag(
+                tagId,
+                tagId.value,
+                TagDisplay.Displayed,
+                stake.tagTypeId,
+                0f,
+                None,
+                None,
+                Country("FR"),
+                Language("fr")
+              )
+            )
+          )
+        )
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(
+              ProposalsSearchResult(
+                total = 4,
+                results = Seq(
+                  indexedProposal(enriched.proposalId),
+                  indexedProposal(lockable.proposalId),
+                  indexedProposal(ProposalId("ignored-1")),
+                  indexedProposal(ProposalId("ignored-2"))
+                )
+              )
+            )
+        )
+
+      Seq(enriched, lockable).foreach { proposal =>
+        Mockito
+          .when(
+            proposalCoordinatorService.lock(
+              matches(
+                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+              )
+            )
+          )
+          .thenReturn(Future.successful(Some(moderatorId)))
+
+        Mockito
+          .when(proposalCoordinatorService.getProposal(matches(proposal.proposalId)))
+          .thenReturn(Future.successful(Some(proposal)))
+
+        Mockito
+          .when(userService.getUser(proposal.author))
+          .thenReturn(Future.successful(Some(user(proposal.author))))
+      }
+
+      Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      whenReady(
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId(question),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = true,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal should be(defined)
+        maybeProposal.map(_.proposalId) should contain(lockable.proposalId)
+      }
+
+    }
+
+    scenario("first proposal can be locked") {
+      val question = "lock-first"
+      val lockable =
+        proposal(ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Accepted)
+
+      Mockito
+        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+        .thenReturn(
+          Future
+            .successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(lockable.proposalId))))
+        )
+
+      Mockito
+        .when(
+          proposalCoordinatorService.lock(
+            matches(
+              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
+            )
+          )
+        )
+        .thenReturn(Future.successful(Some(moderatorId)))
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(lockable.proposalId))
+        .thenReturn(Future.successful(Some(lockable)))
+
+      Mockito
+        .when(userService.getUser(moderatorId))
+        .thenReturn(Future.successful(Some(moderator)))
+
+      Mockito
+        .when(userService.getUser(lockable.author))
+        .thenReturn(Future.successful(Some(user(lockable.author))))
+
+      whenReady(
+        proposalService.searchAndLockProposalToModerate(
+          QuestionId(question),
+          moderatorId,
+          RequestContext.empty,
+          toEnrich = true,
+          minVotesCount = None,
+          minScore = None
+        ),
+        Timeout(3.seconds)
+      ) { maybeProposal =>
+        maybeProposal should be(defined)
+        maybeProposal.map(_.proposalId) should contain(lockable.proposalId)
       }
 
     }
@@ -813,7 +1090,7 @@ class ProposalServiceTest
   }
 
   feature("get tags for proposal") {
-    def tag(id: String) = Tag(
+    def tag(id: String): Tag = Tag(
       tagId = TagId(id),
       label = "label",
       display = TagDisplay.Inherit,
@@ -824,7 +1101,7 @@ class ProposalServiceTest
       country = Country("FR"),
       language = Language("fr")
     )
-    def proposal(questionId: Option[QuestionId], tags: Seq[TagId]) = Proposal(
+    def proposal(questionId: Option[QuestionId], tags: Seq[TagId]): Proposal = Proposal(
       proposalId = ProposalId("proposal-id"),
       slug = "proposal",
       content = "proposal",

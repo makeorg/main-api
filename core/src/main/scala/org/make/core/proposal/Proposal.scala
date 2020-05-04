@@ -38,6 +38,9 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import scala.annotation.meta.field
+import org.make.core.tag.TagType
+import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.tag.TagTypeId
 
 final case class Proposal(proposalId: ProposalId,
                           slug: String,
@@ -68,6 +71,11 @@ final case class Proposal(proposalId: ProposalId,
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
     DefaultJsonProtocol.jsonFormat22(Proposal.apply)
+
+  def needsEnrichment(status: ProposalStatus, tagTypes: Seq[TagType], proposalTagTypes: Seq[TagTypeId]): Boolean = {
+    val proposalTypesSet = proposalTagTypes.toSet
+    status == Accepted && !tagTypes.filter(_.requiredForEnrichment).map(_.tagTypeId).forall(proposalTypesSet.contains)
+  }
 
 }
 
