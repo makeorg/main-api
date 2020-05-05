@@ -208,6 +208,7 @@ trait DefaultAdminCrmTemplatesApiComponent
                               .orElse(defaultTemplate.map(_.forgottenPasswordOrganisation))
                             organisationEmailChangeConfirmation <- request.organisationEmailChangeConfirmation
                               .orElse(defaultTemplate.map(_.organisationEmailChangeConfirmation))
+                            registrationB2B <- request.registrationB2B.orElse(defaultTemplate.map(_.registrationB2B))
                           } yield {
                             CreateCrmTemplates(
                               questionId = question.map(_.questionId),
@@ -221,7 +222,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                               proposalAcceptedOrganisation,
                               proposalRefusedOrganisation,
                               forgottenPasswordOrganisation,
-                              organisationEmailChangeConfirmation
+                              organisationEmailChangeConfirmation,
+                              registrationB2B
                             )
                           }
                           crmTemplates match {
@@ -275,6 +277,7 @@ trait DefaultAdminCrmTemplatesApiComponent
                             .orElse(defaultTemplate.map(_.forgottenPasswordOrganisation))
                           organisationEmailChangeConfirmation <- request.organisationEmailChangeConfirmation
                             .orElse(defaultTemplate.map(_.organisationEmailChangeConfirmation))
+                          registrationB2B <- request.registrationB2B.orElse(defaultTemplate.map(_.registrationB2B))
                         } yield {
                           UpdateCrmTemplates(
                             crmTemplatesId = crmTemplatesId,
@@ -287,7 +290,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                             proposalAcceptedOrganisation,
                             proposalRefusedOrganisation,
                             forgottenPasswordOrganisation,
-                            organisationEmailChangeConfirmation
+                            organisationEmailChangeConfirmation,
+                            registrationB2B
                           )
                         }
                         crmTemplates match {
@@ -339,7 +343,9 @@ trait DefaultAdminCrmTemplatesApiComponent
           .requirePresent(
             fieldName = "organisationEmailChangeConfirmation",
             fieldValue = request.organisationEmailChangeConfirmation
-          )
+          ),
+        Validation
+          .requirePresent(fieldName = "registrationB2B", fieldValue = request.registrationB2B)
       )
     }
 

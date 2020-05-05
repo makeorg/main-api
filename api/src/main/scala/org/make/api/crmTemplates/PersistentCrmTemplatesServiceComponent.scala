@@ -83,7 +83,8 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
               column.proposalAcceptedOrganisation -> crmTemplates.proposalAcceptedOrganisation.value,
               column.proposalRefusedOrganisation -> crmTemplates.proposalRefusedOrganisation.value,
               column.forgottenPasswordOrganisation -> crmTemplates.forgottenPasswordOrganisation.value,
-              column.organisationEmailChangeConfirmation -> crmTemplates.organisationEmailChangeConfirmation.value
+              column.organisationEmailChangeConfirmation -> crmTemplates.organisationEmailChangeConfirmation.value,
+              column.registrationB2b -> crmTemplates.registrationB2B.value
             )
         }.execute().apply()
       }).map(_ => crmTemplates)
@@ -106,7 +107,8 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
               column.proposalAcceptedOrganisation -> crmTemplates.proposalAcceptedOrganisation.value,
               column.proposalRefusedOrganisation -> crmTemplates.proposalRefusedOrganisation.value,
               column.forgottenPasswordOrganisation -> crmTemplates.forgottenPasswordOrganisation.value,
-              column.organisationEmailChangeConfirmation -> crmTemplates.organisationEmailChangeConfirmation.value
+              column.organisationEmailChangeConfirmation -> crmTemplates.organisationEmailChangeConfirmation.value,
+              column.registrationB2b -> crmTemplates.registrationB2B.value
             )
             .where(sqls.eq(column.id, crmTemplates.crmTemplatesId.value))
         }.execute().apply()
@@ -180,7 +182,8 @@ object DefaultPersistentCrmTemplatesServiceComponent {
     proposalAcceptedOrganisation: String,
     proposalRefusedOrganisation: String,
     forgottenPasswordOrganisation: String,
-    organisationEmailChangeConfirmation: String
+    organisationEmailChangeConfirmation: String,
+    registrationB2b: String
   ) {
 
     def toCrmTemplates: CrmTemplates =
@@ -197,7 +200,8 @@ object DefaultPersistentCrmTemplatesServiceComponent {
         proposalAcceptedOrganisation = TemplateId(proposalAcceptedOrganisation),
         proposalRefusedOrganisation = TemplateId(proposalRefusedOrganisation),
         forgottenPasswordOrganisation = TemplateId(forgottenPasswordOrganisation),
-        organisationEmailChangeConfirmation = TemplateId(organisationEmailChangeConfirmation)
+        organisationEmailChangeConfirmation = TemplateId(organisationEmailChangeConfirmation),
+        registrationB2B = TemplateId(registrationB2b)
       )
   }
 
@@ -219,7 +223,8 @@ object DefaultPersistentCrmTemplatesServiceComponent {
       "proposal_accepted_organisation",
       "proposal_refused_organisation",
       "forgotten_password_organisation",
-      "organisation_email_change_confirmation"
+      "organisation_email_change_confirmation",
+      "registration_b2b"
     )
 
     override val tableName: String = "crm_templates"
@@ -245,7 +250,8 @@ object DefaultPersistentCrmTemplatesServiceComponent {
         proposalRefusedOrganisation = resultSet.string(crmTemplatesResultName.proposalRefusedOrganisation),
         forgottenPasswordOrganisation = resultSet.string(crmTemplatesResultName.forgottenPasswordOrganisation),
         organisationEmailChangeConfirmation =
-          resultSet.string(crmTemplatesResultName.organisationEmailChangeConfirmation)
+          resultSet.string(crmTemplatesResultName.organisationEmailChangeConfirmation),
+        registrationB2b = resultSet.string(crmTemplatesResultName.registrationB2b)
       )
     }
 

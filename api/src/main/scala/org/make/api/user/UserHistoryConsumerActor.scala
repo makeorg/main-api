@@ -60,6 +60,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
       case event: UserFollowEvent                 => doNothing(event)
       case event: UserUnfollowEvent               => doNothing(event)
       case event: UserUploadAvatarEvent           => doNothing(event)
+      case event: PersonalityRegisteredEvent      => doNothing(event)
     }
   }
 

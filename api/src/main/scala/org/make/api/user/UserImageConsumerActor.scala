@@ -71,6 +71,7 @@ class UserImageConsumerActor(userService: UserService)
       case event: UserFollowEvent                 => doNothing(event)
       case event: UserUnfollowEvent               => doNothing(event)
       case event: UserUploadAvatarEvent           => handleUserUploadAvatarEvent(event)
+      case event: PersonalityRegisteredEvent      => doNothing(event)
     }
   }
 

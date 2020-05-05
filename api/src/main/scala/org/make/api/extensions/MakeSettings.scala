@@ -37,6 +37,9 @@ class MakeSettings(config: Config) extends Extension {
   val lockDuration: FiniteDuration =
     FiniteDuration(Duration(config.getString("lock-duration")).toMillis, TimeUnit.MILLISECONDS)
   val maxHistoryProposalsPerPage: Int = config.getInt("max-history-proposals-per-page")
+  val validationTokenExpiresIn: Duration = Duration(config.getString("user-token.validation-token-expires-in"))
+  val resetTokenExpiresIn: Duration = Duration(config.getString("user-token.reset-token-expires-in"))
+  val resetTokenB2BExpiresIn: Duration = Duration(config.getString("user-token.reset-token-b2b-expires-in"))
 
   object SessionCookie {
     val lifetime: Duration = Duration(config.getString("cookie-session.lifetime"))

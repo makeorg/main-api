@@ -201,35 +201,46 @@ class UserEmailConsumerActorIT
 
       probeRegistered.expectMsg(500.millis, "sendMailPublisherService.publishRegistration called")
     }
+  }
 
+  feature("consume B2BRegistered") {
     scenario("organisation register") {
       val orgaProbe: TestProbe = TestProbe()
-      val eventOrganisation: UserRegisteredEvent = UserRegisteredEvent(
+      Mockito
+        .when(
+          sendMailPublisherService.publishRegistrationB2B(
+            ArgumentMatchers.eq(organisation),
+            ArgumentMatchers.eq(country),
+            ArgumentMatchers.eq(language),
+            ArgumentMatchers.eq(RequestContext.empty)
+          )
+        )
+        .thenAnswer(_ => {
+          orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
+          Future.successful({})
+        })
+      val eventOrganisation: OrganisationRegisteredEvent = OrganisationRegisteredEvent(
         connectedUserId = None,
         eventDate = dateNow,
         userId = organisation.userId,
         requestContext = RequestContext.empty,
         email = "some@mail.com",
-        firstName = None,
-        lastName = None,
-        profession = None,
-        dateOfBirth = None,
-        postalCode = None,
         country = country,
         language = language
       )
       val wrappedEventOrganisation =
-        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserRegisteredEvent", eventOrganisation)
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "OrganisationRegisteredEvent", eventOrganisation)
 
       send(wrappedEventOrganisation)
 
-      orgaProbe.expectNoMessage()
+      orgaProbe.expectMsg(500.millis, "sendMailPublisherService.publishRegistrationB2B called")
     }
 
     scenario("personality register") {
+      val persoProbe: TestProbe = TestProbe()
       Mockito
         .when(
-          sendMailPublisherService.publishForgottenPasswordOrganisation(
+          sendMailPublisherService.publishRegistrationB2B(
             ArgumentMatchers.eq(personality1),
             ArgumentMatchers.eq(country),
             ArgumentMatchers.eq(language),
@@ -237,28 +248,24 @@ class UserEmailConsumerActorIT
           )
         )
         .thenAnswer(_ => {
-          probeRegistered.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation called"
+          persoProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
           Future.successful({})
         })
-      val event: UserRegisteredEvent = UserRegisteredEvent(
+      val event: PersonalityRegisteredEvent = PersonalityRegisteredEvent(
         connectedUserId = None,
         eventDate = dateNow,
         userId = personality1.userId,
         requestContext = RequestContext.empty,
         email = "some@mail.com",
-        firstName = None,
-        lastName = None,
-        profession = None,
-        dateOfBirth = None,
-        postalCode = None,
         country = country,
         language = language
       )
-      val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserRegisteredEvent", event)
+      val wrappedEvent =
+        UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "PersonalityRegisteredEvent", event)
 
       send(wrappedEvent)
 
-      probeRegistered.expectMsg(500.millis, "sendMailPublisherService.publishForgottenPasswordOrganisation called")
+      persoProbe.expectMsg(500.millis, "sendMailPublisherService.publishRegistrationB2B called")
     }
   }
 

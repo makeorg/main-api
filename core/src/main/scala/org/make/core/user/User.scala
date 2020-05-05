@@ -182,6 +182,9 @@ case class User(
   def hasRole(role: Role): Boolean = {
     roles.contains(role)
   }
+
+  def isB2B: Boolean = userType == UserType.UserTypePersonality || userType == UserType.UserTypeOrganisation
+  def isB2C: Boolean = userType == UserType.UserTypeUser
 }
 
 case class UserId(value: String) extends StringValue

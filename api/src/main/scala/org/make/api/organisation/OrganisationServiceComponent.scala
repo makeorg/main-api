@@ -20,8 +20,10 @@
 package org.make.api.organisation
 
 import com.github.t3hnar.bcrypt._
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
 import org.make.api.proposal._
+import org.make.api.technical.auth.UserTokenGeneratorComponent
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.{
@@ -31,7 +33,6 @@ import org.make.api.user.{
 }
 import org.make.api.userhistory.{
   OrganisationEmailChangedEvent,
-  OrganisationInitializationEvent,
   OrganisationRegisteredEvent,
   OrganisationUpdatedEvent,
   UserHistoryCoordinatorServiceComponent
@@ -120,11 +121,16 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     with ProposalServiceComponent
     with ProposalSearchEngineComponent
     with OrganisationSearchEngineComponent
-    with PersistentUserToAnonymizeServiceComponent =>
+    with PersistentUserToAnonymizeServiceComponent
+    with UserTokenGeneratorComponent
+    with MakeSettingsComponent =>
 
   override lazy val organisationService: OrganisationService = new DefaultOrganisationService
 
   class DefaultOrganisationService extends OrganisationService {
+
+    val resetTokenB2BExpiresIn: Long = makeSettings.resetTokenB2BExpiresIn.toSeconds
+
     override def getOrganisation(userId: UserId): Future[Option[User]] = {
       persistentUserService.findByUserIdAndUserType(userId, UserType.UserTypeOrganisation)
     }
@@ -184,7 +190,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       organisationRegisterData: OrganisationRegisterData,
       lowerCasedEmail: String,
       country: Country,
-      language: Language
+      language: Language,
+      resetToken: String
     ): Future[User] = {
       val user = User(
         userId = idGenerator.nextUserId(),
@@ -200,8 +207,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         lastConnection = DateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
-        resetToken = None,
-        resetTokenExpiresAt = None,
+        resetToken = Some(resetToken),
+        resetTokenExpiresAt = Some(DateHelper.now().plusSeconds(resetTokenB2BExpiresIn)),
         roles = Seq(Role.RoleActor),
         country = country,
         language = language,
@@ -232,10 +239,11 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       val result = for {
         emailExists <- persistentUserService.emailExists(lowerCasedEmail)
         _           <- verifyEmail(lowerCasedEmail, emailExists)
-        user        <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, language)
+        resetToken  <- userTokenGenerator.generateResetToken().map { case (_, token) => token }
+        user        <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, language, resetToken)
       } yield user
 
-      result.flatMap { user =>
+      result.map { user =>
         eventBusService.publish(
           OrganisationRegisteredEvent(
             connectedUserId = Some(user.userId),
@@ -247,22 +255,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             eventDate = DateHelper.now()
           )
         )
-        if (organisationRegisterData.password.isEmpty) {
-          userService.requestPasswordReset(user.userId).map { _ =>
-            eventBusService.publish(
-              OrganisationInitializationEvent(
-                userId = user.userId,
-                connectedUserId = None,
-                country = user.country,
-                language = user.language,
-                requestContext = requestContext
-              )
-            )
-            user
-          }
-        } else {
-          Future.successful(user)
-        }
+        user
       }
     }
 

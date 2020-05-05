@@ -79,6 +79,21 @@ object UserEventWrapper extends AvroSerializers {
     RecordFormat[UserEventWrapper](schemaFor.schema(DefaultFieldMapper))
 }
 
+sealed trait B2BRegisteredEvent extends UserEvent
+
+@AvroSortPriority(17)
+final case class PersonalityRegisteredEvent(
+  override val connectedUserId: Option[UserId] = None,
+  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
+  override val userId: UserId,
+  override val requestContext: RequestContext,
+  email: String,
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
+  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage
+) extends B2BRegisteredEvent {
+  override def version(): Int = MakeSerializable.V1
+}
+
 @AvroSortPriority(16)
 case class PersonalityEmailChangedEvent(
   override val connectedUserId: Option[UserId] = None,
@@ -227,7 +242,7 @@ case class OrganisationRegisteredEvent(
   email: String,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
   @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage
-) extends UserEvent {
+) extends B2BRegisteredEvent {
   override def version(): Int = MakeSerializable.V1
 }
 

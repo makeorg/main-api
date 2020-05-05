@@ -64,7 +64,8 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
         forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id"),
-        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id")
+        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id"),
+        registrationB2B = TemplateId("registration_b2b-id")
       )
 
       waitForCompletion(persistentQuestionService.persist(createQuestion(questionId)))
@@ -104,7 +105,8 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
         forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id"),
-        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id")
+        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id"),
+        registrationB2B = TemplateId("registration_b2b-id")
       )
 
       val insertDependencies = for {
@@ -151,7 +153,8 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
         proposalAcceptedOrganisation = TemplateId("accepted_organisation-id"),
         proposalRefusedOrganisation = TemplateId("refused_organisation-id"),
         forgottenPasswordOrganisation = TemplateId("forgot_password_organisation-id"),
-        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id")
+        organisationEmailChangeConfirmation = TemplateId("organisation_change_email_confirmation-id"),
+        registrationB2B = TemplateId("registration_b2b-id")
       )
       val crmTemplates2 =
         crmTemplates1.copy(crmTemplatesId = CrmTemplatesId("template-id-2"), questionId = Some(questionId2))

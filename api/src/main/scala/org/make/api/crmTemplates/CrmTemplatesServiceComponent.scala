@@ -27,8 +27,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.core.Validation._
 
-import scala.util.Try
-
 trait CrmTemplatesServiceComponent {
   def crmTemplatesService: CrmTemplatesService
 }
@@ -72,7 +70,8 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
         proposalAcceptedOrganisation = entity.proposalAcceptedOrganisation,
         proposalRefusedOrganisation = entity.proposalRefusedOrganisation,
         forgottenPasswordOrganisation = entity.forgottenPasswordOrganisation,
-        organisationEmailChangeConfirmation = entity.organisationEmailChangeConfirmation
+        organisationEmailChangeConfirmation = entity.organisationEmailChangeConfirmation,
+        registrationB2B = entity.registrationB2B
       )
       persistentCrmTemplatesService.persist(crmTemplates)
     }
@@ -92,7 +91,8 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
                 proposalAcceptedOrganisation = entity.proposalAcceptedOrganisation,
                 proposalRefusedOrganisation = entity.proposalRefusedOrganisation,
                 forgottenPasswordOrganisation = entity.forgottenPasswordOrganisation,
-                organisationEmailChangeConfirmation = entity.organisationEmailChangeConfirmation
+                organisationEmailChangeConfirmation = entity.organisationEmailChangeConfirmation,
+                registrationB2B = entity.registrationB2B
               )
             )
             .map(Some.apply)
@@ -145,56 +145,63 @@ final case class CreateCrmTemplates(
   proposalAcceptedOrganisation: TemplateId,
   proposalRefusedOrganisation: TemplateId,
   forgottenPasswordOrganisation: TemplateId,
-  organisationEmailChangeConfirmation: TemplateId
+  organisationEmailChangeConfirmation: TemplateId,
+  registrationB2B: TemplateId
 ) {
   validate(
     validateField(
       "registration",
       "invalid_content",
-      Try(registration.value.toInt).isSuccess,
+      registration.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
-    validateField("welcome", "invalid_content", Try(welcome.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("welcome", "invalid_content", welcome.value.toIntOption.isDefined, "TemplateId must be of type Int"),
     validateField(
       "proposalAccepted",
       "invalid_content",
-      Try(proposalAccepted.value.toInt).isSuccess,
+      proposalAccepted.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "proposalRefused",
       "invalid_content",
-      Try(proposalRefused.value.toInt).isSuccess,
+      proposalRefused.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "forgottenPassword",
       "invalid_content",
-      Try(forgottenPassword.value.toInt).isSuccess,
+      forgottenPassword.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "proposalAcceptedOrganisation",
       "invalid_content",
-      Try(proposalAcceptedOrganisation.value.toInt).isSuccess,
+      proposalAcceptedOrganisation.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "proposalRefusedOrganisation",
       "invalid_content",
-      Try(proposalRefusedOrganisation.value.toInt).isSuccess,
+      proposalRefusedOrganisation.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "forgottenPasswordOrganisation",
       "invalid_content",
-      Try(forgottenPasswordOrganisation.value.toInt).isSuccess,
+      forgottenPasswordOrganisation.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "organisationEmailChangeConfirmation",
       "invalid_content",
-      Try(organisationEmailChangeConfirmation.value.toInt).isSuccess,
+      organisationEmailChangeConfirmation.value.toIntOption.isDefined,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "registrationB2B",
+      "invalid_content",
+      registrationB2B.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     )
   )
@@ -211,56 +218,63 @@ final case class UpdateCrmTemplates(
   proposalAcceptedOrganisation: TemplateId,
   proposalRefusedOrganisation: TemplateId,
   forgottenPasswordOrganisation: TemplateId,
-  organisationEmailChangeConfirmation: TemplateId
+  organisationEmailChangeConfirmation: TemplateId,
+  registrationB2B: TemplateId
 ) {
   validate(
     validateField(
       "registration",
       "invalid_content",
-      Try(registration.value.toInt).isSuccess,
+      registration.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
-    validateField("welcome", "invalid_content", Try(welcome.value.toInt).isSuccess, "TemplateId must be of type Int"),
+    validateField("welcome", "invalid_content", welcome.value.toIntOption.isDefined, "TemplateId must be of type Int"),
     validateField(
       "proposalAccepted",
       "invalid_content",
-      Try(proposalAccepted.value.toInt).isSuccess,
+      proposalAccepted.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "proposalRefused",
       "invalid_content",
-      Try(proposalRefused.value.toInt).isSuccess,
+      proposalRefused.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "forgottenPassword",
       "invalid_content",
-      Try(forgottenPassword.value.toInt).isSuccess,
+      forgottenPassword.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "proposalAcceptedOrganisation",
       "invalid_content",
-      Try(proposalAcceptedOrganisation.value.toInt).isSuccess,
+      proposalAcceptedOrganisation.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "proposalRefusedOrganisation",
       "invalid_content",
-      Try(proposalRefusedOrganisation.value.toInt).isSuccess,
+      proposalRefusedOrganisation.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "forgottenPasswordOrganisation",
       "invalid_content",
-      Try(forgottenPasswordOrganisation.value.toInt).isSuccess,
+      forgottenPasswordOrganisation.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     ),
     validateField(
       "organisationEmailChangeConfirmation",
       "invalid_content",
-      Try(organisationEmailChangeConfirmation.value.toInt).isSuccess,
+      organisationEmailChangeConfirmation.value.toIntOption.isDefined,
+      "TemplateId must be of type Int"
+    ),
+    validateField(
+      "registrationB2B",
+      "invalid_content",
+      registrationB2B.value.toIntOption.isDefined,
       "TemplateId must be of type Int"
     )
   )

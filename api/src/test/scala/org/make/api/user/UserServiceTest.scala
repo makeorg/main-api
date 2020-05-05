@@ -54,7 +54,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 
 class UserServiceTest
     extends MakeUnitTest
@@ -91,6 +91,9 @@ class UserServiceTest
   override val downloadService: DownloadService = mock[DownloadService]
 
   Mockito.when(makeSettings.defaultUserAnonymousParticipation).thenReturn(false)
+  Mockito.when(makeSettings.validationTokenExpiresIn).thenReturn(Duration("30 days"))
+  Mockito.when(makeSettings.resetTokenExpiresIn).thenReturn(Duration("1 days"))
+  Mockito.when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
 
   Mockito
     .when(persistentUserService.updateUser(any[User]))
@@ -179,6 +182,8 @@ class UserServiceTest
 
   val returnedPersonality: User = TestUtils.user(
     id = UserId("AAA-BBB-CCC"),
+    firstName = Some("perso"),
+    lastName = Some("nality"),
     email = "personality@mail.com",
     hashedPassword = Some("passpass"),
     userType = UserType.UserTypePersonality
@@ -634,6 +639,47 @@ class UserServiceTest
         case EmailNotAllowed(_) =>
         case other              => fail(s"${other.getClass.getName} is not the expected EmailNotAllowed exception")
       }
+    }
+  }
+
+  feature("register personality") {
+    scenario("successful register personality") {
+      Mockito.clearInvocations(persistentUserService)
+
+      Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
+
+      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
+
+      Mockito.when(persistentUserService.persist(any[User])).thenReturn(Future.successful(returnedPersonality))
+
+      val futurePersonality = userService.registerPersonality(
+        PersonalityRegisterData(
+          email = "personality@mail.com",
+          firstName = Some("perso"),
+          lastName = Some("nality"),
+          country = Country("FR"),
+          language = Language("fr"),
+          gender = Some(Gender.Male),
+          genderName = None,
+          description = None,
+          avatarUrl = None,
+          website = None,
+          politicalParty = None
+        ),
+        RequestContext.empty
+      )
+
+      whenReady(futurePersonality, Timeout(2.seconds)) { user =>
+        user.email should be("personality@mail.com")
+        user.firstName should contain("perso")
+        user.lastName should contain("nality")
+      }
+
+      verify(eventBusService, times(1))
+        .publish(ArgumentMatchers.argThat[AnyRef] {
+          case event: PersonalityRegisteredEvent => event.userId == returnedPersonality.userId
+          case _                                 => false
+        })
     }
   }
 
