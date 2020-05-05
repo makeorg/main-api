@@ -166,7 +166,7 @@ trait ProposalIndexationStream
       case None => Future.failed(new IllegalStateException("Unable to find stake tag types"))
       case Some(stakeTypeTag) =>
         val stakeTags: Seq[Tag] = tags.filter(_.tagTypeId.value == stakeTypeTag.tagTypeId.value)
-        tagService.retrieveIndexedTags(stakeTags, Seq(stakeTypeTag)) match {
+        tagService.retrieveIndexedTags(stakeTags, Seq(stakeTypeTag)).filter(_.display) match {
           case Seq()         => Future.successful(None)
           case Seq(stakeTag) => Future.successful(Some(stakeTag))
           case indexedTags =>
