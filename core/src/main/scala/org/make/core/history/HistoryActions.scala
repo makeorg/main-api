@@ -81,10 +81,12 @@ object HistoryActions {
     override val isInSegment: Boolean = true
   }
 
-  final case class VoteAndQualifications(voteKey: VoteKey,
-                                         qualificationKeys: Map[QualificationKey, VoteTrust],
-                                         date: ZonedDateTime,
-                                         trust: VoteTrust)
+  final case class VoteAndQualifications(
+    voteKey: VoteKey,
+    qualificationKeys: Map[QualificationKey, VoteTrust],
+    date: ZonedDateTime,
+    trust: VoteTrust
+  )
 
   object VoteAndQualifications {
     implicit val formatter: RootJsonFormat[VoteAndQualifications] =
@@ -109,15 +111,17 @@ object HistoryActions {
       extends GenericVoteAction
   final case class UnvoteAction(proposalId: ProposalId, date: ZonedDateTime, key: VoteKey, trust: VoteTrust)
       extends GenericVoteAction
-  final case class QualificationAction(proposalId: ProposalId,
-                                       date: ZonedDateTime,
-                                       key: QualificationKey,
-                                       trust: VoteTrust)
-      extends GenericQualificationAction
-  final case class UnqualificationAction(proposalId: ProposalId,
-                                         date: ZonedDateTime,
-                                         key: QualificationKey,
-                                         trust: VoteTrust)
-      extends GenericQualificationAction
+  final case class QualificationAction(
+    proposalId: ProposalId,
+    date: ZonedDateTime,
+    key: QualificationKey,
+    trust: VoteTrust
+  ) extends GenericQualificationAction
+  final case class UnqualificationAction(
+    proposalId: ProposalId,
+    date: ZonedDateTime,
+    key: QualificationKey,
+    trust: VoteTrust
+  ) extends GenericQualificationAction
 
 }

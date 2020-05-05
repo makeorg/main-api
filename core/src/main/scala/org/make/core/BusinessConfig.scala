@@ -42,10 +42,11 @@ object CountryConfiguration {
   implicit val decoder: Decoder[CountryConfiguration] = deriveDecoder[CountryConfiguration]
 }
 
-case class FrontConfiguration(proposalMinLength: Int,
-                              override val proposalMaxLength: Int,
-                              override val supportedCountries: Seq[CountryConfiguration])
-    extends BusinessConfig
+case class FrontConfiguration(
+  proposalMinLength: Int,
+  override val proposalMaxLength: Int,
+  override val supportedCountries: Seq[CountryConfiguration]
+) extends BusinessConfig
 
 object BusinessConfig {
   val defaultProposalMaxLength: Int = 140
@@ -245,9 +246,11 @@ object FrontConfiguration {
 
   val defaultProposalMinLength: Int = 12
 
-  def default(proposalMinLength: Int = defaultProposalMinLength,
-              proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
-              supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries): FrontConfiguration =
+  def default(
+    proposalMinLength: Int = defaultProposalMinLength,
+    proposalMaxLength: Int = BusinessConfig.defaultProposalMaxLength,
+    supportedCountries: Seq[CountryConfiguration] = BusinessConfig.supportedCountries
+  ): FrontConfiguration =
     FrontConfiguration(
       proposalMinLength = proposalMinLength,
       proposalMaxLength = proposalMaxLength,

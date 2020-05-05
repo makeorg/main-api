@@ -106,8 +106,8 @@ trait DefaultSecurityApiComponent extends SecurityApiComponent with MakeAuthenti
                 decodeRequest {
                   entity(as[CreateSecureHashRequest]) { request: CreateSecureHashRequest =>
                     complete(
-                      SecureHashResponse(
-                        hash = SecurityHelper.createSecureHash(request.value, securityConfiguration.secureHashSalt)
+                      SecureHashResponse(hash =
+                        SecurityHelper.createSecureHash(request.value, securityConfiguration.secureHashSalt)
                       )
                     )
                   }

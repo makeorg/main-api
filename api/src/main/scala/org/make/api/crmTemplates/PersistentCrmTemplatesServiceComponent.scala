@@ -40,10 +40,12 @@ trait PersistentCrmTemplatesService {
   def persist(crmTemplates: CrmTemplates): Future[CrmTemplates]
   def modify(crmTemplates: CrmTemplates): Future[CrmTemplates]
   def getById(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]]
-  def find(start: Int,
-           end: Option[Int],
-           questionId: Option[QuestionId],
-           locale: Option[String]): Future[Seq[CrmTemplates]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    questionId: Option[QuestionId],
+    locale: Option[String]
+  ): Future[Seq[CrmTemplates]]
   def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int]
 }
 
@@ -122,10 +124,12 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
       }).map(_.map(_.toCrmTemplates))
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      questionId: Option[QuestionId],
-                      locale: Option[String]): Future[Seq[CrmTemplates]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      questionId: Option[QuestionId],
+      locale: Option[String]
+    ): Future[Seq[CrmTemplates]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -163,19 +167,21 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
 
 object DefaultPersistentCrmTemplatesServiceComponent {
 
-  case class PersistentCrmTemplates(id: String,
-                                    questionId: Option[String],
-                                    locale: Option[String],
-                                    registration: String,
-                                    welcome: String,
-                                    proposalAccepted: String,
-                                    proposalRefused: String,
-                                    forgottenPassword: String,
-                                    resendRegistration: String,
-                                    proposalAcceptedOrganisation: String,
-                                    proposalRefusedOrganisation: String,
-                                    forgottenPasswordOrganisation: String,
-                                    organisationEmailChangeConfirmation: String) {
+  case class PersistentCrmTemplates(
+    id: String,
+    questionId: Option[String],
+    locale: Option[String],
+    registration: String,
+    welcome: String,
+    proposalAccepted: String,
+    proposalRefused: String,
+    forgottenPassword: String,
+    resendRegistration: String,
+    proposalAcceptedOrganisation: String,
+    proposalRefusedOrganisation: String,
+    forgottenPasswordOrganisation: String,
+    organisationEmailChangeConfirmation: String
+  ) {
 
     def toCrmTemplates: CrmTemplates =
       CrmTemplates(

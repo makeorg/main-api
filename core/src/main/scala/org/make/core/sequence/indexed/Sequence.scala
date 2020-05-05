@@ -57,27 +57,31 @@ object IndexedSequenceProposalId {
   implicit val decoder: Decoder[IndexedSequenceProposalId] = deriveDecoder[IndexedSequenceProposalId]
 }
 
-case class IndexedSequence(id: SequenceId,
-                           title: String,
-                           slug: String,
-                           translation: Seq[SequenceTranslation] = Seq.empty,
-                           status: SequenceStatus,
-                           createdAt: ZonedDateTime,
-                           updatedAt: ZonedDateTime,
-                           context: Option[Context],
-                           operationId: Option[OperationId],
-                           proposals: Seq[IndexedSequenceProposalId],
-                           searchable: Boolean)
+case class IndexedSequence(
+  id: SequenceId,
+  title: String,
+  slug: String,
+  translation: Seq[SequenceTranslation] = Seq.empty,
+  status: SequenceStatus,
+  createdAt: ZonedDateTime,
+  updatedAt: ZonedDateTime,
+  context: Option[Context],
+  operationId: Option[OperationId],
+  proposals: Seq[IndexedSequenceProposalId],
+  searchable: Boolean
+)
 
 object IndexedSequence extends CirceFormatters {
   implicit val encoder: Encoder[IndexedSequence] = deriveEncoder[IndexedSequence]
   implicit val decoder: Decoder[IndexedSequence] = deriveDecoder[IndexedSequence]
 }
 
-final case class Context(operation: Option[OperationId],
-                         source: Option[String],
-                         location: Option[String],
-                         question: Option[String])
+final case class Context(
+  operation: Option[OperationId],
+  source: Option[String],
+  location: Option[String],
+  question: Option[String]
+)
 
 object Context {
   implicit val encoder: Encoder[Context] = deriveEncoder[Context]
@@ -90,11 +94,13 @@ object SequencesSearchResult {
   implicit val encoder: Encoder[SequencesSearchResult] = deriveEncoder[SequencesSearchResult]
 }
 
-final case class IndexedStartSequence(id: SequenceId,
-                                      title: String,
-                                      slug: String,
-                                      translation: Seq[SequenceTranslation] = Seq.empty,
-                                      proposals: Seq[IndexedProposal])
+final case class IndexedStartSequence(
+  id: SequenceId,
+  title: String,
+  slug: String,
+  translation: Seq[SequenceTranslation] = Seq.empty,
+  proposals: Seq[IndexedProposal]
+)
 
 object IndexedStartSequence {
   implicit val encoder: Encoder[IndexedStartSequence] = deriveEncoder[IndexedStartSequence]

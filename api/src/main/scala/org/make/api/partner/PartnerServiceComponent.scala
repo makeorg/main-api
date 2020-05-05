@@ -33,16 +33,20 @@ trait PartnerServiceComponent {
 
 trait PartnerService extends ShortenedNames {
   def getPartner(partnerId: PartnerId): Future[Option[Partner]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           questionId: Option[QuestionId],
-           organisationId: Option[UserId],
-           partnerKind: Option[PartnerKind]): Future[Seq[Partner]]
-  def count(questionId: Option[QuestionId],
-            organisationId: Option[UserId],
-            partnerKind: Option[PartnerKind]): Future[Int]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    questionId: Option[QuestionId],
+    organisationId: Option[UserId],
+    partnerKind: Option[PartnerKind]
+  ): Future[Seq[Partner]]
+  def count(
+    questionId: Option[QuestionId],
+    organisationId: Option[UserId],
+    partnerKind: Option[PartnerKind]
+  ): Future[Int]
   def createPartner(request: CreatePartnerRequest): Future[Partner]
   def updatePartner(partnerId: PartnerId, request: UpdatePartnerRequest): Future[Option[Partner]]
   def deletePartner(partnerId: PartnerId): Future[Unit]
@@ -92,19 +96,23 @@ trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
       }
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      questionId: Option[QuestionId],
-                      organisationId: Option[UserId],
-                      partnerKind: Option[PartnerKind]): Future[Seq[Partner]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      questionId: Option[QuestionId],
+      organisationId: Option[UserId],
+      partnerKind: Option[PartnerKind]
+    ): Future[Seq[Partner]] = {
       persistentPartnerService.find(start, end, sort, order, questionId, organisationId, partnerKind)
     }
 
-    override def count(questionId: Option[QuestionId],
-                       organisationId: Option[UserId],
-                       partnerKind: Option[PartnerKind]): Future[Int] = {
+    override def count(
+      questionId: Option[QuestionId],
+      organisationId: Option[UserId],
+      partnerKind: Option[PartnerKind]
+    ): Future[Int] = {
       persistentPartnerService.count(questionId, organisationId, partnerKind)
     }
 

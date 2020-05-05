@@ -97,9 +97,11 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     }
   }
 
-  def getStateOrSendQualificationNotFound(voteKey: VoteKey,
-                                          qualificationKey: QualificationKey,
-                                          senderRef: ActorRef = sender())(work: Qualification => Unit): Unit = {
+  def getStateOrSendQualificationNotFound(
+    voteKey: VoteKey,
+    qualificationKey: QualificationKey,
+    senderRef: ActorRef = sender()
+  )(work: Qualification => Unit): Unit = {
     state.flatMap(_.votes.find(_.key == voteKey).flatMap(_.qualifications.find(_.key == qualificationKey))) match {
       case None                => senderRef ! QualificationNotFound
       case Some(qualification) => work(qualification)
@@ -332,9 +334,11 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     }
   }
 
-  private def checkQualification(voteKey: VoteKey,
-                                 commandVoteKey: VoteKey,
-                                 qualificationKey: QualificationKey): Boolean = {
+  private def checkQualification(
+    voteKey: VoteKey,
+    commandVoteKey: VoteKey,
+    qualificationKey: QualificationKey
+  ): Boolean = {
     voteKey match {
       case key if key != commandVoteKey => false
       case Agree =>
@@ -374,7 +378,11 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           }
         // User qualifies correctly
         case Some(vote) =>
-          val resolvedTrust = if (!vote.trust.isTrusted) { vote.trust } else { command.voteTrust }
+          val resolvedTrust = if (!vote.trust.isTrusted) {
+            vote.trust
+          } else {
+            command.voteTrust
+          }
           persistAndPublishEventAsync(
             ProposalQualified(
               id = proposalId,
@@ -637,8 +645,10 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     }
   }
 
-  private def mergeQualifications(proposalQualifications: Seq[Qualification],
-                                  commandQualification: Seq[UpdateQualificationRequest]): Seq[Qualification] = {
+  private def mergeQualifications(
+    proposalQualifications: Seq[Qualification],
+    commandQualification: Seq[UpdateQualificationRequest]
+  ): Seq[Qualification] = {
     val commandQualificationsAsMap: Map[QualificationKey, UpdateQualificationRequest] =
       commandQualification.map(qualification => qualification.key -> qualification).toMap
 
@@ -963,9 +973,8 @@ object ProposalActor {
             voteDecreased = voteDecreased.copy(countVerified = vote.countVerified - 1)
           }
 
-          voteDecreased.copy(
-            qualifications = voteDecreased.qualifications
-              .map(qualification => applyUnqualifVote(qualification, event.selectedQualifications, event.voteTrust))
+          voteDecreased.copy(qualifications = voteDecreased.qualifications
+            .map(qualification => applyUnqualifVote(qualification, event.selectedQualifications, event.voteTrust))
           )
         case vote => vote
       },
@@ -977,9 +986,11 @@ object ProposalActor {
     )
   }
 
-  def applyUnqualifVote(qualification: Qualification,
-                        selectedQualifications: Seq[QualificationKey],
-                        voteTrust: VoteTrust): Qualification = {
+  def applyUnqualifVote(
+    qualification: Qualification,
+    selectedQualifications: Seq[QualificationKey],
+    voteTrust: VoteTrust
+  ): Qualification = {
     if (selectedQualifications.contains(qualification.key)) {
       var qualificationDecreased = qualification.copy(count = qualification.count - 1)
       if (voteTrust.isTrusted) {
@@ -1024,8 +1035,8 @@ object ProposalActor {
   def applyProposalUnqualified(state: Proposal, event: ProposalUnqualified): Proposal = {
     state.copy(votes = state.votes.map {
       case vote if vote.key == event.voteKey =>
-        vote.copy(
-          qualifications = vote.qualifications.map(applyUnqualifVote(_, Seq(event.qualificationKey), event.voteTrust))
+        vote.copy(qualifications =
+          vote.qualifications.map(applyUnqualifVote(_, Seq(event.qualificationKey), event.voteTrust))
         )
       case vote => vote
     })

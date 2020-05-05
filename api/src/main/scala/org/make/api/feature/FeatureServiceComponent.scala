@@ -36,11 +36,13 @@ trait FeatureService extends ShortenedNames {
   def updateFeature(featureId: FeatureId, slug: String, name: String): Future[Option[Feature]]
   def deleteFeature(featureId: FeatureId): Future[Unit]
   def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]]
-  def find(start: Int = 0,
-           end: Option[Int] = None,
-           sort: Option[String] = None,
-           order: Option[String] = None,
-           slug: Option[String]): Future[Seq[Feature]]
+  def find(
+    start: Int = 0,
+    end: Option[Int] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    slug: Option[String]
+  ): Future[Seq[Feature]]
   def count(slug: Option[String]): Future[Int]
 }
 
@@ -83,11 +85,13 @@ trait DefaultFeatureServiceComponent extends FeatureServiceComponent with Shorte
       persistentFeatureService.findByFeatureIds(featureIds)
     }
 
-    override def find(start: Int = 0,
-                      end: Option[Int] = None,
-                      sort: Option[String] = None,
-                      order: Option[String] = None,
-                      slug: Option[String]): Future[Seq[Feature]] = {
+    override def find(
+      start: Int = 0,
+      end: Option[Int] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      slug: Option[String]
+    ): Future[Seq[Feature]] = {
 
       persistentFeatureService.find(start, end, sort, order, slug)
 

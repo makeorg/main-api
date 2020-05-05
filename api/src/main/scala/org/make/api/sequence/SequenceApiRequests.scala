@@ -33,9 +33,11 @@ import scala.annotation.meta.field
 
 // ToDo: handle translations
 @ApiModel
-final case class CreateSequenceRequest(@(ApiModelProperty @field)(example = "ma séquence") title: String,
-                                       operationId: Option[OperationId],
-                                       searchable: Boolean)
+final case class CreateSequenceRequest(
+  @(ApiModelProperty @field)(example = "ma séquence") title: String,
+  operationId: Option[OperationId],
+  searchable: Boolean
+)
 
 object CreateSequenceRequest {
   implicit val decoder: Decoder[CreateSequenceRequest] = deriveDecoder[CreateSequenceRequest]
@@ -67,15 +69,17 @@ object UpdateSequenceRequest {
 }
 
 @ApiModel
-final case class ExhaustiveSearchRequest(title: Option[String] = None,
-                                         slug: Option[String] = None,
-                                         context: Option[ContextFilterRequest] = None,
-                                         operationId: Option[OperationId] = None,
-                                         status: Option[SequenceStatus] = None,
-                                         searchable: Option[Boolean] = None,
-                                         sorts: Seq[SortRequest] = Seq.empty,
-                                         limit: Option[Int] = None,
-                                         skip: Option[Int] = None) {
+final case class ExhaustiveSearchRequest(
+  title: Option[String] = None,
+  slug: Option[String] = None,
+  context: Option[ContextFilterRequest] = None,
+  operationId: Option[OperationId] = None,
+  status: Option[SequenceStatus] = None,
+  searchable: Option[Boolean] = None,
+  sorts: Seq[SortRequest] = Seq.empty,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None
+) {
   def toSearchQuery: SearchQuery = {
     val filters: Option[SearchFilters] = {
       SearchFilters.parse(
@@ -95,10 +99,12 @@ object ExhaustiveSearchRequest {
   implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
 }
 
-final case class ContextFilterRequest(operation: Option[OperationId] = None,
-                                      source: Option[String] = None,
-                                      location: Option[String] = None,
-                                      question: Option[String] = None) {
+final case class ContextFilterRequest(
+  operation: Option[OperationId] = None,
+  source: Option[String] = None,
+  location: Option[String] = None,
+  question: Option[String] = None
+) {
   def toContext: ContextSearchFilter = {
     ContextSearchFilter(operation, source, location, question)
   }

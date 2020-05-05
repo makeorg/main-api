@@ -163,20 +163,24 @@ object ProposalSerializers extends SprayJsonFormatters {
     implicit val voteV6formatter: RootJsonFormat[VoteV6] =
       DefaultJsonProtocol.jsonFormat4(VoteV6.apply)
 
-    final case class QualificationV8(key: QualificationKey,
-                                     count: Int,
-                                     countVerified: Int,
-                                     countSequence: Int,
-                                     countSegment: Int)
+    final case class QualificationV8(
+      key: QualificationKey,
+      count: Int,
+      countVerified: Int,
+      countSequence: Int,
+      countSegment: Int
+    )
     implicit val qualificationV8formatter: RootJsonFormat[QualificationV8] =
       DefaultJsonProtocol.jsonFormat5(QualificationV8.apply)
 
-    final case class VoteV8(key: VoteKey,
-                            count: Int,
-                            countVerified: Int,
-                            countSequence: Int,
-                            countSegment: Int,
-                            qualifications: Seq[QualificationV8])
+    final case class VoteV8(
+      key: VoteKey,
+      count: Int,
+      countVerified: Int,
+      countSequence: Int,
+      countSegment: Int,
+      qualifications: Seq[QualificationV8]
+    )
 
     implicit val voteV8formatter: RootJsonFormat[VoteV8] =
       DefaultJsonProtocol.jsonFormat6(VoteV8.apply)
@@ -220,7 +224,7 @@ object ProposalSerializers extends SprayJsonFormatters {
                       countVerified = qualification.countVerified,
                       countSequence = qualification.countVerified,
                       countSegment = 0
-                  )
+                    )
                 )
               VoteV8(
                 key = vote.key,
@@ -266,20 +270,24 @@ object ProposalSerializers extends SprayJsonFormatters {
     implicit val voteV5Formatter: RootJsonFormat[VoteV5] =
       DefaultJsonProtocol.jsonFormat4(VoteV5.apply)
 
-    final case class QualificationV7(key: QualificationKey,
-                                     count: Int,
-                                     countVerified: Int,
-                                     countSequence: Int,
-                                     countSegment: Int)
+    final case class QualificationV7(
+      key: QualificationKey,
+      count: Int,
+      countVerified: Int,
+      countSequence: Int,
+      countSegment: Int
+    )
     implicit val qualificationV7formatter: RootJsonFormat[QualificationV7] =
       DefaultJsonProtocol.jsonFormat5(QualificationV7.apply)
 
-    final case class VoteV7(key: VoteKey,
-                            count: Int,
-                            countVerified: Int,
-                            countSequence: Int,
-                            countSegment: Int,
-                            qualifications: Seq[QualificationV7])
+    final case class VoteV7(
+      key: VoteKey,
+      count: Int,
+      countVerified: Int,
+      countSequence: Int,
+      countSegment: Int,
+      qualifications: Seq[QualificationV7]
+    )
 
     implicit val voteV7formatter: RootJsonFormat[VoteV7] =
       DefaultJsonProtocol.jsonFormat6(VoteV7.apply)
@@ -322,7 +330,7 @@ object ProposalSerializers extends SprayJsonFormatters {
                       countVerified = qualification.countVerified,
                       countSequence = qualification.count,
                       countSegment = 0
-                  )
+                    )
                 )
               VoteV7(
                 key = vote.key,

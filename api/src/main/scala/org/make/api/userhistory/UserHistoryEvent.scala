@@ -142,23 +142,27 @@ object SearchSequenceParameters {
     DefaultJsonProtocol.jsonFormat1(SearchSequenceParameters.apply)
 }
 
-final case class StartSequenceParameters(slug: Option[String],
-                                         questionId: Option[QuestionId],
-                                         sequenceId: Option[SequenceId],
-                                         includedProposals: Seq[ProposalId] = Seq.empty)
+final case class StartSequenceParameters(
+  slug: Option[String],
+  questionId: Option[QuestionId],
+  sequenceId: Option[SequenceId],
+  includedProposals: Seq[ProposalId] = Seq.empty
+)
 object StartSequenceParameters {
   implicit val searchParametersFormatted: RootJsonFormat[StartSequenceParameters] =
     DefaultJsonProtocol.jsonFormat4(StartSequenceParameters.apply)
 }
 
-final case class UserRegistered(email: String,
-                                dateOfBirth: Option[LocalDate],
-                                firstName: Option[String],
-                                lastName: Option[String],
-                                profession: Option[String],
-                                postalCode: Option[String],
-                                country: Country = Country("FR"),
-                                language: Language = Language("fr"))
+final case class UserRegistered(
+  email: String,
+  dateOfBirth: Option[LocalDate],
+  firstName: Option[String],
+  lastName: Option[String],
+  profession: Option[String],
+  postalCode: Option[String],
+  country: Country = Country("FR"),
+  language: Language = Language("fr")
+)
 
 object UserRegistered {
   implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =
@@ -206,10 +210,11 @@ object UserUnqualification {
 
 }
 
-final case class LogUserSearchProposalsEvent(userId: UserId,
-                                             requestContext: RequestContext,
-                                             action: UserAction[UserSearchParameters])
-    extends UserHistoryEvent[UserSearchParameters] {
+final case class LogUserSearchProposalsEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserSearchParameters]
+) extends UserHistoryEvent[UserSearchParameters] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -222,10 +227,11 @@ object LogUserSearchProposalsEvent {
 
 }
 
-final case class LogGetProposalDuplicatesEvent(userId: UserId,
-                                               requestContext: RequestContext,
-                                               action: UserAction[ProposalId])
-    extends UserHistoryEvent[ProposalId] {
+final case class LogGetProposalDuplicatesEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[ProposalId]
+) extends UserHistoryEvent[ProposalId] {
   override val protagonist: Protagonist = Moderator
 }
 
@@ -236,10 +242,11 @@ object LogGetProposalDuplicatesEvent {
     DefaultJsonProtocol.jsonFormat(LogGetProposalDuplicatesEvent.apply, "userId", "context", "action")
 }
 
-final case class LogAcceptProposalEvent(userId: UserId,
-                                        requestContext: RequestContext,
-                                        action: UserAction[ProposalAccepted])
-    extends UserHistoryEvent[ProposalAccepted] {
+final case class LogAcceptProposalEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[ProposalAccepted]
+) extends UserHistoryEvent[ProposalAccepted] {
   override val protagonist: Protagonist = Moderator
 }
 
@@ -251,10 +258,11 @@ object LogAcceptProposalEvent {
 
 }
 
-final case class LogRefuseProposalEvent(userId: UserId,
-                                        requestContext: RequestContext,
-                                        action: UserAction[ProposalRefused])
-    extends UserHistoryEvent[ProposalRefused] {
+final case class LogRefuseProposalEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[ProposalRefused]
+) extends UserHistoryEvent[ProposalRefused] {
   override val protagonist: Protagonist = Moderator
 }
 
@@ -266,10 +274,11 @@ object LogRefuseProposalEvent {
 
 }
 
-final case class LogPostponeProposalEvent(userId: UserId,
-                                          requestContext: RequestContext,
-                                          action: UserAction[ProposalPostponed])
-    extends UserHistoryEvent[ProposalPostponed] {
+final case class LogPostponeProposalEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[ProposalPostponed]
+) extends UserHistoryEvent[ProposalPostponed] {
   override val protagonist: Protagonist = Moderator
 }
 
@@ -280,11 +289,12 @@ object LogPostponeProposalEvent {
     DefaultJsonProtocol.jsonFormat(LogPostponeProposalEvent.apply, "userId", "context", "action")
 }
 
-final case class LogLockProposalEvent(userId: UserId,
-                                      moderatorName: Option[String],
-                                      requestContext: RequestContext,
-                                      action: UserAction[ProposalLocked])
-    extends UserHistoryEvent[ProposalLocked] {
+final case class LogLockProposalEvent(
+  userId: UserId,
+  moderatorName: Option[String],
+  requestContext: RequestContext,
+  action: UserAction[ProposalLocked]
+) extends UserHistoryEvent[ProposalLocked] {
   override val protagonist: Protagonist = Moderator
 }
 
@@ -342,10 +352,11 @@ object LogUserUnvoteEvent {
 
 }
 
-final case class LogUserQualificationEvent(userId: UserId,
-                                           requestContext: RequestContext,
-                                           action: UserAction[UserQualification])
-    extends TransactionalUserHistoryEvent[UserQualification] {
+final case class LogUserQualificationEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserQualification]
+) extends TransactionalUserHistoryEvent[UserQualification] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -357,10 +368,11 @@ object LogUserQualificationEvent {
 
 }
 
-final case class LogUserUnqualificationEvent(userId: UserId,
-                                             requestContext: RequestContext,
-                                             action: UserAction[UserUnqualification])
-    extends TransactionalUserHistoryEvent[UserUnqualification] {
+final case class LogUserUnqualificationEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserUnqualification]
+) extends TransactionalUserHistoryEvent[UserUnqualification] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -372,17 +384,19 @@ object LogUserUnqualificationEvent {
 
 }
 
-final case class LogRegisterCitizenEvent(userId: UserId,
-                                         requestContext: RequestContext,
-                                         action: UserAction[UserRegistered])
-    extends UserHistoryEvent[UserRegistered] {
+final case class LogRegisterCitizenEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserRegistered]
+) extends UserHistoryEvent[UserRegistered] {
   override val protagonist: Protagonist = Citizen
 }
 
-final case class LogUserCreateSequenceEvent(userId: UserId,
-                                            requestContext: RequestContext,
-                                            action: UserAction[SequenceCreated])
-    extends UserHistoryEvent[SequenceCreated] {
+final case class LogUserCreateSequenceEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[SequenceCreated]
+) extends UserHistoryEvent[SequenceCreated] {
   override val protagonist: Protagonist = Moderator
 }
 
@@ -393,10 +407,11 @@ object LogUserCreateSequenceEvent {
     DefaultJsonProtocol.jsonFormat(LogUserCreateSequenceEvent.apply, "userId", "context", "action")
 }
 
-final case class LogUserAddProposalsSequenceEvent(userId: UserId,
-                                                  requestContext: RequestContext,
-                                                  action: UserAction[SequenceProposalsAdded])
-    extends UserHistoryEvent[SequenceProposalsAdded] {
+final case class LogUserAddProposalsSequenceEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[SequenceProposalsAdded]
+) extends UserHistoryEvent[SequenceProposalsAdded] {
   override val protagonist: Protagonist = Moderator
 }
 
@@ -407,10 +422,11 @@ object LogUserAddProposalsSequenceEvent {
     DefaultJsonProtocol.jsonFormat(LogUserAddProposalsSequenceEvent.apply, "userId", "context", "action")
 }
 
-final case class LogUserRemoveProposalsSequenceEvent(userId: UserId,
-                                                     requestContext: RequestContext,
-                                                     action: UserAction[SequenceProposalsRemoved])
-    extends UserHistoryEvent[SequenceProposalsRemoved] {
+final case class LogUserRemoveProposalsSequenceEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[SequenceProposalsRemoved]
+) extends UserHistoryEvent[SequenceProposalsRemoved] {
   override val protagonist: Protagonist = Moderator
 }
 object LogUserRemoveProposalsSequenceEvent {
@@ -420,10 +436,11 @@ object LogUserRemoveProposalsSequenceEvent {
     DefaultJsonProtocol.jsonFormat(LogUserRemoveProposalsSequenceEvent.apply, "userId", "context", "action")
 }
 
-final case class LogUserUpdateSequenceEvent(userId: UserId,
-                                            requestContext: RequestContext,
-                                            action: UserAction[SequenceUpdated])
-    extends UserHistoryEvent[SequenceUpdated] {
+final case class LogUserUpdateSequenceEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[SequenceUpdated]
+) extends UserHistoryEvent[SequenceUpdated] {
   override val protagonist: Protagonist = Moderator
 }
 object LogUserUpdateSequenceEvent {
@@ -433,10 +450,11 @@ object LogUserUpdateSequenceEvent {
     DefaultJsonProtocol.jsonFormat(LogUserUpdateSequenceEvent.apply, "userId", "context", "action")
 }
 
-final case class LogUserSearchSequencesEvent(userId: UserId,
-                                             requestContext: RequestContext,
-                                             action: UserAction[SearchSequenceParameters])
-    extends UserHistoryEvent[SearchSequenceParameters] {
+final case class LogUserSearchSequencesEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[SearchSequenceParameters]
+) extends UserHistoryEvent[SearchSequenceParameters] {
   override val protagonist: Protagonist = Moderator
 }
 object LogUserSearchSequencesEvent {
@@ -447,10 +465,11 @@ object LogUserSearchSequencesEvent {
 
 }
 
-final case class LogUserStartSequenceEvent(userId: UserId,
-                                           requestContext: RequestContext,
-                                           action: UserAction[StartSequenceParameters])
-    extends UserHistoryEvent[StartSequenceParameters] {
+final case class LogUserStartSequenceEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[StartSequenceParameters]
+) extends UserHistoryEvent[StartSequenceParameters] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -462,11 +481,13 @@ object LogUserStartSequenceEvent {
 
 }
 
-final case class SequenceProposalsAdded(id: SequenceId,
-                                        proposalIds: Seq[ProposalId],
-                                        requestContext: RequestContext,
-                                        eventDate: ZonedDateTime,
-                                        userId: UserId) {
+final case class SequenceProposalsAdded(
+  id: SequenceId,
+  proposalIds: Seq[ProposalId],
+  requestContext: RequestContext,
+  eventDate: ZonedDateTime,
+  userId: UserId
+) {
 
   def version(): Int = MakeSerializable.V1
 }
@@ -478,11 +499,13 @@ object SequenceProposalsAdded {
     DefaultJsonProtocol.jsonFormat5(SequenceProposalsAdded.apply)
 }
 
-final case class SequenceProposalsRemoved(id: SequenceId,
-                                          proposalIds: Seq[ProposalId],
-                                          requestContext: RequestContext,
-                                          eventDate: ZonedDateTime,
-                                          userId: UserId) {
+final case class SequenceProposalsRemoved(
+  id: SequenceId,
+  proposalIds: Seq[ProposalId],
+  requestContext: RequestContext,
+  eventDate: ZonedDateTime,
+  userId: UserId
+) {
 
   def version(): Int = MakeSerializable.V1
 }
@@ -495,15 +518,17 @@ object SequenceProposalsRemoved {
 
 }
 
-final case class SequenceCreated(id: SequenceId,
-                                 slug: String,
-                                 requestContext: RequestContext,
-                                 userId: UserId,
-                                 eventDate: ZonedDateTime,
-                                 title: String,
-                                 themeIds: Seq[ThemeId] = Seq.empty,
-                                 operationId: Option[OperationId] = None,
-                                 searchable: Boolean) {
+final case class SequenceCreated(
+  id: SequenceId,
+  slug: String,
+  requestContext: RequestContext,
+  userId: UserId,
+  eventDate: ZonedDateTime,
+  title: String,
+  themeIds: Seq[ThemeId] = Seq.empty,
+  operationId: Option[OperationId] = None,
+  searchable: Boolean
+) {
   def version(): Int = MakeSerializable.V2
 }
 
@@ -514,15 +539,17 @@ object SequenceCreated {
     DefaultJsonProtocol.jsonFormat9(SequenceCreated.apply)
 }
 
-final case class SequenceUpdated(id: SequenceId,
-                                 userId: UserId,
-                                 eventDate: ZonedDateTime,
-                                 requestContext: RequestContext,
-                                 title: Option[String],
-                                 status: Option[SequenceStatus],
-                                 @Deprecated operation: Option[String] = None,
-                                 operationId: Option[OperationId] = None,
-                                 themeIds: Seq[ThemeId] = Seq.empty) {
+final case class SequenceUpdated(
+  id: SequenceId,
+  userId: UserId,
+  eventDate: ZonedDateTime,
+  requestContext: RequestContext,
+  title: Option[String],
+  status: Option[SequenceStatus],
+  @Deprecated operation: Option[String] = None,
+  operationId: Option[OperationId] = None,
+  themeIds: Seq[ThemeId] = Seq.empty
+) {
   def version(): Int = MakeSerializable.V2
 }
 
@@ -533,10 +560,11 @@ object SequenceUpdated {
     DefaultJsonProtocol.jsonFormat9(SequenceUpdated.apply)
 }
 
-final case class LogUserAnonymizedEvent(userId: UserId,
-                                        requestContext: RequestContext,
-                                        action: UserAction[UserAnonymized])
-    extends UserHistoryEvent[UserAnonymized] {
+final case class LogUserAnonymizedEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserAnonymized]
+) extends UserHistoryEvent[UserAnonymized] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -559,10 +587,11 @@ object UserAnonymized {
     DefaultJsonProtocol.jsonFormat2(UserAnonymized.apply)
 }
 
-final case class LogUserOptInNewsletterEvent(userId: UserId,
-                                             requestContext: RequestContext,
-                                             action: UserAction[UserUpdatedOptIn])
-    extends UserHistoryEvent[UserUpdatedOptIn] {
+final case class LogUserOptInNewsletterEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserUpdatedOptIn]
+) extends UserHistoryEvent[UserUpdatedOptIn] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -574,10 +603,11 @@ object LogUserOptInNewsletterEvent {
 
 }
 
-final case class LogUserOptOutNewsletterEvent(userId: UserId,
-                                              requestContext: RequestContext,
-                                              action: UserAction[UserUpdatedOptIn])
-    extends UserHistoryEvent[UserUpdatedOptIn] {
+final case class LogUserOptOutNewsletterEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserUpdatedOptIn]
+) extends UserHistoryEvent[UserUpdatedOptIn] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -600,10 +630,11 @@ object UserUpdatedOptIn {
     DefaultJsonProtocol.jsonFormat1(UserUpdatedOptIn.apply)
 }
 
-final case class LogUserConnectedEvent(userId: UserId,
-                                       requestContext: RequestContext,
-                                       action: UserAction[UserHasConnected])
-    extends UserHistoryEvent[UserHasConnected] {
+final case class LogUserConnectedEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UserHasConnected]
+) extends UserHistoryEvent[UserHasConnected] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -626,10 +657,11 @@ case object UserHasConnected {
     DefaultJsonProtocol.jsonFormat0(UserHasConnected.apply _)
 }
 
-final case class LogUserUploadedAvatarEvent(userId: UserId,
-                                            requestContext: RequestContext,
-                                            action: UserAction[UploadedAvatar])
-    extends UserHistoryEvent[UploadedAvatar] {
+final case class LogUserUploadedAvatarEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[UploadedAvatar]
+) extends UserHistoryEvent[UploadedAvatar] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -652,10 +684,11 @@ case object UploadedAvatar {
     DefaultJsonProtocol.jsonFormat1(UploadedAvatar.apply)
 }
 
-final case class LogOrganisationEmailChangedEvent(userId: UserId,
-                                                  requestContext: RequestContext,
-                                                  action: UserAction[OrganisationEmailChanged])
-    extends UserHistoryEvent[OrganisationEmailChanged] {
+final case class LogOrganisationEmailChangedEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[OrganisationEmailChanged]
+) extends UserHistoryEvent[OrganisationEmailChanged] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -667,10 +700,11 @@ object LogOrganisationEmailChangedEvent {
 
 }
 
-final case class LogPersonalityEmailChangedEvent(userId: UserId,
-                                                 requestContext: RequestContext,
-                                                 action: UserAction[PersonalityEmailChanged])
-    extends UserHistoryEvent[PersonalityEmailChanged] {
+final case class LogPersonalityEmailChangedEvent(
+  userId: UserId,
+  requestContext: RequestContext,
+  action: UserAction[PersonalityEmailChanged]
+) extends UserHistoryEvent[PersonalityEmailChanged] {
   override val protagonist: Protagonist = Citizen
 }
 

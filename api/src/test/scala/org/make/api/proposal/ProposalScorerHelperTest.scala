@@ -35,18 +35,20 @@ import scala.util.Random
 
 class ProposalScorerHelperTest extends MakeUnitTest {
 
-  def createVotes(nbVoteAgree: Int = 0,
-                  nbVoteDisagree: Int = 0,
-                  nbVoteNeutral: Int = 0,
-                  nbQualificationLikeIt: Int = 0,
-                  nbQualificationDoable: Int = 0,
-                  nbQualificationPlatitudeAgree: Int = 0,
-                  nbQualificationNoWay: Int = 0,
-                  nbQualificationImpossible: Int = 0,
-                  nbQualificationPlatitudeDisagree: Int = 0,
-                  nbQualificationDoNotUnderstand: Int = 0,
-                  nbQualificationNoOpinion: Int = 0,
-                  nbQualificationDoNotCare: Int = 0): Seq[Vote] = {
+  def createVotes(
+    nbVoteAgree: Int = 0,
+    nbVoteDisagree: Int = 0,
+    nbVoteNeutral: Int = 0,
+    nbQualificationLikeIt: Int = 0,
+    nbQualificationDoable: Int = 0,
+    nbQualificationPlatitudeAgree: Int = 0,
+    nbQualificationNoWay: Int = 0,
+    nbQualificationImpossible: Int = 0,
+    nbQualificationPlatitudeDisagree: Int = 0,
+    nbQualificationDoNotUnderstand: Int = 0,
+    nbQualificationNoOpinion: Int = 0,
+    nbQualificationDoNotCare: Int = 0
+  ): Seq[Vote] = {
     Seq(
       Vote(
         key = VoteKey.Agree,
@@ -296,23 +298,27 @@ class ProposalScorerHelperTest extends MakeUnitTest {
   }
 
   feature("score counts") {
-    def votes(agree: Int,
-              disagree: Int,
-              neutral: Int,
-              qualifsAgree: Seq[Qualification] = Seq.empty,
-              qualifsNeutral: Seq[Qualification] = Seq.empty,
-              qualifsDisagree: Seq[Qualification] = Seq.empty): Seq[Vote] =
+    def votes(
+      agree: Int,
+      disagree: Int,
+      neutral: Int,
+      qualifsAgree: Seq[Qualification] = Seq.empty,
+      qualifsNeutral: Seq[Qualification] = Seq.empty,
+      qualifsDisagree: Seq[Qualification] = Seq.empty
+    ): Seq[Vote] =
       Seq(
         Vote(Agree, agree, agree, agree, 0, qualifsAgree),
         Vote(Neutral, neutral, neutral, neutral, 0, qualifsNeutral),
         Vote(Disagree, disagree, disagree, disagree, 0, qualifsDisagree)
       )
-    def qualifications(platitudeAgree: Int,
-                       platitudeDisagree: Int,
-                       likeIt: Int,
-                       noWay: Int,
-                       doable: Int,
-                       impossible: Int): Seq[Qualification] =
+    def qualifications(
+      platitudeAgree: Int,
+      platitudeDisagree: Int,
+      likeIt: Int,
+      noWay: Int,
+      doable: Int,
+      impossible: Int
+    ): Seq[Qualification] =
       Seq(
         Qualification(PlatitudeAgree, 0, 0, platitudeAgree, 0),
         Qualification(PlatitudeDisagree, 0, 0, platitudeDisagree, 0),

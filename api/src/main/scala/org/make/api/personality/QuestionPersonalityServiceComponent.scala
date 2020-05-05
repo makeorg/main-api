@@ -45,19 +45,25 @@ trait QuestionPersonalityServiceComponent {
 
 trait QuestionPersonalityService extends ShortenedNames {
   def getPersonality(personalityId: PersonalityId): Future[Option[Personality]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           userId: Option[UserId],
-           questionId: Option[QuestionId],
-           personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]]
-  def count(userId: Option[UserId],
-            questionId: Option[QuestionId],
-            personalityRoleId: Option[PersonalityRoleId]): Future[Int]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    userId: Option[UserId],
+    questionId: Option[QuestionId],
+    personalityRoleId: Option[PersonalityRoleId]
+  ): Future[Seq[Personality]]
+  def count(
+    userId: Option[UserId],
+    questionId: Option[QuestionId],
+    personalityRoleId: Option[PersonalityRoleId]
+  ): Future[Int]
   def createPersonality(request: CreateQuestionPersonalityRequest): Future[Personality]
-  def updatePersonality(personalityId: PersonalityId,
-                        request: UpdateQuestionPersonalityRequest): Future[Option[Personality]]
+  def updatePersonality(
+    personalityId: PersonalityId,
+    request: UpdateQuestionPersonalityRequest
+  ): Future[Option[Personality]]
   def deletePersonality(personalityId: PersonalityId): Future[Unit]
   def getPersonalitiesOpinionsByQuestions(personalities: Seq[Personality]): Future[Seq[PersonalityOpinionResponse]]
 }
@@ -90,8 +96,10 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
       persistentQuestionPersonalityService.persist(personality)
     }
 
-    override def updatePersonality(personalityId: PersonalityId,
-                                   request: UpdateQuestionPersonalityRequest): Future[Option[Personality]] = {
+    override def updatePersonality(
+      personalityId: PersonalityId,
+      request: UpdateQuestionPersonalityRequest
+    ): Future[Option[Personality]] = {
       persistentQuestionPersonalityService.getById(personalityId).flatMap {
         case Some(personality) =>
           persistentQuestionPersonalityService
@@ -101,19 +109,23 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
       }
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      userId: Option[UserId],
-                      questionId: Option[QuestionId],
-                      personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      userId: Option[UserId],
+      questionId: Option[QuestionId],
+      personalityRoleId: Option[PersonalityRoleId]
+    ): Future[Seq[Personality]] = {
       persistentQuestionPersonalityService.find(start, end, sort, order, userId, questionId, personalityRoleId)
     }
 
-    override def count(userId: Option[UserId],
-                       questionId: Option[QuestionId],
-                       personalityRoleId: Option[PersonalityRoleId]): Future[Int] = {
+    override def count(
+      userId: Option[UserId],
+      questionId: Option[QuestionId],
+      personalityRoleId: Option[PersonalityRoleId]
+    ): Future[Int] = {
       persistentQuestionPersonalityService.count(userId, questionId, personalityRoleId)
     }
 
@@ -192,15 +204,14 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
           ideaIds = topIdeas.map(_.ideaId),
           MakeRandom.random.nextInt()
         )
-      } yield
-        opinionsResponse(
-          topIdeas,
-          questions,
-          opOfQuestionsResult.results,
-          topIdeaComments,
-          commentByTopIdea,
-          avatarsAndProposalsCountByIdea
-        )
+      } yield opinionsResponse(
+        topIdeas,
+        questions,
+        opOfQuestionsResult.results,
+        topIdeaComments,
+        commentByTopIdea,
+        avatarsAndProposalsCountByIdea
+      )
 
     }
 

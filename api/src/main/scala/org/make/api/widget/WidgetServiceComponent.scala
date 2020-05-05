@@ -37,11 +37,13 @@ trait WidgetServiceComponent {
 }
 
 trait WidgetService {
-  def startNewWidgetSequence(maybeUserId: Option[UserId],
-                             questionId: QuestionId,
-                             tagsIds: Option[Seq[TagId]],
-                             limit: Option[Int],
-                             requestContext: RequestContext): Future[ProposalsResultSeededResponse]
+  def startNewWidgetSequence(
+    maybeUserId: Option[UserId],
+    questionId: QuestionId,
+    tagsIds: Option[Seq[TagId]],
+    limit: Option[Int],
+    requestContext: RequestContext
+  ): Future[ProposalsResultSeededResponse]
 }
 
 trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
@@ -59,11 +61,13 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
 
   class DefaultWidgetService extends WidgetService {
 
-    override def startNewWidgetSequence(maybeUserId: Option[UserId],
-                                        questionId: QuestionId,
-                                        tagsIds: Option[Seq[TagId]],
-                                        limit: Option[Int],
-                                        requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
+    override def startNewWidgetSequence(
+      maybeUserId: Option[UserId],
+      questionId: QuestionId,
+      tagsIds: Option[Seq[TagId]],
+      limit: Option[Int],
+      requestContext: RequestContext
+    ): Future[ProposalsResultSeededResponse] = {
 
       for {
         selectedProposals <- sequenceService.startNewSequence(
@@ -73,12 +77,11 @@ trait DefaultWidgetServiceComponent extends WidgetServiceComponent {
           tagsIds = tagsIds,
           requestContext = requestContext
         )
-      } yield
-        ProposalsResultSeededResponse(
-          selectedProposals.map(_.proposals.size).getOrElse(0).toLong,
-          selectedProposals.map(_.proposals).getOrElse(Seq.empty),
-          None
-        )
+      } yield ProposalsResultSeededResponse(
+        selectedProposals.map(_.proposals.size).getOrElse(0).toLong,
+        selectedProposals.map(_.proposals).getOrElse(Seq.empty),
+        None
+      )
 
     }
   }

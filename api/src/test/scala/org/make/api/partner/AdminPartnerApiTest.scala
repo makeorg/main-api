@@ -49,7 +49,7 @@ class AdminPartnerApiTest
     organisationId = None,
     partnerKind = PartnerKind.Founder,
     questionId = QuestionId("question-id"),
-    weight = 20F
+    weight = 20f
   )
 
   feature("post partner") {

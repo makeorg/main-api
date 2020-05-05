@@ -42,10 +42,12 @@ trait PersistentTopIdeaCommentService {
   def persist(topIdeaComment: TopIdeaComment): Future[TopIdeaComment]
   def modify(topIdeaComment: TopIdeaComment): Future[TopIdeaComment]
   def remove(topIdeaCommentId: TopIdeaCommentId): Future[Unit]
-  def search(start: Int,
-             end: Option[Int],
-             topIdeaIds: Option[Seq[TopIdeaId]],
-             personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]]
+  def search(
+    start: Int,
+    end: Option[Int],
+    topIdeaIds: Option[Seq[TopIdeaId]],
+    personalityIds: Option[Seq[UserId]]
+  ): Future[Seq[TopIdeaComment]]
   def count(topIdeaIds: Option[Seq[TopIdeaId]], personalityIds: Option[Seq[UserId]]): Future[Int]
   def countForAll(topIdeaIds: Seq[TopIdeaId]): Future[Map[String, Int]]
 }
@@ -132,10 +134,12 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
       })
     }
 
-    override def search(start: Int,
-                        end: Option[Int],
-                        topIdeaIds: Option[Seq[TopIdeaId]],
-                        personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]] = {
+    override def search(
+      start: Int,
+      end: Option[Int],
+      topIdeaIds: Option[Seq[TopIdeaId]],
+      personalityIds: Option[Seq[UserId]]
+    ): Future[Seq[TopIdeaComment]] = {
       implicit val context: EC = readExecutionContext
 
       val futurePersistentTopIdeaComments = Future(NamedDB("READ").retryableTx { implicit session =>
@@ -196,16 +200,18 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
 
 object DefaultPersistentTopIdeaCommentServiceComponent {
 
-  case class PersistentTopIdeaComment(id: String,
-                                      topIdeaId: String,
-                                      personalityId: String,
-                                      comment1: Option[String],
-                                      comment2: Option[String],
-                                      comment3: Option[String],
-                                      vote: String,
-                                      qualification: Option[String],
-                                      createdAt: Option[ZonedDateTime],
-                                      updatedAt: Option[ZonedDateTime]) {
+  case class PersistentTopIdeaComment(
+    id: String,
+    topIdeaId: String,
+    personalityId: String,
+    comment1: Option[String],
+    comment2: Option[String],
+    comment3: Option[String],
+    vote: String,
+    qualification: Option[String],
+    createdAt: Option[ZonedDateTime],
+    updatedAt: Option[ZonedDateTime]
+  ) {
     def toTopIdeaComment: TopIdeaComment =
       TopIdeaComment(
         topIdeaCommentId = TopIdeaCommentId(id),

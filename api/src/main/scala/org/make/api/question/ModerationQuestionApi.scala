@@ -185,12 +185,14 @@ trait ModerationQuestionComponent {
   def moderationQuestionApi: ModerationQuestionApi
 }
 
-final case class AuthorRequest(@(ApiModelProperty @field)(dataType = "integer", example = "23")
-                               age: Option[Int],
-                               firstName: String,
-                               lastName: Option[String],
-                               postalCode: Option[String],
-                               profession: Option[String]) {
+final case class AuthorRequest(
+  @(ApiModelProperty @field)(dataType = "integer", example = "23")
+  age: Option[Int],
+  firstName: String,
+  lastName: Option[String],
+  postalCode: Option[String],
+  profession: Option[String]
+) {
   validate(
     validateAge("age", age.map(DateHelper.computeBirthDate)),
     validateUserInput("firstName", firstName, None),
@@ -206,9 +208,11 @@ object AuthorRequest {
   implicit val decoder: Decoder[AuthorRequest] = deriveDecoder[AuthorRequest]
 }
 
-final case class CreateInitialProposalRequest(content: String,
-                                              author: AuthorRequest,
-                                              @(ApiModelProperty @field)(dataType = "list[string]") tags: Seq[TagId]) {
+final case class CreateInitialProposalRequest(
+  content: String,
+  author: AuthorRequest,
+  @(ApiModelProperty @field)(dataType = "list[string]") tags: Seq[TagId]
+) {
   private val maxProposalLength = BusinessConfig.defaultProposalMaxLength
   private val minProposalLength = FrontConfiguration.defaultProposalMinLength
   validate(
@@ -404,12 +408,14 @@ trait DefaultModerationQuestionComponent
   }
 }
 
-final case class CreateQuestionRequest(@(ApiModelProperty @field)(dataType = "string", example = "FR")
-                                       country: Country,
-                                       @(ApiModelProperty @field)(dataType = "string", example = "fr")
-                                       language: Language,
-                                       question: String,
-                                       slug: String) {
+final case class CreateQuestionRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  question: String,
+  slug: String
+) {
   validate(validateUserInput("question", question, None), requireValidSlug("slug", Some(slug), None))
 }
 

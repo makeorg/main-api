@@ -224,11 +224,13 @@ trait DefaultOrganisationApiComponent
                 "language".as[Language].?
               )
             ) {
-              (organisationIds: Option[Seq[UserId]],
-               organisationName: Option[String],
-               slug: Option[String],
-               country: Option[Country],
-               language: Option[Language]) =>
+              (
+                organisationIds: Option[Seq[UserId]],
+                organisationName: Option[String],
+                slug: Option[String],
+                country: Option[Country],
+                language: Option[Language]
+              ) =>
                 provideAsync(organisationService.search(organisationName, slug, organisationIds, country, language)) {
                   results =>
                     complete(OrganisationsSearchResultResponse.fromOrganisationSearchResult(results))
@@ -298,12 +300,14 @@ trait DefaultOrganisationApiComponent
                     "skip".as[Int].?
                   )
                 ) {
-                  (votes: Option[Seq[VoteKey]],
-                   qualifications: Option[Seq[QualificationKey]],
-                   sort: Option[String],
-                   order: Option[SortOrder],
-                   limit: Option[Int],
-                   skip: Option[Int]) =>
+                  (
+                    votes: Option[Seq[VoteKey]],
+                    qualifications: Option[Seq[QualificationKey]],
+                    sort: Option[String],
+                    order: Option[SortOrder],
+                    limit: Option[Int],
+                    skip: Option[Int]
+                  ) =>
                     val defaultSort = Some("createdAt")
                     val defaultOrder = Some(Desc)
                     onSuccess(

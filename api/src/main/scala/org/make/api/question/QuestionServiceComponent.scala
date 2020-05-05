@@ -44,43 +44,57 @@ trait QuestionService {
   def getQuestion(questionId: QuestionId): Future[Option[Question]]
   def getQuestions(questionIds: Seq[QuestionId]): Future[Seq[Question]]
   def getQuestionByQuestionIdValueOrSlug(questionIdValueOrSlug: String): Future[Option[Question]]
-  def findQuestion(maybeOperationId: Option[OperationId],
-                   country: Country,
-                   language: Language): Future[Option[Question]]
+  def findQuestion(
+    maybeOperationId: Option[OperationId],
+    country: Country,
+    language: Language
+  ): Future[Option[Question]]
   def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]]
   def countQuestion(request: SearchQuestionRequest): Future[Int]
-  def createQuestion(country: Country,
-                     language: Language,
-                     question: String,
-                     shortTitle: Option[String],
-                     slug: String): Future[Question]
-  def getQuestionPersonalities(start: Int,
-                               end: Option[Int],
-                               questionId: QuestionId,
-                               personalityRoleId: Option[PersonalityRoleId]): Future[Seq[QuestionPersonalityResponse]]
-  def getPartners(questionId: QuestionId,
-                  organisationIds: Seq[UserId],
-                  sortAlgorithm: Option[OrganisationSortAlgorithm],
-                  limit: Option[Int],
-                  skip: Option[Int]): Future[OrganisationSearchResult]
-  def getTopIdeas(start: Int,
-                  end: Option[Int],
-                  seed: Option[Int],
-                  questionId: QuestionId): Future[QuestionTopIdeasResponseWithSeed]
-  def getTopIdea(topIdeaId: TopIdeaId,
-                 questionId: QuestionId,
-                 seed: Option[Int]): Future[Option[QuestionTopIdeaResultWithSeed]]
+  def createQuestion(
+    country: Country,
+    language: Language,
+    question: String,
+    shortTitle: Option[String],
+    slug: String
+  ): Future[Question]
+  def getQuestionPersonalities(
+    start: Int,
+    end: Option[Int],
+    questionId: QuestionId,
+    personalityRoleId: Option[PersonalityRoleId]
+  ): Future[Seq[QuestionPersonalityResponse]]
+  def getPartners(
+    questionId: QuestionId,
+    organisationIds: Seq[UserId],
+    sortAlgorithm: Option[OrganisationSortAlgorithm],
+    limit: Option[Int],
+    skip: Option[Int]
+  ): Future[OrganisationSearchResult]
+  def getTopIdeas(
+    start: Int,
+    end: Option[Int],
+    seed: Option[Int],
+    questionId: QuestionId
+  ): Future[QuestionTopIdeasResponseWithSeed]
+  def getTopIdea(
+    topIdeaId: TopIdeaId,
+    questionId: QuestionId,
+    seed: Option[Int]
+  ): Future[Option[QuestionTopIdeaResultWithSeed]]
 }
 
-case class SearchQuestionRequest(maybeQuestionIds: Option[Seq[QuestionId]] = None,
-                                 maybeOperationIds: Option[Seq[OperationId]] = None,
-                                 country: Option[Country] = None,
-                                 language: Option[Language] = None,
-                                 maybeSlug: Option[String] = None,
-                                 skip: Option[Int] = None,
-                                 limit: Option[Int] = None,
-                                 sort: Option[String] = None,
-                                 order: Option[String] = None)
+case class SearchQuestionRequest(
+  maybeQuestionIds: Option[Seq[QuestionId]] = None,
+  maybeOperationIds: Option[Seq[OperationId]] = None,
+  country: Option[Country] = None,
+  language: Option[Language] = None,
+  maybeSlug: Option[String] = None,
+  skip: Option[Int] = None,
+  limit: Option[Int] = None,
+  sort: Option[String] = None,
+  order: Option[String] = None
+)
 
 trait QuestionServiceComponent {
   def questionService: QuestionService
@@ -114,9 +128,11 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       persistentQuestionService.getById(questionId)
     }
 
-    override def findQuestion(maybeOperationId: Option[OperationId],
-                              country: Country,
-                              language: Language): Future[Option[Question]] = {
+    override def findQuestion(
+      maybeOperationId: Option[OperationId],
+      country: Country,
+      language: Language
+    ): Future[Option[Question]] = {
 
       maybeOperationId match {
         case None =>
@@ -147,11 +163,13 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       persistentQuestionService.count(request)
     }
 
-    override def createQuestion(country: Country,
-                                language: Language,
-                                question: String,
-                                shortTitle: Option[String],
-                                slug: String): Future[Question] = {
+    override def createQuestion(
+      country: Country,
+      language: Language,
+      question: String,
+      shortTitle: Option[String],
+      slug: String
+    ): Future[Question] = {
       persistentQuestionService.persist(
         Question(
           questionId = idGenerator.nextQuestionId(),
@@ -201,11 +219,13 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         .runWith(Sink.seq[QuestionPersonalityResponse])
     }
 
-    override def getPartners(questionId: QuestionId,
-                             organisationIds: Seq[UserId],
-                             sortAlgorithm: Option[OrganisationSortAlgorithm],
-                             limit: Option[Int],
-                             skip: Option[Int]): Future[OrganisationSearchResult] = {
+    override def getPartners(
+      questionId: QuestionId,
+      organisationIds: Seq[UserId],
+      sortAlgorithm: Option[OrganisationSortAlgorithm],
+      limit: Option[Int],
+      skip: Option[Int]
+    ): Future[OrganisationSearchResult] = {
       val query = OrganisationSearchQuery(
         filters = Some(OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(organisationIds)))),
         sortAlgorithm = sortAlgorithm,
@@ -227,10 +247,12 @@ trait DefaultQuestionService extends QuestionServiceComponent {
 
     }
 
-    override def getTopIdeas(start: Int,
-                             end: Option[Int],
-                             seed: Option[Int],
-                             questionId: QuestionId): Future[QuestionTopIdeasResponseWithSeed] = {
+    override def getTopIdeas(
+      start: Int,
+      end: Option[Int],
+      seed: Option[Int],
+      questionId: QuestionId
+    ): Future[QuestionTopIdeasResponseWithSeed] = {
 
       val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
 
@@ -263,9 +285,11 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         .map(result => QuestionTopIdeasResponseWithSeed(result, randomSeed))
     }
 
-    def getTopIdea(topIdeaId: TopIdeaId,
-                   questionId: QuestionId,
-                   seed: Option[Int]): Future[Option[QuestionTopIdeaResultWithSeed]] = {
+    def getTopIdea(
+      topIdeaId: TopIdeaId,
+      questionId: QuestionId,
+      seed: Option[Int]
+    ): Future[Option[QuestionTopIdeaResultWithSeed]] = {
       val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
 
       persistentTopIdeaService.getByIdAndQuestionId(topIdeaId, questionId).flatMap {

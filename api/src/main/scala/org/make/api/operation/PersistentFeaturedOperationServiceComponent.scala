@@ -132,18 +132,20 @@ trait DefaultPersistentFeaturedOperationServiceComponent extends PersistentFeatu
 }
 
 object DefaultPersistentFeaturedOperationServiceComponent {
-  case class PersistentFeaturedOperation(id: String,
-                                         questionId: Option[String],
-                                         title: String,
-                                         description: Option[String],
-                                         landscapePicture: String,
-                                         portraitPicture: String,
-                                         altPicture: String,
-                                         label: String,
-                                         buttonLabel: String,
-                                         internalLink: Option[String],
-                                         externalLink: Option[String],
-                                         slot: Int) {
+  case class PersistentFeaturedOperation(
+    id: String,
+    questionId: Option[String],
+    title: String,
+    description: Option[String],
+    landscapePicture: String,
+    portraitPicture: String,
+    altPicture: String,
+    label: String,
+    buttonLabel: String,
+    internalLink: Option[String],
+    externalLink: Option[String],
+    slot: Int
+  ) {
     def toFeaturedOperation: FeaturedOperation = {
       FeaturedOperation(
         featuredOperationId = FeaturedOperationId(id),

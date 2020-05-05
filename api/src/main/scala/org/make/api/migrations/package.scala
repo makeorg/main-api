@@ -25,8 +25,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 package object migrations extends StrictLogging {
 
-  def retryableFuture[T](future: => Future[T],
-                         times: Int = 3)(implicit executionContext: ExecutionContext): Future[T] = {
+  def retryableFuture[T](future: => Future[T], times: Int = 3)(
+    implicit executionContext: ExecutionContext
+  ): Future[T] = {
     future.recoverWith {
       case _ if times > 0 => retryableFuture(future, times - 1)
       case error          => Future.failed(error)

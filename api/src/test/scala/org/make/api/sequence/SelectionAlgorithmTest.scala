@@ -76,12 +76,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
   val roundRobinProposalIds: Seq[ProposalId] =
     (1 to roundRobinSequenceConfiguration.sequenceSize).map(i => ProposalId(s"proposal$i"))
 
-  def fakeProposal(id: ProposalId,
-                   votes: Map[VoteKey, Int],
-                   sequencePool: SequencePool,
-                   idea: Option[IdeaId] = None,
-                   createdAt: ZonedDateTime = DateHelper.now(),
-                   segment: Option[String] = None): IndexedProposal = {
+  def fakeProposal(
+    id: ProposalId,
+    votes: Map[VoteKey, Int],
+    sequencePool: SequencePool,
+    idea: Option[IdeaId] = None,
+    createdAt: ZonedDateTime = DateHelper.now(),
+    segment: Option[String] = None
+  ): IndexedProposal = {
     IndexedProposal(
       id = id,
       userId = UserId(s"fake-$id"),
@@ -149,12 +151,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     )
   }
 
-  def fakeProposalQualif(id: ProposalId,
-                         votes: Map[VoteKey, (Int, Map[QualificationKey, Int])],
-                         sequencePool: SequencePool,
-                         idea: Option[IdeaId] = None,
-                         createdAt: ZonedDateTime = DateHelper.now(),
-                         segment: Option[String] = None): IndexedProposal = {
+  def fakeProposalQualif(
+    id: ProposalId,
+    votes: Map[VoteKey, (Int, Map[QualificationKey, Int])],
+    sequencePool: SequencePool,
+    idea: Option[IdeaId] = None,
+    createdAt: ZonedDateTime = DateHelper.now(),
+    segment: Option[String] = None
+  ): IndexedProposal = {
     IndexedProposal(
       id = id,
       userId = UserId(s"fake-$id"),

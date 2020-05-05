@@ -82,11 +82,7 @@ class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
       action = UserAction(
         date = eventDate,
         actionType = LogUserStartSequenceEvent.action,
-        arguments = StartSequenceParameters(
-          slug = Some("vff"),
-          questionId = None,
-          sequenceId = Some(SequenceId("vff"))
-        )
+        arguments = StartSequenceParameters(slug = Some("vff"), questionId = None, sequenceId = Some(SequenceId("vff")))
       )
     )
     val searchProposalsEvent = LogUserSearchProposalsEvent(

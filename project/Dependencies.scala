@@ -149,6 +149,6 @@ object Dependencies {
   val refinedCirce: ModuleID = "io.circe"        %% "circe-refined"      % circeVersion
   val refinedScalaCheck: ModuleID = "eu.timepit" %% "refined-scalacheck" % refinedVersion
 
-  val enumeratum: ModuleID = "com.beachape" %% "enumeratum" % "1.5.15"
+  val enumeratum: ModuleID = "com.beachape"      %% "enumeratum"       % "1.5.15"
   val enumeratumCirce: ModuleID = "com.beachape" %% "enumeratum-circe" % "1.5.23"
 }

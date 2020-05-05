@@ -31,31 +31,37 @@ import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 
-case class OperationOfQuestionSearchQuery(filters: Option[OperationOfQuestionSearchFilters] = None,
-                                          limit: Option[Int] = None,
-                                          skip: Option[Int] = None,
-                                          sort: Option[String] = None,
-                                          order: Option[String] = None)
+case class OperationOfQuestionSearchQuery(
+  filters: Option[OperationOfQuestionSearchFilters] = None,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None,
+  sort: Option[String] = None,
+  order: Option[String] = None
+)
 
-case class OperationOfQuestionSearchFilters(questionIds: Option[QuestionIdsSearchFilter] = None,
-                                            question: Option[QuestionContentSearchFilter] = None,
-                                            description: Option[DescriptionSearchFilter] = None,
-                                            country: Option[CountrySearchFilter] = None,
-                                            language: Option[LanguageSearchFilter] = None,
-                                            startDate: Option[StartDateSearchFilter] = None,
-                                            endDate: Option[EndDateSearchFilter] = None,
-                                            operationKinds: Option[OperationKindsSearchFilter] = None)
+case class OperationOfQuestionSearchFilters(
+  questionIds: Option[QuestionIdsSearchFilter] = None,
+  question: Option[QuestionContentSearchFilter] = None,
+  description: Option[DescriptionSearchFilter] = None,
+  country: Option[CountrySearchFilter] = None,
+  language: Option[LanguageSearchFilter] = None,
+  startDate: Option[StartDateSearchFilter] = None,
+  endDate: Option[EndDateSearchFilter] = None,
+  operationKinds: Option[OperationKindsSearchFilter] = None
+)
 
 object OperationOfQuestionSearchFilters extends ElasticDsl {
 
-  def parse(questionIds: Option[QuestionIdsSearchFilter],
-            question: Option[QuestionContentSearchFilter],
-            description: Option[DescriptionSearchFilter] = None,
-            country: Option[CountrySearchFilter] = None,
-            language: Option[LanguageSearchFilter] = None,
-            startDate: Option[StartDateSearchFilter] = None,
-            endDate: Option[EndDateSearchFilter] = None,
-            operationKind: Option[OperationKindsSearchFilter] = None): Option[OperationOfQuestionSearchFilters] = {
+  def parse(
+    questionIds: Option[QuestionIdsSearchFilter],
+    question: Option[QuestionContentSearchFilter],
+    description: Option[DescriptionSearchFilter] = None,
+    country: Option[CountrySearchFilter] = None,
+    language: Option[LanguageSearchFilter] = None,
+    startDate: Option[StartDateSearchFilter] = None,
+    endDate: Option[EndDateSearchFilter] = None,
+    operationKind: Option[OperationKindsSearchFilter] = None
+  ): Option[OperationOfQuestionSearchFilters] = {
     (questionIds, question, description, country, language, startDate, endDate, operationKind) match {
       case (None, None, None, None, None, None, None, None) => None
       case _ =>
@@ -135,9 +141,9 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
       val language = filters.language.map(_.language).getOrElse(Language("fr"))
       val fieldsBoosts: Map[String, Double] =
         Map(
-          Some(OperationOfQuestionElasticsearchFieldNames.question) -> 3D,
-          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language) -> 2D,
-          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language, stemmed = true) -> 1.5D
+          Some(OperationOfQuestionElasticsearchFieldNames.question) -> 3d,
+          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language) -> 2d,
+          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language, stemmed = true) -> 1.5d
         ).collect {
           case (Some(key), value) => key -> value
         }

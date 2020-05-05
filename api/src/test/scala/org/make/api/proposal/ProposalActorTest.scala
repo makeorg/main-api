@@ -1309,25 +1309,24 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       coordinator ! PatchProposalCommand(
         proposalId,
         UserId("1234"),
-        PatchProposalRequest(
-          creationContext = Some(
-            PatchRequestContext(
-              requestId = Some("my-request-id"),
-              sessionId = Some(SessionId("session-id")),
-              visitorId = Some(VisitorId("visitor-id")),
-              externalId = Some("external-id"),
-              country = Some(Country("BE")),
-              language = Some(Language("nl")),
-              operation = None /*Some("my-operation")*/, // TODO: use Operation
-              source = Some("my-source"),
-              location = Some("my-location"),
-              question = Some("my-question"),
-              hostname = Some("my-hostname"),
-              ipAddress = Some("1.2.3.4"),
-              getParameters = Some(Map("parameter" -> "value")),
-              userAgent = Some("my-user-agent")
-            )
+        PatchProposalRequest(creationContext = Some(
+          PatchRequestContext(
+            requestId = Some("my-request-id"),
+            sessionId = Some(SessionId("session-id")),
+            visitorId = Some(VisitorId("visitor-id")),
+            externalId = Some("external-id"),
+            country = Some(Country("BE")),
+            language = Some(Language("nl")),
+            operation = None /*Some("my-operation")*/, // TODO: use Operation
+            source = Some("my-source"),
+            location = Some("my-location"),
+            question = Some("my-question"),
+            hostname = Some("my-hostname"),
+            ipAddress = Some("1.2.3.4"),
+            getParameters = Some(Map("parameter" -> "value")),
+            userAgent = Some("my-user-agent")
           )
+        )
         ),
         RequestContext.empty
       )

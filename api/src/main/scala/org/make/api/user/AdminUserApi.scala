@@ -354,13 +354,15 @@ trait DefaultAdminUserApiComponent
               "userType".as[UserType].?
             )
           ) {
-            (start: Option[Int],
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             email: Option[String],
-             maybeRole: Option[String],
-             userType: Option[UserType]) =>
+            (
+              start: Option[Int],
+              end: Option[Int],
+              sort: Option[String],
+              order: Option[String],
+              email: Option[String],
+              maybeRole: Option[String],
+              userType: Option[UserType]
+            ) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   val role: Role =
@@ -499,12 +501,14 @@ trait DefaultAdminUserApiComponent
       path("admin" / "moderators") {
         makeOperation("GetModerators") { _ =>
           parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "email".?, "firstName".?)) {
-            (start: Option[Int],
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             email: Option[String],
-             firstName: Option[String]) =>
+            (
+              start: Option[Int],
+              end: Option[Int],
+              sort: Option[String],
+              order: Option[String],
+              email: Option[String],
+              firstName: Option[String]
+            ) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   provideAsync(

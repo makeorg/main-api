@@ -67,7 +67,7 @@ object TagDisplay extends StrictLogging {
         Right(
           TagDisplay
             .matchTagDisplayOrDefault(tagDisplay)
-      )
+        )
     )
 
   implicit val tagDisplayFormatter: JsonFormat[TagDisplay] = new JsonFormat[TagDisplay] {

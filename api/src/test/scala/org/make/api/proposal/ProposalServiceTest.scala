@@ -2893,13 +2893,12 @@ class ProposalServiceTest
       val userId = UserId("proposal found")
       val date = DateHelper.now().minusHours(5)
 
-      val query = SearchQuery(
-        filters = Some(
-          SearchFilters(
-            user = Some(UserSearchFilter(userId)),
-            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-          )
+      val query = SearchQuery(filters = Some(
+        SearchFilters(
+          user = Some(UserSearchFilter(userId)),
+          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
         )
+      )
       )
 
       Mockito

@@ -26,18 +26,20 @@ import org.make.core.proposal.ProposalId
 import org.make.core.{AvroSerializers, EventWrapper}
 
 sealed trait PredictDuplicate
-case class PredictDuplicateEvent(proposalId: ProposalId,
-                                 predictedDuplicates: Seq[ProposalId],
-                                 predictedScores: Seq[Double],
-                                 algoLabel: String)
-    extends PredictDuplicate
+case class PredictDuplicateEvent(
+  proposalId: ProposalId,
+  predictedDuplicates: Seq[ProposalId],
+  predictedScores: Seq[Double],
+  algoLabel: String
+) extends PredictDuplicate
 
-final case class PredictDuplicateEventWrapper(version: Int,
-                                              id: String,
-                                              date: ZonedDateTime,
-                                              eventType: String,
-                                              event: PredictDuplicate)
-    extends EventWrapper[PredictDuplicate]
+final case class PredictDuplicateEventWrapper(
+  version: Int,
+  id: String,
+  date: ZonedDateTime,
+  eventType: String,
+  event: PredictDuplicate
+) extends EventWrapper[PredictDuplicate]
 
 object PredictDuplicateEventWrapper extends AvroSerializers {
   lazy val schemaFor: SchemaFor[PredictDuplicateEventWrapper] = SchemaFor.gen[PredictDuplicateEventWrapper]

@@ -50,15 +50,19 @@ trait PersistentOperationServiceComponent {
 }
 
 trait PersistentOperationService {
-  def find(slug: Option[String] = None,
-           country: Option[Country] = None,
-           openAt: Option[LocalDate] = None): Future[Seq[Operation]]
-  def findSimple(start: Int,
-                 end: Option[Int],
-                 sort: Option[String],
-                 order: Option[String],
-                 slug: Option[String] = None,
-                 operationKinds: Option[Seq[OperationKind]]): Future[Seq[SimpleOperation]]
+  def find(
+    slug: Option[String] = None,
+    country: Option[Country] = None,
+    openAt: Option[LocalDate] = None
+  ): Future[Seq[Operation]]
+  def findSimple(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    slug: Option[String] = None,
+    operationKinds: Option[Seq[OperationKind]]
+  ): Future[Seq[SimpleOperation]]
   def getById(operationId: OperationId): Future[Option[Operation]]
   def getSimpleById(operationId: OperationId): Future[Option[SimpleOperation]]
   def getBySlug(slug: String): Future[Option[Operation]]
@@ -91,10 +95,12 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         .on(operationAlias.uuid, operationActionAlias.operationUuid)
         .leftJoin(PersistentQuestion.as(questionAlias))
         .on(questionAlias.questionId, operationOfQuestionAlias.questionId)
-    private def operationWhereOpts(slug: Option[String],
-                                   operationKinds: Option[Seq[OperationKind]],
-                                   country: Option[Country],
-                                   openAt: Option[LocalDate]): Option[SQLSyntax] =
+    private def operationWhereOpts(
+      slug: Option[String],
+      operationKinds: Option[Seq[OperationKind]],
+      country: Option[Country],
+      openAt: Option[LocalDate]
+    ): Option[SQLSyntax] =
       sqls.toAndConditionOpt(
         slug.map(slug              => sqls.eq(operationAlias.slug, slug)),
         operationKinds.map(opKinds => sqls.in(operationAlias.operationKind, opKinds.map(_.shortName))),
@@ -113,9 +119,11 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         )
       )
 
-    override def find(slug: Option[String] = None,
-                      country: Option[Country] = None,
-                      openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
+    override def find(
+      slug: Option[String] = None,
+      country: Option[Country] = None,
+      openAt: Option[LocalDate] = None
+    ): Future[Seq[Operation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
@@ -136,12 +144,14 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       futurePersistentOperations.map(_.map(_.toOperation))
     }
 
-    override def findSimple(start: Int,
-                            end: Option[Int],
-                            sort: Option[String],
-                            order: Option[String],
-                            slug: Option[String] = None,
-                            operationKinds: Option[Seq[OperationKind]]): Future[Seq[SimpleOperation]] = {
+    override def findSimple(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      slug: Option[String] = None,
+      operationKinds: Option[Seq[OperationKind]]
+    ): Future[Seq[SimpleOperation]] = {
       implicit val context: EC = readExecutionContext
       val futurePersistentOperations: Future[List[PersistentOperation]] = Future(NamedDB("READ").retryableTx {
         implicit session =>
@@ -292,22 +302,26 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
 object DefaultPersistentOperationServiceComponent {
 
-  case class PersistentOperationAction(operationUuid: String,
-                                       makeUserUuid: String,
-                                       actionDate: ZonedDateTime,
-                                       actionType: String,
-                                       arguments: Option[String])
+  case class PersistentOperationAction(
+    operationUuid: String,
+    makeUserUuid: String,
+    actionDate: ZonedDateTime,
+    actionType: String,
+    arguments: Option[String]
+  )
 
-  case class PersistentOperation(uuid: String,
-                                 questions: Seq[FlatQuestionWithDetails],
-                                 operationActions: Seq[PersistentOperationAction],
-                                 status: String,
-                                 slug: String,
-                                 defaultLanguage: String,
-                                 allowedSources: Seq[String],
-                                 operationKind: String,
-                                 createdAt: ZonedDateTime,
-                                 updatedAt: ZonedDateTime) {
+  case class PersistentOperation(
+    uuid: String,
+    questions: Seq[FlatQuestionWithDetails],
+    operationActions: Seq[PersistentOperationAction],
+    status: String,
+    slug: String,
+    defaultLanguage: String,
+    allowedSources: Seq[String],
+    operationKind: String,
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime
+  ) {
 
     def toOperation: Operation =
       Operation(
@@ -327,7 +341,7 @@ object DefaultPersistentOperationServiceComponent {
                 makeUserId = UserId(action.makeUserUuid),
                 actionType = action.actionType,
                 arguments = action.arguments.getOrElse("{}").parseJson.convertTo[Map[String, String]]
-            )
+              )
           )
           .toList,
         questions = questions.map(_.toQuestionAndDetails)

@@ -206,8 +206,11 @@ trait DefaultViewApiComponent
                     .searchForUser(auth.map(_.user.userId), proposalQuery, requestContext)
                   questions     <- operationOfQuestionService.search(questionQuery)
                   organisations <- organisationService.searchWithQuery(organisationQuery)
-                } yield
-                  (proposals, questions, OrganisationsSearchResultResponse.fromOrganisationSearchResult(organisations))
+                } yield (
+                  proposals,
+                  questions,
+                  OrganisationsSearchResultResponse.fromOrganisationSearchResult(organisations)
+                )
                 provideAsync(futureResults) {
                   case (proposals, questions, organisations) =>
                     complete(

@@ -179,16 +179,18 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
 object DefaultPersistentIdeaServiceComponent {
 
-  case class PersistentIdea(id: String,
-                            name: String,
-                            language: Option[String],
-                            country: Option[String],
-                            question: Option[String],
-                            questionId: Option[String],
-                            operationId: Option[String],
-                            status: Option[String],
-                            createdAt: ZonedDateTime,
-                            updatedAt: ZonedDateTime) {
+  case class PersistentIdea(
+    id: String,
+    name: String,
+    language: Option[String],
+    country: Option[String],
+    question: Option[String],
+    questionId: Option[String],
+    operationId: Option[String],
+    status: Option[String],
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime
+  ) {
     def toIdea: Idea =
       Idea(
         ideaId = IdeaId(id),

@@ -115,8 +115,10 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
         }
     }
 
-    override def indexOrganisations(records: Seq[IndexedOrganisation],
-                                    mayBeIndex: Option[IndexAndType]): Future[Done] = {
+    override def indexOrganisations(
+      records: Seq[IndexedOrganisation],
+      mayBeIndex: Option[IndexAndType]
+    ): Future[Done] = {
       val index = mayBeIndex.getOrElse(organisationAlias)
       client
         .executeAsFuture(bulk(records.map { record =>

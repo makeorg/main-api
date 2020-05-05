@@ -36,11 +36,13 @@ trait OperationOfQuestionService {
   def findByQuestionId(questionId: QuestionId): Future[Option[OperationOfQuestion]]
   def findByOperationId(operationId: OperationId): Future[Seq[OperationOfQuestion]]
   def findByQuestionSlug(slug: String): Future[Option[OperationOfQuestion]]
-  def find(start: Int = 0,
-           end: Option[Int] = None,
-           sort: Option[String] = None,
-           order: Option[String] = None,
-           request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()): Future[Seq[OperationOfQuestion]]
+  def find(
+    start: Int = 0,
+    end: Option[Int] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()
+  ): Future[Seq[OperationOfQuestion]]
   def search(searchQuery: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
   def updateWithQuestion(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion]
   def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
@@ -66,21 +68,25 @@ trait OperationOfQuestionService {
   def create(parameters: CreateOperationOfQuestion): Future[OperationOfQuestion]
 }
 
-final case class CreateOperationOfQuestion(operationId: OperationId,
-                                           startDate: Option[ZonedDateTime],
-                                           endDate: Option[ZonedDateTime],
-                                           operationTitle: String,
-                                           slug: String,
-                                           country: Country,
-                                           language: Language,
-                                           question: String,
-                                           shortTitle: Option[String],
-                                           consultationImage: Option[String])
+final case class CreateOperationOfQuestion(
+  operationId: OperationId,
+  startDate: Option[ZonedDateTime],
+  endDate: Option[ZonedDateTime],
+  operationTitle: String,
+  slug: String,
+  country: Country,
+  language: Language,
+  question: String,
+  shortTitle: Option[String],
+  consultationImage: Option[String]
+)
 
-final case class SearchOperationsOfQuestions(questionIds: Option[Seq[QuestionId]] = None,
-                                             operationIds: Option[Seq[OperationId]] = None,
-                                             operationKind: Option[Seq[OperationKind]] = None,
-                                             openAt: Option[ZonedDateTime] = None)
+final case class SearchOperationsOfQuestions(
+  questionIds: Option[Seq[QuestionId]] = None,
+  operationIds: Option[Seq[OperationId]] = None,
+  operationKind: Option[Seq[OperationKind]] = None,
+  openAt: Option[ZonedDateTime] = None
+)
 
 trait OperationOfQuestionServiceComponent {
   def operationOfQuestionService: OperationOfQuestionService
@@ -136,8 +142,10 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(searchQuery)
     }
 
-    override def updateWithQuestion(operationOfQuestion: OperationOfQuestion,
-                                    question: Question): Future[OperationOfQuestion] = {
+    override def updateWithQuestion(
+      operationOfQuestion: OperationOfQuestion,
+      question: Question
+    ): Future[OperationOfQuestion] = {
       for {
         _       <- persistentQuestionService.modify(question)
         updated <- persistentOperationOfQuestionService.modify(operationOfQuestion)

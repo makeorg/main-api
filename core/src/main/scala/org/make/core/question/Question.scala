@@ -25,13 +25,15 @@ import org.make.core.operation.OperationId
 import org.make.core.reference.{Country, Language}
 import spray.json.{JsString, JsValue, JsonFormat}
 
-case class Question(questionId: QuestionId,
-                    slug: String,
-                    country: Country,
-                    language: Language,
-                    question: String,
-                    shortTitle: Option[String],
-                    operationId: Option[OperationId]) {
+case class Question(
+  questionId: QuestionId,
+  slug: String,
+  country: Country,
+  language: Language,
+  question: String,
+  shortTitle: Option[String],
+  operationId: Option[OperationId]
+) {
   def getLocale: String = s"${language.value.toLowerCase}_${country.value.toUpperCase}"
 }
 

@@ -245,14 +245,16 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   "openAt".as[ZonedDateTime].?
                 )
               ) {
-                (start: Option[Int],
-                 end: Option[Int],
-                 sort: Option[String],
-                 order: Option[String],
-                 questionIds,
-                 operationId,
-                 operationKind,
-                 openAt) =>
+                (
+                  start: Option[Int],
+                  end: Option[Int],
+                  sort: Option[String],
+                  order: Option[String],
+                  questionIds,
+                  operationId,
+                  operationKind,
+                  openAt
+                ) =>
                   order.foreach { orderValue =>
                     Validation.validate(
                       Validation
@@ -306,7 +308,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                   OperationOfQuestionResponse(
                                     operationOfQuestion,
                                     questionsAsMap(operationOfQuestion.questionId)
-                                )
+                                  )
                               )
                           )
                         )
@@ -350,14 +352,13 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           question.copy(question = request.question, shortTitle = request.shortTitle.map(_.value))
                         val updatedSequenceCardsConfiguration =
                           request.sequenceCardsConfiguration.copy(
-                            pushProposalCard = PushProposalCard(
-                              enabled = request.canPropose &&
-                                request.sequenceCardsConfiguration.pushProposalCard.enabled
+                            pushProposalCard = PushProposalCard(enabled = request.canPropose &&
+                              request.sequenceCardsConfiguration.pushProposalCard.enabled
                             ),
-                            finalCard = request.sequenceCardsConfiguration.finalCard.copy(
-                              sharingEnabled = request.sequenceCardsConfiguration.finalCard.enabled &&
+                            finalCard = request.sequenceCardsConfiguration.finalCard
+                              .copy(sharingEnabled = request.sequenceCardsConfiguration.finalCard.enabled &&
                                 request.sequenceCardsConfiguration.finalCard.sharingEnabled
-                            )
+                              )
                           )
                         onSuccess(
                           operationOfQuestionService.updateWithQuestion(
@@ -442,21 +443,23 @@ trait DefaultModerationOperationOfQuestionApiComponent
 }
 
 @ApiModel
-final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(example = "2019-01-23T00:00:00.000Z")
-                                                  startDate: Option[ZonedDateTime],
-                                                  @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
-                                                  endDate: Option[ZonedDateTime],
-                                                  question: String,
-                                                  shortTitle: Option[String Refined MaxSize[W.`30`.T]],
-                                                  canPropose: Boolean,
-                                                  sequenceCardsConfiguration: SequenceCardsConfiguration,
-                                                  aboutUrl: Option[String],
-                                                  metas: Metas,
-                                                  theme: QuestionTheme,
-                                                  description: String,
-                                                  displayResults: Boolean,
-                                                  consultationImage: Option[String Refined Url],
-                                                  descriptionImage: Option[String Refined Url]) {
+final case class ModifyOperationOfQuestionRequest(
+  @(ApiModelProperty @field)(example = "2019-01-23T00:00:00.000Z")
+  startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
+  endDate: Option[ZonedDateTime],
+  question: String,
+  shortTitle: Option[String Refined MaxSize[W.`30`.T]],
+  canPropose: Boolean,
+  sequenceCardsConfiguration: SequenceCardsConfiguration,
+  aboutUrl: Option[String],
+  metas: Metas,
+  theme: QuestionTheme,
+  description: String,
+  displayResults: Boolean,
+  consultationImage: Option[String Refined Url],
+  descriptionImage: Option[String Refined Url]
+) {
 
   validate(
     Seq(

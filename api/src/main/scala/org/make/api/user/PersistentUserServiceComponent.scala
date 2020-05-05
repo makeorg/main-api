@@ -49,53 +49,55 @@ object PersistentUserServiceComponent {
 
   val ROLE_SEPARATOR = ","
 
-  case class PersistentUser(uuid: String,
-                            createdAt: ZonedDateTime,
-                            updatedAt: ZonedDateTime,
-                            email: String,
-                            firstName: Option[String],
-                            lastName: Option[String],
-                            lastIp: Option[String],
-                            hashedPassword: String,
-                            enabled: Boolean,
-                            emailVerified: Boolean,
-                            userType: String,
-                            lastConnection: ZonedDateTime,
-                            verificationToken: Option[String],
-                            verificationTokenExpiresAt: Option[ZonedDateTime],
-                            resetToken: Option[String],
-                            resetTokenExpiresAt: Option[ZonedDateTime],
-                            roles: String,
-                            dateOfBirth: Option[LocalDate],
-                            avatarUrl: Option[String],
-                            profession: Option[String],
-                            phoneNumber: Option[String],
-                            description: Option[String],
-                            twitterId: Option[String],
-                            facebookId: Option[String],
-                            googleId: Option[String],
-                            gender: String,
-                            genderName: Option[String],
-                            postalCode: Option[String],
-                            country: String,
-                            language: String,
-                            karmaLevel: Option[Int],
-                            locale: Option[String],
-                            optInNewsletter: Boolean,
-                            isHardBounce: Boolean,
-                            lastMailingErrorDate: Option[ZonedDateTime],
-                            lastMailingErrorMessage: Option[String],
-                            organisationName: Option[String],
-                            publicProfile: Boolean,
-                            socioProfessionalCategory: String,
-                            registerQuestionId: Option[String],
-                            optInPartner: Option[Boolean],
-                            availableQuestions: Array[String],
-                            reconnectToken: Option[String],
-                            reconnectTokenCreatedAt: Option[ZonedDateTime],
-                            anonymousParticipation: Boolean,
-                            politicalParty: Option[String],
-                            website: Option[String]) {
+  case class PersistentUser(
+    uuid: String,
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime,
+    email: String,
+    firstName: Option[String],
+    lastName: Option[String],
+    lastIp: Option[String],
+    hashedPassword: String,
+    enabled: Boolean,
+    emailVerified: Boolean,
+    userType: String,
+    lastConnection: ZonedDateTime,
+    verificationToken: Option[String],
+    verificationTokenExpiresAt: Option[ZonedDateTime],
+    resetToken: Option[String],
+    resetTokenExpiresAt: Option[ZonedDateTime],
+    roles: String,
+    dateOfBirth: Option[LocalDate],
+    avatarUrl: Option[String],
+    profession: Option[String],
+    phoneNumber: Option[String],
+    description: Option[String],
+    twitterId: Option[String],
+    facebookId: Option[String],
+    googleId: Option[String],
+    gender: String,
+    genderName: Option[String],
+    postalCode: Option[String],
+    country: String,
+    language: String,
+    karmaLevel: Option[Int],
+    locale: Option[String],
+    optInNewsletter: Boolean,
+    isHardBounce: Boolean,
+    lastMailingErrorDate: Option[ZonedDateTime],
+    lastMailingErrorMessage: Option[String],
+    organisationName: Option[String],
+    publicProfile: Boolean,
+    socioProfessionalCategory: String,
+    registerQuestionId: Option[String],
+    optInPartner: Option[Boolean],
+    availableQuestions: Array[String],
+    reconnectToken: Option[String],
+    reconnectTokenCreatedAt: Option[ZonedDateTime],
+    anonymousParticipation: Boolean,
+    politicalParty: Option[String],
+    website: Option[String]
+  ) {
     def toUser: User = {
       User(
         userId = UserId(uuid),
@@ -325,36 +327,44 @@ trait PersistentUserService {
   def findByUserIdAndPassword(userId: UserId, hashedPassword: Option[String]): Future[Option[User]]
   def findByUserIdAndUserType(userId: UserId, userType: UserType): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
-  def adminFindUsers(start: Int,
-                     limit: Option[Int],
-                     sort: Option[String],
-                     order: Option[String],
-                     email: Option[String],
-                     firstName: Option[String],
-                     lastName: Option[String],
-                     maybeRole: Option[Role],
-                     maybeUserType: Option[UserType]): Future[Seq[User]]
+  def adminFindUsers(
+    start: Int,
+    limit: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    email: Option[String],
+    firstName: Option[String],
+    lastName: Option[String],
+    maybeRole: Option[Role],
+    maybeUserType: Option[UserType]
+  ): Future[Seq[User]]
   def findAllOrganisations(): Future[Seq[User]]
-  def findOrganisations(start: Int,
-                        end: Option[Int],
-                        sort: Option[String],
-                        order: Option[String],
-                        organisationName: Option[String]): Future[Seq[User]]
+  def findOrganisations(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    organisationName: Option[String]
+  ): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
   def findUserByUserIdAndResetToken(userId: UserId, resetToken: String): Future[Option[User]]
   def findUserByUserIdAndVerificationToken(userId: UserId, verificationToken: String): Future[Option[User]]
-  def findByReconnectTokenAndPassword(reconnectToken: String,
-                                      password: String,
-                                      validityReconnectToken: Int): Future[Option[User]]
+  def findByReconnectTokenAndPassword(
+    reconnectToken: String,
+    password: String,
+    validityReconnectToken: Int
+  ): Future[Option[User]]
   def emailExists(email: String): Future[Boolean]
   def verificationTokenExists(verificationToken: String): Future[Boolean]
   def resetTokenExists(resetToken: String): Future[Boolean]
   def persist(user: User): Future[User]
   def updateUser(user: User): Future[User]
   def modifyOrganisation(organisation: User): Future[Either[UpdateFailed, User]]
-  def requestResetPassword(userId: UserId,
-                           resetToken: String,
-                           resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean]
+  def requestResetPassword(
+    userId: UserId,
+    resetToken: String,
+    resetTokenExpiresAt: Option[ZonedDateTime]
+  ): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: Option[String], hashedPassword: String): Future[Boolean]
   def validateEmail(verificationToken: String): Future[Boolean]
   def updateOptInNewsletter(userId: UserId, optInNewsletter: Boolean): Future[Boolean]
@@ -364,25 +374,31 @@ trait PersistentUserService {
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
   def updateSocialUser(user: User): Future[Boolean]
-  def findUsersForCrmSynchro(optIn: Option[Boolean],
-                             hardBounce: Option[Boolean],
-                             offset: Int,
-                             limit: Int): Future[Seq[User]]
+  def findUsersForCrmSynchro(
+    optIn: Option[Boolean],
+    hardBounce: Option[Boolean],
+    offset: Int,
+    limit: Int
+  ): Future[Seq[User]]
   def findUsersWithoutRegisterQuestion: Future[Seq[User]]
   def getFollowedUsers(userId: UserId): Future[Seq[String]]
   def removeAnonymizedUserFromFollowedUserTable(userId: UserId): Future[Unit]
   def followUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def unfollowUser(followedUserId: UserId, userId: UserId): Future[Unit]
   def countOrganisations(organisationName: Option[String]): Future[Int]
-  def adminCountUsers(email: Option[String],
-                      firstName: Option[String],
-                      lastName: Option[String],
-                      maybeRole: Option[Role],
-                      maybeUserType: Option[UserType]): Future[Int]
+  def adminCountUsers(
+    email: Option[String],
+    firstName: Option[String],
+    lastName: Option[String],
+    maybeRole: Option[Role],
+    maybeUserType: Option[UserType]
+  ): Future[Int]
   def findAllByEmail(emails: Seq[String]): Future[Seq[User]]
-  def updateReconnectToken(userId: UserId,
-                           reconnectToken: String,
-                           reconnectTokenCreatedAt: ZonedDateTime): Future[Boolean]
+  def updateReconnectToken(
+    userId: UserId,
+    reconnectToken: String,
+    reconnectTokenCreatedAt: ZonedDateTime
+  ): Future[Boolean]
 }
 
 trait DefaultPersistentUserServiceComponent
@@ -499,9 +515,11 @@ trait DefaultPersistentUserServiceComponent
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findByReconnectTokenAndPassword(reconnectToken: String,
-                                                 password: String,
-                                                 validityReconnectToken: Int): Future[Option[User]] = {
+    override def findByReconnectTokenAndPassword(
+      reconnectToken: String,
+      password: String,
+      validityReconnectToken: Int
+    ): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -517,15 +535,17 @@ trait DefaultPersistentUserServiceComponent
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def adminFindUsers(start: Int,
-                                limit: Option[Int],
-                                sort: Option[String],
-                                order: Option[String],
-                                email: Option[String],
-                                firstName: Option[String],
-                                lastName: Option[String],
-                                maybeRole: Option[Role],
-                                maybeUserType: Option[UserType]): Future[Seq[User]] = {
+    override def adminFindUsers(
+      start: Int,
+      limit: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      email: Option[String],
+      firstName: Option[String],
+      lastName: Option[String],
+      maybeRole: Option[Role],
+      maybeUserType: Option[UserType]
+    ): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -568,11 +588,13 @@ trait DefaultPersistentUserServiceComponent
 
     }
 
-    override def findOrganisations(start: Int,
-                                   end: Option[Int],
-                                   sort: Option[String],
-                                   order: Option[String],
-                                   organisationName: Option[String]): Future[Seq[User]] = {
+    override def findOrganisations(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      organisationName: Option[String]
+    ): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUsers: Future[List[PersistentUser]] = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -588,7 +610,7 @@ trait DefaultPersistentUserServiceComponent
                         sqls.like(
                           sqls.lower(userAlias.organisationName),
                           s"%${organisationName.replace("%", "\\%").toLowerCase}%"
-                      )
+                        )
                     )
                   )
               )
@@ -613,8 +635,10 @@ trait DefaultPersistentUserServiceComponent
       futurePersistentUser.map(_.map(_.toUser))
     }
 
-    override def findUserByUserIdAndVerificationToken(userId: UserId,
-                                                      verificationToken: String): Future[Option[User]] = {
+    override def findUserByUserIdAndVerificationToken(
+      userId: UserId,
+      verificationToken: String
+    ): Future[Option[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUser = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -640,10 +664,12 @@ trait DefaultPersistentUserServiceComponent
       futurePersistentUserId.map(_.map(UserId(_)))
     }
 
-    override def findUsersForCrmSynchro(optIn: Option[Boolean],
-                                        hardBounce: Option[Boolean],
-                                        offset: Int,
-                                        limit: Int): Future[Seq[User]] = {
+    override def findUsersForCrmSynchro(
+      optIn: Option[Boolean],
+      hardBounce: Option[Boolean],
+      offset: Int,
+      limit: Int
+    ): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext
       val futurePersistentUsers = Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -864,9 +890,11 @@ trait DefaultPersistentUserServiceComponent
       })
     }
 
-    override def requestResetPassword(userId: UserId,
-                                      resetToken: String,
-                                      resetTokenExpiresAt: Option[ZonedDateTime]): Future[Boolean] = {
+    override def requestResetPassword(
+      userId: UserId,
+      resetToken: String,
+      resetTokenExpiresAt: Option[ZonedDateTime]
+    ): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
@@ -1109,7 +1137,7 @@ trait DefaultPersistentUserServiceComponent
                       sqls.like(
                         sqls.lower(userAlias.organisationName),
                         s"%${organisationName.replace("%", "\\%").toLowerCase}%"
-                    )
+                      )
                   )
                 )
             )
@@ -1117,11 +1145,13 @@ trait DefaultPersistentUserServiceComponent
       })
     }
 
-    override def adminCountUsers(email: Option[String],
-                                 firstName: Option[String],
-                                 lastName: Option[String],
-                                 maybeRole: Option[Role],
-                                 maybeUserType: Option[UserType]): Future[Int] = {
+    override def adminCountUsers(
+      email: Option[String],
+      firstName: Option[String],
+      lastName: Option[String],
+      maybeRole: Option[Role],
+      maybeUserType: Option[UserType]
+    ): Future[Int] = {
       implicit val ctx: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -1153,9 +1183,11 @@ trait DefaultPersistentUserServiceComponent
       futurePersistentUsers.map(_.map(_.toUser))
     }
 
-    override def updateReconnectToken(userId: UserId,
-                                      reconnectToken: String,
-                                      reconnectTokenCreatedAt: ZonedDateTime): Future[Boolean] = {
+    override def updateReconnectToken(
+      userId: UserId,
+      reconnectToken: String,
+      reconnectTokenCreatedAt: ZonedDateTime
+    ): Future[Boolean] = {
       implicit val ctx: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {

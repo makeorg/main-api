@@ -36,13 +36,15 @@ class PersistentTopIdeaServiceIT
 
   override protected val cockroachExposedPort: Int = 40020
 
-  val findTopIdea: (Int,
-                    Option[Int],
-                    Option[String],
-                    Option[String],
-                    Option[IdeaId],
-                    Option[Seq[QuestionId]],
-                    Option[String]) => Future[Seq[TopIdea]] =
+  val findTopIdea: (
+    Int,
+    Option[Int],
+    Option[String],
+    Option[String],
+    Option[IdeaId],
+    Option[Seq[QuestionId]],
+    Option[String]
+  ) => Future[Seq[TopIdea]] =
     persistentTopIdeaService.search
 
   def persistTopIdea(topIdea: TopIdea): Future[TopIdea] = persistentTopIdeaService.persist(topIdea)

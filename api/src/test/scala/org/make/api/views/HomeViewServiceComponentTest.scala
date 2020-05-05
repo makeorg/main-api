@@ -284,18 +284,17 @@ class HomeViewServiceComponentTest
       Mockito
         .when(
           operationOfQuestionService
-            .search(
-              searchQuery = OperationOfQuestionSearchQuery(
-                limit = Some(10000),
-                sort = Some("startDate"),
-                order = Some("desc"),
-                filters = Some(
-                  OperationOfQuestionSearchFilters(
-                    language = Option(operation.LanguageSearchFilter(Language("fr"))),
-                    country = Some(operation.CountrySearchFilter(Country("FR")))
-                  )
+            .search(searchQuery = OperationOfQuestionSearchQuery(
+              limit = Some(10000),
+              sort = Some("startDate"),
+              order = Some("desc"),
+              filters = Some(
+                OperationOfQuestionSearchFilters(
+                  language = Option(operation.LanguageSearchFilter(Language("fr"))),
+                  country = Some(operation.CountrySearchFilter(Country("FR")))
                 )
               )
+            )
             )
         )
         .thenReturn(Future.successful(operationOfQuestions))

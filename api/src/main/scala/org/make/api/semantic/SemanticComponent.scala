@@ -85,9 +85,11 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
 
     lazy val semanticUrl = new URL(semanticConfiguration.url)
 
-    lazy val semanticHttpFlow: Flow[(HttpRequest, Promise[HttpResponse]),
-                                    (Try[HttpResponse], Promise[HttpResponse]),
-                                    Http.HostConnectionPool] =
+    lazy val semanticHttpFlow: Flow[
+      (HttpRequest, Promise[HttpResponse]),
+      (Try[HttpResponse], Promise[HttpResponse]),
+      Http.HostConnectionPool
+    ] =
       Http(actorSystem)
         .cachedHostConnectionPool[Promise[HttpResponse]](
           host = semanticUrl.getHost,
@@ -204,9 +206,11 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
       }
     }
 
-    def logSimilarIdeas(indexedProposal: IndexedProposal,
-                        similarProposals: Seq[ScoredProposal],
-                        algoLabel: String): Unit = {
+    def logSimilarIdeas(
+      indexedProposal: IndexedProposal,
+      similarProposals: Seq[ScoredProposal],
+      algoLabel: String
+    ): Unit = {
       eventBusService.publish(
         PredictDuplicateEvent(
           proposalId = indexedProposal.id,
@@ -234,7 +238,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
                 proposalId = p.proposal.id,
                 proposalContent = p.proposal.content,
                 score = p.score.score
-            )
+              )
           )
         }
     }
@@ -242,12 +246,14 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
 
 }
 
-final case class SemanticProposal(@ApiModelProperty(dataType = "string") id: ProposalId,
-                                  questionId: QuestionId,
-                                  language: Language,
-                                  ideaId: Option[IdeaId],
-                                  status: ProposalStatus,
-                                  content: String)
+final case class SemanticProposal(
+  @ApiModelProperty(dataType = "string") id: ProposalId,
+  questionId: QuestionId,
+  language: Language,
+  ideaId: Option[IdeaId],
+  status: ProposalStatus,
+  content: String
+)
 
 object SemanticProposal {
   implicit val encoder: Encoder[SemanticProposal] = deriveEncoder[SemanticProposal]
@@ -310,11 +316,13 @@ object SimilarIdea {
   implicit val decoder: Decoder[SimilarIdea] = deriveDecoder[SimilarIdea]
 }
 
-case class GetPredictedTagsProposalRequest(id: ProposalId,
-                                           questionId: QuestionId,
-                                           language: String,
-                                           status: ProposalStatus,
-                                           content: String)
+case class GetPredictedTagsProposalRequest(
+  id: ProposalId,
+  questionId: QuestionId,
+  language: String,
+  status: ProposalStatus,
+  content: String
+)
 
 object GetPredictedTagsProposalRequest {
   implicit val encoder: Encoder[GetPredictedTagsProposalRequest] = deriveEncoder[GetPredictedTagsProposalRequest]

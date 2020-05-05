@@ -67,7 +67,7 @@ class IdeaMappingServiceTest
     label = label,
     display = TagDisplay.Inherit,
     tagTypeId = TagTypeId("some-id"),
-    weight = 0.0F,
+    weight = 0.0f,
     operationId = None,
     questionId = Some(QuestionId("my-question")),
     country = Country("FR"),
@@ -215,13 +215,12 @@ class IdeaMappingServiceTest
 
       when(
         elasticsearchProposalAPI.searchProposals(
-          SearchQuery(
-            filters = Some(
-              SearchFilters(
-                idea = Some(IdeaSearchFilter(Seq(IdeaId("original-idea")))),
-                tags = Some(TagsSearchFilter(Seq(TagId("stake-id"), TagId("solution-id"))))
-              )
+          SearchQuery(filters = Some(
+            SearchFilters(
+              idea = Some(IdeaSearchFilter(Seq(IdeaId("original-idea")))),
+              tags = Some(TagsSearchFilter(Seq(TagId("stake-id"), TagId("solution-id"))))
             )
+          )
           )
         )
       ).thenReturn(

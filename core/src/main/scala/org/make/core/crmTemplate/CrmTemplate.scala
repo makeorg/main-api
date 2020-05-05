@@ -23,19 +23,21 @@ import org.make.core.StringValue
 import org.make.core.question.QuestionId
 import spray.json.{JsString, JsValue, JsonFormat}
 
-case class CrmTemplates(crmTemplatesId: CrmTemplatesId,
-                        questionId: Option[QuestionId],
-                        locale: Option[String],
-                        registration: TemplateId,
-                        welcome: TemplateId,
-                        proposalAccepted: TemplateId,
-                        proposalRefused: TemplateId,
-                        forgottenPassword: TemplateId,
-                        resendRegistration: TemplateId,
-                        proposalAcceptedOrganisation: TemplateId,
-                        proposalRefusedOrganisation: TemplateId,
-                        forgottenPasswordOrganisation: TemplateId,
-                        organisationEmailChangeConfirmation: TemplateId)
+case class CrmTemplates(
+  crmTemplatesId: CrmTemplatesId,
+  questionId: Option[QuestionId],
+  locale: Option[String],
+  registration: TemplateId,
+  welcome: TemplateId,
+  proposalAccepted: TemplateId,
+  proposalRefused: TemplateId,
+  forgottenPassword: TemplateId,
+  resendRegistration: TemplateId,
+  proposalAcceptedOrganisation: TemplateId,
+  proposalRefusedOrganisation: TemplateId,
+  forgottenPasswordOrganisation: TemplateId,
+  organisationEmailChangeConfirmation: TemplateId
+)
 object CrmTemplates {
   object MonitoringCategory {
     val account = "account"

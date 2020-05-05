@@ -27,10 +27,11 @@ import org.make.api.technical.MakePersistentActor.Snapshot
 import scala.collection.immutable
 import scala.util.{Failure, Success, Try}
 
-abstract class MakePersistentActor[State, Event <: AnyRef](stateClass: Class[State],
-                                                           eventClass: Class[Event],
-                                                           autoSnapshot: Boolean = true)
-    extends PersistentActor
+abstract class MakePersistentActor[State, Event <: AnyRef](
+  stateClass: Class[State],
+  eventClass: Class[Event],
+  autoSnapshot: Boolean = true
+) extends PersistentActor
     with ActorLogging {
 
   protected val defaultTimeout: Timeout = TimeSettings.defaultTimeout

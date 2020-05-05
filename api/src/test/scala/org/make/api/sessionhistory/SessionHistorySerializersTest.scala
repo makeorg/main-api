@@ -123,15 +123,14 @@ class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
         )
       )
 
-    val sessionHistory = SessionHistory(
-      events = List(
-        sessionSearchEvent,
-        sessionVoteEvent,
-        sessionUnvoteEvent,
-        sessionQualificationEvent,
-        sessionUnqualificationEvent,
-        sessionTransformedEvent
-      )
+    val sessionHistory = SessionHistory(events = List(
+      sessionSearchEvent,
+      sessionVoteEvent,
+      sessionUnvoteEvent,
+      sessionQualificationEvent,
+      sessionUnqualificationEvent,
+      sessionTransformedEvent
+    )
     )
 
     val sessionHistory2 = sessionHistory.copy(events = sessionHistory.events ++ Seq(sessionStartSequenceEvent))

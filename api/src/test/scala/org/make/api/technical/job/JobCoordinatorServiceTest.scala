@@ -82,29 +82,30 @@ class JobCoordinatorServiceTest
         }
 
         When("it is successfully started")
-        started will be(JobAcceptance(true))
+        started.will(be(JobAcceptance(true)))
         eventually {
-          work.report should not be(null)
+          work.report should not be (null)
         }
 
         Then("it is running")
-        jobCoordinatorService.get(id).map(_.map(_.status)) will be(Some(Running(0d)))
+        jobCoordinatorService.get(id).map(_.map(_.status)).will(be(Some(Running(0d))))
 
         And("it should progress")
-        work.report(progress) will be(())
-        jobCoordinatorService.get(id).map(_.map(_.status)) will be(Some(Running(progress)))
+        work.report(progress).will(be(()))
+        jobCoordinatorService.get(id).map(_.map(_.status)).will(be(Some(Running(progress))))
 
         And("its heart should beat")
         eventually {
-          jobCoordinatorService.get(id).map(_.map(_.isStuck(heartRate))) will be(Some(false))
+          jobCoordinatorService.get(id).map(_.map(_.isStuck(heartRate))).will(be(Some(false)))
         }
 
         And("it should finish")
         work.complete(outcome)
         eventually {
-          jobCoordinatorService.get(id).map(_.map(_.status)) will be(
-            Some(Finished(outcome.flatMap(e => Option(e.getMessage))))
-          )
+          jobCoordinatorService
+            .get(id)
+            .map(_.map(_.status))
+            .will(be(Some(Finished(outcome.flatMap(e => Option(e.getMessage))))))
         }
       }
     }
@@ -124,7 +125,7 @@ object JobCoordinatorServiceTest {
     val future: Future[Unit] = promise.future
 
     def complete(outcome: Option[Exception]): Unit = outcome match {
-      case None => promise.complete(Success(()))
+      case None        => promise.complete(Success(()))
       case Some(error) => promise.failure(error)
     }
 

@@ -32,11 +32,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class KafkaTestConsumerActor[T](override val format: RecordFormat[T],
-                                override val kafkaTopic: String,
-                                override val groupId: String,
-                                receiver: ActorRef)
-    extends KafkaConsumerActor[T]
+class KafkaTestConsumerActor[T](
+  override val format: RecordFormat[T],
+  override val kafkaTopic: String,
+  override val groupId: String,
+  receiver: ActorRef
+) extends KafkaConsumerActor[T]
     with ActorLogging {
 
   override def handleMessage(message: T): Future[_] = Future.successful {

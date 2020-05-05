@@ -189,7 +189,9 @@ trait DefaultSequenceConfigurationComponent extends SequenceConfigurationCompone
         .map(_.sequenceConfiguration)
     }
 
-    override def getPersistentSequenceConfigurationByQuestionId(questionId: QuestionId): Future[Option[SequenceConfiguration]] = {
+    override def getPersistentSequenceConfigurationByQuestionId(
+      questionId: QuestionId
+    ): Future[Option[SequenceConfiguration]] = {
       (sequenceConfigurationActor ? GetPersistentSequenceConfigurationByQuestionId(questionId))
         .mapTo[StoredSequenceConfiguration]
         .map(_.sequenceConfiguration)

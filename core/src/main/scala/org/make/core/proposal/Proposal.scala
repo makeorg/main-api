@@ -42,30 +42,31 @@ import org.make.core.tag.TagType
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.tag.TagTypeId
 
-final case class Proposal(proposalId: ProposalId,
-                          slug: String,
-                          content: String,
-                          author: UserId,
-                          labels: Seq[LabelId],
-                          theme: Option[ThemeId] = None,
-                          status: ProposalStatus = ProposalStatus.Pending,
-                          refusalReason: Option[String] = None,
-                          tags: Seq[TagId] = Seq.empty,
-                          votes: Seq[Vote],
-                          // @deprecated "Use the organisationIds field instead"
-                          organisations: Seq[OrganisationInfo] = Seq.empty,
-                          organisationIds: Seq[UserId] = Seq.empty,
-                          language: Option[Language] = None,
-                          country: Option[Country] = None,
-                          questionId: Option[QuestionId] = None,
-                          creationContext: RequestContext,
-                          idea: Option[IdeaId] = None,
-                          operation: Option[OperationId] = None,
-                          override val createdAt: Option[ZonedDateTime],
-                          override val updatedAt: Option[ZonedDateTime],
-                          events: List[ProposalAction],
-                          initialProposal: Boolean = false)
-    extends Timestamped
+final case class Proposal(
+  proposalId: ProposalId,
+  slug: String,
+  content: String,
+  author: UserId,
+  labels: Seq[LabelId],
+  theme: Option[ThemeId] = None,
+  status: ProposalStatus = ProposalStatus.Pending,
+  refusalReason: Option[String] = None,
+  tags: Seq[TagId] = Seq.empty,
+  votes: Seq[Vote],
+  // @deprecated "Use the organisationIds field instead"
+  organisations: Seq[OrganisationInfo] = Seq.empty,
+  organisationIds: Seq[UserId] = Seq.empty,
+  language: Option[Language] = None,
+  country: Option[Country] = None,
+  questionId: Option[QuestionId] = None,
+  creationContext: RequestContext,
+  idea: Option[IdeaId] = None,
+  operation: Option[OperationId] = None,
+  override val createdAt: Option[ZonedDateTime],
+  override val updatedAt: Option[ZonedDateTime],
+  events: List[ProposalAction],
+  initialProposal: Boolean = false
+) extends Timestamped
     with MakeSerializable
 
 object Proposal {
@@ -196,13 +197,14 @@ trait BaseQualification {
   def countSegment: Int
 }
 
-final case class Qualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
-                               override val key: QualificationKey,
-                               override val count: Int,
-                               override val countVerified: Int,
-                               override val countSequence: Int,
-                               override val countSegment: Int)
-    extends BaseQualification
+final case class Qualification(
+  @(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+  override val key: QualificationKey,
+  override val count: Int,
+  override val countVerified: Int,
+  override val countSequence: Int,
+  override val countSegment: Int
+) extends BaseQualification
 
 object Qualification {
   implicit val encoder: Encoder[Qualification] = deriveEncoder[Qualification]
@@ -222,14 +224,15 @@ trait BaseVote {
   def qualifications: Seq[BaseQualification]
 }
 
-final case class Vote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
-                      override val key: VoteKey,
-                      override val count: Int,
-                      override val countVerified: Int,
-                      override val countSequence: Int,
-                      override val countSegment: Int,
-                      override val qualifications: Seq[Qualification])
-    extends BaseVote
+final case class Vote(
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  override val key: VoteKey,
+  override val count: Int,
+  override val countVerified: Int,
+  override val countSequence: Int,
+  override val countSegment: Int,
+  override val qualifications: Seq[Qualification]
+) extends BaseVote
 
 object Vote {
   implicit val encoder: Encoder[Vote] = deriveEncoder[Vote]

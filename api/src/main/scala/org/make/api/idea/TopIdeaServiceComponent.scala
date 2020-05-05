@@ -25,20 +25,24 @@ import org.make.core.question.QuestionId
 import scala.concurrent.Future
 
 trait TopIdeaService {
-  def create(ideaId: IdeaId,
-             questionId: QuestionId,
-             name: String,
-             label: String,
-             scores: TopIdeaScores,
-             weight: Float): Future[TopIdea]
+  def create(
+    ideaId: IdeaId,
+    questionId: QuestionId,
+    name: String,
+    label: String,
+    scores: TopIdeaScores,
+    weight: Float
+  ): Future[TopIdea]
   def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]]
-  def search(start: Int = 0,
-             end: Option[Int] = None,
-             sort: Option[String] = None,
-             order: Option[String] = None,
-             ideaId: Option[IdeaId],
-             questionIds: Option[Seq[QuestionId]],
-             name: Option[String]): Future[Seq[TopIdea]]
+  def search(
+    start: Int = 0,
+    end: Option[Int] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    ideaId: Option[IdeaId],
+    questionIds: Option[Seq[QuestionId]],
+    name: Option[String]
+  ): Future[Seq[TopIdea]]
   def update(topIdea: TopIdea): Future[TopIdea]
   def delete(topIdeaId: TopIdeaId): Future[Unit]
   def count(ideaId: Option[IdeaId], questionId: Option[QuestionId], name: Option[String]): Future[Int]
@@ -55,12 +59,14 @@ trait DefaultTopIdeaServiceComponent extends TopIdeaServiceComponent {
 
   class DefaultTopIdeaService extends TopIdeaService {
 
-    override def create(ideaId: IdeaId,
-                        questionId: QuestionId,
-                        name: String,
-                        label: String,
-                        scores: TopIdeaScores,
-                        weight: Float): Future[TopIdea] = {
+    override def create(
+      ideaId: IdeaId,
+      questionId: QuestionId,
+      name: String,
+      label: String,
+      scores: TopIdeaScores,
+      weight: Float
+    ): Future[TopIdea] = {
       persistentTopIdeaService.persist(
         TopIdea(idGenerator.nextTopIdeaId(), ideaId, questionId, name, label, scores, weight)
       )
@@ -74,13 +80,15 @@ trait DefaultTopIdeaServiceComponent extends TopIdeaServiceComponent {
       persistentTopIdeaService.modify(topIdea)
     }
 
-    override def search(start: Int = 0,
-                        end: Option[Int] = None,
-                        sort: Option[String] = None,
-                        order: Option[String] = None,
-                        ideaId: Option[IdeaId],
-                        questionIds: Option[Seq[QuestionId]],
-                        name: Option[String]): Future[Seq[TopIdea]] = {
+    override def search(
+      start: Int = 0,
+      end: Option[Int] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      ideaId: Option[IdeaId],
+      questionIds: Option[Seq[QuestionId]],
+      name: Option[String]
+    ): Future[Seq[TopIdea]] = {
       persistentTopIdeaService.search(start, end, sort, order, ideaId, questionIds, name)
     }
 

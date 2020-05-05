@@ -37,10 +37,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class OrganisationConsumerActor(organisationService: OrganisationService,
-                                override val elasticsearchOrganisationAPI: OrganisationSearchEngine,
-                                override val elasticsearchConfiguration: ElasticsearchConfiguration)
-    extends KafkaConsumerActor[UserEventWrapper]
+class OrganisationConsumerActor(
+  organisationService: OrganisationService,
+  override val elasticsearchOrganisationAPI: OrganisationSearchEngine,
+  override val elasticsearchConfiguration: ElasticsearchConfiguration
+) extends KafkaConsumerActor[UserEventWrapper]
     with ActorEventBusServiceComponent
     with AvroSerializers
     with ElasticsearchConfigurationComponent
@@ -86,9 +87,11 @@ class OrganisationConsumerActor(organisationService: OrganisationService,
 }
 
 object OrganisationConsumerActor {
-  def props(organisationService: OrganisationService,
-            elasticsearchOrganisationAPI: OrganisationSearchEngine,
-            elasticsearchConfiguration: ElasticsearchConfiguration): Props =
+  def props(
+    organisationService: OrganisationService,
+    elasticsearchOrganisationAPI: OrganisationSearchEngine,
+    elasticsearchConfiguration: ElasticsearchConfiguration
+  ): Props =
     Props(new OrganisationConsumerActor(organisationService, elasticsearchOrganisationAPI, elasticsearchConfiguration))
   val name: String = "organisation-consumer"
 }

@@ -48,13 +48,15 @@ import org.make.core.user.{UserId, UserType}
   * @param language       language to boost the query for. NOT A FILTER.
   * @param sortAlgorithm algorithm used for sorting
   */
-case class SearchQuery(filters: Option[SearchFilters] = None,
-                       excludes: Option[SearchFilters] = None,
-                       sort: Option[IndexedSort] = None,
-                       limit: Option[Int] = None,
-                       skip: Option[Int] = None,
-                       language: Option[Language] = None,
-                       sortAlgorithm: Option[SortAlgorithm] = None) {
+case class SearchQuery(
+  filters: Option[SearchFilters] = None,
+  excludes: Option[SearchFilters] = None,
+  sort: Option[IndexedSort] = None,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None,
+  language: Option[Language] = None,
+  sortAlgorithm: Option[SortAlgorithm] = None
+) {
   def getSeed: Option[Int] =
     sortAlgorithm.flatMap {
       case algorithm: RandomBaseAlgorithm => Some(algorithm.seed)
@@ -62,60 +64,64 @@ case class SearchQuery(filters: Option[SearchFilters] = None,
     }
 }
 
-case class SearchFilters(proposal: Option[ProposalSearchFilter] = None,
-                         initialProposal: Option[InitialProposalFilter] = None,
-                         tags: Option[TagsSearchFilter] = None,
-                         labels: Option[LabelsSearchFilter] = None,
-                         operation: Option[OperationSearchFilter] = None,
-                         question: Option[QuestionSearchFilter] = None,
-                         trending: Option[TrendingSearchFilter] = None,
-                         content: Option[ContentSearchFilter] = None,
-                         status: Option[StatusSearchFilter] = None,
-                         context: Option[ContextSearchFilter] = None,
-                         slug: Option[SlugSearchFilter] = None,
-                         idea: Option[IdeaSearchFilter] = None,
-                         language: Option[LanguageSearchFilter] = None,
-                         country: Option[CountrySearchFilter] = None,
-                         user: Option[UserSearchFilter] = None,
-                         minVotesCount: Option[MinVotesCountSearchFilter] = None,
-                         toEnrich: Option[ToEnrichSearchFilter] = None,
-                         minScore: Option[MinScoreSearchFilter] = None,
-                         createdAt: Option[CreatedAtSearchFilter] = None,
-                         sequencePool: Option[SequencePoolSearchFilter] = None,
-                         sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
-                         operationKinds: Option[OperationKindsSearchFilter] = None,
-                         questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
-                         segment: Option[SegmentSearchFilter] = None,
-                         userTypes: Option[UserTypesSearchFilter] = None)
+case class SearchFilters(
+  proposal: Option[ProposalSearchFilter] = None,
+  initialProposal: Option[InitialProposalFilter] = None,
+  tags: Option[TagsSearchFilter] = None,
+  labels: Option[LabelsSearchFilter] = None,
+  operation: Option[OperationSearchFilter] = None,
+  question: Option[QuestionSearchFilter] = None,
+  trending: Option[TrendingSearchFilter] = None,
+  content: Option[ContentSearchFilter] = None,
+  status: Option[StatusSearchFilter] = None,
+  context: Option[ContextSearchFilter] = None,
+  slug: Option[SlugSearchFilter] = None,
+  idea: Option[IdeaSearchFilter] = None,
+  language: Option[LanguageSearchFilter] = None,
+  country: Option[CountrySearchFilter] = None,
+  user: Option[UserSearchFilter] = None,
+  minVotesCount: Option[MinVotesCountSearchFilter] = None,
+  toEnrich: Option[ToEnrichSearchFilter] = None,
+  minScore: Option[MinScoreSearchFilter] = None,
+  createdAt: Option[CreatedAtSearchFilter] = None,
+  sequencePool: Option[SequencePoolSearchFilter] = None,
+  sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
+  operationKinds: Option[OperationKindsSearchFilter] = None,
+  questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
+  segment: Option[SegmentSearchFilter] = None,
+  userTypes: Option[UserTypesSearchFilter] = None
+)
 
 object SearchFilters extends ElasticDsl {
 
   //noinspection ScalaStyle
-  def parse(proposals: Option[ProposalSearchFilter] = None,
-            initialProposal: Option[InitialProposalFilter] = None,
-            tags: Option[TagsSearchFilter] = None,
-            labels: Option[LabelsSearchFilter] = None,
-            operation: Option[OperationSearchFilter] = None,
-            question: Option[QuestionSearchFilter] = None,
-            trending: Option[TrendingSearchFilter] = None,
-            content: Option[ContentSearchFilter] = None,
-            status: Option[StatusSearchFilter] = None,
-            slug: Option[SlugSearchFilter] = None,
-            context: Option[ContextSearchFilter] = None,
-            idea: Option[IdeaSearchFilter] = None,
-            language: Option[LanguageSearchFilter] = None,
-            country: Option[CountrySearchFilter] = None,
-            user: Option[UserSearchFilter] = None,
-            minVotesCount: Option[MinVotesCountSearchFilter] = None,
-            toEnrich: Option[ToEnrichSearchFilter] = None,
-            minScore: Option[MinScoreSearchFilter] = None,
-            createdAt: Option[CreatedAtSearchFilter] = None,
-            sequencePool: Option[SequencePoolSearchFilter] = None,
-            sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
-            operationKinds: Option[OperationKindsSearchFilter] = None,
-            questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
-            segment: Option[SegmentSearchFilter] = None,
-            userTypes: Option[UserTypesSearchFilter] = None): Option[SearchFilters] = {
+  def parse(
+    proposals: Option[ProposalSearchFilter] = None,
+    initialProposal: Option[InitialProposalFilter] = None,
+    tags: Option[TagsSearchFilter] = None,
+    labels: Option[LabelsSearchFilter] = None,
+    operation: Option[OperationSearchFilter] = None,
+    question: Option[QuestionSearchFilter] = None,
+    trending: Option[TrendingSearchFilter] = None,
+    content: Option[ContentSearchFilter] = None,
+    status: Option[StatusSearchFilter] = None,
+    slug: Option[SlugSearchFilter] = None,
+    context: Option[ContextSearchFilter] = None,
+    idea: Option[IdeaSearchFilter] = None,
+    language: Option[LanguageSearchFilter] = None,
+    country: Option[CountrySearchFilter] = None,
+    user: Option[UserSearchFilter] = None,
+    minVotesCount: Option[MinVotesCountSearchFilter] = None,
+    toEnrich: Option[ToEnrichSearchFilter] = None,
+    minScore: Option[MinScoreSearchFilter] = None,
+    createdAt: Option[CreatedAtSearchFilter] = None,
+    sequencePool: Option[SequencePoolSearchFilter] = None,
+    sequenceSegmentPool: Option[SequencePoolSearchFilter] = None,
+    operationKinds: Option[OperationKindsSearchFilter] = None,
+    questionIsOpen: Option[QuestionIsOpenSearchFilter] = None,
+    segment: Option[SegmentSearchFilter] = None,
+    userTypes: Option[UserTypesSearchFilter] = None
+  ): Option[SearchFilters] = {
 
     Seq(
       proposals,
@@ -387,54 +393,54 @@ object SearchFilters extends ElasticDsl {
     } yield {
       val fieldsBoosts =
         Map(
-          ProposalElasticsearchFieldNames.content -> 3D,
-          ProposalElasticsearchFieldNames.contentFr -> 2D * languageOmission("fr"),
-          ProposalElasticsearchFieldNames.contentFrStemmed -> 1.5D * languageOmission("fr"),
-          ProposalElasticsearchFieldNames.contentEn -> 2D * languageOmission("en"),
-          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5D * languageOmission("en"),
-          ProposalElasticsearchFieldNames.contentIt -> 2D * languageOmission("it"),
-          ProposalElasticsearchFieldNames.contentItStemmed -> 1.5D * languageOmission("it"),
-          ProposalElasticsearchFieldNames.contentDe -> 2D * languageOmission("de"),
-          ProposalElasticsearchFieldNames.contentDeStemmed -> 1.5D * languageOmission("de"),
-          ProposalElasticsearchFieldNames.contentBg -> 2D * languageOmission("bg"),
-          ProposalElasticsearchFieldNames.contentBgStemmed -> 1.5D * languageOmission("bg"),
-          ProposalElasticsearchFieldNames.contentCs -> 2D * languageOmission("cs"),
-          ProposalElasticsearchFieldNames.contentCsStemmed -> 1.5D * languageOmission("cs"),
-          ProposalElasticsearchFieldNames.contentDa -> 2D * languageOmission("da"),
-          ProposalElasticsearchFieldNames.contentDaStemmed -> 1.5D * languageOmission("da"),
-          ProposalElasticsearchFieldNames.contentNl -> 2D * languageOmission("nl"),
-          ProposalElasticsearchFieldNames.contentNlStemmed -> 1.5D * languageOmission("nl"),
-          ProposalElasticsearchFieldNames.contentFi -> 2D * languageOmission("fi"),
-          ProposalElasticsearchFieldNames.contentFiStemmed -> 1.5D * languageOmission("fi"),
-          ProposalElasticsearchFieldNames.contentEl -> 2D * languageOmission("el"),
-          ProposalElasticsearchFieldNames.contentElStemmed -> 1.5D * languageOmission("el"),
-          ProposalElasticsearchFieldNames.contentHu -> 2D * languageOmission("hu"),
-          ProposalElasticsearchFieldNames.contentHuStemmed -> 1.5D * languageOmission("hu"),
-          ProposalElasticsearchFieldNames.contentLv -> 2D * languageOmission("lv"),
-          ProposalElasticsearchFieldNames.contentLvStemmed -> 1.5D * languageOmission("lv"),
-          ProposalElasticsearchFieldNames.contentLt -> 2D * languageOmission("lt"),
-          ProposalElasticsearchFieldNames.contentLtStemmed -> 1.5D * languageOmission("lt"),
-          ProposalElasticsearchFieldNames.contentPt -> 2D * languageOmission("pt"),
-          ProposalElasticsearchFieldNames.contentPtStemmed -> 1.5D * languageOmission("pt"),
-          ProposalElasticsearchFieldNames.contentRo -> 2D * languageOmission("ro"),
-          ProposalElasticsearchFieldNames.contentRoStemmed -> 1.5D * languageOmission("ro"),
-          ProposalElasticsearchFieldNames.contentEs -> 2D * languageOmission("es"),
-          ProposalElasticsearchFieldNames.contentEsStemmed -> 1.5D * languageOmission("es"),
-          ProposalElasticsearchFieldNames.contentSv -> 2D * languageOmission("sv"),
-          ProposalElasticsearchFieldNames.contentSvStemmed -> 1.5D * languageOmission("sv"),
-          ProposalElasticsearchFieldNames.contentPl -> 2D * languageOmission("pl"),
-          ProposalElasticsearchFieldNames.contentPlStemmed -> 1.5D * languageOmission("pl"),
-          ProposalElasticsearchFieldNames.contentHr -> 2D * languageOmission("hr"),
-          ProposalElasticsearchFieldNames.contentEt -> 2D * languageOmission("et"),
-          ProposalElasticsearchFieldNames.contentMt -> 2D * languageOmission("mt"),
-          ProposalElasticsearchFieldNames.contentSk -> 2D * languageOmission("sk"),
-          ProposalElasticsearchFieldNames.contentSl -> 2D * languageOmission("sl"),
-          ProposalElasticsearchFieldNames.contentGeneral -> 1D
+          ProposalElasticsearchFieldNames.content -> 3d,
+          ProposalElasticsearchFieldNames.contentFr -> 2d * languageOmission("fr"),
+          ProposalElasticsearchFieldNames.contentFrStemmed -> 1.5d * languageOmission("fr"),
+          ProposalElasticsearchFieldNames.contentEn -> 2d * languageOmission("en"),
+          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5d * languageOmission("en"),
+          ProposalElasticsearchFieldNames.contentIt -> 2d * languageOmission("it"),
+          ProposalElasticsearchFieldNames.contentItStemmed -> 1.5d * languageOmission("it"),
+          ProposalElasticsearchFieldNames.contentDe -> 2d * languageOmission("de"),
+          ProposalElasticsearchFieldNames.contentDeStemmed -> 1.5d * languageOmission("de"),
+          ProposalElasticsearchFieldNames.contentBg -> 2d * languageOmission("bg"),
+          ProposalElasticsearchFieldNames.contentBgStemmed -> 1.5d * languageOmission("bg"),
+          ProposalElasticsearchFieldNames.contentCs -> 2d * languageOmission("cs"),
+          ProposalElasticsearchFieldNames.contentCsStemmed -> 1.5d * languageOmission("cs"),
+          ProposalElasticsearchFieldNames.contentDa -> 2d * languageOmission("da"),
+          ProposalElasticsearchFieldNames.contentDaStemmed -> 1.5d * languageOmission("da"),
+          ProposalElasticsearchFieldNames.contentNl -> 2d * languageOmission("nl"),
+          ProposalElasticsearchFieldNames.contentNlStemmed -> 1.5d * languageOmission("nl"),
+          ProposalElasticsearchFieldNames.contentFi -> 2d * languageOmission("fi"),
+          ProposalElasticsearchFieldNames.contentFiStemmed -> 1.5d * languageOmission("fi"),
+          ProposalElasticsearchFieldNames.contentEl -> 2d * languageOmission("el"),
+          ProposalElasticsearchFieldNames.contentElStemmed -> 1.5d * languageOmission("el"),
+          ProposalElasticsearchFieldNames.contentHu -> 2d * languageOmission("hu"),
+          ProposalElasticsearchFieldNames.contentHuStemmed -> 1.5d * languageOmission("hu"),
+          ProposalElasticsearchFieldNames.contentLv -> 2d * languageOmission("lv"),
+          ProposalElasticsearchFieldNames.contentLvStemmed -> 1.5d * languageOmission("lv"),
+          ProposalElasticsearchFieldNames.contentLt -> 2d * languageOmission("lt"),
+          ProposalElasticsearchFieldNames.contentLtStemmed -> 1.5d * languageOmission("lt"),
+          ProposalElasticsearchFieldNames.contentPt -> 2d * languageOmission("pt"),
+          ProposalElasticsearchFieldNames.contentPtStemmed -> 1.5d * languageOmission("pt"),
+          ProposalElasticsearchFieldNames.contentRo -> 2d * languageOmission("ro"),
+          ProposalElasticsearchFieldNames.contentRoStemmed -> 1.5d * languageOmission("ro"),
+          ProposalElasticsearchFieldNames.contentEs -> 2d * languageOmission("es"),
+          ProposalElasticsearchFieldNames.contentEsStemmed -> 1.5d * languageOmission("es"),
+          ProposalElasticsearchFieldNames.contentSv -> 2d * languageOmission("sv"),
+          ProposalElasticsearchFieldNames.contentSvStemmed -> 1.5d * languageOmission("sv"),
+          ProposalElasticsearchFieldNames.contentPl -> 2d * languageOmission("pl"),
+          ProposalElasticsearchFieldNames.contentPlStemmed -> 1.5d * languageOmission("pl"),
+          ProposalElasticsearchFieldNames.contentHr -> 2d * languageOmission("hr"),
+          ProposalElasticsearchFieldNames.contentEt -> 2d * languageOmission("et"),
+          ProposalElasticsearchFieldNames.contentMt -> 2d * languageOmission("mt"),
+          ProposalElasticsearchFieldNames.contentSk -> 2d * languageOmission("sk"),
+          ProposalElasticsearchFieldNames.contentSl -> 2d * languageOmission("sl"),
+          ProposalElasticsearchFieldNames.contentGeneral -> 1d
         ).filter { case (_, boost) => boost != 0 }
       functionScoreQuery(multiMatchQuery(text).fields(fieldsBoosts).fuzziness("Auto:4,7").operator(Operator.AND))
         .functions(
           WeightScore(
-            weight = 2D,
+            weight = 2d,
             filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
           )
         )
@@ -636,10 +642,12 @@ final case class ContentSearchFilter(text: String)
 
 final case class StatusSearchFilter(status: Seq[ProposalStatus])
 
-final case class ContextSearchFilter(operation: Option[OperationId] = None,
-                                     source: Option[String] = None,
-                                     location: Option[String] = None,
-                                     question: Option[String] = None)
+final case class ContextSearchFilter(
+  operation: Option[OperationId] = None,
+  source: Option[String] = None,
+  location: Option[String] = None,
+  question: Option[String] = None
+)
 
 final case class SlugSearchFilter(slug: String)
 

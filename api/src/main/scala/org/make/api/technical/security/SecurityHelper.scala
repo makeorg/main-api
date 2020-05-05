@@ -66,10 +66,12 @@ object SecurityHelper extends StrictLogging {
     }
   }
 
-  def generateProposalKeyHash(proposalId: ProposalId,
-                              sessionId: SessionId,
-                              location: Option[String],
-                              salt: String): String = {
+  def generateProposalKeyHash(
+    proposalId: ProposalId,
+    sessionId: SessionId,
+    location: Option[String],
+    salt: String
+  ): String = {
     val rawString: String = s"${proposalId.value}${sessionId.value}${location.getOrElse("")}"
     generateHash(value = rawString, salt = salt)
   }

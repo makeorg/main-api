@@ -32,17 +32,21 @@ import scala.concurrent.Future
 
 trait TopIdeaCommentService {
   def get(topIdeaCommentId: TopIdeaCommentId): Future[Option[TopIdeaComment]]
-  def create(topIdeaId: TopIdeaId,
-             personalityId: UserId,
-             comment1: Option[String],
-             comment2: Option[String],
-             comment3: Option[String],
-             vote: CommentVoteKey,
-             qualification: Option[CommentQualificationKey]): Future[TopIdeaComment]
-  def search(start: Int,
-             end: Option[Int],
-             topIdeaIds: Option[Seq[TopIdeaId]],
-             personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]]
+  def create(
+    topIdeaId: TopIdeaId,
+    personalityId: UserId,
+    comment1: Option[String],
+    comment2: Option[String],
+    comment3: Option[String],
+    vote: CommentVoteKey,
+    qualification: Option[CommentQualificationKey]
+  ): Future[TopIdeaComment]
+  def search(
+    start: Int,
+    end: Option[Int],
+    topIdeaIds: Option[Seq[TopIdeaId]],
+    personalityIds: Option[Seq[UserId]]
+  ): Future[Seq[TopIdeaComment]]
   def getCommentsWithPersonality(topIdeaIds: Seq[TopIdeaId]): Future[Seq[QuestionTopIdeaCommentsResponse]]
   def countForAll(topIdeaIds: Seq[TopIdeaId]): Future[Map[String, Int]]
 }
@@ -64,13 +68,15 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
     override def get(topIdeaCommentId: TopIdeaCommentId): Future[Option[TopIdeaComment]] =
       persistentTopIdeaCommentService.getById(topIdeaCommentId)
 
-    override def create(topIdeaId: TopIdeaId,
-                        personalityId: UserId,
-                        comment1: Option[String],
-                        comment2: Option[String],
-                        comment3: Option[String],
-                        vote: CommentVoteKey,
-                        qualification: Option[CommentQualificationKey]): Future[TopIdeaComment] = {
+    override def create(
+      topIdeaId: TopIdeaId,
+      personalityId: UserId,
+      comment1: Option[String],
+      comment2: Option[String],
+      comment3: Option[String],
+      vote: CommentVoteKey,
+      qualification: Option[CommentQualificationKey]
+    ): Future[TopIdeaComment] = {
       persistentTopIdeaCommentService.persist(
         TopIdeaComment(
           topIdeaCommentId = idGenerator.nextTopIdeaCommentId(),
@@ -85,10 +91,12 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
       )
     }
 
-    override def search(start: Int,
-                        end: Option[Int],
-                        topIdeaIds: Option[Seq[TopIdeaId]],
-                        personalityIds: Option[Seq[UserId]]): Future[Seq[TopIdeaComment]] = {
+    override def search(
+      start: Int,
+      end: Option[Int],
+      topIdeaIds: Option[Seq[TopIdeaId]],
+      personalityIds: Option[Seq[UserId]]
+    ): Future[Seq[TopIdeaComment]] = {
       persistentTopIdeaCommentService.search(start, end, topIdeaIds, personalityIds)
     }
 

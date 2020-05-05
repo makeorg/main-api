@@ -217,11 +217,13 @@ trait DefaultAdminFeatureApiComponent
         path("admin" / "features") {
           makeOperation("AdminSearchFeature") { _ =>
             parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "slug".?)) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               maybeSlug: Option[String]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                sort: Option[String],
+                order: Option[String],
+                maybeSlug: Option[String]
+              ) =>
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireAdminRole(userAuth.user) {
                     order.foreach { orderValue =>

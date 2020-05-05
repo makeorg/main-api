@@ -442,13 +442,15 @@ trait DefaultAdminPersonalityRoleApiComponent
               "required".as[Boolean].?
             )
           ) {
-            (start: Option[Int],
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             name: Option[String],
-             fieldType: Option[FieldType],
-             required: Option[Boolean]) =>
+            (
+              start: Option[Int],
+              end: Option[Int],
+              sort: Option[String],
+              order: Option[String],
+              name: Option[String],
+              fieldType: Option[FieldType],
+              required: Option[Boolean]
+            ) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   provideAsync(
@@ -588,11 +590,10 @@ object UpdatePersonalityRoleFieldRequest {
   implicit val decoder: Decoder[UpdatePersonalityRoleFieldRequest] = deriveDecoder[UpdatePersonalityRoleFieldRequest]
 }
 
-case class PersonalityRoleResponse(@(ApiModelProperty @field)(
-                                     dataType = "string",
-                                     example = "d22c8e70-f709-42ff-8a52-9398d159c753"
-                                   ) id: PersonalityRoleId,
-                                   name: String)
+case class PersonalityRoleResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: PersonalityRoleId,
+  name: String
+)
 
 object PersonalityRoleResponse {
   implicit val encoder: Encoder[PersonalityRoleResponse] = deriveEncoder[PersonalityRoleResponse]
@@ -612,14 +613,13 @@ object PersonalityRoleIdResponse {
   implicit val decoder: Decoder[PersonalityRoleIdResponse] = deriveDecoder[PersonalityRoleIdResponse]
 }
 
-case class PersonalityRoleFieldResponse(@(ApiModelProperty @field)(
-                                          dataType = "string",
-                                          example = "d22c8e70-f709-42ff-8a52-9398d159c753"
-                                        ) id: PersonalityRoleFieldId,
-                                        personalityRoleId: PersonalityRoleId,
-                                        name: String,
-                                        fieldType: FieldType,
-                                        required: Boolean)
+case class PersonalityRoleFieldResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: PersonalityRoleFieldId,
+  personalityRoleId: PersonalityRoleId,
+  name: String,
+  fieldType: FieldType,
+  required: Boolean
+)
 
 object PersonalityRoleFieldResponse {
   implicit val encoder: Encoder[PersonalityRoleFieldResponse] = deriveEncoder[PersonalityRoleFieldResponse]

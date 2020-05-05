@@ -128,12 +128,14 @@ object ModerationProposalResponse extends CirceFormatters {
   implicit val decoder: Decoder[ModerationProposalResponse] = deriveDecoder[ModerationProposalResponse]
 }
 
-final case class ProposalActionResponse(@(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
-                                        date: ZonedDateTime,
-                                        user: Option[UserResponse],
-                                        actionType: String,
-                                        @(ApiModelProperty @field)(dataType = "java.util.Map")
-                                        arguments: Map[String, String])
+final case class ProposalActionResponse(
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  date: ZonedDateTime,
+  user: Option[UserResponse],
+  actionType: String,
+  @(ApiModelProperty @field)(dataType = "java.util.Map")
+  arguments: Map[String, String]
+)
 
 object ProposalActionResponse extends CirceFormatters {
   implicit val encoder: Encoder[ProposalActionResponse] = deriveEncoder[ProposalActionResponse]
@@ -151,15 +153,17 @@ object ProposalIdResponse {
   implicit val decoder: Decoder[ProposalIdResponse] = deriveDecoder[ProposalIdResponse]
 }
 
-final case class AuthorResponse(firstName: Option[String],
-                                displayName: Option[String],
-                                organisationName: Option[String],
-                                organisationSlug: Option[String],
-                                postalCode: Option[String],
-                                @(ApiModelProperty @field)(example = "21", dataType = "int")
-                                age: Option[Int],
-                                avatarUrl: Option[String],
-                                userType: Option[UserType])
+final case class AuthorResponse(
+  firstName: Option[String],
+  displayName: Option[String],
+  organisationName: Option[String],
+  organisationSlug: Option[String],
+  postalCode: Option[String],
+  @(ApiModelProperty @field)(example = "21", dataType = "int")
+  age: Option[Int],
+  avatarUrl: Option[String],
+  userType: Option[UserType]
+)
 
 object AuthorResponse {
   implicit val encoder: Encoder[AuthorResponse] = deriveEncoder[AuthorResponse]
@@ -286,10 +290,12 @@ object ProposalResponse extends CirceFormatters {
   implicit val encoder: Encoder[ProposalResponse] = deriveEncoder[ProposalResponse]
   implicit val decoder: Decoder[ProposalResponse] = deriveDecoder[ProposalResponse]
 
-  def apply(indexedProposal: IndexedProposal,
-            myProposal: Boolean,
-            voteAndQualifications: Option[VoteAndQualifications],
-            proposalKey: String): ProposalResponse =
+  def apply(
+    indexedProposal: IndexedProposal,
+    myProposal: Boolean,
+    voteAndQualifications: Option[VoteAndQualifications],
+    proposalKey: String
+  ): ProposalResponse =
     ProposalResponse(
       id = indexedProposal.id,
       userId = indexedProposal.userId,
@@ -365,10 +371,12 @@ object ProposalResultWithUserVote extends CirceFormatters {
 }
 
 @ApiModel
-final case class ProposalsResultWithUserVoteSeededResponse(total: Long,
-                                                           results: Seq[ProposalResultWithUserVote],
-                                                           @(ApiModelProperty @field)(dataType = "int", example = "42")
-                                                           seed: Option[Int])
+final case class ProposalsResultWithUserVoteSeededResponse(
+  total: Long,
+  results: Seq[ProposalResultWithUserVote],
+  @(ApiModelProperty @field)(dataType = "int", example = "42")
+  seed: Option[Int]
+)
 
 object ProposalsResultWithUserVoteSeededResponse {
   implicit val encoder: Encoder[ProposalsResultWithUserVoteSeededResponse] =
@@ -378,11 +386,13 @@ object ProposalsResultWithUserVoteSeededResponse {
 }
 
 @ApiModel
-final case class VoteResponse(@(ApiModelProperty @field)(dataType = "string", example = "agree")
-                              voteKey: VoteKey,
-                              count: Int,
-                              qualifications: Seq[QualificationResponse],
-                              hasVoted: Boolean)
+final case class VoteResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  voteKey: VoteKey,
+  count: Int,
+  qualifications: Seq[QualificationResponse],
+  hasVoted: Boolean
+)
 
 object VoteResponse {
 
@@ -404,9 +414,11 @@ object VoteResponse {
       hasVoted = hasVoted
     )
 
-  def parseVote(vote: IndexedVote,
-                hasVoted: Boolean,
-                voteAndQualifications: Option[VoteAndQualifications]): VoteResponse =
+  def parseVote(
+    vote: IndexedVote,
+    hasVoted: Boolean,
+    voteAndQualifications: Option[VoteAndQualifications]
+  ): VoteResponse =
     VoteResponse(
       voteKey = vote.key,
       count = vote.count,
@@ -423,10 +435,12 @@ object VoteResponse {
 }
 
 @ApiModel
-final case class QualificationResponse(@(ApiModelProperty @field)(dataType = "string", example = "likeIt")
-                                       qualificationKey: QualificationKey,
-                                       count: Int,
-                                       hasQualified: Boolean)
+final case class QualificationResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
+  qualificationKey: QualificationKey,
+  count: Int,
+  hasQualified: Boolean
+)
 
 object QualificationResponse {
   implicit val encoder: Encoder[QualificationResponse] = deriveEncoder[QualificationResponse]
@@ -446,11 +460,13 @@ object QualificationResponse {
     )
 }
 
-final case class DuplicateResponse(ideaId: IdeaId,
-                                   ideaName: String,
-                                   proposalId: ProposalId,
-                                   proposalContent: String,
-                                   score: Double)
+final case class DuplicateResponse(
+  ideaId: IdeaId,
+  ideaName: String,
+  proposalId: ProposalId,
+  proposalContent: String,
+  score: Double
+)
 
 object DuplicateResponse {
   implicit val encoder: Encoder[DuplicateResponse] = deriveEncoder[DuplicateResponse]
@@ -458,13 +474,15 @@ object DuplicateResponse {
 }
 
 @ApiModel
-final case class TagForProposalResponse(@(ApiModelProperty @field)(dataType = "string", example = "tag-slug") id: TagId,
-                                        label: String,
-                                        @(ApiModelProperty @field)(dataType = "string") tagTypeId: TagTypeId,
-                                        weight: Float,
-                                        @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
-                                        checked: Boolean,
-                                        predicted: Boolean)
+final case class TagForProposalResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "tag-slug") id: TagId,
+  label: String,
+  @(ApiModelProperty @field)(dataType = "string") tagTypeId: TagTypeId,
+  weight: Float,
+  @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
+  checked: Boolean,
+  predicted: Boolean
+)
 
 object TagForProposalResponse {
   implicit val encoder: Encoder[TagForProposalResponse] = deriveEncoder[TagForProposalResponse]

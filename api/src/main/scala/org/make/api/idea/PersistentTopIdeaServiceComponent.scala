@@ -39,13 +39,15 @@ trait PersistentTopIdeaServiceComponent {
 trait PersistentTopIdeaService {
   def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]]
   def getByIdAndQuestionId(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[TopIdea]]
-  def search(start: Int,
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             ideaId: Option[IdeaId],
-             questionIds: Option[Seq[QuestionId]],
-             name: Option[String]): Future[Seq[TopIdea]]
+  def search(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    ideaId: Option[IdeaId],
+    questionIds: Option[Seq[QuestionId]],
+    name: Option[String]
+  ): Future[Seq[TopIdea]]
   def persist(topIdea: TopIdea): Future[TopIdea]
   def modify(topIdea: TopIdea): Future[TopIdea]
   def remove(topIdeaId: TopIdeaId): Future[Unit]
@@ -88,13 +90,15 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
       futurePersistentTopIdea.map(_.map(_.toTopIdea))
     }
 
-    override def search(start: Int,
-                        end: Option[Int],
-                        sort: Option[String],
-                        order: Option[String],
-                        ideaId: Option[IdeaId],
-                        questionIds: Option[Seq[QuestionId]],
-                        name: Option[String]): Future[Seq[TopIdea]] = {
+    override def search(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      ideaId: Option[IdeaId],
+      questionIds: Option[Seq[QuestionId]],
+      name: Option[String]
+    ): Future[Seq[TopIdea]] = {
       implicit val context: EC = readExecutionContext
 
       val futurePersistentTopIdeas = Future(NamedDB("READ").retryableTx { implicit session =>
@@ -194,15 +198,17 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
 
 object DefaultPersistentTopIdeaServiceComponent {
 
-  case class PersistentTopIdea(id: String,
-                               ideaId: String,
-                               questionId: String,
-                               name: String,
-                               label: String,
-                               totalProposalsRatio: Float,
-                               agreementRatio: Float,
-                               likeItRatio: Float,
-                               weight: Float) {
+  case class PersistentTopIdea(
+    id: String,
+    ideaId: String,
+    questionId: String,
+    name: String,
+    label: String,
+    totalProposalsRatio: Float,
+    agreementRatio: Float,
+    likeItRatio: Float,
+    weight: Float
+  ) {
     def toTopIdea: TopIdea =
       TopIdea(
         topIdeaId = TopIdeaId(id),

@@ -172,13 +172,15 @@ trait DefaultAdminPersonalityApiComponent
           parameters(
             ("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "email".?, "firstName".?, "lastName".?)
           ) {
-            (start: Option[Int],
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             email: Option[String],
-             firstName: Option[String],
-             lastName: Option[String]) =>
+            (
+              start: Option[Int],
+              end: Option[Int],
+              sort: Option[String],
+              order: Option[String],
+              email: Option[String],
+              firstName: Option[String],
+              lastName: Option[String]
+            ) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   provideAsync(

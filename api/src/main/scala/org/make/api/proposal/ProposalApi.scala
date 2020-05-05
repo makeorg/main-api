@@ -287,28 +287,30 @@ trait DefaultProposalApiComponent
                   "ideaIds".as[immutable.Seq[IdeaId]].?
                 )
               ) {
-                (proposalIds: Option[Seq[ProposalId]],
-                 questionIds: Option[Seq[QuestionId]],
-                 tagsIds: Option[Seq[TagId]],
-                 operationId: Option[OperationId],
-                 content: Option[String],
-                 slug: Option[String],
-                 seed: Option[Int],
-                 source: Option[String],
-                 location: Option[String],
-                 question: Option[String],
-                 language: Option[Language],
-                 country: Option[Country],
-                 sort: Option[String],
-                 order: Option[String],
-                 limit: Option[Int],
-                 skip: Option[Int],
-                 isRandom: Option[Boolean],
-                 sortAlgorithm: Option[String],
-                 operationKinds: Option[Seq[OperationKind]],
-                 isOrganisation: Option[Boolean],
-                 userType: Option[Seq[UserType]],
-                 ideaIds: Option[Seq[IdeaId]]) =>
+                (
+                  proposalIds: Option[Seq[ProposalId]],
+                  questionIds: Option[Seq[QuestionId]],
+                  tagsIds: Option[Seq[TagId]],
+                  operationId: Option[OperationId],
+                  content: Option[String],
+                  slug: Option[String],
+                  seed: Option[Int],
+                  source: Option[String],
+                  location: Option[String],
+                  question: Option[String],
+                  language: Option[Language],
+                  country: Option[Country],
+                  sort: Option[String],
+                  order: Option[String],
+                  limit: Option[Int],
+                  skip: Option[Int],
+                  isRandom: Option[Boolean],
+                  sortAlgorithm: Option[String],
+                  operationKinds: Option[Seq[OperationKind]],
+                  isOrganisation: Option[Boolean],
+                  userType: Option[Seq[UserType]],
+                  ideaIds: Option[Seq[IdeaId]]
+                ) =>
                   Validation.validate(Seq(country.map { countryValue =>
                     Validation.validChoices(
                       fieldName = "country",

@@ -35,20 +35,24 @@ import scala.concurrent.Future
 trait PersistentIdeaMappingService {
 
   def persist(mapping: IdeaMapping): Future[IdeaMapping]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           questionId: Option[QuestionId],
-           stakeTagId: Option[TagIdOrNone],
-           solutionTypeTagId: Option[TagIdOrNone],
-           ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    questionId: Option[QuestionId],
+    stakeTagId: Option[TagIdOrNone],
+    solutionTypeTagId: Option[TagIdOrNone],
+    ideaId: Option[IdeaId]
+  ): Future[Seq[IdeaMapping]]
   def get(id: IdeaMappingId): Future[Option[IdeaMapping]]
   def updateMapping(mapping: IdeaMapping): Future[Option[IdeaMapping]]
-  def count(questionId: Option[QuestionId],
-            stakeTagId: Option[TagIdOrNone],
-            solutionTypeTagId: Option[TagIdOrNone],
-            ideaId: Option[IdeaId]): Future[Int]
+  def count(
+    questionId: Option[QuestionId],
+    stakeTagId: Option[TagIdOrNone],
+    solutionTypeTagId: Option[TagIdOrNone],
+    ideaId: Option[IdeaId]
+  ): Future[Int]
 }
 
 trait PersistentIdeaMappingServiceComponent {
@@ -78,14 +82,16 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
       }).map(_ => mapping)
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      questionId: Option[QuestionId],
-                      stakeTagId: Option[TagIdOrNone],
-                      solutionTypeTagId: Option[TagIdOrNone],
-                      ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      questionId: Option[QuestionId],
+      stakeTagId: Option[TagIdOrNone],
+      solutionTypeTagId: Option[TagIdOrNone],
+      ideaId: Option[IdeaId]
+    ): Future[Seq[IdeaMapping]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -139,10 +145,12 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
       }).flatMap(_ => get(mapping.id))
     }
 
-    override def count(questionId: Option[QuestionId],
-                       stakeTagId: Option[TagIdOrNone],
-                       solutionTypeTagId: Option[TagIdOrNone],
-                       ideaId: Option[IdeaId]): Future[Int] = {
+    override def count(
+      questionId: Option[QuestionId],
+      stakeTagId: Option[TagIdOrNone],
+      solutionTypeTagId: Option[TagIdOrNone],
+      ideaId: Option[IdeaId]
+    ): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentIdeaMapping] {

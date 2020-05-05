@@ -48,9 +48,11 @@ trait OperationHelper {
 
   implicit def executor: ExecutionContext
 
-  def createQuestionsAndSequences(api: MakeApi,
-                                  operation: Operation,
-                                  configuration: QuestionConfiguration): Future[Unit] = {
+  def createQuestionsAndSequences(
+    api: MakeApi,
+    operation: Operation,
+    configuration: QuestionConfiguration
+  ): Future[Unit] = {
 
     val questionId: QuestionId = api.idGenerator.nextQuestionId()
     val sequenceId: SequenceId = api.idGenerator.nextSequenceId()
@@ -111,11 +113,13 @@ trait OperationHelper {
       }
   }
 
-  def createOperation(api: MakeApi,
-                      operationSlug: String,
-                      defaultLanguage: Language,
-                      countryConfigurations: Seq[QuestionConfiguration],
-                      allowedSources: Seq[String]): Future[Operation] = {
+  def createOperation(
+    api: MakeApi,
+    operationSlug: String,
+    defaultLanguage: Language,
+    countryConfigurations: Seq[QuestionConfiguration],
+    allowedSources: Seq[String]
+  ): Future[Operation] = {
 
     api.operationService
       .create(
@@ -134,11 +138,13 @@ trait OperationHelper {
       }
   }
 
-  def createOperationIfNeeded(api: MakeApi,
-                              defaultLanguage: Language,
-                              operationSlug: String,
-                              countryConfigurations: Seq[QuestionConfiguration],
-                              allowedSources: Seq[String]): Future[Unit] = {
+  def createOperationIfNeeded(
+    api: MakeApi,
+    defaultLanguage: Language,
+    operationSlug: String,
+    countryConfigurations: Seq[QuestionConfiguration],
+    allowedSources: Seq[String]
+  ): Future[Unit] = {
 
     api.operationService.findOneBySlug(operationSlug).flatMap {
       case Some(_) => Future.successful {}

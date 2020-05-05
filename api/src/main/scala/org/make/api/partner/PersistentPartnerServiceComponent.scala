@@ -41,16 +41,20 @@ trait PersistentPartnerService {
   def persist(partner: Partner): Future[Partner]
   def modify(partner: Partner): Future[Partner]
   def getById(partnerId: PartnerId): Future[Option[Partner]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           questionId: Option[QuestionId],
-           organisationId: Option[UserId],
-           partnerKind: Option[PartnerKind]): Future[Seq[Partner]]
-  def count(questionId: Option[QuestionId],
-            organisationId: Option[UserId],
-            partnerKind: Option[PartnerKind]): Future[Int]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    questionId: Option[QuestionId],
+    organisationId: Option[UserId],
+    partnerKind: Option[PartnerKind]
+  ): Future[Seq[Partner]]
+  def count(
+    questionId: Option[QuestionId],
+    organisationId: Option[UserId],
+    partnerKind: Option[PartnerKind]
+  ): Future[Int]
   def delete(partnerId: PartnerId): Future[Unit]
 }
 
@@ -115,13 +119,15 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
       }).map(_.map(_.toPartner))
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      questionId: Option[QuestionId],
-                      organisationId: Option[UserId],
-                      partnerKind: Option[PartnerKind]): Future[Seq[Partner]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      questionId: Option[QuestionId],
+      organisationId: Option[UserId],
+      partnerKind: Option[PartnerKind]
+    ): Future[Seq[Partner]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -140,9 +146,11 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
       }).map(_.map(_.toPartner))
     }
 
-    override def count(questionId: Option[QuestionId],
-                       organisationId: Option[UserId],
-                       partnerKind: Option[PartnerKind]): Future[Int] = {
+    override def count(
+      questionId: Option[QuestionId],
+      organisationId: Option[UserId],
+      partnerKind: Option[PartnerKind]
+    ): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -174,14 +182,16 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
 object DefaultPersistentPartnerServiceComponent {
 
-  case class PersistentPartner(id: String,
-                               name: String,
-                               logo: Option[String],
-                               link: Option[String],
-                               organisationId: Option[String],
-                               partnerKind: String,
-                               questionId: String,
-                               weight: Float) {
+  case class PersistentPartner(
+    id: String,
+    name: String,
+    logo: Option[String],
+    link: Option[String],
+    organisationId: Option[String],
+    partnerKind: String,
+    questionId: String,
+    weight: Float
+  ) {
     def toPartner: Partner = {
       Partner(
         partnerId = PartnerId(id),

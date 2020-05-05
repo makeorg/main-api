@@ -46,30 +46,42 @@ trait SendMailPublisherServiceComponent {
 
 trait SendMailPublisherService {
   def publishWelcome(user: User, country: Country, language: Language, requestContext: RequestContext): Future[Unit]
-  def publishRegistration(user: User,
-                          country: Country,
-                          language: Language,
-                          requestContext: RequestContext): Future[Unit]
-  def publishForgottenPassword(user: User,
-                               country: Country,
-                               language: Language,
-                               requestContext: RequestContext): Future[Unit]
-  def publishForgottenPasswordOrganisation(organisation: User,
-                                           country: Country,
-                                           language: Language,
-                                           requestContext: RequestContext): Future[Unit]
-  def publishEmailChanged(user: User,
-                          country: Country,
-                          language: Language,
-                          requestContext: RequestContext,
-                          newEmail: String): Future[Unit]
-  def publishAcceptProposal(proposalId: ProposalId,
-                            maybeQuestionId: Option[QuestionId],
-                            maybeOperationId: Option[OperationId],
-                            requestContext: RequestContext): Future[Unit]
-  def publishRefuseProposal(proposalId: ProposalId,
-                            maybeOperationId: Option[OperationId],
-                            requestContext: RequestContext): Future[Unit]
+  def publishRegistration(
+    user: User,
+    country: Country,
+    language: Language,
+    requestContext: RequestContext
+  ): Future[Unit]
+  def publishForgottenPassword(
+    user: User,
+    country: Country,
+    language: Language,
+    requestContext: RequestContext
+  ): Future[Unit]
+  def publishForgottenPasswordOrganisation(
+    organisation: User,
+    country: Country,
+    language: Language,
+    requestContext: RequestContext
+  ): Future[Unit]
+  def publishEmailChanged(
+    user: User,
+    country: Country,
+    language: Language,
+    requestContext: RequestContext,
+    newEmail: String
+  ): Future[Unit]
+  def publishAcceptProposal(
+    proposalId: ProposalId,
+    maybeQuestionId: Option[QuestionId],
+    maybeOperationId: Option[OperationId],
+    requestContext: RequestContext
+  ): Future[Unit]
+  def publishRefuseProposal(
+    proposalId: ProposalId,
+    maybeOperationId: Option[OperationId],
+    requestContext: RequestContext
+  ): Future[Unit]
   def resendRegistration(user: User, country: Country, language: Language, requestContext: RequestContext): Future[Unit]
 }
 
@@ -95,10 +107,12 @@ trait DefaultSendMailPublisherServiceComponent
     s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$utmParams"
   }
 
-  private def getAccountValidationUrl(user: User,
-                                      verificationToken: String,
-                                      requestContext: RequestContext,
-                                      utmCampaign: String): String = {
+  private def getAccountValidationUrl(
+    user: User,
+    verificationToken: String,
+    requestContext: RequestContext,
+    utmCampaign: String
+  ): String = {
     val operationIdValue: String = requestContext.operationId.map(_.value).getOrElse("core")
     val language: String = requestContext.language.map(_.value).getOrElse("fr")
     val country: String = requestContext.country.map(_.value).getOrElse("FR")
@@ -123,10 +137,12 @@ trait DefaultSendMailPublisherServiceComponent
     s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$appParams"
   }
 
-  private def sequenceUrlForProposal(isAccepted: Boolean,
-                                     userType: UserType,
-                                     questionSlug: String,
-                                     proposal: Proposal): String = {
+  private def sequenceUrlForProposal(
+    isAccepted: Boolean,
+    userType: UserType,
+    questionSlug: String,
+    proposal: Proposal
+  ): String = {
     val country: String = proposal.country.map(_.value).getOrElse("FR")
     val language: String = proposal.language.map(_.value).getOrElse("fr")
     val term: String = if (isAccepted) "publication" else "refus"
@@ -162,10 +178,12 @@ trait DefaultSendMailPublisherServiceComponent
     }
   }
 
-  private def sendModerationMail(proposalId: ProposalId,
-                                 questionId: Option[QuestionId],
-                                 templateId: (CrmTemplates, UserType) => TemplateId,
-                                 variables: (User, Proposal)          => Map[String, String]): Future[Unit] = {
+  private def sendModerationMail(
+    proposalId: ProposalId,
+    questionId: Option[QuestionId],
+    templateId: (CrmTemplates, UserType) => TemplateId,
+    variables: (User, Proposal)          => Map[String, String]
+  ): Future[Unit] = {
     val maybePublish: OptionT[Future, Unit] = for {
       proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
       user     <- OptionT(userService.getUser(proposal.author))
@@ -210,10 +228,12 @@ trait DefaultSendMailPublisherServiceComponent
   override def sendMailPublisherService: SendMailPublisherService = new DefaultSendMailPublisherService
 
   class DefaultSendMailPublisherService extends SendMailPublisherService {
-    override def publishWelcome(user: User,
-                                country: Country,
-                                language: Language,
-                                requestContext: RequestContext): Future[Unit] = {
+    override def publishWelcome(
+      user: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, requestContext)
@@ -247,10 +267,12 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    override def publishRegistration(user: User,
-                                     country: Country,
-                                     language: Language,
-                                     requestContext: RequestContext): Future[Unit] = {
+    override def publishRegistration(
+      user: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val verificationToken: String = user.verificationToken match {
@@ -289,10 +311,12 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    def publishResendRegistration(user: User,
-                                  country: Country,
-                                  language: Language,
-                                  requestContext: RequestContext): Future[Unit] = {
+    def publishResendRegistration(
+      user: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val verificationToken: String = user.verificationToken match {
@@ -327,10 +351,12 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    override def publishForgottenPassword(user: User,
-                                          country: Country,
-                                          language: Language,
-                                          requestContext: RequestContext): Future[Unit] = {
+    override def publishForgottenPassword(
+      user: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val resetToken: String = user.resetToken match {
@@ -365,10 +391,12 @@ trait DefaultSendMailPublisherServiceComponent
       })
     }
 
-    override def publishForgottenPasswordOrganisation(organisation: User,
-                                                      country: Country,
-                                                      language: Language,
-                                                      requestContext: RequestContext): Future[Unit] = {
+    override def publishForgottenPasswordOrganisation(
+      organisation: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       val resetToken: String = organisation.resetToken match {
@@ -403,11 +431,13 @@ trait DefaultSendMailPublisherServiceComponent
       })
     }
 
-    override def publishEmailChanged(user: User,
-                                     country: Country,
-                                     language: Language,
-                                     requestContext: RequestContext,
-                                     newEmail: String): Future[Unit] = {
+    override def publishEmailChanged(
+      user: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext,
+      newEmail: String
+    ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
       def publishSendEmail(crmTemplates: CrmTemplates): Unit = {
@@ -430,10 +460,12 @@ trait DefaultSendMailPublisherServiceComponent
       })
     }
 
-    override def publishAcceptProposal(proposalId: ProposalId,
-                                       maybeQuestionId: Option[QuestionId],
-                                       maybeOperationId: Option[OperationId],
-                                       requestContext: RequestContext): Future[Unit] = {
+    override def publishAcceptProposal(
+      proposalId: ProposalId,
+      maybeQuestionId: Option[QuestionId],
+      maybeOperationId: Option[OperationId],
+      requestContext: RequestContext
+    ): Future[Unit] = {
       val locale: Option[String] = (requestContext.language, requestContext.country) match {
         case (Some(language), Some(country)) => Some(s"${language}_$country")
         case _                               => None
@@ -468,9 +500,11 @@ trait DefaultSendMailPublisherServiceComponent
       }
     }
 
-    override def publishRefuseProposal(proposalId: ProposalId,
-                                       maybeOperationId: Option[OperationId],
-                                       requestContext: RequestContext): Future[Unit] = {
+    override def publishRefuseProposal(
+      proposalId: ProposalId,
+      maybeOperationId: Option[OperationId],
+      requestContext: RequestContext
+    ): Future[Unit] = {
       val locale: Option[String] = (requestContext.language, requestContext.country) match {
         case (Some(language), Some(country)) => Some(s"${language}_$country")
         case _                               => None
@@ -506,10 +540,12 @@ trait DefaultSendMailPublisherServiceComponent
 
     }
 
-    override def resendRegistration(user: User,
-                                    country: Country,
-                                    language: Language,
-                                    requestContext: RequestContext): Future[Unit] = {
+    override def resendRegistration(
+      user: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext
+    ): Future[Unit] = {
 
       userService.changeEmailVerificationTokenIfNeeded(user.userId).flatMap {
         case Some(_) => publishResendRegistration(user, country, language, requestContext)

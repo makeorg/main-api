@@ -43,11 +43,13 @@ trait PersistentFeatureService {
   def remove(featureId: FeatureId): Future[Unit]
   def findAll(): Future[Seq[Feature]]
   def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           slug: Option[String]): Future[Seq[Feature]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    slug: Option[String]
+  ): Future[Seq[Feature]]
   def count(slug: Option[String]): Future[Int]
 }
 
@@ -155,11 +157,13 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
       futurePersistentFeatures.map(_.map(_.toFeature))
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      maybeSlug: Option[String]): Future[Seq[Feature]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      maybeSlug: Option[String]
+    ): Future[Seq[Feature]] = {
       implicit val context: EC = readExecutionContext
 
       val futurePersistentFeatures: Future[List[PersistentFeature]] = Future(NamedDB("READ").retryableTx {

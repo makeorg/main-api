@@ -64,9 +64,11 @@ class MailJetEventConsumerActor(userService: UserService)
     userService.updateOptInNewsletter(email = event.email, optInNewsletter = false)
   }
 
-  private def registerMailingError(email: String,
-                                   maybeError: Option[MailJetError],
-                                   date: ZonedDateTime): Future[Boolean] = {
+  private def registerMailingError(
+    email: String,
+    maybeError: Option[MailJetError],
+    date: ZonedDateTime
+  ): Future[Boolean] = {
     maybeError match {
       case None => Future.successful(false)
       case Some(error) =>

@@ -55,9 +55,11 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))
 
     @Trace(operationName = "client-downloadImage")
-    override def downloadImage(imageUrl: String,
-                               destFn: ContentType => File,
-                               redirectCount: Int = 0): Future[(ContentType, File)] = {
+    override def downloadImage(
+      imageUrl: String,
+      destFn: ContentType => File,
+      redirectCount: Int = 0
+    ): Future[(ContentType, File)] = {
       Try(HttpRequest(uri = Uri(imageUrl), headers = Seq(Accept.create(MediaRanges.`image/*`)))) match {
         case Failure(e) => Future.failed(e)
         case Success(req) =>

@@ -441,7 +441,7 @@ class OrganisationApiTest
             vote = Agree,
             voteDate = DateHelper.now(),
             voteDetails = None
-        )
+          )
       ),
       seed = None
     )

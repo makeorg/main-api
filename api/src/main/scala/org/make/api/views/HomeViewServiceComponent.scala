@@ -39,10 +39,12 @@ import org.make.core.{operation, DateHelper, RequestContext}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class QuestionWithDetail(question: Question,
-                              operationOfQuestion: IndexedOperationOfQuestion,
-                              kind: OperationKind,
-                              proposalCount: Long) {
+case class QuestionWithDetail(
+  question: Question,
+  operationOfQuestion: IndexedOperationOfQuestion,
+  kind: OperationKind,
+  proposalCount: Long
+) {
   def isOpenedConsultation: Boolean = {
     val now = DateHelper.now()
     (operationOfQuestion.startDate, operationOfQuestion.endDate) match {
@@ -54,17 +56,21 @@ case class QuestionWithDetail(question: Question,
   }
 }
 
-case class HomeViewData(popularProposals: Seq[Proposal],
-                        controverseProposals: Seq[Proposal],
-                        currentQuestions: Seq[QuestionWithDetail],
-                        businessQuestions: Seq[QuestionWithDetail],
-                        featuredQuestions: Seq[QuestionWithDetail])
+case class HomeViewData(
+  popularProposals: Seq[Proposal],
+  controverseProposals: Seq[Proposal],
+  currentQuestions: Seq[QuestionWithDetail],
+  businessQuestions: Seq[QuestionWithDetail],
+  featuredQuestions: Seq[QuestionWithDetail]
+)
 
 trait HomeViewService {
-  def getHomeViewResponse(language: Language,
-                          country: Country,
-                          userId: Option[UserId],
-                          requestContext: RequestContext): Future[HomeViewResponse]
+  def getHomeViewResponse(
+    language: Language,
+    country: Country,
+    userId: Option[UserId],
+    requestContext: RequestContext
+  ): Future[HomeViewResponse]
 }
 
 trait HomeViewServiceComponent {
@@ -88,10 +94,12 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
     val publicKinds: Seq[OperationKind] = Seq(OperationKind.GreatCause, OperationKind.PublicConsultation)
     val businessKinds: Seq[OperationKind] = Seq(OperationKind.BusinessConsultation)
 
-    override def getHomeViewResponse(language: Language,
-                                     country: Country,
-                                     userId: Option[UserId],
-                                     requestContext: RequestContext): Future[HomeViewResponse] = {
+    override def getHomeViewResponse(
+      language: Language,
+      country: Country,
+      userId: Option[UserId],
+      requestContext: RequestContext
+    ): Future[HomeViewResponse] = {
 
       val futureAllQuestionWithDetails: Future[Seq[QuestionWithDetail]] = getAllQuestionWithDetails(language, country)
       val futurePublicOpenedConsultations: Future[Seq[QuestionWithDetail]] = futureAllQuestionWithDetails
@@ -189,18 +197,17 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
 
       val maxLimit: Int = 10000
       for {
-        operationOfQuestions <- operationOfQuestionService.search(
-          searchQuery = OperationOfQuestionSearchQuery(
-            limit = Some(maxLimit),
-            sort = Some("startDate"),
-            order = Some("desc"),
-            filters = Some(
-              OperationOfQuestionSearchFilters(
-                language = Option(operation.LanguageSearchFilter(language)),
-                country = Some(operation.CountrySearchFilter(country))
-              )
+        operationOfQuestions <- operationOfQuestionService.search(searchQuery = OperationOfQuestionSearchQuery(
+          limit = Some(maxLimit),
+          sort = Some("startDate"),
+          order = Some("desc"),
+          filters = Some(
+            OperationOfQuestionSearchFilters(
+              language = Option(operation.LanguageSearchFilter(language)),
+              country = Some(operation.CountrySearchFilter(country))
             )
           )
+        )
         )
         operations <- operationService.findSimple()
         questions <- questionService.searchQuestion(
@@ -219,23 +226,24 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           question            <- questions
           operationOfQuestion <- operationOfQuestions.results.find(_.questionId == question.questionId)
           ope                 <- operations.find(_.operationId == operationOfQuestion.operationId)
-        } yield
-          QuestionWithDetail(
-            question,
-            operationOfQuestion,
-            ope.operationKind,
-            proposalsCount.getOrElse(question.questionId, 0)
-          )
+        } yield QuestionWithDetail(
+          question,
+          operationOfQuestion,
+          ope.operationKind,
+          proposalsCount.getOrElse(question.questionId, 0)
+        )
 
       }
     }
 
-    private def getProposals(questionDetails: Seq[QuestionWithDetail],
-                             userId: Option[UserId],
-                             language: Language,
-                             country: Country,
-                             sortAlgorithm: SortAlgorithm,
-                             requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
+    private def getProposals(
+      questionDetails: Seq[QuestionWithDetail],
+      userId: Option[UserId],
+      language: Language,
+      country: Country,
+      sortAlgorithm: SortAlgorithm,
+      requestContext: RequestContext
+    ): Future[ProposalsResultSeededResponse] = {
 
       proposalService.searchForUser(
         userId = userId,

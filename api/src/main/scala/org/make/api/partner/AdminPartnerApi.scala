@@ -187,13 +187,15 @@ trait DefaultAdminPartnerApiComponent
                 "partnerKind".as[PartnerKind].?
               )
             ) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               questionId: Option[QuestionId],
-               organisationId: Option[UserId],
-               partnerKind: Option[PartnerKind]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                sort: Option[String],
+                order: Option[String],
+                questionId: Option[QuestionId],
+                organisationId: Option[UserId],
+                partnerKind: Option[PartnerKind]
+              ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     provideAsync(

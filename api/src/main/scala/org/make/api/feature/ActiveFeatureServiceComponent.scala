@@ -33,11 +33,13 @@ trait ActiveFeatureService extends ShortenedNames {
   def getActiveFeature(slug: ActiveFeatureId): Future[Option[ActiveFeature]]
   def createActiveFeature(featureId: FeatureId, maybeQuestionId: Option[QuestionId]): Future[ActiveFeature]
   def deleteActiveFeature(activeFeatureId: ActiveFeatureId): Future[Unit]
-  def find(start: Int = 0,
-           end: Option[Int] = None,
-           sort: Option[String] = None,
-           order: Option[String] = None,
-           maybeQuestionId: Option[QuestionId]): Future[Seq[ActiveFeature]]
+  def find(
+    start: Int = 0,
+    end: Option[Int] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    maybeQuestionId: Option[QuestionId]
+  ): Future[Seq[ActiveFeature]]
   def count(maybeQuestionId: Option[QuestionId]): Future[Int]
 }
 
@@ -52,8 +54,10 @@ trait DefaultActiveFeatureServiceComponent extends ActiveFeatureServiceComponent
       persistentActiveFeatureService.get(activeFeatureId)
     }
 
-    override def createActiveFeature(featureId: FeatureId,
-                                     maybeQuestionId: Option[QuestionId]): Future[ActiveFeature] = {
+    override def createActiveFeature(
+      featureId: FeatureId,
+      maybeQuestionId: Option[QuestionId]
+    ): Future[ActiveFeature] = {
       persistentActiveFeatureService.persist(
         ActiveFeature(
           activeFeatureId = idGenerator.nextActiveFeatureId(),
@@ -67,11 +71,13 @@ trait DefaultActiveFeatureServiceComponent extends ActiveFeatureServiceComponent
       persistentActiveFeatureService.remove(activeFeatureId)
     }
 
-    override def find(start: Int = 0,
-                      end: Option[Int] = None,
-                      sort: Option[String] = None,
-                      order: Option[String] = None,
-                      maybeQuestionId: Option[QuestionId]): Future[Seq[ActiveFeature]] = {
+    override def find(
+      start: Int = 0,
+      end: Option[Int] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      maybeQuestionId: Option[QuestionId]
+    ): Future[Seq[ActiveFeature]] = {
 
       persistentActiveFeatureService.find(start, end, sort, order, maybeQuestionId)
 

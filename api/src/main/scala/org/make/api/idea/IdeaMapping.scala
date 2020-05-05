@@ -25,11 +25,13 @@ import org.make.core.idea.IdeaId
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 
-final case class IdeaMapping(id: IdeaMappingId,
-                             questionId: QuestionId,
-                             stakeTagId: Option[TagId],
-                             solutionTypeTagId: Option[TagId],
-                             ideaId: IdeaId)
+final case class IdeaMapping(
+  id: IdeaMappingId,
+  questionId: QuestionId,
+  stakeTagId: Option[TagId],
+  solutionTypeTagId: Option[TagId],
+  ideaId: IdeaId
+)
 
 final case class IdeaMappingId(value: String) extends StringValue
 

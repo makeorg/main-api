@@ -38,17 +38,18 @@ import scala.annotation.meta.field
 
 case class QuestionWithDetails(question: Question, details: OperationOfQuestion)
 
-final case class Operation(status: OperationStatus,
-                           operationId: OperationId,
-                           slug: String,
-                           defaultLanguage: Language,
-                           allowedSources: Seq[String],
-                           events: List[OperationAction],
-                           questions: Seq[QuestionWithDetails],
-                           operationKind: OperationKind,
-                           override val createdAt: Option[ZonedDateTime],
-                           override val updatedAt: Option[ZonedDateTime])
-    extends MakeSerializable
+final case class Operation(
+  status: OperationStatus,
+  operationId: OperationId,
+  slug: String,
+  defaultLanguage: Language,
+  allowedSources: Seq[String],
+  events: List[OperationAction],
+  questions: Seq[QuestionWithDetails],
+  operationKind: OperationKind,
+  override val createdAt: Option[ZonedDateTime],
+  override val updatedAt: Option[ZonedDateTime]
+) extends MakeSerializable
     with Timestamped
 
 final case class OperationId(value: String) extends StringValue
@@ -71,9 +72,11 @@ object OperationId {
   }
 }
 
-final case class IntroCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
-                           title: Option[String],
-                           description: Option[String])
+final case class IntroCard(
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+  title: Option[String],
+  description: Option[String]
+)
 object IntroCard extends CirceFormatters {
   implicit val encoder: Encoder[IntroCard] = deriveEncoder[IntroCard]
   implicit val decoder: Decoder[IntroCard] = deriveDecoder[IntroCard]
@@ -85,30 +88,36 @@ object PushProposalCard extends CirceFormatters {
   implicit val decoder: Decoder[PushProposalCard] = deriveDecoder[PushProposalCard]
 }
 
-final case class SignUpCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
-                            title: Option[String],
-                            nextCtaText: Option[String])
+final case class SignUpCard(
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+  title: Option[String],
+  nextCtaText: Option[String]
+)
 object SignUpCard extends CirceFormatters {
   implicit val encoder: Encoder[SignUpCard] = deriveEncoder[SignUpCard]
   implicit val decoder: Decoder[SignUpCard] = deriveDecoder[SignUpCard]
 }
 
-final case class FinalCard(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
-                           @(ApiModelProperty @field)(dataType = "boolean", example = "true") sharingEnabled: Boolean,
-                           title: Option[String],
-                           shareDescription: Option[String],
-                           learnMoreTitle: Option[String],
-                           learnMoreTextButton: Option[String],
-                           linkUrl: Option[String])
+final case class FinalCard(
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") sharingEnabled: Boolean,
+  title: Option[String],
+  shareDescription: Option[String],
+  learnMoreTitle: Option[String],
+  learnMoreTextButton: Option[String],
+  linkUrl: Option[String]
+)
 object FinalCard extends CirceFormatters {
   implicit val encoder: Encoder[FinalCard] = deriveEncoder[FinalCard]
   implicit val decoder: Decoder[FinalCard] = deriveDecoder[FinalCard]
 }
 
-final case class SequenceCardsConfiguration(introCard: IntroCard,
-                                            pushProposalCard: PushProposalCard,
-                                            signUpCard: SignUpCard,
-                                            finalCard: FinalCard)
+final case class SequenceCardsConfiguration(
+  introCard: IntroCard,
+  pushProposalCard: PushProposalCard,
+  signUpCard: SignUpCard,
+  finalCard: FinalCard
+)
 
 object SequenceCardsConfiguration extends CirceFormatters {
   implicit val encoder: Encoder[SequenceCardsConfiguration] = deriveEncoder[SequenceCardsConfiguration]
@@ -137,12 +146,14 @@ object Metas extends CirceFormatters {
   implicit val decoder: Decoder[Metas] = deriveDecoder[Metas]
 }
 
-final case class QuestionTheme(gradientStart: String,
-                               gradientEnd: String,
-                               color: String,
-                               fontColor: String,
-                               secondaryColor: Option[String],
-                               secondaryFontColor: Option[String])
+final case class QuestionTheme(
+  gradientStart: String,
+  gradientEnd: String,
+  color: String,
+  fontColor: String,
+  secondaryColor: Option[String],
+  secondaryFontColor: Option[String]
+)
 
 object QuestionTheme {
   implicit val encoder: Encoder[QuestionTheme] = deriveEncoder[QuestionTheme]
@@ -161,21 +172,23 @@ object QuestionTheme {
   }
 }
 
-final case class OperationOfQuestion(questionId: QuestionId,
-                                     operationId: OperationId,
-                                     startDate: Option[ZonedDateTime],
-                                     endDate: Option[ZonedDateTime],
-                                     operationTitle: String,
-                                     landingSequenceId: SequenceId,
-                                     canPropose: Boolean,
-                                     sequenceCardsConfiguration: SequenceCardsConfiguration,
-                                     aboutUrl: Option[String],
-                                     metas: Metas,
-                                     theme: QuestionTheme,
-                                     description: String,
-                                     consultationImage: Option[String],
-                                     descriptionImage: Option[String],
-                                     displayResults: Boolean) {
+final case class OperationOfQuestion(
+  questionId: QuestionId,
+  operationId: OperationId,
+  startDate: Option[ZonedDateTime],
+  endDate: Option[ZonedDateTime],
+  operationTitle: String,
+  landingSequenceId: SequenceId,
+  canPropose: Boolean,
+  sequenceCardsConfiguration: SequenceCardsConfiguration,
+  aboutUrl: Option[String],
+  metas: Metas,
+  theme: QuestionTheme,
+  description: String,
+  consultationImage: Option[String],
+  descriptionImage: Option[String],
+  displayResults: Boolean
+) {
 
   def isOpenAt(date: ZonedDateTime): Boolean = {
     (startDate, endDate) match {
@@ -210,10 +223,11 @@ object OperationCountryConfiguration extends CirceFormatters {
 }
 
 @ApiModel
-final case class OperationTranslation(title: String,
-                                      @(ApiModelProperty @field)(dataType = "string", example = "fr")
-                                      language: Language)
-    extends MakeSerializable
+final case class OperationTranslation(
+  title: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language
+) extends MakeSerializable
 
 object OperationTranslation {
   implicit val operationTranslationFormatter: RootJsonFormat[OperationTranslation] =
@@ -223,10 +237,12 @@ object OperationTranslation {
   implicit val decoder: Decoder[OperationTranslation] = deriveDecoder[OperationTranslation]
 }
 
-final case class OperationAction(date: ZonedDateTime = DateHelper.now(),
-                                 makeUserId: UserId,
-                                 actionType: String,
-                                 arguments: Map[String, String] = Map.empty)
+final case class OperationAction(
+  date: ZonedDateTime = DateHelper.now(),
+  makeUserId: UserId,
+  actionType: String,
+  arguments: Map[String, String] = Map.empty
+)
 
 object OperationAction {
   implicit val operationActionFormatter: RootJsonFormat[OperationAction] =
@@ -280,14 +296,16 @@ object OperationStatus {
   }
 }
 
-case class SimpleOperation(operationId: OperationId,
-                           status: OperationStatus,
-                           slug: String,
-                           allowedSources: Seq[String],
-                           defaultLanguage: Language,
-                           operationKind: OperationKind,
-                           createdAt: Option[ZonedDateTime],
-                           updatedAt: Option[ZonedDateTime])
+case class SimpleOperation(
+  operationId: OperationId,
+  status: OperationStatus,
+  slug: String,
+  allowedSources: Seq[String],
+  defaultLanguage: Language,
+  operationKind: OperationKind,
+  createdAt: Option[ZonedDateTime],
+  updatedAt: Option[ZonedDateTime]
+)
 
 object SimpleOperation extends CirceFormatters {
   implicit val encoder: Encoder[SimpleOperation] = deriveEncoder[SimpleOperation]
@@ -333,18 +351,20 @@ object OperationKind {
   case object BusinessConsultation extends OperationKind { override val shortName: String = "BUSINESS_CONSULTATION" }
 }
 
-case class FeaturedOperation(featuredOperationId: FeaturedOperationId,
-                             questionId: Option[QuestionId],
-                             title: String,
-                             description: Option[String],
-                             landscapePicture: String,
-                             portraitPicture: String,
-                             altPicture: String,
-                             label: String,
-                             buttonLabel: String,
-                             internalLink: Option[String],
-                             externalLink: Option[String],
-                             slot: Int)
+case class FeaturedOperation(
+  featuredOperationId: FeaturedOperationId,
+  questionId: Option[QuestionId],
+  title: String,
+  description: Option[String],
+  landscapePicture: String,
+  portraitPicture: String,
+  altPicture: String,
+  label: String,
+  buttonLabel: String,
+  internalLink: Option[String],
+  externalLink: Option[String],
+  slot: Int
+)
 
 object FeaturedOperation {
   implicit lazy val featuredOperationEncoder: Encoder[FeaturedOperation] = deriveEncoder[FeaturedOperation]
@@ -371,15 +391,17 @@ object FeaturedOperationId {
   }
 }
 
-case class CurrentOperation(currentOperationId: CurrentOperationId,
-                            questionId: QuestionId,
-                            label: String,
-                            description: String,
-                            picture: String,
-                            altPicture: String,
-                            linkLabel: String,
-                            internalLink: Option[String],
-                            externalLink: Option[String])
+case class CurrentOperation(
+  currentOperationId: CurrentOperationId,
+  questionId: QuestionId,
+  label: String,
+  description: String,
+  picture: String,
+  altPicture: String,
+  linkLabel: String,
+  internalLink: Option[String],
+  externalLink: Option[String]
+)
 
 object CurrentOperation {
   implicit lazy val currentOperationEncoder: Encoder[CurrentOperation] = deriveEncoder[CurrentOperation]

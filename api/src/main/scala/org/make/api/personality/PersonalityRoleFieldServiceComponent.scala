@@ -30,25 +30,35 @@ trait PersonalityRoleFieldServiceComponent {
 }
 
 trait PersonalityRoleFieldService extends ShortenedNames {
-  def getPersonalityRoleField(personalityRoleFieldId: PersonalityRoleFieldId,
-                              personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRoleField]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           personalityRoleId: Option[PersonalityRoleId],
-           name: Option[String],
-           fieldType: Option[FieldType],
-           required: Option[Boolean]): Future[Seq[PersonalityRoleField]]
-  def count(personalityRoleId: Option[PersonalityRoleId],
-            name: Option[String],
-            fieldType: Option[FieldType],
-            required: Option[Boolean]): Future[Int]
-  def createPersonalityRoleField(personalityRoleId: PersonalityRoleId,
-                                 request: CreatePersonalityRoleFieldRequest): Future[PersonalityRoleField]
-  def updatePersonalityRoleField(personalityRoleFieldId: PersonalityRoleFieldId,
-                                 personalityRoleId: PersonalityRoleId,
-                                 request: UpdatePersonalityRoleFieldRequest): Future[Option[PersonalityRoleField]]
+  def getPersonalityRoleField(
+    personalityRoleFieldId: PersonalityRoleFieldId,
+    personalityRoleId: PersonalityRoleId
+  ): Future[Option[PersonalityRoleField]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    personalityRoleId: Option[PersonalityRoleId],
+    name: Option[String],
+    fieldType: Option[FieldType],
+    required: Option[Boolean]
+  ): Future[Seq[PersonalityRoleField]]
+  def count(
+    personalityRoleId: Option[PersonalityRoleId],
+    name: Option[String],
+    fieldType: Option[FieldType],
+    required: Option[Boolean]
+  ): Future[Int]
+  def createPersonalityRoleField(
+    personalityRoleId: PersonalityRoleId,
+    request: CreatePersonalityRoleFieldRequest
+  ): Future[PersonalityRoleField]
+  def updatePersonalityRoleField(
+    personalityRoleFieldId: PersonalityRoleFieldId,
+    personalityRoleId: PersonalityRoleId,
+    request: UpdatePersonalityRoleFieldRequest
+  ): Future[Option[PersonalityRoleField]]
   def deletePersonalityRoleField(personalityRoleFieldId: PersonalityRoleFieldId): Future[Unit]
 }
 
@@ -60,8 +70,10 @@ trait DefaultPersonalityRoleFieldServiceComponent extends PersonalityRoleFieldSe
 
   class DefaultPersonalityRoleFieldService extends PersonalityRoleFieldService {
 
-    override def getPersonalityRoleField(personalityRoleFieldId: PersonalityRoleFieldId,
-                                         personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRoleField]] = {
+    override def getPersonalityRoleField(
+      personalityRoleFieldId: PersonalityRoleFieldId,
+      personalityRoleId: PersonalityRoleId
+    ): Future[Option[PersonalityRoleField]] = {
       persistentPersonalityRoleFieldService.getById(personalityRoleFieldId, personalityRoleId)
     }
 
@@ -96,21 +108,25 @@ trait DefaultPersonalityRoleFieldServiceComponent extends PersonalityRoleFieldSe
       }
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      personalityRoleId: Option[PersonalityRoleId],
-                      name: Option[String],
-                      fieldType: Option[FieldType],
-                      required: Option[Boolean]): Future[Seq[PersonalityRoleField]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      personalityRoleId: Option[PersonalityRoleId],
+      name: Option[String],
+      fieldType: Option[FieldType],
+      required: Option[Boolean]
+    ): Future[Seq[PersonalityRoleField]] = {
       persistentPersonalityRoleFieldService.find(start, end, sort, order, personalityRoleId, name, fieldType, required)
     }
 
-    override def count(personalityRoleId: Option[PersonalityRoleId],
-                       name: Option[String],
-                       fieldType: Option[FieldType],
-                       required: Option[Boolean]): Future[Int] = {
+    override def count(
+      personalityRoleId: Option[PersonalityRoleId],
+      name: Option[String],
+      fieldType: Option[FieldType],
+      required: Option[Boolean]
+    ): Future[Int] = {
       persistentPersonalityRoleFieldService.count(personalityRoleId, name, fieldType, required)
     }
 

@@ -176,13 +176,15 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
 
 object DefaultPersistentTagTypeServiceComponent {
 
-  case class PersistentTagType(id: String,
-                               label: String,
-                               display: TagTypeDisplay,
-                               weightType: Int,
-                               createdAt: ZonedDateTime,
-                               updatedAt: ZonedDateTime,
-                               requiredForEnrichment: Boolean) {
+  case class PersistentTagType(
+    id: String,
+    label: String,
+    display: TagTypeDisplay,
+    weightType: Int,
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime,
+    requiredForEnrichment: Boolean
+  ) {
     def toTagType: TagType =
       TagType(
         tagTypeId = TagTypeId(id),

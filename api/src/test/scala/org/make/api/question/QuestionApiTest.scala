@@ -194,7 +194,7 @@ class QuestionApiTest
       organisationId = None,
       partnerKind = PartnerKind.Founder,
       questionId = baseQuestion.questionId,
-      weight = 20F
+      weight = 20f
     )
     val partner2: Partner = partner.copy(partnerId = PartnerId("partner2"), name = "partner2")
     val activeFeature1 = ActiveFeature(
@@ -335,7 +335,7 @@ class QuestionApiTest
     }
 
     def newTag(s: String): Tag =
-      Tag(TagId(s), s, TagDisplay.Displayed, TagTypeId("type"), 42F, None, None, Country("FR"), Language("fr"))
+      Tag(TagId(s), s, TagDisplay.Displayed, TagTypeId("type"), 42f, None, None, Country("FR"), Language("fr"))
 
     val tag1 = newTag("tag1")
     val tag2 = newTag("tag2")
@@ -443,7 +443,7 @@ class QuestionApiTest
         organisationId.map(UserId.apply),
         PartnerKind.Actor,
         QuestionId("question-id"),
-        0F
+        0f
       )
 
     scenario("invalid sortAlgorithm") {

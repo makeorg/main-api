@@ -42,30 +42,40 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 trait IdeaMappingService {
-  def create(questionId: QuestionId,
-             stakeTagId: Option[TagId],
-             solutionTypeTagId: Option[TagId],
-             ideaId: IdeaId): Future[IdeaMapping]
+  def create(
+    questionId: QuestionId,
+    stakeTagId: Option[TagId],
+    solutionTypeTagId: Option[TagId],
+    ideaId: IdeaId
+  ): Future[IdeaMapping]
   def getById(ideaMappingId: IdeaMappingId): Future[Option[IdeaMapping]]
-  def changeIdea(adminId: UserId,
-                 IdeaMappingId: IdeaMappingId,
-                 newIdea: IdeaId,
-                 migrateProposals: Boolean): Future[Option[IdeaMapping]]
-  def search(start: Int = 0,
-             end: Option[Int] = None,
-             sort: Option[String] = None,
-             order: Option[String] = None,
-             questionId: Option[QuestionId],
-             stakeTagId: Option[TagIdOrNone],
-             solutionTypeTagId: Option[TagIdOrNone],
-             ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]]
-  def getOrCreateMapping(questionId: QuestionId,
-                         stakeTagId: Option[TagId],
-                         solutionTypeTagId: Option[TagId]): Future[IdeaMapping]
-  def count(questionId: Option[QuestionId],
-            stakeTagId: Option[TagIdOrNone],
-            solutionTypeTagId: Option[TagIdOrNone],
-            ideaId: Option[IdeaId]): Future[Int]
+  def changeIdea(
+    adminId: UserId,
+    IdeaMappingId: IdeaMappingId,
+    newIdea: IdeaId,
+    migrateProposals: Boolean
+  ): Future[Option[IdeaMapping]]
+  def search(
+    start: Int = 0,
+    end: Option[Int] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    questionId: Option[QuestionId],
+    stakeTagId: Option[TagIdOrNone],
+    solutionTypeTagId: Option[TagIdOrNone],
+    ideaId: Option[IdeaId]
+  ): Future[Seq[IdeaMapping]]
+  def getOrCreateMapping(
+    questionId: QuestionId,
+    stakeTagId: Option[TagId],
+    solutionTypeTagId: Option[TagId]
+  ): Future[IdeaMapping]
+  def count(
+    questionId: Option[QuestionId],
+    stakeTagId: Option[TagIdOrNone],
+    solutionTypeTagId: Option[TagIdOrNone],
+    ideaId: Option[IdeaId]
+  ): Future[Int]
 }
 
 trait IdeaMappingServiceComponent {
@@ -87,10 +97,12 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
 
   class DefaultIdeaMappingService extends IdeaMappingService {
 
-    override def create(questionId: QuestionId,
-                        stakeTagId: Option[TagId],
-                        solutionTypeTagId: Option[TagId],
-                        ideaId: IdeaId): Future[IdeaMapping] = {
+    override def create(
+      questionId: QuestionId,
+      stakeTagId: Option[TagId],
+      solutionTypeTagId: Option[TagId],
+      ideaId: IdeaId
+    ): Future[IdeaMapping] = {
       persistentIdeaMappingService.persist(
         IdeaMapping(idGenerator.nextIdeaMappingId(), questionId, stakeTagId, solutionTypeTagId, ideaId)
       )
@@ -100,10 +112,12 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       persistentIdeaMappingService.get(ideaMappingId)
     }
 
-    override def changeIdea(adminId: UserId,
-                            ideaMappingId: IdeaMappingId,
-                            newIdea: IdeaId,
-                            migrateProposals: Boolean): Future[Option[IdeaMapping]] = {
+    override def changeIdea(
+      adminId: UserId,
+      ideaMappingId: IdeaMappingId,
+      newIdea: IdeaId,
+      migrateProposals: Boolean
+    ): Future[Option[IdeaMapping]] = {
       persistentIdeaMappingService.get(ideaMappingId).flatMap {
         case None => Future.successful(None)
         case Some(mapping) =>
@@ -118,9 +132,11 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
 
     }
 
-    private def updateProposalsIdea(adminId: UserId,
-                                    newIdea: IdeaId,
-                                    mapping: IdeaMapping): Future[Seq[ModerationProposalResponse]] = {
+    private def updateProposalsIdea(
+      adminId: UserId,
+      newIdea: IdeaId,
+      mapping: IdeaMapping
+    ): Future[Seq[ModerationProposalResponse]] = {
 
       val stakeLabel = "Stake"
       val solutionTypeLabel = "Solution type"
@@ -134,13 +150,12 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
           .toMap
       }
 
-      val searchQuery = SearchQuery(
-        filters = Some(
-          SearchFilters(
-            idea = Some(IdeaSearchFilter(Seq(mapping.ideaId))),
-            tags = Some(TagsSearchFilter(tagsFromMapping))
-          )
+      val searchQuery = SearchQuery(filters = Some(
+        SearchFilters(
+          idea = Some(IdeaSearchFilter(Seq(mapping.ideaId))),
+          tags = Some(TagsSearchFilter(tagsFromMapping))
         )
+      )
       )
 
       stakeAndSolutionTagTypeIds.flatMap { tagTypeMap =>
@@ -173,12 +188,14 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       }
     }
 
-    private def proposalsFilter(stakeLabel: String,
-                                solutionTypeLabel: String,
-                                proposals: ProposalsSearchResult,
-                                tagMap: Map[TagId, Tag],
-                                mapping: IdeaMapping,
-                                tagTypeMap: Map[String, TagTypeId]): Seq[IndexedProposal] = {
+    private def proposalsFilter(
+      stakeLabel: String,
+      solutionTypeLabel: String,
+      proposals: ProposalsSearchResult,
+      tagMap: Map[TagId, Tag],
+      mapping: IdeaMapping,
+      tagTypeMap: Map[String, TagTypeId]
+    ): Seq[IndexedProposal] = {
       proposals.results.filter { proposal =>
         val proposalTags = proposal.tags.map(tag => tagMap(tag.tagId))
         val stakeTagTypeId: Option[TagTypeId] = tagTypeMap.get(stakeLabel)
@@ -199,20 +216,24 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       }
     }
 
-    override def search(start: Int = 0,
-                        end: Option[Int] = None,
-                        sort: Option[String] = None,
-                        order: Option[String] = None,
-                        questionId: Option[QuestionId],
-                        stakeTagId: Option[TagIdOrNone],
-                        solutionTypeTagId: Option[TagIdOrNone],
-                        ideaId: Option[IdeaId]): Future[Seq[IdeaMapping]] = {
+    override def search(
+      start: Int = 0,
+      end: Option[Int] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      questionId: Option[QuestionId],
+      stakeTagId: Option[TagIdOrNone],
+      solutionTypeTagId: Option[TagIdOrNone],
+      ideaId: Option[IdeaId]
+    ): Future[Seq[IdeaMapping]] = {
       persistentIdeaMappingService.find(start, end, sort, order, questionId, stakeTagId, solutionTypeTagId, ideaId)
     }
 
-    override def getOrCreateMapping(questionId: QuestionId,
-                                    stakeTagId: Option[TagId],
-                                    solutionTypeTagId: Option[TagId]): Future[IdeaMapping] = {
+    override def getOrCreateMapping(
+      questionId: QuestionId,
+      stakeTagId: Option[TagId],
+      solutionTypeTagId: Option[TagId]
+    ): Future[IdeaMapping] = {
 
       persistentIdeaMappingService
         .find(
@@ -238,9 +259,11 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
         case None        => Some(Left(None))
       }
     }
-    private def createMapping(questionId: QuestionId,
-                              stakeTagId: Option[TagId],
-                              solutionTypeTagId: Option[TagId]): Future[IdeaMapping] = {
+    private def createMapping(
+      questionId: QuestionId,
+      stakeTagId: Option[TagId],
+      solutionTypeTagId: Option[TagId]
+    ): Future[IdeaMapping] = {
 
       for {
         question <- retrieveQuestionOrFail(questionId)
@@ -295,10 +318,12 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       )
     }
 
-    override def count(questionId: Option[QuestionId],
-                       stakeTagId: Option[TagIdOrNone],
-                       solutionTypeTagId: Option[TagIdOrNone],
-                       ideaId: Option[IdeaId]): Future[Int] = {
+    override def count(
+      questionId: Option[QuestionId],
+      stakeTagId: Option[TagIdOrNone],
+      solutionTypeTagId: Option[TagIdOrNone],
+      ideaId: Option[IdeaId]
+    ): Future[Int] = {
       persistentIdeaMappingService.count(questionId, stakeTagId, solutionTypeTagId, ideaId)
     }
   }

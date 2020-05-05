@@ -31,8 +31,10 @@ trait CurrentOperationServiceComponent {
 
 trait CurrentOperationService {
   def create(request: CreateCurrentOperationRequest): Future[CurrentOperation]
-  def update(currentOperationId: CurrentOperationId,
-             request: UpdateCurrentOperationRequest): Future[Option[CurrentOperation]]
+  def update(
+    currentOperationId: CurrentOperationId,
+    request: UpdateCurrentOperationRequest
+  ): Future[Option[CurrentOperation]]
   def getCurrentOperation(currentOperationId: CurrentOperationId): Future[Option[CurrentOperation]]
   def getAll: Future[Seq[CurrentOperation]]
   def delete(currentOperationId: CurrentOperationId): Future[Unit]
@@ -60,8 +62,10 @@ trait DefaultCurrentOperationServiceComponent extends CurrentOperationServiceCom
       persistentCurrentOperationService.persist(currentOperation)
     }
 
-    override def update(currentOperationId: CurrentOperationId,
-                        request: UpdateCurrentOperationRequest): Future[Option[CurrentOperation]] = {
+    override def update(
+      currentOperationId: CurrentOperationId,
+      request: UpdateCurrentOperationRequest
+    ): Future[Option[CurrentOperation]] = {
       persistentCurrentOperationService.getById(currentOperationId).flatMap {
         case Some(currentOperation) =>
           persistentCurrentOperationService

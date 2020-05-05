@@ -144,7 +144,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
               updatedAt = None
             )
           )
-      )
+        )
     )
 
   Mockito
@@ -161,7 +161,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
     val tagTypes: Seq[TagType] = Seq(
       tagTypeStake,
       TagType(TagTypeId("target"), label = "target", display = TagTypeDisplay.Hidden, requiredForEnrichment = false),
-      TagType(TagTypeId("actor"), label = "actor", display = TagTypeDisplay.Displayed, requiredForEnrichment = true),
+      TagType(TagTypeId("actor"), label = "actor", display = TagTypeDisplay.Displayed, requiredForEnrichment = true)
     )
     val tagStake = Tag(
       tagId = TagId("stake-1"),

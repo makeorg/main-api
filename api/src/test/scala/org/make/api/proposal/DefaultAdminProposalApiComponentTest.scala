@@ -182,99 +182,98 @@ class DefaultAdminProposalApiComponentTest
             any[Seq[UpdateVoteRequest]]
           )
       ).thenReturn(Future.successful(Some(proposal(ProposalId("counts-123")))))
-      val verifiedVotesRequest = UpdateProposalVotesRequest(
-        votes = Seq(
-          UpdateVoteRequest(
-            key = Agree,
-            count = Some(12),
-            countVerified = Some(12),
-            countSequence = Some(12),
-            countSegment = Some(12),
-            qualifications = Seq(
-              UpdateQualificationRequest(
-                LikeIt,
-                countVerified = Some(1),
-                count = Some(1),
-                countSequence = Some(1),
-                countSegment = Some(1)
-              ),
-              UpdateQualificationRequest(
-                Doable,
-                countVerified = Some(2),
-                count = Some(2),
-                countSequence = Some(2),
-                countSegment = Some(2)
-              ),
-              UpdateQualificationRequest(
-                PlatitudeAgree,
-                countVerified = Some(3),
-                count = Some(3),
-                countSequence = Some(3),
-                countSegment = Some(3)
-              )
+      val verifiedVotesRequest = UpdateProposalVotesRequest(votes = Seq(
+        UpdateVoteRequest(
+          key = Agree,
+          count = Some(12),
+          countVerified = Some(12),
+          countSequence = Some(12),
+          countSegment = Some(12),
+          qualifications = Seq(
+            UpdateQualificationRequest(
+              LikeIt,
+              countVerified = Some(1),
+              count = Some(1),
+              countSequence = Some(1),
+              countSegment = Some(1)
+            ),
+            UpdateQualificationRequest(
+              Doable,
+              countVerified = Some(2),
+              count = Some(2),
+              countSequence = Some(2),
+              countSegment = Some(2)
+            ),
+            UpdateQualificationRequest(
+              PlatitudeAgree,
+              countVerified = Some(3),
+              count = Some(3),
+              countSequence = Some(3),
+              countSegment = Some(3)
             )
-          ),
-          UpdateVoteRequest(
-            key = Disagree,
-            count = Some(24),
-            countVerified = Some(24),
-            countSequence = Some(24),
-            countSegment = Some(24),
-            qualifications = Seq(
-              UpdateQualificationRequest(
-                NoWay,
-                countVerified = Some(4),
-                count = Some(4),
-                countSequence = Some(4),
-                countSegment = Some(4)
-              ),
-              UpdateQualificationRequest(
-                Impossible,
-                countVerified = Some(5),
-                count = Some(5),
-                countSequence = Some(5),
-                countSegment = Some(5)
-              ),
-              UpdateQualificationRequest(
-                PlatitudeDisagree,
-                countVerified = Some(6),
-                count = Some(6),
-                countSequence = Some(6),
-                countSegment = Some(6)
-              )
+          )
+        ),
+        UpdateVoteRequest(
+          key = Disagree,
+          count = Some(24),
+          countVerified = Some(24),
+          countSequence = Some(24),
+          countSegment = Some(24),
+          qualifications = Seq(
+            UpdateQualificationRequest(
+              NoWay,
+              countVerified = Some(4),
+              count = Some(4),
+              countSequence = Some(4),
+              countSegment = Some(4)
+            ),
+            UpdateQualificationRequest(
+              Impossible,
+              countVerified = Some(5),
+              count = Some(5),
+              countSequence = Some(5),
+              countSegment = Some(5)
+            ),
+            UpdateQualificationRequest(
+              PlatitudeDisagree,
+              countVerified = Some(6),
+              count = Some(6),
+              countSequence = Some(6),
+              countSegment = Some(6)
             )
-          ),
-          UpdateVoteRequest(
-            key = VoteKey.Neutral,
-            count = Some(36),
-            countVerified = Some(36),
-            countSequence = Some(36),
-            countSegment = Some(36),
-            qualifications = Seq(
-              UpdateQualificationRequest(
-                NoOpinion,
-                countVerified = Some(7),
-                count = Some(7),
-                countSequence = Some(7),
-                countSegment = Some(7)
-              ),
-              UpdateQualificationRequest(
-                DoNotUnderstand,
-                countVerified = Some(8),
-                count = Some(8),
-                countSequence = Some(8),
-                countSegment = Some(8)
-              ),
-              UpdateQualificationRequest(
-                DoNotCare,
-                countVerified = Some(9),
-                count = Some(9),
-                countSequence = Some(9),
-                countSegment = Some(9)
-              )
+          )
+        ),
+        UpdateVoteRequest(
+          key = VoteKey.Neutral,
+          count = Some(36),
+          countVerified = Some(36),
+          countSequence = Some(36),
+          countSegment = Some(36),
+          qualifications = Seq(
+            UpdateQualificationRequest(
+              NoOpinion,
+              countVerified = Some(7),
+              count = Some(7),
+              countSequence = Some(7),
+              countSegment = Some(7)
+            ),
+            UpdateQualificationRequest(
+              DoNotUnderstand,
+              countVerified = Some(8),
+              count = Some(8),
+              countSequence = Some(8),
+              countSegment = Some(8)
+            ),
+            UpdateQualificationRequest(
+              DoNotCare,
+              countVerified = Some(9),
+              count = Some(9),
+              countSequence = Some(9),
+              countSegment = Some(9)
             )
           )
         )
+      )
       )
       Put("/admin/proposals/counts-123/fix-trolled-proposal")
         .withEntity(HttpEntity(ContentTypes.`application/json`, verifiedVotesRequest.asJson.toString))

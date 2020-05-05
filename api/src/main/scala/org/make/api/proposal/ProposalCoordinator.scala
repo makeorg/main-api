@@ -36,9 +36,10 @@ object ProposalCoordinator {
   val name: String = "proposal-coordinator"
 }
 
-class ProposalCoordinator(sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
-                          lockDuration: FiniteDuration)
-    extends Actor {
+class ProposalCoordinator(
+  sessionHistoryCoordinatorService: SessionHistoryCoordinatorService,
+  lockDuration: FiniteDuration
+) extends Actor {
   ClusterSharding(context.system).start(
     ShardedProposal.shardName,
     ShardedProposal

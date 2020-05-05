@@ -90,7 +90,7 @@ trait ProposalHelper {
                   language = userSpec.language
                 ),
                 requestContext = emptyContext
-            )
+              )
           )
           .getOrElse(getUser(api, users(MakeRandom.random.nextInt(users.size)).email))
     }
@@ -133,12 +133,14 @@ trait ProposalHelper {
     }
   }
 
-  def acceptProposal(api: MakeApi,
-                     proposalId: ProposalId,
-                     ideaName: String,
-                     question: Question,
-                     tagIds: Seq[TagId],
-                     labels: Seq[LabelId]): Future[Unit] = {
+  def acceptProposal(
+    api: MakeApi,
+    proposalId: ProposalId,
+    ideaName: String,
+    question: Question,
+    tagIds: Seq[TagId],
+    labels: Seq[LabelId]
+  ): Future[Unit] = {
 
     getOrCreateIdea(api, ideaName, question).flatMap { idea =>
       api.proposalCoordinatorService.accept(
@@ -167,14 +169,16 @@ trait ProposalHelper {
 }
 
 object ProposalHelper {
-  case class FixtureDataLine(email: String,
-                             content: String,
-                             operation: Option[OperationId],
-                             tags: Seq[String],
-                             labels: Seq[LabelId],
-                             country: Country,
-                             language: Language,
-                             acceptProposal: Boolean)
+  case class FixtureDataLine(
+    email: String,
+    content: String,
+    operation: Option[OperationId],
+    tags: Seq[String],
+    labels: Seq[LabelId],
+    country: Country,
+    language: Language,
+    acceptProposal: Boolean
+  )
 
   case class UserInfo(email: String, firstName: String, age: Int, country: Country, language: Language)
 }

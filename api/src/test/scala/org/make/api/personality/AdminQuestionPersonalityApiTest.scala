@@ -243,9 +243,9 @@ class AdminQuestionPersonalityApiTest
           name = None
         )
       ).thenReturn(
-          Future
-            .successful(Seq(PersonalityRole(personalityRoleId = PersonalityRoleId("candidate"), name = "CANDIDATE")))
-        )
+        Future
+          .successful(Seq(PersonalityRole(personalityRoleId = PersonalityRoleId("candidate"), name = "CANDIDATE")))
+      )
 
       Get("/admin/question-personalities")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {

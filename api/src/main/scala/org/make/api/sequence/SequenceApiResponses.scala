@@ -34,27 +34,30 @@ import org.make.core.tag.TagId
 import scala.annotation.meta.field
 
 @ApiModel
-final case class SequenceResponse(sequenceId: SequenceId,
-                                  slug: String,
-                                  title: String,
-                                  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId] = Seq.empty,
-                                  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId] =
-                                    Seq.empty,
-                                  status: SequenceStatus,
-                                  creationContext: RequestContext,
-                                  createdAt: Option[ZonedDateTime],
-                                  updatedAt: Option[ZonedDateTime],
-                                  sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
-                                  events: Seq[SequenceActionResponse])
+final case class SequenceResponse(
+  sequenceId: SequenceId,
+  slug: String,
+  title: String,
+  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId] = Seq.empty,
+  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId] = Seq.empty,
+  status: SequenceStatus,
+  creationContext: RequestContext,
+  createdAt: Option[ZonedDateTime],
+  updatedAt: Option[ZonedDateTime],
+  sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
+  events: Seq[SequenceActionResponse]
+)
 
 object SequenceResponse extends CirceFormatters {
   implicit val encoder: Encoder[SequenceResponse] = deriveEncoder[SequenceResponse]
 }
 
-final case class SequenceActionResponse(date: ZonedDateTime,
-                                        user: Option[UserResponse],
-                                        actionType: String,
-                                        arguments: Map[String, String])
+final case class SequenceActionResponse(
+  date: ZonedDateTime,
+  user: Option[UserResponse],
+  actionType: String,
+  arguments: Map[String, String]
+)
 
 object SequenceActionResponse extends CirceFormatters {
   implicit val encoder: Encoder[SequenceActionResponse] = deriveEncoder[SequenceActionResponse]

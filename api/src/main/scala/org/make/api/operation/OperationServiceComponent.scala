@@ -38,31 +38,39 @@ trait OperationServiceComponent {
 }
 
 trait OperationService extends ShortenedNames {
-  def find(slug: Option[String] = None,
-           country: Option[Country] = None,
-           maybeSource: Option[String],
-           openAt: Option[LocalDate] = None): Future[Seq[Operation]]
-  def findSimple(start: Int = 0,
-                 end: Option[Int] = None,
-                 sort: Option[String] = None,
-                 order: Option[String] = None,
-                 slug: Option[String] = None,
-                 operationKinds: Option[Seq[OperationKind]] = None): Future[Seq[SimpleOperation]]
+  def find(
+    slug: Option[String] = None,
+    country: Option[Country] = None,
+    maybeSource: Option[String],
+    openAt: Option[LocalDate] = None
+  ): Future[Seq[Operation]]
+  def findSimple(
+    start: Int = 0,
+    end: Option[Int] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    slug: Option[String] = None,
+    operationKinds: Option[Seq[OperationKind]] = None
+  ): Future[Seq[SimpleOperation]]
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
-  def create(userId: UserId,
-             slug: String,
-             defaultLanguage: Language,
-             allowedSources: Seq[String],
-             operationKind: OperationKind): Future[OperationId]
-  def update(operationId: OperationId,
-             userId: UserId,
-             slug: Option[String] = None,
-             defaultLanguage: Option[Language] = None,
-             status: Option[OperationStatus] = None,
-             allowedSources: Option[Seq[String]] = None,
-             operationKind: Option[OperationKind]): Future[Option[OperationId]]
+  def create(
+    userId: UserId,
+    slug: String,
+    defaultLanguage: Language,
+    allowedSources: Seq[String],
+    operationKind: OperationKind
+  ): Future[OperationId]
+  def update(
+    operationId: OperationId,
+    userId: UserId,
+    slug: Option[String] = None,
+    defaultLanguage: Option[Language] = None,
+    status: Option[OperationStatus] = None,
+    allowedSources: Option[Seq[String]] = None,
+    operationKind: Option[OperationKind]
+  ): Future[Option[OperationId]]
   def count(slug: Option[String], operationKinds: Option[Seq[OperationKind]]): Future[Int]
 }
 
@@ -76,20 +84,24 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
 
   class DefaultOperationService extends OperationService {
 
-    override def find(slug: Option[String] = None,
-                      country: Option[Country] = None,
-                      maybeSource: Option[String],
-                      openAt: Option[LocalDate] = None): Future[Seq[Operation]] = {
+    override def find(
+      slug: Option[String] = None,
+      country: Option[Country] = None,
+      maybeSource: Option[String],
+      openAt: Option[LocalDate] = None
+    ): Future[Seq[Operation]] = {
 
       persistentOperationService.find(slug = slug, country = country, openAt = openAt)
     }
 
-    override def findSimple(start: Int = 0,
-                            end: Option[Int] = None,
-                            sort: Option[String] = None,
-                            order: Option[String] = None,
-                            slug: Option[String] = None,
-                            operationKinds: Option[Seq[OperationKind]]): Future[Seq[SimpleOperation]] = {
+    override def findSimple(
+      start: Int = 0,
+      end: Option[Int] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      slug: Option[String] = None,
+      operationKinds: Option[Seq[OperationKind]]
+    ): Future[Seq[SimpleOperation]] = {
 
       persistentOperationService.findSimple(
         start = start,
@@ -113,11 +125,13 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       persistentOperationService.getBySlug(slug)
     }
 
-    override def create(userId: UserId,
-                        slug: String,
-                        defaultLanguage: Language,
-                        allowedSources: Seq[String],
-                        operationKind: OperationKind): Future[OperationId] = {
+    override def create(
+      userId: UserId,
+      slug: String,
+      defaultLanguage: Language,
+      allowedSources: Seq[String],
+      operationKind: OperationKind
+    ): Future[OperationId] = {
       val now = DateHelper.now()
 
       val operation: SimpleOperation = SimpleOperation(
@@ -145,13 +159,15 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       }
     }
 
-    override def update(operationId: OperationId,
-                        userId: UserId,
-                        slug: Option[String] = None,
-                        defaultLanguage: Option[Language] = None,
-                        status: Option[OperationStatus] = None,
-                        allowedSources: Option[Seq[String]] = None,
-                        operationKind: Option[OperationKind]): Future[Option[OperationId]] = {
+    override def update(
+      operationId: OperationId,
+      userId: UserId,
+      slug: Option[String] = None,
+      defaultLanguage: Option[Language] = None,
+      status: Option[OperationStatus] = None,
+      allowedSources: Option[Seq[String]] = None,
+      operationKind: Option[OperationKind]
+    ): Future[Option[OperationId]] = {
 
       persistentOperationService
         .getById(operationId)

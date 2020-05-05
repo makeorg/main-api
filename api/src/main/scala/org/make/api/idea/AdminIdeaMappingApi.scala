@@ -190,22 +190,16 @@ object AdminIdeaMappingApi {
   }
 
   @ApiModel
-  final case class CreateIdeaMappingRequest(@(ApiModelProperty @field)(
-                                              dataType = "string",
-                                              example = "613ea01f-2da7-4d77-b1fe-99f9f252b3a2"
-                                            ) questionId: QuestionId,
-                                            @(ApiModelProperty @field)(
-                                              dataType = "string",
-                                              example = "dd9e6f92-7745-4224-aa6d-a177a5645daf"
-                                            ) stakeTagId: Option[TagId],
-                                            @(ApiModelProperty @field)(
-                                              dataType = "string",
-                                              example = "0fa85cb4-cf91-4f0c-a03e-0b0445af4184"
-                                            ) solutionTypeTagId: Option[TagId],
-                                            @(ApiModelProperty @field)(
-                                              dataType = "string",
-                                              example = "fa113d64-bc99-4e25-894c-03dccf3203e2"
-                                            ) ideaId: IdeaId)
+  final case class CreateIdeaMappingRequest(
+    @(ApiModelProperty @field)(dataType = "string", example = "613ea01f-2da7-4d77-b1fe-99f9f252b3a2") questionId: QuestionId,
+    @(ApiModelProperty @field)(dataType = "string", example = "dd9e6f92-7745-4224-aa6d-a177a5645daf") stakeTagId: Option[
+      TagId
+    ],
+    @(ApiModelProperty @field)(dataType = "string", example = "0fa85cb4-cf91-4f0c-a03e-0b0445af4184") solutionTypeTagId: Option[
+      TagId
+    ],
+    @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2") ideaId: IdeaId
+  )
   object CreateIdeaMappingRequest {
     implicit val decoder: Decoder[CreateIdeaMappingRequest] = deriveDecoder[CreateIdeaMappingRequest]
   }
@@ -256,14 +250,16 @@ trait DefaultAdminIdeaMappingApiComponent
             "ideaId".as[IdeaId].?
           )
         ) {
-          (start: Option[Int],
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           questionId: Option[QuestionId],
-           stakeTagId: Option[TagIdOrNone],
-           solutionTypeTagId: Option[TagIdOrNone],
-           ideaId: Option[IdeaId]) =>
+          (
+            start: Option[Int],
+            end: Option[Int],
+            sort: Option[String],
+            order: Option[String],
+            questionId: Option[QuestionId],
+            stakeTagId: Option[TagIdOrNone],
+            solutionTypeTagId: Option[TagIdOrNone],
+            ideaId: Option[IdeaId]
+          ) =>
             makeOperation("searchIdeaMapping") { _ =>
               makeOAuth2 { auth =>
                 requireAdminRole(auth.user) {

@@ -368,18 +368,20 @@ trait DefaultQuestionApiComponent
               "order".?
             )
           ) {
-            (questionIds: Option[Seq[QuestionId]],
-             questionContent: Option[String],
-             description: Option[String],
-             startDate: Option[ZonedDateTime],
-             endDate: Option[ZonedDateTime],
-             operationKinds: Option[Seq[OperationKind]],
-             language: Option[Language],
-             country: Option[Country],
-             limit: Option[Int],
-             skip: Option[Int],
-             sort: Option[String],
-             order: Option[String]) =>
+            (
+              questionIds: Option[Seq[QuestionId]],
+              questionContent: Option[String],
+              description: Option[String],
+              startDate: Option[ZonedDateTime],
+              endDate: Option[ZonedDateTime],
+              operationKinds: Option[Seq[OperationKind]],
+              language: Option[Language],
+              country: Option[Country],
+              limit: Option[Int],
+              skip: Option[Int],
+              sort: Option[String],
+              order: Option[String]
+            ) =>
               Validation.validate(
                 Seq(
                   sort.map { sortValue =>

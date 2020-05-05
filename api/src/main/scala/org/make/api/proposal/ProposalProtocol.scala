@@ -38,32 +38,35 @@ sealed trait ProposalCommand extends ProposalActorProtocol {
   def requestContext: RequestContext
 }
 
-final case class ProposeCommand(proposalId: ProposalId,
-                                requestContext: RequestContext,
-                                user: User,
-                                createdAt: ZonedDateTime,
-                                content: String,
-                                question: Question,
-                                initialProposal: Boolean)
-    extends ProposalCommand
+final case class ProposeCommand(
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  user: User,
+  createdAt: ZonedDateTime,
+  content: String,
+  question: Question,
+  initialProposal: Boolean
+) extends ProposalCommand
 
-final case class UpdateProposalCommand(moderator: UserId,
-                                       proposalId: ProposalId,
-                                       requestContext: RequestContext,
-                                       updatedAt: ZonedDateTime,
-                                       newContent: Option[String],
-                                       labels: Seq[LabelId],
-                                       tags: Seq[TagId],
-                                       idea: Option[IdeaId],
-                                       question: Question)
-    extends ProposalCommand
+final case class UpdateProposalCommand(
+  moderator: UserId,
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  updatedAt: ZonedDateTime,
+  newContent: Option[String],
+  labels: Seq[LabelId],
+  tags: Seq[TagId],
+  idea: Option[IdeaId],
+  question: Question
+) extends ProposalCommand
 
-final case class UpdateProposalVotesCommand(moderator: UserId,
-                                            proposalId: ProposalId,
-                                            requestContext: RequestContext,
-                                            updatedAt: ZonedDateTime,
-                                            votes: Seq[UpdateVoteRequest])
-    extends ProposalCommand
+final case class UpdateProposalVotesCommand(
+  moderator: UserId,
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  updatedAt: ZonedDateTime,
+  votes: Seq[UpdateVoteRequest]
+) extends ProposalCommand
 
 final case class ViewProposalCommand(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
 
@@ -71,74 +74,82 @@ final case class GetProposal(proposalId: ProposalId, requestContext: RequestCont
 
 final case class KillProposalShard(proposalId: ProposalId, requestContext: RequestContext) extends ProposalCommand
 
-final case class AcceptProposalCommand(moderator: UserId,
-                                       proposalId: ProposalId,
-                                       requestContext: RequestContext,
-                                       sendNotificationEmail: Boolean,
-                                       newContent: Option[String],
-                                       question: Question,
-                                       labels: Seq[LabelId],
-                                       tags: Seq[TagId],
-                                       idea: Option[IdeaId])
-    extends ProposalCommand
+final case class AcceptProposalCommand(
+  moderator: UserId,
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  sendNotificationEmail: Boolean,
+  newContent: Option[String],
+  question: Question,
+  labels: Seq[LabelId],
+  tags: Seq[TagId],
+  idea: Option[IdeaId]
+) extends ProposalCommand
 
-final case class RefuseProposalCommand(moderator: UserId,
-                                       proposalId: ProposalId,
-                                       requestContext: RequestContext,
-                                       sendNotificationEmail: Boolean,
-                                       refusalReason: Option[String])
-    extends ProposalCommand
+final case class RefuseProposalCommand(
+  moderator: UserId,
+  proposalId: ProposalId,
+  requestContext: RequestContext,
+  sendNotificationEmail: Boolean,
+  refusalReason: Option[String]
+) extends ProposalCommand
 
 final case class PostponeProposalCommand(moderator: UserId, proposalId: ProposalId, requestContext: RequestContext)
     extends ProposalCommand
 
-final case class VoteProposalCommand(proposalId: ProposalId,
-                                     maybeUserId: Option[UserId],
-                                     requestContext: RequestContext,
-                                     voteKey: VoteKey,
-                                     maybeOrganisationId: Option[UserId],
-                                     vote: Option[VoteAndQualifications],
-                                     voteTrust: VoteTrust)
-    extends ProposalCommand
+final case class VoteProposalCommand(
+  proposalId: ProposalId,
+  maybeUserId: Option[UserId],
+  requestContext: RequestContext,
+  voteKey: VoteKey,
+  maybeOrganisationId: Option[UserId],
+  vote: Option[VoteAndQualifications],
+  voteTrust: VoteTrust
+) extends ProposalCommand
 
-final case class UnvoteProposalCommand(proposalId: ProposalId,
-                                       maybeUserId: Option[UserId],
-                                       requestContext: RequestContext,
-                                       voteKey: VoteKey,
-                                       maybeOrganisationId: Option[UserId],
-                                       vote: Option[VoteAndQualifications],
-                                       voteTrust: VoteTrust)
-    extends ProposalCommand
+final case class UnvoteProposalCommand(
+  proposalId: ProposalId,
+  maybeUserId: Option[UserId],
+  requestContext: RequestContext,
+  voteKey: VoteKey,
+  maybeOrganisationId: Option[UserId],
+  vote: Option[VoteAndQualifications],
+  voteTrust: VoteTrust
+) extends ProposalCommand
 
-final case class QualifyVoteCommand(proposalId: ProposalId,
-                                    maybeUserId: Option[UserId],
-                                    requestContext: RequestContext,
-                                    voteKey: VoteKey,
-                                    qualificationKey: QualificationKey,
-                                    vote: Option[VoteAndQualifications],
-                                    voteTrust: VoteTrust)
-    extends ProposalCommand
+final case class QualifyVoteCommand(
+  proposalId: ProposalId,
+  maybeUserId: Option[UserId],
+  requestContext: RequestContext,
+  voteKey: VoteKey,
+  qualificationKey: QualificationKey,
+  vote: Option[VoteAndQualifications],
+  voteTrust: VoteTrust
+) extends ProposalCommand
 
-final case class UnqualifyVoteCommand(proposalId: ProposalId,
-                                      maybeUserId: Option[UserId],
-                                      requestContext: RequestContext,
-                                      voteKey: VoteKey,
-                                      qualificationKey: QualificationKey,
-                                      vote: Option[VoteAndQualifications],
-                                      voteTrust: VoteTrust)
-    extends ProposalCommand
+final case class UnqualifyVoteCommand(
+  proposalId: ProposalId,
+  maybeUserId: Option[UserId],
+  requestContext: RequestContext,
+  voteKey: VoteKey,
+  qualificationKey: QualificationKey,
+  vote: Option[VoteAndQualifications],
+  voteTrust: VoteTrust
+) extends ProposalCommand
 
-final case class LockProposalCommand(proposalId: ProposalId,
-                                     moderatorId: UserId,
-                                     moderatorName: Option[String],
-                                     requestContext: RequestContext)
-    extends ProposalCommand
+final case class LockProposalCommand(
+  proposalId: ProposalId,
+  moderatorId: UserId,
+  moderatorName: Option[String],
+  requestContext: RequestContext
+) extends ProposalCommand
 
-final case class PatchProposalCommand(proposalId: ProposalId,
-                                      userId: UserId,
-                                      changes: PatchProposalRequest,
-                                      requestContext: RequestContext)
-    extends ProposalCommand
+final case class PatchProposalCommand(
+  proposalId: ProposalId,
+  userId: UserId,
+  changes: PatchProposalRequest,
+  requestContext: RequestContext
+) extends ProposalCommand
 
 final case class AnonymizeProposalCommand(proposalId: ProposalId, requestContext: RequestContext = RequestContext.empty)
     extends ProposalCommand

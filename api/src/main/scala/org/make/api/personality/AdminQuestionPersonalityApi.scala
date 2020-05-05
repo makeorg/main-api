@@ -233,13 +233,15 @@ trait DefaultAdminQuestionPersonalityApiComponent
                 "personalityRoleId".as[PersonalityRoleId].?
               )
             ) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               userId: Option[UserId],
-               questionId: Option[QuestionId],
-               personalityRoleId: Option[PersonalityRoleId]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                sort: Option[String],
+                order: Option[String],
+                userId: Option[UserId],
+                questionId: Option[QuestionId],
+                personalityRoleId: Option[PersonalityRoleId]
+              ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     provideAsync(

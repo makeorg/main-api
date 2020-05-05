@@ -49,19 +49,20 @@ object SequenceAction {
     DefaultJsonProtocol.jsonFormat4(SequenceAction.apply)
 }
 
-case class Sequence(sequenceId: SequenceId,
-                    title: String,
-                    slug: String,
-                    proposalIds: Seq[ProposalId] = Seq.empty,
-                    operationId: Option[OperationId] = None,
-                    override val createdAt: Option[ZonedDateTime],
-                    override val updatedAt: Option[ZonedDateTime],
-                    status: SequenceStatus = SequenceStatus.Unpublished,
-                    creationContext: RequestContext,
-                    sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
-                    events: List[SequenceAction],
-                    searchable: Boolean)
-    extends MakeSerializable
+case class Sequence(
+  sequenceId: SequenceId,
+  title: String,
+  slug: String,
+  proposalIds: Seq[ProposalId] = Seq.empty,
+  operationId: Option[OperationId] = None,
+  override val createdAt: Option[ZonedDateTime],
+  override val updatedAt: Option[ZonedDateTime],
+  status: SequenceStatus = SequenceStatus.Unpublished,
+  creationContext: RequestContext,
+  sequenceTranslation: Seq[SequenceTranslation] = Seq.empty,
+  events: List[SequenceAction],
+  searchable: Boolean
+) extends MakeSerializable
     with Timestamped
 
 object Sequence {

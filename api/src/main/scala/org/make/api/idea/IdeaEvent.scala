@@ -47,10 +47,10 @@ object IdeaEventWrapper extends AvroSerializers {
 }
 
 @AvroSortPriority(2)
-final case class IdeaCreatedEvent(override val ideaId: IdeaId,
-                                  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
-                                    IdeaEvent.defaultDate)
-    extends IdeaEvent {
+final case class IdeaCreatedEvent(
+  override val ideaId: IdeaId,
+  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = IdeaEvent.defaultDate
+) extends IdeaEvent {
 
   def version(): Int = MakeSerializable.V1
 }
@@ -62,10 +62,10 @@ object IdeaCreatedEvent {
 }
 
 @AvroSortPriority(1)
-final case class IdeaUpdatedEvent(override val ideaId: IdeaId,
-                                  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime =
-                                    IdeaEvent.defaultDate)
-    extends IdeaEvent {
+final case class IdeaUpdatedEvent(
+  override val ideaId: IdeaId,
+  @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = IdeaEvent.defaultDate
+) extends IdeaEvent {
   def version(): Int = MakeSerializable.V1
 }
 

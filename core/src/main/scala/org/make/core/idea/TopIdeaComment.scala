@@ -48,16 +48,18 @@ object TopIdeaCommentId {
   }
 }
 
-final case class TopIdeaComment(topIdeaCommentId: TopIdeaCommentId,
-                                topIdeaId: TopIdeaId,
-                                personalityId: UserId,
-                                comment1: Option[String],
-                                comment2: Option[String],
-                                comment3: Option[String],
-                                vote: CommentVoteKey,
-                                qualification: Option[CommentQualificationKey],
-                                createdAt: Option[ZonedDateTime] = None,
-                                updatedAt: Option[ZonedDateTime] = None)
+final case class TopIdeaComment(
+  topIdeaCommentId: TopIdeaCommentId,
+  topIdeaId: TopIdeaId,
+  personalityId: UserId,
+  comment1: Option[String],
+  comment2: Option[String],
+  comment3: Option[String],
+  vote: CommentVoteKey,
+  qualification: Option[CommentQualificationKey],
+  createdAt: Option[ZonedDateTime] = None,
+  updatedAt: Option[ZonedDateTime] = None
+)
 
 object TopIdeaComment {
   implicit val encoder: Encoder[TopIdeaComment] = deriveEncoder[TopIdeaComment]

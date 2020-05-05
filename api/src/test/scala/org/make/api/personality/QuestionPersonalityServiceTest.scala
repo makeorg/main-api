@@ -73,12 +73,11 @@ class QuestionPersonalityServiceTest
       Mockito.when(persistentQuestionPersonalityService.persist(personality)).thenReturn(Future.successful(personality))
 
       whenReady(
-        questionPersonalityService.createPersonality(
-          request = CreateQuestionPersonalityRequest(
-            userId = UserId("user-id"),
-            questionId = QuestionId("question"),
-            personalityRoleId = PersonalityRoleId("candidate")
-          )
+        questionPersonalityService.createPersonality(request = CreateQuestionPersonalityRequest(
+          userId = UserId("user-id"),
+          questionId = QuestionId("question"),
+          personalityRoleId = PersonalityRoleId("candidate")
+        )
         ),
         Timeout(2.seconds)
       ) { personality =>
@@ -138,8 +137,8 @@ class QuestionPersonalityServiceTest
       when(
         operationOfQuestionService.search(
           ArgumentMatchers.eq(
-            OperationOfQuestionSearchQuery(
-              filters = Some(OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(Seq.empty))))
+            OperationOfQuestionSearchQuery(filters =
+              Some(OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(Seq.empty))))
             )
           )
         )
@@ -220,13 +219,11 @@ class QuestionPersonalityServiceTest
       when(
         operationOfQuestionService.search(
           ArgumentMatchers.eq(
-            OperationOfQuestionSearchQuery(
-              filters = Some(
-                OperationOfQuestionSearchFilters(
-                  questionIds =
-                    Some(QuestionIdsSearchFilter(Seq(QuestionId("question-id-one"), QuestionId("question-id-two"))))
-                )
+            OperationOfQuestionSearchQuery(filters = Some(
+              OperationOfQuestionSearchFilters(questionIds =
+                Some(QuestionIdsSearchFilter(Seq(QuestionId("question-id-one"), QuestionId("question-id-two"))))
               )
+            )
             )
           )
         )

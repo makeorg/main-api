@@ -45,13 +45,15 @@ object TopIdeaId {
   }
 }
 
-final case class TopIdea(topIdeaId: TopIdeaId,
-                         ideaId: IdeaId,
-                         questionId: QuestionId,
-                         name: String,
-                         label: String,
-                         scores: TopIdeaScores,
-                         weight: Float)
+final case class TopIdea(
+  topIdeaId: TopIdeaId,
+  ideaId: IdeaId,
+  questionId: QuestionId,
+  name: String,
+  label: String,
+  scores: TopIdeaScores,
+  weight: Float
+)
 
 object TopIdea {
   implicit val encoder: Encoder[TopIdea] = deriveEncoder[TopIdea]

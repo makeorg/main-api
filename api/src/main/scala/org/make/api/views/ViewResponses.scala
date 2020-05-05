@@ -53,12 +53,14 @@ object BusinessConsultationThemeResponse {
   implicit val decoder: Decoder[BusinessConsultationThemeResponse] = deriveDecoder[BusinessConsultationThemeResponse]
 }
 
-final case class BusinessConsultationResponse(theme: BusinessConsultationThemeResponse,
-                                              startDate: Option[ZonedDateTime],
-                                              endDate: Option[ZonedDateTime],
-                                              slug: Option[String],
-                                              aboutUrl: Option[String],
-                                              question: String)
+final case class BusinessConsultationResponse(
+  theme: BusinessConsultationThemeResponse,
+  startDate: Option[ZonedDateTime],
+  endDate: Option[ZonedDateTime],
+  slug: Option[String],
+  aboutUrl: Option[String],
+  question: String
+)
 
 object BusinessConsultationResponse extends CirceFormatters {
   implicit val encoder: Encoder[BusinessConsultationResponse] = deriveEncoder[BusinessConsultationResponse]
@@ -122,11 +124,13 @@ object CurrentConsultationResponse extends CirceFormatters {
   implicit val encoder: Encoder[CurrentConsultationResponse] = deriveEncoder[CurrentConsultationResponse]
   implicit val decoder: Decoder[CurrentConsultationResponse] = deriveDecoder[CurrentConsultationResponse]
 
-  def apply(current: CurrentOperation,
-            slug: Option[String],
-            startDate: Option[ZonedDateTime],
-            endDate: Option[ZonedDateTime],
-            proposalsNumber: Long): CurrentConsultationResponse =
+  def apply(
+    current: CurrentOperation,
+    slug: Option[String],
+    startDate: Option[ZonedDateTime],
+    endDate: Option[ZonedDateTime],
+    proposalsNumber: Long
+  ): CurrentConsultationResponse =
     CurrentConsultationResponse(
       questionId = Some(current.questionId),
       questionSlug = slug,
@@ -143,9 +147,11 @@ object CurrentConsultationResponse extends CirceFormatters {
     )
 }
 
-final case class SearchViewResponse(proposals: ProposalsResultSeededResponse,
-                                    questions: OperationOfQuestionSearchResult,
-                                    organisations: OrganisationsSearchResultResponse)
+final case class SearchViewResponse(
+  proposals: ProposalsResultSeededResponse,
+  questions: OperationOfQuestionSearchResult,
+  organisations: OrganisationsSearchResultResponse
+)
 
 object SearchViewResponse {
   implicit val encoder: Encoder[SearchViewResponse] = deriveEncoder[SearchViewResponse]

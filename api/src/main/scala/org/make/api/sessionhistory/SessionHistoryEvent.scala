@@ -130,10 +130,11 @@ object SessionUnqualification {
     DefaultJsonProtocol.jsonFormat3(SessionUnqualification.apply)
 }
 
-final case class LogSessionVoteEvent(sessionId: SessionId,
-                                     requestContext: RequestContext,
-                                     action: SessionAction[SessionVote])
-    extends TransferableToUser[SessionVote]
+final case class LogSessionVoteEvent(
+  sessionId: SessionId,
+  requestContext: RequestContext,
+  action: SessionAction[SessionVote]
+) extends TransferableToUser[SessionVote]
     with TransactionalSessionHistoryEvent[SessionVote] {
   override def toUserHistoryEvent(userId: UserId): LogUserVoteEvent = {
     LogUserVoteEvent(
@@ -159,10 +160,11 @@ object LogSessionVoteEvent {
     DefaultJsonProtocol.jsonFormat(LogSessionVoteEvent.apply, "sessionId", "context", "action")
 }
 
-final case class LogSessionUnvoteEvent(sessionId: SessionId,
-                                       requestContext: RequestContext,
-                                       action: SessionAction[SessionUnvote])
-    extends TransferableToUser[SessionUnvote]
+final case class LogSessionUnvoteEvent(
+  sessionId: SessionId,
+  requestContext: RequestContext,
+  action: SessionAction[SessionUnvote]
+) extends TransferableToUser[SessionUnvote]
     with TransactionalSessionHistoryEvent[SessionUnvote] {
   override def toUserHistoryEvent(userId: UserId): LogUserUnvoteEvent = {
     LogUserUnvoteEvent(
@@ -188,10 +190,11 @@ object LogSessionUnvoteEvent {
     DefaultJsonProtocol.jsonFormat(LogSessionUnvoteEvent.apply, "sessionId", "context", "action")
 }
 
-final case class LogSessionQualificationEvent(sessionId: SessionId,
-                                              requestContext: RequestContext,
-                                              action: SessionAction[SessionQualification])
-    extends TransferableToUser[SessionQualification]
+final case class LogSessionQualificationEvent(
+  sessionId: SessionId,
+  requestContext: RequestContext,
+  action: SessionAction[SessionQualification]
+) extends TransferableToUser[SessionQualification]
     with TransactionalSessionHistoryEvent[SessionQualification] {
   override def toUserHistoryEvent(userId: UserId): LogUserQualificationEvent = {
     LogUserQualificationEvent(
@@ -217,10 +220,11 @@ object LogSessionQualificationEvent {
     DefaultJsonProtocol.jsonFormat(LogSessionQualificationEvent.apply, "sessionId", "context", "action")
 }
 
-final case class LogSessionUnqualificationEvent(sessionId: SessionId,
-                                                requestContext: RequestContext,
-                                                action: SessionAction[SessionUnqualification])
-    extends TransferableToUser[SessionUnqualification]
+final case class LogSessionUnqualificationEvent(
+  sessionId: SessionId,
+  requestContext: RequestContext,
+  action: SessionAction[SessionUnqualification]
+) extends TransferableToUser[SessionUnqualification]
     with TransactionalSessionHistoryEvent[SessionUnqualification] {
   override def toUserHistoryEvent(userId: UserId): LogUserUnqualificationEvent = {
     LogUserUnqualificationEvent(
@@ -246,10 +250,11 @@ object LogSessionUnqualificationEvent {
     DefaultJsonProtocol.jsonFormat(LogSessionUnqualificationEvent.apply, "sessionId", "context", "action")
 }
 
-final case class LogSessionSearchProposalsEvent(sessionId: SessionId,
-                                                requestContext: RequestContext,
-                                                action: SessionAction[SessionSearchParameters])
-    extends TransferableToUser[SessionSearchParameters] {
+final case class LogSessionSearchProposalsEvent(
+  sessionId: SessionId,
+  requestContext: RequestContext,
+  action: SessionAction[SessionSearchParameters]
+) extends TransferableToUser[SessionSearchParameters] {
   override def toUserHistoryEvent(userId: UserId): LogUserSearchProposalsEvent = {
     LogUserSearchProposalsEvent(
       userId = userId,
@@ -304,18 +309,20 @@ final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq
 
 final case class RequestSessionVotedProposals(sessionId: SessionId, proposalsIds: Option[Seq[ProposalId]] = None)
     extends SessionRelatedEvent
-final case class RequestSessionVotedProposalsPaginate(sessionId: SessionId,
-                                                      proposalsIds: Option[Seq[ProposalId]] = None,
-                                                      limit: Int,
-                                                      skip: Int)
-    extends SessionRelatedEvent
+final case class RequestSessionVotedProposalsPaginate(
+  sessionId: SessionId,
+  proposalsIds: Option[Seq[ProposalId]] = None,
+  limit: Int,
+  skip: Int
+) extends SessionRelatedEvent
 final case class UserConnected(sessionId: SessionId, userId: UserId, requestContext: RequestContext)
     extends SessionHistoryAction
 
-final case class LogSessionStartSequenceEvent(sessionId: SessionId,
-                                              requestContext: RequestContext,
-                                              action: SessionAction[StartSequenceParameters])
-    extends TransferableToUser[StartSequenceParameters] {
+final case class LogSessionStartSequenceEvent(
+  sessionId: SessionId,
+  requestContext: RequestContext,
+  action: SessionAction[StartSequenceParameters]
+) extends TransferableToUser[StartSequenceParameters] {
   override def toUserHistoryEvent(userId: UserId): UserHistoryEvent[_] =
     LogUserStartSequenceEvent(
       userId,

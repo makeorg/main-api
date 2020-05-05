@@ -92,9 +92,11 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
     lazy val url = new URL(mailJetConfiguration.url)
     val httpPort: Int = 443
 
-    lazy val httpFlow: Flow[(HttpRequest, Promise[HttpResponse]),
-                            (Try[HttpResponse], Promise[HttpResponse]),
-                            Http.HostConnectionPool] =
+    lazy val httpFlow: Flow[
+      (HttpRequest, Promise[HttpResponse]),
+      (Try[HttpResponse], Promise[HttpResponse]),
+      Http.HostConnectionPool
+    ] =
       Http(actorSystem).cachedHostConnectionPoolHttps[Promise[HttpResponse]](host = url.getHost, port = httpPort)
 
     private lazy val bufferSize = mailJetConfiguration.httpBufferSize
@@ -141,8 +143,9 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
       }
     }
 
-    override def sendCsv(listId: String,
-                         csv: Path)(implicit executionContext: ExecutionContext): Future[SendCsvResponse] = {
+    override def sendCsv(listId: String, csv: Path)(
+      implicit executionContext: ExecutionContext
+    ): Future[SendCsvResponse] = {
       val request: HttpRequest = HttpRequest(
         method = HttpMethods.POST,
         uri = Uri(s"${mailJetConfiguration.url}/v3/DATA/contactslist/$listId/CSVData/application:octet-stream"),
@@ -213,17 +216,15 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
     override def sendEmail(
       message: SendMessages
     )(implicit executionContext: ExecutionContext): Future[SendEmailResponse] = {
-      val messagesWithErrorHandling = message.copy(
-        messages = message.messages.map(
-          _.copy(
-            templateErrorReporting = Some(
-              TemplateErrorReporting(
-                mailJetConfiguration.errorReportingRecipient,
-                Some(mailJetConfiguration.errorReportingRecipientName)
-              )
-            )
+      val messagesWithErrorHandling = message.copy(messages = message.messages.map(
+        _.copy(templateErrorReporting = Some(
+          TemplateErrorReporting(
+            mailJetConfiguration.errorReportingRecipient,
+            Some(mailJetConfiguration.errorReportingRecipientName)
           )
         )
+        )
+      )
       )
 
       val request: HttpRequest = HttpRequest(
@@ -419,12 +420,14 @@ object SendCsvResponse {
     Decoder.forProduct1("ID")(SendCsvResponse.apply)
 }
 
-case class SentEmail(status: String,
-                     errors: Option[Seq[SendMessageError]],
-                     customId: String,
-                     to: Seq[MessageDetails],
-                     cc: Seq[MessageDetails],
-                     bcc: Seq[MessageDetails]) {
+case class SentEmail(
+  status: String,
+  errors: Option[Seq[SendMessageError]],
+  customId: String,
+  to: Seq[MessageDetails],
+  cc: Seq[MessageDetails],
+  bcc: Seq[MessageDetails]
+) {
   override def toString =
     s"SentEmail: (status = $status, errors = ${errors.map(_.mkString("[", ",", "]"))}, customId = $customId, to = ${to
       .mkString("[", ",", "]")}, cc = ${cc.mkString("[", ",", "]")}, bcc = ${bcc.mkString("[", ",", "]")})"
@@ -435,11 +438,13 @@ object SentEmail {
     Decoder.forProduct6("Status", "Errors", "CustomID", "To", "Cc", "Bcc")(SentEmail.apply)
 }
 
-case class SendMessageError(errorIdentifier: String,
-                            errorCode: String,
-                            statusCode: Int,
-                            errorMessage: String,
-                            errorRelatedTo: String) {
+case class SendMessageError(
+  errorIdentifier: String,
+  errorCode: String,
+  statusCode: Int,
+  errorMessage: String,
+  errorRelatedTo: String
+) {
   override def toString =
     s"SendMessageError: (errorIdentifier = $errorIdentifier, errorCode = $errorCode, statusCode = $statusCode, errorMessage = $errorMessage, errorRelatedTo = $errorRelatedTo)"
 }
@@ -491,17 +496,19 @@ object CsvImportResponse {
     Decoder.forProduct4("ID", "DataID", "Errcount", "Status")(CsvImportResponse.apply)
 }
 
-case class ContactDataResponse(isExcludedFromCampaigns: Boolean,
-                               name: String,
-                               createdAt: String,
-                               deliveredCount: Int,
-                               email: String,
-                               exclusionFromCampaignsUpdatedAt: String,
-                               id: Long,
-                               isOptInPending: Boolean,
-                               isSpamComplaining: Boolean,
-                               lastActivityAt: String,
-                               lastUpdateAt: String)
+case class ContactDataResponse(
+  isExcludedFromCampaigns: Boolean,
+  name: String,
+  createdAt: String,
+  deliveredCount: Int,
+  email: String,
+  exclusionFromCampaignsUpdatedAt: String,
+  id: Long,
+  isOptInPending: Boolean,
+  isSpamComplaining: Boolean,
+  lastActivityAt: String,
+  lastUpdateAt: String
+)
 
 object ContactDataResponse {
   implicit val decoder: Decoder[ContactDataResponse] =
@@ -527,13 +534,15 @@ object JobId {
     Decoder.forProduct1("JobID")(JobId.apply)
 }
 
-case class JobDetailsResponse(contactsLists: Seq[ContactListAndAction],
-                              count: Int,
-                              error: String,
-                              errorFile: String,
-                              jobEnd: String,
-                              jobStart: String,
-                              status: String)
+case class JobDetailsResponse(
+  contactsLists: Seq[ContactListAndAction],
+  count: Int,
+  error: String,
+  errorFile: String,
+  jobEnd: String,
+  jobStart: String,
+  status: String
+)
 
 object JobDetailsResponse {
   implicit val decoder: Decoder[JobDetailsResponse] =

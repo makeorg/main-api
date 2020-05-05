@@ -353,9 +353,11 @@ object CreateIdeaRequest {
   implicit val decoder: Decoder[CreateIdeaRequest] = deriveDecoder[CreateIdeaRequest]
 }
 
-final case class UpdateIdeaRequest(name: String,
-                                   @(ApiModelProperty @field)(dataType = "string", example = "Activated")
-                                   status: IdeaStatus) {
+final case class UpdateIdeaRequest(
+  name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "Activated")
+  status: IdeaStatus
+) {
   validate(Validation.validateUserInput("name", name, None))
 }
 
@@ -363,12 +365,14 @@ object UpdateIdeaRequest {
   implicit val decoder: Decoder[UpdateIdeaRequest] = deriveDecoder[UpdateIdeaRequest]
 }
 
-final case class IdeaFiltersRequest(name: Option[String],
-                                    questionId: Option[QuestionId],
-                                    limit: Option[Int],
-                                    skip: Option[Int],
-                                    sort: Option[String],
-                                    order: Option[String]) {
+final case class IdeaFiltersRequest(
+  name: Option[String],
+  questionId: Option[QuestionId],
+  limit: Option[Int],
+  skip: Option[Int],
+  sort: Option[String],
+  order: Option[String]
+) {
   def toSearchQuery(requestContext: RequestContext): IdeaSearchQuery = {
     val fuzziness = Fuzziness.Auto
     val filters: Option[IdeaSearchFilters] =

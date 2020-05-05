@@ -440,28 +440,30 @@ trait DefaultModerationProposalApiComponent
                     "userType".as[immutable.Seq[UserType]].?
                   )
                 ) {
-                  (proposalIds: Option[Seq[ProposalId]],
-                   createdBefore: Option[ZonedDateTime],
-                   initialProposal: Option[Boolean],
-                   tagsIds: Option[Seq[TagId]],
-                   operationId: Option[OperationId],
-                   questionIds: Option[Seq[QuestionId]],
-                   ideaId: Option[Seq[IdeaId]],
-                   content: Option[String],
-                   source: Option[String],
-                   location: Option[String],
-                   question: Option[String],
-                   status: Option[Seq[ProposalStatus]],
-                   minVotesCount: Option[Int],
-                   toEnrich: Option[Boolean],
-                   minScore: Option[Float],
-                   language: Option[Language],
-                   country: Option[Country],
-                   limit: Option[Int],
-                   skip: Option[Int],
-                   sort: Option[String],
-                   order: Option[String],
-                   userTypes: Option[Seq[UserType]]) =>
+                  (
+                    proposalIds: Option[Seq[ProposalId]],
+                    createdBefore: Option[ZonedDateTime],
+                    initialProposal: Option[Boolean],
+                    tagsIds: Option[Seq[TagId]],
+                    operationId: Option[OperationId],
+                    questionIds: Option[Seq[QuestionId]],
+                    ideaId: Option[Seq[IdeaId]],
+                    content: Option[String],
+                    source: Option[String],
+                    location: Option[String],
+                    question: Option[String],
+                    status: Option[Seq[ProposalStatus]],
+                    minVotesCount: Option[Int],
+                    toEnrich: Option[Boolean],
+                    minScore: Option[Float],
+                    language: Option[Language],
+                    country: Option[Country],
+                    limit: Option[Int],
+                    skip: Option[Int],
+                    sort: Option[String],
+                    order: Option[String],
+                    userTypes: Option[Seq[UserType]]
+                  ) =>
                     Validation.validate(Seq(country.map { countryValue =>
                       Validation.validChoices(
                         fieldName = "country",
@@ -590,9 +592,11 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    private def retrieveQuestion(maybeQuestionId: Option[QuestionId],
-                                 proposalId: ProposalId,
-                                 maybeOperationId: Option[OperationId]): Future[Option[Question]] = {
+    private def retrieveQuestion(
+      maybeQuestionId: Option[QuestionId],
+      proposalId: ProposalId,
+      maybeOperationId: Option[OperationId]
+    ): Future[Option[Question]] = {
 
       maybeQuestionId.map { questionId =>
         questionService.getQuestion(questionId)

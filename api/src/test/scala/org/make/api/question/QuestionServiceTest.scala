@@ -144,9 +144,8 @@ class QuestionServiceTest
           ArgumentMatchers.eq(
             OrganisationSearchQuery(
               filters = Some(
-                OrganisationSearchFilters(
-                  organisationIds =
-                    Some(OrganisationIdsSearchFilter(Seq(UserId("organisation-1"), UserId("organisation-2"))))
+                OrganisationSearchFilters(organisationIds =
+                  Some(OrganisationIdsSearchFilter(Seq(UserId("organisation-1"), UserId("organisation-2"))))
                 )
               ),
               sortAlgorithm = Some(ParticipationAlgorithm(QuestionId("question-id"))),

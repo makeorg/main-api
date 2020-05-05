@@ -31,8 +31,10 @@ trait FeaturedOperationServiceComponent {
 
 trait FeaturedOperationService {
   def create(request: CreateFeaturedOperationRequest): Future[FeaturedOperation]
-  def update(featuredOperationId: FeaturedOperationId,
-             request: UpdateFeaturedOperationRequest): Future[Option[FeaturedOperation]]
+  def update(
+    featuredOperationId: FeaturedOperationId,
+    request: UpdateFeaturedOperationRequest
+  ): Future[Option[FeaturedOperation]]
   def getFeaturedOperation(featuredOperationId: FeaturedOperationId): Future[Option[FeaturedOperation]]
   def getAll: Future[Seq[FeaturedOperation]]
   def delete(featuredOperationId: FeaturedOperationId): Future[Unit]
@@ -63,8 +65,10 @@ trait DefaultFeaturedOperationServiceComponent extends FeaturedOperationServiceC
       persistentFeaturedOperationService.persist(featuredOperation)
     }
 
-    override def update(featuredOperationId: FeaturedOperationId,
-                        request: UpdateFeaturedOperationRequest): Future[Option[FeaturedOperation]] = {
+    override def update(
+      featuredOperationId: FeaturedOperationId,
+      request: UpdateFeaturedOperationRequest
+    ): Future[Option[FeaturedOperation]] = {
       persistentFeaturedOperationService.getById(featuredOperationId).flatMap {
         case Some(featuredOperation) =>
           persistentFeaturedOperationService

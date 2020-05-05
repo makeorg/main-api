@@ -63,13 +63,13 @@ final case class TaggedFirstAlgorithm(override val seed: Int) extends SortAlgori
         functionScoreQuery()
           .query(request.query.getOrElse(matchAllQuery()))
           .functions(
-            WeightScore(50D, Some(existsQuery(ProposalElasticsearchFieldNames.tagId))),
-            WeightScore(10D, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() > 1"))),
-            WeightScore(5D, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() == 1"))),
+            WeightScore(50d, Some(existsQuery(ProposalElasticsearchFieldNames.tagId))),
+            WeightScore(10d, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() > 1"))),
+            WeightScore(5d, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() == 1"))),
             exponentialScore(field = ProposalElasticsearchFieldNames.createdAt, scale = "7d", origin = "now")
-              .weight(30D)
-              .decay(0.33D),
-            randomScore(seed = seed).fieldName("id").weight(5D)
+              .weight(30d)
+              .decay(0.33d),
+            randomScore(seed = seed).fieldName("id").weight(5d)
           )
           .scoreMode("sum")
           .boostMode(CombineFunction.Replace)

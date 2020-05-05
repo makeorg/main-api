@@ -27,7 +27,7 @@ import kamon.instrumentation.sbt.SbtKanelaRunner.Keys.kanelaVersion
 lazy val commonSettings = Seq(
   organization := "org.make",
   scalaVersion := "2.13.1",
-  licenses += "AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl.html"),
+  licenses     += "AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl.html"),
   credentials ++= {
     if (System.getenv().containsKey("CI_BUILD")) {
       Seq(
@@ -56,7 +56,7 @@ lazy val commonSettings = Seq(
       Some("Sonatype Releases Nexus".at("https://nexus.prod.makeorg.tech/repository/maven-releases/"))
     }
   },
-  resolvers += "Sonatype Nexus Repository Manager".at("https://nexus.prod.makeorg.tech/repository/maven-public/"),
+  resolvers             += "Sonatype Nexus Repository Manager".at("https://nexus.prod.makeorg.tech/repository/maven-public/"),
   scalastyleFailOnError := true,
   scalacOptions ++= Seq(
     "-Yrangepos",
@@ -105,7 +105,9 @@ lazy val api = project
 
 isSnapshot in ThisBuild := false
 
-git.formattedShaVersion := git.gitHeadCommit.value map { sha => sha.take(10) }
+git.formattedShaVersion := git.gitHeadCommit.value.map { sha =>
+  sha.take(10)
+}
 
 version in ThisBuild := {
   git.formattedShaVersion.value.get
@@ -117,11 +119,11 @@ enablePlugins(GitHooks)
 enablePlugins(GitVersioning)
 enablePlugins(SbtSwift)
 
-swiftContainerName := "reports"
+swiftContainerName     := "reports"
 swiftConfigurationPath := file("/var/run/secrets/main-api.conf")
 swiftContainerDirectory := {
   val currentBranch: String = {
-    if(Option(System.getenv("CI_COMMIT_REF_NAME")).exists(_.nonEmpty)) {
+    if (Option(System.getenv("CI_COMMIT_REF_NAME")).exists(_.nonEmpty)) {
       System.getenv("CI_COMMIT_REF_NAME")
     } else {
       git.gitCurrentBranch.value

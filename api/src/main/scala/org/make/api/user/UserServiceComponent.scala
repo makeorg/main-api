@@ -67,27 +67,35 @@ trait UserService extends ShortenedNames {
   def getUserByEmail(email: String): Future[Option[User]]
   def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
-  def adminFindUsers(start: Int,
-                     limit: Option[Int],
-                     sort: Option[String],
-                     order: Option[String],
-                     email: Option[String],
-                     firstName: Option[String],
-                     lastName: Option[String],
-                     role: Option[Role],
-                     userType: Option[UserType]): Future[Seq[User]]
+  def adminFindUsers(
+    start: Int,
+    limit: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    email: Option[String],
+    firstName: Option[String],
+    lastName: Option[String],
+    role: Option[Role],
+    userType: Option[UserType]
+  ): Future[Seq[User]]
   def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User]
-  def registerPersonality(personalityRegisterData: PersonalityRegisterData,
-                          requestContext: RequestContext): Future[User]
+  def registerPersonality(
+    personalityRegisterData: PersonalityRegisterData,
+    requestContext: RequestContext
+  ): Future[User]
   def update(user: User, requestContext: RequestContext): Future[User]
-  def updatePersonality(personality: User,
-                        moderatorId: Option[UserId],
-                        oldEmail: String,
-                        requestContext: RequestContext): Future[User]
-  def createOrUpdateUserFromSocial(userInfo: UserInfo,
-                                   clientIp: Option[String],
-                                   questionId: Option[QuestionId],
-                                   requestContext: RequestContext): Future[(User, Boolean)]
+  def updatePersonality(
+    personality: User,
+    moderatorId: Option[UserId],
+    oldEmail: String,
+    requestContext: RequestContext
+  ): Future[User]
+  def createOrUpdateUserFromSocial(
+    userInfo: UserInfo,
+    clientIp: Option[String],
+    questionId: Option[QuestionId],
+    requestContext: RequestContext
+  ): Future[(User, Boolean)]
   def requestPasswordReset(userId: UserId): Future[Boolean]
   def updatePassword(userId: UserId, resetToken: Option[String], password: String): Future[Boolean]
   def validateEmail(user: User, verificationToken: String): Future[TokenResponse]
@@ -97,61 +105,71 @@ trait UserService extends ShortenedNames {
   def updateIsHardBounce(email: String, isHardBounce: Boolean): Future[Boolean]
   def updateLastMailingError(userId: UserId, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
   def updateLastMailingError(email: String, lastMailingError: Option[MailingErrorLog]): Future[Boolean]
-  def findUsersForCrmSynchro(optIn: Option[Boolean],
-                             hardBounce: Option[Boolean],
-                             page: Int,
-                             limit: Int): Future[Seq[User]]
+  def findUsersForCrmSynchro(
+    optIn: Option[Boolean],
+    hardBounce: Option[Boolean],
+    page: Int,
+    limit: Int
+  ): Future[Seq[User]]
   def getUsersWithoutRegisterQuestion: Future[Seq[User]]
   def anonymize(user: User, adminId: UserId, requestContext: RequestContext): Future[Unit]
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
-  def adminCountUsers(email: Option[String],
-                      firstName: Option[String],
-                      lastName: Option[String],
-                      role: Option[Role],
-                      userType: Option[UserType]): Future[Int]
+  def adminCountUsers(
+    email: Option[String],
+    firstName: Option[String],
+    lastName: Option[String],
+    role: Option[Role],
+    userType: Option[UserType]
+  ): Future[Int]
   def reconnectInfo(userId: UserId): Future[Option[ReconnectInfo]]
   def changeEmailVerificationTokenIfNeeded(userId: UserId): Future[Option[String]]
-  def changeAvatarForUser(userId: UserId,
-                          avatarUrl: String,
-                          requestContext: RequestContext,
-                          eventDate: ZonedDateTime): Future[Unit]
+  def changeAvatarForUser(
+    userId: UserId,
+    avatarUrl: String,
+    requestContext: RequestContext,
+    eventDate: ZonedDateTime
+  ): Future[Unit]
 }
 
-case class UserRegisterData(email: String,
-                            firstName: Option[String],
-                            lastName: Option[String] = None,
-                            password: Option[String],
-                            lastIp: Option[String],
-                            dateOfBirth: Option[LocalDate] = None,
-                            profession: Option[String] = None,
-                            postalCode: Option[String] = None,
-                            gender: Option[Gender] = None,
-                            socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
-                            country: Country,
-                            language: Language,
-                            questionId: Option[QuestionId] = None,
-                            optIn: Option[Boolean] = None,
-                            optInPartner: Option[Boolean] = None,
-                            roles: Seq[Role] = Seq(Role.RoleCitizen),
-                            availableQuestions: Seq[QuestionId] = Seq.empty,
-                            politicalParty: Option[String] = None,
-                            website: Option[String] = None,
-                            publicProfile: Boolean = false)
+case class UserRegisterData(
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String] = None,
+  password: Option[String],
+  lastIp: Option[String],
+  dateOfBirth: Option[LocalDate] = None,
+  profession: Option[String] = None,
+  postalCode: Option[String] = None,
+  gender: Option[Gender] = None,
+  socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+  country: Country,
+  language: Language,
+  questionId: Option[QuestionId] = None,
+  optIn: Option[Boolean] = None,
+  optInPartner: Option[Boolean] = None,
+  roles: Seq[Role] = Seq(Role.RoleCitizen),
+  availableQuestions: Seq[QuestionId] = Seq.empty,
+  politicalParty: Option[String] = None,
+  website: Option[String] = None,
+  publicProfile: Boolean = false
+)
 
-case class PersonalityRegisterData(email: String,
-                                   firstName: Option[String],
-                                   lastName: Option[String],
-                                   gender: Option[Gender],
-                                   genderName: Option[String],
-                                   country: Country,
-                                   language: Language,
-                                   description: Option[String],
-                                   avatarUrl: Option[String],
-                                   website: Option[String],
-                                   politicalParty: Option[String])
+case class PersonalityRegisterData(
+  email: String,
+  firstName: Option[String],
+  lastName: Option[String],
+  gender: Option[Gender],
+  genderName: Option[String],
+  country: Country,
+  language: Language,
+  description: Option[String],
+  avatarUrl: Option[String],
+  website: Option[String],
+  politicalParty: Option[String]
+)
 
 trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNames with StrictLogging {
   this: IdGeneratorComponent
@@ -196,24 +214,28 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.findAllByUserIds(ids)
     }
 
-    override def adminFindUsers(start: Int,
-                                limit: Option[Int],
-                                sort: Option[String],
-                                order: Option[String],
-                                email: Option[String],
-                                firstName: Option[String],
-                                lastName: Option[String],
-                                role: Option[Role],
-                                userType: Option[UserType]): Future[Seq[User]] = {
+    override def adminFindUsers(
+      start: Int,
+      limit: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      email: Option[String],
+      firstName: Option[String],
+      lastName: Option[String],
+      role: Option[Role],
+      userType: Option[UserType]
+    ): Future[Seq[User]] = {
       persistentUserService.adminFindUsers(start, limit, sort, order, email, firstName, lastName, role, userType)
     }
 
-    private def registerUser(userRegisterData: UserRegisterData,
-                             lowerCasedEmail: String,
-                             country: Country,
-                             language: Language,
-                             profile: Option[Profile],
-                             hashedVerificationToken: String): Future[User] = {
+    private def registerUser(
+      userRegisterData: UserRegisterData,
+      lowerCasedEmail: String,
+      country: Country,
+      language: Language,
+      profile: Option[Profile],
+      hashedVerificationToken: String
+    ): Future[User] = {
 
       val user = User(
         userId = idGenerator.nextUserId(),
@@ -242,12 +264,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.persist(user)
     }
 
-    private def persistPersonality(personalityRegisterData: PersonalityRegisterData,
-                                   lowerCasedEmail: String,
-                                   country: Country,
-                                   language: Language,
-                                   profile: Option[Profile],
-                                   resetToken: String): Future[User] = {
+    private def persistPersonality(
+      personalityRegisterData: PersonalityRegisterData,
+      lowerCasedEmail: String,
+      country: Country,
+      language: Language,
+      profile: Option[Profile],
+      resetToken: String
+    ): Future[User] = {
 
       val user = User(
         userId = idGenerator.nextUserId(),
@@ -276,9 +300,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.persist(user)
     }
 
-    private def validateAccountCreation(emailExists: Boolean,
-                                        canRegister: Boolean,
-                                        lowerCasedEmail: String): Future[Unit] = {
+    private def validateAccountCreation(
+      emailExists: Boolean,
+      canRegister: Boolean,
+      lowerCasedEmail: String
+    ): Future[Unit] = {
       if (emailExists) {
         Future.failed(EmailAlreadyRegisteredException(lowerCasedEmail))
       } else if (!canRegister) {
@@ -359,8 +385,10 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def registerPersonality(personalityRegisterData: PersonalityRegisterData,
-                                     requestContext: RequestContext): Future[User] = {
+    override def registerPersonality(
+      personalityRegisterData: PersonalityRegisterData,
+      requestContext: RequestContext
+    ): Future[User] = {
 
       val country = BusinessConfig.validateCountry(personalityRegisterData.country)
       val language = BusinessConfig.validateLanguage(personalityRegisterData.country, personalityRegisterData.language)
@@ -410,10 +438,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def createOrUpdateUserFromSocial(userInfo: UserInfo,
-                                              clientIp: Option[String],
-                                              questionId: Option[QuestionId],
-                                              requestContext: RequestContext): Future[(User, Boolean)] = {
+    override def createOrUpdateUserFromSocial(
+      userInfo: UserInfo,
+      clientIp: Option[String],
+      questionId: Option[QuestionId],
+      requestContext: RequestContext
+    ): Future[(User, Boolean)] = {
 
       val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
 
@@ -423,10 +453,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    private def createUserFromSocial(requestContext: RequestContext,
-                                     userInfo: UserInfo,
-                                     questionId: Option[QuestionId],
-                                     clientIp: Option[String]): Future[User] = {
+    private def createUserFromSocial(
+      requestContext: RequestContext,
+      userInfo: UserInfo,
+      questionId: Option[QuestionId],
+      clientIp: Option[String]
+    ): Future[User] = {
 
       val country = BusinessConfig.validateCountry(Country(userInfo.country))
       val language = BusinessConfig.validateLanguage(Country(userInfo.country), Language(userInfo.language))
@@ -589,13 +621,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
       for {
         emailVerified <- persistentUserService.validateEmail(verificationToken)
-        accessToken <- oauth2DataHandler.createAccessToken(
-          authInfo = AuthInfo(
-            user = UserRights(user.userId, user.roles, user.availableQuestions, emailVerified),
-            clientId = None,
-            scope = None,
-            redirectUri = None
-          )
+        accessToken <- oauth2DataHandler.createAccessToken(authInfo = AuthInfo(
+          user = UserRights(user.userId, user.roles, user.availableQuestions, emailVerified),
+          clientId = None,
+          scope = None,
+          redirectUri = None
+        )
         )
       } yield {
         TokenResponse(
@@ -660,10 +691,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       persistentUserService.updateLastMailingError(userId, lastMailingError)
     }
 
-    override def findUsersForCrmSynchro(optIn: Option[Boolean],
-                                        hardBounce: Option[Boolean],
-                                        offset: Int,
-                                        limit: Int): Future[Seq[User]] = {
+    override def findUsersForCrmSynchro(
+      optIn: Option[Boolean],
+      hardBounce: Option[Boolean],
+      offset: Int,
+      limit: Int
+    ): Future[Seq[User]] = {
       persistentUserService.findUsersForCrmSynchro(optIn, hardBounce, offset, limit)
     }
 
@@ -689,7 +722,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 proposal =>
                   eventBusService
                     .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
-            )
+              )
           )
       } else {
         Future.successful({})
@@ -700,15 +733,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       proposalService
         .searchForUser(
           userId = Some(user.userId),
-          query = SearchQuery(
-            filters = Some(
-              SearchFilters(
-                user = Some(UserSearchFilter(userId = user.userId)),
-                status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
-                  case (_, status) => status != ProposalStatus.Archived
-                }.values.toSeq))
-              )
+          query = SearchQuery(filters = Some(
+            SearchFilters(
+              user = Some(UserSearchFilter(userId = user.userId)),
+              status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
+                case (_, status) => status != ProposalStatus.Archived
+              }.values.toSeq))
             )
+          )
           ),
           requestContext = requestContext
         )
@@ -718,7 +750,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               proposal =>
                 eventBusService
                   .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
-          )
+            )
         )
     }
 
@@ -730,11 +762,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       } yield updatedUser
     }
 
-    private def updatePersonalityEmail(personality: User,
-                                       moderatorId: Option[UserId],
-                                       newEmail: Option[String],
-                                       oldEmail: String,
-                                       requestContext: RequestContext): Future[Unit] = {
+    private def updatePersonalityEmail(
+      personality: User,
+      moderatorId: Option[UserId],
+      newEmail: Option[String],
+      oldEmail: String,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       newEmail match {
         case Some(email) =>
           persistentUserToAnonymizeService.create(oldEmail).map { _ =>
@@ -755,10 +789,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def updatePersonality(personality: User,
-                                   moderatorId: Option[UserId],
-                                   oldEmail: String,
-                                   requestContext: RequestContext): Future[User] = {
+    override def updatePersonality(
+      personality: User,
+      moderatorId: Option[UserId],
+      oldEmail: String,
+      requestContext: RequestContext
+    ): Future[User] = {
 
       val newEmail: Option[String] = personality.email match {
         case email if email.toLowerCase == oldEmail.toLowerCase => None
@@ -836,9 +872,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def unfollowUser(followedUserId: UserId,
-                              userId: UserId,
-                              requestContext: RequestContext): Future[UserId] = {
+    override def unfollowUser(
+      followedUserId: UserId,
+      userId: UserId,
+      requestContext: RequestContext
+    ): Future[UserId] = {
       persistentUserService.unfollowUser(followedUserId, userId).map(_ => followedUserId).map { value =>
         eventBusService.publish(
           UserUnfollowEvent(
@@ -853,9 +891,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def retrieveOrCreateVirtualUser(userInfo: AuthorRequest,
-                                             country: Country,
-                                             language: Language): Future[User] = {
+    override def retrieveOrCreateVirtualUser(
+      userInfo: AuthorRequest,
+      country: Country,
+      language: Language
+    ): Future[User] = {
       // Take only 50 chars to avoid having values too large for the column
       val fullHash: String = tokenGenerator.tokenToHash(s"$userInfo")
       val hash = fullHash.substring(0, Math.min(50, fullHash.length)).toLowerCase()
@@ -884,11 +924,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def adminCountUsers(email: Option[String],
-                                 firstName: Option[String],
-                                 lastName: Option[String],
-                                 role: Option[Role],
-                                 userType: Option[UserType]): Future[Int] = {
+    override def adminCountUsers(
+      email: Option[String],
+      firstName: Option[String],
+      lastName: Option[String],
+      role: Option[Role],
+      userType: Option[UserType]
+    ): Future[Int] = {
       persistentUserService.adminCountUsers(email, firstName, lastName, role, userType)
     }
 
@@ -946,10 +988,12 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    def changeAvatarForUser(userId: UserId,
-                            avatarUrl: String,
-                            requestContext: RequestContext,
-                            eventDate: ZonedDateTime): Future[Unit] = {
+    def changeAvatarForUser(
+      userId: UserId,
+      avatarUrl: String,
+      requestContext: RequestContext,
+      eventDate: ZonedDateTime
+    ): Future[Unit] = {
       def extension(contentType: ContentType): String = contentType.mediaType.subType
       def destFn(contentType: ContentType): File =
         Files.createTempFile("user-upload-avatar", s".${extension(contentType)}").toFile
@@ -978,7 +1022,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               case None =>
                 logger.warn(s"Could not find user $userId to update avatar")
                 Future.successful(path)
-          }
+            }
         )
         .map { _ =>
           userHistoryCoordinatorService.logHistory(
