@@ -253,7 +253,7 @@ trait DefaultAdminIdeaMappingApiComponent
             "questionId".as[QuestionId].?,
             "stakeTagId".as[TagIdOrNone].?,
             "solutionTypeTagId".as[TagIdOrNone].?,
-            "ideaId".as[IdeaId].?,
+            "ideaId".as[IdeaId].?
           )
         ) {
           (start: Option[Int],

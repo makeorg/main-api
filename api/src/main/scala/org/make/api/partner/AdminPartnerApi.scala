@@ -88,7 +88,7 @@ trait AdminPartnerApi extends Directives {
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "organisationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string")
     )
   )
   @Path(value = "/")

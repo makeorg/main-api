@@ -67,7 +67,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
         defaultLanguage = defaultLanguage,
         operationKind = operationKind,
         createdAt = Some(date),
-        updatedAt = Some(date),
+        updatedAt = Some(date)
       )
 
   def genQuestion(operationId: Option[OperationId]): Gen[Question] =
@@ -160,7 +160,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
         availableQuestions = questionId.toSeq,
         politicalParty = politicalParty,
         website = None,
-        publicProfile = publicProfile,
+        publicProfile = publicProfile
       )
 
   def genCounts: Gen[Counts] =

@@ -251,7 +251,7 @@ object DefaultPersistentTopIdeaServiceComponent {
         totalProposalsRatio = resultSet.float(topIdeaResultName.totalProposalsRatio),
         agreementRatio = resultSet.float(topIdeaResultName.agreementRatio),
         likeItRatio = resultSet.float(topIdeaResultName.likeItRatio),
-        weight = resultSet.float(topIdeaResultName.weight),
+        weight = resultSet.float(topIdeaResultName.weight)
       )
     }
   }

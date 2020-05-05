@@ -83,7 +83,7 @@ trait TestUtilsIT {
         Qualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
         Qualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
       )
-    ),
+    )
   )
 
   def proposal(id: ProposalId,

@@ -256,7 +256,7 @@ trait DefaultPersonalityApiComponent
                           comment2 = request.comment2,
                           comment3 = request.comment3,
                           vote = request.vote,
-                          qualification = request.qualification,
+                          qualification = request.qualification
                         )
                       ) { comment =>
                         complete(StatusCodes.Created -> TopIdeaCommentResponse(comment))

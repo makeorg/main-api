@@ -104,7 +104,7 @@ trait ProposalHelper {
           requestContext = emptyContext.copy(
             operationId = question.operationId,
             country = Some(question.country),
-            language = Some(question.language),
+            language = Some(question.language)
           ),
           user = user,
           createdAt = DateHelper.now(),

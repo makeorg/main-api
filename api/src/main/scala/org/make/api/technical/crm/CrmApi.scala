@@ -186,7 +186,7 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
                             fieldName = "payload",
                             message = Some("Invalid payload")
                         )
-                      ),
+                      )
                     )
                     eventBusService.publish(event)
                   }

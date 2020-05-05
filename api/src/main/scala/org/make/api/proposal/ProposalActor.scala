@@ -650,7 +650,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             count = updatedQualification.count.getOrElse(qualification.count),
             countVerified = updatedQualification.countVerified.getOrElse(qualification.countVerified),
             countSequence = updatedQualification.countSequence.getOrElse(qualification.countSequence),
-            countSegment = updatedQualification.countSegment.getOrElse(qualification.countSegment),
+            countSegment = updatedQualification.countSegment.getOrElse(qualification.countSegment)
           )
       }
 
@@ -854,7 +854,7 @@ object ProposalActor {
         countSequence = vote.countSequence,
         countSegment = vote.countSegment,
         countVerified = event.votesVerified.filter(_.key == vote.key).map(_.countVerified).sum,
-        qualifications = qualifications,
+        qualifications = qualifications
       )
     }
     state.copy(votes = votes)

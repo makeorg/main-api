@@ -216,7 +216,7 @@ class UserEmailConsumerActorIT
         dateOfBirth = None,
         postalCode = None,
         country = country,
-        language = language,
+        language = language
       )
       val wrappedEventOrganisation =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserRegisteredEvent", eventOrganisation)
@@ -252,7 +252,7 @@ class UserEmailConsumerActorIT
         dateOfBirth = None,
         postalCode = None,
         country = country,
-        language = language,
+        language = language
       )
       val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserRegisteredEvent", event)
 

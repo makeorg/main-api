@@ -189,7 +189,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
                       count = Some(q.count),
                       countVerified = Some(q.countVerified),
                       countSequence = Some(q.countSequence),
-                      countSegment = Some(q.countSegment),
+                      countSegment = Some(q.countSegment)
                   )
                 )
             )

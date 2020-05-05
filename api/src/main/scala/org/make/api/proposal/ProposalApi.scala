@@ -98,7 +98,7 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean"),
       new ApiImplicitParam(name = "userType", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "ideaIds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "ideaIds", paramType = "query", dataType = "string")
     )
   )
   def search: Route

@@ -259,7 +259,7 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
         vote = resultSet.string(topIdeaCommentResultName.vote),
         qualification = resultSet.stringOpt(topIdeaCommentResultName.qualification),
         createdAt = resultSet.zonedDateTimeOpt(topIdeaCommentResultName.createdAt),
-        updatedAt = resultSet.zonedDateTimeOpt(topIdeaCommentResultName.updatedAt),
+        updatedAt = resultSet.zonedDateTimeOpt(topIdeaCommentResultName.updatedAt)
       )
     }
   }
