@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.typesafe.scalalogging.StrictLogging
+import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
 import eu.timepit.refined.collection.MaxSize
@@ -446,7 +447,7 @@ final case class ModifyOperationOfQuestionRequest(@(ApiModelProperty @field)(exa
                                                   @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
                                                   endDate: Option[ZonedDateTime],
                                                   question: String,
-                                                  shortTitle: Option[String Refined MaxSize[30]],
+                                                  shortTitle: Option[String Refined MaxSize[W.`30`.T]],
                                                   canPropose: Boolean,
                                                   sequenceCardsConfiguration: SequenceCardsConfiguration,
                                                   aboutUrl: Option[String],
