@@ -361,6 +361,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
 
     scenario("proposal with multiple stake tag with same proposals count") {
       val id = ProposalId("proposal-without-votes")
+
       val tags = Seq(tagStake, tagStake.copy(tagId = TagId("stake-2")), tagActor, tagTarget)
       Mockito
         .when(proposalCoordinatorService.getProposal(id))
@@ -429,6 +430,51 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
 
         proposal.selectedStakeTag.map(_.tagId) should be(Some(TagId("stake-1")))
         proposal.toEnrich shouldBe false
+      }
+    }
+
+    scenario("proposal without displayed stake tag") {
+      val id = ProposalId("proposal-without-votes")
+      val hiddenTagStake = tagStake.copy(display = TagDisplay.Hidden)
+
+      Mockito
+        .when(proposalCoordinatorService.getProposal(id))
+        .thenReturn(Future.successful(Some(proposal(id, tags = Seq(tagStake.tagId), idea = Some(IdeaId("idea-id"))))))
+
+      Mockito
+        .when(tagService.findByTagIds(Seq(tagStake.tagId)))
+        .thenReturn(Future.successful(Seq(hiddenTagStake)))
+
+      Mockito
+        .when(tagTypeService.findAll())
+        .thenReturn(Future.successful(tagTypes))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(Seq(hiddenTagStake), tagTypes))
+        .thenReturn(Seq(IndexedTag(tagId = TagId("stake-1"), label = "stake tag", display = false)))
+
+      Mockito
+        .when(tagService.retrieveIndexedTags(Seq(hiddenTagStake), Seq(tagTypeStake)))
+        .thenReturn(Seq(IndexedTag(tagId = TagId("stake-1"), label = "stake tag", display = false)))
+
+      whenReady(getIndexedProposal(id), Timeout(2.seconds)) { result =>
+        result should be(defined)
+        val proposal = result.get
+
+        proposal.id should be(id)
+        proposal.segment should be(None)
+        proposal.votesCount should be(0)
+        proposal.votesVerifiedCount should be(0)
+        proposal.votesSequenceCount should be(0)
+        proposal.votesSegmentCount should be(0)
+
+        proposal.author.firstName should contain("Joe")
+        proposal.author.organisationName should be(empty)
+        proposal.author.organisationSlug should be(empty)
+        proposal.author.anonymousParticipation should be(false)
+
+        proposal.selectedStakeTag.isDefined should be(false)
+        proposal.toEnrich shouldBe true
       }
     }
 
