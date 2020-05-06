@@ -23,6 +23,8 @@ import Tasks._
 import org.make.GitHooks
 import sbt.Keys.scalacOptions
 import kamon.instrumentation.sbt.SbtKanelaRunner.Keys.kanelaVersion
+import ScalafmtPlugin.scalafmtConfigSettings
+import ScalastylePlugin.rawScalastyleSettings
 
 lazy val commonSettings = Seq(
   organization := "org.make",
@@ -75,8 +77,16 @@ lazy val commonSettings = Seq(
     "-Ycache-macro-class-loader:last-modified",
     "-Ybackend-parallelism",
     "5"
-  )
-)
+  ),
+  IntegrationTest / scalastyleConfig        := (scalastyle / scalastyleConfig).value,
+  IntegrationTest / scalastyleTarget        := target.value / "scalastyle-it-results.xml",
+  IntegrationTest / scalastyleFailOnError   := (scalastyle / scalastyleFailOnError).value,
+  IntegrationTest / scalastyleFailOnWarning := (scalastyle / scalastyleFailOnWarning).value,
+  IntegrationTest / scalastyleSources       := Seq((IntegrationTest / scalaSource).value)
+) ++ inConfig(IntegrationTest)(scalafmtConfigSettings) ++ inConfig(IntegrationTest)(rawScalastyleSettings())
+
+addCommandAlias("checkStyle", ";scalastyle;test:scalastyle;it:scalastyle;scalafmtCheckAll;scalafmtSbtCheck")
+addCommandAlias("fixStyle", ";scalafmtAll;scalafmtSbt")
 
 lazy val phantom = project
   .in(file("."))
