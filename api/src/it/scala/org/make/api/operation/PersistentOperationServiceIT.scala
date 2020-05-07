@@ -33,7 +33,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
-import org.make.core.user.{Role, UserId}
+import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -70,7 +70,7 @@ class PersistentOperationServiceIT
     website = None
   )
   val userId: UserId = idGenerator.nextUserId()
-  val johnDoe = TestUtilsIT.user(
+  val johnDoe: User = TestUtilsIT.user(
     id = userId,
     email = "doe@example.com",
     firstName = Some("John"),
@@ -161,7 +161,12 @@ class PersistentOperationServiceIT
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         )
       ),
       QuestionWithDetails(
@@ -202,7 +207,12 @@ class PersistentOperationServiceIT
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         )
       )
     )

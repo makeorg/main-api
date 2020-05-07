@@ -187,7 +187,12 @@ final case class OperationOfQuestion(
   description: String,
   consultationImage: Option[String],
   descriptionImage: Option[String],
-  displayResults: Boolean
+  displayResults: Boolean,
+  resultsLink: Option[String],
+  proposalsCount: Int,
+  participantsCount: Int,
+  actions: Option[String],
+  featured: Boolean
 ) {
 
   def isOpenAt(date: ZonedDateTime): Boolean = {

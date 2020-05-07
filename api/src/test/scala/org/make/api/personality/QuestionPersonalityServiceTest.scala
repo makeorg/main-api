@@ -246,7 +246,13 @@ class QuestionPersonalityServiceTest
                 country = Country("FR"),
                 language = Language("fr"),
                 operationKind = "",
-                aboutUrl = Some("http://about")
+                aboutUrl = Some("http://about"),
+                displayResults = false,
+                resultsLink = None,
+                proposalsCount = 42,
+                participantsCount = 84,
+                actions = None,
+                featured = true
               ),
               IndexedOperationOfQuestion(
                 operationId = OperationId("operation-id-two"),
@@ -262,7 +268,13 @@ class QuestionPersonalityServiceTest
                 country = Country("FR"),
                 language = Language("fr"),
                 operationKind = "",
-                aboutUrl = Some("http://about")
+                aboutUrl = Some("http://about"),
+                displayResults = true,
+                resultsLink = Some("http://example.com/results"),
+                proposalsCount = 420,
+                participantsCount = 840,
+                actions = None,
+                featured = false
               )
             )
           )

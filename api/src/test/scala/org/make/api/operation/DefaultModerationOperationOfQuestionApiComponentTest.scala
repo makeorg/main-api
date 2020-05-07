@@ -37,6 +37,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
+import eu.timepit.refined.auto._
 
 class DefaultModerationOperationOfQuestionApiComponentTest
     extends MakeApiTestBase
@@ -80,7 +81,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         description = OperationOfQuestion.defaultDescription,
         consultationImage = None,
         descriptionImage = None,
-        displayResults = false
+        displayResults = false,
+        resultsLink = None,
+        proposalsCount = 42,
+        participantsCount = 84,
+        actions = None,
+        featured = true
       )
     )
   }
@@ -117,7 +123,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         )
       )
     )
@@ -180,7 +191,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -210,7 +226,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         )
       )
     )
@@ -291,7 +312,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         ),
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
@@ -321,7 +347,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         )
       )
     )
@@ -458,13 +489,38 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             question = "how to save the world?",
             shortTitle = None,
             questionSlug = "make-the-world-great-again",
-            consultationImage = Some("https://example.com/image")
+            consultationImage = Some("https://example.com/image"),
+            descriptionImage = Some("https://example.com/image-desc"),
+            displayResults = false,
+            resultsLink = None,
+            actions = None,
+            featured = true
           ).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.Created)
         val operationOfQuestion = entityAs[OperationOfQuestionResponse]
         operationOfQuestion.canPropose shouldBe true
+      }
+    }
+
+    scenario("create as moderator with resultsLink even if displayResults is false") {
+      Post("/moderation/operations-of-questions")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, """{
+            |"operationId": "some-operation",
+            |"startDate": "2018-12-01T10:15:30+00:00",
+            |"question": "question ?",
+            |"questionSlug": "question-slug",
+            |"operationTitle": "my-operation",
+            |"country": "FR",
+            |"language": "fr",
+            |"consultationImage": "http://example.com/image",
+            |"displayResults": false,
+            |"resultsLink": "http://example.com/results",
+            |"featured": true
+            |}""".stripMargin) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
       }
     }
 
@@ -498,6 +554,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             endDate = None,
             canPropose = true,
             question = "question ?",
+            operationTitle = "new title",
             shortTitle = None,
             sequenceCardsConfiguration = SequenceCardsConfiguration(
               introCard = IntroCard(enabled = true, title = None, description = None),
@@ -517,9 +574,14 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             metas = Metas(title = None, description = None, picture = None),
             theme = QuestionTheme.default,
             description = OperationOfQuestion.defaultDescription,
-            displayResults = false,
+            displayResults = true,
             consultationImage = None,
-            descriptionImage = None
+            descriptionImage = None,
+            resultsLink = Some("https://example.com/results"),
+            proposalsCount = 420,
+            participantsCount = 840,
+            actions = Some("some actions"),
+            featured = false
           ).asJson.toString()
         ) ~> routes ~> check {
 
@@ -535,6 +597,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "startDate": "2018-12-01T10:15:30.000Z",
             | "canPropose": true,
             | "question": "question ?",
+            | "operationTitle": "title",
             | "sequenceCardsConfiguration": {
             |   "introCard": { "enabled": true },
             |   "pushProposalCard": { "enabled": true },
@@ -553,11 +616,15 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | },
             | "description": "description",
             | "displayResults": false,
-            | "consultationImage": "https://example"
+            | "consultationImage": "https://example",
+            | "proposalsCount": 42,
+            | "participantsCount": 84,
+            | "featured": true
           }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
+        println(errors.toString())
         errors.size should be(1)
         errors.head.field shouldBe "gradientStart"
       }
@@ -573,6 +640,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | "startDate": "2018-12-01T10:15:30.000Z",
            | "canPropose": true,
            | "question": "question ?",
+           | "operationTitle": "title",
            | "shortTitle": "Il s'agit d'un short title de plus de 30 charactères !",
            | "sequenceCardsConfiguration": {
            |   "introCard": { "enabled": true },
@@ -592,12 +660,16 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | },
            | "description": "description",
            | "displayResults": false,
-           | "consultationImage": "https://example"
-          }""".stripMargin
+           | "consultationImage": "https://example.com",
+           | "proposalsCount": 42,
+           | "participantsCount": 84,
+           | "featured": true
+           |}""".stripMargin
         ) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
+        println(errors.toString())
         errors.size should be(1)
         errors.head.field shouldBe "shortTitle"
       }
@@ -610,6 +682,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | "startDate": "2018-12-01T10:15:30.000Z",
                                                        | "canPropose": true,
                                                        | "question": "question ?",
+                                                       | "operationTitle": "title",
                                                        | "sequenceCardsConfiguration": {
                                                        |   "introCard": { "enabled": true },
                                                        |   "pushProposalCard": { "enabled": true },
@@ -629,14 +702,58 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | "description": "description",
                                                        | "displayResults": false,
                                                        | "consultationImage": "wrong URL",
-                                                       | "descriptionImage": "wrong URL"
-          }""".stripMargin) ~> routes ~> check {
+                                                       | "descriptionImage": "wrong URL",
+                                                       | "proposalsCount": 42,
+                                                       | "participantsCount": 84,
+                                                       | "featured": true
+                                                       | }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
+        println(errors.toString())
         errors.size should be(2)
         errors.head.field shouldBe "consultationImage"
         errors(1).field shouldBe "descriptionImage"
+      }
+    }
+
+    scenario("update with resultsLink even if displayResults is false") {
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, """{
+            | "startDate": "2018-12-01T10:15:30.000Z",
+            | "canPropose": true,
+            | "question": "question ?",
+            | "operationTitle": "title",
+            | "sequenceCardsConfiguration": {
+            |   "introCard": { "enabled": true },
+            |   "pushProposalCard": { "enabled": true },
+            |   "signUpCard": { "enabled": true },
+            |   "finalCard": {
+            |     "enabled": true,
+            |     "sharingEnabled": false
+            |   }
+            | },
+            | "metas": { "title": "metas" },
+            | "theme": {
+            |   "gradientStart": "#424242",
+            |   "gradientEnd": "#000000",
+            |   "color": "#000000",
+            |   "fontColor": "#000000"
+            | },
+            | "description": "description",
+            | "displayResults": false,
+            | "resultsLink": "http://example.com/results",
+            | "consultationImage": "https://example",
+            | "proposalsCount": 42,
+            | "participantsCount": 84,
+            | "featured": true
+          }""".stripMargin) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        println(errors.toString())
+        errors.size should be(1)
+        errors.head.field shouldBe "resultsLink"
       }
     }
   }

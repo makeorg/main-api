@@ -126,7 +126,12 @@ class ModerationQuestionApiTest
     description = OperationOfQuestion.defaultDescription,
     consultationImage = Some("image-url"),
     descriptionImage = None,
-    displayResults = false
+    displayResults = false,
+    resultsLink = None,
+    proposalsCount = 42,
+    participantsCount = 84,
+    actions = None,
+    featured = true
   )
 
   feature("list questions") {

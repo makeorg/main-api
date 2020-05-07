@@ -74,7 +74,13 @@ case class IndexedOperationOfQuestion(
   operationId: OperationId,
   operationTitle: String,
   operationKind: String,
-  aboutUrl: Option[String]
+  aboutUrl: Option[String],
+  displayResults: Boolean,
+  resultsLink: Option[String],
+  proposalsCount: Int,
+  participantsCount: Int,
+  actions: Option[String],
+  featured: Boolean
 )
 
 object IndexedOperationOfQuestion extends CirceFormatters {
@@ -100,7 +106,13 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       operationId = operationOfQuestion.operationId,
       operationTitle = operationOfQuestion.operationTitle,
       operationKind = operation.operationKind.shortName,
-      aboutUrl = operationOfQuestion.aboutUrl
+      aboutUrl = operationOfQuestion.aboutUrl,
+      displayResults = operationOfQuestion.displayResults,
+      resultsLink = operationOfQuestion.resultsLink,
+      proposalsCount = operationOfQuestion.proposalsCount,
+      participantsCount = operationOfQuestion.participantsCount,
+      actions = operationOfQuestion.actions,
+      featured = operationOfQuestion.featured
     )
   }
 }
