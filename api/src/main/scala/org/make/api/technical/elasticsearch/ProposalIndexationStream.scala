@@ -49,7 +49,6 @@ import org.make.api.tagtype.TagTypeServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
 import org.make.core.proposal._
-import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.indexed.{
   IndexedAuthor,
   IndexedGetParameters,
@@ -213,10 +212,6 @@ trait ProposalIndexationStream
       // in order to insert this in this for-comprehension correctly we need to transform the Future[Option[String]]
       // into a Future[Option[Option[String]]] since we want to keep an Option[String] in the end.
       segment <- OptionT(segmentService.resolveSegment(proposal.creationContext).map(Option(_)))
-
-      indexedTags = tagService.retrieveIndexedTags(tags, tagTypes)
-      requiredTagTypesIds = tagTypes.collect { case TagType(id, _, _, _, true) => id }
-      hasAllRequiredTagTypes = requiredTagTypesIds.forall(tags.map(_.tagTypeId).contains)
     } yield {
       createIndexedProposal(
         proposal,
@@ -224,8 +219,8 @@ trait ProposalIndexationStream
         sequenceConfiguration,
         user,
         organisationInfos,
-        indexedTags,
-        hasAllRequiredTagTypes,
+        tagService.retrieveIndexedTags(tags, tagTypes),
+        Proposal.needsEnrichment(proposal.status, tagTypes, tags.map(_.tagTypeId)),
         selectedStakeTag,
         question,
         operationOfQuestion,
@@ -242,7 +237,7 @@ trait ProposalIndexationStream
                                     user: User,
                                     organisationInfos: Seq[User],
                                     tags: Seq[IndexedTag],
-                                    hasAllRequiredTagTypes: Boolean,
+                                    needsEnrichment: Boolean,
                                     selectedStakeTag: Option[IndexedTag],
                                     question: Question,
                                     operationOfQuestion: OperationOfQuestion,
@@ -257,8 +252,6 @@ trait ProposalIndexationStream
     val segmentScore = segment.map { _ =>
       ScoreCounts.fromSegmentVotes(proposal.votes)
     }.getOrElse(ScoreCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-
-    val toEnrich: Boolean = proposal.status == Accepted && !hasAllRequiredTagTypes
 
     IndexedProposal(
       id = proposal.proposalId,
@@ -276,7 +269,7 @@ trait ProposalIndexationStream
       votesVerifiedCount = proposal.votes.map(_.countVerified).sum,
       votesSequenceCount = proposal.votes.map(_.countSequence).sum,
       votesSegmentCount = proposal.votes.map(_.countSegment).sum,
-      toEnrich = toEnrich,
+      toEnrich = needsEnrichment,
       scores = IndexedScores(
         engagement = regularScore.engagement(),
         agreement = regularScore.agreement(),
