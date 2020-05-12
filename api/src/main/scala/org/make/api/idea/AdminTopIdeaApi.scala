@@ -188,13 +188,15 @@ trait DefaultAdminTopIdeaApiComponent
             "name".?
           )
         ) {
-          (start: Option[Int],
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           ideaId: Option[IdeaId],
-           questionId: Option[QuestionId],
-           name: Option[String]) =>
+          (
+            start: Option[Int],
+            end: Option[Int],
+            sort: Option[String],
+            order: Option[String],
+            ideaId: Option[IdeaId],
+            questionId: Option[QuestionId],
+            name: Option[String]
+          ) =>
             makeOperation("searchTopIdea") { _ =>
               makeOAuth2 { auth =>
                 requireAdminRole(auth.user) {

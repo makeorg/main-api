@@ -26,10 +26,12 @@ import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 import spray.json.{JsString, JsValue, JsonFormat}
 
-case class Personality(personalityId: PersonalityId,
-                       userId: UserId,
-                       questionId: QuestionId,
-                       personalityRoleId: PersonalityRoleId)
+case class Personality(
+  personalityId: PersonalityId,
+  userId: UserId,
+  questionId: QuestionId,
+  personalityRoleId: PersonalityRoleId
+)
 
 case class PersonalityId(value: String) extends StringValue
 
@@ -53,11 +55,13 @@ object PersonalityId {
 
 case class PersonalityRole(personalityRoleId: PersonalityRoleId, name: String)
 
-case class PersonalityRoleField(personalityRoleFieldId: PersonalityRoleFieldId,
-                                personalityRoleId: PersonalityRoleId,
-                                name: String,
-                                fieldType: FieldType,
-                                required: Boolean)
+case class PersonalityRoleField(
+  personalityRoleFieldId: PersonalityRoleFieldId,
+  personalityRoleId: PersonalityRoleId,
+  name: String,
+  fieldType: FieldType,
+  required: Boolean
+)
 
 case class PersonalityRoleFieldId(value: String) extends StringValue
 

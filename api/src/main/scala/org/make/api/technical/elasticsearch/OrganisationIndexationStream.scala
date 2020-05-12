@@ -63,8 +63,9 @@ trait OrganisationIndexationStream
   // Use custom `grouped` to reduce the size of every batch. Purpose: avoid a heavy load of actor commands.
   private def groupedOrganisations: Flow[User, Seq[User], NotUsed] = Flow[User].groupedWithin(20, 500.milliseconds)
 
-  private def executeIndexOrganisations(organisations: Seq[User],
-                                        organisationIndexName: String)(implicit mat: Materializer): Future[Done] = {
+  private def executeIndexOrganisations(organisations: Seq[User], organisationIndexName: String)(
+    implicit mat: Materializer
+  ): Future[Done] = {
     def futureVotedProposals(organisationId: UserId): Future[Seq[ProposalId]] =
       userHistoryCoordinatorService.retrieveVotedProposals(RequestUserVotedProposals(organisationId))
 
@@ -73,8 +74,10 @@ trait OrganisationIndexationStream
         SearchQuery(filters = Some(SearchFilters(proposal = Some(ProposalSearchFilter(proposalIds)))))
       )
 
-    def futureVotes(proposalIds: Seq[ProposalId],
-                    organisationId: UserId): Future[Map[ProposalId, VoteAndQualifications]] =
+    def futureVotes(
+      proposalIds: Seq[ProposalId],
+      organisationId: UserId
+    ): Future[Map[ProposalId, VoteAndQualifications]] =
       userHistoryCoordinatorService.retrieveVoteAndQualifications(RequestVoteValues(organisationId, proposalIds))
 
     def futureProposalsCountByQuestion(organisationId: UserId): Future[Map[QuestionId, Long]] =

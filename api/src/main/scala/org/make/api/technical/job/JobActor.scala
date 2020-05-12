@@ -44,7 +44,7 @@ class JobActor(heartRate: Duration) extends MakePersistentActor(classOf[Job], cl
         job =>
           job.status match {
             case JobStatus.Running(_) => job.isStuck(heartRate)
-            case _                 => true
+            case _                    => true
           }
       )
       if (startable) {
@@ -63,12 +63,12 @@ class JobActor(heartRate: Duration) extends MakePersistentActor(classOf[Job], cl
 
   private def acceptIfRunning(event: JobEvent): Unit = state match {
     case Some(Job(_, JobStatus.Running(_), _, _)) => persistAndPublishEvent(event)(_ => sender() ! Ack)
-    case _                                     => sender() ! NotRunning
+    case _                                        => sender() ! NotRunning
   }
 
   override val applyEvent: PartialFunction[JobEvent, Option[Job]] = {
     case Started(_, date) =>
-      Some(Job(id, JobStatus.Running(0D), Some(date), Some(date)))
+      Some(Job(id, JobStatus.Running(0d), Some(date), Some(date)))
     case HeartbeatReceived(_, date) =>
       state.map(_.copy(updatedAt = Some(date)))
     case Progressed(_, date, progress) =>

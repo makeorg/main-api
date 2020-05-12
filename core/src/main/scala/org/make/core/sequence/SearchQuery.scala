@@ -38,10 +38,12 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
   * @param limit   number of items to fetch
   * @param skip    number of items to skip
   */
-case class SearchQuery(filters: Option[SearchFilters] = None,
-                       sorts: Seq[Sort] = Seq.empty,
-                       limit: Option[Int] = None,
-                       skip: Option[Int] = None)
+case class SearchQuery(
+  filters: Option[SearchFilters] = None,
+  sorts: Seq[Sort] = Seq.empty,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None
+)
 
 object SearchQuery {
   implicit val searchQueryFormatted: RootJsonFormat[SearchQuery] =
@@ -56,24 +58,28 @@ object SearchQuery {
   * @param status  The Status of sequence
   * @param context The Context of sequence
   */
-case class SearchFilters(title: Option[TitleSearchFilter] = None,
-                         slug: Option[SlugSearchFilter] = None,
-                         status: Option[StatusSearchFilter] = None,
-                         searchable: Option[Boolean] = None,
-                         context: Option[ContextSearchFilter] = None,
-                         operationId: Option[OperationSearchFilter] = None)
+case class SearchFilters(
+  title: Option[TitleSearchFilter] = None,
+  slug: Option[SlugSearchFilter] = None,
+  status: Option[StatusSearchFilter] = None,
+  searchable: Option[Boolean] = None,
+  context: Option[ContextSearchFilter] = None,
+  operationId: Option[OperationSearchFilter] = None
+)
 
 object SearchFilters extends ElasticDsl {
 
   implicit val searchFilterFormatted: RootJsonFormat[SearchFilters] =
     DefaultJsonProtocol.jsonFormat6(SearchFilters.apply)
 
-  def parse(title: Option[TitleSearchFilter] = None,
-            slug: Option[SlugSearchFilter] = None,
-            status: Option[StatusSearchFilter] = None,
-            searchable: Option[Boolean] = None,
-            context: Option[ContextSearchFilter] = None,
-            operationId: Option[OperationSearchFilter] = None): Option[SearchFilters] = {
+  def parse(
+    title: Option[TitleSearchFilter] = None,
+    slug: Option[SlugSearchFilter] = None,
+    status: Option[StatusSearchFilter] = None,
+    searchable: Option[Boolean] = None,
+    context: Option[ContextSearchFilter] = None,
+    operationId: Option[OperationSearchFilter] = None
+  ): Option[SearchFilters] = {
 
     (title, slug, status, searchable, context, operationId) match {
       case (None, None, None, None, None, None) => None
@@ -251,10 +257,12 @@ object StatusSearchFilter {
 
 }
 
-case class ContextSearchFilter(operation: Option[OperationId],
-                               source: Option[String],
-                               location: Option[String],
-                               question: Option[String])
+case class ContextSearchFilter(
+  operation: Option[OperationId],
+  source: Option[String],
+  location: Option[String],
+  question: Option[String]
+)
 
 object ContextSearchFilter {
   implicit val contextSearchFilterFormatted: RootJsonFormat[ContextSearchFilter] =

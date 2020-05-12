@@ -43,16 +43,18 @@ object ProposalScorerHelper extends StrictLogging {
 
   val combinedStd: Double = math.sqrt(topScoreComponents.map(sc => math.pow(sc.weight, 2)).sum)
 
-  case class ScoreCounts(votes: Int,
-                         agreeCount: Int,
-                         disagreeCount: Int,
-                         neutralCount: Int,
-                         platitudeAgreeCount: Int,
-                         platitudeDisagreeCount: Int,
-                         loveCount: Int,
-                         hateCount: Int,
-                         doableCount: Int,
-                         impossibleCount: Int) {
+  case class ScoreCounts(
+    votes: Int,
+    agreeCount: Int,
+    disagreeCount: Int,
+    neutralCount: Int,
+    platitudeAgreeCount: Int,
+    platitudeDisagreeCount: Int,
+    loveCount: Int,
+    hateCount: Int,
+    doableCount: Int,
+    impossibleCount: Int
+  ) {
 
     def engagement(): Double = {
       (agreeCount + disagreeCount + 2 * ScoreCounts.VotePrior) / (votes + ScoreCounts.CountPrior).toDouble
@@ -227,20 +229,26 @@ object ProposalScorerHelper extends StrictLogging {
         configuration.nonSequenceVotesWeight * allScores.topScore()
     }
 
-    def topScoreUpperBound(configuration: SequenceConfiguration,
-                           allScores: ScoreCounts,
-                           specificScores: ScoreCounts): Double =
+    def topScoreUpperBound(
+      configuration: SequenceConfiguration,
+      allScores: ScoreCounts,
+      specificScores: ScoreCounts
+    ): Double =
       topScore(configuration, allScores, specificScores) + specificScores.topScoreConfidenceInterval()
 
-    def topScoreLowerBound(configuration: SequenceConfiguration,
-                           allScores: ScoreCounts,
-                           specificScores: ScoreCounts): Double =
+    def topScoreLowerBound(
+      configuration: SequenceConfiguration,
+      allScores: ScoreCounts,
+      specificScores: ScoreCounts
+    ): Double =
       topScore(configuration, allScores, specificScores) - specificScores.topScoreConfidenceInterval()
 
-    def topScoreAjustedWithVotes(configuration: SequenceConfiguration,
-                                 allScores: ScoreCounts,
-                                 specificScores: ScoreCounts,
-                                 votesCount: Int): Double = {
+    def topScoreAjustedWithVotes(
+      configuration: SequenceConfiguration,
+      allScores: ScoreCounts,
+      specificScores: ScoreCounts,
+      votesCount: Int
+    ): Double = {
       val score = topScore(configuration, allScores, specificScores)
       if (votesCount < configuration.scoreAdjustementVotesThreshold) {
         if (score > 0) {
@@ -279,10 +287,12 @@ object ProposalScorerHelper extends StrictLogging {
       votes.filter(_.key == voteKey).map(counter).sum
     }
 
-    private def qualificationCount(votes: Seq[BaseVote],
-                                   voteKey: VoteKey,
-                                   qualificationKey: QualificationKey,
-                                   counter: BaseQualification => Int): Int = {
+    private def qualificationCount(
+      votes: Seq[BaseVote],
+      voteKey: VoteKey,
+      qualificationKey: QualificationKey,
+      counter: BaseQualification => Int
+    ): Int = {
       votes
         .filter(_.key == voteKey)
         .flatMap(_.qualifications.filter(_.key == qualificationKey).map(counter))
@@ -297,9 +307,11 @@ object ProposalScorerHelper extends StrictLogging {
       new BetaDistribution(random, successes + prior, trials - successes + ScoreCounts.CountPrior).sample()
     }
 
-    private def apply(votes: Seq[BaseVote],
-                      voteCounter: BaseVote                   => Int,
-                      qualificationCounter: BaseQualification => Int): ScoreCounts = {
+    private def apply(
+      votes: Seq[BaseVote],
+      voteCounter: BaseVote                   => Int,
+      qualificationCounter: BaseQualification => Int
+    ): ScoreCounts = {
       ScoreCounts(
         votes = totalVoteCount(votes, voteCounter),
         agreeCount = voteCount(votes, Agree, voteCounter),
@@ -333,9 +345,11 @@ object ProposalScorerHelper extends StrictLogging {
     RateEstimate(pp, sd)
   }
 
-  def sequencePool(sequenceConfiguration: SequenceConfiguration,
-                   status: ProposalStatus,
-                   scores: ScoreCounts): SequencePool = {
+  def sequencePool(
+    sequenceConfiguration: SequenceConfiguration,
+    status: ProposalStatus,
+    scores: ScoreCounts
+  ): SequencePool = {
 
     val votesCount: Int = scores.votes
     val engagementRate: Double = scores.engagementUpperBound()

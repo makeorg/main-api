@@ -46,7 +46,7 @@ class PartnerServiceTest
     organisationId = None,
     partnerKind = PartnerKind.Founder,
     questionId = QuestionId("question"),
-    weight = 20F
+    weight = 20f
   )
 
   feature("create partner") {
@@ -55,16 +55,15 @@ class PartnerServiceTest
       Mockito.when(persistentPartnerService.persist(partner)).thenReturn(Future.successful(partner))
 
       whenReady(
-        partnerService.createPartner(
-          request = CreatePartnerRequest(
-            name = "name",
-            logo = Some("logo"),
-            link = Some("link"),
-            organisationId = None,
-            partnerKind = PartnerKind.Founder,
-            questionId = QuestionId("question"),
-            weight = 20F
-          )
+        partnerService.createPartner(request = CreatePartnerRequest(
+          name = "name",
+          logo = Some("logo"),
+          link = Some("link"),
+          organisationId = None,
+          partnerKind = PartnerKind.Founder,
+          questionId = QuestionId("question"),
+          weight = 20f
+        )
         ),
         Timeout(2.seconds)
       ) { partner =>
@@ -86,7 +85,7 @@ class PartnerServiceTest
             link = Some("link"),
             organisationId = None,
             partnerKind = PartnerKind.Founder,
-            weight = 20F
+            weight = 20f
           )
         ),
         Timeout(2.seconds)
@@ -112,7 +111,7 @@ class PartnerServiceTest
             link = Some("link"),
             organisationId = None,
             partnerKind = PartnerKind.Founder,
-            weight = 20F
+            weight = 20f
           )
         ),
         Timeout(2.seconds)

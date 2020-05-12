@@ -36,9 +36,11 @@ trait TagServiceComponent {
   def tagService: TagService
 }
 
-case class TagFilter(label: Option[String] = None,
-                     tagTypeId: Option[TagTypeId] = None,
-                     questionId: Option[QuestionId] = None)
+case class TagFilter(
+  label: Option[String] = None,
+  tagTypeId: Option[TagTypeId] = None,
+  questionId: Option[QuestionId] = None
+)
 
 object TagFilter {
   val empty: TagFilter = TagFilter()
@@ -46,31 +48,37 @@ object TagFilter {
 
 trait TagService extends ShortenedNames {
   def getTag(slug: TagId): Future[Option[Tag]]
-  def createTag(label: String,
-                tagTypeId: TagTypeId,
-                question: Question,
-                display: TagDisplay = TagDisplay.Inherit,
-                weight: Float = 0f): Future[Tag]
+  def createTag(
+    label: String,
+    tagTypeId: TagTypeId,
+    question: Question,
+    display: TagDisplay = TagDisplay.Inherit,
+    weight: Float = 0f
+  ): Future[Tag]
   def findAll(): Future[Seq[Tag]]
   def findAllDisplayed(): Future[Seq[Tag]]
   def findByTagIds(tagIds: Seq[TagId]): Future[Seq[Tag]]
   def findByQuestionId(questionId: QuestionId): Future[Seq[Tag]]
   def findByQuestionIds(questionIds: Seq[QuestionId]): Future[Map[QuestionId, Seq[TagId]]]
   def findByLabel(partialLabel: String, like: Boolean): Future[Seq[Tag]]
-  def updateTag(tagId: TagId,
-                label: String,
-                display: TagDisplay,
-                tagTypeId: TagTypeId,
-                weight: Float,
-                question: Question,
-                requestContext: RequestContext = RequestContext.empty): Future[Option[Tag]]
+  def updateTag(
+    tagId: TagId,
+    label: String,
+    display: TagDisplay,
+    tagTypeId: TagTypeId,
+    weight: Float,
+    question: Question,
+    requestContext: RequestContext = RequestContext.empty
+  ): Future[Option[Tag]]
   def retrieveIndexedTags(tags: Seq[Tag], tagTypes: Seq[TagType]): Seq[IndexedTag]
-  def find(start: Int = 0,
-           end: Option[Int] = None,
-           sort: Option[String] = None,
-           order: Option[String] = None,
-           onlyDisplayed: Boolean = false,
-           tagFilter: TagFilter = TagFilter.empty): Future[Seq[Tag]]
+  def find(
+    start: Int = 0,
+    end: Option[Int] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    onlyDisplayed: Boolean = false,
+    tagFilter: TagFilter = TagFilter.empty
+  ): Future[Seq[Tag]]
   def count(tagFilter: TagFilter = TagFilter.empty): Future[Int]
 }
 
@@ -106,11 +114,13 @@ trait DefaultTagServiceComponent
       persistentTagService.findByQuestion(questionId)
     }
 
-    override def createTag(label: String,
-                           tagTypeId: TagTypeId,
-                           question: Question,
-                           display: TagDisplay,
-                           weight: Float): Future[Tag] = {
+    override def createTag(
+      label: String,
+      tagTypeId: TagTypeId,
+      question: Question,
+      display: TagDisplay,
+      weight: Float
+    ): Future[Tag] = {
       val tag: Tag = Tag(
         tagId = idGenerator.nextTagId(),
         label = label,
@@ -152,13 +162,15 @@ trait DefaultTagServiceComponent
       }
     }
 
-    override def updateTag(tagId: TagId,
-                           label: String,
-                           display: TagDisplay,
-                           tagTypeId: TagTypeId,
-                           weight: Float,
-                           question: Question,
-                           requestContext: RequestContext): Future[Option[Tag]] = {
+    override def updateTag(
+      tagId: TagId,
+      label: String,
+      display: TagDisplay,
+      tagTypeId: TagTypeId,
+      weight: Float,
+      question: Question,
+      requestContext: RequestContext
+    ): Future[Option[Tag]] = {
       persistentTagService.get(tagId).flatMap {
         case Some(tag) =>
           for {
@@ -189,12 +201,14 @@ trait DefaultTagServiceComponent
       }
     }
 
-    override def find(start: Int = 0,
-                      end: Option[Int] = None,
-                      sort: Option[String] = None,
-                      order: Option[String] = None,
-                      onlyDisplayed: Boolean = false,
-                      tagFilter: TagFilter): Future[Seq[Tag]] = {
+    override def find(
+      start: Int = 0,
+      end: Option[Int] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      onlyDisplayed: Boolean = false,
+      tagFilter: TagFilter
+    ): Future[Seq[Tag]] = {
 
       persistentTagService.find(
         start,

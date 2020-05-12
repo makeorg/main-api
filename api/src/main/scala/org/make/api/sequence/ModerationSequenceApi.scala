@@ -187,30 +187,30 @@ trait DefaultModerationSequenceApiComponent
 
     override def putSequenceConfiguration: Route = {
       put {
-        path("moderation" / "sequences" / questionId / "configuration") {
-          questionId =>
-            makeOperation("PutSequenceConfiguration") { _ =>
-              makeOAuth2 { auth: AuthInfo[UserRights] =>
-                requireAdminRole(auth.user) {
-                  decodeRequest {
-                    entity(as[SequenceConfigurationRequest]) {
-                      sequenceConfigurationRequest: SequenceConfigurationRequest =>
-                        provideAsyncOrNotFound(
-                          sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(questionId)
-                        ) { sequenceConfiguration =>
-                          provideAsync[Boolean](sequenceConfigurationService.setSequenceConfiguration(
-                            sequenceConfigurationRequest.toSequenceConfiguration(
-                              sequenceConfiguration.sequenceId, questionId
-                            )
-                          )) {
-                            complete(_)
-                          }
+        path("moderation" / "sequences" / questionId / "configuration") { questionId =>
+          makeOperation("PutSequenceConfiguration") { _ =>
+            makeOAuth2 { auth: AuthInfo[UserRights] =>
+              requireAdminRole(auth.user) {
+                decodeRequest {
+                  entity(as[SequenceConfigurationRequest]) {
+                    sequenceConfigurationRequest: SequenceConfigurationRequest =>
+                      provideAsyncOrNotFound(
+                        sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(questionId)
+                      ) { sequenceConfiguration =>
+                        provideAsync[Boolean](
+                          sequenceConfigurationService.setSequenceConfiguration(
+                            sequenceConfigurationRequest
+                              .toSequenceConfiguration(sequenceConfiguration.sequenceId, questionId)
+                          )
+                        ) {
+                          complete(_)
                         }
-                    }
+                      }
                   }
                 }
               }
             }
+          }
         }
       }
     }

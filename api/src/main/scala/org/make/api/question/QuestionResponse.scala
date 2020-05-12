@@ -80,12 +80,14 @@ object QuestionPersonalityResponseWithTotal {
     deriveEncoder[QuestionPersonalityResponseWithTotal]
 }
 
-final case class QuestionPersonalityResponse(userId: UserId,
-                                             firstName: Option[String],
-                                             lastName: Option[String],
-                                             politicalParty: Option[String],
-                                             avatarUrl: Option[String],
-                                             gender: Option[String])
+final case class QuestionPersonalityResponse(
+  userId: UserId,
+  firstName: Option[String],
+  lastName: Option[String],
+  politicalParty: Option[String],
+  avatarUrl: Option[String],
+  gender: Option[String]
+)
 
 object QuestionPersonalityResponse {
   implicit val decoder: Decoder[QuestionPersonalityResponse] = deriveDecoder[QuestionPersonalityResponse]
@@ -170,8 +172,10 @@ object QuestionTopIdeasResponseWithSeed {
   implicit val encoder: Encoder[QuestionTopIdeasResponseWithSeed] = deriveEncoder[QuestionTopIdeasResponseWithSeed]
 }
 
-final case class QuestionTopIdeaResponseWithSeed(questionTopIdea: QuestionTopIdeaWithAvatarAndCommentsResponse,
-                                                 seed: Int)
+final case class QuestionTopIdeaResponseWithSeed(
+  questionTopIdea: QuestionTopIdeaWithAvatarAndCommentsResponse,
+  seed: Int
+)
 
 object QuestionTopIdeaResponseWithSeed {
   implicit val encoder: Encoder[QuestionTopIdeaResponseWithSeed] = deriveEncoder[QuestionTopIdeaResponseWithSeed]

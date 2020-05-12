@@ -291,7 +291,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
             country = Country("GB"),
             language = Language("en"),
             question = "new question ?",
-            shortTitle = Some("new short title"),
+            shortTitle = Some("new short title")
           )
         ),
         Timeout(5.seconds)

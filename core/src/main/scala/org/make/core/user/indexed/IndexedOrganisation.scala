@@ -54,18 +54,20 @@ object OrganisationElasticsearchFieldNames {
   }
 }
 
-case class IndexedOrganisation(organisationId: UserId,
-                               organisationName: Option[String],
-                               slug: Option[String],
-                               avatarUrl: Option[String],
-                               description: Option[String],
-                               publicProfile: Boolean,
-                               proposalsCount: Int,
-                               votesCount: Int,
-                               language: Language,
-                               country: Country,
-                               website: Option[String],
-                               countsByQuestion: Seq[ProposalsAndVotesCountsByQuestion])
+case class IndexedOrganisation(
+  organisationId: UserId,
+  organisationName: Option[String],
+  slug: Option[String],
+  avatarUrl: Option[String],
+  description: Option[String],
+  publicProfile: Boolean,
+  proposalsCount: Int,
+  votesCount: Int,
+  language: Language,
+  country: Country,
+  website: Option[String],
+  countsByQuestion: Seq[ProposalsAndVotesCountsByQuestion]
+)
 
 object IndexedOrganisation extends CirceFormatters {
   implicit val encoder: Encoder[IndexedOrganisation] = deriveEncoder[IndexedOrganisation]

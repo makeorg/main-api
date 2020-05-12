@@ -204,12 +204,11 @@ class SortAlgorithmIT
           Seq(IndexedTag(TagId("tag-1"), "tag1", display = true), IndexedTag(TagId("tag-2"), "tag2", display = true))
       ),
     newEmptyProposal("actor-3")
-      .copy(
-        organisations = Seq(
-          IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
-          IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2")),
-          IndexedOrganisationInfo(UserId("3"), Some("3"), Some("3"))
-        )
+      .copy(organisations = Seq(
+        IndexedOrganisationInfo(UserId("1"), Some("1"), Some("1")),
+        IndexedOrganisationInfo(UserId("2"), Some("2"), Some("2")),
+        IndexedOrganisationInfo(UserId("3"), Some("3"), Some("3"))
+      )
       ),
     newEmptyProposal("actor-4")
       .copy(

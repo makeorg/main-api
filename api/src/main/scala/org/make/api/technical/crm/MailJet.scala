@@ -44,21 +44,22 @@ object TemplateErrorReporting {
     }
 }
 
-final case class SendEmail(id: String = "none",
-                           from: Option[Recipient] = None,
-                           subject: Option[String] = None,
-                           textPart: Option[String] = None,
-                           htmlPart: Option[String] = None,
-                           useTemplateLanguage: Option[Boolean] = Some(true),
-                           templateId: Option[Int] = None,
-                           variables: Option[Map[String, String]] = None,
-                           recipients: Seq[Recipient],
-                           headers: Option[Map[String, String]] = None,
-                           emailId: Option[String] = None,
-                           customCampaign: Option[String] = None,
-                           monitoringCategory: Option[String] = None,
-                           templateErrorReporting: Option[TemplateErrorReporting] = None)
-    extends Sharded {
+final case class SendEmail(
+  id: String = "none",
+  from: Option[Recipient] = None,
+  subject: Option[String] = None,
+  textPart: Option[String] = None,
+  htmlPart: Option[String] = None,
+  useTemplateLanguage: Option[Boolean] = Some(true),
+  templateId: Option[Int] = None,
+  variables: Option[Map[String, String]] = None,
+  recipients: Seq[Recipient],
+  headers: Option[Map[String, String]] = None,
+  emailId: Option[String] = None,
+  customCampaign: Option[String] = None,
+  monitoringCategory: Option[String] = None,
+  templateErrorReporting: Option[TemplateErrorReporting] = None
+) extends Sharded {
   override def toString =
     s"SendEmail: (id = $id, from = $from, subject = $subject, textPart = $textPart, htmlPart = $htmlPart, useTemplateLanguage = $useTemplateLanguage, templateId = $templateId, variables = $variables, recipients = ${recipients
       .map(_.toAnonymizedString)}, headers = $headers, emailId = $emailId, customCampaign = $customCampaign, monitoringCategory = $monitoringCategory)"
@@ -72,19 +73,21 @@ object SendEmail extends AvroSerializers {
   lazy val recordFormat: RecordFormat[SendEmail] =
     RecordFormat[SendEmail](schemaFor.schema(DefaultFieldMapper))
 
-  def create(from: Option[Recipient] = None,
-             subject: Option[String] = None,
-             textPart: Option[String] = None,
-             htmlPart: Option[String] = None,
-             useTemplateLanguage: Option[Boolean] = Some(true),
-             templateId: Option[Int] = None,
-             variables: Option[Map[String, String]] = None,
-             recipients: Seq[Recipient],
-             headers: Option[Map[String, String]] = None,
-             emailId: Option[String] = None,
-             customCampaign: Option[String] = None,
-             monitoringCategory: Option[String] = None,
-             templateErrorReporting: Option[TemplateErrorReporting] = None): SendEmail = {
+  def create(
+    from: Option[Recipient] = None,
+    subject: Option[String] = None,
+    textPart: Option[String] = None,
+    htmlPart: Option[String] = None,
+    useTemplateLanguage: Option[Boolean] = Some(true),
+    templateId: Option[Int] = None,
+    variables: Option[Map[String, String]] = None,
+    recipients: Seq[Recipient],
+    headers: Option[Map[String, String]] = None,
+    emailId: Option[String] = None,
+    customCampaign: Option[String] = None,
+    monitoringCategory: Option[String] = None,
+    templateErrorReporting: Option[TemplateErrorReporting] = None
+  ): SendEmail = {
 
     SendEmail(
       recipients.headOption.map(head => SecurityHelper.anonymizeEmail(head.email)).getOrElse("unknown"),
@@ -166,11 +169,13 @@ object SendMessages {
   }
 }
 
-case class TransactionDetail(status: String,
-                             customId: String,
-                             to: Seq[EmailDetail],
-                             cc: Seq[EmailDetail],
-                             bcc: Seq[EmailDetail])
+case class TransactionDetail(
+  status: String,
+  customId: String,
+  to: Seq[EmailDetail],
+  cc: Seq[EmailDetail],
+  bcc: Seq[EmailDetail]
+)
 
 object TransactionDetail {
   implicit val decoder: Decoder[TransactionDetail] =
@@ -221,10 +226,12 @@ object Recipient {
     }
 }
 
-case class ManageContact(email: String,
-                         name: String,
-                         action: ManageContactAction,
-                         properties: Option[ContactProperties] = None)
+case class ManageContact(
+  email: String,
+  name: String,
+  action: ManageContactAction,
+  properties: Option[ContactProperties] = None
+)
 
 object ManageContact {
   implicit val encoder: Encoder[ManageContact] = Encoder.forProduct4("Email", "Name", "Action", "Properties") {
@@ -364,32 +371,34 @@ object ContactData {
   }
 }
 
-case class ContactProperties(userId: Option[UserId],
-                             firstName: Option[String],
-                             postalCode: Option[String],
-                             dateOfBirth: Option[String],
-                             emailValidationStatus: Option[Boolean],
-                             emailHardBounceValue: Option[Boolean],
-                             unsubscribeStatus: Option[Boolean],
-                             accountCreationDate: Option[String],
-                             accountCreationSource: Option[String],
-                             accountCreationOrigin: Option[String],
-                             accountCreationSlug: Option[String],
-                             accountCreationCountry: Option[String],
-                             countriesActivity: Option[String],
-                             lastCountryActivity: Option[String],
-                             lastLanguageActivity: Option[String],
-                             totalProposals: Option[Int],
-                             totalVotes: Option[Int],
-                             firstContributionDate: Option[String],
-                             lastContributionDate: Option[String],
-                             operationActivity: Option[String],
-                             sourceActivity: Option[String],
-                             daysOfActivity: Option[Int],
-                             daysOfActivity30: Option[Int],
-                             userType: Option[String],
-                             accountType: Option[String],
-                             updatedAt: Option[String]) {
+case class ContactProperties(
+  userId: Option[UserId],
+  firstName: Option[String],
+  postalCode: Option[String],
+  dateOfBirth: Option[String],
+  emailValidationStatus: Option[Boolean],
+  emailHardBounceValue: Option[Boolean],
+  unsubscribeStatus: Option[Boolean],
+  accountCreationDate: Option[String],
+  accountCreationSource: Option[String],
+  accountCreationOrigin: Option[String],
+  accountCreationSlug: Option[String],
+  accountCreationCountry: Option[String],
+  countriesActivity: Option[String],
+  lastCountryActivity: Option[String],
+  lastLanguageActivity: Option[String],
+  totalProposals: Option[Int],
+  totalVotes: Option[Int],
+  firstContributionDate: Option[String],
+  lastContributionDate: Option[String],
+  operationActivity: Option[String],
+  sourceActivity: Option[String],
+  daysOfActivity: Option[Int],
+  daysOfActivity30: Option[Int],
+  userType: Option[String],
+  accountType: Option[String],
+  updatedAt: Option[String]
+) {
   def toContactPropertySeq: Seq[ContactProperty[_]] = {
     Seq(
       ContactProperty("UserId", userId.map(_.value)),

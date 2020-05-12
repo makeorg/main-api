@@ -963,11 +963,10 @@ class AdminUserApiTest
     }
 
     scenario("incorrect file type") {
-      val request: Multipart = Multipart.FormData(
-        fields = Map(
-          "data" -> HttpEntity
-            .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
-        )
+      val request: Multipart = Multipart.FormData(fields = Map(
+        "data" -> HttpEntity
+          .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
+      )
       )
 
       Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", request)

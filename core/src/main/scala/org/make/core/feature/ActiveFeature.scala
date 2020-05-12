@@ -24,9 +24,11 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.make.core.StringValue
 import org.make.core.question.QuestionId
 
-final case class ActiveFeature(activeFeatureId: ActiveFeatureId,
-                               featureId: FeatureId,
-                               maybeQuestionId: Option[QuestionId])
+final case class ActiveFeature(
+  activeFeatureId: ActiveFeatureId,
+  featureId: FeatureId,
+  maybeQuestionId: Option[QuestionId]
+)
 
 object ActiveFeature {
   implicit val encoder: Encoder[ActiveFeature] = deriveEncoder[ActiveFeature]

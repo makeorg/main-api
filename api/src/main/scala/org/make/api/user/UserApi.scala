@@ -741,12 +741,14 @@ trait DefaultUserApiComponent
                 "skip".as[Int].?
               )
             ) {
-              (votes: Option[Seq[VoteKey]],
-               qualifications: Option[Seq[QualificationKey]],
-               sort: Option[String],
-               order: Option[SortOrder],
-               limit: Option[Int],
-               skip: Option[Int]) =>
+              (
+                votes: Option[Seq[VoteKey]],
+                qualifications: Option[Seq[QualificationKey]],
+                sort: Option[String],
+                order: Option[SortOrder],
+                limit: Option[Int],
+                skip: Option[Int]
+              ) =>
                 if (userAuth.user.userId != userId) {
                   complete(StatusCodes.Forbidden)
                 } else {

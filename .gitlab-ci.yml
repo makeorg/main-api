@@ -54,7 +54,7 @@ tests-coverage:
     - echo $SEARCH_CODE
     - >
       if [[ $SEARCH_CODE == "404" ]];then
-        sbt clean coverage test it:test
+        sbt clean coverage checkStyle test it:test
         sbt coverageReport coverageAggregate
         sbt swiftSendReports codacyCoverage
       fi

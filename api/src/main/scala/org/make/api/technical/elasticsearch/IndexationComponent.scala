@@ -55,14 +55,18 @@ case object IndexProposals extends EntitiesToIndex
 case object IndexOperationOfQuestions extends EntitiesToIndex
 
 trait IndexationService {
-  def reindexData(forceIdeas: Boolean,
-                  forceOrganisations: Boolean,
-                  forceProposals: Boolean,
-                  forceOperationOfQuestions: Boolean): Future[JobAcceptance]
-  def indicesToReindex(forceIdeas: Boolean,
-                       forceOrganisations: Boolean,
-                       forceProposals: Boolean,
-                       forceOperationOfQuestions: Boolean): Future[Set[EntitiesToIndex]]
+  def reindexData(
+    forceIdeas: Boolean,
+    forceOrganisations: Boolean,
+    forceProposals: Boolean,
+    forceOperationOfQuestions: Boolean
+  ): Future[JobAcceptance]
+  def indicesToReindex(
+    forceIdeas: Boolean,
+    forceOrganisations: Boolean,
+    forceProposals: Boolean,
+    forceOperationOfQuestions: Boolean
+  ): Future[Set[EntitiesToIndex]]
 }
 
 //TODO: test this component
@@ -148,10 +152,12 @@ trait DefaultIndexationComponent
       }
     }
 
-    override def reindexData(forceIdeas: Boolean,
-                             forceOrganisations: Boolean,
-                             forceProposals: Boolean,
-                             forceOperationOfQuestions: Boolean): Future[JobAcceptance] =
+    override def reindexData(
+      forceIdeas: Boolean,
+      forceOrganisations: Boolean,
+      forceProposals: Boolean,
+      forceOperationOfQuestions: Boolean
+    ): Future[JobAcceptance] =
       jobCoordinatorService.start(Reindex) { report =>
         logger.info(s"Elasticsearch Reindexation")
         indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceOperationOfQuestions).flatMap {
@@ -165,7 +171,7 @@ trait DefaultIndexationComponent
                   Future.successful(indicesNotUpToDate)
               }
         }.flatMap { indicesNotUpToDate =>
-          report(25D).map(_ => indicesNotUpToDate)
+          report(25d).map(_ => indicesNotUpToDate)
         }.flatMap { indicesNotUpToDate =>
           val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
           val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
@@ -180,10 +186,12 @@ trait DefaultIndexationComponent
         }
       }
 
-    override def indicesToReindex(forceIdeas: Boolean,
-                                  forceOrganisations: Boolean,
-                                  forceProposals: Boolean,
-                                  forceOperationOfQuestions: Boolean): Future[Set[EntitiesToIndex]] = {
+    override def indicesToReindex(
+      forceIdeas: Boolean,
+      forceOrganisations: Boolean,
+      forceProposals: Boolean,
+      forceOperationOfQuestions: Boolean
+    ): Future[Set[EntitiesToIndex]] = {
       val hashes: Map[EntitiesToIndex, String] = Map(
         IndexIdeas -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.ideaAliasName),
         IndexOrganisations -> elasticsearchClient.hashForAlias(elasticsearchConfiguration.organisationAliasName),
@@ -216,9 +224,11 @@ trait DefaultIndexationComponent
       }
     }
 
-    private def addAndRemoveAlias(aliasName: String,
-                                  newIndexName: String,
-                                  indexes: Seq[String]): Future[AliasActionResponse] = {
+    private def addAndRemoveAlias(
+      aliasName: String,
+      newIndexName: String,
+      indexes: Seq[String]
+    ): Future[AliasActionResponse] = {
       if (indexes.isEmpty) {
         logger.error("indexes with alias is empty")
       }

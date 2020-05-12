@@ -64,15 +64,21 @@ trait ProposalSearchEngine {
   def findProposalsByIds(proposalIds: Seq[ProposalId], size: Int, random: Boolean = true): Future[Seq[IndexedProposal]]
   def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
   def countProposals(searchQuery: SearchQuery): Future[Long]
-  def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]],
-                               status: Option[Seq[ProposalStatus]],
-                               maybeUserId: Option[UserId]): Future[Map[QuestionId, Long]]
+  def countProposalsByQuestion(
+    maybeQuestionIds: Option[Seq[QuestionId]],
+    status: Option[Seq[ProposalStatus]],
+    maybeUserId: Option[UserId]
+  ): Future[Map[QuestionId, Long]]
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
-  def indexProposals(records: Seq[IndexedProposal],
-                     mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
-  def updateProposals(records: Seq[IndexedProposal],
-                      mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]]
+  def indexProposals(
+    records: Seq[IndexedProposal],
+    mayBeIndex: Option[IndexAndType] = None
+  ): Future[Seq[IndexedProposal]]
+  def updateProposals(
+    records: Seq[IndexedProposal],
+    mayBeIndex: Option[IndexAndType] = None
+  ): Future[Seq[IndexedProposal]]
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
   def getTopProposals(questionId: QuestionId, size: Int, aggregationField: String): Future[Seq[IndexedProposal]]
   def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]]
@@ -99,9 +105,11 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       client.executeAsFuture(get(id = proposalId.value).from(proposalAlias)).map(_.toOpt[IndexedProposal])
     }
 
-    override def findProposalsByIds(proposalIds: Seq[ProposalId],
-                                    size: Int,
-                                    random: Boolean = true): Future[Seq[IndexedProposal]] = {
+    override def findProposalsByIds(
+      proposalIds: Seq[ProposalId],
+      size: Int,
+      random: Boolean = true
+    ): Future[Seq[IndexedProposal]] = {
 
       val seed: Int = DateHelper.now().toEpochSecond.toInt
 
@@ -153,17 +161,18 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def countProposalsByQuestion(maybeQuestionIds: Option[Seq[QuestionId]],
-                                          status: Option[Seq[ProposalStatus]],
-                                          maybeUserId: Option[UserId]): Future[Map[QuestionId, Long]] = {
-      val searchQuery: SearchQuery = SearchQuery(
-        filters = Some(
-          SearchFilters(
-            question = maybeQuestionIds.map(QuestionSearchFilter.apply),
-            status = status.map(StatusSearchFilter.apply),
-            user = maybeUserId.map(UserSearchFilter.apply)
-          )
+    override def countProposalsByQuestion(
+      maybeQuestionIds: Option[Seq[QuestionId]],
+      status: Option[Seq[ProposalStatus]],
+      maybeUserId: Option[UserId]
+    ): Future[Map[QuestionId, Long]] = {
+      val searchQuery: SearchQuery = SearchQuery(filters = Some(
+        SearchFilters(
+          question = maybeQuestionIds.map(QuestionSearchFilter.apply),
+          status = status.map(StatusSearchFilter.apply),
+          user = maybeUserId.map(UserSearchFilter.apply)
         )
+      )
       )
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
       val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
@@ -219,8 +228,10 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       }
     }
 
-    override def indexProposals(proposals: Seq[IndexedProposal],
-                                mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]] = {
+    override def indexProposals(
+      proposals: Seq[IndexedProposal],
+      mayBeIndex: Option[IndexAndType] = None
+    ): Future[Seq[IndexedProposal]] = {
       val records = proposals
         .groupBy(_.id)
         .map {
@@ -236,8 +247,10 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .map(_ => records.toSeq)
     }
 
-    override def updateProposals(proposals: Seq[IndexedProposal],
-                                 mayBeIndex: Option[IndexAndType] = None): Future[Seq[IndexedProposal]] = {
+    override def updateProposals(
+      proposals: Seq[IndexedProposal],
+      mayBeIndex: Option[IndexAndType] = None
+    ): Future[Seq[IndexedProposal]] = {
       val records = proposals
         .groupBy(_.id)
         .map {
@@ -255,9 +268,8 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     override def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]] = {
       // parse json string to build search query
-      val searchQuery: SearchQuery = SearchQuery(
-        filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId)))))
-      )
+      val searchQuery: SearchQuery =
+        SearchQuery(filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId))))))
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
       val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
 
@@ -287,16 +299,17 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def getTopProposals(questionId: QuestionId,
-                                 size: Int,
-                                 aggregationField: String): Future[Seq[IndexedProposal]] = {
+    override def getTopProposals(
+      questionId: QuestionId,
+      size: Int,
+      aggregationField: String
+    ): Future[Seq[IndexedProposal]] = {
       val topHitsAggregationName = "topHits"
       val termsAggregationName = "termsAgg"
       val maxAggregationName = "maxTopScore"
 
-      val searchQuery: SearchQuery = SearchQuery(
-        filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId)))))
-      )
+      val searchQuery: SearchQuery =
+        SearchQuery(filters = Some(SearchFilters(question = Some(QuestionSearchFilter(Seq(questionId))))))
       val searchFilters: Seq[Query] = SearchFilters.getSearchFilters(searchQuery)
       val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
 
@@ -358,8 +371,10 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
     }
 
-    override def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId],
-                                                    seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]] = {
+    override def getRandomProposalsByIdeaWithAvatar(
+      ideaIds: Seq[IdeaId],
+      seed: Int
+    ): Future[Map[IdeaId, AvatarsAndProposalsCount]] = {
       val avatarsSize = 4
 
       // this aggregation count the proposals without taking account of the search filters set for the bool query

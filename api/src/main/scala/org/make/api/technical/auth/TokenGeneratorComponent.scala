@@ -47,8 +47,10 @@ trait DefaultTokenGeneratorComponent extends TokenGeneratorComponent {
     override def tokenToHash(token: String): String =
       SecurityHelper.defaultHash(token).toUpperCase()
 
-    override def generateToken(tokenExistsFunction: String => Future[Boolean],
-                               depth: Int = MAX_RETRY): Future[(String, String)] = {
+    override def generateToken(
+      tokenExistsFunction: String => Future[Boolean],
+      depth: Int = MAX_RETRY
+    ): Future[(String, String)] = {
       if (depth <= 0) {
         Future.failed(new RuntimeException("Token generation failed due to max retries reached."))
       } else {

@@ -152,10 +152,10 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       Then("result is a multiMatchQuery")
       val fieldsBoosts =
         Map(
-          ProposalElasticsearchFieldNames.contentGeneral -> 1D,
-          ProposalElasticsearchFieldNames.contentEn -> 2D,
-          ProposalElasticsearchFieldNames.content -> 3D,
-          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5D
+          ProposalElasticsearchFieldNames.contentGeneral -> 1d,
+          ProposalElasticsearchFieldNames.contentEn -> 2d,
+          ProposalElasticsearchFieldNames.content -> 3d,
+          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5d
         )
       contentSearchFilterResult shouldBe Some(
         ElasticApi
@@ -164,7 +164,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
           )
           .functions(
             WeightScore(
-              weight = 2D,
+              weight = 2d,
               filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
             )
           )
@@ -177,7 +177,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery.copy(language = None))
       Then("result is a functionScore with a multimatch query")
       val fieldsBoosts =
-        Map(ProposalElasticsearchFieldNames.contentGeneral -> 1D, ProposalElasticsearchFieldNames.content -> 3D)
+        Map(ProposalElasticsearchFieldNames.contentGeneral -> 1d, ProposalElasticsearchFieldNames.content -> 3d)
       contentSearchFilterResult shouldBe Some(
         ElasticApi
           .functionScoreQuery(
@@ -185,7 +185,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
           )
           .functions(
             WeightScore(
-              weight = 2D,
+              weight = 2d,
               filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
             )
           )

@@ -41,10 +41,12 @@ trait MakeDataHandlerComponent {
 }
 
 trait MakeDataHandler extends DataHandler[UserRights] {
-  def createAuthorizationCode(userId: UserId,
-                              clientId: ClientId,
-                              scope: Option[String],
-                              redirectUri: Option[String]): Future[Option[AuthCode]]
+  def createAuthorizationCode(
+    userId: UserId,
+    clientId: ClientId,
+    scope: Option[String],
+    redirectUri: Option[String]
+  ): Future[Option[AuthCode]]
   def removeTokenByUserId(userId: UserId): Future[Int]
   def removeToken(token: String): Future[Unit]
   def refreshIfTokenIsExpired(token: String): Future[Option[AccessToken]]
@@ -91,8 +93,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     private def userIsRelatedToClient(client: Client)(user: User): Boolean =
       client.roles.isEmpty || user.roles.exists(client.roles.contains)
 
-    override def validateClient(maybeCredential: Option[ClientCredential],
-                                request: AuthorizationRequest): Future[Boolean] = {
+    override def validateClient(
+      maybeCredential: Option[ClientCredential],
+      request: AuthorizationRequest
+    ): Future[Boolean] = {
       maybeCredential match {
         case Some(ClientCredential(clientId, secret)) =>
           persistentClientService.findByClientIdAndSecret(clientId, secret).map(_.isDefined)
@@ -148,8 +152,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         }
     }
 
-    override def findUser(maybeCredential: Option[ClientCredential],
-                          request: AuthorizationRequest): Future[Option[UserRights]] = {
+    override def findUser(
+      maybeCredential: Option[ClientCredential],
+      request: AuthorizationRequest
+    ): Future[Option[UserRights]] = {
 
       val findClient: Future[Option[Client]] = request match {
         // if client information is not provided in password flow, use the default ones
@@ -330,10 +336,12 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       persistentTokenService.deleteByUserId(userId)
     }
 
-    override def createAuthorizationCode(userId: UserId,
-                                         clientId: ClientId,
-                                         scope: Option[String],
-                                         redirectUri: Option[String]): Future[Option[AuthCode]] = {
+    override def createAuthorizationCode(
+      userId: UserId,
+      clientId: ClientId,
+      scope: Option[String],
+      redirectUri: Option[String]
+    ): Future[Option[AuthCode]] = {
 
       persistentClientService.get(clientId).flatMap {
         case None => Future.successful(None)

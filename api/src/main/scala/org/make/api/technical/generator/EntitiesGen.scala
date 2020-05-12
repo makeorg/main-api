@@ -58,17 +58,16 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       (_, defaultLanguage) <- genCountryLanguage
       operationKind        <- Gen.oneOf(OperationKind.kindMap.values.toSeq)
       date                 <- Gen.calendar.map(_.toZonedDateTime)
-    } yield
-      SimpleOperation(
-        operationId = idGenerator.nextOperationId(),
-        status = status,
-        slug = slug,
-        allowedSources = allowedSources,
-        defaultLanguage = defaultLanguage,
-        operationKind = operationKind,
-        createdAt = Some(date),
-        updatedAt = Some(date),
-      )
+    } yield SimpleOperation(
+      operationId = idGenerator.nextOperationId(),
+      status = status,
+      slug = slug,
+      allowedSources = allowedSources,
+      defaultLanguage = defaultLanguage,
+      operationKind = operationKind,
+      createdAt = Some(date),
+      updatedAt = Some(date)
+    )
 
   def genQuestion(operationId: Option[OperationId]): Gen[Question] =
     for {
@@ -76,16 +75,15 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       (country, language) <- genCountryLanguage
       question            <- CustomGenerators.LoremIpsumGen.sentence()
       shortTitle          <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(30))
-    } yield
-      Question(
-        questionId = idGenerator.nextQuestionId(),
-        slug = slug,
-        country = country,
-        language = language,
-        question = question,
-        shortTitle = Some(shortTitle),
-        operationId = operationId
-      )
+    } yield Question(
+      questionId = idGenerator.nextQuestionId(),
+      slug = slug,
+      country = country,
+      language = language,
+      question = question,
+      shortTitle = Some(shortTitle),
+      operationId = operationId
+    )
 
   def genCreateOperationOfQuestion(operationId: OperationId): Gen[CreateOperationOfQuestion] =
     for {
@@ -96,19 +94,18 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       (country, language) <- genCountryLanguage
       question            <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
       consultationImage   <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
-    } yield
-      CreateOperationOfQuestion(
-        operationId = operationId,
-        startDate = date,
-        endDate = date.map(_.plusMonths(3)),
-        operationTitle = operationTitle,
-        slug = slug,
-        country = country,
-        language = language,
-        question = question,
-        shortTitle = Some(shortTitle),
-        consultationImage = Some(consultationImage)
-      )
+    } yield CreateOperationOfQuestion(
+      operationId = operationId,
+      startDate = date,
+      endDate = date.map(_.plusMonths(3)),
+      operationTitle = operationTitle,
+      slug = slug,
+      country = country,
+      language = language,
+      question = question,
+      shortTitle = Some(shortTitle),
+      consultationImage = Some(consultationImage)
+    )
 
   def genRoles: Gen[Seq[Role]] = {
     val roles = Gen.frequency(
@@ -139,29 +136,28 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       roles               <- genRoles
       politicalParty      <- Gen.option(CustomGenerators.LoremIpsumGen.word)
       publicProfile       <- Arbitrary.arbitrary[Boolean]
-    } yield
-      UserRegisterData(
-        email = email,
-        firstName = firstName,
-        lastName = lastName,
-        password = Some(email),
-        lastIp = None,
-        dateOfBirth = dateOfBirth,
-        profession = profession,
-        postalCode = postalCode,
-        gender = gender,
-        socioProfessionalCategory = socioProfessionalCategory,
-        country = country,
-        language = language,
-        questionId = questionId,
-        optIn = optIn,
-        optInPartner = optInPartner,
-        roles = roles,
-        availableQuestions = questionId.toSeq,
-        politicalParty = politicalParty,
-        website = None,
-        publicProfile = publicProfile,
-      )
+    } yield UserRegisterData(
+      email = email,
+      firstName = firstName,
+      lastName = lastName,
+      password = Some(email),
+      lastIp = None,
+      dateOfBirth = dateOfBirth,
+      profession = profession,
+      postalCode = postalCode,
+      gender = gender,
+      socioProfessionalCategory = socioProfessionalCategory,
+      country = country,
+      language = language,
+      questionId = questionId,
+      optIn = optIn,
+      optInPartner = optInPartner,
+      roles = roles,
+      availableQuestions = questionId.toSeq,
+      politicalParty = politicalParty,
+      website = None,
+      publicProfile = publicProfile
+    )
 
   def genCounts: Gen[Counts] =
     for {
@@ -185,99 +181,98 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       countsQualifNoWay             <- genCounts
       countsQualifImpossible        <- genCounts
       countsQualifPlatitudeDisagree <- genCounts
-    } yield
-      Seq(
-        Vote(
-          key = VoteKey.Agree,
-          count = countsAgree.count,
-          countVerified = countsAgree.verified,
-          countSequence = countsAgree.sequence,
-          countSegment = countsAgree.segment,
-          qualifications = Seq(
-            Qualification(
-              QualificationKey.LikeIt,
-              countsQualifLikeIt.count,
-              countsQualifLikeIt.verified,
-              countsQualifLikeIt.sequence,
-              countsQualifLikeIt.segment
-            ),
-            Qualification(
-              QualificationKey.Doable,
-              countsQualifDoable.count,
-              countsQualifDoable.verified,
-              countsQualifDoable.sequence,
-              countsQualifDoable.segment
-            ),
-            Qualification(
-              QualificationKey.PlatitudeAgree,
-              countsQualifPlatitudeAgree.count,
-              countsQualifPlatitudeAgree.verified,
-              countsQualifPlatitudeAgree.sequence,
-              countsQualifPlatitudeAgree.segment
-            )
+    } yield Seq(
+      Vote(
+        key = VoteKey.Agree,
+        count = countsAgree.count,
+        countVerified = countsAgree.verified,
+        countSequence = countsAgree.sequence,
+        countSegment = countsAgree.segment,
+        qualifications = Seq(
+          Qualification(
+            QualificationKey.LikeIt,
+            countsQualifLikeIt.count,
+            countsQualifLikeIt.verified,
+            countsQualifLikeIt.sequence,
+            countsQualifLikeIt.segment
+          ),
+          Qualification(
+            QualificationKey.Doable,
+            countsQualifDoable.count,
+            countsQualifDoable.verified,
+            countsQualifDoable.sequence,
+            countsQualifDoable.segment
+          ),
+          Qualification(
+            QualificationKey.PlatitudeAgree,
+            countsQualifPlatitudeAgree.count,
+            countsQualifPlatitudeAgree.verified,
+            countsQualifPlatitudeAgree.sequence,
+            countsQualifPlatitudeAgree.segment
           )
-        ),
-        Vote(
-          key = VoteKey.Neutral,
-          count = countsNeutral.count,
-          countVerified = countsNeutral.verified,
-          countSequence = countsNeutral.sequence,
-          countSegment = countsNeutral.segment,
-          qualifications = Seq(
-            Qualification(
-              QualificationKey.DoNotUnderstand,
-              countsQualifDoNotUnderstand.count,
-              countsQualifDoNotUnderstand.verified,
-              countsQualifDoNotUnderstand.sequence,
-              countsQualifDoNotUnderstand.segment
-            ),
-            Qualification(
-              QualificationKey.DoNotCare,
-              countsQualifDoNotCare.count,
-              countsQualifDoNotCare.verified,
-              countsQualifDoNotCare.sequence,
-              countsQualifDoNotCare.segment
-            ),
-            Qualification(
-              QualificationKey.NoOpinion,
-              countsQualifNoOpinion.count,
-              countsQualifNoOpinion.verified,
-              countsQualifNoOpinion.sequence,
-              countsQualifNoOpinion.segment
-            )
+        )
+      ),
+      Vote(
+        key = VoteKey.Neutral,
+        count = countsNeutral.count,
+        countVerified = countsNeutral.verified,
+        countSequence = countsNeutral.sequence,
+        countSegment = countsNeutral.segment,
+        qualifications = Seq(
+          Qualification(
+            QualificationKey.DoNotUnderstand,
+            countsQualifDoNotUnderstand.count,
+            countsQualifDoNotUnderstand.verified,
+            countsQualifDoNotUnderstand.sequence,
+            countsQualifDoNotUnderstand.segment
+          ),
+          Qualification(
+            QualificationKey.DoNotCare,
+            countsQualifDoNotCare.count,
+            countsQualifDoNotCare.verified,
+            countsQualifDoNotCare.sequence,
+            countsQualifDoNotCare.segment
+          ),
+          Qualification(
+            QualificationKey.NoOpinion,
+            countsQualifNoOpinion.count,
+            countsQualifNoOpinion.verified,
+            countsQualifNoOpinion.sequence,
+            countsQualifNoOpinion.segment
           )
-        ),
-        Vote(
-          key = VoteKey.Disagree,
-          count = countsDisagree.count,
-          countVerified = countsDisagree.verified,
-          countSequence = countsDisagree.sequence,
-          countSegment = countsDisagree.segment,
-          qualifications = Seq(
-            Qualification(
-              QualificationKey.NoWay,
-              countsQualifNoWay.count,
-              countsQualifNoWay.verified,
-              countsQualifNoWay.sequence,
-              countsQualifNoWay.segment
-            ),
-            Qualification(
-              QualificationKey.Impossible,
-              countsQualifImpossible.count,
-              countsQualifImpossible.verified,
-              countsQualifImpossible.sequence,
-              countsQualifImpossible.segment
-            ),
-            Qualification(
-              QualificationKey.PlatitudeDisagree,
-              countsQualifPlatitudeDisagree.count,
-              countsQualifPlatitudeDisagree.verified,
-              countsQualifPlatitudeDisagree.sequence,
-              countsQualifPlatitudeDisagree.segment
-            )
+        )
+      ),
+      Vote(
+        key = VoteKey.Disagree,
+        count = countsDisagree.count,
+        countVerified = countsDisagree.verified,
+        countSequence = countsDisagree.sequence,
+        countSegment = countsDisagree.segment,
+        qualifications = Seq(
+          Qualification(
+            QualificationKey.NoWay,
+            countsQualifNoWay.count,
+            countsQualifNoWay.verified,
+            countsQualifNoWay.sequence,
+            countsQualifNoWay.segment
+          ),
+          Qualification(
+            QualificationKey.Impossible,
+            countsQualifImpossible.count,
+            countsQualifImpossible.verified,
+            countsQualifImpossible.sequence,
+            countsQualifImpossible.segment
+          ),
+          Qualification(
+            QualificationKey.PlatitudeDisagree,
+            countsQualifPlatitudeDisagree.count,
+            countsQualifPlatitudeDisagree.verified,
+            countsQualifPlatitudeDisagree.sequence,
+            countsQualifPlatitudeDisagree.segment
           )
         )
       )
+    )
   }
 
   def genProposal(question: Question, users: Seq[User], tagsIds: Seq[TagId]): Gen[Proposal] = {
@@ -292,29 +287,28 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       organisationIds <- Gen.someOf(users.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId))
       date            <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
       initialProposal <- Gen.frequency((9, false), (1, true))
-    } yield
-      Proposal(
-        proposalId = idGenerator.nextProposalId(),
-        slug = SlugHelper(content),
-        content = content,
-        author = author,
-        labels = Seq.empty,
-        status = status,
-        refusalReason = if (status == ProposalStatus.Refused) Some(refusalReason) else None,
-        tags = tags.toSeq,
-        votes = votes,
-        organisationIds = organisationIds.toSeq,
-        language = Some(question.language),
-        country = Some(question.country),
-        questionId = Some(question.questionId),
-        creationContext = RequestContext.empty,
-        idea = None,
-        operation = question.operationId,
-        createdAt = date,
-        updatedAt = date,
-        events = List.empty,
-        initialProposal = initialProposal
-      )
+    } yield Proposal(
+      proposalId = idGenerator.nextProposalId(),
+      slug = SlugHelper(content),
+      content = content,
+      author = author,
+      labels = Seq.empty,
+      status = status,
+      refusalReason = if (status == ProposalStatus.Refused) Some(refusalReason) else None,
+      tags = tags.toSeq,
+      votes = votes,
+      organisationIds = organisationIds.toSeq,
+      language = Some(question.language),
+      country = Some(question.country),
+      questionId = Some(question.questionId),
+      creationContext = RequestContext.empty,
+      idea = None,
+      operation = question.operationId,
+      createdAt = date,
+      updatedAt = date,
+      events = List.empty,
+      initialProposal = initialProposal
+    )
   }
 
   val genJob: Gen[Job] = {

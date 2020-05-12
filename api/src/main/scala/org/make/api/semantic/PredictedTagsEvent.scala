@@ -27,18 +27,20 @@ import org.make.core.{AvroSerializers, EventWrapper}
 
 sealed trait PredictedTagsEvents
 
-final case class PredictedTagsEvent(proposalId: ProposalId,
-                                    predictedTags: Seq[TagId],
-                                    selectedTags: Seq[TagId],
-                                    modelName: String)
-    extends PredictedTagsEvents
+final case class PredictedTagsEvent(
+  proposalId: ProposalId,
+  predictedTags: Seq[TagId],
+  selectedTags: Seq[TagId],
+  modelName: String
+) extends PredictedTagsEvents
 
-final case class PredictionsEventWrapper(version: Int,
-                                         id: String,
-                                         date: ZonedDateTime,
-                                         eventType: String,
-                                         event: PredictedTagsEvents)
-    extends EventWrapper[PredictedTagsEvents]
+final case class PredictionsEventWrapper(
+  version: Int,
+  id: String,
+  date: ZonedDateTime,
+  eventType: String,
+  event: PredictedTagsEvents
+) extends EventWrapper[PredictedTagsEvents]
 
 object PredictionsEventWrapper extends AvroSerializers {
   lazy val schemaFor: SchemaFor[PredictionsEventWrapper] = SchemaFor.gen[PredictionsEventWrapper]

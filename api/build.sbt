@@ -113,12 +113,10 @@ buildInfoKeys :=
     swaggerUiVersion
   )
 
-fork in run := true
-fork in Test := true
+fork in run             := true
+fork in Test            := true
 fork in IntegrationTest := true
 
-javaOptions in run ++= Seq(
-  "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
-) ++ SbtKanelaRunner.jvmForkOptions.value
+javaOptions in run ++= Seq("-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager") ++ SbtKanelaRunner.jvmForkOptions.value
 
 enablePlugins(BuildInfoPlugin)

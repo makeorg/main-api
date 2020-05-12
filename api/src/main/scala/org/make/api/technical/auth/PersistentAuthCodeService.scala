@@ -96,13 +96,15 @@ trait DefaultPersistentAuthCodeServiceComponent extends PersistentAuthCodeServic
   }
 }
 
-case class PersistentAuthCode(authorizationCode: String,
-                              scope: Option[String],
-                              redirectUri: Option[String],
-                              createdAt: ZonedDateTime,
-                              expiresIn: Int,
-                              makeUserUuid: String,
-                              clientUuid: String) {
+case class PersistentAuthCode(
+  authorizationCode: String,
+  scope: Option[String],
+  redirectUri: Option[String],
+  createdAt: ZonedDateTime,
+  expiresIn: Int,
+  makeUserUuid: String,
+  clientUuid: String
+) {
   def toAuthCode: AuthCode =
     AuthCode(authorizationCode, scope, redirectUri, createdAt, expiresIn, UserId(makeUserUuid), ClientId(clientUuid))
 }

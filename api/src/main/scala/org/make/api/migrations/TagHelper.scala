@@ -74,11 +74,13 @@ trait TagHelper {
 }
 
 object TagHelper {
-  case class TagsDataLine(label: String,
-                          tagTypeId: TagTypeId,
-                          tagDisplay: TagDisplay,
-                          weight: Float,
-                          country: Country,
-                          language: Language)
+  case class TagsDataLine(
+    label: String,
+    tagTypeId: TagTypeId,
+    tagDisplay: TagDisplay,
+    weight: Float,
+    country: Country,
+    language: Language
+  )
 
 }

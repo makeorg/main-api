@@ -65,10 +65,12 @@ object Validation extends StrictLogging {
   def validateField(field: String, key: String, condition: => Boolean, message: => String): Requirement =
     Requirement(field, key, () => condition, () => message)
 
-  def maxLength(field: String,
-                maxLength: Int,
-                fieldValue: String,
-                message: Option[Int => String] = None): Requirement = {
+  def maxLength(
+    field: String,
+    maxLength: Int,
+    fieldValue: String,
+    message: Option[Int => String] = None
+  ): Requirement = {
 
     val computeLength: Int = {
       Option(fieldValue).map(_.length).getOrElse(0)
@@ -87,10 +89,12 @@ object Validation extends StrictLogging {
 
   }
 
-  def minLength(field: String,
-                minLength: Int,
-                fieldValue: String,
-                message: Option[Int => String] = None): Requirement = {
+  def minLength(
+    field: String,
+    minLength: Int,
+    fieldValue: String,
+    message: Option[Int => String] = None
+  ): Requirement = {
 
     val computeLength: Int = {
       Option(fieldValue).map(_.length).getOrElse(0)
@@ -141,18 +145,22 @@ object Validation extends StrictLogging {
     validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }
 
-  def validateOptionalUserInput(fieldName: String,
-                                fieldValue: => Option[String],
-                                message: Option[String]): Requirement = {
+  def validateOptionalUserInput(
+    fieldName: String,
+    fieldValue: => Option[String],
+    message: Option[String]
+  ): Requirement = {
     val condition: () => Boolean = () => {
       fieldValue.forall(value => new Cleaner(Whitelist.none()).isValid(Jsoup.parse(value)))
     }
     validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not a valid user input"))
   }
 
-  def requireValidSlug(fieldName: String,
-                       fieldValue: => Option[String],
-                       message: Option[String] = None): Requirement = {
+  def requireValidSlug(
+    fieldName: String,
+    fieldValue: => Option[String],
+    message: Option[String] = None
+  ): Requirement = {
     validateField(
       fieldName,
       "invalid_slug",
@@ -169,10 +177,12 @@ object Validation extends StrictLogging {
     validateField(fieldName, "non_empty", fieldValue.isEmpty, message.getOrElse(s"$fieldName should be empty"))
   }
 
-  def validMatch(fieldName: String,
-                 fieldValue: => String,
-                 message: Option[String] = None,
-                 regex: Regex): Requirement = {
+  def validMatch(
+    fieldName: String,
+    fieldValue: => String,
+    message: Option[String] = None,
+    regex: Regex
+  ): Requirement = {
     val condition: () => Boolean = () => {
       val value: String = fieldValue
       exists(value) && regex.findFirstIn(value).isDefined
@@ -180,29 +190,35 @@ object Validation extends StrictLogging {
     validateField(fieldName, "invalid_content", condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
-  def validChoices[T](fieldName: String,
-                      message: Option[String] = None,
-                      userChoices: Seq[T],
-                      validChoices: Seq[T]): Requirement = {
+  def validChoices[T](
+    fieldName: String,
+    message: Option[String] = None,
+    userChoices: Seq[T],
+    validChoices: Seq[T]
+  ): Requirement = {
     val condition: () => Boolean = () => {
       userChoices.forall(validChoices.contains)
     }
     validateField(fieldName, "invalid_value", condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
-  def validateEquals(fieldName: String,
-                     message: Option[String] = None,
-                     userValue: Any,
-                     expectedValue: Any): Requirement = {
+  def validateEquals(
+    fieldName: String,
+    message: Option[String] = None,
+    userValue: Any,
+    expectedValue: Any
+  ): Requirement = {
     val condition: () => Boolean = () => {
       userValue.equals(expectedValue)
     }
     validateField(fieldName, "invalid_value", condition(), message.getOrElse(s"$fieldName is not valid"))
   }
 
-  def validateEntity(fieldName: String,
-                     message: Option[String] = None,
-                     userValue: Option[MakeSerializable]): Requirement = {
+  def validateEntity(
+    fieldName: String,
+    message: Option[String] = None,
+    userValue: Option[MakeSerializable]
+  ): Requirement = {
     validateField(fieldName, "mandatory", userValue.nonEmpty, message.getOrElse(s"$fieldName does not exist"))
   }
 

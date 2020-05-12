@@ -1017,13 +1017,12 @@ class ModerationProposalApiTest
         proposalService.search(
           any[Option[UserId]],
           matches(
-            SearchQuery(
-              filters = Some(
-                SearchFilters(
-                  createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None)),
-                  question = Some(QuestionSearchFilter(tyrion.availableQuestions))
-                )
+            SearchQuery(filters = Some(
+              SearchFilters(
+                createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None)),
+                question = Some(QuestionSearchFilter(tyrion.availableQuestions))
               )
+            )
             )
           ),
           any[RequestContext]
@@ -1062,7 +1061,7 @@ class ModerationProposalApiTest
                   id = TagId("tag-id"),
                   label = "label",
                   tagTypeId = TagTypeId("tag-type-id"),
-                  weight = 1.0F,
+                  weight = 1.0f,
                   questionId = Some(QuestionId("question-id")),
                   checked = true,
                   predicted = true
@@ -1091,7 +1090,7 @@ class ModerationProposalApiTest
                   id = TagId("tag-id"),
                   label = "label",
                   tagTypeId = TagTypeId("tag-type-id"),
-                  weight = 1.0F,
+                  weight = 1.0f,
                   questionId = Some(QuestionId("question-id")),
                   checked = true,
                   predicted = true

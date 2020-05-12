@@ -25,19 +25,22 @@ import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
 import org.make.core.{AvroSerializers, DateHelper, EventWrapper, RequestContext}
 
-final case class TrackingEvent(eventProvider: String,
-                               eventType: Option[String],
-                               eventName: Option[String],
-                               eventParameters: Option[Map[String, String]],
-                               requestContext: RequestContext,
-                               createdAt: ZonedDateTime)
+final case class TrackingEvent(
+  eventProvider: String,
+  eventType: Option[String],
+  eventName: Option[String],
+  eventParameters: Option[Map[String, String]],
+  requestContext: RequestContext,
+  createdAt: ZonedDateTime
+)
 
-final case class TrackingEventWrapper(version: Int,
-                                      id: String,
-                                      date: ZonedDateTime,
-                                      eventType: String,
-                                      event: TrackingEvent)
-    extends EventWrapper[TrackingEvent]
+final case class TrackingEventWrapper(
+  version: Int,
+  id: String,
+  date: ZonedDateTime,
+  eventType: String,
+  event: TrackingEvent
+) extends EventWrapper[TrackingEvent]
 
 object TrackingEventWrapper extends AvroSerializers {
   lazy val schemaFor: SchemaFor[TrackingEventWrapper] = SchemaFor.gen[TrackingEventWrapper]

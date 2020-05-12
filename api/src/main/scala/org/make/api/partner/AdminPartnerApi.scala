@@ -88,7 +88,7 @@ trait AdminPartnerApi extends Directives {
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "organisationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string")
     )
   )
   @Path(value = "/")
@@ -187,13 +187,15 @@ trait DefaultAdminPartnerApiComponent
                 "partnerKind".as[PartnerKind].?
               )
             ) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               questionId: Option[QuestionId],
-               organisationId: Option[UserId],
-               partnerKind: Option[PartnerKind]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                sort: Option[String],
+                order: Option[String],
+                questionId: Option[QuestionId],
+                organisationId: Option[UserId],
+                partnerKind: Option[PartnerKind]
+              ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     provideAsync(

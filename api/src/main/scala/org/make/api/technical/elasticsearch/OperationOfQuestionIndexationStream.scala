@@ -57,8 +57,10 @@ trait OperationOfQuestionIndexationStream
         )
     }
 
-    private def executeIndexOperationOfQuestions(operationOfQuestions: Seq[OperationOfQuestion],
-                                                 operationOfQuestionIndexName: String): Future[Done] = {
+    private def executeIndexOperationOfQuestions(
+      operationOfQuestions: Seq[OperationOfQuestion],
+      operationOfQuestionIndexName: String
+    ): Future[Done] = {
 
       val futureQuestion: Future[Seq[Question]] =
         questionService.getQuestions(operationOfQuestions.map(_.questionId))
@@ -76,9 +78,8 @@ trait OperationOfQuestionIndexationStream
             for {
               question  <- questions.find(_.questionId == operationOfQuestion.questionId)
               operation <- operations.find(_.operationId == operationOfQuestion.operationId)
-            } yield
-              IndexedOperationOfQuestion
-                .createFromOperationOfQuestion(operationOfQuestion, operation, question)
+            } yield IndexedOperationOfQuestion
+              .createFromOperationOfQuestion(operationOfQuestion, operation, question)
           }
       }.map(_.flatten).flatMap { operationOfQuestions =>
         elasticsearchOperationOfQuestionAPI

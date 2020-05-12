@@ -700,7 +700,7 @@ class UserApiTest
         invocation =>
           if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeUser.userId)) {
             throw new IllegalArgumentException("UserId not match")
-        }
+          }
       )
     Mockito
       .when(persistentUserService.findByEmail("fake@example.com"))
@@ -1575,11 +1575,10 @@ class UserApiTest
     }
 
     scenario("incorrect file type") {
-      val request: Multipart = Multipart.FormData(
-        fields = Map(
-          "data" -> HttpEntity
-            .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
-        )
+      val request: Multipart = Multipart.FormData(fields = Map(
+        "data" -> HttpEntity
+          .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
+      )
       )
 
       Post("/user/ABCD/upload-avatar", request)

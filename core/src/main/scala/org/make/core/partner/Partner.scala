@@ -25,14 +25,16 @@ import org.make.core.question.QuestionId
 import org.make.core.user.UserId
 import spray.json.{JsString, JsValue, JsonFormat}
 
-case class Partner(partnerId: PartnerId,
-                   name: String,
-                   logo: Option[String],
-                   link: Option[String],
-                   organisationId: Option[UserId],
-                   partnerKind: PartnerKind,
-                   questionId: QuestionId,
-                   weight: Float)
+case class Partner(
+  partnerId: PartnerId,
+  name: String,
+  logo: Option[String],
+  link: Option[String],
+  organisationId: Option[UserId],
+  partnerKind: PartnerKind,
+  questionId: QuestionId,
+  weight: Float
+)
 
 case class PartnerId(value: String) extends StringValue
 

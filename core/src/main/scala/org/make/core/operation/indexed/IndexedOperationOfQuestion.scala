@@ -55,39 +55,37 @@ object OperationOfQuestionElasticsearchFieldNames {
   }
 }
 
-case class IndexedOperationOfQuestion(@(ApiModelProperty @field)(
-                                        dataType = "string",
-                                        example = "42ccc3ce-f5b9-e7c0-b927-01a9cb159e55"
-                                      ) questionId: QuestionId,
-                                      question: String,
-                                      slug: String,
-                                      @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
-                                      startDate: Option[ZonedDateTime],
-                                      @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
-                                      endDate: Option[ZonedDateTime],
-                                      theme: QuestionTheme,
-                                      description: String,
-                                      consultationImage: Option[String],
-                                      @(ApiModelProperty @field)(dataType = "string", example = "FR")
-                                      country: Country,
-                                      @(ApiModelProperty @field)(dataType = "string", example = "fr")
-                                      language: Language,
-                                      @(ApiModelProperty @field)(
-                                        dataType = "string",
-                                        example = "57c4a8d0-f3c1-4391-b75b-03082ac94d19"
-                                      )
-                                      operationId: OperationId,
-                                      operationTitle: String,
-                                      operationKind: String,
-                                      aboutUrl: Option[String])
+case class IndexedOperationOfQuestion(
+  @(ApiModelProperty @field)(dataType = "string", example = "42ccc3ce-f5b9-e7c0-b927-01a9cb159e55") questionId: QuestionId,
+  question: String,
+  slug: String,
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
+  endDate: Option[ZonedDateTime],
+  theme: QuestionTheme,
+  description: String,
+  consultationImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr")
+  language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "57c4a8d0-f3c1-4391-b75b-03082ac94d19")
+  operationId: OperationId,
+  operationTitle: String,
+  operationKind: String,
+  aboutUrl: Option[String]
+)
 
 object IndexedOperationOfQuestion extends CirceFormatters {
   implicit val encoder: Encoder[IndexedOperationOfQuestion] = deriveEncoder[IndexedOperationOfQuestion]
   implicit val decoder: Decoder[IndexedOperationOfQuestion] = deriveDecoder[IndexedOperationOfQuestion]
 
-  def createFromOperationOfQuestion(operationOfQuestion: OperationOfQuestion,
-                                    operation: SimpleOperation,
-                                    question: Question): IndexedOperationOfQuestion = {
+  def createFromOperationOfQuestion(
+    operationOfQuestion: OperationOfQuestion,
+    operation: SimpleOperation,
+    question: Question
+  ): IndexedOperationOfQuestion = {
     IndexedOperationOfQuestion(
       questionId = operationOfQuestion.questionId,
       question = question.question,

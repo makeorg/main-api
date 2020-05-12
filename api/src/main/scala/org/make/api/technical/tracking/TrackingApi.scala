@@ -129,27 +129,29 @@ object FrontPerformanceRequest {
   implicit val decoder: Decoder[FrontPerformanceRequest] = deriveDecoder[FrontPerformanceRequest]
 }
 
-final case class FrontPerformanceTimings(connectStart: Long,
-                                         connectEnd: Long,
-                                         domComplete: Long,
-                                         domContentLoadedEventEnd: Long,
-                                         domContentLoadedEventStart: Long,
-                                         domInteractive: Long,
-                                         domLoading: Long,
-                                         domainLookupEnd: Long,
-                                         domainLookupStart: Long,
-                                         fetchStart: Long,
-                                         loadEventEnd: Long,
-                                         loadEventStart: Long,
-                                         navigationStart: Long,
-                                         redirectEnd: Long,
-                                         redirectStart: Long,
-                                         requestStart: Long,
-                                         responseEnd: Long,
-                                         responseStart: Long,
-                                         secureConnectionStart: Long,
-                                         unloadEventEnd: Long,
-                                         unloadEventStart: Long)
+final case class FrontPerformanceTimings(
+  connectStart: Long,
+  connectEnd: Long,
+  domComplete: Long,
+  domContentLoadedEventEnd: Long,
+  domContentLoadedEventStart: Long,
+  domInteractive: Long,
+  domLoading: Long,
+  domainLookupEnd: Long,
+  domainLookupStart: Long,
+  fetchStart: Long,
+  loadEventEnd: Long,
+  loadEventStart: Long,
+  navigationStart: Long,
+  redirectEnd: Long,
+  redirectStart: Long,
+  requestStart: Long,
+  responseEnd: Long,
+  responseStart: Long,
+  secureConnectionStart: Long,
+  unloadEventEnd: Long,
+  unloadEventStart: Long
+)
 object FrontPerformanceTimings {
   implicit val decoder: Decoder[FrontPerformanceTimings] = deriveDecoder[FrontPerformanceTimings]
 }

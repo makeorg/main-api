@@ -38,12 +38,14 @@ trait PersistentPersonalityRoleService {
   def persist(personalityRole: PersonalityRole): Future[PersonalityRole]
   def modify(personalityRole: PersonalityRole): Future[PersonalityRole]
   def getById(personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRole]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           maybeRoleIds: Option[Seq[PersonalityRoleId]],
-           maybeName: Option[String]): Future[Seq[PersonalityRole]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    maybeRoleIds: Option[Seq[PersonalityRoleId]],
+    maybeName: Option[String]
+  ): Future[Seq[PersonalityRole]]
   def count(maybeRoleIds: Option[Seq[PersonalityRoleId]], maybeName: Option[String]): Future[Int]
   def delete(personalityRoleId: PersonalityRoleId): Future[Unit]
 }
@@ -93,12 +95,14 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
       }).map(_.map(_.toPersonalityRole))
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      maybeRoleIds: Option[Seq[PersonalityRoleId]],
-                      maybeName: Option[String]): Future[Seq[PersonalityRole]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      maybeRoleIds: Option[Seq[PersonalityRoleId]],
+      maybeName: Option[String]
+    ): Future[Seq[PersonalityRole]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {

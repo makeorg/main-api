@@ -54,11 +54,13 @@ trait SequenceServiceComponent {
 }
 
 trait SequenceService {
-  def startNewSequence(maybeUserId: Option[UserId],
-                       questionId: QuestionId,
-                       includedProposals: Seq[ProposalId],
-                       tagsIds: Option[Seq[TagId]],
-                       requestContext: RequestContext): Future[Option[SequenceResult]]
+  def startNewSequence(
+    maybeUserId: Option[UserId],
+    questionId: QuestionId,
+    includedProposals: Seq[ProposalId],
+    tagsIds: Option[Seq[TagId]],
+    requestContext: RequestContext
+  ): Future[Option[SequenceResult]]
 }
 
 trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
@@ -82,11 +84,13 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
   class DefaultSequenceService extends SequenceService {
 
-    override def startNewSequence(maybeUserId: Option[UserId],
-                                  questionId: QuestionId,
-                                  includedProposals: Seq[ProposalId],
-                                  tagsIds: Option[Seq[TagId]],
-                                  requestContext: RequestContext): Future[Option[SequenceResult]] = {
+    override def startNewSequence(
+      maybeUserId: Option[UserId],
+      questionId: QuestionId,
+      includedProposals: Seq[ProposalId],
+      tagsIds: Option[Seq[TagId]],
+      requestContext: RequestContext
+    ): Future[Option[SequenceResult]] = {
       logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
 
       futureVotedProposals(maybeUserId = maybeUserId, proposalsIds = None, requestContext = requestContext).flatMap {
@@ -116,11 +120,13 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
-    private def fallbackEmptySequence(maybeUserId: Option[UserId],
-                                      sequenceConfiguration: SequenceConfiguration,
-                                      initialSequenceProposals: Seq[ProposalResponse],
-                                      proposalsVoted: Seq[ProposalId],
-                                      requestContext: RequestContext): Future[Option[SequenceResult]] = {
+    private def fallbackEmptySequence(
+      maybeUserId: Option[UserId],
+      sequenceConfiguration: SequenceConfiguration,
+      initialSequenceProposals: Seq[ProposalResponse],
+      proposalsVoted: Seq[ProposalId],
+      requestContext: RequestContext
+    ): Future[Option[SequenceResult]] = {
 
       logger.warn(
         s"Sequence fallback for user ${requestContext.sessionId} and question ${sequenceConfiguration.questionId}"
@@ -169,12 +175,14 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
-    private def startSequence(maybeUserId: Option[UserId],
-                              sequenceConfiguration: SequenceConfiguration,
-                              includedProposalIds: Seq[ProposalId],
-                              proposalsVoted: Seq[ProposalId],
-                              tagsIds: Option[Seq[TagId]],
-                              requestContext: RequestContext): Future[Option[SequenceResult]] = {
+    private def startSequence(
+      maybeUserId: Option[UserId],
+      sequenceConfiguration: SequenceConfiguration,
+      includedProposalIds: Seq[ProposalId],
+      proposalsVoted: Seq[ProposalId],
+      tagsIds: Option[Seq[TagId]],
+      requestContext: RequestContext
+    ): Future[Option[SequenceResult]] = {
 
       val futureIncludedProposals: Future[Seq[IndexedProposal]] = if (includedProposalIds.nonEmpty) {
         elasticsearchProposalAPI.findProposalsByIds(includedProposalIds, size = 1000, random = false)
@@ -182,8 +190,10 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         Future.successful(Seq.empty)
       }
 
-      def futureNewProposalsPool(maybeSegment: Option[String],
-                                 proposalsToExclude: Seq[ProposalId]): Future[Seq[IndexedProposal]] = {
+      def futureNewProposalsPool(
+        maybeSegment: Option[String],
+        proposalsToExclude: Seq[ProposalId]
+      ): Future[Seq[IndexedProposal]] = {
         val (poolSearch, segmentPoolSearch) = maybeSegment match {
           case None    => (Some(SequencePoolSearchFilter(SequencePool.New)), None)
           case Some(_) => (None, Some(SequencePoolSearchFilter(SequencePool.New)))
@@ -208,8 +218,10 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
           .map(_.results)
       }
 
-      def futureTestedProposalsPool(maybeSegment: Option[String],
-                                    proposalsToExclude: Seq[ProposalId]): Future[Seq[IndexedProposal]] = {
+      def futureTestedProposalsPool(
+        maybeSegment: Option[String],
+        proposalsToExclude: Seq[ProposalId]
+      ): Future[Seq[IndexedProposal]] = {
         val (poolSearch, segmentPoolSearch) = maybeSegment match {
           case None    => (Some(SequencePoolSearchFilter(SequencePool.Tested)), None)
           case Some(_) => (None, Some(SequencePoolSearchFilter(SequencePool.Tested)))
@@ -295,10 +307,12 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       }
     }
 
-    private def logStartSequenceUserHistory(questionId: Option[QuestionId],
-                                            maybeUserId: Option[UserId],
-                                            includedProposals: Seq[ProposalId],
-                                            requestContext: RequestContext): Unit = {
+    private def logStartSequenceUserHistory(
+      questionId: Option[QuestionId],
+      maybeUserId: Option[UserId],
+      includedProposals: Seq[ProposalId],
+      requestContext: RequestContext
+    ): Unit = {
 
       (maybeUserId, requestContext.sessionId) match {
         case (Some(userId), _) =>
@@ -329,9 +343,11 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
     }
 
-    private def futureVotedProposals(maybeUserId: Option[UserId],
-                                     proposalsIds: Option[Seq[ProposalId]],
-                                     requestContext: RequestContext): Future[Seq[ProposalId]] =
+    private def futureVotedProposals(
+      maybeUserId: Option[UserId],
+      proposalsIds: Option[Seq[ProposalId]],
+      requestContext: RequestContext
+    ): Future[Seq[ProposalId]] =
       maybeUserId.map { userId =>
         userHistoryCoordinatorService.retrieveVotedProposals(
           RequestUserVotedProposals(userId = userId, proposalsIds = proposalsIds)

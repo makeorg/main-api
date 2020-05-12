@@ -57,47 +57,59 @@ trait OrganisationServiceComponent {
 trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
   def getOrganisations: Future[Seq[User]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           organisationName: Option[String]): Future[Seq[User]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    organisationName: Option[String]
+  ): Future[Seq[User]]
   def count(organisationName: Option[String]): Future[Int]
-  def search(organisationName: Option[String],
-             slug: Option[String],
-             organisationIds: Option[Seq[UserId]],
-             country: Option[Country],
-             language: Option[Language]): Future[OrganisationSearchResult]
+  def search(
+    organisationName: Option[String],
+    slug: Option[String],
+    organisationIds: Option[Seq[UserId]],
+    country: Option[Country],
+    language: Option[Language]
+  ): Future[OrganisationSearchResult]
   def searchWithQuery(query: OrganisationSearchQuery): Future[OrganisationSearchResult]
   def register(organisationRegisterData: OrganisationRegisterData, requestContext: RequestContext): Future[User]
-  def update(organisation: User,
-             moderatorId: Option[UserId],
-             oldEmail: String,
-             requestContext: RequestContext): Future[UserId]
-  def getVotedProposals(organisationId: UserId,
-                        maybeUserId: Option[UserId],
-                        filterVotes: Option[Seq[VoteKey]],
-                        filterQualifications: Option[Seq[QualificationKey]],
-                        sort: Option[Sort],
-                        limit: Option[Int],
-                        skip: Option[Int],
-                        requestContext: RequestContext): Future[ProposalsResultWithUserVoteSeededResponse]
+  def update(
+    organisation: User,
+    moderatorId: Option[UserId],
+    oldEmail: String,
+    requestContext: RequestContext
+  ): Future[UserId]
+  def getVotedProposals(
+    organisationId: UserId,
+    maybeUserId: Option[UserId],
+    filterVotes: Option[Seq[VoteKey]],
+    filterQualifications: Option[Seq[QualificationKey]],
+    sort: Option[Sort],
+    limit: Option[Int],
+    skip: Option[Int],
+    requestContext: RequestContext
+  ): Future[ProposalsResultWithUserVoteSeededResponse]
 }
 
-case class OrganisationRegisterData(name: String,
-                                    email: String,
-                                    password: Option[String],
-                                    avatar: Option[String],
-                                    description: Option[String],
-                                    country: Country,
-                                    language: Language,
-                                    website: Option[String])
+case class OrganisationRegisterData(
+  name: String,
+  email: String,
+  password: Option[String],
+  avatar: Option[String],
+  description: Option[String],
+  country: Country,
+  language: Language,
+  website: Option[String]
+)
 
-case class OrganisationUpdateData(name: Option[String],
-                                  email: Option[String],
-                                  avatar: Option[String],
-                                  description: Option[String],
-                                  website: Option[String])
+case class OrganisationUpdateData(
+  name: Option[String],
+  email: Option[String],
+  avatar: Option[String],
+  description: Option[String],
+  website: Option[String]
+)
 
 trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent with ShortenedNames {
   this: IdGeneratorComponent
@@ -126,11 +138,13 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       * start and end are here to paginate the result
       * sort and order are here to sort the result
       */
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      organisationName: Option[String]): Future[Seq[User]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      organisationName: Option[String]
+    ): Future[Seq[User]] = {
       persistentUserService.findOrganisations(start, end, sort, order, organisationName)
     }
 
@@ -142,21 +156,22 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       * This method fetch the organisations from elasticsearch
       * organisations can be search by name or slug
       */
-    override def search(organisationName: Option[String],
-                        slug: Option[String],
-                        organisationIds: Option[Seq[UserId]],
-                        country: Option[Country],
-                        language: Option[Language]): Future[OrganisationSearchResult] = {
+    override def search(
+      organisationName: Option[String],
+      slug: Option[String],
+      organisationIds: Option[Seq[UserId]],
+      country: Option[Country],
+      language: Option[Language]
+    ): Future[OrganisationSearchResult] = {
       elasticsearchOrganisationAPI.searchOrganisations(
-        OrganisationSearchQuery(
-          filters = OrganisationSearchFilters
-            .parse(
-              organisationName = organisationName.map(orgaName => OrganisationNameSearchFilter(orgaName)),
-              slug = slug.map(user.SlugSearchFilter.apply),
-              organisationIds = organisationIds.map(OrganisationIdsSearchFilter.apply),
-              country = country.map(CountrySearchFilter.apply),
-              language = language.map(LanguageSearchFilter.apply)
-            )
+        OrganisationSearchQuery(filters = OrganisationSearchFilters
+          .parse(
+            organisationName = organisationName.map(orgaName => OrganisationNameSearchFilter(orgaName)),
+            slug = slug.map(user.SlugSearchFilter.apply),
+            organisationIds = organisationIds.map(OrganisationIdsSearchFilter.apply),
+            country = country.map(CountrySearchFilter.apply),
+            language = language.map(LanguageSearchFilter.apply)
+          )
         )
       )
     }
@@ -165,10 +180,12 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       elasticsearchOrganisationAPI.searchOrganisations(query)
     }
 
-    private def registerOrganisation(organisationRegisterData: OrganisationRegisterData,
-                                     lowerCasedEmail: String,
-                                     country: Country,
-                                     language: Language): Future[User] = {
+    private def registerOrganisation(
+      organisationRegisterData: OrganisationRegisterData,
+      lowerCasedEmail: String,
+      country: Country,
+      language: Language
+    ): Future[User] = {
       val user = User(
         userId = idGenerator.nextUserId(),
         email = lowerCasedEmail,
@@ -201,8 +218,10 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       persistentUserService.persist(user)
     }
 
-    override def register(organisationRegisterData: OrganisationRegisterData,
-                          requestContext: RequestContext): Future[User] = {
+    override def register(
+      organisationRegisterData: OrganisationRegisterData,
+      requestContext: RequestContext
+    ): Future[User] = {
 
       val country = BusinessConfig.validateCountry(organisationRegisterData.country)
       val language =
@@ -247,8 +266,10 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       }
     }
 
-    private def updateProposalsFromOrganisation(organisationId: UserId,
-                                                requestContext: RequestContext): Future[Unit] = {
+    private def updateProposalsFromOrganisation(
+      organisationId: UserId,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       for {
         _ <- getVotedProposals(
           organisationId,
@@ -265,20 +286,18 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
               proposalWithVote =>
                 eventBusService
                   .publish(ReindexProposal(proposalWithVote.proposal.id, DateHelper.now(), requestContext))
-          )
+            )
         )
         _ <- elasticsearchProposalAPI
-          .searchProposals(
-            searchQuery = SearchQuery(
-              filters = Some(
-                SearchFilters(
-                  user = Some(UserSearchFilter(userId = organisationId)),
-                  status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
-                    case (_, status) => status != ProposalStatus.Archived
-                  }.values.toSeq))
-                )
-              )
+          .searchProposals(searchQuery = SearchQuery(filters = Some(
+            SearchFilters(
+              user = Some(UserSearchFilter(userId = organisationId)),
+              status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
+                case (_, status) => status != ProposalStatus.Archived
+              }.values.toSeq))
             )
+          )
+          )
           )
           .map(
             result =>
@@ -286,16 +305,18 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                 proposal =>
                   eventBusService
                     .publish(ReindexProposal(proposal.id, DateHelper.now(), requestContext))
-            )
+              )
           )
       } yield {}
     }
 
-    private def updateOrganisationEmail(organisation: User,
-                                        moderatorId: Option[UserId],
-                                        newEmail: Option[String],
-                                        oldEmail: String,
-                                        requestContext: RequestContext): Future[Unit] = {
+    private def updateOrganisationEmail(
+      organisation: User,
+      moderatorId: Option[UserId],
+      newEmail: Option[String],
+      oldEmail: String,
+      requestContext: RequestContext
+    ): Future[Unit] = {
       newEmail match {
         case Some(email) =>
           persistentUserToAnonymizeService.create(oldEmail).map { _ =>
@@ -316,10 +337,12 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       }
     }
 
-    override def update(organisation: User,
-                        moderatorId: Option[UserId],
-                        oldEmail: String,
-                        requestContext: RequestContext): Future[UserId] = {
+    override def update(
+      organisation: User,
+      moderatorId: Option[UserId],
+      oldEmail: String,
+      requestContext: RequestContext
+    ): Future[UserId] = {
 
       val newEmail: Option[String] = organisation.email match {
         case email if email.toLowerCase == oldEmail.toLowerCase => None

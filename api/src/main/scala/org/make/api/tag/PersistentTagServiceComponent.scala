@@ -55,12 +55,14 @@ trait PersistentTagService {
   def persist(tag: Tag): Future[Tag]
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           onlyDisplayed: Boolean,
-           persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    onlyDisplayed: Boolean,
+    persistentTagFilter: PersistentTagFilter
+  ): Future[Seq[Tag]]
   def count(persistentTagFilter: PersistentTagFilter): Future[Int]
 }
 
@@ -275,12 +277,14 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       result
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      onlyDisplayed: Boolean,
-                      persistentTagFilter: PersistentTagFilter): Future[Seq[Tag]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      onlyDisplayed: Boolean,
+      persistentTagFilter: PersistentTagFilter
+    ): Future[Seq[Tag]] = {
       implicit val context: EC = readExecutionContext
 
       val futurePersistentTags: Future[List[PersistentTag]] = Future(NamedDB("READ").retryableTx { implicit session =>
@@ -348,17 +352,19 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
 object DefaultPersistentTagServiceComponent {
 
-  case class PersistentTag(id: String,
-                           label: String,
-                           display: TagDisplay,
-                           tagTypeId: String,
-                           operationId: Option[String],
-                           questionId: Option[String],
-                           weight: Float,
-                           country: String,
-                           language: String,
-                           createdAt: ZonedDateTime,
-                           updatedAt: ZonedDateTime) {
+  case class PersistentTag(
+    id: String,
+    label: String,
+    display: TagDisplay,
+    tagTypeId: String,
+    operationId: Option[String],
+    questionId: Option[String],
+    weight: Float,
+    country: String,
+    language: String,
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime
+  ) {
     def toTag: Tag =
       Tag(
         tagId = TagId(id),

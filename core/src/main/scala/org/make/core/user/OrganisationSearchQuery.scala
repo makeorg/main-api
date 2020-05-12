@@ -34,12 +34,14 @@ import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
   * @param skip          number of items to skip
   * @param sortAlgorithm algorithm used for sorting
   */
-case class OrganisationSearchQuery(filters: Option[OrganisationSearchFilters] = None,
-                                   limit: Option[Int] = None,
-                                   skip: Option[Int] = None,
-                                   sort: Option[String] = None,
-                                   order: Option[String] = None,
-                                   sortAlgorithm: Option[OrganisationSortAlgorithm] = None)
+case class OrganisationSearchQuery(
+  filters: Option[OrganisationSearchFilters] = None,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None,
+  sort: Option[String] = None,
+  order: Option[String] = None,
+  sortAlgorithm: Option[OrganisationSortAlgorithm] = None
+)
 
 /**
   * The class holding the filters
@@ -51,21 +53,25 @@ case class OrganisationSearchQuery(filters: Option[OrganisationSearchFilters] = 
   * @param country           Country to filter
   * @param language          Language to filter
   */
-case class OrganisationSearchFilters(organisationIds: Option[OrganisationIdsSearchFilter] = None,
-                                     organisationName: Option[OrganisationNameSearchFilter] = None,
-                                     slug: Option[SlugSearchFilter] = None,
-                                     description: Option[DescriptionSearchFilter] = None,
-                                     country: Option[CountrySearchFilter] = None,
-                                     language: Option[LanguageSearchFilter] = None)
+case class OrganisationSearchFilters(
+  organisationIds: Option[OrganisationIdsSearchFilter] = None,
+  organisationName: Option[OrganisationNameSearchFilter] = None,
+  slug: Option[SlugSearchFilter] = None,
+  description: Option[DescriptionSearchFilter] = None,
+  country: Option[CountrySearchFilter] = None,
+  language: Option[LanguageSearchFilter] = None
+)
 
 object OrganisationSearchFilters extends ElasticDsl {
 
-  def parse(organisationIds: Option[OrganisationIdsSearchFilter] = None,
-            organisationName: Option[OrganisationNameSearchFilter] = None,
-            slug: Option[SlugSearchFilter] = None,
-            description: Option[DescriptionSearchFilter] = None,
-            country: Option[CountrySearchFilter] = None,
-            language: Option[LanguageSearchFilter] = None): Option[OrganisationSearchFilters] = {
+  def parse(
+    organisationIds: Option[OrganisationIdsSearchFilter] = None,
+    organisationName: Option[OrganisationNameSearchFilter] = None,
+    slug: Option[SlugSearchFilter] = None,
+    description: Option[DescriptionSearchFilter] = None,
+    country: Option[CountrySearchFilter] = None,
+    language: Option[LanguageSearchFilter] = None
+  ): Option[OrganisationSearchFilters] = {
 
     (organisationIds, organisationName, slug, description, country, language) match {
       case (None, None, None, None, None, None) => None
@@ -135,9 +141,9 @@ object OrganisationSearchFilters extends ElasticDsl {
       val language = filters.language.map(_.language).getOrElse(Language("fr"))
       val fieldsBoosts: Map[String, Double] =
         Map(
-          Some(OrganisationElasticsearchFieldNames.organisationName) -> 3D,
-          OrganisationElasticsearchFieldNames.organisationNameLanguageSubfield(language) -> 2D,
-          OrganisationElasticsearchFieldNames.organisationNameLanguageSubfield(language, stemmed = true) -> 1.5D
+          Some(OrganisationElasticsearchFieldNames.organisationName) -> 3d,
+          OrganisationElasticsearchFieldNames.organisationNameLanguageSubfield(language) -> 2d,
+          OrganisationElasticsearchFieldNames.organisationNameLanguageSubfield(language, stemmed = true) -> 1.5d
         ).collect {
           case (Some(key), value) => key -> value
         }

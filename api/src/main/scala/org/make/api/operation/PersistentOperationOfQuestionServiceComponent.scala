@@ -39,22 +39,26 @@ import scalikejdbc._
 import scala.concurrent.Future
 
 trait PersistentOperationOfQuestionService {
-  def search(start: Int,
-             end: Option[Int],
-             sort: Option[String],
-             order: Option[String],
-             questionIds: Option[Seq[QuestionId]],
-             operationIds: Option[Seq[OperationId]],
-             operationKind: Option[Seq[OperationKind]],
-             openAt: Option[ZonedDateTime]): Future[Seq[OperationOfQuestion]]
+  def search(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    questionIds: Option[Seq[QuestionId]],
+    operationIds: Option[Seq[OperationId]],
+    operationKind: Option[Seq[OperationKind]],
+    openAt: Option[ZonedDateTime]
+  ): Future[Seq[OperationOfQuestion]]
   def persist(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def modify(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def getById(id: QuestionId): Future[Option[OperationOfQuestion]]
   def find(operationId: Option[OperationId] = None): Future[Seq[OperationOfQuestion]]
   def delete(questionId: QuestionId): Future[Unit]
-  def count(questionIds: Option[Seq[QuestionId]],
-            operationIds: Option[Seq[OperationId]],
-            openAt: Option[ZonedDateTime]): Future[Int]
+  def count(
+    questionIds: Option[Seq[QuestionId]],
+    operationIds: Option[Seq[OperationId]],
+    openAt: Option[ZonedDateTime]
+  ): Future[Int]
 }
 
 trait PersistentOperationOfQuestionServiceComponent {
@@ -75,14 +79,16 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
     private val operationOfQuestionAlias = PersistentOperationOfQuestion.alias
     private val operationAlias = PersistentOperation.alias
 
-    override def search(start: Int,
-                        end: Option[Int],
-                        sort: Option[String],
-                        order: Option[String],
-                        questionIds: Option[Seq[QuestionId]],
-                        operationIds: Option[Seq[OperationId]],
-                        operationKind: Option[Seq[OperationKind]],
-                        openAt: Option[ZonedDateTime]): Future[scala.Seq[OperationOfQuestion]] = {
+    override def search(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      questionIds: Option[Seq[QuestionId]],
+      operationIds: Option[Seq[OperationId]],
+      operationKind: Option[Seq[OperationKind]],
+      openAt: Option[ZonedDateTime]
+    ): Future[scala.Seq[OperationOfQuestion]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentOperationOfQuestion] {
@@ -109,7 +115,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                         sqls
                           .isNull(PersistentOperationOfQuestion.column.endDate)
                           .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                    )
+                      )
                 )
               )
             )
@@ -252,9 +258,11 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       }).map(_ => ())
     }
 
-    override def count(questionIds: Option[Seq[QuestionId]],
-                       operationIds: Option[Seq[OperationId]],
-                       openAt: Option[ZonedDateTime]): Future[Int] = {
+    override def count(
+      questionIds: Option[Seq[QuestionId]],
+      operationIds: Option[Seq[OperationId]],
+      openAt: Option[ZonedDateTime]
+    ): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL[PersistentOperationOfQuestion] {
@@ -275,7 +283,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                         sqls
                           .isNull(PersistentOperationOfQuestion.column.endDate)
                           .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                    )
+                      )
                 )
               )
             )

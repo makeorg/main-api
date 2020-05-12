@@ -43,7 +43,7 @@ class PersistentPartnerServiceIT
     organisationId = None,
     partnerKind = PartnerKind.Founder,
     questionId = QuestionId("question"),
-    weight = 20F
+    weight = 20f
   )
 
   val question = Question(
@@ -205,13 +205,13 @@ class PersistentPartnerServiceIT
   feature("update partners") {
     scenario("update existing partner") {
       val updatedPartner =
-        partner.copy(name = "updated name", partnerKind = PartnerKind.ActionPartner, weight = 42F)
+        partner.copy(name = "updated name", partnerKind = PartnerKind.ActionPartner, weight = 42f)
 
       whenReady(persistentPartnerService.modify(updatedPartner), Timeout(2.seconds)) { partner =>
         partner.partnerId should be(PartnerId("partner"))
         partner.name should be("updated name")
         partner.partnerKind should be(PartnerKind.ActionPartner)
-        partner.weight should be(42F)
+        partner.weight should be(42f)
       }
     }
   }

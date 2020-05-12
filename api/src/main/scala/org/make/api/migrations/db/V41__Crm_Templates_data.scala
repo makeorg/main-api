@@ -43,16 +43,18 @@ class V41__Crm_Templates_data extends BaseJavaMigration {
 
     def nextId(): String = UUID.randomUUID().toString
 
-    def valuesToInsertCrmTemplate(questionId: String,
-                                  locale: String,
-                                  registration: String,
-                                  welcome: String,
-                                  accepted: String,
-                                  refused: String,
-                                  forgotPassword: String,
-                                  acceptedOrganisation: String,
-                                  refusedOrganisation: String,
-                                  forgotPasswordOrganisation: String): String = {
+    def valuesToInsertCrmTemplate(
+      questionId: String,
+      locale: String,
+      registration: String,
+      welcome: String,
+      accepted: String,
+      refused: String,
+      forgotPassword: String,
+      acceptedOrganisation: String,
+      refusedOrganisation: String,
+      forgotPasswordOrganisation: String
+    ): String = {
       val id: String = nextId()
       (s"('$id', '$questionId', '$locale', '$registration', '$welcome'," +
         s" '$accepted', '$refused', '$forgotPassword'," +

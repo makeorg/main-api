@@ -81,7 +81,7 @@ class ProposalApiTest
               operationId = invocation.getArgument[Option[OperationId]](1)
             )
           )
-      )
+        )
     )
 
   when(questionService.getQuestion(any[QuestionId])).thenReturn(

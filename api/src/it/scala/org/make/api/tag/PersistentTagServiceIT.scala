@@ -54,9 +54,11 @@ class PersistentTagServiceIT
     updatedAt = None
   )
 
-  def questionForOperation(operationId: OperationId,
-                           country: Country = Country("FR"),
-                           language: Language = Language("fr")): Question = {
+  def questionForOperation(
+    operationId: OperationId,
+    country: Country = Country("FR"),
+    language: Language = Language("fr")
+  ): Question = {
     Question(
       questionId = QuestionId(operationId.value),
       slug = s"some-question-on-operation-${operationId.value}",
@@ -68,9 +70,11 @@ class PersistentTagServiceIT
     )
   }
 
-  def questionForTheme(themeId: ThemeId,
-                       country: Country = Country("FR"),
-                       language: Language = Language("fr")): Question = {
+  def questionForTheme(
+    themeId: ThemeId,
+    country: Country = Country("FR"),
+    language: Language = Language("fr")
+  ): Question = {
     Question(
       questionId = QuestionId(themeId.value),
       slug = s"some-question-on-theme-${themeId.value}",

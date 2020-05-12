@@ -74,131 +74,167 @@ trait ProposalService {
 
   def search(userId: Option[UserId], query: SearchQuery, requestContext: RequestContext): Future[ProposalsSearchResult]
 
-  def searchForUser(userId: Option[UserId],
-                    query: SearchQuery,
-                    requestContext: RequestContext): Future[ProposalsResultSeededResponse]
+  def searchForUser(
+    userId: Option[UserId],
+    query: SearchQuery,
+    requestContext: RequestContext
+  ): Future[ProposalsResultSeededResponse]
 
-  def getTopProposals(maybeUserId: Option[UserId],
-                      questionId: QuestionId,
-                      size: Int,
-                      mode: Option[TopProposalsMode],
-                      requestContext: RequestContext): Future[ProposalsResultResponse]
+  def getTopProposals(
+    maybeUserId: Option[UserId],
+    questionId: QuestionId,
+    size: Int,
+    mode: Option[TopProposalsMode],
+    requestContext: RequestContext
+  ): Future[ProposalsResultResponse]
 
-  def searchProposalsVotedByUser(userId: UserId,
-                                 filterVotes: Option[Seq[VoteKey]],
-                                 filterQualifications: Option[Seq[QualificationKey]],
-                                 sort: Option[Sort],
-                                 limit: Option[Int],
-                                 skip: Option[Int],
-                                 requestContext: RequestContext): Future[ProposalsResultResponse]
+  def searchProposalsVotedByUser(
+    userId: UserId,
+    filterVotes: Option[Seq[VoteKey]],
+    filterQualifications: Option[Seq[QualificationKey]],
+    sort: Option[Sort],
+    limit: Option[Int],
+    skip: Option[Int],
+    requestContext: RequestContext
+  ): Future[ProposalsResultResponse]
 
-  def propose(user: User,
-              requestContext: RequestContext,
-              createdAt: ZonedDateTime,
-              content: String,
-              question: Question,
-              initialProposal: Boolean): Future[ProposalId]
+  def propose(
+    user: User,
+    requestContext: RequestContext,
+    createdAt: ZonedDateTime,
+    content: String,
+    question: Question,
+    initialProposal: Boolean
+  ): Future[ProposalId]
 
-  def update(proposalId: ProposalId,
-             moderator: UserId,
-             requestContext: RequestContext,
-             updatedAt: ZonedDateTime,
-             newContent: Option[String],
-             question: Question,
-             tags: Seq[TagId],
-             idea: Option[IdeaId],
-             predictedTags: Option[Seq[TagId]],
-             predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]]
+  def update(
+    proposalId: ProposalId,
+    moderator: UserId,
+    requestContext: RequestContext,
+    updatedAt: ZonedDateTime,
+    newContent: Option[String],
+    question: Question,
+    tags: Seq[TagId],
+    idea: Option[IdeaId],
+    predictedTags: Option[Seq[TagId]],
+    predictedTagsModelName: Option[String]
+  ): Future[Option[ModerationProposalResponse]]
 
-  def updateVotes(proposalId: ProposalId,
-                  moderator: UserId,
-                  requestContext: RequestContext,
-                  updatedAt: ZonedDateTime,
-                  votesVerified: Seq[UpdateVoteRequest]): Future[Option[ModerationProposalResponse]]
+  def updateVotes(
+    proposalId: ProposalId,
+    moderator: UserId,
+    requestContext: RequestContext,
+    updatedAt: ZonedDateTime,
+    votesVerified: Seq[UpdateVoteRequest]
+  ): Future[Option[ModerationProposalResponse]]
 
-  def validateProposal(proposalId: ProposalId,
-                       moderator: UserId,
-                       requestContext: RequestContext,
-                       question: Question,
-                       newContent: Option[String],
-                       sendNotificationEmail: Boolean,
-                       idea: Option[IdeaId],
-                       tags: Seq[TagId],
-                       predictedTags: Option[Seq[TagId]],
-                       predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]]
+  def validateProposal(
+    proposalId: ProposalId,
+    moderator: UserId,
+    requestContext: RequestContext,
+    question: Question,
+    newContent: Option[String],
+    sendNotificationEmail: Boolean,
+    idea: Option[IdeaId],
+    tags: Seq[TagId],
+    predictedTags: Option[Seq[TagId]],
+    predictedTagsModelName: Option[String]
+  ): Future[Option[ModerationProposalResponse]]
 
-  def refuseProposal(proposalId: ProposalId,
-                     moderator: UserId,
-                     requestContext: RequestContext,
-                     request: RefuseProposalRequest): Future[Option[ModerationProposalResponse]]
+  def refuseProposal(
+    proposalId: ProposalId,
+    moderator: UserId,
+    requestContext: RequestContext,
+    request: RefuseProposalRequest
+  ): Future[Option[ModerationProposalResponse]]
 
-  def postponeProposal(proposalId: ProposalId,
-                       moderator: UserId,
-                       requestContext: RequestContext): Future[Option[ModerationProposalResponse]]
+  def postponeProposal(
+    proposalId: ProposalId,
+    moderator: UserId,
+    requestContext: RequestContext
+  ): Future[Option[ModerationProposalResponse]]
 
-  def voteProposal(proposalId: ProposalId,
-                   maybeUserId: Option[UserId],
-                   requestContext: RequestContext,
-                   voteKey: VoteKey,
-                   proposalKey: Option[String]): Future[Option[Vote]]
+  def voteProposal(
+    proposalId: ProposalId,
+    maybeUserId: Option[UserId],
+    requestContext: RequestContext,
+    voteKey: VoteKey,
+    proposalKey: Option[String]
+  ): Future[Option[Vote]]
 
-  def unvoteProposal(proposalId: ProposalId,
-                     maybeUserId: Option[UserId],
-                     requestContext: RequestContext,
-                     voteKey: VoteKey,
-                     proposalKey: Option[String]): Future[Option[Vote]]
+  def unvoteProposal(
+    proposalId: ProposalId,
+    maybeUserId: Option[UserId],
+    requestContext: RequestContext,
+    voteKey: VoteKey,
+    proposalKey: Option[String]
+  ): Future[Option[Vote]]
 
-  def qualifyVote(proposalId: ProposalId,
-                  maybeUserId: Option[UserId],
-                  requestContext: RequestContext,
-                  voteKey: VoteKey,
-                  qualificationKey: QualificationKey,
-                  proposalKey: Option[String]): Future[Option[Qualification]]
+  def qualifyVote(
+    proposalId: ProposalId,
+    maybeUserId: Option[UserId],
+    requestContext: RequestContext,
+    voteKey: VoteKey,
+    qualificationKey: QualificationKey,
+    proposalKey: Option[String]
+  ): Future[Option[Qualification]]
 
-  def unqualifyVote(proposalId: ProposalId,
-                    maybeUserId: Option[UserId],
-                    requestContext: RequestContext,
-                    voteKey: VoteKey,
-                    qualificationKey: QualificationKey,
-                    proposalKey: Option[String]): Future[Option[Qualification]]
+  def unqualifyVote(
+    proposalId: ProposalId,
+    maybeUserId: Option[UserId],
+    requestContext: RequestContext,
+    voteKey: VoteKey,
+    qualificationKey: QualificationKey,
+    proposalKey: Option[String]
+  ): Future[Option[Qualification]]
 
   def lockProposal(proposalId: ProposalId, moderatorId: UserId, requestContext: RequestContext): Future[Option[UserId]]
 
-  def patchProposal(proposalId: ProposalId,
-                    userId: UserId,
-                    requestContext: RequestContext,
-                    changes: PatchProposalRequest): Future[Option[ModerationProposalResponse]]
+  def patchProposal(
+    proposalId: ProposalId,
+    userId: UserId,
+    requestContext: RequestContext,
+    changes: PatchProposalRequest
+  ): Future[Option[ModerationProposalResponse]]
 
   def changeProposalsIdea(proposalIds: Seq[ProposalId], moderatorId: UserId, ideaId: IdeaId): Future[Seq[Proposal]]
 
-  def searchAndLockProposalToModerate(questionId: QuestionId,
-                                      moderator: UserId,
-                                      requestContext: RequestContext,
-                                      toEnrich: Boolean,
-                                      minVotesCount: Option[Int],
-                                      minScore: Option[Float]): Future[Option[ModerationProposalResponse]]
+  def searchAndLockProposalToModerate(
+    questionId: QuestionId,
+    moderator: UserId,
+    requestContext: RequestContext,
+    toEnrich: Boolean,
+    minVotesCount: Option[Int],
+    minScore: Option[Float]
+  ): Future[Option[ModerationProposalResponse]]
 
   def anonymizeByUserId(userId: UserId): Future[Unit]
 
-  def createInitialProposal(content: String,
-                            question: Question,
-                            tags: Seq[TagId],
-                            author: AuthorRequest,
-                            moderator: UserId,
-                            moderatorRequestContext: RequestContext): Future[ProposalId]
+  def createInitialProposal(
+    content: String,
+    question: Question,
+    tags: Seq[TagId],
+    author: AuthorRequest,
+    moderator: UserId,
+    moderatorRequestContext: RequestContext
+  ): Future[ProposalId]
 
   def getTagsForProposal(proposal: Proposal): Future[TagsForProposalResponse]
 
   def resetVotes(adminUserId: UserId, requestContext: RequestContext): Future[Done]
 
-  def resolveQuestionFromVoteEvent(resolver: QuestionResolver,
-                                   context: RequestContext,
-                                   proposalId: ProposalId): Future[Option[Question]]
+  def resolveQuestionFromVoteEvent(
+    resolver: QuestionResolver,
+    context: RequestContext,
+    proposalId: ProposalId
+  ): Future[Option[Question]]
 
-  def resolveQuestionFromUserProposal(questionResolver: QuestionResolver,
-                                      requestContext: RequestContext,
-                                      userId: UserId,
-                                      eventDate: ZonedDateTime): Future[Option[Question]]
+  def resolveQuestionFromUserProposal(
+    questionResolver: QuestionResolver,
+    requestContext: RequestContext,
+    userId: UserId,
+    eventDate: ZonedDateTime
+  ): Future[Option[Question]]
 }
 
 trait DefaultProposalServiceComponent extends ProposalServiceComponent with CirceFormatters with StrictLogging {
@@ -225,12 +261,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
   class DefaultProposalService extends ProposalService {
 
-    override def createInitialProposal(content: String,
-                                       question: Question,
-                                       tags: Seq[TagId],
-                                       author: AuthorRequest,
-                                       moderator: UserId,
-                                       moderatorRequestContext: RequestContext): Future[ProposalId] = {
+    override def createInitialProposal(
+      content: String,
+      question: Question,
+      tags: Seq[TagId],
+      author: AuthorRequest,
+      moderator: UserId,
+      moderatorRequestContext: RequestContext
+    ): Future[ProposalId] = {
 
       for {
         user       <- userService.retrieveOrCreateVirtualUser(author, question.country, question.language)
@@ -250,13 +288,15 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       } yield proposalId
     }
 
-    override def searchProposalsVotedByUser(userId: UserId,
-                                            filterVotes: Option[Seq[VoteKey]],
-                                            filterQualifications: Option[Seq[QualificationKey]],
-                                            sort: Option[Sort],
-                                            limit: Option[Int],
-                                            skip: Option[Int],
-                                            requestContext: RequestContext): Future[ProposalsResultResponse] = {
+    override def searchProposalsVotedByUser(
+      userId: UserId,
+      filterVotes: Option[Seq[VoteKey]],
+      filterQualifications: Option[Seq[QualificationKey]],
+      sort: Option[Sort],
+      limit: Option[Int],
+      skip: Option[Int],
+      requestContext: RequestContext
+    ): Future[ProposalsResultResponse] = {
       val votedProposals: Future[Map[ProposalId, VoteAndQualifications]] =
         for {
           proposalIds <- userHistoryCoordinatorService.retrieveVotedProposals(
@@ -300,8 +340,10 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def getProposalById(proposalId: ProposalId,
-                                 requestContext: RequestContext): Future[Option[IndexedProposal]] = {
+    override def getProposalById(
+      proposalId: ProposalId,
+      requestContext: RequestContext
+    ): Future[Option[IndexedProposal]] = {
       proposalCoordinatorService.viewProposal(proposalId, requestContext)
       elasticsearchProposalAPI.findProposalById(proposalId)
     }
@@ -310,14 +352,18 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       toModerationProposalResponse(proposalCoordinatorService.getProposal(proposalId))
     }
 
-    override def getEventSourcingProposal(proposalId: ProposalId,
-                                          requestContext: RequestContext): Future[Option[Proposal]] = {
+    override def getEventSourcingProposal(
+      proposalId: ProposalId,
+      requestContext: RequestContext
+    ): Future[Option[Proposal]] = {
       proposalCoordinatorService.viewProposal(proposalId, requestContext)
     }
 
-    override def search(maybeUserId: Option[UserId],
-                        query: SearchQuery,
-                        requestContext: RequestContext): Future[ProposalsSearchResult] = {
+    override def search(
+      maybeUserId: Option[UserId],
+      query: SearchQuery,
+      requestContext: RequestContext
+    ): Future[ProposalsSearchResult] = {
       query.filters.foreach(_.content.foreach { content =>
         sessionHistoryCoordinatorService.logHistory(
           LogSessionSearchProposalsEvent(
@@ -334,10 +380,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       elasticsearchProposalAPI.searchProposals(query)
     }
 
-    private def mergeVoteResults(maybeUserId: Option[UserId],
-                                 searchResult: ProposalsSearchResult,
-                                 votes: Map[ProposalId, VoteAndQualifications],
-                                 requestContext: RequestContext): ProposalsResultResponse = {
+    private def mergeVoteResults(
+      maybeUserId: Option[UserId],
+      searchResult: ProposalsSearchResult,
+      votes: Map[ProposalId, VoteAndQualifications],
+      requestContext: RequestContext
+    ): ProposalsResultResponse = {
       val proposals = searchResult.results.map { indexedProposal =>
         val proposalKey =
           SecurityHelper.generateProposalKeyHash(
@@ -356,9 +404,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       ProposalsResultResponse(searchResult.total, proposals)
     }
 
-    override def searchForUser(maybeUserId: Option[UserId],
-                               query: SearchQuery,
-                               requestContext: RequestContext): Future[ProposalsResultSeededResponse] = {
+    override def searchForUser(
+      maybeUserId: Option[UserId],
+      query: SearchQuery,
+      requestContext: RequestContext
+    ): Future[ProposalsResultSeededResponse] = {
 
       search(maybeUserId, query, requestContext).flatMap { searchResult =>
         maybeUserId.map { userId =>
@@ -376,11 +426,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def getTopProposals(maybeUserId: Option[UserId],
-                                 questionId: QuestionId,
-                                 size: Int,
-                                 mode: Option[TopProposalsMode],
-                                 requestContext: RequestContext): Future[ProposalsResultResponse] = {
+    override def getTopProposals(
+      maybeUserId: Option[UserId],
+      questionId: QuestionId,
+      size: Int,
+      mode: Option[TopProposalsMode],
+      requestContext: RequestContext
+    ): Future[ProposalsResultResponse] = {
       val search = mode match {
         case Some(IdeaMode) =>
           elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldNames.ideaId)
@@ -403,12 +455,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def propose(user: User,
-                         requestContext: RequestContext,
-                         createdAt: ZonedDateTime,
-                         content: String,
-                         question: Question,
-                         initialProposal: Boolean): Future[ProposalId] = {
+    override def propose(
+      user: User,
+      requestContext: RequestContext,
+      createdAt: ZonedDateTime,
+      content: String,
+      question: Question,
+      initialProposal: Boolean
+    ): Future[ProposalId] = {
 
       proposalCoordinatorService.propose(
         ProposeCommand(
@@ -452,10 +506,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     }
 
-    private def findIdea(proposalId: ProposalId,
-                         tags: Seq[TagId],
-                         idea: Option[IdeaId],
-                         questionId: QuestionId): Future[Option[IdeaId]] = {
+    private def findIdea(
+      proposalId: ProposalId,
+      tags: Seq[TagId],
+      idea: Option[IdeaId],
+      questionId: QuestionId
+    ): Future[Option[IdeaId]] = {
 
       proposalCoordinatorService.getProposal(proposalId).flatMap {
         case None => Future.successful(None)
@@ -472,16 +528,18 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def update(proposalId: ProposalId,
-                        moderator: UserId,
-                        requestContext: RequestContext,
-                        updatedAt: ZonedDateTime,
-                        newContent: Option[String],
-                        question: Question,
-                        tags: Seq[TagId],
-                        idea: Option[IdeaId],
-                        predictedTags: Option[Seq[TagId]],
-                        predictedTagsModelName: Option[String]): Future[Option[ModerationProposalResponse]] = {
+    override def update(
+      proposalId: ProposalId,
+      moderator: UserId,
+      requestContext: RequestContext,
+      updatedAt: ZonedDateTime,
+      newContent: Option[String],
+      question: Question,
+      tags: Seq[TagId],
+      idea: Option[IdeaId],
+      predictedTags: Option[Seq[TagId]],
+      predictedTagsModelName: Option[String]
+    ): Future[Option[ModerationProposalResponse]] = {
 
       findIdea(proposalId, tags, idea, question.questionId).flatMap { ideaId =>
         (predictedTags, predictedTagsModelName) match {
@@ -560,11 +618,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def updateVotes(proposalId: ProposalId,
-                             moderator: UserId,
-                             requestContext: RequestContext,
-                             updatedAt: ZonedDateTime,
-                             votesVerified: Seq[UpdateVoteRequest]): Future[Option[ModerationProposalResponse]] = {
+    override def updateVotes(
+      proposalId: ProposalId,
+      moderator: UserId,
+      requestContext: RequestContext,
+      updatedAt: ZonedDateTime,
+      votesVerified: Seq[UpdateVoteRequest]
+    ): Future[Option[ModerationProposalResponse]] = {
       toModerationProposalResponse(
         proposalCoordinatorService.updateVotes(
           UpdateProposalVotesCommand(
@@ -615,10 +675,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def refuseProposal(proposalId: ProposalId,
-                                moderator: UserId,
-                                requestContext: RequestContext,
-                                request: RefuseProposalRequest): Future[Option[ModerationProposalResponse]] = {
+    override def refuseProposal(
+      proposalId: ProposalId,
+      moderator: UserId,
+      requestContext: RequestContext,
+      request: RefuseProposalRequest
+    ): Future[Option[ModerationProposalResponse]] = {
       toModerationProposalResponse(
         proposalCoordinatorService.refuse(
           RefuseProposalCommand(
@@ -632,9 +694,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
     }
 
-    override def postponeProposal(proposalId: ProposalId,
-                                  moderator: UserId,
-                                  requestContext: RequestContext): Future[Option[ModerationProposalResponse]] = {
+    override def postponeProposal(
+      proposalId: ProposalId,
+      moderator: UserId,
+      requestContext: RequestContext
+    ): Future[Option[ModerationProposalResponse]] = {
 
       toModerationProposalResponse(
         proposalCoordinatorService.postpone(
@@ -643,9 +707,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
     }
 
-    override def getSimilar(userId: UserId,
-                            proposal: IndexedProposal,
-                            requestContext: RequestContext): Future[Seq[SimilarIdea]] = {
+    override def getSimilar(
+      userId: UserId,
+      proposal: IndexedProposal,
+      requestContext: RequestContext
+    ): Future[Seq[SimilarIdea]] = {
       userHistoryCoordinatorService.logHistory(
         LogGetProposalDuplicatesEvent(
           userId,
@@ -661,9 +727,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    private def retrieveVoteHistory(proposalId: ProposalId,
-                                    maybeUserId: Option[UserId],
-                                    requestContext: RequestContext): Future[Map[ProposalId, VoteAndQualifications]] = {
+    private def retrieveVoteHistory(
+      proposalId: ProposalId,
+      maybeUserId: Option[UserId],
+      requestContext: RequestContext
+    ): Future[Map[ProposalId, VoteAndQualifications]] = {
       val votesHistory = maybeUserId match {
         case Some(userId) =>
           userHistoryCoordinatorService
@@ -697,11 +765,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .increment()
     }
 
-    def resolveVoteTrust(proposalKey: Option[String],
-                         proposalId: ProposalId,
-                         maybeUserSegment: Option[String],
-                         maybeProposalSegment: Option[String],
-                         requestContext: RequestContext): VoteTrust = {
+    def resolveVoteTrust(
+      proposalKey: Option[String],
+      proposalId: ProposalId,
+      maybeUserSegment: Option[String],
+      maybeProposalSegment: Option[String],
+      requestContext: RequestContext
+    ): VoteTrust = {
 
       val newHash =
         SecurityHelper.generateProposalKeyHash(
@@ -741,11 +811,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def voteProposal(proposalId: ProposalId,
-                              maybeUserId: Option[UserId],
-                              requestContext: RequestContext,
-                              voteKey: VoteKey,
-                              proposalKey: Option[String]): Future[Option[Vote]] = {
+    override def voteProposal(
+      proposalId: ProposalId,
+      maybeUserId: Option[UserId],
+      requestContext: RequestContext,
+      voteKey: VoteKey,
+      proposalKey: Option[String]
+    ): Future[Option[Vote]] = {
 
       val result = for {
         _                    <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
@@ -778,11 +850,13 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     }
 
-    override def unvoteProposal(proposalId: ProposalId,
-                                maybeUserId: Option[UserId],
-                                requestContext: RequestContext,
-                                voteKey: VoteKey,
-                                proposalKey: Option[String]): Future[Option[Vote]] = {
+    override def unvoteProposal(
+      proposalId: ProposalId,
+      maybeUserId: Option[UserId],
+      requestContext: RequestContext,
+      voteKey: VoteKey,
+      proposalKey: Option[String]
+    ): Future[Option[Vote]] = {
 
       val result = for {
         _                    <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
@@ -814,12 +888,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def qualifyVote(proposalId: ProposalId,
-                             maybeUserId: Option[UserId],
-                             requestContext: RequestContext,
-                             voteKey: VoteKey,
-                             qualificationKey: QualificationKey,
-                             proposalKey: Option[String]): Future[Option[Qualification]] = {
+    override def qualifyVote(
+      proposalId: ProposalId,
+      maybeUserId: Option[UserId],
+      requestContext: RequestContext,
+      voteKey: VoteKey,
+      qualificationKey: QualificationKey,
+      proposalKey: Option[String]
+    ): Future[Option[Qualification]] = {
 
       val result = for {
         _ <- sessionHistoryCoordinatorService.lockSessionForQualification(
@@ -861,12 +937,14 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     }
 
-    override def unqualifyVote(proposalId: ProposalId,
-                               maybeUserId: Option[UserId],
-                               requestContext: RequestContext,
-                               voteKey: VoteKey,
-                               qualificationKey: QualificationKey,
-                               proposalKey: Option[String]): Future[Option[Qualification]] = {
+    override def unqualifyVote(
+      proposalId: ProposalId,
+      maybeUserId: Option[UserId],
+      requestContext: RequestContext,
+      voteKey: VoteKey,
+      qualificationKey: QualificationKey,
+      proposalKey: Option[String]
+    ): Future[Option[Qualification]] = {
 
       val result = for {
         _ <- sessionHistoryCoordinatorService.lockSessionForQualification(
@@ -908,9 +986,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
     }
 
-    override def lockProposal(proposalId: ProposalId,
-                              moderatorId: UserId,
-                              requestContext: RequestContext): Future[Option[UserId]] = {
+    override def lockProposal(
+      proposalId: ProposalId,
+      moderatorId: UserId,
+      requestContext: RequestContext
+    ): Future[Option[UserId]] = {
       userService.getUser(moderatorId).flatMap {
         case None => Future.successful(None)
         case Some(moderator) =>
@@ -925,10 +1005,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       }
     }
 
-    override def patchProposal(proposalId: ProposalId,
-                               userId: UserId,
-                               requestContext: RequestContext,
-                               changes: PatchProposalRequest): Future[Option[ModerationProposalResponse]] = {
+    override def patchProposal(
+      proposalId: ProposalId,
+      userId: UserId,
+      requestContext: RequestContext,
+      changes: PatchProposalRequest
+    ): Future[Option[ModerationProposalResponse]] = {
       toModerationProposalResponse(
         proposalCoordinatorService
           .patch(
@@ -942,9 +1024,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       )
     }
 
-    override def changeProposalsIdea(proposalIds: Seq[ProposalId],
-                                     moderatorId: UserId,
-                                     ideaId: IdeaId): Future[Seq[Proposal]] = {
+    override def changeProposalsIdea(
+      proposalIds: Seq[ProposalId],
+      moderatorId: UserId,
+      ideaId: IdeaId
+    ): Future[Seq[Proposal]] = {
       Future
         .sequence(proposalIds.map { proposalId =>
           proposalCoordinatorService.patch(
@@ -959,10 +1043,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .map(_.flatten)
     }
 
-    private def getSearchFilters(questionId: QuestionId,
-                                 toEnrich: Boolean,
-                                 minVotesCount: Option[Int],
-                                 minScore: Option[Float]): SearchFilters = {
+    private def getSearchFilters(
+      questionId: QuestionId,
+      toEnrich: Boolean,
+      minVotesCount: Option[Int],
+      minScore: Option[Float]
+    ): SearchFilters = {
       if (toEnrich) {
         SearchFilters(
           question = Some(QuestionSearchFilter(Seq(questionId))),
@@ -1100,10 +1186,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     def needVoteReset(proposal: Proposal): Boolean =
       proposal.status == ProposalStatus.Accepted && proposal.votes.exists(trolledVote)
 
-    def updateCommand(adminUserId: UserId,
-                      requestContext: RequestContext,
-                      proposalId: ProposalId,
-                      votes: Seq[Vote]): UpdateProposalVotesCommand = {
+    def updateCommand(
+      adminUserId: UserId,
+      requestContext: RequestContext,
+      proposalId: ProposalId,
+      votes: Seq[Vote]
+    ): UpdateProposalVotesCommand = {
       UpdateProposalVotesCommand(
         moderator = adminUserId,
         proposalId = proposalId,
@@ -1155,9 +1243,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         }
     }
 
-    override def resolveQuestionFromVoteEvent(resolver: QuestionResolver,
-                                              context: RequestContext,
-                                              proposalId: ProposalId): Future[Option[Question]] = {
+    override def resolveQuestionFromVoteEvent(
+      resolver: QuestionResolver,
+      context: RequestContext,
+      proposalId: ProposalId
+    ): Future[Option[Question]] = {
       resolver
         .extractQuestionWithOperationFromRequestContext(context) match {
         case Some(question) => Future.successful(Some(question))
@@ -1189,10 +1279,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         }
     }
 
-    override def resolveQuestionFromUserProposal(questionResolver: QuestionResolver,
-                                                 requestContext: RequestContext,
-                                                 userId: UserId,
-                                                 eventDate: ZonedDateTime): Future[Option[Question]] = {
+    override def resolveQuestionFromUserProposal(
+      questionResolver: QuestionResolver,
+      requestContext: RequestContext,
+      userId: UserId,
+      eventDate: ZonedDateTime
+    ): Future[Option[Question]] = {
       questionResolver
         .extractQuestionWithOperationFromRequestContext(requestContext) match {
         case Some(question) => Future.successful(Some(question))

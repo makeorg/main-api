@@ -57,7 +57,7 @@ class PersistentTopIdeaCommentServiceIT
     Idea(IdeaId("idea-1"), "test-1", createdAt = None, updatedAt = None),
     Idea(IdeaId("idea-2"), "test-2", createdAt = None, updatedAt = None),
     Idea(IdeaId("idea-3"), "test-3", createdAt = None, updatedAt = None),
-    Idea(IdeaId("idea-4"), "test-4", createdAt = None, updatedAt = None),
+    Idea(IdeaId("idea-4"), "test-4", createdAt = None, updatedAt = None)
   )
 
   private val topIdeas: Seq[TopIdea] = Seq(
@@ -105,7 +105,7 @@ class PersistentTopIdeaCommentServiceIT
       "label",
       TopIdeaScores(0, 0, 0),
       0
-    ),
+    )
   )
 
   val personalities: Seq[User] = Seq(
@@ -113,7 +113,7 @@ class PersistentTopIdeaCommentServiceIT
     TestUtilsIT.user(UserId("personality-1"), email = "personality-1@make.org"),
     TestUtilsIT.user(UserId("personality-2"), email = "personality-2@make.org"),
     TestUtilsIT.user(UserId("personality-3"), email = "personality-3@make.org"),
-    TestUtilsIT.user(UserId("personality-4"), email = "personality-4@make.org"),
+    TestUtilsIT.user(UserId("personality-4"), email = "personality-4@make.org")
   )
 
   def initForTopIdeaComments: Future[Unit] = {

@@ -50,8 +50,7 @@ class SendMessagesTest extends MakeUnitTest {
     }
     scenario("Send an email to yopmail+xxx@make.org and yopmail+yyy@make.org") {
       val messages = SendMessages(
-        SendEmail(
-          recipients = Seq(Recipient(email = "yopmail+xxx@make.org"), Recipient(email = "yopmail+yyy@make.org"))
+        SendEmail(recipients = Seq(Recipient(email = "yopmail+xxx@make.org"), Recipient(email = "yopmail+yyy@make.org"))
         )
       )
       messages.sandboxMode should be(Some(true))

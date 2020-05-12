@@ -162,30 +162,27 @@ class ProposalSearchEngineIT
     votes = Seq(
       IndexedVote
         .empty(VoteKey.Agree)
-        .copy(
-          qualifications = Seq(
-            IndexedQualification.empty(QualificationKey.LikeIt),
-            IndexedQualification.empty(QualificationKey.Doable),
-            IndexedQualification.empty(QualificationKey.PlatitudeAgree)
-          )
+        .copy(qualifications = Seq(
+          IndexedQualification.empty(QualificationKey.LikeIt),
+          IndexedQualification.empty(QualificationKey.Doable),
+          IndexedQualification.empty(QualificationKey.PlatitudeAgree)
+        )
         ),
       IndexedVote
         .empty(key = VoteKey.Disagree)
-        .copy(
-          qualifications = Seq(
-            IndexedQualification.empty(QualificationKey.NoWay),
-            IndexedQualification.empty(QualificationKey.Impossible),
-            IndexedQualification.empty(QualificationKey.PlatitudeDisagree)
-          )
+        .copy(qualifications = Seq(
+          IndexedQualification.empty(QualificationKey.NoWay),
+          IndexedQualification.empty(QualificationKey.Impossible),
+          IndexedQualification.empty(QualificationKey.PlatitudeDisagree)
+        )
         ),
       IndexedVote
         .empty(key = VoteKey.Neutral)
-        .copy(
-          qualifications = Seq(
-            IndexedQualification.empty(QualificationKey.DoNotUnderstand),
-            IndexedQualification.empty(QualificationKey.NoOpinion),
-            IndexedQualification.empty(QualificationKey.DoNotCare)
-          )
+        .copy(qualifications = Seq(
+          IndexedQualification.empty(QualificationKey.DoNotUnderstand),
+          IndexedQualification.empty(QualificationKey.NoOpinion),
+          IndexedQualification.empty(QualificationKey.DoNotCare)
+        )
         )
     ),
     votesCount = 3,
@@ -1559,13 +1556,12 @@ class ProposalSearchEngineIT
       val queryBeforeAfter: SearchQuery =
         SearchQuery(
           Some(
-            SearchFilters(
-              createdAt = Some(
-                CreatedAtSearchFilter(
-                  before = Some(searchDate.plus(3, ChronoUnit.DAYS)),
-                  after = Some(searchDate.minus(1, ChronoUnit.DAYS))
-                )
+            SearchFilters(createdAt = Some(
+              CreatedAtSearchFilter(
+                before = Some(searchDate.plus(3, ChronoUnit.DAYS)),
+                after = Some(searchDate.minus(1, ChronoUnit.DAYS))
               )
+            )
             )
           )
         )
@@ -1691,8 +1687,8 @@ class ProposalSearchEngineIT
 
   feature("search proposals by sequence segment pool") {
     scenario("search for pool new") {
-      val query = SearchQuery(
-        filters = Some(SearchFilters(sequenceSegmentPool = Some(SequencePoolSearchFilter(SequencePool.New))))
+      val query = SearchQuery(filters =
+        Some(SearchFilters(sequenceSegmentPool = Some(SequencePoolSearchFilter(SequencePool.New))))
       )
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
@@ -1705,13 +1701,12 @@ class ProposalSearchEngineIT
 
   feature("search proposals by author is organisation") {
     scenario("search for author organisation") {
-      val query = SearchQuery(
-        filters = Some(
-          SearchFilters(
-            userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation))),
-            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-          )
+      val query = SearchQuery(filters = Some(
+        SearchFilters(
+          userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation))),
+          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
         )
+      )
       )
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
@@ -1787,13 +1782,12 @@ class ProposalSearchEngineIT
 
   feature("search proposals by userType") {
     scenario("search for author organisation and personality") {
-      val query = SearchQuery(
-        filters = Some(
-          SearchFilters(
-            userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation, UserType.UserTypePersonality))),
-            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-          )
+      val query = SearchQuery(filters = Some(
+        SearchFilters(
+          userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation, UserType.UserTypePersonality))),
+          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
         )
+      )
       )
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>

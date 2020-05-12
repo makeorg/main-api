@@ -66,9 +66,11 @@ object WordingResponse {
   implicit val decoder: Decoder[WordingResponse] = deriveDecoder[WordingResponse]
 }
 
-final case class IntroCardResponse(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
-                                   title: Option[String],
-                                   description: Option[String])
+final case class IntroCardResponse(
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+  title: Option[String],
+  description: Option[String]
+)
 object IntroCardResponse extends CirceFormatters {
   implicit val encoder: Encoder[IntroCardResponse] = deriveEncoder[IntroCardResponse]
   implicit val decoder: Decoder[IntroCardResponse] = deriveDecoder[IntroCardResponse]
@@ -82,9 +84,11 @@ object PushProposalCardResponse extends CirceFormatters {
   implicit val decoder: Decoder[PushProposalCardResponse] = deriveDecoder[PushProposalCardResponse]
 }
 
-final case class SignUpCardResponse(@(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
-                                    title: Option[String],
-                                    nextCtaText: Option[String])
+final case class SignUpCardResponse(
+  @(ApiModelProperty @field)(dataType = "boolean", example = "true") enabled: Boolean,
+  title: Option[String],
+  nextCtaText: Option[String]
+)
 object SignUpCardResponse extends CirceFormatters {
   implicit val encoder: Encoder[SignUpCardResponse] = deriveEncoder[SignUpCardResponse]
   implicit val decoder: Decoder[SignUpCardResponse] = deriveDecoder[SignUpCardResponse]
@@ -104,10 +108,12 @@ object FinalCardResponse extends CirceFormatters {
   implicit val decoder: Decoder[FinalCardResponse] = deriveDecoder[FinalCardResponse]
 }
 
-final case class SequenceCardsConfigurationResponse(introCard: IntroCardResponse,
-                                                    pushProposalCard: PushProposalCardResponse,
-                                                    signUpCard: SignUpCardResponse,
-                                                    finalCard: FinalCardResponse)
+final case class SequenceCardsConfigurationResponse(
+  introCard: IntroCardResponse,
+  pushProposalCard: PushProposalCardResponse,
+  signUpCard: SignUpCardResponse,
+  finalCard: FinalCardResponse
+)
 
 object SequenceCardsConfigurationResponse extends CirceFormatters {
   implicit val encoder: Encoder[SequenceCardsConfigurationResponse] =
@@ -209,12 +215,14 @@ case class QuestionDetailsResponse(
 )
 
 object QuestionDetailsResponse extends CirceFormatters {
-  def apply(question: Question,
-            operation: Operation,
-            operationOfQuestion: OperationOfQuestion,
-            partners: Seq[Partner],
-            questionsOfOperation: Seq[QuestionOfOperationResponse],
-            activeFeatures: Seq[String]): QuestionDetailsResponse = QuestionDetailsResponse(
+  def apply(
+    question: Question,
+    operation: Operation,
+    operationOfQuestion: OperationOfQuestion,
+    partners: Seq[Partner],
+    questionsOfOperation: Seq[QuestionOfOperationResponse],
+    activeFeatures: Seq[String]
+  ): QuestionDetailsResponse = QuestionDetailsResponse(
     questionId = question.questionId,
     operationId = operation.operationId,
     wording = WordingResponse(
@@ -273,12 +281,14 @@ object QuestionOfOperationResponse {
   implicit val decoder: Decoder[QuestionOfOperationResponse] = deriveDecoder[QuestionOfOperationResponse]
 }
 
-final case class QuestionThemeResponse(gradientStart: String,
-                                       gradientEnd: String,
-                                       color: String,
-                                       fontColor: String,
-                                       secondaryColor: Option[String],
-                                       secondaryFontColor: Option[String])
+final case class QuestionThemeResponse(
+  gradientStart: String,
+  gradientEnd: String,
+  color: String,
+  fontColor: String,
+  secondaryColor: Option[String],
+  secondaryFontColor: Option[String]
+)
 
 object QuestionThemeResponse {
   def fromQuestionTheme(theme: QuestionTheme): QuestionThemeResponse = {

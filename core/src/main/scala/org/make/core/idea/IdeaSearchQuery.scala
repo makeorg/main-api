@@ -36,12 +36,14 @@ import org.make.core.reference.{Country, Language}
   * @param limit   number of items to fetch
   * @param skip    number of items to skip
   */
-case class IdeaSearchQuery(filters: Option[IdeaSearchFilters] = None,
-                           limit: Option[Int] = None,
-                           skip: Option[Int] = None,
-                           sort: Option[String] = None,
-                           order: Option[String] = None,
-                           language: Option[Language] = None)
+case class IdeaSearchQuery(
+  filters: Option[IdeaSearchFilters] = None,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None,
+  sort: Option[String] = None,
+  order: Option[String] = None,
+  language: Option[Language] = None
+)
 
 /**
   * The class holding the filters
@@ -49,14 +51,18 @@ case class IdeaSearchQuery(filters: Option[IdeaSearchFilters] = None,
   * @param name        Name to search into idea
   * @param questionId  The questionId to filter
   */
-case class IdeaSearchFilters(name: Option[NameSearchFilter] = None,
-                             questionId: Option[QuestionIdSearchFilter] = None,
-                             status: Option[StatusSearchFilter] = None)
+case class IdeaSearchFilters(
+  name: Option[NameSearchFilter] = None,
+  questionId: Option[QuestionIdSearchFilter] = None,
+  status: Option[StatusSearchFilter] = None
+)
 
 object IdeaSearchFilters extends ElasticDsl {
 
-  def parse(name: Option[NameSearchFilter] = None,
-            questionId: Option[QuestionIdSearchFilter] = None): Option[IdeaSearchFilters] = {
+  def parse(
+    name: Option[NameSearchFilter] = None,
+    questionId: Option[QuestionIdSearchFilter] = None
+  ): Option[IdeaSearchFilters] = {
 
     (name, questionId) match {
       case (None, None) => None
@@ -112,30 +118,30 @@ object IdeaSearchFilters extends ElasticDsl {
       NameSearchFilter(text, maybeFuzzy) <- filters.name
     } yield {
       val fieldsBoosts: Map[String, Double] = Map(
-        IdeaElasticsearchFieldNames.name -> 3D,
-        IdeaElasticsearchFieldNames.nameFr -> 2D * languageOmission("fr"),
-        IdeaElasticsearchFieldNames.nameEn -> 2D * languageOmission("en"),
-        IdeaElasticsearchFieldNames.nameIt -> 2D * languageOmission("it"),
-        IdeaElasticsearchFieldNames.nameDe -> 2D * languageOmission("de"),
-        IdeaElasticsearchFieldNames.nameBg -> 2D * languageOmission("bg"),
-        IdeaElasticsearchFieldNames.nameCs -> 2D * languageOmission("cs"),
-        IdeaElasticsearchFieldNames.nameDa -> 2D * languageOmission("da"),
-        IdeaElasticsearchFieldNames.nameNl -> 2D * languageOmission("nl"),
-        IdeaElasticsearchFieldNames.nameFi -> 2D * languageOmission("fi"),
-        IdeaElasticsearchFieldNames.nameEl -> 2D * languageOmission("el"),
-        IdeaElasticsearchFieldNames.nameHu -> 2D * languageOmission("hu"),
-        IdeaElasticsearchFieldNames.nameLv -> 2D * languageOmission("lv"),
-        IdeaElasticsearchFieldNames.nameLt -> 2D * languageOmission("lt"),
-        IdeaElasticsearchFieldNames.namePt -> 2D * languageOmission("pt"),
-        IdeaElasticsearchFieldNames.nameRo -> 2D * languageOmission("ro"),
-        IdeaElasticsearchFieldNames.nameEs -> 2D * languageOmission("es"),
-        IdeaElasticsearchFieldNames.nameSv -> 2D * languageOmission("sv"),
-        IdeaElasticsearchFieldNames.nameHr -> 2D * languageOmission("hr"),
-        IdeaElasticsearchFieldNames.nameEt -> 2D * languageOmission("et"),
-        IdeaElasticsearchFieldNames.nameMt -> 2D * languageOmission("mt"),
-        IdeaElasticsearchFieldNames.nameSk -> 2D * languageOmission("sk"),
-        IdeaElasticsearchFieldNames.nameSl -> 2D * languageOmission("sl"),
-        IdeaElasticsearchFieldNames.nameGeneral -> 1D
+        IdeaElasticsearchFieldNames.name -> 3d,
+        IdeaElasticsearchFieldNames.nameFr -> 2d * languageOmission("fr"),
+        IdeaElasticsearchFieldNames.nameEn -> 2d * languageOmission("en"),
+        IdeaElasticsearchFieldNames.nameIt -> 2d * languageOmission("it"),
+        IdeaElasticsearchFieldNames.nameDe -> 2d * languageOmission("de"),
+        IdeaElasticsearchFieldNames.nameBg -> 2d * languageOmission("bg"),
+        IdeaElasticsearchFieldNames.nameCs -> 2d * languageOmission("cs"),
+        IdeaElasticsearchFieldNames.nameDa -> 2d * languageOmission("da"),
+        IdeaElasticsearchFieldNames.nameNl -> 2d * languageOmission("nl"),
+        IdeaElasticsearchFieldNames.nameFi -> 2d * languageOmission("fi"),
+        IdeaElasticsearchFieldNames.nameEl -> 2d * languageOmission("el"),
+        IdeaElasticsearchFieldNames.nameHu -> 2d * languageOmission("hu"),
+        IdeaElasticsearchFieldNames.nameLv -> 2d * languageOmission("lv"),
+        IdeaElasticsearchFieldNames.nameLt -> 2d * languageOmission("lt"),
+        IdeaElasticsearchFieldNames.namePt -> 2d * languageOmission("pt"),
+        IdeaElasticsearchFieldNames.nameRo -> 2d * languageOmission("ro"),
+        IdeaElasticsearchFieldNames.nameEs -> 2d * languageOmission("es"),
+        IdeaElasticsearchFieldNames.nameSv -> 2d * languageOmission("sv"),
+        IdeaElasticsearchFieldNames.nameHr -> 2d * languageOmission("hr"),
+        IdeaElasticsearchFieldNames.nameEt -> 2d * languageOmission("et"),
+        IdeaElasticsearchFieldNames.nameMt -> 2d * languageOmission("mt"),
+        IdeaElasticsearchFieldNames.nameSk -> 2d * languageOmission("sk"),
+        IdeaElasticsearchFieldNames.nameSl -> 2d * languageOmission("sl"),
+        IdeaElasticsearchFieldNames.nameGeneral -> 1d
       ).filter { case (_, boost) => boost != 0 }
       maybeFuzzy match {
         case Some(fuzzy) =>
@@ -143,11 +149,11 @@ object IdeaSearchFilters extends ElasticDsl {
             .should(
               multiMatchQuery(text)
                 .fields(fieldsBoosts)
-                .boost(2F),
+                .boost(2f),
               multiMatchQuery(text)
                 .fields(fieldsBoosts)
                 .fuzziness(fuzzy)
-                .boost(1F)
+                .boost(1f)
             )
         case None =>
           ElasticApi
@@ -199,10 +205,12 @@ case class QuestionSearchFilter(question: String)
 case class CountrySearchFilter(country: Country)
 case class LanguageSearchFilter(language: Language)
 case class StatusSearchFilter(status: Seq[IdeaStatus])
-case class ContextSearchFilter(operation: Option[OperationId] = None,
-                               source: Option[String] = None,
-                               location: Option[String] = None,
-                               question: Option[String] = None)
+case class ContextSearchFilter(
+  operation: Option[OperationId] = None,
+  source: Option[String] = None,
+  location: Option[String] = None,
+  question: Option[String] = None
+)
 case class SlugSearchFilter(slug: String)
 case class IdeaSearchFilter(ideaId: IdeaId)
 case class Limit(value: Int)

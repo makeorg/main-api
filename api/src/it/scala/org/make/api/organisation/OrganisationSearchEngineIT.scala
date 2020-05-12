@@ -211,8 +211,8 @@ class OrganisationSearchEngineIT
 
     scenario("search by name with accent") {
       val organisationSearchQuery: OrganisationSearchQuery =
-        OrganisationSearchQuery(
-          filters = Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("aines"))))
+        OrganisationSearchQuery(filters =
+          Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("aines"))))
         )
       whenReady(elasticsearchOrganisationAPI.searchOrganisations(organisationSearchQuery), Timeout(5.seconds)) {
         result =>

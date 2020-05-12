@@ -41,14 +41,16 @@ class PersistentIdeaMappingServiceIT
 
   def persistMapping(mapping: IdeaMapping): Future[IdeaMapping] = persistentIdeaMappingService.persist(mapping)
 
-  val findMapping: (Int,
-                    Option[Int],
-                    Option[String],
-                    Option[String],
-                    Option[QuestionId],
-                    Option[TagIdOrNone],
-                    Option[TagIdOrNone],
-                    Option[IdeaId]) => Future[Seq[IdeaMapping]] =
+  val findMapping: (
+    Int,
+    Option[Int],
+    Option[String],
+    Option[String],
+    Option[QuestionId],
+    Option[TagIdOrNone],
+    Option[TagIdOrNone],
+    Option[IdeaId]
+  ) => Future[Seq[IdeaMapping]] =
     persistentIdeaMappingService.find
 
   def waitForCompletion(f: Future[_]): Unit = whenReady(f, Timeout(5.seconds))(_ => ())
@@ -56,7 +58,7 @@ class PersistentIdeaMappingServiceIT
   val stake: TagTypeId = TagTypeId("c0d8d858-8b04-4dd9-add6-fa65443b622b")
 
   def createTag(id: TagId, questionId: QuestionId): Tag = {
-    Tag(id, id.value, TagDisplay.Displayed, stake, 0.0F, None, Some(questionId), Country("FR"), Language("fr"))
+    Tag(id, id.value, TagDisplay.Displayed, stake, 0.0f, None, Some(questionId), Country("FR"), Language("fr"))
   }
 
   def createQuestion(id: QuestionId): Question = Question(

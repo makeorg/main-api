@@ -29,12 +29,14 @@ import scala.jdk.CollectionConverters._
 
 class MakePartitioner extends Partitioner {
 
-  override def partition(topic: String,
-                         key: scala.Any,
-                         keyBytes: Array[Byte],
-                         value: scala.Any,
-                         valueBytes: Array[Byte],
-                         cluster: Cluster): Int = {
+  override def partition(
+    topic: String,
+    key: scala.Any,
+    keyBytes: Array[Byte],
+    value: scala.Any,
+    valueBytes: Array[Byte],
+    cluster: Cluster
+  ): Int = {
 
     val partitions = cluster.availablePartitionsForTopic(topic).asScala.map(_.partition()).sorted
 

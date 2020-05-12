@@ -169,7 +169,7 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
                             fieldValue = customCampaign,
                             fieldName = "customCampaign",
                             message = Some("Invalid customCampaign")
-                        )
+                          )
                       ),
                       event.customId.map(
                         customId =>
@@ -177,7 +177,7 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
                             fieldValue = customId,
                             fieldName = "customId",
                             message = Some("Invalid customId")
-                        )
+                          )
                       ),
                       event.payload.map(
                         payload =>
@@ -185,8 +185,8 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
                             fieldValue = payload,
                             fieldName = "payload",
                             message = Some("Invalid payload")
-                        )
-                      ),
+                          )
+                      )
                     )
                     eventBusService.publish(event)
                   }

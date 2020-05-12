@@ -49,10 +49,12 @@ class TagServiceTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val eventBusService: EventBusService = mock[EventBusService]
 
-  def newTag(label: String,
-             tagId: TagId = idGenerator.nextTagId(),
-             questionId: QuestionId,
-             operationId: Option[OperationId] = None): Tag = Tag(
+  def newTag(
+    label: String,
+    tagId: TagId = idGenerator.nextTagId(),
+    questionId: QuestionId,
+    operationId: Option[OperationId] = None
+  ): Tag = Tag(
     tagId = tagId,
     label = label,
     display = TagDisplay.Inherit,

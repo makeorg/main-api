@@ -48,18 +48,20 @@ trait CreateOperation extends Migration with OperationHelper {
 }
 
 object CreateOperation {
-  final case class QuestionConfiguration(country: Country,
-                                         language: Language,
-                                         slug: String,
-                                         question: String,
-                                         shortTitle: Option[String],
-                                         title: String,
-                                         startDate: Option[ZonedDateTime],
-                                         endDate: Option[ZonedDateTime],
-                                         sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default,
-                                         canPropose: Boolean = true,
-                                         aboutUrl: Option[String],
-                                         consultationImage: Option[String])
+  final case class QuestionConfiguration(
+    country: Country,
+    language: Language,
+    slug: String,
+    question: String,
+    shortTitle: Option[String],
+    title: String,
+    startDate: Option[ZonedDateTime],
+    endDate: Option[ZonedDateTime],
+    sequenceConfiguration: SequenceConfiguration = SequenceConfiguration.default,
+    canPropose: Boolean = true,
+    aboutUrl: Option[String],
+    consultationImage: Option[String]
+  )
 
   final case class SequenceWithCountryLanguage(sequence: SequenceResponse, country: Country, language: Language)
 

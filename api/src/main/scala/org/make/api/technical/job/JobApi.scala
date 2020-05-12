@@ -130,7 +130,7 @@ object JobResponse extends CirceFormatters {
   object Status extends Enum[Status] {
 
     case object Running extends Status
-    case object Stuck   extends Status
+    case object Stuck extends Status
     case object Success extends Status
     case object Failure extends Status
 

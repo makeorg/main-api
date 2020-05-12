@@ -32,24 +32,28 @@ trait ClientServiceComponent {
 
 trait ClientService {
   def getClient(clientId: ClientId): Future[Option[Client]]
-  def createClient(name: String,
-                   allowedGrantTypes: Seq[String],
-                   secret: Option[String],
-                   scope: Option[String],
-                   redirectUri: Option[String],
-                   defaultUserId: Option[UserId],
-                   roles: Seq[CustomRole],
-                   tokenExpirationSeconds: Int): Future[Client]
+  def createClient(
+    name: String,
+    allowedGrantTypes: Seq[String],
+    secret: Option[String],
+    scope: Option[String],
+    redirectUri: Option[String],
+    defaultUserId: Option[UserId],
+    roles: Seq[CustomRole],
+    tokenExpirationSeconds: Int
+  ): Future[Client]
   def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]]
-  def updateClient(clientId: ClientId,
-                   name: String,
-                   allowedGrantTypes: Seq[String],
-                   secret: Option[String],
-                   scope: Option[String],
-                   redirectUri: Option[String],
-                   defaultUserId: Option[UserId],
-                   roles: Seq[CustomRole],
-                   tokenExpirationSeconds: Int): Future[Option[Client]]
+  def updateClient(
+    clientId: ClientId,
+    name: String,
+    allowedGrantTypes: Seq[String],
+    secret: Option[String],
+    scope: Option[String],
+    redirectUri: Option[String],
+    defaultUserId: Option[UserId],
+    roles: Seq[CustomRole],
+    tokenExpirationSeconds: Int
+  ): Future[Option[Client]]
   def count(name: Option[String]): Future[Int]
 }
 
@@ -64,14 +68,16 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
       persistentClientService.get(clientId)
     }
 
-    override def createClient(name: String,
-                              allowedGrantTypes: Seq[String],
-                              secret: Option[String],
-                              scope: Option[String],
-                              redirectUri: Option[String],
-                              defaultUserId: Option[UserId],
-                              roles: Seq[CustomRole],
-                              tokenExpirationSeconds: Int): Future[Client] = {
+    override def createClient(
+      name: String,
+      allowedGrantTypes: Seq[String],
+      secret: Option[String],
+      scope: Option[String],
+      redirectUri: Option[String],
+      defaultUserId: Option[UserId],
+      roles: Seq[CustomRole],
+      tokenExpirationSeconds: Int
+    ): Future[Client] = {
       persistentClientService.persist(
         Client(
           clientId = idGenerator.nextClientId(),
@@ -91,15 +97,17 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
       persistentClientService.search(start = start, end = end, name = name)
     }
 
-    override def updateClient(clientId: ClientId,
-                              name: String,
-                              allowedGrantTypes: Seq[String],
-                              secret: Option[String],
-                              scope: Option[String],
-                              redirectUri: Option[String],
-                              defaultUserId: Option[UserId],
-                              roles: Seq[CustomRole],
-                              tokenExpirationSeconds: Int): Future[Option[Client]] = {
+    override def updateClient(
+      clientId: ClientId,
+      name: String,
+      allowedGrantTypes: Seq[String],
+      secret: Option[String],
+      scope: Option[String],
+      redirectUri: Option[String],
+      defaultUserId: Option[UserId],
+      roles: Seq[CustomRole],
+      tokenExpirationSeconds: Int
+    ): Future[Option[Client]] = {
       getClient(clientId).flatMap {
         case Some(client) =>
           persistentClientService

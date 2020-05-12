@@ -72,9 +72,11 @@ object ThreadPoolMonitoringActor {
   case object Monitor
   case class MonitorThreadPool(pool: MonitorableExecutionContext, name: String)
 
-  case class ExecutorWithGauges(executor: MonitorableExecutionContext,
-                                activeTasks: Gauge,
-                                currentTasks: Gauge,
-                                maxTasks: Gauge,
-                                waitingTasks: Gauge)
+  case class ExecutorWithGauges(
+    executor: MonitorableExecutionContext,
+    activeTasks: Gauge,
+    currentTasks: Gauge,
+    maxTasks: Gauge,
+    waitingTasks: Gauge
+  )
 }

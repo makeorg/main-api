@@ -49,7 +49,8 @@ trait AvroSerializers {
   }
 
   implicit object ZonedDateTimeEncoder extends Encoder[ZonedDateTime] {
-    override def encode(value: ZonedDateTime, schema: Schema, fieldMapper: FieldMapper): String = DateHelper.format(value)
+    override def encode(value: ZonedDateTime, schema: Schema, fieldMapper: FieldMapper): String =
+      DateHelper.format(value)
   }
 
   implicit object ZonedDateTimeDecoder extends Decoder[ZonedDateTime] {

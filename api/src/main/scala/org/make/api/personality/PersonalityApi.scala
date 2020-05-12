@@ -256,7 +256,7 @@ trait DefaultPersonalityApiComponent
                           comment2 = request.comment2,
                           comment3 = request.comment3,
                           vote = request.vote,
-                          qualification = request.qualification,
+                          qualification = request.qualification
                         )
                       ) { comment =>
                         complete(StatusCodes.Created -> TopIdeaCommentResponse(comment))
@@ -295,13 +295,15 @@ trait DefaultPersonalityApiComponent
   }
 }
 
-final case class PersonalityProfileResponse(firstName: Option[String],
-                                            lastName: Option[String],
-                                            avatarUrl: Option[String],
-                                            description: Option[String],
-                                            optInNewsletter: Option[Boolean],
-                                            website: Option[String],
-                                            politicalParty: Option[String])
+final case class PersonalityProfileResponse(
+  firstName: Option[String],
+  lastName: Option[String],
+  avatarUrl: Option[String],
+  description: Option[String],
+  optInNewsletter: Option[Boolean],
+  website: Option[String],
+  politicalParty: Option[String]
+)
 
 object PersonalityProfileResponse {
   implicit val encoder: Encoder[PersonalityProfileResponse] = deriveEncoder[PersonalityProfileResponse]
@@ -417,9 +419,11 @@ object TopIdeaCommentResponse {
 }
 
 @ApiModel
-final case class PersonalityOpinionResponse(question: SimpleQuestionResponse,
-                                            topIdea: QuestionTopIdeaWithAvatarResponse,
-                                            comment: Option[TopIdeaCommentResponse])
+final case class PersonalityOpinionResponse(
+  question: SimpleQuestionResponse,
+  topIdea: QuestionTopIdeaWithAvatarResponse,
+  comment: Option[TopIdeaCommentResponse]
+)
 
 object PersonalityOpinionResponse {
   implicit val decoder: Decoder[PersonalityOpinionResponse] = deriveDecoder[PersonalityOpinionResponse]

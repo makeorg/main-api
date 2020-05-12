@@ -51,9 +51,11 @@ import org.scalacheck.Gen.Parameters
 import org.scalacheck.rng.Seed
 
 trait FixturesService {
-  def generate(maybeOperationId: Option[OperationId],
-               maybeQuestionId: Option[QuestionId],
-               proposalFillMode: Option[FillMode]): Future[Map[String, Int]]
+  def generate(
+    maybeOperationId: Option[OperationId],
+    maybeQuestionId: Option[QuestionId],
+    proposalFillMode: Option[FillMode]
+  ): Future[Map[String, Int]]
 }
 
 trait FixturesServiceComponent {
@@ -112,11 +114,13 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         .runWith(Sink.seq)
     }
 
-    def generateProposals(question: Question,
-                          mode: Option[FillMode],
-                          users: Seq[User],
-                          tagsIds: Seq[TagId],
-                          adminUserId: UserId): Future[Seq[ProposalId]] = {
+    def generateProposals(
+      question: Question,
+      mode: Option[FillMode],
+      users: Seq[User],
+      tagsIds: Seq[TagId],
+      adminUserId: UserId
+    ): Future[Seq[ProposalId]] = {
       val parameters: Parameters = mode match {
         case None                => Parameters.default.withSize(0)
         case Some(FillMode.Tiny) => Parameters.default.withSize(20)
@@ -189,10 +193,10 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
                       count = Some(q.count),
                       countVerified = Some(q.countVerified),
                       countSequence = Some(q.countSequence),
-                      countSegment = Some(q.countSegment),
-                  )
+                      countSegment = Some(q.countSegment)
+                    )
                 )
-            )
+              )
           )
           proposal.status match {
             case ProposalStatus.Accepted =>
@@ -211,9 +215,11 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         .runWith(Sink.seq)
     }
 
-    override def generate(maybeOperationId: Option[OperationId],
-                          maybeQuestionId: Option[QuestionId],
-                          proposalFillMode: Option[FillMode]): Future[Map[String, Int]] = {
+    override def generate(
+      maybeOperationId: Option[OperationId],
+      maybeQuestionId: Option[QuestionId],
+      proposalFillMode: Option[FillMode]
+    ): Future[Map[String, Int]] = {
       val futureAdmin: Future[User] = userService.getUserByEmail("admin@make.org").flatMap {
         case Some(user) => Future.successful(user)
         case None       => Future.failed(new IllegalStateException())

@@ -21,23 +21,25 @@ package org.make.api.user.social.models.google
 
 import io.circe.Decoder
 
-final case class UserInfo(azp: Option[String],
-                          aud: Option[String],
-                          sub: Option[String],
-                          hd: Option[String],
-                          email: Option[String],
-                          emailVerified: String,
-                          atHash: Option[String],
-                          iss: Option[String],
-                          iat: Option[String],
-                          exp: Option[String],
-                          name: Option[String],
-                          picture: Option[String],
-                          givenName: Option[String],
-                          familyName: Option[String],
-                          local: Option[String],
-                          alg: Option[String],
-                          kid: Option[String]) {
+final case class UserInfo(
+  azp: Option[String],
+  aud: Option[String],
+  sub: Option[String],
+  hd: Option[String],
+  email: Option[String],
+  emailVerified: String,
+  atHash: Option[String],
+  iss: Option[String],
+  iat: Option[String],
+  exp: Option[String],
+  name: Option[String],
+  picture: Option[String],
+  givenName: Option[String],
+  familyName: Option[String],
+  local: Option[String],
+  alg: Option[String],
+  kid: Option[String]
+) {
   def pictureUrl: Option[String] = {
     val end = "/photo.jpg"
     picture.map {

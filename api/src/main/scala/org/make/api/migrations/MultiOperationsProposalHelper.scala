@@ -73,8 +73,8 @@ trait MultiOperationsProposalHelper extends Migration with ProposalHelper {
                   sequentially(readProposalFile(dataFile)) { line =>
                     api.elasticsearchProposalAPI
                       .countProposals(
-                        SearchQuery(
-                          filters = Some(SearchFilters(slug = Some(SlugSearchFilter(SlugHelper(line.content)))))
+                        SearchQuery(filters =
+                          Some(SearchFilters(slug = Some(SlugSearchFilter(SlugHelper(line.content)))))
                         )
                       )
                       .flatMap {

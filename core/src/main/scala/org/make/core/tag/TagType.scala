@@ -79,11 +79,13 @@ object TagTypeDisplay extends StrictLogging {
   case object Hidden extends TagTypeDisplay { override val shortName: String = "HIDDEN" }
 }
 
-final case class TagType(tagTypeId: TagTypeId,
-                         label: String,
-                         display: TagTypeDisplay,
-                         weight: Int = 0,
-                         requiredForEnrichment: Boolean)
+final case class TagType(
+  tagTypeId: TagTypeId,
+  label: String,
+  display: TagTypeDisplay,
+  weight: Int = 0,
+  requiredForEnrichment: Boolean
+)
 
 object TagType {
   implicit val encoder: Encoder[TagType] = deriveEncoder[TagType]

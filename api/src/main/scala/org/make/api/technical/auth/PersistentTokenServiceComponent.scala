@@ -53,15 +53,16 @@ trait PersistentTokenService {
 trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceComponent {
   self: MakeDBExecutionContextComponent with PersistentUserServiceComponent with PersistentClientServiceComponent =>
 
-  case class PersistentToken(accessToken: String,
-                             refreshToken: Option[String],
-                             scope: Option[String],
-                             createdAt: Option[ZonedDateTime],
-                             updatedAt: Option[ZonedDateTime],
-                             expiresIn: Int,
-                             makeUserUuid: PersistentUser,
-                             clientUuid: PersistentClient)
-      extends StrictLogging {
+  case class PersistentToken(
+    accessToken: String,
+    refreshToken: Option[String],
+    scope: Option[String],
+    createdAt: Option[ZonedDateTime],
+    updatedAt: Option[ZonedDateTime],
+    expiresIn: Int,
+    makeUserUuid: PersistentUser,
+    clientUuid: PersistentClient
+  ) extends StrictLogging {
     def toToken: Token = {
       Token(
         accessToken = accessToken,

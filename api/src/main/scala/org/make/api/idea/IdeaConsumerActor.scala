@@ -38,10 +38,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IdeaConsumerActor(ideaService: IdeaService,
-                        override val elasticsearchConfiguration: ElasticsearchConfiguration,
-                        override val elasticsearchClient: ElasticsearchClient)
-    extends KafkaConsumerActor[IdeaEventWrapper]
+class IdeaConsumerActor(
+  ideaService: IdeaService,
+  override val elasticsearchConfiguration: ElasticsearchConfiguration,
+  override val elasticsearchClient: ElasticsearchClient
+) extends KafkaConsumerActor[IdeaEventWrapper]
     with KafkaConfigurationExtension
     with DefaultIdeaSearchEngineComponent
     with ElasticsearchConfigurationComponent
@@ -85,9 +86,11 @@ class IdeaConsumerActor(ideaService: IdeaService,
 }
 
 object IdeaConsumerActor {
-  def props(ideaService: IdeaService,
-            elasticsearchConfiguration: ElasticsearchConfiguration,
-            elasticsearchClient: ElasticsearchClient): Props =
+  def props(
+    ideaService: IdeaService,
+    elasticsearchConfiguration: ElasticsearchConfiguration,
+    elasticsearchClient: ElasticsearchClient
+  ): Props =
     Props(new IdeaConsumerActor(ideaService, elasticsearchConfiguration, elasticsearchClient))
   val name: String = "idea-consumer"
 }

@@ -231,17 +231,19 @@ trait ProposalIndexationStream
     maybeResult.value
   }
 
-  private def createIndexedProposal(proposal: Proposal,
-                                    segment: Option[String],
-                                    sequenceConfiguration: SequenceConfiguration,
-                                    user: User,
-                                    organisationInfos: Seq[User],
-                                    tags: Seq[IndexedTag],
-                                    needsEnrichment: Boolean,
-                                    selectedStakeTag: Option[IndexedTag],
-                                    question: Question,
-                                    operationOfQuestion: OperationOfQuestion,
-                                    operation: SimpleOperation): IndexedProposal = {
+  private def createIndexedProposal(
+    proposal: Proposal,
+    segment: Option[String],
+    sequenceConfiguration: SequenceConfiguration,
+    user: User,
+    organisationInfos: Seq[User],
+    tags: Seq[IndexedTag],
+    needsEnrichment: Boolean,
+    selectedStakeTag: Option[IndexedTag],
+    question: Question,
+    operationOfQuestion: OperationOfQuestion,
+    operation: SimpleOperation
+  ): IndexedProposal = {
 
     val isBeforeContextSourceFeature: Boolean =
       proposal.createdAt.exists(_.isBefore(ZonedDateTime.parse("2018-09-01T00:00:00Z")))
@@ -344,7 +346,7 @@ trait ProposalIndexationStream
               organisation.userId,
               organisation.organisationName,
               organisation.organisationName.map(name => SlugHelper(name))
-          )
+            )
         ),
       country = proposal.country.getOrElse(Country("FR")),
       language = proposal.language.getOrElse(Language("fr")),
@@ -362,7 +364,7 @@ trait ProposalIndexationStream
             startDate = operationOfQuestion.startDate,
             endDate = operationOfQuestion.endDate,
             isOpen = operationOfQuestion.isOpenAt(DateHelper.now())
-        )
+          )
       ),
       sequencePool = ProposalScorerHelper
         .sequencePool(sequenceConfiguration, proposal.status, ScoreCounts.fromSequenceVotes(proposal.votes)),

@@ -240,8 +240,7 @@ class ViewApiTest
             ArgumentMatchers.eq(
               OrganisationSearchQuery(
                 filters = Some(
-                  OrganisationSearchFilters(
-                    organisationName = Some(OrganisationNameSearchFilter(text = "lownoresults"))
+                  OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter(text = "lownoresults"))
                   )
                 ),
                 limit = None

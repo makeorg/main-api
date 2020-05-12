@@ -35,10 +35,12 @@ trait PersistentCrmUserServiceComponent {
 trait PersistentCrmUserService {
 
   def persist(users: Seq[PersistentCrmUser]): Future[Seq[PersistentCrmUser]]
-  def list(unsubscribed: Option[Boolean],
-           hardBounced: Boolean,
-           page: Int,
-           numberPerPage: Int): Future[Seq[PersistentCrmUser]]
+  def list(
+    unsubscribed: Option[Boolean],
+    hardBounced: Boolean,
+    page: Int,
+    numberPerPage: Int
+  ): Future[Seq[PersistentCrmUser]]
   def truncateCrmUsers(): Future[Unit]
 
 }
@@ -92,10 +94,12 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
       }).map(_ => users)
     }
 
-    override def list(maybeUnsubscribed: Option[Boolean],
-                      hardBounce: Boolean,
-                      offset: Int,
-                      numberPerPage: Int): Future[Seq[PersistentCrmUser]] = {
+    override def list(
+      maybeUnsubscribed: Option[Boolean],
+      hardBounce: Boolean,
+      offset: Int,
+      numberPerPage: Int
+    ): Future[Seq[PersistentCrmUser]] = {
       implicit val cxt: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -228,33 +232,35 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
   }
 }
 
-case class PersistentCrmUser(userId: String,
-                             email: String,
-                             fullName: String,
-                             firstname: String,
-                             zipcode: Option[String],
-                             dateOfBirth: Option[String],
-                             emailValidationStatus: Boolean,
-                             emailHardbounceStatus: Boolean,
-                             unsubscribeStatus: Boolean,
-                             accountCreationDate: Option[String],
-                             accountCreationSource: Option[String],
-                             accountCreationOrigin: Option[String],
-                             accountCreationOperation: Option[String],
-                             accountCreationCountry: Option[String],
-                             countriesActivity: Option[String],
-                             lastCountryActivity: Option[String],
-                             lastLanguageActivity: Option[String],
-                             totalNumberProposals: Option[Int],
-                             totalNumberVotes: Option[Int],
-                             firstContributionDate: Option[String],
-                             lastContributionDate: Option[String],
-                             operationActivity: Option[String],
-                             sourceActivity: Option[String],
-                             daysOfActivity: Option[Int],
-                             daysOfActivity30d: Option[Int],
-                             userType: Option[String],
-                             accountType: Option[String]) {
+case class PersistentCrmUser(
+  userId: String,
+  email: String,
+  fullName: String,
+  firstname: String,
+  zipcode: Option[String],
+  dateOfBirth: Option[String],
+  emailValidationStatus: Boolean,
+  emailHardbounceStatus: Boolean,
+  unsubscribeStatus: Boolean,
+  accountCreationDate: Option[String],
+  accountCreationSource: Option[String],
+  accountCreationOrigin: Option[String],
+  accountCreationOperation: Option[String],
+  accountCreationCountry: Option[String],
+  countriesActivity: Option[String],
+  lastCountryActivity: Option[String],
+  lastLanguageActivity: Option[String],
+  totalNumberProposals: Option[Int],
+  totalNumberVotes: Option[Int],
+  firstContributionDate: Option[String],
+  lastContributionDate: Option[String],
+  operationActivity: Option[String],
+  sourceActivity: Option[String],
+  daysOfActivity: Option[Int],
+  daysOfActivity30d: Option[Int],
+  userType: Option[String],
+  accountType: Option[String]
+) {
 
   def toContactProperties(updatedAt: Option[String]): ContactProperties = {
     ContactProperties(

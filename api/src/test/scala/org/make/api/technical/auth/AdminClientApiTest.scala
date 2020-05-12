@@ -205,7 +205,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
         ArgumentMatchers.any[Option[String]],
         ArgumentMatchers.any[Option[UserId]],
         ArgumentMatchers.any[Seq[CustomRole]],
-        ArgumentMatchers.any[Int],
+        ArgumentMatchers.any[Int]
       )
     ).thenReturn(Future.successful(None))
 

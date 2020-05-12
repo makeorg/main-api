@@ -252,12 +252,14 @@ trait DefaultModerationOperationApiComponent
                 "operationKind".as[immutable.Seq[OperationKind]].?
               )
             ) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               slug: Option[String],
-               operationKinds: Option[Seq[OperationKind]]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                sort: Option[String],
+                order: Option[String],
+                slug: Option[String],
+                operationKinds: Option[Seq[OperationKind]]
+              ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireModerationRole(auth.user) {
                     order.foreach { orderValue =>

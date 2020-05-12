@@ -83,26 +83,28 @@ trait TestUtilsIT {
         Qualification(key = NoOpinion, count = 0, countVerified = 0, countSequence = 0, countSegment = 0),
         Qualification(key = DoNotCare, count = 0, countVerified = 0, countSequence = 0, countSegment = 0)
       )
-    ),
+    )
   )
 
-  def proposal(id: ProposalId,
-               votes: Seq[Vote] = defaultVotes,
-               author: UserId = UserId("author"),
-               tags: Seq[TagId] = Seq.empty,
-               organisations: Seq[OrganisationInfo] = Seq.empty,
-               questionId: QuestionId = QuestionId("question"),
-               operationId: Option[OperationId] = Some(OperationId("operation")),
-               requestContext: RequestContext = RequestContext.empty,
-               content: String = "Il faut tester l'indexation des propositions",
-               country: Country = Country("FR"),
-               language: Language = Language("fr"),
-               status: ProposalStatus = Accepted,
-               idea: Option[IdeaId] = None,
-               events: List[ProposalAction] = Nil,
-               theme: Option[ThemeId] = None,
-               createdAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T10:10:10.000Z")),
-               updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z"))): Proposal = {
+  def proposal(
+    id: ProposalId,
+    votes: Seq[Vote] = defaultVotes,
+    author: UserId = UserId("author"),
+    tags: Seq[TagId] = Seq.empty,
+    organisations: Seq[OrganisationInfo] = Seq.empty,
+    questionId: QuestionId = QuestionId("question"),
+    operationId: Option[OperationId] = Some(OperationId("operation")),
+    requestContext: RequestContext = RequestContext.empty,
+    content: String = "Il faut tester l'indexation des propositions",
+    country: Country = Country("FR"),
+    language: Language = Language("fr"),
+    status: ProposalStatus = Accepted,
+    idea: Option[IdeaId] = None,
+    events: List[ProposalAction] = Nil,
+    theme: Option[ThemeId] = None,
+    createdAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T10:10:10.000Z")),
+    updatedAt: Option[ZonedDateTime] = Some(ZonedDateTime.parse("2019-10-10T15:10:10.000Z"))
+  ): Proposal = {
     Proposal(
       proposalId = id,
       votes = votes,
@@ -128,30 +130,32 @@ trait TestUtilsIT {
     )
   }
 
-  def user(id: UserId,
-           anonymousParticipation: Boolean = false,
-           email: String = "test@make.org",
-           firstName: Option[String] = Some("Joe"),
-           lastName: Option[String] = Some("Chip"),
-           lastIp: Option[String] = None,
-           hashedPassword: Option[String] = None,
-           enabled: Boolean = true,
-           emailVerified: Boolean = true,
-           lastConnection: ZonedDateTime = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
-           verificationToken: Option[String] = None,
-           verificationTokenExpiresAt: Option[ZonedDateTime] = None,
-           resetToken: Option[String] = None,
-           resetTokenExpiresAt: Option[ZonedDateTime] = None,
-           roles: Seq[Role] = Seq(RoleCitizen),
-           country: Country = Country("FR"),
-           language: Language = Language("fr"),
-           profile: Option[Profile] = None,
-           createdAt: Option[ZonedDateTime] = Some(DateHelper.now()),
-           updatedAt: Option[ZonedDateTime] = None,
-           lastMailingError: Option[MailingErrorLog] = None,
-           organisationName: Option[String] = None,
-           availableQuestions: Seq[QuestionId] = Seq.empty,
-           userType: UserType = UserType.UserTypeUser): User = {
+  def user(
+    id: UserId,
+    anonymousParticipation: Boolean = false,
+    email: String = "test@make.org",
+    firstName: Option[String] = Some("Joe"),
+    lastName: Option[String] = Some("Chip"),
+    lastIp: Option[String] = None,
+    hashedPassword: Option[String] = None,
+    enabled: Boolean = true,
+    emailVerified: Boolean = true,
+    lastConnection: ZonedDateTime = ZonedDateTime.parse("1992-08-23T02:02:02.020Z"),
+    verificationToken: Option[String] = None,
+    verificationTokenExpiresAt: Option[ZonedDateTime] = None,
+    resetToken: Option[String] = None,
+    resetTokenExpiresAt: Option[ZonedDateTime] = None,
+    roles: Seq[Role] = Seq(RoleCitizen),
+    country: Country = Country("FR"),
+    language: Language = Language("fr"),
+    profile: Option[Profile] = None,
+    createdAt: Option[ZonedDateTime] = Some(DateHelper.now()),
+    updatedAt: Option[ZonedDateTime] = None,
+    lastMailingError: Option[MailingErrorLog] = None,
+    organisationName: Option[String] = None,
+    availableQuestions: Seq[QuestionId] = Seq.empty,
+    userType: UserType = UserType.UserTypeUser
+  ): User = {
     User(
       userId = id,
       email = email,

@@ -411,7 +411,7 @@ class PersistentOperationServiceIT
           end = Some(2),
           sort = Some("uuid"),
           order = Some("DESC"),
-          operationKinds = Some(Seq(OperationKind.PublicConsultation)),
+          operationKinds = Some(Seq(OperationKind.PublicConsultation))
         )
       } yield results
 

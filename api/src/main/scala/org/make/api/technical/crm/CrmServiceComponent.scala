@@ -69,12 +69,14 @@ trait CrmService {
   def createCrmUsers(): Future[Unit]
   def anonymize(): Future[Unit]
   def synchronizeContactsWithCrm(): Future[JobAcceptance]
-  def getUsersMailFromList(listId: Option[String] = None,
-                           sort: Option[String] = None,
-                           order: Option[String] = None,
-                           countOnly: Option[Boolean] = None,
-                           limit: Int,
-                           offset: Int = 0): Future[GetUsersMail]
+  def getUsersMailFromList(
+    listId: Option[String] = None,
+    sort: Option[String] = None,
+    order: Option[String] = None,
+    countOnly: Option[Boolean] = None,
+    limit: Int,
+    offset: Int = 0
+  ): Future[GetUsersMail]
   def deleteAllContactsBefore(maxUpdatedAt: ZonedDateTime, deleteEmptyProperties: Boolean): Future[Int]
 }
 
@@ -144,12 +146,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       result
     }
 
-    override def getUsersMailFromList(listId: Option[String] = None,
-                                      sort: Option[String] = None,
-                                      order: Option[String] = None,
-                                      countOnly: Option[Boolean] = None,
-                                      limit: Int,
-                                      offset: Int = 0): Future[GetUsersMail] = {
+    override def getUsersMailFromList(
+      listId: Option[String] = None,
+      sort: Option[String] = None,
+      order: Option[String] = None,
+      countOnly: Option[Boolean] = None,
+      limit: Int,
+      offset: Int = 0
+    ): Future[GetUsersMail] = {
       crmClient
         .getUsersInformationMailFromList(listId, sort, order, countOnly, limit, offset)
         .map { response =>
@@ -229,27 +233,27 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         val crmSynchronization =
           for {
             _ <- createCrmUsers()
-            _ <- report(49D)
+            _ <- report(49d)
             _ <- initializeDirectories()
-            _ <- report(50D)
+            _ <- report(50d)
             _ <- synchronizeList(
               formattedDate = synchronizationTime,
               list = CrmList.OptIn,
               csvDirectory = CrmList.OptIn.targetDirectory(baseCsvDirectory)
             )
-            _ <- report(65D)
+            _ <- report(65d)
             _ <- synchronizeList(
               formattedDate = synchronizationTime,
               list = CrmList.OptOut,
               csvDirectory = CrmList.OptOut.targetDirectory(baseCsvDirectory)
             )
-            _ <- report(80D)
+            _ <- report(80d)
             _ <- synchronizeList(
               formattedDate = synchronizationTime,
               list = CrmList.HardBounce,
               csvDirectory = CrmList.HardBounce.targetDirectory(baseCsvDirectory)
             )
-            _ <- report(95D)
+            _ <- report(95d)
             _ <- anonymize()
           } yield {}
 
@@ -359,9 +363,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .runWith(Sink.ignore)
     }
 
-    private def verifyJobCompletion(responseHardBounce: Long,
-                                    responseOptIn: Long,
-                                    responseUnsubscribe: Long): Future[Unit] = {
+    private def verifyJobCompletion(
+      responseHardBounce: Long,
+      responseOptIn: Long,
+      responseUnsubscribe: Long
+    ): Future[Unit] = {
       val jobIds = Seq(responseHardBounce, responseOptIn, responseUnsubscribe)
       val promise = Promise[Unit]()
       actorSystem.actorOf(CrmSynchroCsvMonitor.props(crmClient, jobIds, promise, mailJetConfiguration.tickInterval))
@@ -433,15 +439,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           .throttle(200, 1.hour)
           .mapAsync(1) { grouppedEmails =>
             crmClient
-              .manageContactList(
-                manageContactList = ManageManyContacts(
-                  contacts = grouppedEmails,
-                  contactList = Seq(
-                    ContactList(mailJetConfiguration.hardBounceListId, Remove),
-                    ContactList(mailJetConfiguration.unsubscribeListId, Remove),
-                    ContactList(mailJetConfiguration.optInListId, Remove)
-                  )
+              .manageContactList(manageContactList = ManageManyContacts(
+                contacts = grouppedEmails,
+                contactList = Seq(
+                  ContactList(mailJetConfiguration.hardBounceListId, Remove),
+                  ContactList(mailJetConfiguration.unsubscribeListId, Remove),
+                  ContactList(mailJetConfiguration.optInListId, Remove)
                 )
+              )
               )
               .map(Right(_))
               .recoverWith { case e => Future.successful(Left(e)) }
@@ -552,9 +557,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         updatedAt = userProperty.updatedAt.map(_.format(dateFormatter))
       )
     }
-    private def accumulateEvent(accumulator: UserProperties,
-                                envelope: EventEnvelope,
-                                questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateEvent(
+      accumulator: UserProperties,
+      envelope: EventEnvelope,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       envelope.event match {
         case event: LogRegisterCitizenEvent =>
           Future.successful(accumulateLogRegisterCitizenEvent(accumulator, event, questionResolver))
@@ -572,9 +579,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def accumulateLogUserUnqualificationEvent(accumulator: UserProperties,
-                                                      event: LogUserUnqualificationEvent,
-                                                      questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserUnqualificationEvent(
+      accumulator: UserProperties,
+      event: LogUserUnqualificationEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureQuestion: Future[Option[Question]] =
         proposalService.resolveQuestionFromVoteEvent(
           questionResolver,
@@ -600,9 +609,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def accumulateLogUserQualificationEvent(accumulator: UserProperties,
-                                                    event: LogUserQualificationEvent,
-                                                    questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserQualificationEvent(
+      accumulator: UserProperties,
+      event: LogUserQualificationEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
 
       val futureQuestion: Future[Option[Question]] =
         proposalService.resolveQuestionFromVoteEvent(
@@ -628,9 +639,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         )
       }
     }
-    private def accumulateLogUserUnvoteEvent(accumulator: UserProperties,
-                                             event: LogUserUnvoteEvent,
-                                             questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserUnvoteEvent(
+      accumulator: UserProperties,
+      event: LogUserUnvoteEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureQuestion: Future[Option[Question]] =
         proposalService.resolveQuestionFromVoteEvent(
           questionResolver,
@@ -656,9 +669,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         )
       }
     }
-    private def accumulateLogUserVoteEvent(accumulator: UserProperties,
-                                           event: LogUserVoteEvent,
-                                           questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserVoteEvent(
+      accumulator: UserProperties,
+      event: LogUserVoteEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureQuestion: Future[Option[Question]] =
         proposalService.resolveQuestionFromVoteEvent(
           questionResolver,
@@ -686,9 +701,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def accumulateLogUserProposalEvent(accumulator: UserProperties,
-                                               event: LogUserProposalEvent,
-                                               questionResolver: QuestionResolver): Future[UserProperties] = {
+    private def accumulateLogUserProposalEvent(
+      accumulator: UserProperties,
+      event: LogUserProposalEvent,
+      questionResolver: QuestionResolver
+    ): Future[UserProperties] = {
       val futureMaybeQuestion: Future[Option[Question]] =
         proposalService.resolveQuestionFromUserProposal(
           questionResolver,
@@ -717,9 +734,11 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
-    private def accumulateLogRegisterCitizenEvent(accumulator: UserProperties,
-                                                  event: LogRegisterCitizenEvent,
-                                                  questionResolver: QuestionResolver): UserProperties = {
+    private def accumulateLogRegisterCitizenEvent(
+      accumulator: UserProperties,
+      event: LogRegisterCitizenEvent,
+      questionResolver: QuestionResolver
+    ): UserProperties = {
 
       val maybeQuestion = questionResolver
         .extractQuestionWithOperationFromRequestContext(event.requestContext)
@@ -746,32 +765,34 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
   }
 }
 
-final case class UserProperties(userId: UserId,
-                                firstname: String,
-                                zipCode: Option[String],
-                                dateOfBirth: Option[LocalDate],
-                                emailValidationStatus: Boolean,
-                                emailHardBounceStatus: Boolean,
-                                unsubscribeStatus: Boolean,
-                                accountCreationDate: Option[ZonedDateTime],
-                                userB2B: Boolean,
-                                accountCreationSource: Option[String] = None,
-                                accountCreationOrigin: Option[String] = None,
-                                accountCreationSlug: Option[String] = None,
-                                accountCreationCountry: Option[String] = None,
-                                countriesActivity: Seq[String] = Seq.empty,
-                                lastCountryActivity: Option[String] = None,
-                                lastLanguageActivity: Option[String] = None,
-                                totalNumberProposals: Option[Int] = None,
-                                totalNumbervotes: Option[Int] = None,
-                                firstContributionDate: Option[ZonedDateTime] = None,
-                                lastContributionDate: Option[ZonedDateTime] = None,
-                                questionActivity: Seq[String] = Seq.empty,
-                                sourceActivity: Seq[String] = Seq.empty,
-                                daysOfActivity: Seq[String] = Seq.empty,
-                                daysOfActivity30d: Seq[String] = Seq.empty,
-                                accountType: Option[String] = None,
-                                updatedAt: Option[ZonedDateTime]) {
+final case class UserProperties(
+  userId: UserId,
+  firstname: String,
+  zipCode: Option[String],
+  dateOfBirth: Option[LocalDate],
+  emailValidationStatus: Boolean,
+  emailHardBounceStatus: Boolean,
+  unsubscribeStatus: Boolean,
+  accountCreationDate: Option[ZonedDateTime],
+  userB2B: Boolean,
+  accountCreationSource: Option[String] = None,
+  accountCreationOrigin: Option[String] = None,
+  accountCreationSlug: Option[String] = None,
+  accountCreationCountry: Option[String] = None,
+  countriesActivity: Seq[String] = Seq.empty,
+  lastCountryActivity: Option[String] = None,
+  lastLanguageActivity: Option[String] = None,
+  totalNumberProposals: Option[Int] = None,
+  totalNumbervotes: Option[Int] = None,
+  firstContributionDate: Option[ZonedDateTime] = None,
+  lastContributionDate: Option[ZonedDateTime] = None,
+  questionActivity: Seq[String] = Seq.empty,
+  sourceActivity: Seq[String] = Seq.empty,
+  daysOfActivity: Seq[String] = Seq.empty,
+  daysOfActivity30d: Seq[String] = Seq.empty,
+  accountType: Option[String] = None,
+  updatedAt: Option[ZonedDateTime]
+) {
 
   def normalize(): UserProperties = {
     normalizeUserPropertiesWhenNoRegisterEvent()

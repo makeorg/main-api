@@ -126,15 +126,17 @@ trait DefaultPersistentCurrentOperationServiceComponent extends PersistentCurren
 }
 
 object DefaultPersistentCurrentOperationServiceComponent {
-  case class PersistentCurrentOperation(id: String,
-                                        questionId: String,
-                                        description: String,
-                                        label: String,
-                                        picture: String,
-                                        altPicture: String,
-                                        linkLabel: String,
-                                        internalLink: Option[String],
-                                        externalLink: Option[String]) {
+  case class PersistentCurrentOperation(
+    id: String,
+    questionId: String,
+    description: String,
+    label: String,
+    picture: String,
+    altPicture: String,
+    linkLabel: String,
+    internalLink: Option[String],
+    externalLink: Option[String]
+  ) {
     def toCurrentOperation: CurrentOperation = {
       CurrentOperation(
         currentOperationId = CurrentOperationId(id),

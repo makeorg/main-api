@@ -31,16 +31,20 @@ trait PersonalityRoleServiceComponent {
 
 trait PersonalityRoleService extends ShortenedNames {
   def getPersonalityRole(personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRole]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           roleIds: Option[Seq[PersonalityRoleId]],
-           name: Option[String]): Future[Seq[PersonalityRole]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    roleIds: Option[Seq[PersonalityRoleId]],
+    name: Option[String]
+  ): Future[Seq[PersonalityRole]]
   def count(roleIds: Option[Seq[PersonalityRoleId]], name: Option[String]): Future[Int]
   def createPersonalityRole(request: CreatePersonalityRoleRequest): Future[PersonalityRole]
-  def updatePersonalityRole(personalityRoleId: PersonalityRoleId,
-                            request: UpdatePersonalityRoleRequest): Future[Option[PersonalityRole]]
+  def updatePersonalityRole(
+    personalityRoleId: PersonalityRoleId,
+    request: UpdatePersonalityRoleRequest
+  ): Future[Option[PersonalityRole]]
   def deletePersonalityRole(personalityRoleId: PersonalityRoleId): Future[Unit]
 }
 
@@ -62,8 +66,10 @@ trait DefaultPersonalityRoleServiceComponent extends PersonalityRoleServiceCompo
       persistentPersonalityRoleService.persist(personalityRole)
     }
 
-    override def updatePersonalityRole(personalityRoleId: PersonalityRoleId,
-                                       request: UpdatePersonalityRoleRequest): Future[Option[PersonalityRole]] = {
+    override def updatePersonalityRole(
+      personalityRoleId: PersonalityRoleId,
+      request: UpdatePersonalityRoleRequest
+    ): Future[Option[PersonalityRole]] = {
       persistentPersonalityRoleService.getById(personalityRoleId).flatMap {
         case Some(personalityRole) =>
           persistentPersonalityRoleService
@@ -73,12 +79,14 @@ trait DefaultPersonalityRoleServiceComponent extends PersonalityRoleServiceCompo
       }
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      roleIds: Option[Seq[PersonalityRoleId]],
-                      name: Option[String]): Future[Seq[PersonalityRole]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      roleIds: Option[Seq[PersonalityRoleId]],
+      name: Option[String]
+    ): Future[Seq[PersonalityRole]] = {
       persistentPersonalityRoleService.find(start, end, sort, order, roleIds, name)
     }
 

@@ -376,9 +376,8 @@ class OrganisationServiceTest
       .when(
         elasticsearchOrganisationAPI.searchOrganisations(
           ArgumentMatchers.eq(
-            OrganisationSearchQuery(
-              filters =
-                Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("John Doe Corp."))))
+            OrganisationSearchQuery(filters =
+              Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("John Doe Corp."))))
             )
           )
         )
@@ -395,12 +394,9 @@ class OrganisationServiceTest
       .when(
         elasticsearchOrganisationAPI.searchOrganisations(
           ArgumentMatchers.eq(
-            OrganisationSearchQuery(
-              filters = Some(
-                OrganisationSearchFilters(
-                  organisationIds = Some(OrganisationIdsSearchFilter(Seq(UserId("AAA-BBB-CCC"))))
-                )
-              )
+            OrganisationSearchQuery(filters = Some(
+              OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(Seq(UserId("AAA-BBB-CCC")))))
+            )
             )
           )
         )
@@ -417,13 +413,12 @@ class OrganisationServiceTest
       .when(
         elasticsearchOrganisationAPI.searchOrganisations(
           ArgumentMatchers.eq(
-            OrganisationSearchQuery(
-              filters = Some(
-                OrganisationSearchFilters(
-                  country = Some(CountrySearchFilter(Country("FR"))),
-                  language = Some(LanguageSearchFilter(Language("fr")))
-                )
+            OrganisationSearchQuery(filters = Some(
+              OrganisationSearchFilters(
+                country = Some(CountrySearchFilter(Country("FR"))),
+                language = Some(LanguageSearchFilter(Language("fr")))
               )
+            )
             )
           )
         )

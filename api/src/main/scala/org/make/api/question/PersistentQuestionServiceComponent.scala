@@ -196,15 +196,17 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
 object DefaultPersistentQuestionServiceComponent {
 
-  case class PersistentQuestion(questionId: String,
-                                country: String,
-                                language: String,
-                                question: String,
-                                shortTitle: Option[String],
-                                slug: String,
-                                createdAt: ZonedDateTime,
-                                updatedAt: ZonedDateTime,
-                                operationId: Option[String]) {
+  case class PersistentQuestion(
+    questionId: String,
+    country: String,
+    language: String,
+    question: String,
+    shortTitle: Option[String],
+    slug: String,
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime,
+    operationId: Option[String]
+  ) {
 
     def toQuestion: Question = {
       Question(

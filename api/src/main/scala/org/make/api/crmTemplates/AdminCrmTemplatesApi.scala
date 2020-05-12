@@ -364,10 +364,12 @@ trait DefaultAdminCrmTemplatesApiComponent
         path("admin" / "crm" / "templates") {
           makeOperation("AdminSearchCrmTemplates") { _ =>
             parameters(("_start".as[Int].?, "_end".as[Int].?, "locale".?, "questionId".as[QuestionId].?)) {
-              (start: Option[Int],
-               end: Option[Int],
-               maybeLocale: Option[String],
-               maybeQuestionId: Option[QuestionId]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                maybeLocale: Option[String],
+                maybeQuestionId: Option[QuestionId]
+              ) =>
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireAdminRole(userAuth.user) {
                     provideAsync(crmTemplatesService.count(maybeQuestionId, maybeLocale)) { count =>

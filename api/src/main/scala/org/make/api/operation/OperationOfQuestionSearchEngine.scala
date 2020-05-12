@@ -47,8 +47,10 @@ trait OperationOfQuestionSearchEngine {
   def findOperationOfQuestionById(questionId: QuestionId): Future[Option[IndexedOperationOfQuestion]]
   def searchOperationOfQuestions(query: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
   def indexOperationOfQuestion(record: IndexedOperationOfQuestion, maybeIndex: Option[IndexAndType]): Future[Done]
-  def indexOperationOfQuestions(records: Seq[IndexedOperationOfQuestion],
-                                maybeIndex: Option[IndexAndType]): Future[Done]
+  def indexOperationOfQuestions(
+    records: Seq[IndexedOperationOfQuestion],
+    maybeIndex: Option[IndexAndType]
+  ): Future[Done]
   def updateOperationOfQuestion(record: IndexedOperationOfQuestion, maybeIndex: Option[IndexAndType]): Future[Done]
 }
 
@@ -112,8 +114,10 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         }
     }
 
-    override def indexOperationOfQuestion(record: IndexedOperationOfQuestion,
-                                          maybeIndex: Option[IndexAndType]): Future[Done] = {
+    override def indexOperationOfQuestion(
+      record: IndexedOperationOfQuestion,
+      maybeIndex: Option[IndexAndType]
+    ): Future[Done] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.questionId.value))
@@ -122,8 +126,10 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         }
     }
 
-    override def indexOperationOfQuestions(records: Seq[IndexedOperationOfQuestion],
-                                           maybeIndex: Option[IndexAndType]): Future[Done] = {
+    override def indexOperationOfQuestions(
+      records: Seq[IndexedOperationOfQuestion],
+      maybeIndex: Option[IndexAndType]
+    ): Future[Done] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
         .executeAsFuture(bulk(records.map { record =>
@@ -134,8 +140,10 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         }
     }
 
-    override def updateOperationOfQuestion(record: IndexedOperationOfQuestion,
-                                           maybeIndex: Option[IndexAndType]): Future[Done] = {
+    override def updateOperationOfQuestion(
+      record: IndexedOperationOfQuestion,
+      maybeIndex: Option[IndexAndType]
+    ): Future[Done] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
         .executeAsFuture((update(id = record.questionId.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))

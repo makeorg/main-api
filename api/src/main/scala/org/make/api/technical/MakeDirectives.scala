@@ -138,7 +138,7 @@ trait MakeDirectives
                 path = Some("/"),
                 domain = Some(makeSettings.SecureCookie.domain)
               )
-          )
+            )
         ),
         tokenRefreshed.map(
           _ =>
@@ -152,7 +152,7 @@ trait MakeDirectives
                 path = Some("/"),
                 domain = Some(makeSettings.SecureCookie.domain)
               )
-          )
+            )
         )
       ).collect { case Some(setCookie) => setCookie }
     }
@@ -164,13 +164,15 @@ trait MakeDirectives
     }
   }
 
-  def addMakeHeaders(requestId: String,
-                     routeName: String,
-                     sessionId: String,
-                     visitorId: String,
-                     visitorCreatedAt: ZonedDateTime,
-                     startTime: Long,
-                     externalId: String): Directive0 = {
+  def addMakeHeaders(
+    requestId: String,
+    routeName: String,
+    sessionId: String,
+    visitorId: String,
+    visitorCreatedAt: ZonedDateTime,
+    startTime: Long,
+    externalId: String
+  ): Directive0 = {
     respondWithDefaultHeaders {
       Seq(
         `X-Route-Time`(startTime),
@@ -245,9 +247,11 @@ trait MakeDirectives
       .increment()
   }
 
-  private def connectIfNecessary(sessionId: SessionId,
-                                 maybeUserId: Option[UserId],
-                                 requestContext: RequestContext): Unit = {
+  private def connectIfNecessary(
+    sessionId: SessionId,
+    maybeUserId: Option[UserId],
+    requestContext: RequestContext
+  ): Unit = {
     maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId, requestContext))
   }
 
@@ -436,9 +440,11 @@ trait MakeDirectives
       }
     }
 
-  def uploadImageAsync(imageFieldName: String,
-                       uploadFile: (String, String, Content) => Future[String],
-                       sizeLimit: Option[Long]): Directive[(String, File)] = {
+  def uploadImageAsync(
+    imageFieldName: String,
+    uploadFile: (String, String, Content) => Future[String],
+    sizeLimit: Option[Long]
+  ): Directive[(String, File)] = {
     val sizeDirective = sizeLimit match {
       case Some(size) => withSizeLimit(size)
       case _          => withoutSizeLimit

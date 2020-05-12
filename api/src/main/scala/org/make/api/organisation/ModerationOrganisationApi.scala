@@ -225,11 +225,13 @@ trait DefaultModerationOrganisationApiComponent
         path("moderation" / "organisations") {
           makeOperation("ModerationGetOrganisations") { _ =>
             parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "organisationName".?)) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               organisationName: Option[String]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                sort: Option[String],
+                order: Option[String],
+                organisationName: Option[String]
+              ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     order.foreach { orderValue =>
@@ -293,11 +295,13 @@ object ModerationCreateOrganisationRequest {
     deriveDecoder[ModerationCreateOrganisationRequest]
 }
 
-final case class ModerationUpdateOrganisationRequest(@(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     organisationName: String Refined MaxSize[W.`256`.T],
-                                                     @(ApiModelProperty @field)(dataType = "string", required = false)
-                                                     email: Option[String] = None,
-                                                     profile: Option[ProfileRequest]) {
+final case class ModerationUpdateOrganisationRequest(
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  organisationName: String Refined MaxSize[W.`256`.T],
+  @(ApiModelProperty @field)(dataType = "string", required = false)
+  email: Option[String] = None,
+  profile: Option[ProfileRequest]
+) {
   OrganisationValidation.validateUpdate(
     organisationName = organisationName.value,
     email = email,
@@ -323,10 +327,12 @@ private object OrganisationValidation {
     )
   }
 
-  def validateUpdate(organisationName: String,
-                     email: Option[String],
-                     description: Option[String],
-                     profileRequest: Option[ProfileRequest]): Unit = {
+  def validateUpdate(
+    organisationName: String,
+    email: Option[String],
+    description: Option[String],
+    profileRequest: Option[ProfileRequest]
+  ): Unit = {
     validateOptional(
       Some(validateUserInput("organisationName", organisationName, None)),
       description.map(value => validateUserInput("description", value, None)),
@@ -388,11 +394,13 @@ object OrganisationProfileRequest {
   implicit val decoder: Decoder[OrganisationProfileRequest] = deriveDecoder[OrganisationProfileRequest]
 }
 
-final case class OrganisationProfileResponse(organisationName: Option[String],
-                                             avatarUrl: Option[String],
-                                             description: Option[String],
-                                             website: Option[String],
-                                             optInNewsletter: Boolean)
+final case class OrganisationProfileResponse(
+  organisationName: Option[String],
+  avatarUrl: Option[String],
+  description: Option[String],
+  website: Option[String],
+  optInNewsletter: Boolean
+)
 
 object OrganisationProfileResponse {
   implicit val encoder: Encoder[OrganisationProfileResponse] = deriveEncoder[OrganisationProfileResponse]

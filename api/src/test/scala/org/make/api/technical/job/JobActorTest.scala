@@ -58,12 +58,12 @@ class JobActorTest
       expectMsg(JobAcceptance(true))
 
       Then("the job is started")
-      getJob(id).status should be(Running(0D))
+      getJob(id).status should be(Running(0d))
 
       And("state is restored if actor is killed")
       coordinator ! Kill(id)
       Thread.sleep(10)
-      getJob(id).status should be(Running(0D))
+      getJob(id).status should be(Running(0d))
     }
 
     scenario("fail to start a running job") {

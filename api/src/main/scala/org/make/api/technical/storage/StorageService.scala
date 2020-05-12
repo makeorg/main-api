@@ -37,10 +37,12 @@ trait StorageService {
 
   def uploadFile(fileType: FileType, name: String, contentType: String, content: Content): Future[String]
   def uploadUserAvatar(userId: UserId, name: String, contentType: String, content: Content): Future[String]
-  def uploadAdminUserAvatar(extension: String,
-                            contentType: String,
-                            content: Content,
-                            userType: UserType): Future[String]
+  def uploadAdminUserAvatar(
+    extension: String,
+    contentType: String,
+    content: Content,
+    userType: UserType
+  ): Future[String]
 }
 
 case class UploadResponse(path: String)
@@ -137,10 +139,12 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
     }
 
     @Trace(operationName = "client-uploadUserAvatar")
-    override def uploadUserAvatar(userId: UserId,
-                                  extension: String,
-                                  contentType: String,
-                                  content: Content): Future[String] = {
+    override def uploadUserAvatar(
+      userId: UserId,
+      extension: String,
+      contentType: String,
+      content: Content
+    ): Future[String] = {
       val date = DateHelper.now()
       val name = s"${date.getYear}/${date.getMonthValue}/${userId.value}/${idGenerator.nextId()}.$extension"
       storageService.uploadFile(FileType.Avatar, name, contentType, content)
@@ -148,10 +152,12 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
     }
 
     @Trace(operationName = "client-uploadAdminUserAvatar")
-    override def uploadAdminUserAvatar(extension: String,
-                                       contentType: String,
-                                       content: Content,
-                                       userType: UserType): Future[String] = {
+    override def uploadAdminUserAvatar(
+      extension: String,
+      contentType: String,
+      content: Content,
+      userType: UserType
+    ): Future[String] = {
       val date = DateHelper.now()
       val name =
         s"${date.getYear}/${date.getMonthValue}/${userType.shortName.toLowerCase}/${idGenerator.nextId()}.$extension"

@@ -41,16 +41,20 @@ trait PersistentQuestionPersonalityService {
   def persist(personality: Personality): Future[Personality]
   def modify(personality: Personality): Future[Personality]
   def getById(personalityId: PersonalityId): Future[Option[Personality]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           userId: Option[UserId],
-           questionId: Option[QuestionId],
-           personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]]
-  def count(userId: Option[UserId],
-            questionId: Option[QuestionId],
-            personalityRoleId: Option[PersonalityRoleId]): Future[Int]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    userId: Option[UserId],
+    questionId: Option[QuestionId],
+    personalityRoleId: Option[PersonalityRoleId]
+  ): Future[Seq[Personality]]
+  def count(
+    userId: Option[UserId],
+    questionId: Option[QuestionId],
+    personalityRoleId: Option[PersonalityRoleId]
+  ): Future[Int]
   def delete(personalityId: PersonalityId): Future[Unit]
 }
 
@@ -108,13 +112,15 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
       }).map(_.map(_.toPersonality))
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      userId: Option[UserId],
-                      questionId: Option[QuestionId],
-                      personalityRoleId: Option[PersonalityRoleId]): Future[Seq[Personality]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      userId: Option[UserId],
+      questionId: Option[QuestionId],
+      personalityRoleId: Option[PersonalityRoleId]
+    ): Future[Seq[Personality]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -133,9 +139,11 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
       }).map(_.map(_.toPersonality))
     }
 
-    def count(userId: Option[UserId],
-              questionId: Option[QuestionId],
-              personalityRoleId: Option[PersonalityRoleId]): Future[Int] = {
+    def count(
+      userId: Option[UserId],
+      questionId: Option[QuestionId],
+      personalityRoleId: Option[PersonalityRoleId]
+    ): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {

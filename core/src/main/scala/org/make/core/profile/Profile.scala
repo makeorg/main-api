@@ -144,49 +144,53 @@ object SocioProfessionalCategory extends StrictLogging {
   }
 }
 
-case class Profile(dateOfBirth: Option[LocalDate],
-                   avatarUrl: Option[String],
-                   profession: Option[String],
-                   phoneNumber: Option[String],
-                   description: Option[String],
-                   twitterId: Option[String],
-                   facebookId: Option[String],
-                   googleId: Option[String],
-                   gender: Option[Gender],
-                   genderName: Option[String],
-                   postalCode: Option[String],
-                   karmaLevel: Option[Int],
-                   locale: Option[String],
-                   optInNewsletter: Boolean = true,
-                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
-                   registerQuestionId: Option[QuestionId] = None,
-                   optInPartner: Option[Boolean] = None,
-                   politicalParty: Option[String],
-                   website: Option[String])
+case class Profile(
+  dateOfBirth: Option[LocalDate],
+  avatarUrl: Option[String],
+  profession: Option[String],
+  phoneNumber: Option[String],
+  description: Option[String],
+  twitterId: Option[String],
+  facebookId: Option[String],
+  googleId: Option[String],
+  gender: Option[Gender],
+  genderName: Option[String],
+  postalCode: Option[String],
+  karmaLevel: Option[Int],
+  locale: Option[String],
+  optInNewsletter: Boolean = true,
+  socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+  registerQuestionId: Option[QuestionId] = None,
+  optInPartner: Option[Boolean] = None,
+  politicalParty: Option[String],
+  website: Option[String]
+)
 
 object Profile extends CirceFormatters {
   implicit val encoder: Encoder[Profile] = deriveEncoder[Profile]
   implicit val decoder: Decoder[Profile] = deriveDecoder[Profile]
 
-  def parseProfile(dateOfBirth: Option[LocalDate] = None,
-                   avatarUrl: Option[String] = None,
-                   profession: Option[String] = None,
-                   phoneNumber: Option[String] = None,
-                   description: Option[String] = None,
-                   twitterId: Option[String] = None,
-                   facebookId: Option[String] = None,
-                   googleId: Option[String] = None,
-                   gender: Option[Gender] = None,
-                   genderName: Option[String] = None,
-                   postalCode: Option[String] = None,
-                   karmaLevel: Option[Int] = None,
-                   locale: Option[String] = None,
-                   optInNewsletter: Boolean = true,
-                   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
-                   registerQuestionId: Option[QuestionId] = None,
-                   optInPartner: Option[Boolean] = None,
-                   politicalParty: Option[String] = None,
-                   website: Option[String] = None): Option[Profile] = {
+  def parseProfile(
+    dateOfBirth: Option[LocalDate] = None,
+    avatarUrl: Option[String] = None,
+    profession: Option[String] = None,
+    phoneNumber: Option[String] = None,
+    description: Option[String] = None,
+    twitterId: Option[String] = None,
+    facebookId: Option[String] = None,
+    googleId: Option[String] = None,
+    gender: Option[Gender] = None,
+    genderName: Option[String] = None,
+    postalCode: Option[String] = None,
+    karmaLevel: Option[Int] = None,
+    locale: Option[String] = None,
+    optInNewsletter: Boolean = true,
+    socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+    registerQuestionId: Option[QuestionId] = None,
+    optInPartner: Option[Boolean] = None,
+    politicalParty: Option[String] = None,
+    website: Option[String] = None
+  ): Option[Profile] = {
 
     val profile = Profile(
       dateOfBirth = dateOfBirth,

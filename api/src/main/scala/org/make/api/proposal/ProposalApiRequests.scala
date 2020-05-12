@@ -110,16 +110,18 @@ object ValidateProposalRequest {
   implicit val encoder: Encoder[ValidateProposalRequest] = deriveEncoder[ValidateProposalRequest]
 }
 
-final case class UpdateQualificationRequest(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
-                                            key: QualificationKey,
-                                            @(ApiModelProperty @field)(dataType = "int")
-                                            count: Option[Int] = None,
-                                            @(ApiModelProperty @field)(dataType = "int")
-                                            countVerified: Option[Int] = None,
-                                            @(ApiModelProperty @field)(dataType = "int")
-                                            countSequence: Option[Int] = None,
-                                            @(ApiModelProperty @field)(dataType = "int")
-                                            countSegment: Option[Int] = None)
+final case class UpdateQualificationRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+  key: QualificationKey,
+  @(ApiModelProperty @field)(dataType = "int")
+  count: Option[Int] = None,
+  @(ApiModelProperty @field)(dataType = "int")
+  countVerified: Option[Int] = None,
+  @(ApiModelProperty @field)(dataType = "int")
+  countSequence: Option[Int] = None,
+  @(ApiModelProperty @field)(dataType = "int")
+  countSegment: Option[Int] = None
+)
 
 object UpdateQualificationRequest {
   implicit val decoder: Decoder[UpdateQualificationRequest] = deriveDecoder[UpdateQualificationRequest]
@@ -128,17 +130,19 @@ object UpdateQualificationRequest {
 
 }
 
-final case class UpdateVoteRequest(@(ApiModelProperty @field)(dataType = "string", example = "agree")
-                                   key: VoteKey,
-                                   @(ApiModelProperty @field)(dataType = "int")
-                                   count: Option[Int] = None,
-                                   @(ApiModelProperty @field)(dataType = "int")
-                                   countVerified: Option[Int] = None,
-                                   @(ApiModelProperty @field)(dataType = "int")
-                                   countSequence: Option[Int] = None,
-                                   @(ApiModelProperty @field)(dataType = "int")
-                                   countSegment: Option[Int] = None,
-                                   qualifications: Seq[UpdateQualificationRequest])
+final case class UpdateVoteRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  key: VoteKey,
+  @(ApiModelProperty @field)(dataType = "int")
+  count: Option[Int] = None,
+  @(ApiModelProperty @field)(dataType = "int")
+  countVerified: Option[Int] = None,
+  @(ApiModelProperty @field)(dataType = "int")
+  countSequence: Option[Int] = None,
+  @(ApiModelProperty @field)(dataType = "int")
+  countSegment: Option[Int] = None,
+  qualifications: Seq[UpdateQualificationRequest]
+)
 
 object UpdateVoteRequest {
   implicit val decoder: Decoder[UpdateVoteRequest] = deriveDecoder[UpdateVoteRequest]
@@ -165,10 +169,12 @@ object RefuseProposalRequest {
   implicit val encoder: Encoder[RefuseProposalRequest] = deriveEncoder[RefuseProposalRequest]
 }
 
-final case class ContextFilterRequest(operation: Option[OperationId] = None,
-                                      source: Option[String] = None,
-                                      location: Option[String] = None,
-                                      question: Option[String] = None) {
+final case class ContextFilterRequest(
+  operation: Option[OperationId] = None,
+  source: Option[String] = None,
+  location: Option[String] = None,
+  question: Option[String] = None
+) {
   def toContext: ContextSearchFilter = {
     ContextSearchFilter(operation, source, location, question)
   }
@@ -178,30 +184,34 @@ object ContextFilterRequest {
   implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
 }
 
-final case class SearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
-                               initialProposal: Option[Boolean] = None,
-                               tagsIds: Option[Seq[TagId]] = None,
-                               labelsIds: Option[Seq[LabelId]] = None,
-                               operationId: Option[OperationId] = None,
-                               questionIds: Option[Seq[QuestionId]] = None,
-                               @Deprecated trending: Option[String] = None,
-                               content: Option[String] = None,
-                               slug: Option[String] = None,
-                               seed: Option[Int] = None,
-                               context: Option[ContextFilterRequest] = None,
-                               language: Option[Language] = None,
-                               country: Option[Country] = None,
-                               @Deprecated sort: Option[SortRequest] = None,
-                               limit: Option[Int] = None,
-                               skip: Option[Int] = None,
-                               @Deprecated isRandom: Option[Boolean] = Some(false),
-                               sortAlgorithm: Option[String] = None,
-                               operationKinds: Option[Seq[OperationKind]] = None,
-                               userTypes: Option[Seq[UserType]] = None,
-                               ideaIds: Option[Seq[IdeaId]] = None) {
+final case class SearchRequest(
+  proposalIds: Option[Seq[ProposalId]] = None,
+  initialProposal: Option[Boolean] = None,
+  tagsIds: Option[Seq[TagId]] = None,
+  labelsIds: Option[Seq[LabelId]] = None,
+  operationId: Option[OperationId] = None,
+  questionIds: Option[Seq[QuestionId]] = None,
+  @Deprecated trending: Option[String] = None,
+  content: Option[String] = None,
+  slug: Option[String] = None,
+  seed: Option[Int] = None,
+  context: Option[ContextFilterRequest] = None,
+  language: Option[Language] = None,
+  country: Option[Country] = None,
+  @Deprecated sort: Option[SortRequest] = None,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None,
+  @Deprecated isRandom: Option[Boolean] = Some(false),
+  sortAlgorithm: Option[String] = None,
+  operationKinds: Option[Seq[OperationKind]] = None,
+  userTypes: Option[Seq[UserType]] = None,
+  ideaIds: Option[Seq[IdeaId]] = None
+) {
 
-  def toSearchQuery(requestContext: RequestContext,
-                    sortAlgorithmConfiguration: SortAlgorithmConfiguration): SearchQuery = {
+  def toSearchQuery(
+    requestContext: RequestContext,
+    sortAlgorithmConfiguration: SortAlgorithmConfiguration
+  ): SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
         proposals = proposalIds.map(ProposalSearchFilter.apply),
@@ -247,26 +257,28 @@ object SearchRequest {
   implicit val decoder: Decoder[SearchRequest] = deriveDecoder[SearchRequest]
 }
 
-final case class ExhaustiveSearchRequest(proposalIds: Option[Seq[ProposalId]] = None,
-                                         initialProposal: Option[Boolean] = None,
-                                         tagsIds: Option[Seq[TagId]] = None,
-                                         labelsIds: Option[Seq[LabelId]] = None,
-                                         operationId: Option[OperationId] = None,
-                                         questionIds: Option[Seq[QuestionId]] = None,
-                                         ideaIds: Option[Seq[IdeaId]] = None,
-                                         content: Option[String] = None,
-                                         context: Option[ContextFilterRequest] = None,
-                                         status: Option[Seq[ProposalStatus]] = None,
-                                         minVotesCount: Option[Int] = None,
-                                         toEnrich: Option[Boolean] = None,
-                                         minScore: Option[Float] = None,
-                                         language: Option[Language] = None,
-                                         country: Option[Country] = None,
-                                         sort: Option[SortRequest] = None,
-                                         limit: Option[Int] = None,
-                                         skip: Option[Int] = None,
-                                         createdBefore: Option[ZonedDateTime] = None,
-                                         userTypes: Option[Seq[UserType]] = None) {
+final case class ExhaustiveSearchRequest(
+  proposalIds: Option[Seq[ProposalId]] = None,
+  initialProposal: Option[Boolean] = None,
+  tagsIds: Option[Seq[TagId]] = None,
+  labelsIds: Option[Seq[LabelId]] = None,
+  operationId: Option[OperationId] = None,
+  questionIds: Option[Seq[QuestionId]] = None,
+  ideaIds: Option[Seq[IdeaId]] = None,
+  content: Option[String] = None,
+  context: Option[ContextFilterRequest] = None,
+  status: Option[Seq[ProposalStatus]] = None,
+  minVotesCount: Option[Int] = None,
+  toEnrich: Option[Boolean] = None,
+  minScore: Option[Float] = None,
+  language: Option[Language] = None,
+  country: Option[Country] = None,
+  sort: Option[SortRequest] = None,
+  limit: Option[Int] = None,
+  skip: Option[Int] = None,
+  createdBefore: Option[ZonedDateTime] = None,
+  userTypes: Option[Seq[UserType]] = None
+) {
   def toSearchQuery(requestContext: RequestContext): SearchQuery = {
     val filters: Option[SearchFilters] =
       SearchFilters.parse(
@@ -304,20 +316,24 @@ object ExhaustiveSearchRequest extends CirceFormatters {
 }
 
 @ApiModel
-final case class VoteProposalRequest(@(ApiModelProperty @field)(dataType = "string", example = "agree")
-                                     voteKey: VoteKey,
-                                     proposalKey: Option[String])
+final case class VoteProposalRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  voteKey: VoteKey,
+  proposalKey: Option[String]
+)
 
 object VoteProposalRequest {
   implicit val decoder: Decoder[VoteProposalRequest] = deriveDecoder[VoteProposalRequest]
 }
 
 @ApiModel
-final case class QualificationProposalRequest(@(ApiModelProperty @field)(dataType = "string", example = "likeIt")
-                                              qualificationKey: QualificationKey,
-                                              @(ApiModelProperty @field)(dataType = "string", example = "agree")
-                                              voteKey: VoteKey,
-                                              proposalKey: Option[String])
+final case class QualificationProposalRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
+  qualificationKey: QualificationKey,
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  voteKey: VoteKey,
+  proposalKey: Option[String]
+)
 
 object QualificationProposalRequest {
   implicit val decoder: Decoder[QualificationProposalRequest] = deriveDecoder[QualificationProposalRequest]

@@ -132,20 +132,22 @@ object ProfileRequest extends CirceFormatters {
     )
   }
 
-  def parseProfileRequest(dateOfBirth: Option[LocalDate] = None,
-                          avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]] = None,
-                          profession: Option[String] = None,
-                          phoneNumber: Option[String] = None,
-                          description: Option[String Refined MaxSize[W.`450`.T]] = None,
-                          gender: Option[Gender] = None,
-                          genderName: Option[String] = None,
-                          postalCode: Option[String] = None,
-                          locale: Option[String] = None,
-                          optInNewsletter: Boolean = true,
-                          socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
-                          optInPartner: Option[Boolean] = None,
-                          politicalParty: Option[String] = None,
-                          website: Option[String Refined Url] = None): Option[ProfileRequest] = {
+  def parseProfileRequest(
+    dateOfBirth: Option[LocalDate] = None,
+    avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]] = None,
+    profession: Option[String] = None,
+    phoneNumber: Option[String] = None,
+    description: Option[String Refined MaxSize[W.`450`.T]] = None,
+    gender: Option[Gender] = None,
+    genderName: Option[String] = None,
+    postalCode: Option[String] = None,
+    locale: Option[String] = None,
+    optInNewsletter: Boolean = true,
+    socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
+    optInPartner: Option[Boolean] = None,
+    politicalParty: Option[String] = None,
+    website: Option[String Refined Url] = None
+  ): Option[ProfileRequest] = {
 
     val profile = ProfileRequest(
       dateOfBirth = dateOfBirth,
@@ -258,7 +260,7 @@ case class UpdateUserRequest(
           "invalid_value",
           value == "" || Gender.matchGender(value).isDefined,
           s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
-      )
+        )
     ),
     socioProfessionalCategory.map(
       value =>
@@ -267,7 +269,7 @@ case class UpdateUserRequest(
           "invalid_value",
           value == "" || SocioProfessionalCategory.matchSocioProfessionalCategory(value).isDefined,
           s"CSP should be on of this specified values: ${SocioProfessionalCategory.socioProfessionalCategories.keys.mkString(",")}"
-      )
+        )
     ),
     description.map(value => maxLength("description", maxDescriptionLength, value)),
     Some(validateOptionalUserInput("phoneNumber", phoneNumber, None)),
@@ -289,11 +291,13 @@ object UpdateUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]
 }
 
-case class SocialLoginRequest(provider: String,
-                              token: String,
-                              @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-                              @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
-                              clientId: Option[ClientId]) {
+case class SocialLoginRequest(
+  provider: String,
+  token: String,
+  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
+  clientId: Option[ClientId]
+) {
   validate(mandatoryField("language", language), mandatoryField("country", country))
 }
 

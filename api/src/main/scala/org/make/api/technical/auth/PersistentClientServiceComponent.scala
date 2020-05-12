@@ -44,17 +44,19 @@ object PersistentClientServiceComponent {
   val GRANT_TYPE_SEPARATOR = ","
   val ROLE_SEPARATOR = ","
 
-  case class PersistentClient(uuid: String,
-                              name: String,
-                              allowedGrantTypes: String,
-                              secret: Option[String],
-                              scope: Option[String],
-                              redirectUri: Option[String],
-                              createdAt: ZonedDateTime,
-                              updatedAt: ZonedDateTime,
-                              defaultUserId: Option[String],
-                              roles: String,
-                              tokenExpirationSeconds: Int) {
+  case class PersistentClient(
+    uuid: String,
+    name: String,
+    allowedGrantTypes: String,
+    secret: Option[String],
+    scope: Option[String],
+    redirectUri: Option[String],
+    createdAt: ZonedDateTime,
+    updatedAt: ZonedDateTime,
+    defaultUserId: Option[String],
+    roles: String,
+    tokenExpirationSeconds: Int
+  ) {
     def toClient: Client =
       Client(
         clientId = ClientId(uuid),

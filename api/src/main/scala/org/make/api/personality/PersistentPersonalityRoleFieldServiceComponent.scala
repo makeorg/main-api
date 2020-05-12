@@ -37,20 +37,26 @@ trait PersistentPersonalityRoleFieldServiceComponent {
 trait PersistentPersonalityRoleFieldService {
   def persist(personalityRoleField: PersonalityRoleField): Future[PersonalityRoleField]
   def modify(personalityRoleField: PersonalityRoleField): Future[PersonalityRoleField]
-  def getById(personalityRoleFieldId: PersonalityRoleFieldId,
-              personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRoleField]]
-  def find(start: Int,
-           end: Option[Int],
-           sort: Option[String],
-           order: Option[String],
-           personalityRoleId: Option[PersonalityRoleId],
-           name: Option[String],
-           fieldType: Option[FieldType],
-           required: Option[Boolean]): Future[Seq[PersonalityRoleField]]
-  def count(personalityRoleId: Option[PersonalityRoleId],
-            name: Option[String],
-            fieldType: Option[FieldType],
-            required: Option[Boolean]): Future[Int]
+  def getById(
+    personalityRoleFieldId: PersonalityRoleFieldId,
+    personalityRoleId: PersonalityRoleId
+  ): Future[Option[PersonalityRoleField]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    sort: Option[String],
+    order: Option[String],
+    personalityRoleId: Option[PersonalityRoleId],
+    name: Option[String],
+    fieldType: Option[FieldType],
+    required: Option[Boolean]
+  ): Future[Seq[PersonalityRoleField]]
+  def count(
+    personalityRoleId: Option[PersonalityRoleId],
+    name: Option[String],
+    fieldType: Option[FieldType],
+    required: Option[Boolean]
+  ): Future[Int]
   def delete(personalityRoleFieldId: PersonalityRoleFieldId): Future[Unit]
 }
 
@@ -98,8 +104,10 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
       }).map(_ => personalityRoleField)
     }
 
-    override def getById(personalityRoleFieldId: PersonalityRoleFieldId,
-                         personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRoleField]] = {
+    override def getById(
+      personalityRoleFieldId: PersonalityRoleFieldId,
+      personalityRoleId: PersonalityRoleId
+    ): Future[Option[PersonalityRoleField]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -114,14 +122,16 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
       }).map(_.map(_.toPersonalityRoleField))
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      sort: Option[String],
-                      order: Option[String],
-                      maybePersonalityRoleId: Option[PersonalityRoleId],
-                      maybeName: Option[String],
-                      maybeFieldType: Option[FieldType],
-                      maybeRequired: Option[Boolean]): Future[Seq[PersonalityRoleField]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      sort: Option[String],
+      order: Option[String],
+      maybePersonalityRoleId: Option[PersonalityRoleId],
+      maybeName: Option[String],
+      maybeFieldType: Option[FieldType],
+      maybeRequired: Option[Boolean]
+    ): Future[Seq[PersonalityRoleField]] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -142,10 +152,12 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
       }).map(_.map(_.toPersonalityRoleField))
     }
 
-    def count(maybePersonalityRoleId: Option[PersonalityRoleId],
-              maybeName: Option[String],
-              maybeFieldType: Option[FieldType],
-              maybeRequired: Option[Boolean]): Future[Int] = {
+    def count(
+      maybePersonalityRoleId: Option[PersonalityRoleId],
+      maybeName: Option[String],
+      maybeFieldType: Option[FieldType],
+      maybeRequired: Option[Boolean]
+    ): Future[Int] = {
       implicit val context: EC = readExecutionContext
       Future(NamedDB("READ").retryableTx { implicit session =>
         withSQL {
@@ -180,11 +192,13 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
 
 object DefaultPersistentPersonalityRoleFieldServiceComponent {
 
-  case class PersistentPersonalityRoleField(id: String,
-                                            personalityRoleId: String,
-                                            name: String,
-                                            fieldType: String,
-                                            required: Boolean) {
+  case class PersistentPersonalityRoleField(
+    id: String,
+    personalityRoleId: String,
+    name: String,
+    fieldType: String,
+    required: Boolean
+  ) {
     def toPersonalityRoleField: PersonalityRoleField = {
       PersonalityRoleField(
         personalityRoleFieldId = PersonalityRoleFieldId(id),

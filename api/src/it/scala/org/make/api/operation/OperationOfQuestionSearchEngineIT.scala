@@ -281,9 +281,8 @@ class OperationOfQuestionSearchEngineIT
 
   feature("search by question") {
     scenario("should return a list of operation of question") {
-      val query = OperationOfQuestionSearchQuery(
-        filters =
-          Some(OperationOfQuestionSearchFilters(question = Some(QuestionContentSearchFilter(text = "question"))))
+      val query = OperationOfQuestionSearchQuery(filters =
+        Some(OperationOfQuestionSearchFilters(question = Some(QuestionContentSearchFilter(text = "question"))))
       )
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be > 0L
@@ -291,13 +290,12 @@ class OperationOfQuestionSearchEngineIT
     }
 
     scenario("search without accent on accented content should return the accented question") {
-      val query = OperationOfQuestionSearchQuery(
-        filters = Some(
-          OperationOfQuestionSearchFilters(
-            question = Some(QuestionContentSearchFilter(text = "aines")),
-            language = Some(LanguageSearchFilter(Language("fr")))
-          )
+      val query = OperationOfQuestionSearchQuery(filters = Some(
+        OperationOfQuestionSearchFilters(
+          question = Some(QuestionContentSearchFilter(text = "aines")),
+          language = Some(LanguageSearchFilter(Language("fr")))
         )
+      )
       )
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be > 0L
@@ -306,13 +304,12 @@ class OperationOfQuestionSearchEngineIT
     }
 
     scenario("search in italian should not return french results") {
-      val query = OperationOfQuestionSearchQuery(
-        filters = Some(
-          OperationOfQuestionSearchFilters(
-            question = Some(QuestionContentSearchFilter(text = "aines")),
-            language = Some(LanguageSearchFilter(Language("it")))
-          )
+      val query = OperationOfQuestionSearchQuery(filters = Some(
+        OperationOfQuestionSearchFilters(
+          question = Some(QuestionContentSearchFilter(text = "aines")),
+          language = Some(LanguageSearchFilter(Language("it")))
         )
+      )
       )
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total == 0 shouldBe true

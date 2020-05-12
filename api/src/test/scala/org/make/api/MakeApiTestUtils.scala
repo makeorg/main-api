@@ -168,9 +168,9 @@ trait MakeApiTestBase
                   None,
                   None,
                   None
-              )
+                )
             )
-      )
+        )
     )
 
 }

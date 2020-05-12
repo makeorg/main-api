@@ -31,17 +31,18 @@ import org.make.core.{CirceFormatters, MakeSerializable, StringValue, Timestampe
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
-final case class Idea(ideaId: IdeaId,
-                      name: String,
-                      language: Option[Language] = None,
-                      country: Option[Country] = None,
-                      question: Option[String] = None,
-                      operationId: Option[OperationId] = None,
-                      questionId: Option[QuestionId] = None,
-                      status: IdeaStatus = IdeaStatus.Activated,
-                      override val createdAt: Option[ZonedDateTime],
-                      override val updatedAt: Option[ZonedDateTime])
-    extends MakeSerializable
+final case class Idea(
+  ideaId: IdeaId,
+  name: String,
+  language: Option[Language] = None,
+  country: Option[Country] = None,
+  question: Option[String] = None,
+  operationId: Option[OperationId] = None,
+  questionId: Option[QuestionId] = None,
+  status: IdeaStatus = IdeaStatus.Activated,
+  override val createdAt: Option[ZonedDateTime],
+  override val updatedAt: Option[ZonedDateTime]
+) extends MakeSerializable
     with Timestamped
 
 object Idea extends CirceFormatters {

@@ -29,10 +29,12 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class CrmSynchroCsvMonitor(crmClient: CrmClient,
-                           jobIds: Seq[Long],
-                           promise: Promise[Unit],
-                           tickInterval: FiniteDuration)(implicit executionContext: ExecutionContext)
+class CrmSynchroCsvMonitor(
+  crmClient: CrmClient,
+  jobIds: Seq[Long],
+  promise: Promise[Unit],
+  tickInterval: FiniteDuration
+)(implicit executionContext: ExecutionContext)
     extends Actor
     with StrictLogging {
 

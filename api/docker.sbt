@@ -26,18 +26,19 @@ enablePlugins(DockerPlugin)
 dockerBaseImage := "azul/zulu-openjdk-centos:13"
 // Open 4k for jmx and 9k for http
 dockerExposedPorts := Seq(4000, 9000)
-dockerRepository := Some("nexus.prod.makeorg.tech")
+dockerRepository   := Some("nexus.prod.makeorg.tech")
 
-Docker / daemonUser := "core-api"
+Docker / daemonUser    := "core-api"
 Docker / daemonUserUid := Some("300")
 
-Docker / daemonGroup := "apps"
+Docker / daemonGroup    := "apps"
 Docker / daemonGroupGid := Some("2000")
 
 packageName in Docker := "make-api"
 
 dockerCommands += Cmd(
-  "HEALTHCHECK", "CMD curl --fail http://localhost:9000/version -H 'x-make-app-name: infra' || exit 1"
+  "HEALTHCHECK",
+  "CMD curl --fail http://localhost:9000/version -H 'x-make-app-name: infra' || exit 1"
 )
 
 dockerCmd := Seq(

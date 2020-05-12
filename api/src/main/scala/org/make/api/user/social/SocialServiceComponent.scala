@@ -40,14 +40,16 @@ trait SocialServiceComponent extends GoogleApiComponent with FacebookApiComponen
 
 trait SocialService {
 
-  def login(provider: String,
-            token: String,
-            country: Country,
-            language: Language,
-            clientIp: Option[String],
-            questionId: Option[QuestionId],
-            requestContext: RequestContext,
-            clientId: ClientId): Future[(UserId, SocialLoginResponse)]
+  def login(
+    provider: String,
+    token: String,
+    country: Country,
+    language: Language,
+    clientIp: Option[String],
+    questionId: Option[QuestionId],
+    requestContext: RequestContext,
+    clientId: ClientId
+  ): Future[(UserId, SocialLoginResponse)]
 }
 
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
@@ -60,41 +62,41 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
     private val GOOGLE_PROVIDER = "google"
     private val FACEBOOK_PROVIDER = "facebook"
 
-    def login(provider: String,
-              token: String,
-              country: Country,
-              language: Language,
-              clientIp: Option[String],
-              questionId: Option[QuestionId],
-              requestContext: RequestContext,
-              clientId: ClientId): Future[(UserId, SocialLoginResponse)] = {
+    def login(
+      provider: String,
+      token: String,
+      country: Country,
+      language: Language,
+      clientIp: Option[String],
+      questionId: Option[QuestionId],
+      requestContext: RequestContext,
+      clientId: ClientId
+    ): Future[(UserId, SocialLoginResponse)] = {
 
       val futureUserInfo: Future[UserInfo] = provider match {
         case GOOGLE_PROVIDER =>
           for {
             googleUserInfo <- googleApi.getUserInfo(token)
-          } yield
-            UserInfo(
-              email = googleUserInfo.email,
-              firstName = googleUserInfo.givenName,
-              country = country.value,
-              language = language.value,
-              googleId = googleUserInfo.iat,
-              picture = googleUserInfo.pictureUrl,
-              domain = googleUserInfo.hd
-            )
+          } yield UserInfo(
+            email = googleUserInfo.email,
+            firstName = googleUserInfo.givenName,
+            country = country.value,
+            language = language.value,
+            googleId = googleUserInfo.iat,
+            picture = googleUserInfo.pictureUrl,
+            domain = googleUserInfo.hd
+          )
         case FACEBOOK_PROVIDER =>
           for {
             facebookUserInfo <- facebookApi.getUserInfo(token)
-          } yield
-            UserInfo(
-              email = facebookUserInfo.email,
-              firstName = facebookUserInfo.firstName,
-              country = country.value,
-              language = language.value,
-              facebookId = Some(facebookUserInfo.id),
-              picture = Option(facebookUserInfo.pictureUrl)
-            )
+          } yield UserInfo(
+            email = facebookUserInfo.email,
+            firstName = facebookUserInfo.firstName,
+            country = country.value,
+            language = language.value,
+            facebookId = Some(facebookUserInfo.id),
+            picture = Option(facebookUserInfo.pictureUrl)
+          )
         case _ => Future.failed(new Exception(s"Social login failed: undefined provider $provider"))
       }
 
@@ -116,13 +118,12 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
           requestContext
         )
         client <- futureClient(user.userId)
-        accessToken <- oauth2DataHandler.createAccessToken(
-          authInfo = AuthInfo(
-            user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
-            clientId = client.map(_.value),
-            scope = None,
-            redirectUri = None
-          )
+        accessToken <- oauth2DataHandler.createAccessToken(authInfo = AuthInfo(
+          user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
+          clientId = client.map(_.value),
+          scope = None,
+          redirectUri = None
+        )
         )
       } yield {
         (

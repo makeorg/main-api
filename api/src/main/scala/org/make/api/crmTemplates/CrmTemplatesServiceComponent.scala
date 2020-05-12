@@ -37,10 +37,12 @@ trait CrmTemplatesService extends ShortenedNames {
   def getCrmTemplates(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]]
   def createCrmTemplates(entity: CreateCrmTemplates): Future[CrmTemplates]
   def updateCrmTemplates(entity: UpdateCrmTemplates): Future[Option[CrmTemplates]]
-  def find(start: Int,
-           end: Option[Int],
-           questionId: Option[QuestionId],
-           locale: Option[String]): Future[Seq[CrmTemplates]]
+  def find(
+    start: Int,
+    end: Option[Int],
+    questionId: Option[QuestionId],
+    locale: Option[String]
+  ): Future[Seq[CrmTemplates]]
   def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int]
   def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]]
 }
@@ -98,10 +100,12 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
       }
     }
 
-    override def find(start: Int,
-                      end: Option[Int],
-                      questionId: Option[QuestionId],
-                      locale: Option[String]): Future[Seq[CrmTemplates]] = {
+    override def find(
+      start: Int,
+      end: Option[Int],
+      questionId: Option[QuestionId],
+      locale: Option[String]
+    ): Future[Seq[CrmTemplates]] = {
       val searchByLocale: Option[String] = questionId match {
         case Some(_) => None
         case None    => locale
@@ -129,18 +133,20 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
   }
 }
 
-final case class CreateCrmTemplates(questionId: Option[QuestionId],
-                                    locale: Option[String],
-                                    registration: TemplateId,
-                                    welcome: TemplateId,
-                                    proposalAccepted: TemplateId,
-                                    proposalRefused: TemplateId,
-                                    forgottenPassword: TemplateId,
-                                    resendRegistration: TemplateId,
-                                    proposalAcceptedOrganisation: TemplateId,
-                                    proposalRefusedOrganisation: TemplateId,
-                                    forgottenPasswordOrganisation: TemplateId,
-                                    organisationEmailChangeConfirmation: TemplateId) {
+final case class CreateCrmTemplates(
+  questionId: Option[QuestionId],
+  locale: Option[String],
+  registration: TemplateId,
+  welcome: TemplateId,
+  proposalAccepted: TemplateId,
+  proposalRefused: TemplateId,
+  forgottenPassword: TemplateId,
+  resendRegistration: TemplateId,
+  proposalAcceptedOrganisation: TemplateId,
+  proposalRefusedOrganisation: TemplateId,
+  forgottenPasswordOrganisation: TemplateId,
+  organisationEmailChangeConfirmation: TemplateId
+) {
   validate(
     validateField(
       "registration",
@@ -194,17 +200,19 @@ final case class CreateCrmTemplates(questionId: Option[QuestionId],
   )
 }
 
-final case class UpdateCrmTemplates(crmTemplatesId: CrmTemplatesId,
-                                    registration: TemplateId,
-                                    welcome: TemplateId,
-                                    proposalAccepted: TemplateId,
-                                    proposalRefused: TemplateId,
-                                    forgottenPassword: TemplateId,
-                                    resendRegistration: TemplateId,
-                                    proposalAcceptedOrganisation: TemplateId,
-                                    proposalRefusedOrganisation: TemplateId,
-                                    forgottenPasswordOrganisation: TemplateId,
-                                    organisationEmailChangeConfirmation: TemplateId) {
+final case class UpdateCrmTemplates(
+  crmTemplatesId: CrmTemplatesId,
+  registration: TemplateId,
+  welcome: TemplateId,
+  proposalAccepted: TemplateId,
+  proposalRefused: TemplateId,
+  forgottenPassword: TemplateId,
+  resendRegistration: TemplateId,
+  proposalAcceptedOrganisation: TemplateId,
+  proposalRefusedOrganisation: TemplateId,
+  forgottenPasswordOrganisation: TemplateId,
+  organisationEmailChangeConfirmation: TemplateId
+) {
   validate(
     validateField(
       "registration",

@@ -300,7 +300,7 @@ class CrmServiceComponentTest
             proposal =>
               questionResolver.findQuestionWithOperation { question =>
                 proposal.questionId.contains(question.questionId)
-            }
+              }
           )
         )
     Future.successful(maybeQuestion)
@@ -1240,10 +1240,12 @@ class CrmServiceComponentTest
         Future.successful(SendCsvResponse(6L))
       )
 
-      def csvImportResponse(jobId: Long,
-                            dataId: Long,
-                            errorCount: Int,
-                            status: String): BasicCrmResponse[CsvImportResponse] = {
+      def csvImportResponse(
+        jobId: Long,
+        dataId: Long,
+        errorCount: Int,
+        status: String
+      ): BasicCrmResponse[CsvImportResponse] = {
         BasicCrmResponse[CsvImportResponse](
           count = 1,
           total = 1,

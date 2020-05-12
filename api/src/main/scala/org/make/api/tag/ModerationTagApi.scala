@@ -239,13 +239,15 @@ trait DefaultModerationTagApiComponent
                 "questionId".as[QuestionId].?
               )
             ) {
-              (start: Option[Int],
-               end: Option[Int],
-               sort: Option[String],
-               order: Option[String],
-               maybeLabel: Option[String],
-               maybeTagTypeId: Option[TagTypeId],
-               maybeQuestionId: Option[QuestionId]) =>
+              (
+                start: Option[Int],
+                end: Option[Int],
+                sort: Option[String],
+                order: Option[String],
+                maybeLabel: Option[String],
+                maybeTagTypeId: Option[TagTypeId],
+                maybeQuestionId: Option[QuestionId]
+              ) =>
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireModerationRole(userAuth.user) {
 

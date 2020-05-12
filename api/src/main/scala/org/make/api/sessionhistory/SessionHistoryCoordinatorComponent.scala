@@ -93,8 +93,10 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).map(_ => {})
     }
 
-    private def retrieveVotedProposalsPage(request: RequestSessionVotedProposals,
-                                           offset: Int): Future[Seq[ProposalId]] = {
+    private def retrieveVotedProposalsPage(
+      request: RequestSessionVotedProposals,
+      offset: Int
+    ): Future[Seq[ProposalId]] = {
       def requestPaginate(proposalsIds: Option[Seq[ProposalId]]) =
         RequestSessionVotedProposalsPaginate(
           sessionId = request.sessionId,
@@ -132,9 +134,11 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
           Future.failed(ConcurrentModification("A vote is already pending for this proposal"))
       }
     }
-    override def lockSessionForQualification(sessionId: SessionId,
-                                             proposalId: ProposalId,
-                                             key: QualificationKey): Future[Unit] = {
+    override def lockSessionForQualification(
+      sessionId: SessionId,
+      proposalId: ProposalId,
+      key: QualificationKey
+    ): Future[Unit] = {
       (sessionHistoryCoordinator ? LockProposalForQualification(sessionId, proposalId, key)).flatMap {
         case LockAcquired => Future.successful {}
         case LockAlreadyAcquired =>
@@ -146,9 +150,11 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       Future.successful {}
     }
 
-    override def unlockSessionForQualification(sessionId: SessionId,
-                                               proposalId: ProposalId,
-                                               key: QualificationKey): Future[Unit] = {
+    override def unlockSessionForQualification(
+      sessionId: SessionId,
+      proposalId: ProposalId,
+      key: QualificationKey
+    ): Future[Unit] = {
       sessionHistoryCoordinator ! ReleaseProposalForQualification(sessionId, proposalId, key)
       Future.successful {}
     }

@@ -217,16 +217,18 @@ object IndexedGetParameters {
   implicit val decoder: Decoder[IndexedGetParameters] = deriveDecoder[IndexedGetParameters]
 }
 
-final case class IndexedAuthor(firstName: Option[String],
-                               displayName: Option[String],
-                               organisationName: Option[String],
-                               organisationSlug: Option[String],
-                               postalCode: Option[String],
-                               @(ApiModelProperty @field)(example = "21", dataType = "int")
-                               age: Option[Int],
-                               avatarUrl: Option[String],
-                               anonymousParticipation: Boolean,
-                               userType: UserType)
+final case class IndexedAuthor(
+  firstName: Option[String],
+  displayName: Option[String],
+  organisationName: Option[String],
+  organisationSlug: Option[String],
+  postalCode: Option[String],
+  @(ApiModelProperty @field)(example = "21", dataType = "int")
+  age: Option[Int],
+  avatarUrl: Option[String],
+  anonymousParticipation: Boolean,
+  userType: UserType
+)
 
 object IndexedAuthor {
   implicit val encoder: Encoder[IndexedAuthor] = deriveEncoder[IndexedAuthor]
@@ -246,14 +248,15 @@ object IndexedOrganisationInfo {
   implicit val decoder: Decoder[IndexedOrganisationInfo] = deriveDecoder[IndexedOrganisationInfo]
 }
 
-final case class IndexedVote(@(ApiModelProperty @field)(dataType = "string", example = "agree")
-                             override val key: VoteKey,
-                             override val count: Int,
-                             override val countVerified: Int,
-                             override val countSequence: Int,
-                             override val countSegment: Int,
-                             override val qualifications: Seq[IndexedQualification])
-    extends BaseVote
+final case class IndexedVote(
+  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  override val key: VoteKey,
+  override val count: Int,
+  override val countVerified: Int,
+  override val countSequence: Int,
+  override val countSegment: Int,
+  override val qualifications: Seq[IndexedQualification]
+) extends BaseVote
 
 object IndexedVote {
   implicit val encoder: Encoder[IndexedVote] = deriveEncoder[IndexedVote]
@@ -272,13 +275,14 @@ object IndexedVote {
   def empty(key: VoteKey): IndexedVote = IndexedVote(key, 0, 0, 0, 0, Seq.empty)
 }
 
-final case class IndexedQualification(@(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
-                                      override val key: QualificationKey,
-                                      override val count: Int,
-                                      override val countVerified: Int,
-                                      override val countSequence: Int,
-                                      override val countSegment: Int)
-    extends BaseQualification
+final case class IndexedQualification(
+  @(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+  override val key: QualificationKey,
+  override val count: Int,
+  override val countVerified: Int,
+  override val countSequence: Int,
+  override val countSegment: Int
+) extends BaseQualification
 
 object IndexedQualification {
   implicit val encoder: Encoder[IndexedQualification] = deriveEncoder[IndexedQualification]
@@ -296,18 +300,20 @@ object IndexedQualification {
   def empty(key: QualificationKey): IndexedQualification = IndexedQualification(key, 0, 0, 0, 0)
 }
 
-final case class IndexedScores(boost: Double = 0,
-                               engagement: Double,
-                               agreement: Double,
-                               adhesion: Double,
-                               realistic: Double,
-                               platitude: Double,
-                               topScore: Double,
-                               topScoreAjustedWithVotes: Double,
-                               controversy: Double,
-                               rejection: Double,
-                               scoreUpperBound: Double,
-                               scoreLowerBound: Double)
+final case class IndexedScores(
+  boost: Double = 0,
+  engagement: Double,
+  agreement: Double,
+  adhesion: Double,
+  realistic: Double,
+  platitude: Double,
+  topScore: Double,
+  topScoreAjustedWithVotes: Double,
+  controversy: Double,
+  rejection: Double,
+  scoreUpperBound: Double,
+  scoreLowerBound: Double
+)
 
 object IndexedScores {
   implicit val encoder: Encoder[IndexedScores] = deriveEncoder[IndexedScores]
