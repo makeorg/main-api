@@ -61,27 +61,39 @@ trait ProposalSearchEngineComponent {
 //TODO: add multi-country
 trait ProposalSearchEngine {
   def findProposalById(proposalId: ProposalId): Future[Option[IndexedProposal]]
+
   def findProposalsByIds(proposalIds: Seq[ProposalId], size: Int, random: Boolean = true): Future[Seq[IndexedProposal]]
+
   def searchProposals(searchQuery: SearchQuery): Future[ProposalsSearchResult]
+
   def countProposals(searchQuery: SearchQuery): Future[Long]
+
   def countProposalsByQuestion(
     maybeQuestionIds: Option[Seq[QuestionId]],
     status: Option[Seq[ProposalStatus]],
     maybeUserId: Option[UserId]
   ): Future[Map[QuestionId, Long]]
+
   def countVotedProposals(searchQuery: SearchQuery): Future[Int]
+
   def proposalTrendingMode(proposal: IndexedProposal): Option[String]
+
   def indexProposals(
     records: Seq[IndexedProposal],
     mayBeIndex: Option[IndexAndType] = None
   ): Future[Seq[IndexedProposal]]
+
   def updateProposals(
     records: Seq[IndexedProposal],
     mayBeIndex: Option[IndexAndType] = None
   ): Future[Seq[IndexedProposal]]
+
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
+
   def getTopProposals(questionId: QuestionId, size: Int, aggregationField: String): Future[Seq[IndexedProposal]]
+
   def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]]
+
   def getRandomProposalsByIdeaWithAvatar(ideaIds: Seq[IdeaId], seed: Int): Future[Map[IdeaId, AvatarsAndProposalsCount]]
 }
 
@@ -285,6 +297,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
           ).size(size = size)
         )
         .limit(0)
+
       def popularTagResponseFrombucket(bucket: TermBucket): PopularTagResponse = {
         val Array(tagId, label) = bucket.key.split(",", 2)
         PopularTagResponse(TagId(tagId), label, bucket.docCount)
@@ -415,8 +428,12 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       request = RandomAlgorithm(seed).sortDefinition(request)
 
-      client.executeAsFuture(request).map { response =>
-        computeAvatarAndProposalsCountResponse(response)
+      ideaIds match {
+        case Seq() => Future.successful(Map.empty)
+        case _ =>
+          client.executeAsFuture(request).map { response =>
+            computeAvatarAndProposalsCountResponse(response)
+          }
       }
     }
 
