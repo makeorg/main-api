@@ -99,7 +99,12 @@ trait OperationHelper {
             description = OperationOfQuestion.defaultDescription,
             consultationImage = configuration.consultationImage,
             descriptionImage = None,
-            displayResults = false
+            displayResults = false,
+            resultsLink = None,
+            proposalsCount = 0,
+            participantsCount = 0,
+            actions = None,
+            featured = false
           )
         )
       }

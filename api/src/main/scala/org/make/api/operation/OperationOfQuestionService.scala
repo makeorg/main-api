@@ -78,7 +78,12 @@ final case class CreateOperationOfQuestion(
   language: Language,
   question: String,
   shortTitle: Option[String],
-  consultationImage: Option[String]
+  consultationImage: Option[String],
+  descriptionImage: Option[String],
+  displayResults: Boolean,
+  resultsLink: Option[String],
+  actions: Option[String],
+  featured: Boolean
 )
 
 final case class SearchOperationsOfQuestions(
@@ -211,8 +216,13 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         theme = QuestionTheme.default,
         description = OperationOfQuestion.defaultDescription,
         consultationImage = parameters.consultationImage,
-        descriptionImage = None,
-        displayResults = false
+        descriptionImage = parameters.descriptionImage,
+        displayResults = parameters.displayResults,
+        resultsLink = parameters.resultsLink,
+        proposalsCount = 0,
+        participantsCount = 0,
+        actions = parameters.actions,
+        featured = parameters.featured
       )
 
       val sequenceConfiguration =

@@ -148,7 +148,12 @@ class QuestionApiTest
     description = OperationOfQuestion.defaultDescription,
     consultationImage = None,
     descriptionImage = None,
-    displayResults = false
+    displayResults = false,
+    resultsLink = None,
+    proposalsCount = 42,
+    participantsCount = 84,
+    actions = None,
+    featured = true
   )
 
   feature("start sequence by question id") {
@@ -287,7 +292,13 @@ class QuestionApiTest
       operationId = OperationId("operation-id"),
       operationTitle = "title",
       operationKind = OperationKind.BusinessConsultation.shortName,
-      aboutUrl = None
+      aboutUrl = None,
+      displayResults = false,
+      resultsLink = None,
+      proposalsCount = 42,
+      participantsCount = 84,
+      actions = None,
+      featured = true
     )
 
     when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery]))

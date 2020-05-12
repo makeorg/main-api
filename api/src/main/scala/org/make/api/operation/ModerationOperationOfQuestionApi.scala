@@ -28,6 +28,7 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
 import eu.timepit.refined.collection.MaxSize
+import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.refined._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
@@ -366,6 +367,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                               .copy(
                                 startDate = request.startDate,
                                 endDate = request.endDate,
+                                operationTitle = request.operationTitle,
                                 canPropose = request.canPropose,
                                 sequenceCardsConfiguration = updatedSequenceCardsConfiguration,
                                 aboutUrl = request.aboutUrl,
@@ -374,7 +376,12 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 description = request.description,
                                 displayResults = request.displayResults,
                                 consultationImage = request.consultationImage.map(_.value),
-                                descriptionImage = request.descriptionImage.map(_.value)
+                                descriptionImage = request.descriptionImage.map(_.value),
+                                resultsLink = request.resultsLink.map(_.value),
+                                proposalsCount = request.proposalsCount.value,
+                                participantsCount = request.participantsCount.value,
+                                actions = request.actions,
+                                featured = request.featured
                               ),
                             updatedQuestion
                           )
@@ -423,8 +430,13 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         country = body.country,
                         language = body.language,
                         question = body.question,
-                        shortTitle = body.shortTitle,
-                        consultationImage = body.consultationImage
+                        shortTitle = body.shortTitle.map(_.value),
+                        consultationImage = body.consultationImage.map(_.value),
+                        descriptionImage = body.descriptionImage.map(_.value),
+                        displayResults = body.displayResults,
+                        resultsLink = body.resultsLink.map(_.value),
+                        actions = body.actions,
+                        featured = body.featured
                       )
                     )
                   ) { operationOfQuestion =>
@@ -448,6 +460,7 @@ final case class ModifyOperationOfQuestionRequest(
   startDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
   endDate: Option[ZonedDateTime],
+  operationTitle: String,
   question: String,
   shortTitle: Option[String Refined MaxSize[W.`30`.T]],
   canPropose: Boolean,
@@ -458,18 +471,42 @@ final case class ModifyOperationOfQuestionRequest(
   description: String,
   displayResults: Boolean,
   consultationImage: Option[String Refined Url],
-  descriptionImage: Option[String Refined Url]
+  descriptionImage: Option[String Refined Url],
+  resultsLink: Option[String Refined Url],
+  proposalsCount: NonNegInt,
+  participantsCount: NonNegInt,
+  actions: Option[String],
+  featured: Boolean
 ) {
 
   validate(
     Seq(
       validateUserInput("question", question, None),
+      validateUserInput("operationTitle", operationTitle, None),
       validateOptionalUserInput("shortTitle", shortTitle.map(_.value), None),
       validateUserInput("description", description, None),
       validateColor("gradientStart", theme.gradientStart, None),
       validateColor("gradientEnd", theme.gradientEnd, None),
       validateColor("color", theme.color, None),
-      validateColor("fontColor", theme.fontColor, None)
+      validateColor("fontColor", theme.fontColor, None),
+      validateField(
+        "consultationImage",
+        "not_secure",
+        consultationImage.forall(_.value.startsWith("https://")),
+        "consultationImage must be a secure https url"
+      ),
+      validateField(
+        "descriptionImage",
+        "not_secure",
+        descriptionImage.forall(_.value.startsWith("https://")),
+        "descriptionImage must be a secure https url"
+      ),
+      validateField(
+        "resultsLink",
+        "invalid_value",
+        displayResults || resultsLink.isEmpty,
+        "resultsLink must be empty if results are not displayed (i.e. displayResults == false)"
+      )
     ) ++
       theme.secondaryColor
         .fold(Seq.empty[Requirement])(color => Seq(validateColor("secondaryColor", color, None))) ++
@@ -497,20 +534,37 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   question: String,
-  shortTitle: Option[String],
+  shortTitle: Option[String Refined MaxSize[W.`30`.T]],
   questionSlug: String,
-  consultationImage: Option[String]
+  consultationImage: Option[String Refined Url],
+  descriptionImage: Option[String Refined Url] = None,
+  displayResults: Boolean,
+  resultsLink: Option[String Refined Url],
+  actions: Option[String],
+  featured: Boolean
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),
     validateUserInput("question", question, None),
-    validateOptionalUserInput("shortTitle", shortTitle, None),
+    validateOptionalUserInput("shortTitle", shortTitle.map(_.value), None),
     validateUserInput("questionSlug", questionSlug, None),
     validateField(
       "consultationImage",
       "not_secure",
-      consultationImage.forall(_.startsWith("https://")),
+      consultationImage.forall(_.value.startsWith("https://")),
       "consultationImage must be a secure https url"
+    ),
+    validateField(
+      "descriptionImage",
+      "not_secure",
+      descriptionImage.forall(_.value.startsWith("https://")),
+      "descriptionImage must be a secure https url"
+    ),
+    validateField(
+      "resultsLink",
+      "invalid_value",
+      displayResults || resultsLink.isEmpty,
+      "resultsLink must be empty if results are not displayed (i.e. displayResults == false)"
     )
   )
 }
@@ -548,7 +602,12 @@ final case class OperationOfQuestionResponse(
   description: String,
   consultationImage: Option[String],
   descriptionImage: Option[String],
-  displayResults: Boolean
+  displayResults: Boolean,
+  resultsLink: Option[String],
+  proposalsCount: Int,
+  participantsCount: Int,
+  actions: Option[String],
+  featured: Boolean
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -576,7 +635,12 @@ object OperationOfQuestionResponse extends CirceFormatters {
       description = operationOfQuestion.description,
       consultationImage = operationOfQuestion.consultationImage,
       descriptionImage = operationOfQuestion.descriptionImage,
-      displayResults = operationOfQuestion.displayResults
+      displayResults = operationOfQuestion.displayResults,
+      resultsLink = operationOfQuestion.resultsLink,
+      proposalsCount = operationOfQuestion.proposalsCount,
+      participantsCount = operationOfQuestion.participantsCount,
+      actions = operationOfQuestion.actions,
+      featured = operationOfQuestion.featured
     )
   }
 }

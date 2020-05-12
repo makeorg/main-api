@@ -99,7 +99,13 @@ class OperationOfQuestionSearchEngineIT
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
       operationKind = OperationKind.PublicConsultation.shortName,
-      aboutUrl = None
+      aboutUrl = None,
+      displayResults = false,
+      resultsLink = None,
+      proposalsCount = 42,
+      participantsCount = 84,
+      actions = None,
+      featured = false
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-2"),
@@ -122,7 +128,13 @@ class OperationOfQuestionSearchEngineIT
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
       operationKind = OperationKind.PublicConsultation.shortName,
-      aboutUrl = None
+      aboutUrl = None,
+      displayResults = true,
+      resultsLink = Some("https://example.com"),
+      proposalsCount = 42,
+      participantsCount = 84,
+      actions = Some("some actions"),
+      featured = true
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-3"),
@@ -145,7 +157,13 @@ class OperationOfQuestionSearchEngineIT
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
       operationKind = OperationKind.BusinessConsultation.shortName,
-      aboutUrl = None
+      aboutUrl = None,
+      displayResults = false,
+      resultsLink = None,
+      proposalsCount = 42,
+      participantsCount = 84,
+      actions = None,
+      featured = false
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-4"),
@@ -168,7 +186,13 @@ class OperationOfQuestionSearchEngineIT
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
       operationKind = OperationKind.GreatCause.shortName,
-      aboutUrl = None
+      aboutUrl = None,
+      displayResults = true,
+      resultsLink = Some("https://example.com"),
+      proposalsCount = 42,
+      participantsCount = 84,
+      actions = None,
+      featured = false
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-5"),
@@ -191,7 +215,13 @@ class OperationOfQuestionSearchEngineIT
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
       operationKind = OperationKind.PrivateConsultation.shortName,
-      aboutUrl = None
+      aboutUrl = None,
+      displayResults = false,
+      resultsLink = None,
+      proposalsCount = 42,
+      participantsCount = 84,
+      actions = None,
+      featured = true
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-french-accent"),
@@ -214,7 +244,13 @@ class OperationOfQuestionSearchEngineIT
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
       operationKind = OperationKind.PublicConsultation.shortName,
-      aboutUrl = None
+      aboutUrl = None,
+      displayResults = false,
+      resultsLink = None,
+      proposalsCount = 42,
+      participantsCount = 84,
+      actions = None,
+      featured = false
     )
   )
 

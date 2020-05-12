@@ -94,6 +94,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       (country, language) <- genCountryLanguage
       question            <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
       consultationImage   <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
+      descriptionImage    <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
     } yield CreateOperationOfQuestion(
       operationId = operationId,
       startDate = date,
@@ -104,7 +105,12 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       language = language,
       question = question,
       shortTitle = Some(shortTitle),
-      consultationImage = Some(consultationImage)
+      consultationImage = Some(consultationImage),
+      descriptionImage = Some(descriptionImage),
+      displayResults = false,
+      resultsLink = None,
+      actions = None,
+      featured = false
     )
 
   def genRoles: Gen[Seq[Role]] = {

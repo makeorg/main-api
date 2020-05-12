@@ -688,6 +688,30 @@
         "aboutUrl": {
           "type": "text",
           "index": false
+        },
+        "displayResults": {
+          "type": "boolean",
+          "index": false
+        },
+        "resultsLink": {
+          "type": "text",
+          "index": false
+        },
+        "proposalsCount": {
+          "type": "integer",
+          "index": false
+        },
+        "participantsCount": {
+          "type": "integer",
+          "index": false
+        },
+        "actions": {
+          "type": "text",
+          "index": false
+        },
+        "featured": {
+          "type": "boolean",
+          "index": true
         }
       }
     }

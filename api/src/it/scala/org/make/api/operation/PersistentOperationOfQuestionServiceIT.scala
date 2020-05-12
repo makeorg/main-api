@@ -79,7 +79,12 @@ class PersistentOperationOfQuestionServiceIT
     description = OperationOfQuestion.defaultDescription,
     consultationImage = Some("https://example.com/image"),
     descriptionImage = Some("https://example.com/descriptionImage"),
-    displayResults = false
+    displayResults = false,
+    resultsLink = None,
+    proposalsCount = 42,
+    participantsCount = 84,
+    actions = None,
+    featured = true
   )
 
   def createOperationOfQuestion(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
@@ -126,6 +131,9 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.map(_.canPropose) shouldBe Some(true)
         operationOfQuestion.map(_.sequenceCardsConfiguration.introCard.enabled) shouldBe Some(true)
         operationOfQuestion.map(_.sequenceCardsConfiguration.finalCard.sharingEnabled) shouldBe Some(false)
+        operationOfQuestion.map(_.proposalsCount) shouldBe Some(42)
+        operationOfQuestion.map(_.participantsCount) shouldBe Some(84)
+        operationOfQuestion.map(_.featured) shouldBe Some(true)
       }
     }
   }
@@ -200,7 +208,10 @@ class PersistentOperationOfQuestionServiceIT
               canPropose = false,
               sequenceCardsConfiguration =
                 baseOperationOfQuestion.sequenceCardsConfiguration.copy(pushProposalCard = PushProposalCard(false)),
-              theme = baseOperationOfQuestion.theme.copy(color = "#424242")
+              theme = baseOperationOfQuestion.theme.copy(color = "#424242"),
+              proposalsCount = 420,
+              participantsCount = 840,
+              actions = Some("some actions")
             )
         )
         result <- persistentOperationOfQuestionService.getById(baseOperationOfQuestion.questionId)
@@ -214,6 +225,9 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.map(_.canPropose) shouldBe Some(false)
         operationOfQuestion.map(_.sequenceCardsConfiguration.pushProposalCard.enabled) shouldBe Some(false)
         operationOfQuestion.map(_.theme.color) shouldBe Some("#424242")
+        operationOfQuestion.map(_.proposalsCount) shouldBe Some(420)
+        operationOfQuestion.map(_.participantsCount) shouldBe Some(840)
+        operationOfQuestion.flatMap(_.actions) shouldBe Some("some actions")
       }
     }
   }

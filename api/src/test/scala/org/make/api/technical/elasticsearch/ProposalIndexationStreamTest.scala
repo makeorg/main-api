@@ -121,7 +121,12 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
             description = "description",
             consultationImage = None,
             descriptionImage = None,
-            displayResults = false
+            displayResults = false,
+            resultsLink = None,
+            proposalsCount = 42,
+            participantsCount = 84,
+            actions = None,
+            featured = true
           )
         )
       )

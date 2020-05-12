@@ -96,7 +96,13 @@ class HomeViewServiceComponentTest
     country = Country("FR"),
     language = Language("fr"),
     operationKind = "",
-    aboutUrl = Some("http://about")
+    aboutUrl = Some("http://about"),
+    displayResults = false,
+    resultsLink = None,
+    proposalsCount = 42,
+    participantsCount = 84,
+    actions = None,
+    featured = true
   )
 
   feature("home view") {

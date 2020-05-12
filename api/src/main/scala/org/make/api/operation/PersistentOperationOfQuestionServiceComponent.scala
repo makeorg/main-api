@@ -169,7 +169,12 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
               PersistentOperationOfQuestion.column.consultationImage -> operationOfQuestion.consultationImage,
               PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
-              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults
+              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults,
+              PersistentOperationOfQuestion.column.resultsLink -> operationOfQuestion.resultsLink,
+              PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
+              PersistentOperationOfQuestion.column.participantsCount -> operationOfQuestion.participantsCount,
+              PersistentOperationOfQuestion.column.actions -> operationOfQuestion.actions,
+              PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured
             )
         }.execute().apply()
       }).map(_ => operationOfQuestion)
@@ -214,7 +219,12 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
               PersistentOperationOfQuestion.column.consultationImage -> operationOfQuestion.consultationImage,
               PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
-              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults
+              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults,
+              PersistentOperationOfQuestion.column.resultsLink -> operationOfQuestion.resultsLink,
+              PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
+              PersistentOperationOfQuestion.column.participantsCount -> operationOfQuestion.participantsCount,
+              PersistentOperationOfQuestion.column.actions -> operationOfQuestion.actions,
+              PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured
             )
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
         }.execute().apply()
@@ -333,7 +343,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
     description: String,
     consultationImage: Option[String],
     descriptionImage: Option[String],
-    displayResults: Boolean
+    displayResults: Boolean,
+    resultsLink: Option[String],
+    proposalsCount: Int,
+    participantsCount: Int,
+    actions: Option[String],
+    featured: Boolean
   ) {
     def toOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
       questionId = QuestionId(this.questionId),
@@ -378,7 +393,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       description = this.description,
       consultationImage = this.consultationImage,
       descriptionImage = this.descriptionImage,
-      displayResults = this.displayResults
+      displayResults = this.displayResults,
+      resultsLink = this.resultsLink,
+      proposalsCount = this.proposalsCount,
+      participantsCount = this.participantsCount,
+      actions = this.actions,
+      featured = this.featured
     )
   }
 
@@ -427,7 +447,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       description: String,
       consultationImage: Option[String],
       descriptionImage: Option[String],
-      displayResults: Boolean
+      displayResults: Boolean,
+      resultsLink: Option[String],
+      proposalsCount: Int,
+      participantsCount: Int,
+      actions: Option[String],
+      featured: Boolean
     ) {
       def toQuestionAndDetails: QuestionWithDetails = {
         QuestionWithDetails(
@@ -477,7 +502,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
             description = this.description,
             consultationImage = this.consultationImage,
             descriptionImage = this.descriptionImage,
-            displayResults = this.displayResults
+            displayResults = this.displayResults,
+            resultsLink = this.resultsLink,
+            proposalsCount = this.proposalsCount,
+            participantsCount = this.participantsCount,
+            actions = this.actions,
+            featured = this.featured
           )
         )
 
@@ -538,7 +568,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         description = resultSet.string(operationOfQuestionAlias.description),
         consultationImage = resultSet.stringOpt(operationOfQuestionAlias.consultationImage),
         descriptionImage = resultSet.stringOpt(operationOfQuestionAlias.descriptionImage),
-        displayResults = resultSet.boolean(operationOfQuestionAlias.displayResults)
+        displayResults = resultSet.boolean(operationOfQuestionAlias.displayResults),
+        resultsLink = resultSet.stringOpt(operationOfQuestionAlias.resultsLink),
+        proposalsCount = resultSet.int(operationOfQuestionAlias.proposalsCount),
+        participantsCount = resultSet.int(operationOfQuestionAlias.participantsCount),
+        actions = resultSet.stringOpt(operationOfQuestionAlias.actions),
+        featured = resultSet.boolean(operationOfQuestionAlias.featured)
       )
     }
 
@@ -580,7 +615,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         "description",
         "consultation_image",
         "description_image",
-        "display_results"
+        "display_results",
+        "results_link",
+        "proposals_count",
+        "participants_count",
+        "actions",
+        "featured"
       )
 
     override val tableName: String = "operation_of_question"
@@ -629,7 +669,12 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         description = resultSet.string(resultName.description),
         consultationImage = resultSet.stringOpt(resultName.consultationImage),
         descriptionImage = resultSet.stringOpt(resultName.descriptionImage),
-        displayResults = resultSet.boolean(resultName.displayResults)
+        displayResults = resultSet.boolean(resultName.displayResults),
+        resultsLink = resultSet.stringOpt(resultName.resultsLink),
+        proposalsCount = resultSet.int(resultName.proposalsCount),
+        participantsCount = resultSet.int(resultName.participantsCount),
+        actions = resultSet.stringOpt(resultName.actions),
+        featured = resultSet.boolean(resultName.featured)
       )
     }
   }

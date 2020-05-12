@@ -111,7 +111,12 @@ class OperationApiTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
         )
       ),
       QuestionWithDetails(
@@ -152,7 +157,12 @@ class OperationApiTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = true,
+          resultsLink = Some("http://example.com/results"),
+          proposalsCount = 420,
+          participantsCount = 840,
+          actions = Some("some actions"),
+          featured = false
         )
       )
     )
@@ -214,7 +224,12 @@ class OperationApiTest
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
           descriptionImage = None,
-          displayResults = false
+          displayResults = false,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = false
         )
       )
     )
