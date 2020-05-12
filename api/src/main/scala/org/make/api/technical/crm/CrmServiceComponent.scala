@@ -749,7 +749,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           parameters.getOrElse("utm_source", "unknown")
         },
         accountCreationSlug = accumulator.accountCreationSlug.orElse(maybeQuestion.map(_.slug)),
-        accountCreationCountry = event.requestContext.country.map(_.value),
+        accountCreationCountry = event.requestContext.country.map(_.value).orElse(accumulator.accountCreationCountry),
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
         sourceActivity = accumulator.sourceActivity ++ event.requestContext.source

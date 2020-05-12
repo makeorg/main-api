@@ -997,6 +997,21 @@ class CrmServiceComponentTest
         result.totalProposals should contain(2)
       }
     }
+
+    scenario("Fallback to user's creation country when register event doesn't have one") {
+      val source = readEvents("events/user-without-registration-country")
+
+      val resolver = new QuestionResolver(Nil, Map())
+
+      val userWithCountry = user.copy(country = Country("BE"))
+
+      when(userJournal.currentEventsByPersistenceId(matches(userWithCountry.userId.value), any[Long], any[Long]))
+        .thenReturn(source)
+
+      whenReady(crmService.getPropertiesFromUser(userWithCountry, resolver), Timeout(5.seconds)) { result =>
+        result.accountCreationCountry should be(Some("BE"))
+      }
+    }
   }
 
   feature("createCrmUsers") {
