@@ -1811,5 +1811,12 @@ class ProposalSearchEngineIT
         result(IdeaId("idea-id-3")).proposalsCount should be(1)
       }
     }
+
+    scenario("top ideas are not defined yet") {
+      whenReady(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq.empty, 42), Timeout(10.seconds)) {
+        result =>
+          result should be(Map.empty)
+      }
+    }
   }
 }
