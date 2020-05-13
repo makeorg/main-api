@@ -789,7 +789,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         } yield userSegment == proposalSegment
       ).exists(identity)
 
-      (proposalKey, proposalKey.contains(newHash), page.contains("sequence"), isInSegment) match {
+      val inSequence = page.contains("sequence") | page.contains("widget")
+      (proposalKey, proposalKey.contains(newHash), inSequence, isInSegment) match {
         case (None, _, _, _) =>
           logger.warn(s"No proposal key for proposal $proposalId, on context $requestContext")
           incrementTrollCounter(requestContext)

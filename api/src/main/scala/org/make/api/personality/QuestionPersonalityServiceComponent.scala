@@ -202,7 +202,7 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
         commentByTopIdea <- topIdeaCommentService.countForAll(topIdeas.map(_.topIdeaId))
         avatarsAndProposalsCountByIdea <- elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(
           ideaIds = topIdeas.map(_.ideaId),
-          MakeRandom.random.nextInt()
+          MakeRandom.nextInt()
         )
       } yield opinionsResponse(
         topIdeas,

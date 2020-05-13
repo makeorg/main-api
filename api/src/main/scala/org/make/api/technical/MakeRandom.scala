@@ -21,5 +21,29 @@ package org.make.api.technical
 import scala.util.Random
 
 object MakeRandom {
-  val random: Random = new Random(System.nanoTime())
+  private val random: Random = new Random(System.nanoTime())
+
+  def setSeed(seed: Long): Unit = {
+    random.setSeed(seed)
+  }
+
+  def nextInt(n: Int): Int = {
+    random.nextInt(n)
+  }
+
+  def nextInt(): Int = {
+    random.nextInt()
+  }
+
+  def nextDouble(): Double = {
+    random.nextDouble()
+  }
+
+  def nextString(length: Int): String = {
+    random.nextString(length)
+  }
+
+  def shuffleSeq[T](seq: Seq[T]): Seq[T] = {
+    random.shuffle(seq)
+  }
 }

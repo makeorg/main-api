@@ -231,7 +231,7 @@ final case class SearchRequest(
         idea = ideaIds.map(IdeaSearchFilter.apply)
       )
 
-    val randomSeed: Int = seed.getOrElse(MakeRandom.random.nextInt())
+    val randomSeed: Int = seed.getOrElse(MakeRandom.nextInt())
     val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector
       .select(sortAlgorithm, randomSeed, sortAlgorithmConfiguration)
       // Once the Deprecated field `isRandom` is deleted, replace following code by `None`

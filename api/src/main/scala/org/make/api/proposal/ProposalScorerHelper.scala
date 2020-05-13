@@ -23,13 +23,18 @@ import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.math3.distribution.BetaDistribution
 import org.apache.commons.math3.random.{MersenneTwister, RandomGenerator}
 import org.make.api.sequence.SequenceConfiguration
+import org.make.api.technical.MakeRandom
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal.indexed.SequencePool
 import org.make.core.proposal.{BaseQualification, BaseVote, ProposalStatus, QualificationKey, VoteKey}
 
 object ProposalScorerHelper extends StrictLogging {
-  var random: RandomGenerator = new MersenneTwister()
+  val random: RandomGenerator = new MersenneTwister()
+
+  def setSeed(seed: Int): Unit = {
+    random.setSeed(seed)
+  }
 
   case class ScoreComponent(name: String, weight: Double, mean: Double, std: Double)
 
@@ -219,7 +224,6 @@ object ProposalScorerHelper extends StrictLogging {
   }
 
   object ScoreCounts {
-
     def fromSequenceVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countSequence, _.countSequence)
     def fromSegmentVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countSegment, _.countSegment)
     def fromVerifiedVotes(votes: Seq[BaseVote]): ScoreCounts = apply(votes, _.countVerified, _.countVerified)
@@ -242,6 +246,48 @@ object ProposalScorerHelper extends StrictLogging {
       specificScores: ScoreCounts
     ): Double =
       topScore(configuration, allScores, specificScores) - specificScores.topScoreConfidenceInterval()
+
+    /*
+     * This is the sampling equivalent for a weighted sum.
+     * We replace the weight by a probablity of beeing chosen.
+     * As a result the probability of each value is a weigthed sum of
+     * the probablity for each component of the score.
+     * In short: we sum the probability not the samples
+     */
+    def sampleTopScore(
+      configuration: SequenceConfiguration,
+      allScores: ScoreCounts,
+      specificScores: ScoreCounts
+    ): Double = {
+      val r = MakeRandom.nextDouble()
+      if (r < configuration.nonSequenceVotesWeight) {
+        allScores.sampleTopScore()
+      } else {
+        specificScores.sampleTopScore()
+      }
+    }
+
+    def controversy(
+      configuration: SequenceConfiguration,
+      allScores: ScoreCounts,
+      specificScores: ScoreCounts
+    ): Double = {
+      (1 - configuration.nonSequenceVotesWeight) * specificScores.controversy() +
+        configuration.nonSequenceVotesWeight * allScores.controversy()
+    }
+
+    def sampleControversy(
+      configuration: SequenceConfiguration,
+      allScores: ScoreCounts,
+      specificScores: ScoreCounts
+    ): Double = {
+      val r = MakeRandom.nextDouble()
+      if (r < configuration.nonSequenceVotesWeight) {
+        allScores.sampleControversy()
+      } else {
+        specificScores.sampleControversy()
+      }
+    }
 
     def topScoreAjustedWithVotes(
       configuration: SequenceConfiguration,
