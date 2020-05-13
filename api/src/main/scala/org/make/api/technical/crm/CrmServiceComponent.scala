@@ -537,6 +537,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationOrigin = userProperty.accountCreationOrigin,
         accountCreationSlug = userProperty.accountCreationSlug,
         accountCreationCountry = userProperty.accountCreationCountry,
+        accountCreationLocation = userProperty.accountCreationLocation,
         countriesActivity = Some(userProperty.countriesActivity.distinct.mkString(",")),
         lastCountryActivity = userProperty.lastCountryActivity,
         lastLanguageActivity = userProperty.lastLanguageActivity,
@@ -750,6 +751,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         },
         accountCreationSlug = accumulator.accountCreationSlug.orElse(maybeQuestion.map(_.slug)),
         accountCreationCountry = event.requestContext.country.map(_.value).orElse(accumulator.accountCreationCountry),
+        accountCreationLocation = event.requestContext.location,
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
         questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
         sourceActivity = accumulator.sourceActivity ++ event.requestContext.source
@@ -779,6 +781,7 @@ final case class UserProperties(
   accountCreationOrigin: Option[String] = None,
   accountCreationSlug: Option[String] = None,
   accountCreationCountry: Option[String] = None,
+  accountCreationLocation: Option[String] = None,
   countriesActivity: Seq[String] = Seq.empty,
   lastCountryActivity: Option[String] = None,
   lastLanguageActivity: Option[String] = None,

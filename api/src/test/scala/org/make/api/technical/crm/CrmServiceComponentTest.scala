@@ -151,6 +151,7 @@ class CrmServiceComponentTest
       accountCreationOrigin = None,
       accountCreationOperation = None,
       accountCreationCountry = None,
+      accountCreationLocation = None,
       countriesActivity = None,
       lastCountryActivity = None,
       lastLanguageActivity = None,
@@ -377,6 +378,7 @@ class CrmServiceComponentTest
     accountCreationOrigin = None,
     accountCreationOperation = None,
     accountCreationCountry = None,
+    accountCreationLocation = None,
     countriesActivity = None,
     lastCountryActivity = Some("FR"),
     lastLanguageActivity = Some("fr"),
@@ -1012,6 +1014,21 @@ class CrmServiceComponentTest
         result.accountCreationCountry should be(Some("BE"))
       }
     }
+
+    scenario("User registered on a given location") {
+      val source = readEvents("events/user-with-location")
+
+      val resolver = new QuestionResolver(Nil, Map())
+
+      val userWithLocation = TestUtils.user(id = UserId("user-with-location"))
+
+      when(userJournal.currentEventsByPersistenceId(matches(userWithLocation.userId.value), any[Long], any[Long]))
+        .thenReturn(source)
+
+      whenReady(crmService.getPropertiesFromUser(userWithLocation, resolver), Timeout(5.seconds)) { result =>
+        result.accountCreationLocation should contain("search-page")
+      }
+    }
   }
 
   feature("createCrmUsers") {
@@ -1361,6 +1378,7 @@ class CrmServiceComponentTest
             accountCreationOrigin = None,
             accountCreationSlug = None,
             accountCreationCountry = Some("FR"),
+            accountCreationLocation = Some("search-page"),
             countriesActivity = Some("FR"),
             lastCountryActivity = Some("FR"),
             lastLanguageActivity = Some("fr"),
@@ -1380,7 +1398,7 @@ class CrmServiceComponentTest
       )
 
       contact.toStringCsv should be(
-        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
+        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","search-page","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
           .format("%n")}"""
       )
     }
@@ -1426,7 +1444,7 @@ class CrmServiceComponentTest
         val firstLine = fileToSeq.head
         lineCount should be(2)
         firstLine should be(
-          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
+          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
         )
         bufferedFile.close()
       }
