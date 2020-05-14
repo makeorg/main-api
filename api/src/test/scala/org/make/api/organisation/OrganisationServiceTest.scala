@@ -21,6 +21,7 @@ package org.make.api.organisation
 
 import java.time.ZonedDateTime
 
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.api.proposal.{
   ProposalResponse,
@@ -30,6 +31,7 @@ import org.make.api.proposal.{
   ProposalServiceComponent,
   ProposalsResultSeededResponse
 }
+import org.make.api.technical.auth.{UserTokenGenerator, UserTokenGeneratorComponent}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
@@ -67,7 +69,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 
 class OrganisationServiceTest
     extends MakeUnitTest
@@ -80,7 +82,9 @@ class OrganisationServiceTest
     with EventBusServiceComponent
     with ProposalSearchEngineComponent
     with OrganisationSearchEngineComponent
-    with PersistentUserToAnonymizeServiceComponent {
+    with PersistentUserToAnonymizeServiceComponent
+    with UserTokenGeneratorComponent
+    with MakeSettingsComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val userService: UserService = mock[UserService]
@@ -92,6 +96,10 @@ class OrganisationServiceTest
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val persistentUserToAnonymizeService: PersistentUserToAnonymizeService =
     mock[PersistentUserToAnonymizeService]
+  override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
+
+  Mockito.when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
 
   class MatchRegisterEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
     override def matches(argument: AnyRef): Boolean =
@@ -160,6 +168,8 @@ class OrganisationServiceTest
         )
         .thenReturn(Future.successful(returnedOrganisation))
 
+      Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
+
       val futureOrganisation = organisationService.register(
         OrganisationRegisterData(
           name = "John Doe Corp.",
@@ -184,52 +194,6 @@ class OrganisationServiceTest
         .publish(
           ArgumentMatchers
             .argThat(new MatchRegisterEvents(Some(returnedOrganisation.userId)))
-        )
-    }
-
-    scenario("successfully register an organisation without password") {
-      Mockito.reset(eventBusService)
-      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
-
-      Mockito
-        .when(
-          persistentUserService
-            .persist(any[User])
-        )
-        .thenReturn(Future.successful(returnedOrganisation))
-
-      Mockito.when(userService.requestPasswordReset(any[UserId])).thenReturn(Future.successful(true))
-
-      val futureOrganisation = organisationService.register(
-        OrganisationRegisterData(
-          name = "John Doe Corp.",
-          email = "any@mail.com",
-          password = None,
-          avatar = None,
-          description = None,
-          country = Country("FR"),
-          language = Language("fr"),
-          website = None
-        ),
-        RequestContext.empty
-      )
-
-      whenReady(futureOrganisation, Timeout(2.seconds)) { user =>
-        user shouldBe a[User]
-        user.email should be("any@mail.com")
-        user.organisationName should be(Some("John Doe Corp."))
-      }
-
-      verify(eventBusService, times(1))
-        .publish(
-          ArgumentMatchers
-            .argThat(new MatchRegisterEvents(Some(returnedOrganisation.userId)))
-        )
-
-      verify(eventBusService, times(1))
-        .publish(
-          ArgumentMatchers
-            .argThat(new MatchOrganisationAskPasswordEvents(Some(returnedOrganisation.userId)))
         )
     }
 

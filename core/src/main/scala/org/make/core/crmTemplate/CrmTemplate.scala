@@ -36,7 +36,8 @@ case class CrmTemplates(
   proposalAcceptedOrganisation: TemplateId,
   proposalRefusedOrganisation: TemplateId,
   forgottenPasswordOrganisation: TemplateId,
-  organisationEmailChangeConfirmation: TemplateId
+  organisationEmailChangeConfirmation: TemplateId,
+  registrationB2B: TemplateId
 )
 object CrmTemplates {
   object MonitoringCategory {

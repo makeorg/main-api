@@ -25,7 +25,7 @@ import com.sksamuel.avro4s.RecordFormat
 import org.make.api.technical.crm.SendMailPublisherService
 import org.make.api.technical.{KafkaConsumerActor, TimeSettings}
 import org.make.api.userhistory._
-import org.make.core.user.{User, UserId, UserType}
+import org.make.core.user.{User, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -47,7 +47,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case event: UserConnectedEvent              => doNothing(event)
       case event: UserUpdatedTagEvent             => doNothing(event)
       case event: ResendValidationEmailEvent      => handleResendValidationEmailEvent(event)
-      case event: OrganisationRegisteredEvent     => doNothing(event)
+      case event: OrganisationRegisteredEvent     => handleUserB2BRegisteredEvent(event)
       case event: OrganisationUpdatedEvent        => doNothing(event)
       case event: OrganisationEmailChangedEvent   => handleOrganisationEmailChangedEvent(event)
       case event: PersonalityEmailChangedEvent    => handlePersonalityEmailChangedEvent(event)
@@ -57,6 +57,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
       case event: UserFollowEvent                 => doNothing(event)
       case event: UserUnfollowEvent               => doNothing(event)
       case event: UserUploadAvatarEvent           => doNothing(event)
+      case event: PersonalityRegisteredEvent      => handleUserB2BRegisteredEvent(event)
     }
   }
 
@@ -70,31 +71,31 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
 
   def handleUserValidatedAccountEvent(event: UserValidatedAccountEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(user) if user.userType == UserType.UserTypeUser =>
+      case Some(user) if user.isB2C =>
         sendMailPublisherService.publishWelcome(user, event.country, event.language, event.requestContext)
+      case _ => Future.successful {}
+    }
+  }
+
+  def handleUserB2BRegisteredEvent(event: B2BRegisteredEvent): Future[Unit] = {
+    getUserWithValidEmail(event.userId).map {
+      case Some(user) if user.isB2B =>
+        sendMailPublisherService.publishRegistrationB2B(user, event.country, event.language, event.requestContext)
       case _ => Future.successful {}
     }
   }
 
   def handleUserRegisteredEvent(event: UserRegisteredEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(user) if user.userType == UserType.UserTypeUser && !event.isSocialLogin =>
+      case Some(user) if user.isB2C && !event.isSocialLogin =>
         sendMailPublisherService.publishRegistration(user, event.country, event.language, event.requestContext)
-      case Some(user) if user.userType == UserType.UserTypePersonality =>
-        sendMailPublisherService.publishForgottenPasswordOrganisation(
-          user,
-          event.country,
-          event.language,
-          event.requestContext
-        )
       case _ => Future.successful {}
     }
   }
 
   private def handleResetPasswordEvent(event: ResetPasswordEvent): Future[Unit] = {
     getUserWithValidEmail(event.userId).flatMap {
-      case Some(user)
-          if user.userType == UserType.UserTypeOrganisation || user.userType == UserType.UserTypePersonality =>
+      case Some(user) if user.isB2B =>
         sendMailPublisherService.publishForgottenPasswordOrganisation(
           user,
           event.country,

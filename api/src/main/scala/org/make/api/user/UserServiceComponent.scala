@@ -55,7 +55,6 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 trait UserServiceComponent {
   def userService: UserService
@@ -191,8 +190,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
   class DefaultUserService extends UserService {
 
-    val validationTokenExpiresIn: Long = 30.days.toSeconds
-    val resetTokenExpiresIn: Long = 1.days.toSeconds
+    val validationTokenExpiresIn: Long = makeSettings.validationTokenExpiresIn.toSeconds
+    val resetTokenExpiresIn: Long = makeSettings.resetTokenExpiresIn.toSeconds
+    val resetTokenB2BExpiresIn: Long = makeSettings.resetTokenB2BExpiresIn.toSeconds
 
     override def getUser(userId: UserId): Future[Option[User]] = {
       persistentUserService.get(userId)
@@ -286,7 +286,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = Some(resetToken),
-        resetTokenExpiresAt = Some(DateHelper.now().plusSeconds(resetTokenExpiresIn)),
+        resetTokenExpiresAt = Some(DateHelper.now().plusSeconds(resetTokenB2BExpiresIn)),
         roles = Seq(Role.RoleCitizen),
         country = country,
         language = language,
@@ -415,22 +415,13 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
       result.map { user =>
         eventBusService.publish(
-          UserRegisteredEvent(
+          PersonalityRegisteredEvent(
             connectedUserId = Some(user.userId),
             userId = user.userId,
             requestContext = requestContext,
             email = user.email,
-            firstName = user.firstName,
-            lastName = user.lastName,
-            profession = user.profile.flatMap(_.profession),
-            dateOfBirth = user.profile.flatMap(_.dateOfBirth),
-            postalCode = user.profile.flatMap(_.postalCode),
             country = user.country,
             language = user.language,
-            gender = user.profile.flatMap(_.gender),
-            socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
-            optInPartner = user.profile.flatMap(_.optInPartner),
-            registerQuestionId = user.profile.flatMap(_.registerQuestionId),
             eventDate = DateHelper.now()
           )
         )

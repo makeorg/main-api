@@ -52,6 +52,12 @@ trait SendMailPublisherService {
     language: Language,
     requestContext: RequestContext
   ): Future[Unit]
+  def publishRegistrationB2B(
+    user: User,
+    country: Country,
+    language: Language,
+    requestContext: RequestContext
+  ): Future[Unit]
   def publishForgottenPassword(
     user: User,
     country: Country,
@@ -236,33 +242,30 @@ trait DefaultSendMailPublisherServiceComponent
     ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
-      val futureQuestionSlug: Future[String] = resolveQuestionSlug(country, language, requestContext)
-      def publishSendEmail(questionSlug: String, crmTemplates: CrmTemplates): Unit =
-        eventBusService.publish(
-          SendEmail.create(
-            templateId = Some(crmTemplates.welcome.value.toInt),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "registration_context" -> questionSlug,
-                "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
-                "question" -> requestContext.question.getOrElse(""),
-                "location" -> requestContext.location.getOrElse(""),
-                "source" -> requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = None,
-            monitoringCategory = Some(CrmTemplates.MonitoringCategory.welcome)
-          )
-        )
 
-      futureQuestionSlug.flatMap { questionSlug =>
+      resolveQuestionSlug(country, language, requestContext).flatMap { questionSlug =>
         findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
-          publishSendEmail(questionSlug, crmTemplates)
+          eventBusService.publish(
+            SendEmail.create(
+              templateId = Some(crmTemplates.welcome.value.toInt),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(
+                Map(
+                  "firstname" -> user.firstName.getOrElse(""),
+                  "registration_context" -> questionSlug,
+                  "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
+                  "question" -> requestContext.question.getOrElse(""),
+                  "location" -> requestContext.location.getOrElse(""),
+                  "source" -> requestContext.source.getOrElse("")
+                )
+              ),
+              customCampaign = None,
+              monitoringCategory = Some(CrmTemplates.MonitoringCategory.welcome)
+            )
+          )
         })
       }
     }
@@ -275,39 +278,48 @@ trait DefaultSendMailPublisherServiceComponent
     ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
-      val verificationToken: String = user.verificationToken match {
-        case Some(token) => token
+
+      user.verificationToken match {
+        case Some(verificationToken) =>
+          findCrmTemplates(questionId, locale).flatMap {
+            case Some(crmTemplates) =>
+              getUtmCampaignFromQuestionId(questionId).map { utmCampaign =>
+                eventBusService.publish(
+                  SendEmail.create(
+                    templateId = Some(crmTemplates.registration.value.toInt),
+                    recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+                    from = Some(
+                      Recipient(
+                        name = Some(mailJetTemplateConfiguration.fromName),
+                        email = mailJetTemplateConfiguration.from
+                      )
+                    ),
+                    variables = Some(
+                      Map(
+                        "firstname" -> user.firstName.getOrElse(""),
+                        "email_validation_url" -> getAccountValidationUrl(
+                          user,
+                          verificationToken,
+                          requestContext,
+                          utmCampaign
+                        ),
+                        "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
+                        "question" -> requestContext.question.getOrElse(""),
+                        "location" -> requestContext.location.getOrElse(""),
+                        "source" -> requestContext.source.getOrElse("")
+                      )
+                    ),
+                    customCampaign = None,
+                    monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+                  )
+                )
+              }
+            case None => Future.successful {}
+          }
         case _ =>
-          throw new IllegalStateException(s"verification token required but not provided for user ${user.userId.value}")
-      }
-
-      def publishSendEmail(crmTemplates: CrmTemplates, utmCampaign: String): Unit =
-        eventBusService.publish(
-          SendEmail.create(
-            templateId = Some(crmTemplates.registration.value.toInt),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "email_validation_url" -> getAccountValidationUrl(user, verificationToken, requestContext, utmCampaign),
-                "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
-                "question" -> requestContext.question.getOrElse(""),
-                "location" -> requestContext.location.getOrElse(""),
-                "source" -> requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = None,
-            monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+          Future.failed(
+            new IllegalStateException(s"verification token required but not provided for user ${user.userId.value}")
           )
-        )
-
-      findCrmTemplates(questionId, locale).flatMap {
-        case Some(crmTemplates) =>
-          getUtmCampaignFromQuestionId(questionId).map(utmCampaign => publishSendEmail(crmTemplates, utmCampaign))
-        case None => Future.successful {}
       }
     }
 
@@ -319,35 +331,44 @@ trait DefaultSendMailPublisherServiceComponent
     ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
-      val verificationToken: String = user.verificationToken match {
-        case Some(token) => token
+
+      user.verificationToken match {
+        case Some(verificationToken) =>
+          findCrmTemplates(questionId, locale).flatMap {
+            case Some(crmTemplates) =>
+              getUtmCampaignFromQuestionId(questionId).map { utmCampaign =>
+                eventBusService.publish(
+                  SendEmail.create(
+                    templateId = Some(crmTemplates.resendRegistration.value.toInt),
+                    recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+                    from = Some(
+                      Recipient(
+                        name = Some(mailJetTemplateConfiguration.fromName),
+                        email = mailJetTemplateConfiguration.from
+                      )
+                    ),
+                    variables = Some(
+                      Map(
+                        "firstname" -> user.firstName.getOrElse(""),
+                        "email_validation_url" -> getAccountValidationUrl(
+                          user,
+                          verificationToken,
+                          requestContext,
+                          utmCampaign
+                        )
+                      )
+                    ),
+                    customCampaign = None,
+                    monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+                  )
+                )
+              }
+            case None => Future.successful {}
+          }
         case _ =>
-          throw new IllegalStateException(s"verification token required but not provided for user ${user.userId.value}")
-      }
-
-      def publishSendEmail(crmTemplates: CrmTemplates, utmCampaign: String): Unit =
-        eventBusService.publish(
-          SendEmail.create(
-            templateId = Some(crmTemplates.resendRegistration.value.toInt),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "email_validation_url" -> getAccountValidationUrl(user, verificationToken, requestContext, utmCampaign)
-              )
-            ),
-            customCampaign = None,
-            monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+          Future.failed(
+            new IllegalStateException(s"verification token required but not provided for user ${user.userId.value}")
           )
-        )
-
-      findCrmTemplates(questionId, locale).flatMap {
-        case Some(crmTemplates) =>
-          getUtmCampaignFromQuestionId(questionId).map(utmCampaign => publishSendEmail(crmTemplates, utmCampaign))
-        case None => Future.successful {}
       }
     }
 
@@ -359,36 +380,40 @@ trait DefaultSendMailPublisherServiceComponent
     ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
-      val resetToken: String = user.resetToken match {
-        case Some(token) => token
-        case _           => throw new IllegalStateException("reset token required but not provided")
-      }
-      def publishSendEmail(crmTemplates: CrmTemplates): Unit =
-        eventBusService.publish(
-          SendEmail.create(
-            templateId = Some(crmTemplates.forgottenPassword.value.toInt),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "firstname" -> user.firstName.getOrElse(""),
-                "forgotten_password_url" -> getForgottenPasswordUrl(user, resetToken, requestContext),
-                "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
-                "question" -> requestContext.question.getOrElse(""),
-                "location" -> requestContext.location.getOrElse(""),
-                "source" -> requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = None,
-            monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
-          )
-        )
 
-      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
-        publishSendEmail(crmTemplates)
-      })
+      user.resetToken match {
+        case Some(resetToken) =>
+          findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+            eventBusService.publish(
+              SendEmail.create(
+                templateId = Some(crmTemplates.forgottenPassword.value.toInt),
+                recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+                from = Some(
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
+                ),
+                variables = Some(
+                  Map(
+                    "firstname" -> user.firstName.getOrElse(""),
+                    "forgotten_password_url" -> getForgottenPasswordUrl(user, resetToken, requestContext),
+                    "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
+                    "question" -> requestContext.question.getOrElse(""),
+                    "location" -> requestContext.location.getOrElse(""),
+                    "source" -> requestContext.source.getOrElse("")
+                  )
+                ),
+                customCampaign = None,
+                monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+              )
+            )
+          })
+        case _ =>
+          Future.failed(
+            new IllegalStateException(s"reset token required but not provided for user ${user.userId.value}")
+          )
+      }
     }
 
     override def publishForgottenPasswordOrganisation(
@@ -399,36 +424,41 @@ trait DefaultSendMailPublisherServiceComponent
     ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
-      val resetToken: String = organisation.resetToken match {
-        case Some(token) => token
-        case _           => throw new IllegalStateException("reset token required")
-      }
-      def publishSendEmail(crmTemplates: CrmTemplates): Unit = {
-        eventBusService.publish(
-          SendEmail.create(
-            templateId = Some(crmTemplates.forgottenPasswordOrganisation.value.toInt),
-            recipients = Seq(Recipient(email = organisation.email, name = organisation.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(
-              Map(
-                "forgotten_password_url" -> getForgottenPasswordUrl(organisation, resetToken, requestContext),
-                "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
-                "question" -> requestContext.question.getOrElse(""),
-                "location" -> requestContext.location.getOrElse(""),
-                "source" -> requestContext.source.getOrElse("")
-              )
-            ),
-            customCampaign = None,
-            monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
-          )
-        )
-      }
 
-      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
-        publishSendEmail(crmTemplates)
-      })
+      organisation.resetToken match {
+        case Some(resetToken) =>
+          findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
+            eventBusService.publish(
+              SendEmail.create(
+                templateId = Some(crmTemplates.forgottenPasswordOrganisation.value.toInt),
+                recipients = Seq(Recipient(email = organisation.email, name = organisation.fullName)),
+                from = Some(
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
+                ),
+                variables = Some(
+                  Map(
+                    "forgotten_password_url" -> getForgottenPasswordUrl(organisation, resetToken, requestContext),
+                    "operation" -> requestContext.operationId.map(_.value).getOrElse(""),
+                    "question" -> requestContext.question.getOrElse(""),
+                    "location" -> requestContext.location.getOrElse(""),
+                    "source" -> requestContext.source.getOrElse("")
+                  )
+                ),
+                customCampaign = None,
+                monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+              )
+            )
+          })
+        case _ =>
+          Future.failed(
+            new IllegalStateException(
+              s"reset token required but not provided for organisation ${organisation.userId.value}"
+            )
+          )
+      }
     }
 
     override def publishEmailChanged(
@@ -440,7 +470,8 @@ trait DefaultSendMailPublisherServiceComponent
     ): Future[Unit] = {
       val locale = getLocale(country, language)
       val questionId = requestContext.questionId
-      def publishSendEmail(crmTemplates: CrmTemplates): Unit = {
+
+      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
         eventBusService.publish(
           SendEmail.create(
             templateId = Some(crmTemplates.organisationEmailChangeConfirmation.value.toInt),
@@ -453,10 +484,6 @@ trait DefaultSendMailPublisherServiceComponent
             monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
           )
         )
-      }
-
-      findCrmTemplates(questionId, locale).map(_.foreach { crmTemplates =>
-        publishSendEmail(crmTemplates)
       })
     }
 
@@ -479,6 +506,7 @@ trait DefaultSendMailPublisherServiceComponent
       futureMaybeQuestion.map { maybeQuestion =>
         val maybeQuestionId = maybeQuestion.map(_.questionId)
         val slug = maybeQuestion.map(_.slug).orElse(locale).getOrElse("")
+
         def variables(user: User, proposal: Proposal): Map[String, String] =
           Map(
             "proposal_url" -> getProposalUrl(proposal, slug),
@@ -491,11 +519,13 @@ trait DefaultSendMailPublisherServiceComponent
             "source" -> requestContext.source.getOrElse(""),
             "sequence_url" -> sequenceUrlForProposal(isAccepted = true, user.userType, slug, proposal)
           )
+
         def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
           if (userType == UserType.UserTypeOrganisation)
             crmTemplates.proposalAcceptedOrganisation
           else
             crmTemplates.proposalAccepted
+
         sendModerationMail(proposalId, maybeQuestionId, template, variables)
       }
     }
@@ -517,6 +547,7 @@ trait DefaultSendMailPublisherServiceComponent
       futureMaybeQuestion.map { maybeQuestion =>
         val maybeQuestionId = maybeQuestion.map(_.questionId)
         val slug = maybeQuestion.map(_.slug).orElse(locale).getOrElse("")
+
         def variables(user: User, proposal: Proposal): Map[String, String] =
           Map(
             "proposal_url" -> getProposalUrl(proposal, slug),
@@ -530,11 +561,13 @@ trait DefaultSendMailPublisherServiceComponent
             "source" -> requestContext.source.getOrElse(""),
             "sequence_url" -> sequenceUrlForProposal(isAccepted = false, user.userType, slug, proposal)
           )
+
         def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
           if (userType == UserType.UserTypeOrganisation)
             crmTemplates.proposalRefusedOrganisation
           else
             crmTemplates.proposalRefused
+
         sendModerationMail(proposalId, maybeQuestionId, template, variables)
       }
 
@@ -550,6 +583,45 @@ trait DefaultSendMailPublisherServiceComponent
       userService.changeEmailVerificationTokenIfNeeded(user.userId).flatMap {
         case Some(_) => publishResendRegistration(user, country, language, requestContext)
         case None    => Future.successful {}
+      }
+    }
+
+    override def publishRegistrationB2B(
+      user: User,
+      country: Country,
+      language: Language,
+      requestContext: RequestContext
+    ): Future[Unit] = {
+      val locale = getLocale(country, language)
+
+      user.resetToken match {
+        case Some(resetToken) =>
+          findCrmTemplates(None, locale).map(_.foreach { crmTemplates =>
+            eventBusService.publish(
+              SendEmail.create(
+                templateId = Some(crmTemplates.registrationB2B.value.toInt),
+                recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+                from = Some(
+                  Recipient(
+                    name = Some(mailJetTemplateConfiguration.fromName),
+                    email = mailJetTemplateConfiguration.from
+                  )
+                ),
+                variables = Some(
+                  Map(
+                    "mailto" -> user.email,
+                    "forgotten_password_url" -> getForgottenPasswordUrl(user, resetToken, requestContext)
+                  )
+                ),
+                customCampaign = None,
+                monitoringCategory = Some(CrmTemplates.MonitoringCategory.account)
+              )
+            )
+          })
+        case _ =>
+          Future.failed(
+            new IllegalStateException(s"reset token required but not provided for user ${user.userId.value}")
+          )
       }
     }
   }
