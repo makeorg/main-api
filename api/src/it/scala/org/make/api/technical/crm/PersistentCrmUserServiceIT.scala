@@ -41,6 +41,7 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
     accountCreationOperation = Some("weeuropeans-fr"),
     accountCreationOrigin = Some("origin"),
     accountCreationSource = Some("source"),
+    accountCreationLocation = Some("location"),
     countriesActivity = Some("FR,DE"),
     lastCountryActivity = Some("FR"),
     lastLanguageActivity = Some("fr"),
