@@ -240,7 +240,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               ),
               excludes = Some(proposal.SearchFilters(proposal = Some(ProposalSearchFilter(proposalsToExclude)))),
               limit = Some(sequenceConfiguration.maxTestedProposalCount),
-              sortAlgorithm = Some(RandomAlgorithm(MakeRandom.random.nextInt()))
+              sortAlgorithm = Some(RandomAlgorithm(MakeRandom.nextInt()))
             )
           )
           .map(_.results)

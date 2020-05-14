@@ -92,7 +92,7 @@ trait ProposalHelper {
                 requestContext = emptyContext
               )
           )
-          .getOrElse(getUser(api, users(MakeRandom.random.nextInt(users.size)).email))
+          .getOrElse(getUser(api, users(MakeRandom.nextInt(users.size)).email))
     }
   }
 

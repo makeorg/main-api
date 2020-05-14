@@ -254,7 +254,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       questionId: QuestionId
     ): Future[QuestionTopIdeasResponseWithSeed] = {
 
-      val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
+      val randomSeed = seed.getOrElse(MakeRandom.nextInt())
 
       topIdeaService
         .search(start = start, end = end, ideaId = None, questionIds = Some(Seq(questionId)), name = None)
@@ -290,7 +290,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
       questionId: QuestionId,
       seed: Option[Int]
     ): Future[Option[QuestionTopIdeaResultWithSeed]] = {
-      val randomSeed = seed.getOrElse(MakeRandom.random.nextInt())
+      val randomSeed = seed.getOrElse(MakeRandom.nextInt())
 
       persistentTopIdeaService.getByIdAndQuestionId(topIdeaId, questionId).flatMap {
         case None => Future.successful(None)
