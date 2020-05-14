@@ -19,6 +19,7 @@
 
 package org.make.core
 
+import java.net.URL
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.temporal.ChronoField._
 import java.time.{LocalDate, ZonedDateTime}
@@ -69,6 +70,8 @@ trait CirceFormatters {
   }
 
   implicit def stringValueEncoder[A <: StringValue]: Encoder[A] = a => Json.fromString(a.value)
+
+  implicit val urlEncoder: Encoder[URL] = Encoder[String].contramap(_.toString)
 }
 
 // object CirceFormatters extends CirceFormatters

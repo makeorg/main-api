@@ -712,6 +712,14 @@
         "featured": {
           "type": "boolean",
           "index": true
+        },
+        "questionShortTitle": {
+          "type": "text",
+          "index": false
+        },
+        "open": {
+          "type": "boolean",
+          "index": true
         }
       }
     }

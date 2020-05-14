@@ -18,6 +18,7 @@
  */
 
 package org.make.api.views
+import java.net.URL
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder}
@@ -25,6 +26,8 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.proposal.{ProposalResponse, ProposalsResultSeededResponse}
+import org.make.api.question.QuestionOfOperationResponse
+import org.make.api.views.HomePageViewResponse.{Article, Highlights}
 import org.make.core.CirceFormatters
 import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.operation.{CurrentOperation, FeaturedOperation}
@@ -43,6 +46,22 @@ final case class HomeViewResponse(
 
 object HomeViewResponse {
   implicit val encoder: Encoder[HomeViewResponse] = deriveEncoder[HomeViewResponse]
+}
+
+final case class HomePageViewResponse(
+  highlights: Highlights,
+  currentQuestions: Seq[QuestionOfOperationResponse],
+  featuredQuestions: Seq[QuestionOfOperationResponse],
+  articles: Seq[Article]
+)
+
+object HomePageViewResponse extends CirceFormatters {
+  final case class Article(title: String, description: String, picture: URL, link: URL)
+  final case class Highlights(participantsCount: Int, proposalsCount: Int, partnersCount: Int)
+
+  implicit val articleEncoder: Encoder[Article] = deriveEncoder
+  implicit val highlightsEncoder: Encoder[Highlights] = deriveEncoder
+  implicit val encoder: Encoder[HomePageViewResponse] = deriveEncoder
 }
 
 final case class BusinessConsultationThemeResponse(gradientStart: String, gradientEnd: String)

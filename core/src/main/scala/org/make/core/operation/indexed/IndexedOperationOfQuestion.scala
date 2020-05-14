@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.{BusinessConfig, CirceFormatters}
+import org.make.core.{BusinessConfig, CirceFormatters, DateHelper}
 import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, SimpleOperation}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -36,12 +36,17 @@ object OperationOfQuestionElasticsearchFieldNames {
   val question = "question"
   val questionKeyword = "question.keyword"
   val questionGeneral = "question.general"
+  val slug = "slug"
   val startDate = "startDate"
   val endDate = "endDate"
   val description = " description"
   val country = "country"
   val language = "language"
+  val operationId = "operationId"
+  val operationTitle = "operationTitle"
   val operationKind = "operationKind"
+  val featured = "featured"
+  val open = "open"
 
   def questionLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
     BusinessConfig.supportedCountries
@@ -59,10 +64,12 @@ case class IndexedOperationOfQuestion(
   @(ApiModelProperty @field)(dataType = "string", example = "42ccc3ce-f5b9-e7c0-b927-01a9cb159e55") questionId: QuestionId,
   question: String,
   slug: String,
+  questionShortTitle: Option[String],
   @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   startDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   endDate: Option[ZonedDateTime],
+  open: Boolean,
   theme: QuestionTheme,
   description: String,
   consultationImage: Option[String],
@@ -96,8 +103,10 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       questionId = operationOfQuestion.questionId,
       question = question.question,
       slug = question.slug,
+      questionShortTitle = question.shortTitle,
       startDate = operationOfQuestion.startDate,
       endDate = operationOfQuestion.endDate,
+      open = operationOfQuestion.isOpenAt(DateHelper.now()),
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
       consultationImage = operationOfQuestion.consultationImage,

@@ -24,6 +24,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation._
+import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.partner.{Partner, PartnerKind}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -264,6 +265,7 @@ final case class QuestionOfOperationResponse(
   question: String,
   shortTitle: Option[String],
   operationTitle: String,
+  consultationImage: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -273,10 +275,38 @@ final case class QuestionOfOperationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "2020-01-08T17:23:00.000Z")
   endDate: Option[ZonedDateTime],
   theme: QuestionThemeResponse,
-  displayResults: Boolean
+  displayResults: Boolean,
+  resultsLink: Option[String],
+  aboutUrl: Option[String],
+  actions: Option[String],
+  featured: Boolean,
+  participantsCount: Int,
+  proposalsCount: Int
 )
 
 object QuestionOfOperationResponse {
+  def apply(indexedOperationOfQuestion: IndexedOperationOfQuestion): QuestionOfOperationResponse =
+    QuestionOfOperationResponse(
+      questionId = indexedOperationOfQuestion.questionId,
+      questionSlug = indexedOperationOfQuestion.slug,
+      question = indexedOperationOfQuestion.question,
+      shortTitle = indexedOperationOfQuestion.questionShortTitle,
+      operationTitle = indexedOperationOfQuestion.operationTitle,
+      consultationImage = indexedOperationOfQuestion.consultationImage,
+      country = indexedOperationOfQuestion.country,
+      language = indexedOperationOfQuestion.language,
+      startDate = indexedOperationOfQuestion.startDate,
+      endDate = indexedOperationOfQuestion.endDate,
+      theme = QuestionThemeResponse.fromQuestionTheme(indexedOperationOfQuestion.theme),
+      displayResults = indexedOperationOfQuestion.displayResults,
+      resultsLink = indexedOperationOfQuestion.resultsLink,
+      aboutUrl = indexedOperationOfQuestion.aboutUrl,
+      actions = indexedOperationOfQuestion.actions,
+      featured = indexedOperationOfQuestion.featured,
+      participantsCount = indexedOperationOfQuestion.participantsCount,
+      proposalsCount = indexedOperationOfQuestion.proposalsCount
+    )
+
   implicit val encoder: Encoder[QuestionOfOperationResponse] = deriveEncoder[QuestionOfOperationResponse]
   implicit val decoder: Decoder[QuestionOfOperationResponse] = deriveDecoder[QuestionOfOperationResponse]
 }
