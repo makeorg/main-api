@@ -169,7 +169,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
       command.vote match {
         // User hasn't voted on proposal yet
         case None =>
-          persistAndPublishEventAsync(
+          persistAndPublishEvent(
             ProposalVoted(
               id = proposalId,
               maybeUserId = command.maybeUserId,
@@ -211,7 +211,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             voteKey = command.voteKey,
             voteTrust = command.voteTrust
           )
-          persistAndPublishEventsAsync(Seq(unvoteEvent, voteEvent)) {
+          persistAndPublishEvents(Seq(unvoteEvent, voteEvent)) {
             case _: ProposalVoted =>
               val originalSender = sender()
               logUnvoteEvent(unvoteEvent).flatMap(_ => logVoteEvent(voteEvent)).onComplete {
@@ -297,7 +297,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           getStateOrSendVoteNotFound(command.voteKey)(sender() ! ProposalVote(_))
         // User voted on this proposal so we unvote whatever voted key
         case Some(vote) =>
-          persistAndPublishEventAsync(
+          persistAndPublishEvent(
             ProposalUnvoted(
               id = proposalId,
               maybeUserId = command.maybeUserId,
@@ -383,7 +383,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           } else {
             command.voteTrust
           }
-          persistAndPublishEventAsync(
+          persistAndPublishEvent(
             ProposalQualified(
               id = proposalId,
               maybeUserId = command.maybeUserId,
@@ -421,7 +421,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           }
         // User has voted and qualified this proposal
         case Some(vote) if vote.qualificationKeys.contains(command.qualificationKey) =>
-          persistAndPublishEventAsync(
+          persistAndPublishEvent(
             ProposalUnqualified(
               id = proposalId,
               maybeUserId = command.maybeUserId,

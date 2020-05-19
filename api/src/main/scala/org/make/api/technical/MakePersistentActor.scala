@@ -98,24 +98,6 @@ abstract class MakePersistentActor[State, Event <: AnyRef](
     }
   }
 
-  protected def persistAndPublishEventAsync[T <: Event](event: T)(andThen: T => Unit): Unit = {
-    persistAsync(event) { event: T =>
-      context.system.eventStream.publish(event)
-    }
-    newEventAdded(event)
-    andThen(event)
-  }
-
-  protected def persistAndPublishEventsAsync(events: immutable.Seq[Event])(andThen: Event => Unit): Unit = {
-    persistAll(events) { event: Event =>
-      context.system.eventStream.publish(event)
-    }
-    events.foreach { event =>
-      newEventAdded(event)
-      andThen(event)
-    }
-  }
-
 }
 
 object MakePersistentActor {
