@@ -19,7 +19,7 @@
 
 package org.make.core.elasticsearch
 
-sealed trait IndexationStatus
+sealed trait IndexationStatus extends Product with Serializable
 
 object IndexationStatus {
 

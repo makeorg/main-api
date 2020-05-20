@@ -164,9 +164,10 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     }
 
     override def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
-      persistentOperationOfQuestionService.modify(operationOfQuestion).flatMap { result =>
-        indexById(operationOfQuestion.questionId).map(_ => result)
-      }
+      for {
+        result <- persistentOperationOfQuestionService.modify(operationOfQuestion)
+        _      <- indexById(operationOfQuestion.questionId)
+      } yield result
     }
 
     /**

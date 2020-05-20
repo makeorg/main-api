@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.generic.semiauto._
 import io.circe.refined._
+import eu.timepit.refined.auto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
@@ -105,8 +106,8 @@ trait DefaultAdminOperationOfQuestionApiComponent
                         operationOfQuestionService.update(
                           operationOfQuestion
                             .copy(
-                              proposalsCount = request.proposalsCount.value,
-                              participantsCount = request.participantsCount.value
+                              proposalsCount = request.proposalsCount,
+                              participantsCount = request.participantsCount
                             )
                         )
                       ) { _ =>
