@@ -126,6 +126,7 @@ trait MakeApi
     with DefaultAdminFeatureApiComponent
     with DefaultAdminFeaturedOperationApiComponent
     with DefaultAdminIdeaMappingApiComponent
+    with DefaultAdminOperationOfQuestionApiComponent
     with DefaultAdminPartnerApiComponent
     with DefaultAdminPersonalityApiComponent
     with DefaultAdminPersonalityRoleApiComponent
@@ -352,6 +353,7 @@ trait MakeApi
       classOf[AdminFeatureApi],
       classOf[AdminFeaturedOperationApi],
       classOf[AdminIdeaMappingApi],
+      classOf[AdminOperationOfQuestionApi],
       classOf[AdminPartnerApi],
       classOf[AdminPersonalityApi],
       classOf[AdminPersonalityRoleApi],
@@ -423,6 +425,7 @@ trait MakeApi
       adminFeatureApi.routes ~
       adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
+      adminOperationOfQuestionApi.routes ~
       adminPartnerApi.routes ~
       adminPersonalityApi.routes ~
       adminPersonalityRoleApi.routes ~

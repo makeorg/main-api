@@ -555,8 +555,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             consultationImage = None,
             descriptionImage = None,
             resultsLink = Some("https://example.com/results"),
-            proposalsCount = 420,
-            participantsCount = 840,
             actions = Some("some actions"),
             featured = false
           ).asJson.toString()
@@ -594,14 +592,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "description": "description",
             | "displayResults": false,
             | "consultationImage": "https://example",
-            | "proposalsCount": 42,
-            | "participantsCount": 84,
             | "featured": true
           }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
-        println(errors.toString())
         errors.size should be(1)
         errors.head.field shouldBe "gradientStart"
       }
@@ -638,15 +633,12 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | "description": "description",
            | "displayResults": false,
            | "consultationImage": "https://example.com",
-           | "proposalsCount": 42,
-           | "participantsCount": 84,
            | "featured": true
            |}""".stripMargin
         ) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
-        println(errors.toString())
         errors.size should be(1)
         errors.head.field shouldBe "shortTitle"
       }
@@ -680,14 +672,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | "displayResults": false,
                                                        | "consultationImage": "wrong URL",
                                                        | "descriptionImage": "wrong URL",
-                                                       | "proposalsCount": 42,
-                                                       | "participantsCount": 84,
                                                        | "featured": true
                                                        | }""".stripMargin) ~> routes ~> check {
 
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
-        println(errors.toString())
         errors.size should be(2)
         errors.head.field shouldBe "consultationImage"
         errors(1).field shouldBe "descriptionImage"
@@ -722,13 +711,10 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "displayResults": false,
             | "resultsLink": "http://example.com/results",
             | "consultationImage": "https://example",
-            | "proposalsCount": 42,
-            | "participantsCount": 84,
             | "featured": true
           }""".stripMargin) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
-        println(errors.toString())
         errors.size should be(1)
         errors.head.field shouldBe "resultsLink"
       }

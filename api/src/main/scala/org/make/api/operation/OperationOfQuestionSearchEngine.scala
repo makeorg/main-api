@@ -19,15 +19,16 @@
 
 package org.make.api.operation
 
-import akka.Done
 import com.sksamuel.elastic4s.circe._
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
 import org.make.core.CirceFormatters
+import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.indexed.{
   IndexedOperationOfQuestion,
   OperationOfQuestionElasticsearchFieldNames,
@@ -46,12 +47,18 @@ trait OperationOfQuestionSearchEngineComponent {
 trait OperationOfQuestionSearchEngine {
   def findOperationOfQuestionById(questionId: QuestionId): Future[Option[IndexedOperationOfQuestion]]
   def searchOperationOfQuestions(query: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
-  def indexOperationOfQuestion(record: IndexedOperationOfQuestion, maybeIndex: Option[IndexAndType]): Future[Done]
+  def indexOperationOfQuestion(
+    record: IndexedOperationOfQuestion,
+    maybeIndex: Option[IndexAndType]
+  ): Future[IndexationStatus]
   def indexOperationOfQuestions(
     records: Seq[IndexedOperationOfQuestion],
     maybeIndex: Option[IndexAndType]
-  ): Future[Done]
-  def updateOperationOfQuestion(record: IndexedOperationOfQuestion, maybeIndex: Option[IndexAndType]): Future[Done]
+  ): Future[IndexationStatus]
+  def updateOperationOfQuestion(
+    record: IndexedOperationOfQuestion,
+    maybeIndex: Option[IndexAndType]
+  ): Future[IndexationStatus]
 }
 
 object OperationOfQuestionSearchEngine {
@@ -60,7 +67,8 @@ object OperationOfQuestionSearchEngine {
 
 trait DefaultOperationOfQuestionSearchEngineComponent
     extends OperationOfQuestionSearchEngineComponent
-    with CirceFormatters {
+    with CirceFormatters
+    with StrictLogging {
   self: ElasticsearchConfigurationComponent with ElasticsearchClientComponent =>
 
   override lazy val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
@@ -117,37 +125,52 @@ trait DefaultOperationOfQuestionSearchEngineComponent
     override def indexOperationOfQuestion(
       record: IndexedOperationOfQuestion,
       maybeIndex: Option[IndexAndType]
-    ): Future[Done] = {
+    ): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.questionId.value))
         .map { _ =>
-          Done
+          IndexationStatus.Completed
+        }
+        .recover {
+          case e: Exception =>
+            logger.error(s"Indexing organisation ${record.questionId} failed", e)
+            IndexationStatus.Failed(e)
         }
     }
 
     override def indexOperationOfQuestions(
       records: Seq[IndexedOperationOfQuestion],
       maybeIndex: Option[IndexAndType]
-    ): Future[Done] = {
+    ): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
         .executeAsFuture(bulk(records.map { record =>
           indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.questionId.value)
         }))
         .map { _ =>
-          Done
+          IndexationStatus.Completed
+        }
+        .recover {
+          case e: Exception =>
+            logger.error(s"Indexing ${records.size} organisations failed", e)
+            IndexationStatus.Failed(e)
         }
     }
 
     override def updateOperationOfQuestion(
       record: IndexedOperationOfQuestion,
       maybeIndex: Option[IndexAndType]
-    ): Future[Done] = {
+    ): Future[IndexationStatus] = {
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
         .executeAsFuture((update(id = record.questionId.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
-        .map(_ => Done)
+        .map(_ => IndexationStatus.Completed)
+        .recover {
+          case e: Exception =>
+            logger.error(s"Indexing updated organisation ${record.questionId} failed", e)
+            IndexationStatus.Failed(e)
+        }
     }
   }
 }

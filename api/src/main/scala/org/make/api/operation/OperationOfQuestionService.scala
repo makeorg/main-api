@@ -20,11 +20,15 @@
 package org.make.api.operation
 import java.time.ZonedDateTime
 
-import org.make.api.question.{PersistentQuestionServiceComponent, SearchQuestionRequest}
+import cats.data.OptionT
+import cats.implicits._
+import com.typesafe.scalalogging.StrictLogging
+import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
 import org.make.api.technical.IdGeneratorComponent
+import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
-import org.make.core.operation.indexed.OperationOfQuestionSearchResult
+import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
@@ -66,6 +70,8 @@ trait OperationOfQuestionService {
     * @return the created OperationOfQuestion
     */
   def create(parameters: CreateOperationOfQuestion): Future[OperationOfQuestion]
+
+  def indexById(questionId: QuestionId): Future[Option[IndexationStatus]]
 }
 
 final case class CreateOperationOfQuestion(
@@ -94,12 +100,14 @@ trait OperationOfQuestionServiceComponent {
   def operationOfQuestionService: OperationOfQuestionService
 }
 
-trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServiceComponent {
+trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServiceComponent with StrictLogging {
   this: PersistentQuestionServiceComponent
     with PersistentSequenceConfigurationComponent
     with PersistentOperationOfQuestionServiceComponent
     with OperationOfQuestionSearchEngineComponent
-    with IdGeneratorComponent =>
+    with IdGeneratorComponent
+    with QuestionServiceComponent
+    with OperationServiceComponent =>
 
   override lazy val operationOfQuestionService: OperationOfQuestionService = new DefaultOperationOfQuestionService
 
@@ -151,11 +159,14 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       for {
         _       <- persistentQuestionService.modify(question)
         updated <- persistentOperationOfQuestionService.modify(operationOfQuestion)
+        _       <- indexById(question.questionId)
       } yield updated
     }
 
     override def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion] = {
-      persistentOperationOfQuestionService.modify(operationOfQuestion)
+      persistentOperationOfQuestionService.modify(operationOfQuestion).flatMap { result =>
+        indexById(operationOfQuestion.questionId).map(_ => result)
+      }
     }
 
     /**
@@ -235,5 +246,20 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
     override def count(request: SearchOperationsOfQuestions): Future[Int] = {
       persistentOperationOfQuestionService.count(request.questionIds, request.operationIds, request.openAt)
     }
+
+    override def indexById(questionId: QuestionId): Future[Option[IndexationStatus]] = {
+      val futureIndexedOperationOfQuestion: Future[Option[IndexedOperationOfQuestion]] = (for {
+        question            <- OptionT(questionService.getQuestion(questionId))
+        operationOfQuestion <- OptionT(findByQuestionId(question.questionId))
+        operation           <- OptionT(operationService.findOneSimple(operationOfQuestion.operationId))
+      } yield IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, question)).value
+      futureIndexedOperationOfQuestion.flatMap {
+        case None => Future.successful(None)
+        case Some(operationOfQuestion) =>
+          elasticsearchOperationOfQuestionAPI.updateOperationOfQuestion(operationOfQuestion, None).map(Some(_))
+      }
+
+    }
+
   }
 }

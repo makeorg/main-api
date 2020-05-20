@@ -19,11 +19,11 @@
 
 package org.make.api.tag
 
-import org.make.api.DatabaseTest
 import org.make.api.operation.DefaultPersistentOperationServiceComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
@@ -43,30 +43,21 @@ class PersistentTagServiceIT
 
   override protected val cockroachExposedPort: Int = 40003
 
-  val fakeOperation = SimpleOperation(
-    status = OperationStatus.Active,
-    operationId = OperationId("fakeOperation"),
-    slug = "fake-operation",
-    defaultLanguage = Language("fr"),
-    allowedSources = Seq.empty,
-    operationKind = OperationKind.PublicConsultation,
-    createdAt = None,
-    updatedAt = None
-  )
+  val fakeOperation: SimpleOperation =
+    TestUtilsIT.simpleOperation(id = OperationId("fakeOperation"), slug = "fake-operation")
 
   def questionForOperation(
     operationId: OperationId,
     country: Country = Country("FR"),
     language: Language = Language("fr")
   ): Question = {
-    Question(
-      questionId = QuestionId(operationId.value),
+    TestUtilsIT.question(
+      id = QuestionId(operationId.value),
       slug = s"some-question-on-operation-${operationId.value}",
       operationId = Some(operationId),
       country = country,
       language = language,
-      question = operationId.value,
-      shortTitle = None
+      question = operationId.value
     )
   }
 
@@ -75,14 +66,13 @@ class PersistentTagServiceIT
     country: Country = Country("FR"),
     language: Language = Language("fr")
   ): Question = {
-    Question(
-      questionId = QuestionId(themeId.value),
+    TestUtilsIT.question(
+      id = QuestionId(themeId.value),
       slug = s"some-question-on-theme-${themeId.value}",
       operationId = None,
       country = country,
       language = language,
-      question = themeId.value,
-      shortTitle = None
+      question = themeId.value
     )
   }
 

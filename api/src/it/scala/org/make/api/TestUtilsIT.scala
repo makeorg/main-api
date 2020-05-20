@@ -22,7 +22,7 @@ package org.make.api
 import java.time.ZonedDateTime
 
 import org.make.core.idea.IdeaId
-import org.make.core.operation.OperationId
+import org.make.core.operation._
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{
@@ -38,11 +38,12 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleCitizen
-import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
+import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, SlugHelper}
 
 trait TestUtilsIT {
@@ -183,6 +184,105 @@ trait TestUtilsIT {
       userType = userType
     )
   }
+
+  def question(
+    id: QuestionId,
+    slug: String = "question-slug",
+    country: Country = Country("FR"),
+    language: Language = Language("fr"),
+    question: String = "How to ask a question ?",
+    shortTitle: Option[String] = None,
+    operationId: Option[OperationId] = None
+  ): Question =
+    Question(
+      questionId = id,
+      slug = slug,
+      country = country,
+      language = language,
+      question = question,
+      shortTitle = shortTitle,
+      operationId = operationId
+    )
+
+  def simpleOperation(
+    id: OperationId,
+    status: OperationStatus = OperationStatus.Active,
+    slug: String = "operation-slug",
+    allowedSources: Seq[String] = Seq.empty,
+    defaultLanguage: Language = Language("fr"),
+    operationKind: OperationKind = OperationKind.PublicConsultation,
+    createdAt: Option[ZonedDateTime] = None,
+    updatedAt: Option[ZonedDateTime] = None
+  ): SimpleOperation =
+    SimpleOperation(
+      operationId = id,
+      status = status,
+      slug = slug,
+      defaultLanguage = defaultLanguage,
+      allowedSources = allowedSources,
+      operationKind = operationKind,
+      createdAt = createdAt,
+      updatedAt = updatedAt
+    )
+
+  val defaultSequenceCardsConfiguration = SequenceCardsConfiguration(
+    introCard = IntroCard(enabled = true, title = None, description = None),
+    pushProposalCard = PushProposalCard(enabled = true),
+    signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+    finalCard = FinalCard(
+      enabled = true,
+      sharingEnabled = false,
+      title = None,
+      shareDescription = None,
+      learnMoreTitle = None,
+      learnMoreTextButton = None,
+      linkUrl = None
+    )
+  )
+  val defaultMetas = Metas(title = Some("Metas title"), description = Some("Meta description"), picture = None)
+  def operationOfQuestion(
+    questionId: QuestionId,
+    operationId: OperationId,
+    startDate: Option[ZonedDateTime] = None,
+    endDate: Option[ZonedDateTime] = None,
+    operationTitle: String = "operation title",
+    landingSequenceId: SequenceId = SequenceId("sequence-id"),
+    canPropose: Boolean = true,
+    sequenceCardsConfiguration: SequenceCardsConfiguration = defaultSequenceCardsConfiguration,
+    aboutUrl: Option[String] = None,
+    metas: Metas = defaultMetas,
+    theme: QuestionTheme = QuestionTheme.default,
+    description: String = OperationOfQuestion.defaultDescription,
+    consultationImage: Option[String] = Some("image-url"),
+    descriptionImage: Option[String] = None,
+    displayResults: Boolean = false,
+    resultsLink: Option[String] = None,
+    proposalsCount: Int = 42,
+    participantsCount: Int = 84,
+    actions: Option[String] = None,
+    featured: Boolean = true
+  ) = OperationOfQuestion(
+    questionId = questionId,
+    operationId = operationId,
+    startDate = startDate,
+    endDate = endDate,
+    operationTitle = operationTitle,
+    landingSequenceId = landingSequenceId,
+    canPropose = canPropose,
+    sequenceCardsConfiguration = sequenceCardsConfiguration,
+    aboutUrl = aboutUrl,
+    metas = metas,
+    theme = theme,
+    description = description,
+    consultationImage = consultationImage,
+    descriptionImage = descriptionImage,
+    displayResults = displayResults,
+    resultsLink = resultsLink,
+    proposalsCount = proposalsCount,
+    participantsCount = participantsCount,
+    actions = actions,
+    featured = featured
+  )
 }
 
 object TestUtilsIT extends TestUtilsIT
