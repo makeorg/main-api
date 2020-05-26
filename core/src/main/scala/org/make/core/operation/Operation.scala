@@ -21,6 +21,8 @@ package org.make.core.operation
 
 import java.time.ZonedDateTime
 
+import enumeratum.{Enum, EnumEntry}
+import enumeratum.Circe
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
@@ -195,18 +197,30 @@ final case class OperationOfQuestion(
   featured: Boolean
 ) {
 
-  def isOpenAt(date: ZonedDateTime): Boolean = {
-    (startDate, endDate) match {
-      case (Some(start), Some(end)) => start.isBefore(date) && end.isAfter(date)
-      case (None, Some(end))        => end.isAfter(date)
-      case (Some(start), None)      => start.isBefore(date)
-      case _                        => true
+  def status: OperationOfQuestion.Status = {
+    val now = DateHelper.now()
+    if (startDate.forall(_.isAfter(now))) {
+      OperationOfQuestion.Status.Upcoming
+    } else if (endDate.forall(_.isBefore(now))) {
+      OperationOfQuestion.Status.Finished
+    } else {
+      OperationOfQuestion.Status.Open
     }
   }
 }
 
 object OperationOfQuestion {
   val defaultDescription: String = ""
+
+  sealed abstract class Status extends EnumEntry
+  object Status extends Enum[Status] {
+    case object Upcoming extends Status
+    case object Open extends Status
+    case object Finished extends Status
+    override def values: IndexedSeq[Status] = findValues
+    implicit val decoder: Decoder[Status] = Circe.decodeCaseInsensitive(this)
+    implicit val encoder: Encoder[Status] = Circe.encoderLowercase(this)
+  }
 }
 
 @ApiModel

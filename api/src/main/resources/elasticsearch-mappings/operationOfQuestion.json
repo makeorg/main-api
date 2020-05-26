@@ -615,7 +615,7 @@
           }
         },
         "slug": {
-          "type": "text",
+          "type": "keyword",
           "index": true
         },
         "startDate": {
@@ -717,8 +717,8 @@
           "type": "text",
           "index": false
         },
-        "open": {
-          "type": "boolean",
+        "status": {
+          "type": "keyword",
           "index": true
         }
       }

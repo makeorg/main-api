@@ -24,6 +24,7 @@ import java.util.UUID
 
 import org.make.api.MakeUnitTest
 import org.make.api.operation._
+import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter}
 import org.make.api.proposal._
 import org.make.api.question.{
   QuestionOfOperationResponse,
@@ -117,7 +118,7 @@ class HomeViewServiceComponentTest
     participantsCount = 84,
     actions = None,
     featured = false,
-    open = false
+    status = OperationOfQuestion.Status.Finished
   )
 
   val operation1: SimpleOperation =
@@ -198,14 +199,14 @@ class HomeViewServiceComponentTest
     defaultOperationOfQuestion.copy(
       questionId = question2.questionId,
       operationId = operation2.operationId,
-      open = true
+      status = OperationOfQuestion.Status.Open
     )
   val operationOfQuestion3: IndexedOperationOfQuestion =
     defaultOperationOfQuestion.copy(
       questionId = question3.questionId,
       operationId = operation3.operationId,
       featured = true,
-      open = true
+      status = OperationOfQuestion.Status.Open
     )
   val operationOfQuestion4: IndexedOperationOfQuestion =
     defaultOperationOfQuestion.copy(questionId = question4.questionId, operationId = operation4.operationId)
@@ -214,7 +215,7 @@ class HomeViewServiceComponentTest
       questionId = question5.questionId,
       operationId = operation5.operationId,
       startDate = Some(now.plusDays(5)),
-      open = true
+      status = OperationOfQuestion.Status.Upcoming
     )
   val operationOfQuestion6: IndexedOperationOfQuestion =
     defaultOperationOfQuestion.copy(
@@ -222,7 +223,7 @@ class HomeViewServiceComponentTest
       operationId = operation6.operationId,
       startDate = Some(now.minusDays(8)),
       endDate = Some(now.minusDays(1)),
-      open = true
+      status = OperationOfQuestion.Status.Upcoming
     )
 
   val operations: Seq[SimpleOperation] = Seq(operation1, operation2, operation3, operation4, operation5, operation6)
@@ -512,6 +513,7 @@ class HomeViewServiceComponentTest
                         _,
                         _,
                         _,
+                        _,
                         _
                         ) =>
                       true
@@ -533,7 +535,10 @@ class HomeViewServiceComponentTest
                 (arg: OperationOfQuestionSearchQuery) =>
                   arg match {
                     case OperationOfQuestionSearchQuery(
-                        Some(OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(OpenSearchFilter(true)))),
+                        Some(
+                          OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(OOQStatusSearchFilter(_)))
+                        ),
+                        _,
                         _,
                         _,
                         _,
@@ -546,7 +551,7 @@ class HomeViewServiceComponentTest
             )
         )
         .thenReturn(Future.successful {
-          val results = operationOfQuestions.results.filter(_.open)
+          val results = operationOfQuestions.results.filter(_.status == OperationOfQuestion.Status.Open)
           OperationOfQuestionSearchResult(results.size, results)
         })
 
@@ -555,7 +560,7 @@ class HomeViewServiceComponentTest
       whenReady(futureHomePageViewResponse, Timeout(3.seconds)) { homePageViewResponse =>
         homePageViewResponse.articles should be(Nil)
         homePageViewResponse.currentQuestions should be(
-          Seq(operationOfQuestion2, operationOfQuestion3, operationOfQuestion5, operationOfQuestion6)
+          Seq(operationOfQuestion2, operationOfQuestion3)
             .map(QuestionOfOperationResponse.apply)
         )
         homePageViewResponse.featuredQuestions should be(

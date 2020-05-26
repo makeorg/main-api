@@ -215,9 +215,25 @@ trait QuestionApi extends Directives {
   @Path(value = "/{questionId}/top-ideas/{topIdeaId}")
   def getTopIdea: Route
 
+  @ApiOperation(value = "list-questions", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "status", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string")
+    )
+  )
+  @ApiResponses(
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[QuestionOfOperationResponse]]))
+  )
+  @Path(value = "/")
+  def listQuestions: Route
+
   def routes: Route =
     questionDetails ~ startSequenceByQuestionId ~ searchQuestions ~ getPopularTags ~ getTopProposals ~ getPartners ~
-      getPersonalities ~ getTopIdeas ~ getTopIdea
+      getPersonalities ~ getTopIdeas ~ getTopIdea ~ listQuestions
 }
 
 trait DefaultQuestionApiComponent
@@ -625,6 +641,43 @@ trait DefaultQuestionApiComponent
                   complete(response)
                 }
               }
+            }
+          }
+        }
+      }
+    }
+
+    override def listQuestions: Route = {
+      get {
+        path("questions") {
+          makeOperation("ListQuestions") { _ =>
+            parameters(
+              (
+                "status".as[OperationOfQuestion.Status].?,
+                "limit".as[Int].?,
+                "skip".as[Int].?,
+                "sortAlgorithm".as[SortAlgorithm].?
+              )
+            ) {
+              (
+                status: Option[OperationOfQuestion.Status],
+                limit: Option[Int],
+                skip: Option[Int],
+                sortAlgorithm: Option[SortAlgorithm]
+              ) =>
+                provideAsync(
+                  operationOfQuestionService.search(
+                    OperationOfQuestionSearchQuery(
+                      filters = status
+                        .map(status => OperationOfQuestionSearchFilters(status = Some(StatusSearchFilter(status)))),
+                      limit = limit,
+                      skip = skip,
+                      sortAlgorithm = sortAlgorithm
+                    )
+                  )
+                ) { operationOfQuestions =>
+                  complete(operationOfQuestions.results.map(QuestionOfOperationResponse.apply))
+                }
             }
           }
         }

@@ -115,8 +115,13 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         .size(OperationOfQuestionSearchFilters.getLimitSearch(query))
         .from(OperationOfQuestionSearchFilters.getSkipSearch(query))
 
+      val requestWithAlgorithm = query.sortAlgorithm match {
+        case Some(algorithm) => algorithm.sortDefinition(request)
+        case _               => request
+      }
+
       client
-        .executeAsFuture(request)
+        .executeAsFuture(requestWithAlgorithm)
         .map { response =>
           OperationOfQuestionSearchResult(total = response.totalHits, results = response.to[IndexedOperationOfQuestion])
         }

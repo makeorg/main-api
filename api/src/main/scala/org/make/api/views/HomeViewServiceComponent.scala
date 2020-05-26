@@ -31,8 +31,10 @@ import org.make.api.user.UserServiceComponent
 import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
-import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionElasticsearchFieldNames}
+import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter}
+import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.proposal._
+import org.make.core.proposal.SortAlgorithm
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{UserId, UserType}
@@ -175,17 +177,17 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
 
       val futureCurrentQuestions = searchQuestionOfOperations(
         OperationOfQuestionSearchQuery(
-          filters = Some(OperationOfQuestionSearchFilters(open = Some(OpenSearchFilter(true)))),
-          sort = Some(OperationOfQuestionElasticsearchFieldNames.endDate),
-          order = Some("asc")
+          filters = Some(
+            OperationOfQuestionSearchFilters(status = Some(OOQStatusSearchFilter(OperationOfQuestion.Status.Open)))
+          ),
+          sortAlgorithm = Some(SortAlgorithm.Chronological)
         )
       )
 
       val futureFeaturedQuestions = searchQuestionOfOperations(
         OperationOfQuestionSearchQuery(
           filters = Some(OperationOfQuestionSearchFilters(featured = Some(FeaturedSearchFilter(true)))),
-          sort = Some(OperationOfQuestionElasticsearchFieldNames.endDate),
-          order = Some("desc")
+          sortAlgorithm = Some(SortAlgorithm.Featured)
         )
       )
 

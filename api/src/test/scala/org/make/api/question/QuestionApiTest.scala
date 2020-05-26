@@ -156,6 +156,42 @@ class QuestionApiTest
     featured = true
   )
 
+  val now = DateHelper.now()
+  val baseSimpleOperation = SimpleOperation(
+    baseOperation.operationId,
+    baseOperation.status,
+    baseOperation.slug,
+    baseOperation.allowedSources,
+    baseOperation.defaultLanguage,
+    baseOperation.operationKind,
+    baseOperation.createdAt,
+    baseOperation.updatedAt
+  )
+  val openOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
+    baseOperationOfQuestion.copy(startDate = Some(now.minusDays(1)), endDate = Some(now.plusDays(1))),
+    baseSimpleOperation,
+    baseQuestion
+  )
+  val finishedOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
+    baseOperationOfQuestion.copy(startDate = Some(now.minusDays(2)), endDate = Some(now.minusDays(1))),
+    baseSimpleOperation,
+    baseQuestion
+  )
+  val upcomingOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
+    baseOperationOfQuestion.copy(startDate = Some(now.plusDays(1)), endDate = Some(now.plusDays(2))),
+    baseSimpleOperation,
+    baseQuestion
+  )
+  val indexedOperationOfQuestions =
+    Seq(openOperationOfQuestion, finishedOperationOfQuestion, upcomingOperationOfQuestion)
+
+  when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery])).thenAnswer { invocation =>
+    val query = invocation.getArgument[OperationOfQuestionSearchQuery](0)
+    val result =
+      indexedOperationOfQuestions.filter(i => query.filters.flatMap(_.status).map(_.status).fold(true)(_ == i.status))
+    Future.successful(OperationOfQuestionSearchResult(result.size, result))
+  }
+
   feature("start sequence by question id") {
     scenario("valid question") {
       val questionId = QuestionId("question-id")
@@ -271,47 +307,12 @@ class QuestionApiTest
 
   feature("search question") {
 
-    val questionResult: IndexedOperationOfQuestion = IndexedOperationOfQuestion(
-      questionId = QuestionId("question-id"),
-      question = "Question ?",
-      slug = "question-slug",
-      questionShortTitle = Some("question-short-title"),
-      startDate = None,
-      endDate = None,
-      theme = QuestionTheme(
-        gradientStart = "#000000",
-        gradientEnd = "#ffffff",
-        color = "#424242",
-        fontColor = "#242424",
-        secondaryColor = Some("#848484"),
-        secondaryFontColor = Some("#848484")
-      ),
-      description = "awesome description",
-      consultationImage = None,
-      country = Country("FR"),
-      language = Language("fr"),
-      operationId = OperationId("operation-id"),
-      operationTitle = "title",
-      operationKind = OperationKind.BusinessConsultation.shortName,
-      aboutUrl = None,
-      displayResults = false,
-      resultsLink = None,
-      proposalsCount = 42,
-      participantsCount = 84,
-      actions = None,
-      featured = true,
-      open = true
-    )
-
-    when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery]))
-      .thenReturn(Future.successful(OperationOfQuestionSearchResult(1, Seq(questionResult))))
-
     scenario("search all") {
       Get("/questions/search") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val res: OperationOfQuestionSearchResult = entityAs[OperationOfQuestionSearchResult]
-        res.total shouldBe 1
-        res.results.head.questionId shouldBe QuestionId("question-id")
+        res.total shouldBe 3
+        res.results.foreach(_.questionId shouldBe QuestionId("questionid"))
       }
     }
 
@@ -321,8 +322,8 @@ class QuestionApiTest
       ) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val res: OperationOfQuestionSearchResult = entityAs[OperationOfQuestionSearchResult]
-        res.total shouldBe 1
-        res.results.head.questionId shouldBe QuestionId("question-id")
+        res.total shouldBe 3
+        res.results.foreach(_.questionId shouldBe QuestionId("questionid"))
       }
     }
 
@@ -651,6 +652,32 @@ class QuestionApiTest
         status should be(StatusCodes.NotFound)
       }
     }
+  }
+
+  feature("list") {
+
+    scenario("all statuses") {
+      Get("/questions") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val response = entityAs[Seq[QuestionOfOperationResponse]]
+        response should contain theSameElementsAs indexedOperationOfQuestions.map(QuestionOfOperationResponse.apply)
+      }
+    }
+
+    scenario("one status") {
+      Get("/questions?status=open") ~> routes ~> check {
+        status should be(StatusCodes.OK)
+        val response = entityAs[Seq[QuestionOfOperationResponse]]
+        response should be(Seq(QuestionOfOperationResponse.apply(openOperationOfQuestion)))
+      }
+    }
+
+    scenario("invalid status") {
+      Get("/questions?status=foo") ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
   }
 
 }

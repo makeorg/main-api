@@ -64,7 +64,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagType}
 import org.make.core.user.User
-import org.make.core.{DateHelper, SlugHelper}
+import org.make.core.SlugHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -363,7 +363,7 @@ trait ProposalIndexationStream
             question = question.question,
             startDate = operationOfQuestion.startDate,
             endDate = operationOfQuestion.endDate,
-            isOpen = operationOfQuestion.isOpenAt(DateHelper.now())
+            isOpen = operationOfQuestion.status == OperationOfQuestion.Status.Open
           )
       ),
       sequencePool = ProposalScorerHelper
