@@ -26,7 +26,7 @@ import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsMissing
+import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
@@ -51,7 +51,7 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, _}
-import scalaoauth2.provider.AccessToken
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -255,6 +255,29 @@ trait MakeDirectives
     maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId, requestContext))
   }
 
+  def checkTokenExpirationIfNoCookieIsDefined(maybeUser: Option[AuthInfo[UserRights]]): Directive0 = {
+    mapInnerRoute { route =>
+      maybeUser match {
+        // If a user has been found, the token is valid and the route can continue
+        case Some(_) => route
+        case _ =>
+          optionalCookie(makeSettings.SecureCookie.name) {
+            // If the make-secure cookie is used, then rely on the cookie and auto-refresh mecanism
+            case Some(_) => route
+            case None =>
+              optionalHeaderValueByType[Authorization](()) {
+                // If there is a OAuth2 bearer token, then it is either not found or expired
+                case Some(Authorization(OAuth2BearerToken(_))) =>
+                  reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2(realm)))
+                // If no authentication is sent or it is not OAuth, continue
+                case _ => route
+              }
+          }
+      }
+    }
+
+  }
+
   def makeOperation(name: String, endpointType: EndpointType = EndpointType.Regular): Directive1[RequestContext] = {
     val slugifiedName: String = SlugHelper(name)
     Tracing.entrypoint(slugifiedName)
@@ -279,6 +302,7 @@ trait MakeDirectives
       _                    <- makeAuthCookieHandlers(maybeTokenRefreshed)
       maybeIpAddress       <- extractClientIP
       maybeUser            <- optionalMakeOAuth2
+      _                    <- checkTokenExpirationIfNoCookieIsDefined(maybeUser)
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
       maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
       maybeOperation       <- optionalHeaderValueByName(`X-Make-Operation`.name)

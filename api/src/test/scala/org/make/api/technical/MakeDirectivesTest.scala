@@ -461,6 +461,17 @@ class MakeDirectivesTest
         maybeSecureExpirationCookie.isEmpty shouldBe true
       }
     }
+
+    scenario("connected using headers with an expired token") {
+      val token = "connected using headers with an expired token"
+
+      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
+        .thenReturn(Future.successful(None))
+
+      Get("/test").withHeaders(Authorization(OAuth2BearerToken(token))) ~> route ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
   }
 
   feature("mandatory connection access") {
