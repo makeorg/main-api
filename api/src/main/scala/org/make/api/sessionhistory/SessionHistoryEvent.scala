@@ -29,8 +29,8 @@ import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.session._
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext}
-import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 final case class SessionAction[T](date: ZonedDateTime, actionType: String, arguments: T)
 
@@ -49,7 +49,7 @@ trait SessionRelatedEvent extends SessionHistoryActorProtocol {
   def sessionId: SessionId
 }
 
-case class SessionHistoryEnvelope[T <: SessionHistoryEvent[_]](sessionId: SessionId, command: T)
+case class SessionHistoryEnvelope[T <: TransactionalSessionHistoryEvent[_]](sessionId: SessionId, command: T)
     extends SessionRelatedEvent
 
 sealed trait SessionHistoryEvent[T] extends MakeSerializable {
@@ -60,7 +60,7 @@ sealed trait SessionHistoryEvent[T] extends MakeSerializable {
 
 sealed trait TransactionalSessionHistoryEvent[T] extends SessionHistoryEvent[T]
 
-sealed trait TransferableToUser[T] extends SessionHistoryEvent[T] {
+sealed trait TransferableToUser[T] extends TransactionalSessionHistoryEvent[T] {
 
   def toUserHistoryEvent(userId: UserId): UserHistoryEvent[_]
 
@@ -78,6 +78,7 @@ object SessionHistoryEvent {
           case Seq(JsString("LogSessionQualificationEvent"))   => json.convertTo[LogSessionQualificationEvent]
           case Seq(JsString("LogSessionUnqualificationEvent")) => json.convertTo[LogSessionUnqualificationEvent]
           case Seq(JsString("LogSessionStartSequenceEvent"))   => json.convertTo[LogSessionStartSequenceEvent]
+          case Seq(JsString("SaveLastEventDate"))              => json.convertTo[SaveLastEventDate]
         }
       }
 
@@ -90,6 +91,7 @@ object SessionHistoryEvent {
           case event: LogSessionQualificationEvent   => event.toJson
           case event: LogSessionUnqualificationEvent => event.toJson
           case event: LogSessionStartSequenceEvent   => event.toJson
+          case event: SaveLastEventDate              => event.toJson
         }).asJsObject.fields + ("type" -> JsString(obj.productPrefix)))
       }
     }
@@ -285,6 +287,17 @@ object SessionTransformed {
     DefaultJsonProtocol.jsonFormat(SessionTransformed.apply, "sessionId", "context", "action")
 }
 
+final case class SaveLastEventDate(
+  sessionId: SessionId,
+  requestContext: RequestContext,
+  action: SessionAction[Option[ZonedDateTime]]
+) extends SessionHistoryEvent[Option[ZonedDateTime]]
+
+object SaveLastEventDate {
+  implicit val format: RootJsonFormat[SaveLastEventDate] =
+    DefaultJsonProtocol.jsonFormat(SaveLastEventDate.apply, "sessionId", "context", "action")
+}
+
 sealed trait LockVoteAction extends SessionHistoryActorProtocol
 
 case object Vote extends LockVoteAction
@@ -299,10 +312,15 @@ case class ReleaseProposalForQualification(sessionId: SessionId, proposalId: Pro
 
 case object LockAcquired extends SessionHistoryActorProtocol
 case object LockAlreadyAcquired extends SessionHistoryActorProtocol
+case object LockReleased extends SessionHistoryActorProtocol
 
 sealed trait SessionHistoryAction extends SessionRelatedEvent
 
 final case class GetSessionHistory(sessionId: SessionId) extends SessionHistoryAction
+
+final case class GetCurrentSession(sessionId: SessionId, newSessionId: SessionId) extends SessionHistoryAction
+
+final case class SessionExpired(sessionId: SessionId) extends SessionRelatedEvent
 
 final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq[ProposalId])
     extends SessionRelatedEvent
@@ -315,6 +333,7 @@ final case class RequestSessionVotedProposalsPaginate(
   limit: Int,
   skip: Int
 ) extends SessionRelatedEvent
+
 final case class UserConnected(sessionId: SessionId, userId: UserId, requestContext: RequestContext)
     extends SessionHistoryAction
 

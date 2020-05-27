@@ -24,10 +24,10 @@ import java.time.temporal.ChronoUnit
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import org.make.api.ShardingActorTest
-import org.make.api.sessionhistory.SessionHistoryActor.{SessionHistory, SessionVotesValues}
-import org.make.api.userhistory.{StartSequenceParameters, UserHistoryEnvelope}
+import org.make.api.sessionhistory.SessionHistoryActor.{CurrentSessionId, SessionHistory, SessionVotesValues}
 import org.make.api.userhistory.UserHistoryActor.{InjectSessionEvents, LogAcknowledged, SessionEventsInjected}
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
+import org.make.api.userhistory.{StartSequenceParameters, UserHistoryEnvelope}
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
@@ -548,6 +548,7 @@ class SessionHistoryActorTest extends ShardingActorTest {
       )
 
       coordinator ! SessionHistoryEnvelope(sessionId, event1)
+      expectMsg(LogAcknowledged)
       coordinator ! UserConnected(sessionId, userId, RequestContext.empty)
 
       // This event should be forwarded to user history
@@ -605,6 +606,7 @@ class SessionHistoryActorTest extends ShardingActorTest {
       expectMsg(LockAlreadyAcquired)
 
       coordinator ! ReleaseProposalForVote(sessionId, proposalId)
+      expectMsg(LockReleased)
 
       coordinator ! LockProposalForVote(sessionId, proposalId)
       expectMsg(LockAcquired)
@@ -645,15 +647,72 @@ class SessionHistoryActorTest extends ShardingActorTest {
       expectMsg(LockAcquired)
 
       coordinator ! ReleaseProposalForQualification(sessionId, proposalId, qualification1)
+      expectMsg(LockReleased)
 
       coordinator ! LockProposalForVote(sessionId, proposalId)
       expectMsg(LockAlreadyAcquired)
 
       coordinator ! ReleaseProposalForQualification(sessionId, proposalId, qualification2)
+      expectMsg(LockReleased)
 
       coordinator ! LockProposalForVote(sessionId, proposalId)
       expectMsg(LockAcquired)
 
+    }
+  }
+
+  Feature("session expired") {
+    Scenario("Session expired") {
+      val sessionId = SessionId("session-expired")
+      val newSessionId = SessionId("new-session")
+
+      coordinator ! GetSessionHistory(sessionId)
+      expectMsg(SessionHistory(List()))
+
+      Thread.sleep(1000)
+
+      coordinator ! GetCurrentSession(sessionId, newSessionId)
+      expectMsg(CurrentSessionId(newSessionId))
+
+      coordinator ! GetSessionHistory(sessionId)
+      expectMsg(SessionExpired(newSessionId))
+    }
+
+    scenario("session expired after user connected") {
+      val sessionId = SessionId("session-expired-2")
+      val newSessionId = SessionId("new-session-2")
+      val userId = UserId("user-id-session-expired")
+
+      coordinator ! GetSessionHistory(sessionId)
+      expectMsg(SessionHistory(List()))
+
+      coordinator ! UserConnected(sessionId, userId, RequestContext.empty)
+      userCoordinatorProbe.expectMsg(5.seconds, InjectSessionEvents(userId, Seq.empty))
+      userCoordinatorProbe.reply(SessionEventsInjected)
+      val _ = expectMsgType[SessionTransformed]
+
+      Thread.sleep(1000)
+
+      coordinator ! GetCurrentSession(sessionId, newSessionId)
+      expectMsg(CurrentSessionId(newSessionId))
+
+      coordinator ! GetSessionHistory(sessionId)
+      expectMsg(SessionExpired(newSessionId))
+    }
+
+    Scenario("unexpected actor shutdown") {
+      val sessionId = SessionId("session-expired-3")
+      val newSessionId = SessionId("new-session-2")
+
+      coordinator ! GetSessionHistory(sessionId)
+      expectMsg(SessionHistory(List()))
+
+      coordinator ! StopSession(sessionId)
+
+      Thread.sleep(500)
+
+      coordinator ! GetCurrentSession(sessionId, newSessionId)
+      expectMsg(CurrentSessionId(sessionId))
     }
   }
 

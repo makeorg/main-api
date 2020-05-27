@@ -82,6 +82,8 @@ object TestHelper {
        |    connection-string = "nowhere:-1"
        |    schema-registry = "http://nowhere:-1"
        |  }
+       |
+       |  cookie-session.lifetime = "600 milliseconds"
        |}
     """.stripMargin
   }

@@ -19,16 +19,13 @@
 
 package org.make.api.sessionhistory
 
+import java.time.ZonedDateTime
+
 import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.make.api.extensions.MakeSettingsExtension
-import org.make.api.sessionhistory.SessionHistoryActor.{
-  SessionClosed,
-  SessionHistory,
-  SessionVotedProposals,
-  SessionVotesValues
-}
+import org.make.api.sessionhistory.SessionHistoryActor._
 import org.make.api.technical.MakePersistentActor
 import org.make.api.technical.MakePersistentActor.Snapshot
 import org.make.api.userhistory.UserHistoryActor.{
@@ -59,6 +56,22 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
   private val maxEvents: Int = settings.maxUserHistoryEvents
   private var locks: Map[ProposalId, LockVoteAction] = Map.empty
   private var deadline = Deadline.now
+  private var lastEventDate: Option[ZonedDateTime] = None
+
+  def stopSessionHistoryActor(): Unit = {
+    persist(
+      SaveLastEventDate(
+        sessionId,
+        RequestContext.empty,
+        action = SessionAction(date = DateHelper.now(), actionType = "saveLastEventDate", arguments = lastEventDate)
+      )
+    ) { _ =>
+      context.stop(self)
+    }
+  }
+
+  private def isSessionExpired: Boolean =
+    lastEventDate.exists(_.isBefore(DateHelper.now().minusMinutes(settings.SessionCookie.lifetime.toMinutes)))
 
   def sessionId: SessionId = SessionId(self.path.name)
 
@@ -73,14 +86,11 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
   }
 
   override def receiveCommand: Receive = {
-    case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
+    case GetSessionHistory(_)               => sender() ! state.getOrElse(SessionHistory(Nil))
+    case GetCurrentSession(_, newSessionId) => retrieveOrExpireSession(newSessionId)
     case SessionHistoryEnvelope(_, command: TransactionalSessionHistoryEvent[_]) =>
       persistEvent(command) { _ =>
         sender() ! LogAcknowledged
-      }
-    case SessionHistoryEnvelope(_, command: TransferableToUser[_]) =>
-      persistEvent(command) { _ =>
-        ()
       }
     case RequestSessionVoteValues(_, proposalIds)      => retrieveVoteValues(proposalIds)
     case RequestSessionVotedProposals(_, proposalsIds) => retrieveVotedProposals(proposalsIds, Int.MaxValue, 0)
@@ -92,7 +102,9 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case LockProposalForVote(_, proposalId)       => acquireLockForVotesIfPossible(proposalId)
     case LockProposalForQualification(_, proposalId, qualification) =>
       acquireLockForQualificationIfPossible(proposalId, qualification)
-    case ReleaseProposalForVote(_, proposalId) => locks -= proposalId
+    case ReleaseProposalForVote(_, proposalId) =>
+      locks -= proposalId
+      sender() ! LockReleased
     case ReleaseProposalForQualification(_, proposalId, qualification) =>
       releaseLockForQualification(proposalId, qualification)
   }
@@ -108,6 +120,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
         }
       case _ =>
     }
+    sender() ! LockReleased
   }
 
   private def acquireLockForVotesIfPossible(proposalId: ProposalId): Unit = {
@@ -147,12 +160,38 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     }
   }
 
-  override def onRecoveryCompleted(): Unit = {
-    val transformation =
-      state.toList.flatMap(_.events).find(_.isInstanceOf[SessionTransformed]).map(_.asInstanceOf[SessionTransformed])
+  private def retrieveOrExpireSession(newSessionId: SessionId): Unit = {
+    if (isSessionExpired) {
+      sender() ! CurrentSessionId(newSessionId)
+      context.become(expired(newSessionId))
+    } else {
+      lastEventDate = Some(DateHelper.now())
+      sender() ! CurrentSessionId(sessionId)
+    }
+  }
 
-    transformation.foreach { event =>
-      context.become(closed(event.action.arguments))
+  override def onRecoveryCompleted(): Unit = {
+    def findEvent[T <: SessionHistoryEvent[_]](eventsList: Seq[SessionHistoryEvent[_]]): Option[T] = {
+      eventsList.collectFirst {
+        case event: T => event
+      }
+    }
+
+    val allEvents: Seq[SessionHistoryEvent[_]] = state.toList.flatMap(_.events)
+    val saveLastDateEvent: Option[SaveLastEventDate] = findEvent[SaveLastEventDate](allEvents.reverse)
+
+    lastEventDate = lastEventDate
+      .orElse(saveLastDateEvent.flatMap(_.action.arguments))
+      .orElse(allEvents.lastOption.map(_.action.date))
+
+    val transformation: Option[SessionTransformed] = findEvent[SessionTransformed](allEvents)
+
+    val expiredEvent: Option[SessionExpired] = findEvent[SessionExpired](allEvents)
+
+    (expiredEvent, transformation) match {
+      case (Some(event), _) => context.become(expired(event.action.arguments))
+      case (_, Some(event)) => context.become(closed(event.action.arguments))
+      case _                =>
     }
   }
 
@@ -182,13 +221,13 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
   }
 
   def closed(userId: UserId): Receive = {
-    case GetSessionHistory(_) => sender() ! state.getOrElse(SessionHistory(Nil))
+    case GetSessionHistory(_)               => sender() ! state.getOrElse(SessionHistory(Nil))
+    case GetCurrentSession(_, newSessionId) => retrieveOrExpireSession(newSessionId)
     case UserConnected(_, newUserId, _) =>
       if (newUserId != userId) {
         log.warning("Session {} has moved from user {} to user {}", persistenceId, userId.value, newUserId.value)
         context.become(closed(newUserId))
       }
-      sender() ! LogAcknowledged
     case SessionHistoryEnvelope(_, command: TransferableToUser[_]) =>
       userHistoryCoordinator.forward(UserHistoryEnvelope(userId, command.toUserHistoryEvent(userId)))
     case RequestSessionVotedProposals(_, proposalsIds) =>
@@ -244,6 +283,11 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case ReleaseProposalForQualification(_, proposalId, qualification) =>
       releaseLockForQualification(proposalId, qualification)
     case event => context.become(transforming(userId, pendingEvents :+ sender() -> event, requestContext))
+  }
+
+  def expired(newSessionId: SessionId): Receive = {
+    case GetCurrentSession(_, _) => sender() ! CurrentSessionId(newSessionId)
+    case _: SessionRelatedEvent  => sender() ! SessionExpired(newSessionId)
   }
 
   private def retrieveVotedProposals(proposalsIds: Option[Seq[ProposalId]], limit: Int, skip: Int): Unit = {
@@ -367,8 +411,15 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
 
   override val applyEvent: PartialFunction[SessionHistoryEvent[_], Option[SessionHistory]] = {
     case transformed: SessionTransformed =>
+      lastEventDate = Some(transformed.action.date)
       state.map(_.copy(events = List(transformed))).orElse(Some(SessionHistory(List(transformed))))
+    case event: SaveLastEventDate =>
+      lastEventDate = event.action.arguments
+      state.map { s =>
+        s.copy(events = (event :: s.events).take(maxEvents))
+      }.orElse(Some(SessionHistory(List(event))))
     case event: SessionHistoryEvent[_] =>
+      lastEventDate = Some(event.action.date)
       state.map { s =>
         s.copy(events = (event :: s.events).take(maxEvents))
       }.orElse(Some(SessionHistory(List(event))))
@@ -390,4 +441,6 @@ object SessionHistoryActor {
   final case class SessionVotesValues(votesValues: Map[ProposalId, VoteAndQualifications])
       extends SessionHistoryActorProtocol
       with VotesValues
+
+  final case class CurrentSessionId(sessionId: SessionId) extends SessionHistoryActorProtocol
 }

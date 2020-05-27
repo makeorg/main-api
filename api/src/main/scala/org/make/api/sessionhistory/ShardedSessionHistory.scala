@@ -23,23 +23,25 @@ import akka.actor.{ActorLogging, ActorRef, Props, ReceiveTimeout}
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
+import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.sessionhistory.ShardedSessionHistory.StopSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 
 class ShardedSessionHistory(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration)
     extends SessionHistoryActor(userHistoryCoordinator, lockDuration)
-    with ActorLogging {
+    with ActorLogging
+    with MakeSettingsExtension {
 
-  context.setReceiveTimeout(20.minutes)
+  context.setReceiveTimeout(settings.SessionCookie.lifetime)
 
   override def journalPluginId: String = ShardedSessionHistory.readJournal
   override def snapshotPluginId: String = ShardedSessionHistory.snapshotStore
 
   override def unhandled(msg: Any): Unit = msg match {
     case ReceiveTimeout                => context.parent ! Passivate(stopMessage = StopSessionHistory)
-    case StopSessionHistory            => context.stop(self)
+    case StopSessionHistory            => stopSessionHistoryActor()
     case SaveSnapshotSuccess(_)        => log.debug("Snapshot saved")
     case SaveSnapshotFailure(_, cause) => log.error("Error while saving snapshot", cause)
   }

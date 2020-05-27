@@ -92,7 +92,7 @@ trait MakeApiTestBase
   when(sessionCookieConfiguration.isSecure).thenReturn(false)
   when(sessionCookieConfiguration.lifetime).thenReturn(Duration("20 minutes"))
   when(sessionCookieConfiguration.domain).thenReturn(".foo.com")
-  when(idGenerator.nextId()).thenReturn("some-id")
+  when(idGenerator.nextSessionId()).thenReturn(SessionId("some-id"))
 
   protected val visitorCookieConfiguration: makeSettings.VisitorCookie.type = mock[makeSettings.VisitorCookie.type]
   when(visitorCookieConfiguration.name).thenReturn("cookie-visitor")
@@ -119,6 +119,13 @@ trait MakeApiTestBase
     .thenReturn(successful)
 
   when(oauth2DataHandler.refreshIfTokenIsExpired(any[String])).thenReturn(Future.successful(None))
+
+  when(
+    sessionHistoryCoordinatorService
+      .getCurrentSessionId(any[SessionId], any[SessionId])
+  ).thenAnswer { sessionId: SessionId =>
+    Future.successful(sessionId)
+  }
 
   //DEFINE Citizen, Moderator & Admin tokens and connections
   private val tokenCreationDate = new Date()

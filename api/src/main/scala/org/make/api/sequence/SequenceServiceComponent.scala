@@ -91,32 +91,31 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       tagsIds: Option[Seq[TagId]],
       requestContext: RequestContext
     ): Future[Option[SequenceResult]] = {
-      logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext)
-
-      futureVotedProposals(maybeUserId = maybeUserId, proposalsIds = None, requestContext = requestContext).flatMap {
-        proposalsVoted =>
-          sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).flatMap {
-            sequenceConfiguration =>
-              startSequence(
-                maybeUserId,
-                sequenceConfiguration,
-                includedProposals,
-                proposalsVoted,
-                tagsIds,
-                requestContext
-              ).flatMap {
-                case Some(sequenceResult) if sequenceResult.proposals.size < sequenceConfiguration.sequenceSize =>
-                  fallbackEmptySequence(
-                    maybeUserId,
-                    sequenceConfiguration,
-                    sequenceResult.proposals,
-                    proposalsVoted,
-                    requestContext
-                  )
-                case other => Future.successful(other)
-              }
-          }
-
+      logStartSequenceUserHistory(Some(questionId), maybeUserId, includedProposals, requestContext).flatMap { _ =>
+        futureVotedProposals(maybeUserId = maybeUserId, proposalsIds = None, requestContext = requestContext).flatMap {
+          proposalsVoted =>
+            sequenceConfigurationService.getSequenceConfigurationByQuestionId(questionId).flatMap {
+              sequenceConfiguration =>
+                startSequence(
+                  maybeUserId,
+                  sequenceConfiguration,
+                  includedProposals,
+                  proposalsVoted,
+                  tagsIds,
+                  requestContext
+                ).flatMap {
+                  case Some(sequenceResult) if sequenceResult.proposals.size < sequenceConfiguration.sequenceSize =>
+                    fallbackEmptySequence(
+                      maybeUserId,
+                      sequenceConfiguration,
+                      sequenceResult.proposals,
+                      proposalsVoted,
+                      requestContext
+                    )
+                  case other => Future.successful(other)
+                }
+            }
+        }
       }
     }
 
@@ -312,23 +311,25 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
       maybeUserId: Option[UserId],
       includedProposals: Seq[ProposalId],
       requestContext: RequestContext
-    ): Unit = {
+    ): Future[Unit] = {
 
       (maybeUserId, requestContext.sessionId) match {
         case (Some(userId), _) =>
-          userHistoryCoordinatorService.logHistory(
-            LogUserStartSequenceEvent(
-              userId,
-              requestContext,
-              UserAction(
-                date = DateHelper.now(),
-                actionType = LogUserStartSequenceEvent.action,
-                arguments = StartSequenceParameters(None, questionId, None, includedProposals)
+          Future.successful(
+            userHistoryCoordinatorService.logHistory(
+              LogUserStartSequenceEvent(
+                userId,
+                requestContext,
+                UserAction(
+                  date = DateHelper.now(),
+                  actionType = LogUserStartSequenceEvent.action,
+                  arguments = StartSequenceParameters(None, questionId, None, includedProposals)
+                )
               )
             )
           )
         case (None, sessionId) =>
-          sessionHistoryCoordinatorService.logHistory(
+          sessionHistoryCoordinatorService.logTransactionalHistory(
             LogSessionStartSequenceEvent(
               sessionId,
               requestContext,

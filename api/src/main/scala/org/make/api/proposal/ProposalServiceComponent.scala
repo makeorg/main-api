@@ -365,20 +365,24 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       query: SearchQuery,
       requestContext: RequestContext
     ): Future[ProposalsSearchResult] = {
-      query.filters.foreach(_.content.foreach { content =>
-        sessionHistoryCoordinatorService.logHistory(
-          LogSessionSearchProposalsEvent(
-            requestContext.sessionId,
-            requestContext,
-            SessionAction(
-              DateHelper.now(),
-              LogSessionSearchProposalsEvent.action,
-              SessionSearchParameters(content.text)
+      val logSearchContent: Future[Unit] = query.filters.flatMap(_.content) match {
+        case Some(contentFilter) =>
+          sessionHistoryCoordinatorService.logTransactionalHistory(
+            LogSessionSearchProposalsEvent(
+              requestContext.sessionId,
+              requestContext,
+              SessionAction(
+                DateHelper.now(),
+                LogSessionSearchProposalsEvent.action,
+                SessionSearchParameters(contentFilter.text)
+              )
             )
           )
-        )
-      })
-      elasticsearchProposalAPI.searchProposals(query)
+        case _ => Future.successful {}
+      }
+      logSearchContent.flatMap { _ =>
+        elasticsearchProposalAPI.searchProposals(query)
+      }
     }
 
     private def mergeVoteResults(
