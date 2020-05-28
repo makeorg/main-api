@@ -26,7 +26,7 @@ import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsMissing
+import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
@@ -51,7 +51,7 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, _}
-import scalaoauth2.provider.AccessToken
+import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -97,8 +97,16 @@ trait MakeDirectives
     } yield maybeCookieVisitorId.map(_.value).orElse(maybeVisitorId).getOrElse(idGenerator.nextVisitorId().value)
 
   def visitorCreatedAt: Directive1[ZonedDateTime] =
-    optionalCookie(makeSettings.VisitorCookie.createdAtName)
-      .map(_.flatMap(cookie => Try(ZonedDateTime.parse(cookie.value)).toOption).getOrElse(DateHelper.now()))
+    for {
+      maybeCookieValue <- optionalCookie(makeSettings.VisitorCookie.createdAtName)
+      maybeHeaderValue <- optionalHeaderValueByName(`X-Visitor-CreatedAt`.name)
+    } yield {
+      maybeCookieValue
+        .map(_.value)
+        .orElse(maybeHeaderValue)
+        .flatMap(creation => Try(ZonedDateTime.parse(creation)).toOption)
+        .getOrElse(DateHelper.now())
+    }
 
   def checkEndpointAccess(userRights: Option[UserRights], endpointType: EndpointType): Directive0 = {
     if (mandatoryConnection) {
@@ -174,12 +182,17 @@ trait MakeDirectives
     externalId: String
   ): Directive0 = {
     respondWithDefaultHeaders {
+      val sessionExpirationDate =
+        DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds))
       Seq(
         `X-Route-Time`(startTime),
         `X-Request-Id`(requestId),
         `X-Route-Name`(routeName),
         `X-Make-External-Id`(externalId),
         `X-Session-Id`(sessionId),
+        `X-Session-Id-Expiration`(sessionExpirationDate),
+        `X-Visitor-Id`(visitorId),
+        `X-Visitor-CreatedAt`(DateHelper.format(visitorCreatedAt)),
         `Set-Cookie`(
           HttpCookie(
             name = makeSettings.SessionCookie.name,
@@ -194,7 +207,7 @@ trait MakeDirectives
         `Set-Cookie`(
           HttpCookie(
             name = makeSettings.SessionCookie.expirationName,
-            value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds)),
+            value = sessionExpirationDate,
             secure = makeSettings.SessionCookie.isSecure,
             httpOnly = false,
             maxAge = None,
@@ -255,6 +268,29 @@ trait MakeDirectives
     maybeUserId.foreach(userId => sessionHistoryCoordinatorService.convertSession(sessionId, userId, requestContext))
   }
 
+  def checkTokenExpirationIfNoCookieIsDefined(maybeUser: Option[AuthInfo[UserRights]]): Directive0 = {
+    mapInnerRoute { route =>
+      maybeUser match {
+        // If a user has been found, the token is valid and the route can continue
+        case Some(_) => route
+        case _ =>
+          optionalCookie(makeSettings.SecureCookie.name) {
+            // If the make-secure cookie is used, then rely on the cookie and auto-refresh mecanism
+            case Some(_) => route
+            case None =>
+              optionalHeaderValueByType[Authorization](()) {
+                // If there is a OAuth2 bearer token, then it is either not found or expired
+                case Some(Authorization(OAuth2BearerToken(_))) =>
+                  reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2(realm)))
+                // If no authentication is sent or it is not OAuth, continue
+                case _ => route
+              }
+          }
+      }
+    }
+
+  }
+
   def makeOperation(name: String, endpointType: EndpointType = EndpointType.Regular): Directive1[RequestContext] = {
     val slugifiedName: String = SlugHelper(name)
     Tracing.entrypoint(slugifiedName)
@@ -279,6 +315,7 @@ trait MakeDirectives
       _                    <- makeAuthCookieHandlers(maybeTokenRefreshed)
       maybeIpAddress       <- extractClientIP
       maybeUser            <- optionalMakeOAuth2
+      _                    <- checkTokenExpirationIfNoCookieIsDefined(maybeUser)
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
       maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
       maybeOperation       <- optionalHeaderValueByName(`X-Make-Operation`.name)
@@ -710,6 +747,20 @@ object `X-Session-Id` extends ModeledCustomHeaderCompanion[`X-Session-Id`] {
   override def parse(value: String): Try[`X-Session-Id`] = Success(new `X-Session-Id`(value))
 }
 
+final case class `X-Session-Id-Expiration`(override val value: String)
+    extends ModeledCustomHeader[`X-Session-Id-Expiration`] {
+
+  override def companion: ModeledCustomHeaderCompanion[`X-Session-Id-Expiration`] =
+    `X-Session-Id-Expiration`
+  override def renderInRequests: Boolean = false
+  override def renderInResponses: Boolean = true
+}
+
+object `X-Session-Id-Expiration` extends ModeledCustomHeaderCompanion[`X-Session-Id-Expiration`] {
+  override val name: String = "x-session-id-expiration"
+  override def parse(value: String): Try[`X-Session-Id-Expiration`] = Success(new `X-Session-Id-Expiration`(value))
+}
+
 final case class `X-Total-Count`(override val value: String) extends ModeledCustomHeader[`X-Total-Count`] {
   override def companion: ModeledCustomHeaderCompanion[`X-Total-Count`] = `X-Total-Count`
   override def renderInRequests: Boolean = true
@@ -730,6 +781,17 @@ final case class `X-Visitor-Id`(override val value: String) extends ModeledCusto
 object `X-Visitor-Id` extends ModeledCustomHeaderCompanion[`X-Visitor-Id`] {
   override val name: String = "x-visitor-id"
   override def parse(value: String): Try[`X-Visitor-Id`] = Success(new `X-Visitor-Id`(value))
+}
+
+final case class `X-Visitor-CreatedAt`(override val value: String) extends ModeledCustomHeader[`X-Visitor-CreatedAt`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Visitor-CreatedAt`] = `X-Visitor-CreatedAt`
+  override def renderInRequests: Boolean = true
+  override def renderInResponses: Boolean = true
+}
+
+object `X-Visitor-CreatedAt` extends ModeledCustomHeaderCompanion[`X-Visitor-CreatedAt`] {
+  override val name: String = "x-visitor-created-at"
+  override def parse(value: String): Try[`X-Visitor-CreatedAt`] = Success(new `X-Visitor-CreatedAt`(value))
 }
 
 final case class `X-Make-Question-Id`(override val value: String) extends ModeledCustomHeader[`X-Make-Question-Id`] {
