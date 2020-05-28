@@ -76,6 +76,13 @@ trait MakeDirectives
 
   def startTime: Directive1[Long] = BasicDirectives.provide(System.currentTimeMillis())
 
+  def optionalNonEmptyHeaderValueByName(headerName: String): Directive1[Option[String]] = {
+    optionalHeaderValueByName(headerName).map {
+      case Some("") => None
+      case other    => other
+    }
+  }
+
   /**
     * sessionId is set in cookie and header
     * for web app and native app respectively
@@ -83,7 +90,7 @@ trait MakeDirectives
   def sessionId: Directive1[String] =
     for {
       maybeCookieSessionId <- optionalCookie(makeSettings.SessionCookie.name)
-      maybeSessionId       <- optionalHeaderValueByName(`X-Session-Id`.name)
+      maybeSessionId       <- optionalNonEmptyHeaderValueByName(`X-Session-Id`.name)
     } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId).getOrElse(idGenerator.nextId())
 
   /**
@@ -93,13 +100,13 @@ trait MakeDirectives
   def visitorId: Directive1[String] =
     for {
       maybeCookieVisitorId <- optionalCookie(makeSettings.VisitorCookie.name)
-      maybeVisitorId       <- optionalHeaderValueByName(`X-Visitor-Id`.name)
+      maybeVisitorId       <- optionalNonEmptyHeaderValueByName(`X-Visitor-Id`.name)
     } yield maybeCookieVisitorId.map(_.value).orElse(maybeVisitorId).getOrElse(idGenerator.nextVisitorId().value)
 
   def visitorCreatedAt: Directive1[ZonedDateTime] =
     for {
       maybeCookieValue <- optionalCookie(makeSettings.VisitorCookie.createdAtName)
-      maybeHeaderValue <- optionalHeaderValueByName(`X-Visitor-CreatedAt`.name)
+      maybeHeaderValue <- optionalNonEmptyHeaderValueByName(`X-Visitor-CreatedAt`.name)
     } yield {
       maybeCookieValue
         .map(_.value)
@@ -299,14 +306,14 @@ trait MakeDirectives
 
       requestId            <- requestId
       _                    <- operationName(slugifiedName)
-      origin               <- optionalHeaderValueByName(Origin.name)
+      origin               <- optionalNonEmptyHeaderValueByName(Origin.name)
       _                    <- addCorsHeaders(origin)
       _                    <- encodeResponse
       startTime            <- startTime
       sessionId            <- sessionId
       visitorId            <- visitorId
       visitorCreatedAt     <- visitorCreatedAt
-      externalId           <- optionalHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
+      externalId           <- optionalNonEmptyHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
       _                    <- addMakeHeaders(requestId, slugifiedName, sessionId, visitorId, visitorCreatedAt, startTime, externalId)
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
@@ -317,20 +324,20 @@ trait MakeDirectives
       maybeUser            <- optionalMakeOAuth2
       _                    <- checkTokenExpirationIfNoCookieIsDefined(maybeUser)
       _                    <- checkEndpointAccess(maybeUser.map(_.user), endpointType)
-      maybeUserAgent       <- optionalHeaderValueByName(`User-Agent`.name)
-      maybeOperation       <- optionalHeaderValueByName(`X-Make-Operation`.name)
-      maybeSource          <- optionalHeaderValueByName(`X-Make-Source`.name)
-      maybeLocation        <- optionalHeaderValueByName(`X-Make-Location`.name)
-      maybeQuestion        <- optionalHeaderValueByName(`X-Make-Question`.name)
-      maybeCountry         <- optionalHeaderValueByName(`X-Make-Country`.name)
-      maybeDetectedCountry <- optionalHeaderValueByName(`X-Detected-Country`.name)
-      maybeLanguage        <- optionalHeaderValueByName(`X-Make-Language`.name)
-      maybeHostName        <- optionalHeaderValueByName(`X-Hostname`.name)
-      maybeGetParameters   <- optionalHeaderValueByName(`X-Get-Parameters`.name)
-      maybeQuestionId      <- optionalHeaderValueByName(`X-Make-Question-Id`.name)
-      maybeApplicationName <- optionalHeaderValueByName(`X-Make-App-Name`.name)
-      maybeReferrer        <- optionalHeaderValueByName(`X-Make-Referrer`.name)
-      maybeCustomData      <- optionalHeaderValueByName(`X-Make-Custom-Data`.name)
+      maybeUserAgent       <- optionalNonEmptyHeaderValueByName(`User-Agent`.name)
+      maybeOperation       <- optionalNonEmptyHeaderValueByName(`X-Make-Operation`.name)
+      maybeSource          <- optionalNonEmptyHeaderValueByName(`X-Make-Source`.name)
+      maybeLocation        <- optionalNonEmptyHeaderValueByName(`X-Make-Location`.name)
+      maybeQuestion        <- optionalNonEmptyHeaderValueByName(`X-Make-Question`.name)
+      maybeCountry         <- optionalNonEmptyHeaderValueByName(`X-Make-Country`.name)
+      maybeDetectedCountry <- optionalNonEmptyHeaderValueByName(`X-Detected-Country`.name)
+      maybeLanguage        <- optionalNonEmptyHeaderValueByName(`X-Make-Language`.name)
+      maybeHostName        <- optionalNonEmptyHeaderValueByName(`X-Hostname`.name)
+      maybeGetParameters   <- optionalNonEmptyHeaderValueByName(`X-Get-Parameters`.name)
+      maybeQuestionId      <- optionalNonEmptyHeaderValueByName(`X-Make-Question-Id`.name)
+      maybeApplicationName <- optionalNonEmptyHeaderValueByName(`X-Make-App-Name`.name)
+      maybeReferrer        <- optionalNonEmptyHeaderValueByName(`X-Make-Referrer`.name)
+      maybeCustomData      <- optionalNonEmptyHeaderValueByName(`X-Make-Custom-Data`.name)
     } yield {
       val requestContext = RequestContext(
         currentTheme = None,
@@ -464,7 +471,7 @@ trait MakeDirectives
 
   def corsHeaders(): Directive0 =
     mapInnerRoute { route =>
-      optionalHeaderValueByName(Origin.name) { mayBeOriginHeaderValue =>
+      optionalNonEmptyHeaderValueByName(Origin.name) { mayBeOriginHeaderValue =>
         respondWithDefaultHeaders(defaultCorsHeaders(mayBeOriginHeaderValue)) {
           optionalHeaderValueByType[`Access-Control-Request-Headers`](()) {
             case Some(requestHeader) =>
