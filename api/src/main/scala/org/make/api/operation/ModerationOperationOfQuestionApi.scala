@@ -89,6 +89,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
   )
   @Path(value = "/")
   def listOperationOfQuestions: Route
+
   @ApiOperation(
     value = "get-operation-of-question",
     httpMethod = "GET",
@@ -433,10 +434,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         shortTitle = body.shortTitle.map(_.value),
                         consultationImage = body.consultationImage.map(_.value),
                         descriptionImage = body.descriptionImage.map(_.value),
-                        displayResults = body.displayResults,
-                        resultsLink = body.resultsLink.map(_.value),
-                        actions = body.actions,
-                        featured = body.featured
+                        actions = body.actions
                       )
                     )
                   ) { operationOfQuestion =>
@@ -538,10 +536,7 @@ final case class CreateOperationOfQuestionRequest(
   questionSlug: String,
   consultationImage: Option[String Refined Url],
   descriptionImage: Option[String Refined Url] = None,
-  displayResults: Boolean,
-  resultsLink: Option[String Refined Url],
-  actions: Option[String],
-  featured: Boolean
+  actions: Option[String]
 ) {
   validate(
     validateUserInput("operationTitle", operationTitle, None),
@@ -559,12 +554,6 @@ final case class CreateOperationOfQuestionRequest(
       "not_secure",
       descriptionImage.forall(_.value.startsWith("https://")),
       "descriptionImage must be a secure https url"
-    ),
-    validateField(
-      "resultsLink",
-      "invalid_value",
-      displayResults || resultsLink.isEmpty,
-      "resultsLink must be empty if results are not displayed (i.e. displayResults == false)"
     )
   )
 }

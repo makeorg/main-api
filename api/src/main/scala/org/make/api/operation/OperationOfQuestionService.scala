@@ -80,10 +80,7 @@ final case class CreateOperationOfQuestion(
   shortTitle: Option[String],
   consultationImage: Option[String],
   descriptionImage: Option[String],
-  displayResults: Boolean,
-  resultsLink: Option[String],
-  actions: Option[String],
-  featured: Boolean
+  actions: Option[String]
 )
 
 final case class SearchOperationsOfQuestions(
@@ -217,12 +214,12 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         description = OperationOfQuestion.defaultDescription,
         consultationImage = parameters.consultationImage,
         descriptionImage = parameters.descriptionImage,
-        displayResults = parameters.displayResults,
-        resultsLink = parameters.resultsLink,
+        displayResults = false,
+        resultsLink = None,
         proposalsCount = 0,
         participantsCount = 0,
         actions = parameters.actions,
-        featured = parameters.featured
+        featured = false
       )
 
       val sequenceConfiguration =

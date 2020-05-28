@@ -107,10 +107,7 @@ object EntitiesGen extends DefaultIdGeneratorComponent {
       shortTitle = Some(shortTitle),
       consultationImage = Some(consultationImage),
       descriptionImage = Some(descriptionImage),
-      displayResults = false,
-      resultsLink = None,
-      actions = None,
-      featured = false
+      actions = None
     )
 
   def genRoles: Gen[Seq[Role]] = {
