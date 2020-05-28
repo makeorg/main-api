@@ -491,36 +491,13 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             questionSlug = "make-the-world-great-again",
             consultationImage = Some("https://example.com/image"),
             descriptionImage = Some("https://example.com/image-desc"),
-            displayResults = false,
-            resultsLink = None,
-            actions = None,
-            featured = true
+            actions = None
           ).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.Created)
         val operationOfQuestion = entityAs[OperationOfQuestionResponse]
         operationOfQuestion.canPropose shouldBe true
-      }
-    }
-
-    scenario("create as moderator with resultsLink even if displayResults is false") {
-      Post("/moderation/operations-of-questions")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, """{
-            |"operationId": "some-operation",
-            |"startDate": "2018-12-01T10:15:30+00:00",
-            |"question": "question ?",
-            |"questionSlug": "question-slug",
-            |"operationTitle": "my-operation",
-            |"country": "FR",
-            |"language": "fr",
-            |"consultationImage": "http://example.com/image",
-            |"displayResults": false,
-            |"resultsLink": "http://example.com/results",
-            |"featured": true
-            |}""".stripMargin) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
       }
     }
 
