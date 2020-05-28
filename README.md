@@ -104,6 +104,14 @@ if your images, uploaded on the API are not visible (with an authentication erro
 ./init-swift.sh
 ```
 
+## Adding hooks to automatically fix the style
+
+create a file `local.sbt` in the base directory, and add in it:
+
+`gitPreCommitHook := Some(baseDirectory.value / "bin"/ "fix-style.sh")`
+
+This local.sbt file can be used to add some custom sbt config that will not be shared between users.
+_Use with care, it will not be on the CI server, so everything must work even without it._
 
 ## Sending emails
 
