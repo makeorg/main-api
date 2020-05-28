@@ -438,7 +438,10 @@ trait MakeDirectives
           `X-Route-Time`.name,
           `X-Make-External-Id`.name,
           `X-Session-Id`.name,
-          `X-Total-Count`.name
+          `X-Session-Id-Expiration`.name,
+          `X-Total-Count`.name,
+          `X-Visitor-CreatedAt`.name,
+          `X-Visitor-Id`.name
         )
       )
     ) ++ mayBeOriginValue.map { httpOrigin =>
