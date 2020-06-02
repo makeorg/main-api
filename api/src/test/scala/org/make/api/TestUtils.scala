@@ -19,11 +19,14 @@
 
 package org.make.api
 
+import java.net.URL
 import java.time.ZonedDateTime
 
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
+import org.make.core.article.{Article, ArticleId}
 import org.make.core.idea.IdeaId
 import org.make.core.operation._
+import org.make.core.post.{Post, PostId}
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.QualificationKey.{
@@ -378,20 +381,6 @@ trait TestUtils {
       updatedAt = updatedAt
     )
 
-  val defaultSequenceCardsConfiguration = SequenceCardsConfiguration(
-    introCard = IntroCard(enabled = true, title = None, description = None),
-    pushProposalCard = PushProposalCard(enabled = true),
-    signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-    finalCard = FinalCard(
-      enabled = true,
-      sharingEnabled = false,
-      title = None,
-      shareDescription = None,
-      learnMoreTitle = None,
-      learnMoreTextButton = None,
-      linkUrl = None
-    )
-  )
   val defaultMetas = Metas(title = Some("Metas title"), description = Some("Meta description"), picture = None)
   def operationOfQuestion(
     questionId: QuestionId,
@@ -401,7 +390,7 @@ trait TestUtils {
     operationTitle: String = "operation title",
     landingSequenceId: SequenceId = SequenceId("sequence-id"),
     canPropose: Boolean = true,
-    sequenceCardsConfiguration: SequenceCardsConfiguration = defaultSequenceCardsConfiguration,
+    sequenceCardsConfiguration: SequenceCardsConfiguration = SequenceCardsConfiguration.default,
     aboutUrl: Option[String] = None,
     metas: Metas = defaultMetas,
     theme: QuestionTheme = QuestionTheme.default,
@@ -435,6 +424,28 @@ trait TestUtils {
     participantsCount = participantsCount,
     actions = actions,
     featured = featured
+  )
+
+  def postGen(
+    postId: PostId,
+    name: String = "post name",
+    slug: String = "post-slug",
+    displayHome: Boolean = true,
+    postDate: ZonedDateTime = ZonedDateTime.parse("2020-06-10T10:10:10.000Z"),
+    thumbnailUrl: URL = new URL("https://example.com/thumbnail"),
+    thumbnailAlt: Option[String] = Some("image alternative"),
+    sourceUrl: URL = new URL("https://example.com/source"),
+    summary: String = "This is a summary for an awesome post."
+  ): Post = Post(
+    postId = postId,
+    name = name,
+    slug = slug,
+    displayHome = displayHome,
+    postDate = postDate,
+    thumbnailUrl = thumbnailUrl,
+    thumbnailAlt = thumbnailAlt,
+    sourceUrl = sourceUrl,
+    summary = summary
   )
 
 }

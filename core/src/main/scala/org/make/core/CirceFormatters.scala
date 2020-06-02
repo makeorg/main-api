@@ -72,6 +72,12 @@ trait CirceFormatters {
   implicit def stringValueEncoder[A <: StringValue]: Encoder[A] = a => Json.fromString(a.value)
 
   implicit val urlEncoder: Encoder[URL] = Encoder[String].contramap(_.toString)
+  implicit val urlDecoder: Decoder[URL] = Decoder[String].emap { url =>
+    Try(new URL(url)) match {
+      case Success(parsed) => Right(parsed)
+      case Failure(_)      => Left(s"Not a valid URL: $url")
+    }
+  }
 }
 
 // object CirceFormatters extends CirceFormatters

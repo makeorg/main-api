@@ -98,6 +98,7 @@ import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage._
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
+import org.make.api.technical.webflow.DefaultWebflowClientComponent
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user._
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
@@ -255,6 +256,8 @@ trait MakeApi
     with DefaultUserServiceComponent
     with DefaultUserTokenGeneratorComponent
     with DefaultWidgetApiComponent
+    with DefaultWebflowClientComponent
+    with DefaultWebflowConfigurationComponent
     with DefaultWidgetServiceComponent
     with HealthCheckComponent
     with JobCoordinatorComponent
