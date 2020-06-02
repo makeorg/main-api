@@ -240,6 +240,7 @@ class QuestionPersonalityServiceTest
                 operationTitle = "title",
                 question = "",
                 slug = "",
+                questionShortTitle = None,
                 description = "Description opeOfQue",
                 theme = QuestionTheme("#000000", "#000000", "#000000", "#000000", None, None),
                 consultationImage = None,
@@ -252,7 +253,8 @@ class QuestionPersonalityServiceTest
                 proposalsCount = 42,
                 participantsCount = 84,
                 actions = None,
-                featured = true
+                featured = true,
+                open = true
               ),
               IndexedOperationOfQuestion(
                 operationId = OperationId("operation-id-two"),
@@ -262,6 +264,7 @@ class QuestionPersonalityServiceTest
                 operationTitle = "title",
                 question = "",
                 slug = "",
+                questionShortTitle = None,
                 description = "Description opeOfQue",
                 theme = QuestionTheme("#000000", "#000000", "#000000", "#000000", Some("#000000"), Some("#000000")),
                 consultationImage = None,
@@ -274,7 +277,8 @@ class QuestionPersonalityServiceTest
                 proposalsCount = 420,
                 participantsCount = 840,
                 actions = None,
-                featured = false
+                featured = false,
+                open = false
               )
             )
           )

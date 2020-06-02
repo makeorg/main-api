@@ -19,7 +19,7 @@
 
 package org.make.api.views
 
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -38,7 +38,7 @@ import org.make.core.operation._
 import org.make.core.proposal.SearchQuery
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery}
-import org.make.core.{operation, proposal, user, HttpCodes, ParameterExtractors}
+import org.make.core.{operation, proposal, user, BusinessConfig, HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -53,6 +53,19 @@ trait ViewApi extends Directives {
   )
   @Path(value = "/home")
   def homeView: Route
+
+  @ApiOperation(value = "get-home-page-view", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "country", paramType = "path", dataType = "string", example = "FR"),
+      new ApiImplicitParam(name = "language", paramType = "path", dataType = "string", example = "fr")
+    )
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[HomePageViewResponse]))
+  )
+  @Path(value = "/home-page/{country}/{language}")
+  def homePageView: Route
 
   @ApiOperation(value = "get-search-view", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -71,7 +84,7 @@ trait ViewApi extends Directives {
   @Path(value = "/search")
   def searchView: Route
 
-  def routes: Route = homeView ~ searchView
+  def routes: Route = homeView ~ homePageView ~ searchView
 }
 
 trait ViewApiComponent {
@@ -104,6 +117,9 @@ trait DefaultViewApiComponent
     private val defaultCountry = Country("FR")
     private val defaultLanguage = Language("fr")
 
+    private val country: PathMatcher1[Country] = Segment.map(Country.apply)
+    private val language: PathMatcher1[Language] = Segment.map(Language.apply)
+
     override def homeView: Route = {
       get {
         path("views" / "home") {
@@ -132,6 +148,21 @@ trait DefaultViewApiComponent
                 complete(homeResponse)
               }
             }
+          }
+        }
+      }
+    }
+
+    override def homePageView: Route = {
+      get {
+        path("views" / "home-page" / country / language) { (country, language) =>
+          makeOperation("GetHomePageView") { _ =>
+            provideAsync(
+              homeViewService.getHomePageViewResponse(
+                country = BusinessConfig.validateCountry(country),
+                language = BusinessConfig.validateLanguage(country, language)
+              )
+            )(complete(_))
           }
         }
       }

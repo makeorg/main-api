@@ -275,6 +275,7 @@ class QuestionApiTest
       questionId = QuestionId("question-id"),
       question = "Question ?",
       slug = "question-slug",
+      questionShortTitle = Some("question-short-title"),
       startDate = None,
       endDate = None,
       theme = QuestionTheme(
@@ -298,7 +299,8 @@ class QuestionApiTest
       proposalsCount = 42,
       participantsCount = 84,
       actions = None,
-      featured = true
+      featured = true,
+      open = true
     )
 
     when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery]))

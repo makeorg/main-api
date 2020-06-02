@@ -47,7 +47,9 @@ case class OperationOfQuestionSearchFilters(
   language: Option[LanguageSearchFilter] = None,
   startDate: Option[StartDateSearchFilter] = None,
   endDate: Option[EndDateSearchFilter] = None,
-  operationKinds: Option[OperationKindsSearchFilter] = None
+  operationKinds: Option[OperationKindsSearchFilter] = None,
+  featured: Option[FeaturedSearchFilter] = None,
+  open: Option[OpenSearchFilter] = None
 )
 
 object OperationOfQuestionSearchFilters extends ElasticDsl {
@@ -60,10 +62,12 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     language: Option[LanguageSearchFilter] = None,
     startDate: Option[StartDateSearchFilter] = None,
     endDate: Option[EndDateSearchFilter] = None,
-    operationKind: Option[OperationKindsSearchFilter] = None
+    operationKind: Option[OperationKindsSearchFilter] = None,
+    featured: Option[FeaturedSearchFilter] = None,
+    open: Option[OpenSearchFilter] = None
   ): Option[OperationOfQuestionSearchFilters] = {
-    (questionIds, question, description, country, language, startDate, endDate, operationKind) match {
-      case (None, None, None, None, None, None, None, None) => None
+    (questionIds, question, description, country, language, startDate, endDate, operationKind, featured, open) match {
+      case (None, None, None, None, None, None, None, None, None, None) => None
       case _ =>
         Some(
           OperationOfQuestionSearchFilters(
@@ -74,7 +78,9 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
             language,
             startDate,
             endDate,
-            operationKind
+            operationKind,
+            featured,
+            open
           )
         )
     }
@@ -91,7 +97,9 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
       buildLanguageSearchFilter(operationOfQuestionSearchQuery),
       buildStartDateSearchFilter(operationOfQuestionSearchQuery),
       buildEndDateSearchFilter(operationOfQuestionSearchQuery),
-      buildOperationKindSearchFilter(operationOfQuestionSearchQuery)
+      buildOperationKindSearchFilter(operationOfQuestionSearchQuery),
+      buildFeaturedSearchFilter(operationOfQuestionSearchQuery),
+      buildOpenSearchFilter(operationOfQuestionSearchQuery)
     ).flatten
   }
 
@@ -234,6 +242,26 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     }
   }
 
+  def buildFeaturedSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
+    operationOfQuestionSearchQuery.filters.flatMap {
+      _.featured match {
+        case Some(FeaturedSearchFilter(featured)) =>
+          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.featured, featured))
+        case _ => None
+      }
+    }
+  }
+
+  def buildOpenSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
+    operationOfQuestionSearchQuery.filters.flatMap {
+      _.open match {
+        case Some(OpenSearchFilter(open)) =>
+          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.open, open))
+        case _ => None
+      }
+    }
+  }
+
 }
 
 case class QuestionIdsSearchFilter(questionIds: Seq[QuestionId])
@@ -244,3 +272,5 @@ case class LanguageSearchFilter(language: Language)
 case class StartDateSearchFilter(startDate: ZonedDateTime)
 case class EndDateSearchFilter(endDate: ZonedDateTime)
 case class OperationKindsSearchFilter(operationKinds: Seq[OperationKind])
+case class FeaturedSearchFilter(featured: Boolean)
+case class OpenSearchFilter(open: Boolean)

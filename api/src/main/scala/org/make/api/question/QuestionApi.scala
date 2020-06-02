@@ -308,12 +308,19 @@ trait DefaultQuestionApiComponent
               question = question.question,
               shortTitle = question.shortTitle,
               operationTitle = operationOfQuestion.operationTitle,
+              consultationImage = operationOfQuestion.consultationImage,
               country = question.country,
               language = question.language,
               startDate = operationOfQuestion.startDate,
               endDate = operationOfQuestion.endDate,
               theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme),
-              displayResults = operationOfQuestion.displayResults
+              displayResults = operationOfQuestion.displayResults,
+              resultsLink = operationOfQuestion.resultsLink,
+              aboutUrl = operationOfQuestion.aboutUrl,
+              actions = operationOfQuestion.actions,
+              featured = operationOfQuestion.featured,
+              participantsCount = operationOfQuestion.participantsCount,
+              proposalsCount = operationOfQuestion.proposalsCount
             )
           }.sortBy(_.questionSlug)
         }

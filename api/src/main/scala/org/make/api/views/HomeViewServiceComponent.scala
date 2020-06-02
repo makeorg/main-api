@@ -26,10 +26,11 @@ import org.make.api.proposal.{
   ProposalsResultSeededResponse,
   SortAlgorithmConfigurationComponent
 }
-import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.question.{QuestionOfOperationResponse, QuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
-import org.make.core.operation.indexed.IndexedOperationOfQuestion
+import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionElasticsearchFieldNames}
 import org.make.core.proposal._
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
@@ -71,6 +72,8 @@ trait HomeViewService {
     userId: Option[UserId],
     requestContext: RequestContext
   ): Future[HomeViewResponse]
+
+  def getHomePageViewResponse(country: Country, language: Language): Future[HomePageViewResponse]
 }
 
 trait HomeViewServiceComponent {
@@ -79,6 +82,7 @@ trait HomeViewServiceComponent {
 
 trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
   this: QuestionServiceComponent
+    with OperationOfQuestionSearchEngineComponent
     with OperationOfQuestionServiceComponent
     with OperationServiceComponent
     with ProposalServiceComponent
@@ -140,6 +144,50 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           businessConsultations = getBusinessConsultationResponses(businessConsultations),
           featuredConsultations = getFeaturedConsultationResponses(featuredConsultations, allQuestionsWithDetails),
           currentConsultations = getCurrentConsultationResponses(currentConsultations, allQuestionsWithDetails)
+        )
+      }
+    }
+
+    override def getHomePageViewResponse(country: Country, language: Language): Future[HomePageViewResponse] = {
+
+      def searchQuestionOfOperations(query: OperationOfQuestionSearchQuery): Future[Seq[QuestionOfOperationResponse]] =
+        elasticsearchOperationOfQuestionAPI
+          .searchOperationOfQuestions(
+            query.copy(filters = query.filters.map(
+              _.copy(
+                language = Some(operation.LanguageSearchFilter(language)),
+                country = Some(operation.CountrySearchFilter(country))
+              )
+            )
+            )
+          )
+          .map(_.results.map(QuestionOfOperationResponse.apply))
+
+      val futureCurrentQuestions = searchQuestionOfOperations(
+        OperationOfQuestionSearchQuery(
+          filters = Some(OperationOfQuestionSearchFilters(open = Some(OpenSearchFilter(true)))),
+          sort = Some(OperationOfQuestionElasticsearchFieldNames.endDate),
+          order = Some("asc")
+        )
+      )
+
+      val futureFeaturedQuestions = searchQuestionOfOperations(
+        OperationOfQuestionSearchQuery(
+          filters = Some(OperationOfQuestionSearchFilters(featured = Some(FeaturedSearchFilter(true)))),
+          sort = Some(OperationOfQuestionElasticsearchFieldNames.endDate),
+          order = Some("desc")
+        )
+      )
+
+      for {
+        currentQuestions  <- futureCurrentQuestions
+        featuredQuestions <- futureFeaturedQuestions
+      } yield {
+        HomePageViewResponse(
+          highlights = Highlights(participantsCount = 0, proposalsCount = 0, partnersCount = 0),
+          currentQuestions = currentQuestions,
+          featuredQuestions = featuredQuestions,
+          articles = Nil
         )
       }
     }
