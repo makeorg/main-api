@@ -30,70 +30,32 @@ import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.DecodingFai
 import enumeratum.NoSuchMember
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
-import org.make.api.crmTemplates.{
-  AdminCrmTemplateApi,
-  DefaultAdminCrmTemplatesApiComponent,
-  DefaultCrmTemplatesServiceComponent,
-  DefaultPersistentCrmTemplatesServiceComponent
-}
+import org.make.api.article.DefaultArticleSearchEngineComponent
+import org.make.api.crmTemplates.{AdminCrmTemplateApi, DefaultAdminCrmTemplatesApiComponent, DefaultCrmTemplatesServiceComponent, DefaultPersistentCrmTemplatesServiceComponent}
 import org.make.api.extensions._
 import org.make.api.feature._
 import org.make.api.idea._
-import org.make.api.idea.topIdeaComments.{
-  DefaultPersistentTopIdeaCommentServiceComponent,
-  DefaultTopIdeaCommentServiceComponent
-}
+import org.make.api.idea.topIdeaComments.{DefaultPersistentTopIdeaCommentServiceComponent, DefaultTopIdeaCommentServiceComponent}
 import org.make.api.operation._
 import org.make.api.organisation._
-import org.make.api.partner.{
-  AdminPartnerApi,
-  DefaultAdminPartnerApiComponent,
-  DefaultPartnerServiceComponent,
-  DefaultPersistentPartnerServiceComponent
-}
+import org.make.api.partner.{AdminPartnerApi, DefaultAdminPartnerApiComponent, DefaultPartnerServiceComponent, DefaultPersistentPartnerServiceComponent}
 import org.make.api.personality._
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.segment.DefaultSegmentServiceComponent
 import org.make.api.semantic.{DefaultSemanticComponent, DefaultSemanticConfigurationComponent}
 import org.make.api.sequence._
-import org.make.api.sessionhistory.{
-  ConcurrentModification,
-  DefaultSessionHistoryCoordinatorServiceComponent,
-  SessionHistoryCoordinator,
-  SessionHistoryCoordinatorComponent
-}
+import org.make.api.sessionhistory.{ConcurrentModification, DefaultSessionHistoryCoordinatorServiceComponent, SessionHistoryCoordinator, SessionHistoryCoordinatorComponent}
 import org.make.api.tag._
-import org.make.api.tagtype.{
-  DefaultModerationTagTypeApiComponent,
-  DefaultPersistentTagTypeServiceComponent,
-  DefaultTagTypeServiceComponent,
-  ModerationTagTypeApi
-}
+import org.make.api.tagtype.{DefaultModerationTagTypeApiComponent, DefaultPersistentTagTypeServiceComponent, DefaultTagTypeServiceComponent, ModerationTagTypeApi}
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.{ConfigurationsApi, DefaultConfigurationsApiComponent}
 import org.make.api.technical.crm._
-import org.make.api.technical.elasticsearch.{
-  DefaultElasticSearchApiComponent,
-  DefaultElasticsearchClientComponent,
-  DefaultElasticsearchConfigurationComponent,
-  DefaultIndexationComponent,
-  ElasticSearchApi
-}
-import org.make.api.technical.generator.fixtures.{
-  DefaultFixturesApiComponent,
-  DefaultFixturesServiceComponent,
-  FixturesApi
-}
+import org.make.api.technical.elasticsearch.{DefaultElasticSearchApiComponent, DefaultElasticsearchClientComponent, DefaultElasticsearchConfigurationComponent, DefaultIndexationComponent, ElasticSearchApi}
+import org.make.api.technical.generator.fixtures.{DefaultFixturesApiComponent, DefaultFixturesServiceComponent, FixturesApi}
 import org.make.api.technical.healthcheck._
-import org.make.api.technical.job.{
-  DefaultJobApiComponent,
-  DefaultJobCoordinatorServiceComponent,
-  JobApi,
-  JobCoordinator,
-  JobCoordinatorComponent
-}
+import org.make.api.technical.job.{DefaultJobApiComponent, DefaultJobCoordinatorServiceComponent, JobApi, JobCoordinator, JobCoordinatorComponent}
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage._
@@ -103,11 +65,7 @@ import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailN
 import org.make.api.user._
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
 import org.make.api.user.validation.DefaultUserRegistrationValidatorComponent
-import org.make.api.userhistory.{
-  DefaultUserHistoryCoordinatorServiceComponent,
-  UserHistoryCoordinator,
-  UserHistoryCoordinatorComponent
-}
+import org.make.api.userhistory.{DefaultUserHistoryCoordinatorServiceComponent, UserHistoryCoordinator, UserHistoryCoordinatorComponent}
 import org.make.api.views._
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
 import org.make.core.{AvroSerializers, ValidationError, ValidationFailedError}
@@ -137,6 +95,7 @@ trait MakeApi
     with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAdminViewApiComponent
+    with DefaultArticleSearchEngineComponent
     with DefaultAuthenticationApiComponent
     with DefaultClientServiceComponent
     with DefaultConfigurationsApiComponent

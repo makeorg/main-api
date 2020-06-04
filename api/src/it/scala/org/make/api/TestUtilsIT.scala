@@ -22,9 +22,9 @@ package org.make.api
 import java.net.URL
 import java.time.ZonedDateTime
 
-import org.make.core.article.{Article, ArticleId}
 import org.make.core.idea.IdeaId
 import org.make.core.operation._
+import org.make.core.post.indexed.IndexedPost
 import org.make.core.post.{Post, PostId}
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.Accepted
@@ -308,6 +308,29 @@ trait TestUtilsIT {
     sourceUrl = sourceUrl,
     summary = summary
   )
+
+  def indexedPost(
+    postId: PostId,
+    name: String = "post name",
+    slug: String = "post-slug",
+    displayHome: Boolean = true,
+    postDate: ZonedDateTime = ZonedDateTime.parse("2020-06-10T10:10:10.000Z"),
+    thumbnailUrl: URL = new URL("https://example.com/thumbnail"),
+    thumbnailAlt: Option[String] = Some("image alternative"),
+    sourceUrl: URL = new URL("https://example.com/source"),
+    summary: String = "This is a summary for an awesome post."
+  ): IndexedPost =
+    IndexedPost(
+      postId = postId,
+      name = name,
+      slug = slug,
+      displayHome = displayHome,
+      postDate = postDate,
+      thumbnailUrl = thumbnailUrl,
+      thumbnailAlt = thumbnailAlt,
+      sourceUrl = sourceUrl,
+      summary = summary
+    )
 
 }
 
