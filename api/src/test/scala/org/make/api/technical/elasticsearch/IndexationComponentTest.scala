@@ -25,6 +25,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.{DefaultPersistentIdeaServiceComponent, IdeaSearchEngine, IdeaSearchEngineComponent}
 import org.make.api.operation._
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationService, OrganisationServiceComponent}
+import org.make.api.post.{PostSearchEngine, PostService, PostServiceComponent}
 import org.make.api.proposal.{
   ProposalCoordinatorService,
   ProposalCoordinatorServiceComponent,
@@ -77,9 +78,12 @@ class IndexationComponentTest
     with QuestionServiceComponent
     with PersistentOperationOfQuestionServiceComponent
     with SegmentServiceComponent
-    with JobCoordinatorServiceComponent {
+    with JobCoordinatorServiceComponent
+    with PostServiceComponent
+    with PostIndexationStream {
 
   override lazy val actorSystem: ActorSystem = ActorSystem()
+  override val elasticsearchPostAPI: PostSearchEngine = mock[PostSearchEngine]
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
   override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val elasticsearchOrganisationAPI: OrganisationSearchEngine = mock[OrganisationSearchEngine]
@@ -104,6 +108,7 @@ class IndexationComponentTest
   override val questionService: QuestionService = mock[QuestionService]
   override val persistentOperationOfQuestionService: PersistentOperationOfQuestionService =
     mock[PersistentOperationOfQuestionService]
+  override val postService: PostService = mock[PostService]
 
   override val tagService: TagService = mock[TagService]
   override val jobCoordinatorService: JobCoordinatorService = mock[JobCoordinatorService]

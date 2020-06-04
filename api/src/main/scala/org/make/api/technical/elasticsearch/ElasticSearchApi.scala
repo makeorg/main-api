@@ -28,16 +28,16 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.HttpCodes
 import org.make.core.auth.UserRights
-import org.make.core.job.Job.JobId.Reindex
+import org.make.core.job.Job.JobId.{Reindex, ReindexPosts}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
 
 @Api(value = "Elasticsearch")
-@Path(value = "/")
+@Path(value = "/technical/elasticsearch")
 trait ElasticSearchApi extends Directives {
 
   @ApiOperation(
@@ -60,10 +60,24 @@ trait ElasticSearchApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
-  @Path(value = "/technical/elasticsearch/reindex")
+  @Path(value = "/reindex")
   def reindex: Route
 
-  final def routes: Route = reindex
+  @ApiOperation(
+    value = "reindex-posts",
+    httpMethod = "POST",
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
+  @Path(value = "/reindex-posts")
+  def reindexPosts: Route
+
+  final def routes: Route = reindex ~ reindexPosts
 }
 
 trait ElasticSearchApiComponent {
@@ -87,23 +101,40 @@ trait DefaultElasticSearchApiComponent extends ElasticSearchApiComponent with Ma
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[ReindexRequest]) { request: ReindexRequest =>
-                  makeOperation("ReindexingData") { _ =>
-                    // Do not wait until the reindexation job is over to give an answer
-                    provideAsync(
-                      indexationService.reindexData(
-                        Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
-                        Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
-                        Seq(request.forceAll, request.forceProposals).flatten.contains(true),
-                        Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
-                      )
-                    ) { acceptance =>
-                      if (acceptance.isAccepted) {
-                        complete(StatusCodes.Accepted)
-                      } else {
-                        complete(StatusCodes.Conflict)
-                      }
+                  // Do not wait until the reindexation job is over to give an answer
+                  provideAsync(
+                    indexationService.reindexData(
+                      Seq(request.forceAll, request.forceIdeas).flatten.contains(true),
+                      Seq(request.forceAll, request.forceOrganisations).flatten.contains(true),
+                      Seq(request.forceAll, request.forceProposals).flatten.contains(true),
+                      Seq(request.forceAll, request.forceOperationOfQuestions).flatten.contains(true)
+                    )
+                  ) { acceptance =>
+                    if (acceptance.isAccepted) {
+                      complete(StatusCodes.Accepted)
+                    } else {
+                      complete(StatusCodes.Conflict)
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def reindexPosts: Route = post {
+      path("technical" / "elasticsearch" / "reindex-posts") {
+        makeOperation(ReindexPosts.value, EndpointType.CoreOnly) { _ =>
+          makeOAuth2 { auth: AuthInfo[UserRights] =>
+            requireAdminRole(auth.user) {
+              // Do not wait until the reindexation job is over to give an answer
+              provideAsync(indexationService.reindexPostsData()) { acceptance =>
+                if (acceptance.isAccepted) {
+                  complete(StatusCodes.Accepted)
+                } else {
+                  complete(StatusCodes.Conflict)
                 }
               }
             }

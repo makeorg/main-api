@@ -46,7 +46,7 @@ trait OperationOfQuestionIndexationStream
 
   object OperationOfQuestionStream {
 
-    def flowIndexOrganisations(
+    def flowIndexOperationOfQuestions(
       operationOfQuestionIndexName: String
     ): Flow[OperationOfQuestion, IndexationStatus, NotUsed] =
       grouped[OperationOfQuestion].via(runIndexOperationOfQuestion(operationOfQuestionIndexName))
@@ -56,7 +56,7 @@ trait OperationOfQuestionIndexationStream
     ): Flow[Seq[OperationOfQuestion], IndexationStatus, NotUsed] = {
       Flow[Seq[OperationOfQuestion]]
         .mapAsync(singleAsync)(
-          organisations => executeIndexOperationOfQuestions(organisations, operationOfQuestionIndexName)
+          operationOfQuestions => executeIndexOperationOfQuestions(operationOfQuestions, operationOfQuestionIndexName)
         )
     }
 
