@@ -20,7 +20,7 @@
 package org.make.api.technical.elasticsearch
 
 import akka.stream.scaladsl.Flow
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.operation.{
@@ -29,6 +29,7 @@ import org.make.api.operation.{
   OperationServiceComponent
 }
 import org.make.api.question.QuestionServiceComponent
+import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
 import org.make.core.question.Question
@@ -45,12 +46,14 @@ trait OperationOfQuestionIndexationStream
 
   object OperationOfQuestionStream {
 
-    def flowIndexOrganisations(operationOfQuestionIndexName: String): Flow[OperationOfQuestion, Done, NotUsed] =
+    def flowIndexOrganisations(
+      operationOfQuestionIndexName: String
+    ): Flow[OperationOfQuestion, IndexationStatus, NotUsed] =
       grouped[OperationOfQuestion].via(runIndexOperationOfQuestion(operationOfQuestionIndexName))
 
     def runIndexOperationOfQuestion(
       operationOfQuestionIndexName: String
-    ): Flow[Seq[OperationOfQuestion], Done, NotUsed] = {
+    ): Flow[Seq[OperationOfQuestion], IndexationStatus, NotUsed] = {
       Flow[Seq[OperationOfQuestion]]
         .mapAsync(singleAsync)(
           organisations => executeIndexOperationOfQuestions(organisations, operationOfQuestionIndexName)
@@ -60,7 +63,7 @@ trait OperationOfQuestionIndexationStream
     private def executeIndexOperationOfQuestions(
       operationOfQuestions: Seq[OperationOfQuestion],
       operationOfQuestionIndexName: String
-    ): Future[Done] = {
+    ): Future[IndexationStatus] = {
 
       val futureQuestion: Future[Seq[Question]] =
         questionService.getQuestions(operationOfQuestions.map(_.questionId))
@@ -89,11 +92,6 @@ trait OperationOfQuestionIndexationStream
               IndexAndType(operationOfQuestionIndexName, OperationOfQuestionSearchEngine.operationOfQuestionIndexName)
             )
           )
-          .recoverWith {
-            case e =>
-              logger.error("Indexing organisations failed", e)
-              Future.successful(Done)
-          }
       }
     }
   }

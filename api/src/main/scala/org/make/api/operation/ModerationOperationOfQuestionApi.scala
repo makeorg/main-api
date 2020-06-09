@@ -28,7 +28,6 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.Url
 import eu.timepit.refined.collection.MaxSize
-import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.refined._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
@@ -379,8 +378,6 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 consultationImage = request.consultationImage.map(_.value),
                                 descriptionImage = request.descriptionImage.map(_.value),
                                 resultsLink = request.resultsLink.map(_.value),
-                                proposalsCount = request.proposalsCount.value,
-                                participantsCount = request.participantsCount.value,
                                 actions = request.actions,
                                 featured = request.featured
                               ),
@@ -471,8 +468,6 @@ final case class ModifyOperationOfQuestionRequest(
   consultationImage: Option[String Refined Url],
   descriptionImage: Option[String Refined Url],
   resultsLink: Option[String Refined Url],
-  proposalsCount: NonNegInt,
-  participantsCount: NonNegInt,
   actions: Option[String],
   featured: Boolean
 ) {
@@ -593,8 +588,6 @@ final case class OperationOfQuestionResponse(
   descriptionImage: Option[String],
   displayResults: Boolean,
   resultsLink: Option[String],
-  proposalsCount: Int,
-  participantsCount: Int,
   actions: Option[String],
   featured: Boolean
 )
@@ -626,8 +619,6 @@ object OperationOfQuestionResponse extends CirceFormatters {
       descriptionImage = operationOfQuestion.descriptionImage,
       displayResults = operationOfQuestion.displayResults,
       resultsLink = operationOfQuestion.resultsLink,
-      proposalsCount = operationOfQuestion.proposalsCount,
-      participantsCount = operationOfQuestion.participantsCount,
       actions = operationOfQuestion.actions,
       featured = operationOfQuestion.featured
     )

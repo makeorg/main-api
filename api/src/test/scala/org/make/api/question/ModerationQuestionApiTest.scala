@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.util.ByteString
-import org.make.api.MakeApiTestBase
+import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation.{
   OperationOfQuestionService,
@@ -42,9 +42,8 @@ import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{any, eq => matches}
@@ -78,61 +77,12 @@ class ModerationQuestionApiTest
   override lazy val operationOfQuestionService: OperationOfQuestionService =
     mock[OperationOfQuestionService]
 
-  val baseSimpleOperation = SimpleOperation(
-    operationId = OperationId("operation-id"),
-    status = OperationStatus.Active,
-    slug = "slug-operation",
-    allowedSources = Seq.empty,
-    defaultLanguage = Language("fr"),
-    operationKind = OperationKind.PublicConsultation,
-    createdAt = None,
-    updatedAt = None
-  )
-  val baseQuestion =
-    Question(
-      questionId = QuestionId("question-id"),
-      slug = "slug",
-      country = Country("FR"),
-      language = Language("fr"),
-      question = "Slug ?",
-      shortTitle = None,
-      operationId = Some(OperationId("operation-id"))
-    )
-  val baseOperationOfQuestion = OperationOfQuestion(
-    QuestionId("question-id"),
-    OperationId("operation-id"),
-    None,
-    None,
-    "title",
-    SequenceId("sequence-id"),
-    canPropose = true,
-    sequenceCardsConfiguration = SequenceCardsConfiguration(
-      introCard = IntroCard(enabled = true, title = None, description = None),
-      pushProposalCard = PushProposalCard(enabled = true),
-      signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-      finalCard = FinalCard(
-        enabled = true,
-        sharingEnabled = false,
-        title = None,
-        shareDescription = None,
-        learnMoreTitle = None,
-        learnMoreTextButton = None,
-        linkUrl = None
-      )
-    ),
-    aboutUrl = None,
-    metas = Metas(title = None, description = None, picture = None),
-    theme = QuestionTheme.default,
-    description = OperationOfQuestion.defaultDescription,
-    consultationImage = Some("image-url"),
-    descriptionImage = None,
-    displayResults = false,
-    resultsLink = None,
-    proposalsCount = 42,
-    participantsCount = 84,
-    actions = None,
-    featured = true
-  )
+  val baseSimpleOperation: SimpleOperation =
+    TestUtils.simpleOperation(id = OperationId("operation-id"))
+  val baseQuestion: Question =
+    TestUtils.question(id = QuestionId("question-id"), operationId = Some(OperationId("operation-id")))
+  val baseOperationOfQuestion: OperationOfQuestion =
+    TestUtils.operationOfQuestion(QuestionId("question-id"), OperationId("operation-id"))
 
   feature("list questions") {
 
@@ -224,50 +174,14 @@ class ModerationQuestionApiTest
           ProposalsSearchResult(
             total = 1,
             results = Seq(
-              IndexedProposal(
+              TestUtils.indexedProposal(
                 id = ProposalId("aaa-bbb-ccc"),
                 userId = UserId("foo-bar"),
                 content = "il faut fou",
-                slug = "il-faut-fou",
-                status = ProposalStatus.Accepted,
                 createdAt = DateHelper.now(),
                 updatedAt = None,
-                votes = Seq.empty,
-                context = None,
-                trending = None,
-                labels = Seq.empty,
-                author = IndexedAuthor(
-                  firstName = None,
-                  displayName = None,
-                  organisationName = None,
-                  organisationSlug = None,
-                  postalCode = None,
-                  age = None,
-                  avatarUrl = None,
-                  anonymousParticipation = false,
-                  userType = UserType.UserTypeUser
-                ),
-                organisations = Seq.empty,
-                country = Country("FR"),
-                language = Language("fr"),
-                tags = Seq.empty,
-                selectedStakeTag = None,
-                votesCount = 0,
-                votesVerifiedCount = 0,
-                votesSequenceCount = 0,
-                votesSegmentCount = 0,
                 toEnrich = true,
-                operationId = None,
-                question = None,
-                initialProposal = true,
-                ideaId = None,
-                refusalReason = None,
-                scores = IndexedScores.empty,
-                segmentScores = IndexedScores.empty,
-                sequencePool = SequencePool.New,
-                sequenceSegmentPool = SequencePool.New,
-                operationKind = None,
-                segment = None
+                initialProposal = true
               )
             )
           )
