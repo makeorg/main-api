@@ -7,3 +7,4 @@ ddata*
 .bloop
 /.vscode
 project/metals.sbt
+/local.sbt
