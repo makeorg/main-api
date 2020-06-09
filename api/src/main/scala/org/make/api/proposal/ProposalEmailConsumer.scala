@@ -62,7 +62,7 @@ class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
 
   def handleProposalAccepted(event: ProposalAccepted): Future[Unit] = {
     if (event.sendValidationEmail) {
-      sendMailPublisherService.publishAcceptProposal(event.id, event.question, event.operation, event.requestContext)
+      sendMailPublisherService.publishAcceptProposal(event.id)
     } else {
       Future.successful {}
     }
@@ -70,7 +70,7 @@ class ProposalEmailConsumer(sendMailPublisherService: SendMailPublisherService)
 
   def handleProposalRefused(event: ProposalRefused): Future[Unit] = {
     if (event.sendRefuseEmail) {
-      sendMailPublisherService.publishRefuseProposal(event.id, event.operation, event.requestContext)
+      sendMailPublisherService.publishRefuseProposal(event.id)
     } else {
       Future.successful {}
     }

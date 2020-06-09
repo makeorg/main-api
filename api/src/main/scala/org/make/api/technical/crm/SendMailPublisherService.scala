@@ -31,11 +31,11 @@ import org.make.api.technical.EventBusServiceComponent
 import org.make.api.user.UserServiceComponent
 import org.make.core.RequestContext
 import org.make.core.crmTemplate.{CrmTemplates, TemplateId}
-import org.make.core.operation.OperationId
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserType}
+import org.make.api.technical.RichOptionT._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -77,17 +77,8 @@ trait SendMailPublisherService {
     requestContext: RequestContext,
     newEmail: String
   ): Future[Unit]
-  def publishAcceptProposal(
-    proposalId: ProposalId,
-    maybeQuestionId: Option[QuestionId],
-    maybeOperationId: Option[OperationId],
-    requestContext: RequestContext
-  ): Future[Unit]
-  def publishRefuseProposal(
-    proposalId: ProposalId,
-    maybeOperationId: Option[OperationId],
-    requestContext: RequestContext
-  ): Future[Unit]
+  def publishAcceptProposal(proposalId: ProposalId): Future[Unit]
+  def publishRefuseProposal(proposalId: ProposalId): Future[Unit]
   def resendRegistration(user: User, country: Country, language: Language, requestContext: RequestContext): Future[Unit]
 }
 
@@ -182,40 +173,6 @@ trait DefaultSendMailPublisherServiceComponent
       case Some(futureMaybeQuestion) => futureMaybeQuestion.map(_.map(_.slug).getOrElse("unknown"))
       case None                      => Future.successful("unknown")
     }
-  }
-
-  private def sendModerationMail(
-    proposalId: ProposalId,
-    questionId: Option[QuestionId],
-    templateId: (CrmTemplates, UserType) => TemplateId,
-    variables: (User, Proposal)          => Map[String, String]
-  ): Future[Unit] = {
-    val maybePublish: OptionT[Future, Unit] = for {
-      proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
-      user     <- OptionT(userService.getUser(proposal.author))
-      locale = getLocale(user.country, user.language)
-      crmTemplates <- OptionT(findCrmTemplates(questionId, locale))
-    } yield {
-      if (user.emailVerified) {
-        eventBusService.publish(
-          SendEmail.create(
-            templateId = Some(templateId(crmTemplates, user.userType).value.toInt),
-            recipients = Seq(Recipient(email = user.email, name = user.fullName)),
-            from = Some(
-              Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
-            ),
-            variables = Some(variables(user, proposal)),
-            customCampaign = None,
-            monitoringCategory = Some(CrmTemplates.MonitoringCategory.moderation)
-          )
-        )
-      }
-    }
-    maybePublish.getOrElseF(
-      Future.failed(
-        new IllegalStateException(s"proposal or user not found or user not verified for proposal ${proposalId.value}")
-      )
-    )
   }
 
   private def findCrmTemplates(questionId: Option[QuestionId], locale: String): Future[Option[CrmTemplates]] = {
@@ -487,90 +444,107 @@ trait DefaultSendMailPublisherServiceComponent
       })
     }
 
-    override def publishAcceptProposal(
+    private def publishModerationEmail(
       proposalId: ProposalId,
-      maybeQuestionId: Option[QuestionId],
-      maybeOperationId: Option[OperationId],
-      requestContext: RequestContext
+      variables: (Question, User, Proposal) => Map[String, String],
+      templateId: (CrmTemplates, UserType)  => TemplateId
     ): Future[Unit] = {
-      val locale: Option[String] = (requestContext.language, requestContext.country) match {
-        case (Some(language), Some(country)) => Some(s"${language}_$country")
-        case _                               => None
-      }
 
-      val futureMaybeQuestion: Future[Option[Question]] = maybeQuestionId match {
-        case Some(questionId) => questionService.getQuestion(questionId)
-        case None             => Future.successful(None)
-      }
-
-      futureMaybeQuestion.map { maybeQuestion =>
-        val maybeQuestionId = maybeQuestion.map(_.questionId)
-        val slug = maybeQuestion.map(_.slug).orElse(locale).getOrElse("")
-
-        def variables(user: User, proposal: Proposal): Map[String, String] =
-          Map(
-            "proposal_url" -> getProposalUrl(proposal, slug),
-            "proposal_text" -> proposal.content,
-            "firstname" -> user.firstName.getOrElse(""),
-            "organisation_name" -> user.organisationName.getOrElse(""),
-            "operation" -> maybeOperationId.map(_.value).getOrElse(""),
-            "question" -> maybeQuestionId.map(_.value).getOrElse(""),
-            "location" -> requestContext.location.getOrElse(""),
-            "source" -> requestContext.source.getOrElse(""),
-            "sequence_url" -> sequenceUrlForProposal(isAccepted = true, user.userType, slug, proposal)
+      val publishSendEmail = for {
+        proposal <- OptionT(proposalCoordinatorService.getProposal(proposalId))
+          .orFail(s"Proposal ${proposalId.value} not found")
+        user <- OptionT(userService.getUser(proposal.author))
+          .orFail(s"user ${proposal.author.value}, author of proposal ${proposalId.value} not found")
+        questionId <- OptionT(Future.successful(proposal.questionId))
+          .orFail(s"proposal ${proposal.proposalId} doesn't have a question!")
+        question <- OptionT(questionService.getQuestion(questionId))
+          .orFail(
+            s"question ${proposal.questionId.getOrElse("''")} not found, it is on proposal ${proposal.proposalId}"
           )
-
-        def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
-          if (userType == UserType.UserTypeOrganisation)
-            crmTemplates.proposalAcceptedOrganisation
-          else
-            crmTemplates.proposalAccepted
-
-        sendModerationMail(proposalId, maybeQuestionId, template, variables)
+        crmTemplates <- OptionT(findCrmTemplates(Some(questionId), getLocale(user.country, user.language))).orFail {
+          val locale = getLocale(user.country, user.language)
+          s"no crm templates for question ${questionId.value} and locale $locale"
+        }
+      } yield {
+        if (user.emailVerified) {
+          eventBusService.publish(
+            SendEmail.create(
+              templateId = Some(templateId(crmTemplates, user.userType).value.toInt),
+              recipients = Seq(Recipient(email = user.email, name = user.fullName)),
+              from = Some(
+                Recipient(name = Some(mailJetTemplateConfiguration.fromName), email = mailJetTemplateConfiguration.from)
+              ),
+              variables = Some(variables(question, user, proposal)),
+              customCampaign = None,
+              monitoringCategory = Some(CrmTemplates.MonitoringCategory.moderation)
+            )
+          )
+        }
       }
+
+      publishSendEmail.getOrElseF(
+        Future.failed(
+          new IllegalStateException(
+            s"Something went wrong unexpectedly while trying to send moderation email for proposal ${proposalId.value}"
+          )
+        )
+      )
     }
 
-    override def publishRefuseProposal(
-      proposalId: ProposalId,
-      maybeOperationId: Option[OperationId],
-      requestContext: RequestContext
-    ): Future[Unit] = {
-      val locale: Option[String] = (requestContext.language, requestContext.country) match {
-        case (Some(language), Some(country)) => Some(s"${language}_$country")
-        case _                               => None
+    override def publishAcceptProposal(proposalId: ProposalId): Future[Unit] = {
+
+      def variables(question: Question, user: User, proposal: Proposal): Map[String, String] = {
+        Map(
+          "proposal_url" -> getProposalUrl(proposal, question.slug),
+          "proposal_text" -> proposal.content,
+          "firstname" -> user.firstName.getOrElse(""),
+          "organisation_name" -> user.organisationName.getOrElse(""),
+          "operation" -> question.operationId.map(_.value).getOrElse(""),
+          "question" -> question.questionId.value,
+          "location" -> proposal.creationContext.location.getOrElse(""),
+          "source" -> proposal.creationContext.source.getOrElse(""),
+          "sequence_url" -> sequenceUrlForProposal(isAccepted = true, user.userType, question.slug, proposal)
+        )
       }
 
-      val futureMaybeQuestion: Future[Option[Question]] = (for {
-        questionId <- OptionT(proposalCoordinatorService.getProposal(proposalId).map(_.flatMap(_.questionId)))
-        question   <- OptionT(questionService.getQuestion(questionId))
-      } yield question).value
-      futureMaybeQuestion.map { maybeQuestion =>
-        val maybeQuestionId = maybeQuestion.map(_.questionId)
-        val slug = maybeQuestion.map(_.slug).orElse(locale).getOrElse("")
-
-        def variables(user: User, proposal: Proposal): Map[String, String] =
-          Map(
-            "proposal_url" -> getProposalUrl(proposal, slug),
-            "proposal_text" -> proposal.content,
-            "refusal_reason" -> proposal.refusalReason.getOrElse(""),
-            "firstname" -> user.firstName.getOrElse(""),
-            "organisation_name" -> user.organisationName.getOrElse(""),
-            "operation" -> maybeOperationId.map(_.value).getOrElse(""),
-            "question" -> maybeQuestionId.map(_.value).getOrElse(""),
-            "location" -> requestContext.location.getOrElse(""),
-            "source" -> requestContext.source.getOrElse(""),
-            "sequence_url" -> sequenceUrlForProposal(isAccepted = false, user.userType, slug, proposal)
-          )
-
-        def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId =
-          if (userType == UserType.UserTypeOrganisation)
-            crmTemplates.proposalRefusedOrganisation
-          else
-            crmTemplates.proposalRefused
-
-        sendModerationMail(proposalId, maybeQuestionId, template, variables)
+      def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId = {
+        if (userType == UserType.UserTypeUser) {
+          crmTemplates.proposalAccepted
+        } else {
+          crmTemplates.proposalAcceptedOrganisation
+        }
       }
 
+      publishModerationEmail(proposalId, variables, template)
+
+    }
+
+    override def publishRefuseProposal(proposalId: ProposalId): Future[Unit] = {
+
+      def variables(question: Question, user: User, proposal: Proposal): Map[String, String] = {
+        Map(
+          "proposal_url" -> getProposalUrl(proposal, question.slug),
+          "proposal_text" -> proposal.content,
+          "refusal_reason" -> proposal.refusalReason.getOrElse(""),
+          "firstname" -> user.firstName.getOrElse(""),
+          "organisation_name" -> user.organisationName.getOrElse(""),
+          "operation" -> question.operationId.map(_.value).getOrElse(""),
+          "question" -> question.questionId.value,
+          "location" -> proposal.creationContext.location.getOrElse(""),
+          "source" -> proposal.creationContext.source.getOrElse(""),
+          "sequence_url" -> sequenceUrlForProposal(isAccepted = false, user.userType, question.slug, proposal)
+        )
+      }
+
+      def template(crmTemplates: CrmTemplates, userType: UserType): TemplateId = {
+        if (userType == UserType.UserTypeUser) {
+          crmTemplates.proposalRefused
+        } else {
+          crmTemplates.proposalRefusedOrganisation
+        }
+      }
+
+      publishModerationEmail(proposalId, variables, template)
     }
 
     override def resendRegistration(
