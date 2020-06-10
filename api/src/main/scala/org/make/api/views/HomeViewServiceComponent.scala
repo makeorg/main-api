@@ -27,6 +27,7 @@ import org.make.api.proposal.{
   SortAlgorithmConfigurationComponent
 }
 import org.make.api.question.{QuestionOfOperationResponse, QuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.user.UserServiceComponent
 import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
@@ -34,7 +35,7 @@ import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQ
 import org.make.core.proposal._
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.UserId
+import org.make.core.user.{UserId, UserType}
 import org.make.core.{operation, DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -89,7 +90,8 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
     with ProposalSearchEngineComponent
     with CurrentOperationServiceComponent
     with FeaturedOperationServiceComponent
-    with SortAlgorithmConfigurationComponent =>
+    with SortAlgorithmConfigurationComponent
+    with UserServiceComponent =>
 
   override lazy val homeViewService: HomeViewService = new DefaultHomeViewService
 
@@ -163,6 +165,14 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           )
           .map(_.results.map(QuestionOfOperationResponse.apply))
 
+      val futurePartnersCount = userService.adminCountUsers(
+        email = None,
+        firstName = None,
+        lastName = None,
+        role = None,
+        userType = Some(UserType.UserTypeOrganisation)
+      )
+
       val futureCurrentQuestions = searchQuestionOfOperations(
         OperationOfQuestionSearchQuery(
           filters = Some(OperationOfQuestionSearchFilters(open = Some(OpenSearchFilter(true)))),
@@ -180,11 +190,12 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
       )
 
       for {
+        partnersCount     <- futurePartnersCount
         currentQuestions  <- futureCurrentQuestions
         featuredQuestions <- futureFeaturedQuestions
       } yield {
         HomePageViewResponse(
-          highlights = Highlights(participantsCount = 0, proposalsCount = 0, partnersCount = 0),
+          highlights = Highlights(participantsCount = 0, proposalsCount = 0, partnersCount = partnersCount),
           currentQuestions = currentQuestions,
           featuredQuestions = featuredQuestions,
           articles = Nil
