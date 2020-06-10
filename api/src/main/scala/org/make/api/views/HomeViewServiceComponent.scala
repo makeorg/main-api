@@ -20,6 +20,7 @@
 package org.make.api.views
 
 import org.make.api.operation._
+import org.make.api.post.PostServiceComponent
 import org.make.api.proposal.{
   ProposalSearchEngineComponent,
   ProposalServiceComponent,
@@ -28,12 +29,17 @@ import org.make.api.proposal.{
 }
 import org.make.api.question.{QuestionOfOperationResponse, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.user.UserServiceComponent
+import org.make.api.views.HomePageViewResponse.PostResponse
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation._
-import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter}
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
-import org.make.core.proposal._
-import org.make.core.proposal.SortAlgorithm
+import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter, _}
+import org.make.core.post.indexed.{
+  DisplayHomeSearchFilter,
+  PostElasticsearchFieldNames,
+  PostSearchFilters,
+  PostSearchQuery
+}
+import org.make.core.proposal.{SortAlgorithm, _}
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{UserId, UserType}
@@ -92,7 +98,8 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
     with CurrentOperationServiceComponent
     with FeaturedOperationServiceComponent
     with SortAlgorithmConfigurationComponent
-    with UserServiceComponent =>
+    with UserServiceComponent
+    with PostServiceComponent =>
 
   override lazy val homeViewService: HomeViewService = new DefaultHomeViewService
 
@@ -193,17 +200,29 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
         )
       )
 
+      val futurePosts: Future[Seq[PostResponse]] = postService
+        .search(
+          PostSearchQuery(
+            filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
+            sort = Some(PostElasticsearchFieldNames.postDate),
+            order = Some("DESC"),
+            limit = Some(3)
+          )
+        )
+        .map(_.results.map(HomePageViewResponse.PostResponse.fromIndexedPost))
+
       for {
         partnersCount     <- futurePartnersCount
         otherCounts       <- futureOtherCounts
         currentQuestions  <- futureCurrentQuestions
         featuredQuestions <- futureFeaturedQuestions
+        posts             <- futurePosts
       } yield {
         HomePageViewResponse(
           highlights = otherCounts.copy(partnersCount = partnersCount),
           currentQuestions = currentQuestions,
           featuredQuestions = featuredQuestions,
-          articles = Nil
+          posts = posts
         )
       }
     }

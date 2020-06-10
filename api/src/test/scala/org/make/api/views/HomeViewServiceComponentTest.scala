@@ -24,7 +24,7 @@ import java.util.UUID
 
 import org.make.api.MakeUnitTest
 import org.make.api.operation._
-import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter}
+import org.make.api.post.{PostService, PostServiceComponent}
 import org.make.api.proposal._
 import org.make.api.question.{
   QuestionOfOperationResponse,
@@ -35,20 +35,23 @@ import org.make.api.question.{
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
+import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter, _}
+import org.make.core.post.PostId
+import org.make.core.post.indexed._
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedAuthor, IndexedProposal, IndexedScores, SequencePool}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, UserId, UserType}
 import org.make.core.{operation, DateHelper, RequestContext}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.mockito.ArgumentMatchers.{any, eq => matches}
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+
 class HomeViewServiceComponentTest
     extends MakeUnitTest
     with DefaultHomeViewServiceComponent
@@ -61,7 +64,8 @@ class HomeViewServiceComponentTest
     with CurrentOperationServiceComponent
     with FeaturedOperationServiceComponent
     with SortAlgorithmConfigurationComponent
-    with UserServiceComponent {
+    with UserServiceComponent
+    with PostServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
@@ -74,6 +78,7 @@ class HomeViewServiceComponentTest
   override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
     mock[OperationOfQuestionSearchEngine]
   override val userService: UserService = mock[UserService]
+  override val postService: PostService = mock[PostService]
 
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
@@ -564,10 +569,30 @@ class HomeViewServiceComponentTest
           OperationOfQuestionSearchResult(results.size, results)
         })
 
+      val indexedPosts: Seq[IndexedPost] =
+        Seq(indexedPost(PostId("post-id-1")), indexedPost(PostId("post-id-2")))
+      val postsResponses: Seq[HomePageViewResponse.PostResponse] =
+        indexedPosts.map(HomePageViewResponse.PostResponse.fromIndexedPost)
+
+      Mockito
+        .when(
+          postService.search(
+            ArgumentMatchers.eq(
+              PostSearchQuery(
+                filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
+                sort = Some(PostElasticsearchFieldNames.postDate),
+                order = Some("DESC"),
+                limit = Some(3)
+              )
+            )
+          )
+        )
+        .thenReturn(Future.successful(PostSearchResult(2, indexedPosts)))
+
       val futureHomePageViewResponse: Future[HomePageViewResponse] =
         homeViewService.getHomePageViewResponse(Country("FR"), Language("fr"))
       whenReady(futureHomePageViewResponse, Timeout(3.seconds)) { homePageViewResponse =>
-        homePageViewResponse.articles should be(Nil)
+        homePageViewResponse.posts should be(postsResponses)
         homePageViewResponse.currentQuestions should be(
           Seq(operationOfQuestion3, operationOfQuestion2).map(QuestionOfOperationResponse.apply)
         )
