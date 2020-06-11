@@ -31,6 +31,7 @@ import org.make.api.question.{
   QuestionServiceComponent,
   SearchQuestionRequest
 }
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
@@ -39,9 +40,10 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.{IndexedAuthor, IndexedProposal, IndexedScores, SequencePool}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{UserId, UserType}
+import org.make.core.user.{Role, UserId, UserType}
 import org.make.core.{operation, DateHelper, RequestContext}
 import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.ArgumentMatchers.{any, eq => matches}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -57,7 +59,8 @@ class HomeViewServiceComponentTest
     with ProposalSearchEngineComponent
     with CurrentOperationServiceComponent
     with FeaturedOperationServiceComponent
-    with SortAlgorithmConfigurationComponent {
+    with SortAlgorithmConfigurationComponent
+    with UserServiceComponent {
 
   override val questionService: QuestionService = mock[QuestionService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
@@ -69,6 +72,7 @@ class HomeViewServiceComponentTest
   override val sortAlgorithmConfiguration: SortAlgorithmConfiguration = mock[SortAlgorithmConfiguration]
   override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
     mock[OperationOfQuestionSearchEngine]
+  override val userService: UserService = mock[UserService]
 
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
@@ -484,6 +488,18 @@ class HomeViewServiceComponentTest
 
       Mockito
         .when(
+          userService.adminCountUsers(
+            any[Option[String]],
+            any[Option[String]],
+            any[Option[String]],
+            any[Option[Role]],
+            matches(Some(UserType.UserTypeOrganisation))
+          )
+        )
+        .thenReturn(Future.successful(9001))
+
+      Mockito
+        .when(
           elasticsearchOperationOfQuestionAPI
             .searchOperationOfQuestions(
               ArgumentMatchers.argThat(
@@ -545,7 +561,7 @@ class HomeViewServiceComponentTest
         homePageViewResponse.featuredQuestions should be(
           Seq(operationOfQuestion1, operationOfQuestion3).map(QuestionOfOperationResponse.apply)
         )
-        homePageViewResponse.highlights should be(Highlights(0, 0, 0))
+        homePageViewResponse.highlights should be(Highlights(0, 0, 9001))
       }
 
     }
