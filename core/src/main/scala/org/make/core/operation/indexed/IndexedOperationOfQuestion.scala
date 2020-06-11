@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.{BusinessConfig, CirceFormatters, DateHelper}
+import org.make.core.{BusinessConfig, CirceFormatters}
 import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, SimpleOperation}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -46,7 +46,7 @@ object OperationOfQuestionElasticsearchFieldNames {
   val operationTitle = "operationTitle"
   val operationKind = "operationKind"
   val featured = "featured"
-  val open = "open"
+  val status = "status"
 
   def questionLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
     BusinessConfig.supportedCountries
@@ -69,7 +69,7 @@ case class IndexedOperationOfQuestion(
   startDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   endDate: Option[ZonedDateTime],
-  open: Boolean,
+  status: OperationOfQuestion.Status,
   theme: QuestionTheme,
   description: String,
   consultationImage: Option[String],
@@ -106,7 +106,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       questionShortTitle = question.shortTitle,
       startDate = operationOfQuestion.startDate,
       endDate = operationOfQuestion.endDate,
-      open = operationOfQuestion.isOpenAt(DateHelper.now()),
+      status = operationOfQuestion.status,
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
       consultationImage = operationOfQuestion.consultationImage,

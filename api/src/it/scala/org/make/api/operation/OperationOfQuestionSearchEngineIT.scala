@@ -37,9 +37,12 @@ import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.CirceFormatters
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.operation._
+import org.make.core.operation.OperationOfQuestion.Status._
+import org.make.core.operation.SortAlgorithm._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.mockito.Mockito
+import org.scalatest.Assertion
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
@@ -107,7 +110,7 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      open = true
+      status = Finished
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-2"),
@@ -138,7 +141,7 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = Some("some actions"),
       featured = true,
-      open = false
+      status = Open
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-3"),
@@ -169,7 +172,7 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      open = false
+      status = Finished
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-4"),
@@ -200,7 +203,7 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      open = true
+      status = Open
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-5"),
@@ -208,7 +211,7 @@ class OperationOfQuestionSearchEngineIT
       slug = "fifth-question",
       questionShortTitle = Some("fifth-short-title"),
       startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      endDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      endDate = None,
       theme = QuestionTheme(
         gradientStart = "#424242",
         gradientEnd = "#424242",
@@ -231,7 +234,7 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = true,
-      open = true
+      status = Upcoming
     ),
     IndexedOperationOfQuestion(
       questionId = QuestionId("question-french-accent"),
@@ -262,7 +265,7 @@ class OperationOfQuestionSearchEngineIT
       participantsCount = 84,
       actions = None,
       featured = false,
-      open = false
+      status = Finished
     )
   )
 
@@ -363,6 +366,34 @@ class OperationOfQuestionSearchEngineIT
         result.total == 0 shouldBe true
       }
     }
+  }
+
+  feature("sort algorithms") {
+
+    def resultsAreSorted(results: Seq[IndexedOperationOfQuestion]): Assertion = {
+      results.sortBy(result => (result.endDate.fold(Long.MinValue)(-_.toEpochSecond), result.slug)) should be(results)
+    }
+
+    scenario("chronological") {
+      val query = OperationOfQuestionSearchQuery(sortAlgorithm = Some(Chronological))
+      whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
+        result.total should be(6)
+        resultsAreSorted(result.results)
+      }
+    }
+
+    scenario("featured") {
+      val query = OperationOfQuestionSearchQuery(sortAlgorithm = Some(Featured))
+      whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
+        result.total should be(6)
+        val (featured, notFeatured) = result.results.splitAt(2)
+        featured.forall(_.featured) should be(true)
+        resultsAreSorted(featured)
+        notFeatured.forall(!_.featured) should be(true)
+        resultsAreSorted(notFeatured)
+      }
+    }
+
   }
 
 }

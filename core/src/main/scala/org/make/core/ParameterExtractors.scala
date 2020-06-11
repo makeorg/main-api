@@ -25,6 +25,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
+import enumeratum.{Enum, EnumEntry}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.partner.PartnerKind
@@ -210,5 +211,8 @@ trait ParameterExtractors {
           )
         )
     }
+
+  implicit def enumeratumUnmarshaller[A <: EnumEntry](implicit enum: Enum[A]): Unmarshaller[String, A] =
+    Unmarshaller.strict(s => enum.withNameInsensitiveEither(s).fold(e => throw new Exception(e), identity))
 
 }

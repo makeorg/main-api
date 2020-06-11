@@ -27,6 +27,7 @@ import buildinfo.BuildInfo
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.DecodingFailures
+import enumeratum.NoSuchMember
 import io.circe.CursorOp.DownField
 import io.circe.syntax._
 import org.make.api.crmTemplates.{
@@ -521,6 +522,8 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
         complete(StatusCodes.BadRequest -> errors)
       case MalformedRequestContentRejection(_, e) =>
         complete(StatusCodes.BadRequest -> Seq(ValidationError("unknown", "malformed", Option(e.getMessage))))
+      case MalformedQueryParamRejection(name, _, Some(e: NoSuchMember[_])) =>
+        complete(StatusCodes.BadRequest -> Seq(ValidationError(name, "malformed", Some(e.getMessage))))
       case EmailNotVerifiedRejection =>
         complete(
           StatusCodes.Forbidden ->
