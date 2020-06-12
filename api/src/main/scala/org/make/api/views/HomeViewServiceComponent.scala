@@ -28,7 +28,6 @@ import org.make.api.proposal.{
 }
 import org.make.api.question.{QuestionOfOperationResponse, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.user.UserServiceComponent
-import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation._
 import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter}
@@ -175,6 +174,8 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
         userType = Some(UserType.UserTypeOrganisation)
       )
 
+      val futureOtherCounts = elasticsearchOperationOfQuestionAPI.highlights()
+
       val futureCurrentQuestions = searchQuestionOfOperations(
         OperationOfQuestionSearchQuery(
           filters = Some(
@@ -193,11 +194,12 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
 
       for {
         partnersCount     <- futurePartnersCount
+        otherCounts       <- futureOtherCounts
         currentQuestions  <- futureCurrentQuestions
         featuredQuestions <- futureFeaturedQuestions
       } yield {
         HomePageViewResponse(
-          highlights = Highlights(participantsCount = 0, proposalsCount = 0, partnersCount = partnersCount),
+          highlights = otherCounts.copy(partnersCount = partnersCount),
           currentQuestions = currentQuestions,
           featuredQuestions = featuredQuestions,
           articles = Nil

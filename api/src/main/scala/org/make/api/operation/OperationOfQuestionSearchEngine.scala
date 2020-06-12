@@ -27,6 +27,7 @@ import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.{IndexAndType, RefreshPolicy}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.elasticsearch.{ElasticsearchClientComponent, ElasticsearchConfigurationComponent, _}
+import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.core.CirceFormatters
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.indexed.{
@@ -59,6 +60,7 @@ trait OperationOfQuestionSearchEngine {
     record: IndexedOperationOfQuestion,
     maybeIndex: Option[IndexAndType]
   ): Future[IndexationStatus]
+  def highlights(): Future[Highlights]
 }
 
 object OperationOfQuestionSearchEngine {
@@ -175,6 +177,36 @@ trait DefaultOperationOfQuestionSearchEngineComponent
           case e: Exception =>
             logger.error(s"Indexing updated organisation ${record.questionId} failed", e)
             IndexationStatus.Failed(e)
+        }
+    }
+
+    override def highlights(): Future[Highlights] = {
+      client
+        .executeAsFuture(
+          searchWithType(operationOfQuestionAlias)
+            .aggregations(
+              sumAgg(
+                OperationOfQuestionElasticsearchFieldNames.participantsCount,
+                OperationOfQuestionElasticsearchFieldNames.participantsCount
+              ),
+              sumAgg(
+                OperationOfQuestionElasticsearchFieldNames.proposalsCount,
+                OperationOfQuestionElasticsearchFieldNames.proposalsCount
+              )
+            )
+        )
+        .map { response =>
+          Highlights(
+            participantsCount = response.aggregations
+              .sum(OperationOfQuestionElasticsearchFieldNames.participantsCount)
+              .valueOpt
+              .fold(0)(_.toInt),
+            proposalsCount = response.aggregations
+              .sum(OperationOfQuestionElasticsearchFieldNames.proposalsCount)
+              .valueOpt
+              .fold(0)(_.toInt),
+            partnersCount = 0
+          )
         }
     }
   }

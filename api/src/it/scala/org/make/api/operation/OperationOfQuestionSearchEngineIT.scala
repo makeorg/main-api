@@ -33,6 +33,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
+import org.make.api.views.HomePageViewResponse.Highlights
 import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.CirceFormatters
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
@@ -391,6 +392,22 @@ class OperationOfQuestionSearchEngineIT
         resultsAreSorted(featured)
         notFeatured.forall(!_.featured) should be(true)
         resultsAreSorted(notFeatured)
+      }
+    }
+
+  }
+
+  feature("highlights") {
+
+    scenario("get them") {
+      whenReady(elasticsearchOperationOfQuestionAPI.highlights(), Timeout(3.seconds)) { result =>
+        result should be(
+          Highlights(
+            indexedOperationOfQuestions.map(_.participantsCount).sum,
+            indexedOperationOfQuestions.map(_.proposalsCount).sum,
+            0
+          )
+        )
       }
     }
 
