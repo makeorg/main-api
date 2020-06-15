@@ -500,6 +500,10 @@ class HomeViewServiceComponentTest
         .thenReturn(Future.successful(9001))
 
       Mockito
+        .when(elasticsearchOperationOfQuestionAPI.highlights())
+        .thenReturn(Future.successful(Highlights(42, 84, 0)))
+
+      Mockito
         .when(
           elasticsearchOperationOfQuestionAPI
             .searchOperationOfQuestions(
@@ -566,7 +570,7 @@ class HomeViewServiceComponentTest
         homePageViewResponse.featuredQuestions should be(
           Seq(operationOfQuestion1, operationOfQuestion3).map(QuestionOfOperationResponse.apply)
         )
-        homePageViewResponse.highlights should be(Highlights(0, 0, 9001))
+        homePageViewResponse.highlights should be(Highlights(42, 84, 9001))
       }
 
     }

@@ -47,6 +47,8 @@ object OperationOfQuestionElasticsearchFieldNames {
   val operationKind = "operationKind"
   val featured = "featured"
   val status = "status"
+  val participantsCount = "participantsCount"
+  val proposalsCount = "proposalsCount"
 
   def questionLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
     BusinessConfig.supportedCountries
