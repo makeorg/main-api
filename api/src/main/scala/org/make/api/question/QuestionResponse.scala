@@ -180,3 +180,10 @@ final case class QuestionTopIdeaResponseWithSeed(
 object QuestionTopIdeaResponseWithSeed {
   implicit val encoder: Encoder[QuestionTopIdeaResponseWithSeed] = deriveEncoder[QuestionTopIdeaResponseWithSeed]
 }
+
+final case class QuestionListResponse(results: Seq[QuestionOfOperationResponse], total: Long)
+
+object QuestionListResponse {
+  implicit val decoder: Decoder[QuestionListResponse] = deriveDecoder
+  implicit val encoder: Encoder[QuestionListResponse] = deriveEncoder
+}

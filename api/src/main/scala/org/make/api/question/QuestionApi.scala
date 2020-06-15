@@ -51,7 +51,7 @@ import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _, _}
-import org.make.core.{HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{BusinessConfig, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
@@ -218,6 +218,8 @@ trait QuestionApi extends Directives {
   @ApiOperation(value = "list-questions", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "country", paramType = "path", dataType = "string", example = "FR"),
+      new ApiImplicitParam(name = "language", paramType = "path", dataType = "string", example = "fr"),
       new ApiImplicitParam(name = "status", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
@@ -225,8 +227,7 @@ trait QuestionApi extends Directives {
     )
   )
   @ApiResponses(
-    value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[QuestionOfOperationResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionListResponse]))
   )
   @Path(value = "/")
   def listQuestions: Route
@@ -654,6 +655,8 @@ trait DefaultQuestionApiComponent
           makeOperation("ListQuestions") { _ =>
             parameters(
               (
+                "country".as[Country],
+                "language".as[Language],
                 "status".as[OperationOfQuestion.Status].?,
                 "limit".as[Int].?,
                 "skip".as[Int].?,
@@ -661,23 +664,34 @@ trait DefaultQuestionApiComponent
               )
             ) {
               (
+                country: Country,
+                language: Language,
                 status: Option[OperationOfQuestion.Status],
                 limit: Option[Int],
                 skip: Option[Int],
                 sortAlgorithm: Option[SortAlgorithm]
               ) =>
+                val filters = OperationOfQuestionSearchFilters(
+                  country = Some(CountrySearchFilter(BusinessConfig.validateCountry(country))),
+                  language = Some(LanguageSearchFilter(BusinessConfig.validateLanguage(country, language))),
+                  status = status.map(StatusSearchFilter.apply)
+                )
                 provideAsync(
                   operationOfQuestionService.search(
                     OperationOfQuestionSearchQuery(
-                      filters = status
-                        .map(status => OperationOfQuestionSearchFilters(status = Some(StatusSearchFilter(status)))),
+                      filters = Some(filters),
                       limit = limit,
                       skip = skip,
                       sortAlgorithm = sortAlgorithm
                     )
                   )
                 ) { operationOfQuestions =>
-                  complete(operationOfQuestions.results.map(QuestionOfOperationResponse.apply))
+                  complete(
+                    QuestionListResponse(
+                      results = operationOfQuestions.results.map(QuestionOfOperationResponse.apply),
+                      total = operationOfQuestions.total
+                    )
+                  )
                 }
             }
           }

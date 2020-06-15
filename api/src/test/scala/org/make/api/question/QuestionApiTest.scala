@@ -657,23 +657,25 @@ class QuestionApiTest
   feature("list") {
 
     scenario("all statuses") {
-      Get("/questions") ~> routes ~> check {
+      Get("/questions?country=FR&language=fr") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val response = entityAs[Seq[QuestionOfOperationResponse]]
-        response should contain theSameElementsAs indexedOperationOfQuestions.map(QuestionOfOperationResponse.apply)
+        val response = entityAs[QuestionListResponse]
+        response.results should contain theSameElementsAs indexedOperationOfQuestions.map(
+          QuestionOfOperationResponse.apply
+        )
       }
     }
 
     scenario("one status") {
-      Get("/questions?status=open") ~> routes ~> check {
+      Get("/questions?country=FR&language=fr&status=open") ~> routes ~> check {
         status should be(StatusCodes.OK)
-        val response = entityAs[Seq[QuestionOfOperationResponse]]
-        response should be(Seq(QuestionOfOperationResponse.apply(openOperationOfQuestion)))
+        val response = entityAs[QuestionListResponse]
+        response.results should be(Seq(QuestionOfOperationResponse.apply(openOperationOfQuestion)))
       }
     }
 
     scenario("invalid status") {
-      Get("/questions?status=foo") ~> routes ~> check {
+      Get("/questions?country=FR&language=fr&status=foo") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
