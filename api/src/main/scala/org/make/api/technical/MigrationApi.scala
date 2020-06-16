@@ -20,9 +20,11 @@
 package org.make.api.technical
 
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{Directives, Route}
+import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -30,41 +32,28 @@ import io.swagger.annotations.{Authorization, _}
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
+import org.make.api.operation.OperationServiceComponent
+import org.make.api.proposal.{ProposalCoordinatorComponent, ProposalServiceComponent, SnapshotProposal}
+import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.crm.CrmServiceComponent
+import org.make.api.technical.crm.{CrmServiceComponent, QuestionResolver}
 import org.make.api.technical.storage.StorageConfigurationComponent
 import org.make.api.user.UserServiceComponent
-import org.make.api.userhistory.UserUploadAvatarEvent
+import org.make.api.userhistory.{LogRegisterCitizenEvent, UserHistoryEvent, UserUploadAvatarEvent}
+import org.make.core.profile.Profile
+import org.make.core.proposal.ProposalId
+import org.make.core.question.Question
+import org.make.core.reference.Country
+import org.make.core.session.SessionId
 import org.make.core.tag.{Tag => _}
-import org.make.core.{CirceFormatters, DateHelper, HttpCodes, Validation}
+import org.make.core.user.{User, UserId}
+import org.make.core._
 
 import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
-import akka.stream.scaladsl.Sink
-import org.make.api.technical.crm.QuestionResolver
-import org.make.api.question.SearchQuestionRequest
-import org.make.api.operation.OperationServiceComponent
-import org.make.api.question.QuestionServiceComponent
-import org.make.api.userhistory.UserHistoryEvent
-import org.make.core.user.User
-import org.make.core.question.Question
-import org.make.api.proposal.{ProposalCoordinatorComponent, ProposalServiceComponent, SnapshotProposal}
-import org.make.api.userhistory.LogUserVoteEvent
-import org.make.api.userhistory.LogUserUnvoteEvent
-import org.make.api.userhistory.LogUserQualificationEvent
-import org.make.api.userhistory.LogUserUnqualificationEvent
-import org.make.api.userhistory.LogUserProposalEvent
-import akka.stream.scaladsl.Source
-import org.make.core.profile.Profile
-import org.make.core.RequestContext
-import org.make.core.user.UserId
-import org.make.api.userhistory.LogRegisterCitizenEvent
-import org.make.core.proposal.ProposalId
-import org.make.core.session.SessionId
-import java.time.temporal.ChronoUnit
 
 @Api(value = "Migrations")
 @Path(value = "/migrations")
@@ -161,26 +150,48 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       } yield new QuestionResolver(questions, operations)
     }
 
-    private def retrieveEventQuestion(
-      resolver: QuestionResolver,
-      event: UserHistoryEvent[_]
-    ): Future[Option[Question]] = {
-      resolver.extractQuestionWithOperationFromRequestContext(event.requestContext) match {
-        case Some(question) => Future.successful(Some(question))
-        case None =>
-          event match {
-            case e: LogUserVoteEvent =>
-              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
-            case e: LogUserUnvoteEvent =>
-              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
-            case e: LogUserQualificationEvent =>
-              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
-            case e: LogUserUnqualificationEvent =>
-              proposalService.resolveQuestionFromVoteEvent(resolver, e.requestContext, e.action.arguments.proposalId)
-            case e: LogUserProposalEvent =>
-              proposalService.resolveQuestionFromUserProposal(resolver, e.requestContext, e.userId, e.action.date)
-            case e => Future.successful(resolver.extractQuestionWithOperationFromRequestContext(e.requestContext))
+    private val campaignResolver: Map[String, String] = Map(
+      "mve" -> "mieux-vivre-ensemble",
+      "mvelaunch" -> "mieux-vivre-ensemble",
+      "blabla" -> "mieux-vivre-ensemble",
+      "mveresults1" -> "mieux-vivre-ensemble",
+      "mveresults2" -> "mieux-vivre-ensemble",
+      "welcomemve" -> "mieux-vivre-ensemble",
+      "cpt" -> "culture",
+      "culton" -> "culture",
+      "aixlaunchcpc" -> "lpae",
+      "lpaeresults1" -> "lpae",
+      "lpaeresults1" -> "lpae",
+      "welcomelpae" -> "lpae",
+      "caj" -> "chance-aux-jeunes",
+      "cajresults1" -> "chance-aux-jeunes",
+      "chancejeunelaunch" -> "chance-aux-jeunes",
+      "chancejeuneslaunch" -> "chance-aux-jeunes",
+      "jeunes" -> "chance-aux-jeunes",
+      "welcomechance" -> "chance-aux-jeunes",
+      "vfflaunchbrand" -> "vff",
+      "vfflaunchconv" -> "vff",
+      "vfflaunchcpc" -> "vff",
+      "vffresults1" -> "vff",
+      "vfflaunchbrand" -> "vff"
+    )
+
+    private def resolveQuestionFromUtms(context: RequestContext, resolver: QuestionResolver): Option[Question] = {
+      val maybeUtm: Option[String] = context.getParameters.flatMap(_.get("utm_campaign"))
+      maybeUtm match {
+        case None => None
+        case Some(campaign) =>
+          val resolvedSlug: String = campaignResolver.getOrElse(campaign, campaign)
+          val finalSlug = if (resolvedSlug == "vff") {
+            context.country match {
+              case Some(Country("IT")) => "vff-it"
+              case Some(Country("GB")) => "vff-gb"
+              case _                   => "vff"
+            }
+          } else {
+            resolvedSlug
           }
+          resolver.findQuestionWithOperation(_.slug == finalSlug)
       }
 
     }
@@ -210,14 +221,14 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
             .sortBy(_.action.date)
 
           Source(registerSessionEvents)
-            .mapAsync(1)(retrieveEventQuestion(questionResolver, _))
+            .map(event => resolveQuestionFromUtms(event.requestContext, questionResolver))
             .collect {
               case Some(question) => question
             }
             .runWith(Sink.headOption[Question])
 
-        case Some(_) =>
-          Future.successful(None)
+        case Some(event) =>
+          Future.successful(resolveQuestionFromUtms(event.requestContext, questionResolver))
       }
     }
 
@@ -344,7 +355,8 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 }
 
 final case class DeleteContactsRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z") maxUpdatedAtBeforeDelete: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z")
+  maxUpdatedAtBeforeDelete: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean
 ) {
   Validation.validate(
