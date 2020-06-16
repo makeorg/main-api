@@ -26,10 +26,11 @@ import org.make.api.proposal._
 import org.make.api.segment.{SegmentService, SegmentServiceComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent}
-import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.core.proposal._
+import org.make.core.technical.IdGenerator
 import org.scalatest.PrivateMethodTester
 
 class SequenceServiceComponentTest

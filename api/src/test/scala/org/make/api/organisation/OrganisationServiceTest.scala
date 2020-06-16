@@ -32,7 +32,7 @@ import org.make.api.proposal.{
   ProposalsResultSeededResponse
 }
 import org.make.api.technical.auth.{UserTokenGenerator, UserTokenGeneratorComponent}
-import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.{EventBusService, EventBusServiceComponent, IdGeneratorComponent}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
@@ -57,6 +57,7 @@ import org.make.core.proposal.indexed.{
 }
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery}
 import org.make.core.reference.{Country, Language}
+import org.make.core.technical.IdGenerator
 import org.make.core.user.Role.RoleActor
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}

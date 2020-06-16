@@ -20,9 +20,10 @@
 package org.make.api.feature
 
 import org.make.api.MakeUnitTest
-import org.make.api.technical.{DefaultIdGeneratorComponent, IdGenerator}
+import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.feature._
 import org.make.core.question.QuestionId
+import org.make.core.technical.IdGenerator
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 

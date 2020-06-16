@@ -21,10 +21,11 @@ package org.make.api.idea.topIdeaComments
 
 import akka.actor.ActorSystem
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.idea.CommentVoteKey
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.idea.{TopIdeaComment, TopIdeaCommentId, TopIdeaId}
+import org.make.core.technical.IdGenerator
 import org.make.core.user.{UserId, UserType}
 import org.mockito.Mockito.when
 import org.mockito.{ArgumentMatchers, Mockito}

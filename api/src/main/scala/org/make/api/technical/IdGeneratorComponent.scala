@@ -19,58 +19,12 @@
 
 package org.make.api.technical
 
-import java.util.UUID
-
-import org.make.api.idea.IdeaMappingId
-import org.make.core.auth.ClientId
-import org.make.core.crmTemplate.CrmTemplatesId
-import org.make.core.feature.{ActiveFeatureId, FeatureId}
-import org.make.core.idea.{IdeaId, TopIdeaCommentId, TopIdeaId}
-import org.make.core.job.Job.JobId
-import org.make.core.operation.{CurrentOperationId, FeaturedOperationId, OperationId}
-import org.make.core.partner.PartnerId
-import org.make.core.personality.{PersonalityId, PersonalityRoleFieldId, PersonalityRoleId}
-import org.make.core.proposal.ProposalId
-import org.make.core.question.QuestionId
-import org.make.core.sequence.SequenceId
-import org.make.core.session.VisitorId
-import org.make.core.tag.{TagId, TagTypeId}
-import org.make.core.user.UserId
+import org.make.core.technical.IdGenerator
 
 trait IdGeneratorComponent {
   def idGenerator: IdGenerator
 }
 
-trait IdGenerator {
-  def nextClientId(): ClientId = ClientId(nextId())
-  def nextCrmTemplatesId(): CrmTemplatesId = CrmTemplatesId(nextId())
-  def nextCurrentOperationId(): CurrentOperationId = CurrentOperationId(nextId())
-  def nextFeaturedOperationId(): FeaturedOperationId = FeaturedOperationId(nextId())
-  def nextFeatureId(): FeatureId = FeatureId(nextId())
-  def nextActiveFeatureId(): ActiveFeatureId = ActiveFeatureId(nextId())
-  def nextIdeaId(): IdeaId = IdeaId(nextId())
-  def nextIdeaMappingId(): IdeaMappingId = IdeaMappingId(nextId())
-  def nextJobId(): JobId = JobId(nextId())
-  def nextOperationId(): OperationId = OperationId(nextId())
-  def nextPartnerId(): PartnerId = PartnerId(nextId())
-  def nextProposalId(): ProposalId = ProposalId(nextId())
-  def nextQuestionId(): QuestionId = QuestionId(nextId())
-  def nextSequenceId(): SequenceId = SequenceId(nextId())
-  def nextTagId(): TagId = TagId(nextId())
-  def nextTagTypeId(): TagTypeId = TagTypeId(nextId())
-  def nextUserId(): UserId = UserId(nextId())
-  def nextVisitorId(): VisitorId = VisitorId(nextId())
-  def nextPersonalityId(): PersonalityId = PersonalityId(nextId())
-  def nextTopIdeaId(): TopIdeaId = TopIdeaId(nextId())
-  def nextTopIdeaCommentId(): TopIdeaCommentId = TopIdeaCommentId(nextId())
-  def nextPersonalityRoleId(): PersonalityRoleId = PersonalityRoleId(nextId())
-  def nextPersonalityRoleFieldId(): PersonalityRoleFieldId = PersonalityRoleFieldId(nextId())
-
-  def nextId(): String
-}
-
 trait DefaultIdGeneratorComponent extends IdGeneratorComponent {
-  override lazy val idGenerator: IdGenerator = () => {
-    UUID.randomUUID().toString
-  }
+  override lazy val idGenerator: IdGenerator = IdGenerator.uuidGenerator
 }

@@ -26,12 +26,13 @@ import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question._
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, PersistentSequenceConfigurationService}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.DateHelper
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.question.QuestionId
+import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout

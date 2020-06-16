@@ -30,13 +30,14 @@ import org.make.api.question.PersistentQuestionServiceComponent
 import org.make.api.tag.{PersistentTagServiceComponent, TagServiceComponent}
 import org.make.api.tagtype.PersistentTagTypeServiceComponent
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
+import org.make.core.idea.{Idea, IdeaId, IdeaMapping, IdeaMappingId, IdeaStatus}
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{IdeaSearchFilter, SearchFilters, SearchQuery, TagsSearchFilter}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag.{Tag, TagId, TagTypeId}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
+
 import Ordering.Float.TotalOrdering
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}

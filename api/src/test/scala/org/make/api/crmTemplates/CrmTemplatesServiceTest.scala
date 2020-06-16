@@ -20,13 +20,14 @@
 package org.make.api.crmTemplates
 
 import org.make.api.MakeUnitTest
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
 import org.make.core.question.QuestionId
+import org.make.core.technical.IdGenerator
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import scala.concurrent.duration.DurationInt
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 
 class CrmTemplatesServiceTest

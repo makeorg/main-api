@@ -34,6 +34,7 @@ import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.{TagId, TagTypeId}
+import org.make.core.technical.IdGenerator
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.mockito.ArgumentMatchers

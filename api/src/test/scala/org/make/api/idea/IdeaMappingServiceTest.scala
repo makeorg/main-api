@@ -22,13 +22,14 @@ import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionService, PersistentQuestionServiceComponent}
 import org.make.api.tag.{PersistentTagService, PersistentTagServiceComponent, TagService, TagServiceComponent}
 import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
-import org.make.core.idea.{Idea, IdeaId}
+import org.make.api.technical.IdGeneratorComponent
+import org.make.core.idea.{Idea, IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag._
+import org.make.core.technical.IdGenerator
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.any

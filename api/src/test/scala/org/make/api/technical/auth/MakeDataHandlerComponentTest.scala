@@ -25,11 +25,12 @@ import java.time.format.DateTimeFormatter
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent, ShortenedNames}
+import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.session.VisitorId
+import org.make.core.technical.IdGenerator
 import org.make.core.user.{CustomRole, Role, User, UserId}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{doReturn, spy, verify, when}
