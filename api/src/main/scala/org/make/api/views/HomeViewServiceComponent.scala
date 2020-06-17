@@ -181,6 +181,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           filters = Some(
             OperationOfQuestionSearchFilters(status = Some(OOQStatusSearchFilter(OperationOfQuestion.Status.Open)))
           ),
+          limit = Some(4),
           sortAlgorithm = Some(SortAlgorithm.Chronological)
         )
       )
