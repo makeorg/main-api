@@ -75,6 +75,7 @@ case class IndexedOperationOfQuestion(
   theme: QuestionTheme,
   description: String,
   consultationImage: Option[String],
+  descriptionImage: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -112,6 +113,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
       consultationImage = operationOfQuestion.consultationImage,
+      descriptionImage = operationOfQuestion.descriptionImage,
       country = question.country,
       language = question.language,
       operationId = operationOfQuestion.operationId,

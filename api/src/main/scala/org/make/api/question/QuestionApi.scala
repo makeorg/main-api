@@ -325,6 +325,7 @@ trait DefaultQuestionApiComponent
               shortTitle = question.shortTitle,
               operationTitle = operationOfQuestion.operationTitle,
               consultationImage = operationOfQuestion.consultationImage,
+              descriptionImage = operationOfQuestion.descriptionImage,
               country = question.country,
               language = question.language,
               startDate = operationOfQuestion.startDate,

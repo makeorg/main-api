@@ -665,6 +665,10 @@
           "type": "text",
           "index": false
         },
+        "descriptionImage": {
+          "type": "text",
+          "index": false
+        },
         "country": {
           "type": "keyword",
           "index": true

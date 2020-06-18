@@ -108,6 +108,7 @@ class HomeViewServiceComponentTest
     description = "Description opeOfQue",
     theme = QuestionTheme("#000000", "#000000", "#000000", "#000000", None, None),
     consultationImage = None,
+    descriptionImage = None,
     country = Country("FR"),
     language = Language("fr"),
     operationKind = "",
