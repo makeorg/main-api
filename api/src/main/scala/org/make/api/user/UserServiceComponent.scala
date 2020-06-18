@@ -131,6 +131,7 @@ trait UserService extends ShortenedNames {
     requestContext: RequestContext,
     eventDate: ZonedDateTime
   ): Future[Unit]
+  def adminUpdateUserEmail(user: User, email: String): Future[Unit]
 }
 
 case class UserRegisterData(
@@ -1029,6 +1030,16 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           )
         }
 
+    }
+
+    override def adminUpdateUserEmail(user: User, email: String): Future[Unit] = {
+      val toDelete = user.email
+      // do not initialize the futures before the comprehension:
+      // we actually want to anonymize only if update was successful
+      for {
+        _ <- persistentUserService.updateUser(user.copy(email = email))
+        _ <- persistentUserToAnonymizeService.create(toDelete)
+      } yield ()
     }
 
   }

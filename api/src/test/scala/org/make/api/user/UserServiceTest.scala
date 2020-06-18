@@ -1249,4 +1249,17 @@ class UserServiceTest
       }
     }
   }
+
+  feature("update user email") {
+    scenario("it works") {
+      val user = fooUser.copy(email = "foo+ineedauniqueemail@example.com")
+      Mockito
+        .when(persistentUserToAnonymizeService.create("foo+ineedauniqueemail@example.com"))
+        .thenReturn(Future.successful({}))
+      whenReady(userService.adminUpdateUserEmail(user, "bar@example.com"), Timeout(2.seconds)) { _ =>
+        Mockito.verify(persistentUserService).updateUser(user.copy(email = "bar@example.com"))
+        Mockito.verify(persistentUserToAnonymizeService).create("foo+ineedauniqueemail@example.com")
+      }
+    }
+  }
 }

@@ -88,6 +88,13 @@ class AdminUserApiTest
     emailVerified = false
   )
 
+  Mockito.when(userService.getUserByEmail(any[String])).thenReturn(Future.successful(None))
+  Mockito.when(userService.getUserByEmail(newCitizen.email)).thenReturn(Future.successful(Some(newCitizen)))
+  Mockito.when(userService.getUserByEmail(newModerator.email)).thenReturn(Future.successful(Some(newModerator)))
+  Mockito
+    .when(userService.getUserByEmail("toto@modo.com"))
+    .thenReturn(Future.successful(Some(newModerator.copy(userId = UserId("other")))))
+
   feature("get moderator") {
     scenario("unauthenticate user unauthorized to get moderator") {
       Get(s"/admin/moderators/${moderatorId.value}") ~> routes ~> check {
@@ -442,7 +449,6 @@ class AdminUserApiTest
     }
 
     Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
-    Mockito.when(userService.getUserByEmail(any[String])).thenReturn(Future.successful(None))
 
     scenario("moderator allowed to update itself") {
       Put(s"/admin/moderators/${moderatorId.value}")
@@ -488,9 +494,6 @@ class AdminUserApiTest
     scenario("failed because email exists") {
       Mockito.when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
       Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
-      Mockito
-        .when(userService.getUserByEmail(any[String]))
-        .thenReturn(Future.successful(Some(newModerator.copy(userId = UserId("other")))))
       val request =
         """{
           |  "email": "toto@modo.com",
@@ -516,7 +519,6 @@ class AdminUserApiTest
 
     scenario("failed because new email is invalid") {
       Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
-      Mockito.when(userService.getUserByEmail(any[String])).thenReturn(Future.successful(None))
       val request =
         """{
           |  "email": "toto@modo",
@@ -652,7 +654,6 @@ class AdminUserApiTest
     }
 
     scenario("admin user") {
-      Mockito.when(userService.getUserByEmail(newModerator.email)).thenReturn(Future.successful(Some(newModerator)))
       Mockito
         .when(
           userService.anonymize(ArgumentMatchers.eq(newModerator), ArgumentMatchers.eq(adminId), any[RequestContext])
@@ -795,7 +796,6 @@ class AdminUserApiTest
     }
 
     Mockito.when(userService.getUser(citizenId)).thenReturn(Future.successful(Some(newModerator)))
-    Mockito.when(userService.getUserByEmail(any[String])).thenReturn(Future.successful(None))
 
     scenario("moderator forbidden to update user") {
       Put(s"/admin/users/${moderatorId.value}")
@@ -840,9 +840,6 @@ class AdminUserApiTest
 
     scenario("failed because email exists") {
       Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
-      Mockito
-        .when(userService.getUserByEmail(any[String]))
-        .thenReturn(Future.successful(Some(newModerator.copy(userId = UserId("other")))))
       val request =
         """{
           |  "email": "toto@modo.com",
@@ -869,7 +866,6 @@ class AdminUserApiTest
 
     scenario("failed because new email is invalid") {
       Mockito.when(userService.update(any[User], any[RequestContext])).thenReturn(Future.successful(newModerator))
-      Mockito.when(userService.getUserByEmail(any[String])).thenReturn(Future.successful(None))
       val request =
         """{
           |  "email": "toto@modo",
@@ -1050,5 +1046,46 @@ class AdminUserApiTest
         path.path shouldBe "path/to/uploaded/image.jpeg"
       }
     }
+  }
+
+  feature("update user email") {
+
+    val request = AdminUpdateUserEmail(newCitizen.email, "kane@example.com")
+    Mockito.when(userService.adminUpdateUserEmail(any[User], any[String])).thenReturn(Future.successful(None))
+
+    scenario("anonymously") {
+      Post("/admin/users/update-user-email", request) ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("as a citizen") {
+      Post("/admin/users/update-user-email", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("as a moderator") {
+      Post("/admin/users/update-user-email", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("as an admin") {
+      Post("/admin/users/update-user-email", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    scenario("old email not found") {
+      Post("/admin/users/update-user-email", request.copy(oldEmail = "outis@example.com"))
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
   }
 }

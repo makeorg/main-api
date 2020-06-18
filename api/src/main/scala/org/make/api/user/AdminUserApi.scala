@@ -308,9 +308,29 @@ trait AdminUserApi extends Directives {
   @Path(value = "/upload-avatar/{userType}")
   def adminUploadAvatar: Route
 
+  @ApiOperation(
+    value = "update-user-email",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.AdminUpdateUserEmail")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
+  @Path(value = "/users/update-user-email")
+  def updateUserEmail: Route
+
   def routes: Route =
     getUsers ~ getUser ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~
-      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar
+      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar ~ updateUserEmail
 }
 
 trait AdminUserApiComponent {
@@ -699,6 +719,37 @@ trait DefaultAdminUserApiComponent
       }
     }
 
+    override def updateUserEmail: Route = {
+      post {
+        path("admin" / "users" / "update-user-email") {
+          makeOperation("AdminUserUpdateEmail") { _ =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                decodeRequest {
+                  entity(as[AdminUpdateUserEmail]) {
+                    case AdminUpdateUserEmail(oldEmail, newEmail) =>
+                      provideAsync(userService.getUserByEmail(oldEmail)) {
+                        case Some(user) =>
+                          provideAsync(userService.adminUpdateUserEmail(user, newEmail))(
+                            _ => complete(StatusCodes.NoContent)
+                          )
+                        case None =>
+                          complete(
+                            StatusCodes.BadRequest ->
+                              Seq(
+                                ValidationError("oldEmail", "not_found", Some(s"No user found for email '$oldEmail'"))
+                              )
+                          )
+                      }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   }
 }
 
@@ -871,4 +922,13 @@ final case class AdminUpdateUserRequest(
 
 object AdminUpdateUserRequest {
   implicit lazy val decoder: Decoder[AdminUpdateUserRequest] = deriveDecoder[AdminUpdateUserRequest]
+}
+
+final case class AdminUpdateUserEmail(oldEmail: String, newEmail: String) {
+  validate(validateEmail("oldEmail", oldEmail.toLowerCase), validateEmail("newEmail", newEmail.toLowerCase))
+}
+
+object AdminUpdateUserEmail {
+  implicit val decoder: Decoder[AdminUpdateUserEmail] = deriveDecoder
+  implicit val encoder: Encoder[AdminUpdateUserEmail] = deriveEncoder
 }
