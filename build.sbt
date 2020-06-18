@@ -28,7 +28,7 @@ import ScalastylePlugin.rawScalastyleSettings
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  scalaVersion := "2.13.1",
+  scalaVersion := "2.13.2",
   licenses     += "AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl.html"),
   credentials ++= {
     if (System.getenv().containsKey("CI_BUILD")) {

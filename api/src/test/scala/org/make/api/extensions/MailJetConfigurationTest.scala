@@ -62,7 +62,7 @@ class MailJetConfigurationTest
     with MailJetConfigurationComponent
     with BeforeAndAfterAll {
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 
