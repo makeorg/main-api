@@ -266,6 +266,7 @@ final case class QuestionOfOperationResponse(
   shortTitle: Option[String],
   operationTitle: String,
   consultationImage: Option[String],
+  descriptionImage: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -293,6 +294,7 @@ object QuestionOfOperationResponse {
       shortTitle = indexedOperationOfQuestion.questionShortTitle,
       operationTitle = indexedOperationOfQuestion.operationTitle,
       consultationImage = indexedOperationOfQuestion.consultationImage,
+      descriptionImage = indexedOperationOfQuestion.descriptionImage,
       country = indexedOperationOfQuestion.country,
       language = indexedOperationOfQuestion.language,
       startDate = indexedOperationOfQuestion.startDate,
