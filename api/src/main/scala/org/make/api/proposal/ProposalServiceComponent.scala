@@ -58,6 +58,7 @@ import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.api.technical.crm.QuestionResolver
+import org.make.core.session.SessionId
 
 trait ProposalServiceComponent {
   def proposalService: ProposalService
@@ -735,7 +736,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     private def retrieveVoteHistory(
       proposalId: ProposalId,
       maybeUserId: Option[UserId],
-      requestContext: RequestContext
+      sessionId: SessionId
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
       val votesHistory = maybeUserId match {
         case Some(userId) =>
@@ -744,7 +745,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         case None =>
           sessionHistoryCoordinatorService
             .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(sessionId = requestContext.sessionId, proposalIds = Seq(proposalId))
+              RequestSessionVoteValues(sessionId = sessionId, proposalIds = Seq(proposalId))
             )
       }
       votesHistory
@@ -827,7 +828,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       val result = for {
         _                    <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
-        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext.sessionId)
         user                 <- retrieveUser(maybeUserId)
         maybeProposalSegment <- getSegmentForProposal(proposalId)
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
@@ -866,7 +867,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       val result = for {
         _                    <- sessionHistoryCoordinatorService.lockSessionForVote(requestContext.sessionId, proposalId)
-        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext.sessionId)
         user                 <- retrieveUser(maybeUserId)
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         maybeProposalSegment <- getSegmentForProposal(proposalId)
@@ -909,7 +910,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           proposalId,
           qualificationKey
         )
-        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext.sessionId)
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         maybeProposalSegment <- getSegmentForProposal(proposalId)
         qualify <- proposalCoordinatorService.qualification(
@@ -958,7 +959,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           proposalId,
           qualificationKey
         )
-        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext)
+        votes                <- retrieveVoteHistory(proposalId, maybeUserId, requestContext.sessionId)
         maybeUserSegment     <- segmentService.resolveSegment(requestContext)
         maybeProposalSegment <- getSegmentForProposal(proposalId)
         removeQualification <- proposalCoordinatorService.unqualification(

@@ -24,7 +24,6 @@ import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.persistence.{SaveSnapshotFailure, SaveSnapshotSuccess}
 import org.make.api.extensions.MakeSettingsExtension
-import org.make.api.sessionhistory.ShardedSessionHistory.StopSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
 
 import scala.concurrent.duration.FiniteDuration
@@ -55,8 +54,6 @@ object ShardedSessionHistory {
   def props(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration): Props =
     Props(new ShardedSessionHistory(userHistoryCoordinator, lockDuration))
   val shardName: String = "session-history"
-
-  case object StopSessionHistory
 
   def extractEntityId: ShardRegion.ExtractEntityId = {
     case cmd: SessionRelatedEvent => (cmd.sessionId.value, cmd)

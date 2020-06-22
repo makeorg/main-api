@@ -72,6 +72,7 @@ object SessionHistoryEvent {
       override def read(json: JsValue): SessionHistoryEvent[_] = {
         json.asJsObject.getFields("type") match {
           case Seq(JsString("SessionTransformed"))             => json.convertTo[SessionTransformed]
+          case Seq(JsString("SessionExpired"))                 => json.convertTo[SessionExpired]
           case Seq(JsString("LogSessionSearchProposalsEvent")) => json.convertTo[LogSessionSearchProposalsEvent]
           case Seq(JsString("LogSessionVoteEvent"))            => json.convertTo[LogSessionVoteEvent]
           case Seq(JsString("LogSessionUnvoteEvent"))          => json.convertTo[LogSessionUnvoteEvent]
@@ -85,6 +86,7 @@ object SessionHistoryEvent {
       override def write(obj: SessionHistoryEvent[_]): JsObject = {
         JsObject((obj match {
           case event: SessionTransformed             => event.toJson
+          case event: SessionExpired                 => event.toJson
           case event: LogSessionSearchProposalsEvent => event.toJson
           case event: LogSessionVoteEvent            => event.toJson
           case event: LogSessionUnvoteEvent          => event.toJson
@@ -279,6 +281,14 @@ object LogSessionSearchProposalsEvent {
 
 }
 
+case class SessionExpired(sessionId: SessionId, requestContext: RequestContext, action: SessionAction[SessionId])
+    extends SessionHistoryEvent[SessionId]
+
+object SessionExpired {
+  implicit val format: RootJsonFormat[SessionExpired] =
+    DefaultJsonProtocol.jsonFormat(SessionExpired.apply, "sessionId", "context", "action")
+}
+
 case class SessionTransformed(sessionId: SessionId, requestContext: RequestContext, action: SessionAction[UserId])
     extends SessionHistoryEvent[UserId]
 
@@ -320,7 +330,7 @@ final case class GetSessionHistory(sessionId: SessionId) extends SessionHistoryA
 
 final case class GetCurrentSession(sessionId: SessionId, newSessionId: SessionId) extends SessionHistoryAction
 
-final case class SessionExpired(sessionId: SessionId) extends SessionRelatedEvent
+final case class SessionIsExpired(sessionId: SessionId) extends SessionRelatedEvent
 
 final case class RequestSessionVoteValues(sessionId: SessionId, proposalIds: Seq[ProposalId])
     extends SessionRelatedEvent
@@ -356,5 +366,7 @@ object LogSessionStartSequenceEvent {
   implicit val logSessionStartSequenceEventFormatted: RootJsonFormat[LogSessionStartSequenceEvent] =
     DefaultJsonProtocol.jsonFormat(LogSessionStartSequenceEvent.apply, "sessionId", "context", "action")
 }
+
+case object StopSessionHistory extends SessionHistoryActorProtocol
 
 final case class StopSession(sessionId: SessionId) extends SessionRelatedEvent

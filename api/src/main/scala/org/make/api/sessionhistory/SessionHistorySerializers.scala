@@ -72,6 +72,9 @@ object SessionHistorySerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
     )
 
+  private val logSessionExpiredSerializer: JsonPersister[SessionExpired, V1] =
+    json.persister[SessionExpired]("session-expired")
+
   private val logSessionStartSequenceEventSerializer: JsonPersister[LogSessionStartSequenceEvent, V2] =
     json.persister[LogSessionStartSequenceEvent, V2](
       "session-history-start-sequence",
@@ -112,6 +115,7 @@ object SessionHistorySerializers extends SprayJsonFormatters {
       logSessionQualificationEventSerializer,
       logSessionUnqualificationEventSerializer,
       logSessionTransformedEventSerializer,
+      logSessionExpiredSerializer,
       logSessionStartSequenceEventSerializer,
       saveLastEventDateSerializer,
       SessionHistorySerializer

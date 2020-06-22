@@ -46,6 +46,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Deadline, FiniteDuration}
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: FiniteDuration)
@@ -162,8 +163,16 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
 
   private def retrieveOrExpireSession(newSessionId: SessionId): Unit = {
     if (isSessionExpired) {
-      sender() ! CurrentSessionId(newSessionId)
-      context.become(expired(newSessionId))
+      persistEvent(
+        SessionExpired(
+          sessionId = sessionId,
+          requestContext = RequestContext.empty,
+          action = SessionAction(date = DateHelper.now(), actionType = "transformSession", arguments = newSessionId)
+        )
+      ) { event =>
+        sender() ! CurrentSessionId(newSessionId)
+        context.become(expired(event.action.arguments))
+      }
     } else {
       lastEventDate = Some(DateHelper.now())
       sender() ! CurrentSessionId(sessionId)
@@ -171,13 +180,15 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
   }
 
   override def onRecoveryCompleted(): Unit = {
-    def findEvent[T <: SessionHistoryEvent[_]](eventsList: Seq[SessionHistoryEvent[_]]): Option[T] = {
+    def findEvent[T <: SessionHistoryEvent[_]](
+      eventsList: Seq[SessionHistoryEvent[_]]
+    )(implicit tag: ClassTag[T]): Option[T] = {
       eventsList.collectFirst {
         case event: T => event
       }
     }
 
-    val allEvents: Seq[SessionHistoryEvent[_]] = state.toList.flatMap(_.events)
+    val allEvents: Seq[SessionHistoryEvent[_]] = state.toList.flatMap(_.events).sortBy(_.action.date)
     val saveLastDateEvent: Option[SaveLastEventDate] = findEvent[SaveLastEventDate](allEvents.reverse)
 
     lastEventDate = lastEventDate
@@ -287,7 +298,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
 
   def expired(newSessionId: SessionId): Receive = {
     case GetCurrentSession(_, _) => sender() ! CurrentSessionId(newSessionId)
-    case _: SessionRelatedEvent  => sender() ! SessionExpired(newSessionId)
+    case _: SessionRelatedEvent  => sender() ! SessionIsExpired(newSessionId)
   }
 
   private def retrieveVotedProposals(proposalsIds: Option[Seq[ProposalId]], limit: Int, skip: Int): Unit = {

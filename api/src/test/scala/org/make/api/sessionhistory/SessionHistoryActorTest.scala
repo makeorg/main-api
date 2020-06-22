@@ -675,10 +675,10 @@ class SessionHistoryActorTest extends ShardingActorTest {
       expectMsg(CurrentSessionId(newSessionId))
 
       coordinator ! GetSessionHistory(sessionId)
-      expectMsg(SessionExpired(newSessionId))
+      expectMsg(SessionIsExpired(newSessionId))
     }
 
-    scenario("session expired after user connected") {
+    Scenario("session expired after user connected") {
       val sessionId = SessionId("session-expired-2")
       val newSessionId = SessionId("new-session-2")
       val userId = UserId("user-id-session-expired")
@@ -697,7 +697,7 @@ class SessionHistoryActorTest extends ShardingActorTest {
       expectMsg(CurrentSessionId(newSessionId))
 
       coordinator ! GetSessionHistory(sessionId)
-      expectMsg(SessionExpired(newSessionId))
+      expectMsg(SessionIsExpired(newSessionId))
     }
 
     Scenario("unexpected actor shutdown") {

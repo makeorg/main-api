@@ -73,8 +73,8 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
 
     override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
       (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).flatMap {
-        case SessionExpired(newSessionId) => sessionHistory(newSessionId)
-        case response                     => Future.successful(response).mapTo[SessionHistory]
+        case SessionIsExpired(newSessionId) => sessionHistory(newSessionId)
+        case response                       => Future.successful(response).mapTo[SessionHistory]
       }
     }
 
@@ -84,7 +84,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
 
     override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
       (sessionHistoryCoordinator ? SessionHistoryEnvelope(command.sessionId, command)).flatMap {
-        case SessionExpired(newSessionId) =>
+        case SessionIsExpired(newSessionId) =>
           (sessionHistoryCoordinator ? SessionHistoryEnvelope(newSessionId, command)).map(_ => ())
         case _ => Future.successful {}
       }
@@ -94,15 +94,15 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       request: RequestSessionVoteValues
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
       (sessionHistoryCoordinator ? request).flatMap {
-        case SessionExpired(newSessionId) => retrieveVoteAndQualifications(request.copy(sessionId = newSessionId))
-        case response                     => Future.successful(response).mapTo[VotesValues].map(_.votesValues)
+        case SessionIsExpired(newSessionId) => retrieveVoteAndQualifications(request.copy(sessionId = newSessionId))
+        case response                       => Future.successful(response).mapTo[VotesValues].map(_.votesValues)
       }
     }
 
     override def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit] = {
       (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).flatMap {
-        case SessionExpired(newSessionId) => convertSession(newSessionId, userId, requestContext)
-        case _                            => Future.successful {}
+        case SessionIsExpired(newSessionId) => convertSession(newSessionId, userId, requestContext)
+        case _                              => Future.successful {}
       }
     }
 
@@ -142,8 +142,8 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
 
     override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
       (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
-        case SessionExpired(newSessionId) => lockSessionForVote(newSessionId, proposalId)
-        case LockAcquired                 => Future.successful {}
+        case SessionIsExpired(newSessionId) => lockSessionForVote(newSessionId, proposalId)
+        case LockAcquired                   => Future.successful {}
         case LockAlreadyAcquired =>
           Future.failed(ConcurrentModification("A vote is already pending for this proposal"))
       }
@@ -155,8 +155,8 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       key: QualificationKey
     ): Future[Unit] = {
       (sessionHistoryCoordinator ? LockProposalForQualification(sessionId, proposalId, key)).flatMap {
-        case SessionExpired(newSessionId) => lockSessionForQualification(newSessionId, proposalId, key)
-        case LockAcquired                 => Future.successful {}
+        case SessionIsExpired(newSessionId) => lockSessionForQualification(newSessionId, proposalId, key)
+        case LockAcquired                   => Future.successful {}
         case LockAlreadyAcquired =>
           Future.failed(ConcurrentModification("A qualification is already pending for this proposal"))
       }
@@ -164,8 +164,8 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
 
     override def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
       (sessionHistoryCoordinator ? ReleaseProposalForVote(sessionId, proposalId)).flatMap {
-        case SessionExpired(newSessionId) => unlockSessionForVote(newSessionId, proposalId)
-        case _                            => Future.successful {}
+        case SessionIsExpired(newSessionId) => unlockSessionForVote(newSessionId, proposalId)
+        case _                              => Future.successful {}
       }
     }
 
@@ -175,8 +175,8 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       key: QualificationKey
     ): Future[Unit] = {
       (sessionHistoryCoordinator ? ReleaseProposalForQualification(sessionId, proposalId, key)).flatMap {
-        case SessionExpired(newSessionId) => unlockSessionForQualification(newSessionId, proposalId, key)
-        case _                            => Future.successful {}
+        case SessionIsExpired(newSessionId) => unlockSessionForQualification(newSessionId, proposalId, key)
+        case _                              => Future.successful {}
       }
     }
   }

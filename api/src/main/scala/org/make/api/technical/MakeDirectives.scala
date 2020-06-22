@@ -91,8 +91,8 @@ trait MakeDirectives
   def maybeSessionId: Directive1[Option[SessionId]] =
     (for {
       maybeCookieSessionId <- optionalCookie(makeSettings.SessionCookie.name)
-      maybeSessionId       <- optionalNonEmptyHeaderValueByName(`X-Session-Id`.name)
-    } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId))
+      maybeHeaderSessionId <- optionalNonEmptyHeaderValueByName(`X-Session-Id`.name)
+    } yield maybeCookieSessionId.map(_.value).orElse(maybeHeaderSessionId))
       .map(_.map(SessionId(_)))
 
   def getCurrentSessionId: Directive1[SessionId] = {
