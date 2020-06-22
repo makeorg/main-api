@@ -33,5 +33,7 @@ libraryDependencies ++= Seq(
   Dependencies.refinedScala,
   Dependencies.stamina,
   Dependencies.slugify,
-  Dependencies.jsoup
+  Dependencies.jsoup,
+  Dependencies.refinedScalaCheck,
+  Dependencies.scalaCheck
 )

@@ -34,7 +34,7 @@ import org.make.api.idea.AdminIdeaMappingApi.{
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, ParameterExtractors}

@@ -21,7 +21,7 @@ package org.make.api.idea
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
-import org.make.core.idea.{Idea, IdeaId}
+import org.make.core.idea.{Idea, IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}

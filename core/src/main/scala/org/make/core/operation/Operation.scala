@@ -199,9 +199,9 @@ final case class OperationOfQuestion(
 
   def status: OperationOfQuestion.Status = {
     val now = DateHelper.now()
-    if (startDate.forall(_.isAfter(now))) {
+    if (startDate.exists(_.isAfter(now))) {
       OperationOfQuestion.Status.Upcoming
-    } else if (endDate.forall(_.isBefore(now))) {
+    } else if (endDate.exists(_.isBefore(now))) {
       OperationOfQuestion.Status.Finished
     } else {
       OperationOfQuestion.Status.Open

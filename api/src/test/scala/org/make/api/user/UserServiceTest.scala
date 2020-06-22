@@ -45,6 +45,7 @@ import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.SearchQuery
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
+import org.make.core.technical.IdGenerator
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.ArgumentMatchers.{eq => isEqual, _}

@@ -20,8 +20,9 @@
 package org.make.api.operation
 
 import org.make.api.MakeUnitTest
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.{FeaturedOperation, FeaturedOperationId}
+import org.make.core.technical.IdGenerator
 import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 

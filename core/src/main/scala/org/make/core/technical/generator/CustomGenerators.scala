@@ -17,7 +17,7 @@
  *
  */
 
-package org.make.api.technical.generator
+package org.make.core.technical.generator
 
 import java.time.temporal.ChronoUnit
 import java.time.{ZoneId, ZonedDateTime}

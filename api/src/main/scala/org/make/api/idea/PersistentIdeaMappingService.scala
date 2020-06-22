@@ -25,7 +25,7 @@ import org.make.api.idea.DefaultPersistentIdeaMappingServiceComponent.Persistent
 import org.make.api.technical.DatabaseTransactions.RichDatabase
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import scalikejdbc._

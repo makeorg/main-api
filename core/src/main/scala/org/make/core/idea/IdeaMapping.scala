@@ -17,7 +17,7 @@
  *
  */
 
-package org.make.api.idea
+package org.make.core.idea
 
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue

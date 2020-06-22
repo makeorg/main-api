@@ -26,13 +26,14 @@ import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.{PersistentQuestionService, PersistentQuestionServiceComponent}
 import org.make.api.tag.{PersistentTagService, PersistentTagServiceComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.IdGeneratorComponent
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
+import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentMatchers, Mockito}

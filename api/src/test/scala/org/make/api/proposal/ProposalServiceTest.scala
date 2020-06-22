@@ -39,7 +39,7 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions._
-import org.make.core.idea.IdeaId
+import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalStatus.{Accepted, Pending}
@@ -72,6 +72,7 @@ import org.make.core.proposal.Vote
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import org.make.api.technical.crm.QuestionResolver
+import org.make.core.technical.IdGenerator
 
 class ProposalServiceTest
     extends MakeUnitTest

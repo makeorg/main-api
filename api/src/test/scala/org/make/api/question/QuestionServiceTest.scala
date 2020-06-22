@@ -30,13 +30,14 @@ import org.make.api.idea.{
 import org.make.api.organisation.{OrganisationSearchEngine, OrganisationSearchEngineComponent}
 import org.make.api.personality.{QuestionPersonalityService, QuestionPersonalityServiceComponent}
 import org.make.api.proposal.{ProposalSearchEngine, ProposalSearchEngineComponent}
-import org.make.api.technical.{IdGenerator, IdGeneratorComponent}
+import org.make.api.technical.IdGeneratorComponent
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
+import org.make.core.technical.IdGenerator
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult, ProposalsAndVotesCountsByQuestion}
 import org.mockito.ArgumentMatchers

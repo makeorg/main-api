@@ -75,9 +75,7 @@ libraryDependencies ++= Seq(
   Dependencies.jsonLenses,
   Dependencies.apacheMath,
   Dependencies.staminaTestKit,
-  Dependencies.alpakka,
-  Dependencies.refinedScalaCheck,
-  Dependencies.scalaCheck
+  Dependencies.alpakka
 )
 
 libraryDependencies += {
