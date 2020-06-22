@@ -25,13 +25,11 @@ import io.confluent.kafka.schemaregistry.client.rest.RestService
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AvroHealthCheckActor(healthCheckExecutionContext: ExecutionContext)
+class AvroHealthCheckActor(val healthCheckExecutionContext: ExecutionContext)
     extends HealthCheck
     with KafkaConfigurationExtension {
 
   override val techno: String = "avro"
-
-  val _ = healthCheckExecutionContext
 
   override def healthCheck(): Future[String] = {
     val restService = new RestService(kafkaConfiguration.schemaRegistry)

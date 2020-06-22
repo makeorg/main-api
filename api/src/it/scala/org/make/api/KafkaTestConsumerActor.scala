@@ -62,7 +62,7 @@ object KafkaTestConsumerActor {
       case Ready => Future.successful {}
       case Waiting =>
         Thread.sleep(defaultInterval)
-        waitUntilReady(target)
+        waitUntilReady(target, retries)
     }.recoverWith {
       case e if retries <= 0 => Future.failed(e)
       case _ =>

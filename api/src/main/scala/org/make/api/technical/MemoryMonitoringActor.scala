@@ -39,9 +39,9 @@ class MemoryMonitoringActor extends Actor {
 
   override def receive: Receive = {
     case Monitor =>
-      memoryFree.update(Runtime.getRuntime.freeMemory())
-      memoryMax.update(Runtime.getRuntime.maxMemory())
-      memoryTotal.update(Runtime.getRuntime.totalMemory())
+      memoryFree.update(Runtime.getRuntime.freeMemory().toDouble)
+      memoryMax.update(Runtime.getRuntime.maxMemory().toDouble)
+      memoryTotal.update(Runtime.getRuntime.totalMemory().toDouble)
     case _ =>
   }
 }
