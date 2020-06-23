@@ -218,8 +218,14 @@ trait QuestionApi extends Directives {
   @ApiOperation(value = "list-questions", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "country", paramType = "path", dataType = "string", example = "FR"),
-      new ApiImplicitParam(name = "language", paramType = "path", dataType = "string", example = "fr"),
+      new ApiImplicitParam(name = "country", paramType = "query", dataType = "string", example = "FR", required = true),
+      new ApiImplicitParam(
+        name = "language",
+        paramType = "query",
+        dataType = "string",
+        example = "fr",
+        required = true
+      ),
       new ApiImplicitParam(name = "status", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
