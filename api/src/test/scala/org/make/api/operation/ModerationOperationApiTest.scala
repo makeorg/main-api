@@ -122,40 +122,13 @@ class ModerationOperationApiTest
           shortTitle = None,
           operationId = Some(OperationId("firstOperation"))
         ),
-        details = OperationOfQuestion(
+        details = operationOfQuestion(
           questionId = QuestionId("first-question-id"),
           operationId = OperationId("firstOperation"),
           startDate = Some(ZonedDateTime.parse("2018-02-02T10:15:30+00:00")),
           endDate = None,
           operationTitle = "première operation",
-          landingSequenceId = SequenceId("first-sequence-id"),
-          canPropose = true,
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          descriptionImage = None,
-          displayResults = false,
-          resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          landingSequenceId = SequenceId("first-sequence-id")
         )
       )
     )

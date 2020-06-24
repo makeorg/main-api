@@ -17,14 +17,31 @@
  *
  */
 
-package org.make.api.extensions
+package org.make.api.technical
 
+import eu.timepit.refined.api.{RefType, Refined, Validate}
+import eu.timepit.refined.refineV
 import org.make.core.StringValue
-import scalikejdbc.ParameterBinderFactory
+import scalikejdbc.{ParameterBinderFactory, TypeBinder}
 
 object ScalikeSupport {
 
   implicit def stringValueParameterBinderFactory[A <: StringValue]: ParameterBinderFactory[A] =
     ParameterBinderFactory.stringParameterBinderFactory.contramap(_.value)
 
+  /*
+   * The following code is a copy-paste from https://github.com/katainaka0503/scalikejdbc-refined
+   **/
+  implicit def refinedParameterBinderFactory[T, P, F[_, _]](
+    implicit
+    based: ParameterBinderFactory[T],
+    refType: RefType[F]
+  ): ParameterBinderFactory[F[T, P]] =
+    based.contramap(refType.unwrap)
+
+  implicit def refinedTypeBinder[T, P](
+    implicit validate: Validate[T, P],
+    based: TypeBinder[T]
+  ): TypeBinder[Refined[T, P]] =
+    based.map(refineV[P].unsafeFrom(_))
 }

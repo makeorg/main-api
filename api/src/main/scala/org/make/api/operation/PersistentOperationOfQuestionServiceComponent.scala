@@ -21,6 +21,11 @@ package org.make.api.operation
 import java.time.ZonedDateTime
 
 import cats.data.NonEmptyList
+import eu.timepit.refined.W
+import eu.timepit.refined.auto._
+import org.make.api.technical.ScalikeSupport._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.MaxSize
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion
@@ -133,12 +138,12 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
           insert
             .into(PersistentOperationOfQuestion)
             .namedValues(
-              PersistentOperationOfQuestion.column.questionId -> operationOfQuestion.questionId.value,
-              PersistentOperationOfQuestion.column.operationId -> operationOfQuestion.operationId.value,
+              PersistentOperationOfQuestion.column.questionId -> operationOfQuestion.questionId,
+              PersistentOperationOfQuestion.column.operationId -> operationOfQuestion.operationId,
               PersistentOperationOfQuestion.column.startDate -> operationOfQuestion.startDate,
               PersistentOperationOfQuestion.column.endDate -> operationOfQuestion.endDate,
               PersistentOperationOfQuestion.column.operationTitle -> operationOfQuestion.operationTitle,
-              PersistentOperationOfQuestion.column.landingSequenceId -> operationOfQuestion.landingSequenceId.value,
+              PersistentOperationOfQuestion.column.landingSequenceId -> operationOfQuestion.landingSequenceId,
               PersistentOperationOfQuestion.column.createdAt -> now,
               PersistentOperationOfQuestion.column.updatedAt -> now,
               PersistentOperationOfQuestion.column.canPropose -> operationOfQuestion.canPropose,
@@ -168,7 +173,9 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.secondaryFontColor -> operationOfQuestion.theme.secondaryFontColor,
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
               PersistentOperationOfQuestion.column.consultationImage -> operationOfQuestion.consultationImage,
+              PersistentOperationOfQuestion.column.consultationImageAlt -> operationOfQuestion.consultationImageAlt,
               PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
+              PersistentOperationOfQuestion.column.descriptionImageAlt -> operationOfQuestion.descriptionImageAlt,
               PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults,
               PersistentOperationOfQuestion.column.resultsLink -> operationOfQuestion.resultsLink,
               PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
@@ -218,7 +225,9 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.secondaryFontColor -> operationOfQuestion.theme.secondaryFontColor,
               PersistentOperationOfQuestion.column.description -> operationOfQuestion.description,
               PersistentOperationOfQuestion.column.consultationImage -> operationOfQuestion.consultationImage,
+              PersistentOperationOfQuestion.column.consultationImageAlt -> operationOfQuestion.consultationImageAlt,
               PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
+              PersistentOperationOfQuestion.column.descriptionImageAlt -> operationOfQuestion.descriptionImageAlt,
               PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults,
               PersistentOperationOfQuestion.column.resultsLink -> operationOfQuestion.resultsLink,
               PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
@@ -226,7 +235,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.actions -> operationOfQuestion.actions,
               PersistentOperationOfQuestion.column.featured -> operationOfQuestion.featured
             )
-            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId.value))
+            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, operationOfQuestion.questionId))
         }.execute().apply()
       }).map(_ => operationOfQuestion)
     }
@@ -237,7 +246,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
         withSQL[PersistentOperationOfQuestion] {
           select
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
-            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, id.value))
+            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, id))
         }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)(_)).single.apply()
       }).map(_.map(_.toOperationOfQuestion))
     }
@@ -263,7 +272,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           deleteFrom(PersistentOperationOfQuestion)
-            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, questionId.value))
+            .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, questionId))
         }.execute().apply()
       }).map(_ => ())
     }
@@ -342,7 +351,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
     secondaryFontColor: Option[String],
     description: String,
     consultationImage: Option[String],
+    consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
     descriptionImage: Option[String],
+    descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
     displayResults: Boolean,
     resultsLink: Option[String],
     proposalsCount: Int,
@@ -392,7 +403,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       ),
       description = this.description,
       consultationImage = this.consultationImage,
+      consultationImageAlt = this.consultationImageAlt,
       descriptionImage = this.descriptionImage,
+      descriptionImageAlt = this.descriptionImageAlt,
       displayResults = this.displayResults,
       resultsLink = this.resultsLink,
       proposalsCount = this.proposalsCount,
@@ -446,7 +459,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       secondaryFontColor: Option[String],
       description: String,
       consultationImage: Option[String],
+      consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
       descriptionImage: Option[String],
+      descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
       displayResults: Boolean,
       resultsLink: Option[String],
       proposalsCount: Int,
@@ -501,7 +516,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
             ),
             description = this.description,
             consultationImage = this.consultationImage,
+            consultationImageAlt = this.consultationImageAlt,
             descriptionImage = this.descriptionImage,
+            descriptionImageAlt = this.descriptionImageAlt,
             displayResults = this.displayResults,
             resultsLink = this.resultsLink,
             proposalsCount = this.proposalsCount,
@@ -567,7 +584,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         secondaryFontColor = resultSet.stringOpt(operationOfQuestionAlias.secondaryFontColor),
         description = resultSet.string(operationOfQuestionAlias.description),
         consultationImage = resultSet.stringOpt(operationOfQuestionAlias.consultationImage),
+        consultationImageAlt = resultSet.get(operationOfQuestionAlias.consultationImageAlt),
         descriptionImage = resultSet.stringOpt(operationOfQuestionAlias.descriptionImage),
+        descriptionImageAlt = resultSet.get(operationOfQuestionAlias.descriptionImageAlt),
         displayResults = resultSet.boolean(operationOfQuestionAlias.displayResults),
         resultsLink = resultSet.stringOpt(operationOfQuestionAlias.resultsLink),
         proposalsCount = resultSet.int(operationOfQuestionAlias.proposalsCount),
@@ -614,7 +633,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         "secondary_font_color",
         "description",
         "consultation_image",
+        "consultation_image_alt",
         "description_image",
+        "description_image_alt",
         "display_results",
         "results_link",
         "proposals_count",
@@ -668,7 +689,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         secondaryFontColor = resultSet.stringOpt(resultName.secondaryFontColor),
         description = resultSet.string(resultName.description),
         consultationImage = resultSet.stringOpt(resultName.consultationImage),
+        consultationImageAlt = resultSet.get(resultName.consultationImageAlt),
         descriptionImage = resultSet.stringOpt(resultName.descriptionImage),
+        descriptionImageAlt = resultSet.get(resultName.descriptionImageAlt),
         displayResults = resultSet.boolean(resultName.displayResults),
         resultsLink = resultSet.stringOpt(resultName.resultsLink),
         proposalsCount = resultSet.int(resultName.proposalsCount),

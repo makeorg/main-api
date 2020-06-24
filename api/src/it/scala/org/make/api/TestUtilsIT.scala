@@ -20,6 +20,10 @@
 package org.make.api
 
 import java.net.URL
+import eu.timepit.refined.W
+import eu.timepit.refined.auto._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.MaxSize
 import java.time.ZonedDateTime
 
 import org.make.core.idea.IdeaId
@@ -257,7 +261,9 @@ trait TestUtilsIT {
     theme: QuestionTheme = QuestionTheme.default,
     description: String = OperationOfQuestion.defaultDescription,
     consultationImage: Option[String] = Some("image-url"),
+    consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]] = Some("image-url alternative"),
     descriptionImage: Option[String] = None,
+    descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]] = None,
     displayResults: Boolean = false,
     resultsLink: Option[String] = None,
     proposalsCount: Int = 42,
@@ -278,7 +284,9 @@ trait TestUtilsIT {
     theme = theme,
     description = description,
     consultationImage = consultationImage,
+    consultationImageAlt = consultationImageAlt,
     descriptionImage = descriptionImage,
+    descriptionImageAlt = descriptionImageAlt,
     displayResults = displayResults,
     resultsLink = resultsLink,
     proposalsCount = proposalsCount,

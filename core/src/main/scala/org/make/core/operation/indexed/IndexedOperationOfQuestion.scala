@@ -23,6 +23,10 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
+import io.circe.refined._
+import eu.timepit.refined.W
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.MaxSize
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.{BusinessConfig, CirceFormatters}
 import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, SimpleOperation}
@@ -75,7 +79,9 @@ case class IndexedOperationOfQuestion(
   theme: QuestionTheme,
   description: String,
   consultationImage: Option[String],
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   descriptionImage: Option[String],
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -113,7 +119,9 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
       consultationImage = operationOfQuestion.consultationImage,
+      consultationImageAlt = operationOfQuestion.consultationImageAlt,
       descriptionImage = operationOfQuestion.descriptionImage,
+      descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
       country = question.country,
       language = question.language,
       operationId = operationOfQuestion.operationId,

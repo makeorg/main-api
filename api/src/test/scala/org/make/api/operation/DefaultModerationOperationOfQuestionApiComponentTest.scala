@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import eu.timepit.refined.auto._
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
@@ -37,7 +38,6 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 
 import scala.concurrent.Future
-import eu.timepit.refined.auto._
 
 class DefaultModerationOperationOfQuestionApiComponentTest
     extends MakeApiTestBase
@@ -80,7 +80,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         theme = QuestionTheme.default,
         description = OperationOfQuestion.defaultDescription,
         consultationImage = None,
+        consultationImageAlt = None,
         descriptionImage = None,
+        descriptionImageAlt = None,
         displayResults = false,
         resultsLink = None,
         proposalsCount = 42,
@@ -122,7 +124,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
+          consultationImageAlt = None,
           descriptionImage = None,
+          descriptionImageAlt = None,
           displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
@@ -190,7 +194,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
+          consultationImageAlt = None,
           descriptionImage = None,
+          descriptionImageAlt = None,
           displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
@@ -225,7 +231,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
+          consultationImageAlt = None,
           descriptionImage = None,
+          descriptionImageAlt = None,
           displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
@@ -311,7 +319,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
+          consultationImageAlt = None,
           descriptionImage = None,
+          descriptionImageAlt = None,
           displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
@@ -346,7 +356,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           theme = QuestionTheme.default,
           description = OperationOfQuestion.defaultDescription,
           consultationImage = None,
+          consultationImageAlt = None,
           descriptionImage = None,
+          descriptionImageAlt = None,
           displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
@@ -490,7 +502,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             shortTitle = None,
             questionSlug = "make-the-world-great-again",
             consultationImage = Some("https://example.com/image"),
+            consultationImageAlt = Some("image alternative"),
             descriptionImage = Some("https://example.com/image-desc"),
+            descriptionImageAlt = Some("image-desc alternative"),
             actions = None
           ).asJson.toString()
         ) ~> routes ~> check {
@@ -553,7 +567,9 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             description = OperationOfQuestion.defaultDescription,
             displayResults = true,
             consultationImage = None,
+            consultationImageAlt = None,
             descriptionImage = None,
+            descriptionImageAlt = None,
             resultsLink = Some("https://example.com/results"),
             actions = Some("some actions"),
             featured = false

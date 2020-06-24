@@ -21,6 +21,7 @@ package org.make.api.operation
 
 import java.time.ZonedDateTime
 
+import eu.timepit.refined.auto._
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
@@ -78,7 +79,9 @@ class PersistentOperationOfQuestionServiceIT
     theme = QuestionTheme.default,
     description = OperationOfQuestion.defaultDescription,
     consultationImage = Some("https://example.com/image"),
+    consultationImageAlt = Some("alt for image"),
     descriptionImage = Some("https://example.com/descriptionImage"),
+    descriptionImageAlt = Some("alt for descriptionImage"),
     displayResults = false,
     resultsLink = None,
     proposalsCount = 42,

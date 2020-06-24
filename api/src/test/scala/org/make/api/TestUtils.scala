@@ -22,6 +22,10 @@ package org.make.api
 import java.net.URL
 import java.time.ZonedDateTime
 
+import eu.timepit.refined.W
+import eu.timepit.refined.auto._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.MaxSize
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.core.idea.IdeaId
 import org.make.core.operation._
@@ -396,7 +400,9 @@ trait TestUtils {
     theme: QuestionTheme = QuestionTheme.default,
     description: String = OperationOfQuestion.defaultDescription,
     consultationImage: Option[String] = Some("image-url"),
+    consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]] = Some("image alternative"),
     descriptionImage: Option[String] = None,
+    descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]] = None,
     displayResults: Boolean = false,
     resultsLink: Option[String] = None,
     proposalsCount: Int = 42,
@@ -417,7 +423,9 @@ trait TestUtils {
     theme = theme,
     description = description,
     consultationImage = consultationImage,
+    consultationImageAlt = consultationImageAlt,
     descriptionImage = descriptionImage,
+    descriptionImageAlt = descriptionImageAlt,
     displayResults = displayResults,
     resultsLink = resultsLink,
     proposalsCount = proposalsCount,

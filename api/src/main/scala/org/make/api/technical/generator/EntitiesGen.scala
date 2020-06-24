@@ -29,20 +29,24 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.make.core.DateHelper._
 import org.make.core.technical.generator.{EntitiesGen => CoreEntitiesGen}
 import eu.timepit.refined.auto._
+import eu.timepit.refined.collection.MaxSize
+import eu.timepit.refined.{refineV, W}
 import org.make.core.technical.generator.CustomGenerators
 
 trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
 
   def genCreateOperationOfQuestion(operationId: OperationId): Gen[CreateOperationOfQuestion] =
     for {
-      date                <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
-      operationTitle      <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
-      shortTitle          <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(30))
-      slug                <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(30))
-      (country, language) <- genCountryLanguage
-      question            <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
-      consultationImage   <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
-      descriptionImage    <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
+      date                 <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
+      operationTitle       <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
+      shortTitle           <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(30))
+      slug                 <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(30))
+      (country, language)  <- genCountryLanguage
+      question             <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
+      consultationImage    <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
+      consultationImageAlt <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(130))
+      descriptionImage     <- CustomGenerators.ImageUrl.gen(width = 300, height = 100)
+      descriptionImageAlt  <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(130))
     } yield CreateOperationOfQuestion(
       operationId = operationId,
       startDate = date,
@@ -54,7 +58,9 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       question = question,
       shortTitle = Some(shortTitle),
       consultationImage = Some(consultationImage),
+      consultationImageAlt = Some(refineV[MaxSize[W.`130`.T]](consultationImageAlt).getOrElse("")),
       descriptionImage = Some(descriptionImage),
+      descriptionImageAlt = Some(refineV[MaxSize[W.`130`.T]](descriptionImageAlt).getOrElse("")),
       actions = None
     )
 

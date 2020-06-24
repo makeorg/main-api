@@ -44,7 +44,7 @@ import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature, FeatureId}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
-import org.make.core.operation.{OperationId, OperationOfQuestion, _}
+import org.make.core.operation.{OperationId, _}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
 import org.make.core.proposal.ProposalId
@@ -120,40 +120,13 @@ class QuestionApiTest
     updatedAt = Some(DateHelper.now())
   )
 
-  val baseOperationOfQuestion = OperationOfQuestion(
+  val baseOperationOfQuestion = operationOfQuestion(
     questionId = baseQuestion.questionId,
     operationId = baseOperation.operationId,
     startDate = Some(ZonedDateTime.parse("2018-10-21T10:15:30+00:00")),
     endDate = None,
     operationTitle = "operation title",
-    landingSequenceId = SequenceId("sequenceId"),
-    canPropose = true,
-    sequenceCardsConfiguration = SequenceCardsConfiguration(
-      introCard = IntroCard(enabled = true, title = None, description = None),
-      pushProposalCard = PushProposalCard(enabled = true),
-      signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-      finalCard = FinalCard(
-        enabled = true,
-        sharingEnabled = false,
-        title = None,
-        shareDescription = None,
-        learnMoreTitle = None,
-        learnMoreTextButton = None,
-        linkUrl = None
-      )
-    ),
-    aboutUrl = None,
-    metas = Metas(title = None, description = None, picture = None),
-    theme = QuestionTheme.default,
-    description = OperationOfQuestion.defaultDescription,
-    consultationImage = None,
-    descriptionImage = None,
-    displayResults = false,
-    resultsLink = None,
-    proposalsCount = 42,
-    participantsCount = 84,
-    actions = None,
-    featured = true
+    landingSequenceId = SequenceId("sequenceId")
   )
 
   val now = DateHelper.now()

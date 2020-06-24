@@ -83,40 +83,11 @@ class OperationApiTest
           shortTitle = None,
           operationId = Some(OperationId("firstOperation"))
         ),
-        details = OperationOfQuestion(
+        details = operationOfQuestion(
           questionId = QuestionId("first-question-BR"),
           operationId = OperationId("firstOperation"),
-          startDate = None,
-          endDate = None,
           operationTitle = "première operation",
-          landingSequenceId = SequenceId("first-sequence-id-BR"),
-          canPropose = true,
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          descriptionImage = None,
-          displayResults = false,
-          resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = true
+          landingSequenceId = SequenceId("first-sequence-id-BR")
         )
       ),
       QuestionWithDetails(
@@ -129,35 +100,11 @@ class OperationApiTest
           shortTitle = None,
           operationId = Some(OperationId("firstOperation"))
         ),
-        details = OperationOfQuestion(
+        details = operationOfQuestion(
           questionId = QuestionId("first-question-GB"),
           operationId = OperationId("firstOperation"),
-          startDate = None,
-          endDate = None,
           operationTitle = "first operation",
           landingSequenceId = SequenceId("first-sequence-id-BR"),
-          canPropose = true,
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          descriptionImage = None,
-          displayResults = true,
           resultsLink = Some("http://example.com/results"),
           proposalsCount = 420,
           participantsCount = 840,
@@ -196,40 +143,11 @@ class OperationApiTest
           shortTitle = None,
           operationId = Some(OperationId("secondOperation"))
         ),
-        details = OperationOfQuestion(
+        details = operationOfQuestion(
           questionId = QuestionId("second-question"),
           operationId = OperationId("secondOperation"),
-          startDate = None,
-          endDate = None,
           operationTitle = "secondo operazione",
-          landingSequenceId = SequenceId("second-sequence-id"),
-          canPropose = true,
-          sequenceCardsConfiguration = SequenceCardsConfiguration(
-            introCard = IntroCard(enabled = true, title = None, description = None),
-            pushProposalCard = PushProposalCard(enabled = true),
-            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-            finalCard = FinalCard(
-              enabled = true,
-              sharingEnabled = false,
-              title = None,
-              shareDescription = None,
-              learnMoreTitle = None,
-              learnMoreTextButton = None,
-              linkUrl = None
-            )
-          ),
-          aboutUrl = None,
-          metas = Metas(title = None, description = None, picture = None),
-          theme = QuestionTheme.default,
-          description = OperationOfQuestion.defaultDescription,
-          consultationImage = None,
-          descriptionImage = None,
-          displayResults = false,
-          resultsLink = None,
-          proposalsCount = 42,
-          participantsCount = 84,
-          actions = None,
-          featured = false
+          landingSequenceId = SequenceId("second-sequence-id")
         )
       )
     )

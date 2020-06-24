@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.extensions.ScalikeSupport._
+import org.make.api.technical.ScalikeSupport._
 import org.make.api.proposal.SelectionAlgorithmName
 import org.make.api.sequence.DefaultPersistentSequenceConfigurationServiceComponent.PersistentSequenceConfiguration
 import org.make.api.technical.DatabaseTransactions._
