@@ -19,22 +19,15 @@
 
 package org.make.api.user
 
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, MediaTypes, Multipart, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.storage.Content.FileContent
-import org.make.api.technical.storage.{
-  FileType,
-  StorageConfiguration,
-  StorageConfigurationComponent,
-  StorageService,
-  StorageServiceComponent,
-  UploadResponse
-}
+import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.reference.{Country, Language}
@@ -65,7 +58,9 @@ class AdminUserApiTest
   override val storageService: StorageService = mock[StorageService]
   override val storageConfiguration: StorageConfiguration = mock[StorageConfiguration]
 
-  val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) { adminUserApi.routes })
+  val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
+    adminUserApi.routes
+  })
 
   val citizenId: UserId = defaultCitizenUser.userId
   val moderatorId: UserId = defaultModeratorUser.userId
@@ -939,20 +934,20 @@ class AdminUserApiTest
     val maxUploadFileSize = 4242L
     when(storageConfiguration.maxFileSize).thenReturn(maxUploadFileSize)
     scenario("unauthorized not connected") {
-      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}") ~> routes ~> check {
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
     scenario("forbidden citizen") {
-      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}")
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     scenario("forbidden moderator") {
-      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}")
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -965,7 +960,7 @@ class AdminUserApiTest
       )
       )
 
-      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", request)
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", request)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
@@ -990,7 +985,7 @@ class AdminUserApiTest
             )
         )
 
-      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", request)
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", request)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.InternalServerError)
       }
@@ -1014,7 +1009,8 @@ class AdminUserApiTest
             Map("filename" -> "image.jpeg")
           )
       )
-      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(maxUploadFileSize.toInt + 1))
+
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(maxUploadFileSize.toInt + 1))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.PayloadTooLarge)
       }
@@ -1038,7 +1034,8 @@ class AdminUserApiTest
             Map("filename" -> "image.jpeg")
           )
       )
-      Post(s"/admin/user/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(10))
+
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(10))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
 
@@ -1086,6 +1083,54 @@ class AdminUserApiTest
         status should be(StatusCodes.BadRequest)
       }
     }
-
   }
+
+  feature("update user role") {
+    val request = UpdateUserRolesRequest(email = "toto@make.org", roles = Seq(RoleCitizen, RoleModerator))
+
+    scenario("unauthorized not connected") {
+      Post(s"/admin/users/update-user-roles") ~> routes ~> check {
+        status should be(StatusCodes.Unauthorized)
+      }
+    }
+
+    scenario("forbidden citizen") {
+      Post(s"/admin/users/update-user-roles")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("forbidden moderator") {
+      Post(s"/admin/users/update-user-roles")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
+        status should be(StatusCodes.Forbidden)
+      }
+    }
+
+    scenario("ok") {
+
+      when(userService.getUserByEmail(any[String]))
+        .thenReturn(Future.successful(Some(TestUtils.user(id = UserId("user-id")))))
+
+      when(userService.update(any[User], any[RequestContext]))
+        .thenReturn(Future.successful(TestUtils.user(id = UserId("user-id"))))
+
+      Post("/admin/users/update-user-roles", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.NoContent)
+      }
+    }
+
+    scenario("email not found") {
+      when(userService.getUserByEmail(any[String]))
+        .thenReturn(Future.successful(None))
+
+      Post("/admin/users/update-user-roles", request)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+  }
+
 }

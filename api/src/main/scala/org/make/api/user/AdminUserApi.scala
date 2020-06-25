@@ -41,7 +41,7 @@ import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleAdmin
-import org.make.core.user.{CustomRole, Role, User, UserId, UserType}
+import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -305,7 +305,7 @@ trait AdminUserApi extends Directives {
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[UploadResponse])))
-  @Path(value = "/upload-avatar/{userType}")
+  @Path(value = "/users/upload-avatar/{userType}")
   def adminUploadAvatar: Route
 
   @ApiOperation(
@@ -328,9 +328,30 @@ trait AdminUserApi extends Directives {
   @Path(value = "/users/update-user-email")
   def updateUserEmail: Route
 
+  @ApiOperation(
+    value = "update-user-roles",
+    httpMethod = "POST",
+    code = HttpCodes.NoContent,
+    authorizations = Array(
+      new Authorization(
+        value = "MakeApi",
+        scopes = Array(new AuthorizationScope(scope = "admin", description = "BO Admin"))
+      )
+    )
+  )
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateUserRolesRequest")
+    )
+  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @Path(value = "/users/update-user-roles")
+  def updateUserRoles: Route
+
   def routes: Route =
     getUsers ~ getUser ~ updateUser ~ getModerator ~ getModerators ~ createModerator ~ updateModerator ~
-      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar ~ updateUserEmail
+      anonymizeUser ~ anonymizeUserByEmail ~ adminUploadAvatar ~ updateUserEmail ~ updateUserRoles
+
 }
 
 trait AdminUserApiComponent {
@@ -701,12 +722,13 @@ trait DefaultAdminUserApiComponent
 
     override def adminUploadAvatar: Route = {
       post {
-        path("admin" / "user" / "upload-avatar" / userType) { userType =>
+        path("admin" / "users" / "upload-avatar" / userType) { userType =>
           makeOperation("AdminUserUploadAvatar") { _ =>
             makeOAuth2 { userAuth =>
               requireAdminRole(userAuth.user) {
                 def uploadFile(extension: String, contentType: String, fileContent: Content): Future[String] =
                   storageService.uploadAdminUserAvatar(extension, contentType, fileContent, userType)
+
                 uploadImageAsync("data", uploadFile, sizeLimit = Some(storageConfiguration.maxFileSize)) {
                   (path, file) =>
                     file.delete()
@@ -750,7 +772,41 @@ trait DefaultAdminUserApiComponent
       }
     }
 
+    override def updateUserRoles: Route = {
+      post {
+        path("admin" / "users" / "update-user-roles") {
+          makeOperation("UpdateUserRoles") { requestContext =>
+            makeOAuth2 { userAuth =>
+              requireAdminRole(userAuth.user) {
+                decodeRequest {
+                  entity(as[UpdateUserRolesRequest]) { request =>
+                    provideAsync(userService.getUserByEmail(request.email)) {
+                      case None =>
+                        complete(
+                          StatusCodes.BadRequest ->
+                            Seq(
+                              ValidationError(
+                                field = "email",
+                                key = "not_found",
+                                message = Some(s"The email ${request.email} was not found")
+                              )
+                            )
+                        )
+                      case Some(user) =>
+                        provideAsync(userService.update(user.copy(roles = request.roles), requestContext)) { _ =>
+                          complete(StatusCodes.NoContent)
+                        }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
+
 }
 
 final case class CreateModeratorRequest(
@@ -931,4 +987,19 @@ final case class AdminUpdateUserEmail(oldEmail: String, newEmail: String) {
 object AdminUpdateUserEmail {
   implicit val decoder: Decoder[AdminUpdateUserEmail] = deriveDecoder
   implicit val encoder: Encoder[AdminUpdateUserEmail] = deriveEncoder
+}
+
+final case class UpdateUserRolesRequest(
+  email: String,
+  @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role]
+) {
+  validate(
+    validateEmail(fieldName = "email", fieldValue = email.toLowerCase),
+    validateUserInput(fieldName = "email", fieldValue = email, message = None)
+  )
+}
+
+object UpdateUserRolesRequest {
+  implicit lazy val decoder: Decoder[UpdateUserRolesRequest] = deriveDecoder[UpdateUserRolesRequest]
+  implicit lazy val encoder: Encoder[UpdateUserRolesRequest] = deriveEncoder[UpdateUserRolesRequest]
 }

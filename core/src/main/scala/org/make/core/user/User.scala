@@ -27,11 +27,9 @@ import io.circe.generic.semiauto._
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
+import org.make.core.user.UserType.{UserTypeOrganisation, UserTypePersonality, UserTypeUser}
 import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
 import spray.json.{JsString, JsValue, JsonFormat}
-import org.make.core.user.UserType.UserTypeUser
-import org.make.core.user.UserType.UserTypeOrganisation
-import org.make.core.user.UserType.UserTypePersonality
 
 sealed trait Role {
   def shortName: String
