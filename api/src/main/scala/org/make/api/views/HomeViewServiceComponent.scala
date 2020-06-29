@@ -182,14 +182,14 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
             OperationOfQuestionSearchFilters(status = Some(OOQStatusSearchFilter(OperationOfQuestion.Status.Open)))
           ),
           limit = Some(4),
-          sortAlgorithm = Some(SortAlgorithm.Chronological)
+          sortAlgorithm = Some(SortAlgorithm.Featured)
         )
       )
 
       val futureFeaturedQuestions = searchQuestionOfOperations(
         OperationOfQuestionSearchQuery(
           filters = Some(OperationOfQuestionSearchFilters(featured = Some(FeaturedSearchFilter(true)))),
-          sortAlgorithm = Some(SortAlgorithm.Featured)
+          sortAlgorithm = Some(SortAlgorithm.Chronological)
         )
       )
 

@@ -206,6 +206,7 @@ class HomeViewServiceComponentTest
     defaultOperationOfQuestion.copy(
       questionId = question3.questionId,
       operationId = operation3.operationId,
+      endDate = defaultOperationOfQuestion.endDate.map(_.plusDays(1)),
       featured = true,
       status = OperationOfQuestion.Status.Open
     )
@@ -528,7 +529,7 @@ class HomeViewServiceComponentTest
             )
         )
         .thenReturn(Future.successful {
-          val results = operationOfQuestions.results.filter(_.featured)
+          val results = operationOfQuestions.results.filter(_.featured).sortBy(_.endDate).reverse
           OperationOfQuestionSearchResult(results.size, results)
         })
 
@@ -556,7 +557,10 @@ class HomeViewServiceComponentTest
             )
         )
         .thenReturn(Future.successful {
-          val results = operationOfQuestions.results.filter(_.status == OperationOfQuestion.Status.Open)
+          val results = operationOfQuestions.results
+            .filter(_.status == OperationOfQuestion.Status.Open)
+            .sortBy(e => (e.featured, e.endDate))
+            .reverse
           OperationOfQuestionSearchResult(results.size, results)
         })
 
@@ -565,11 +569,10 @@ class HomeViewServiceComponentTest
       whenReady(futureHomePageViewResponse, Timeout(3.seconds)) { homePageViewResponse =>
         homePageViewResponse.articles should be(Nil)
         homePageViewResponse.currentQuestions should be(
-          Seq(operationOfQuestion2, operationOfQuestion3)
-            .map(QuestionOfOperationResponse.apply)
+          Seq(operationOfQuestion3, operationOfQuestion2).map(QuestionOfOperationResponse.apply)
         )
         homePageViewResponse.featuredQuestions should be(
-          Seq(operationOfQuestion1, operationOfQuestion3).map(QuestionOfOperationResponse.apply)
+          Seq(operationOfQuestion3, operationOfQuestion1).map(QuestionOfOperationResponse.apply)
         )
         homePageViewResponse.highlights should be(Highlights(42, 84, 9001))
       }
