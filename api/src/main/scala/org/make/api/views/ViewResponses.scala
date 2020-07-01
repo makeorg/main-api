@@ -21,16 +21,17 @@ package org.make.api.views
 import java.net.URL
 import java.time.ZonedDateTime
 
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.proposal.{ProposalResponse, ProposalsResultSeededResponse}
 import org.make.api.question.QuestionOfOperationResponse
-import org.make.api.views.HomePageViewResponse.{Article, Highlights}
+import org.make.api.views.HomePageViewResponse.{Highlights, PostResponse}
 import org.make.core.CirceFormatters
 import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.operation.{CurrentOperation, FeaturedOperation}
+import org.make.core.post.indexed.IndexedPost
 import org.make.core.question.QuestionId
 
 import scala.annotation.meta.field
@@ -52,14 +53,25 @@ final case class HomePageViewResponse(
   highlights: Highlights,
   currentQuestions: Seq[QuestionOfOperationResponse],
   featuredQuestions: Seq[QuestionOfOperationResponse],
-  articles: Seq[Article]
+  posts: Seq[PostResponse]
 )
 
 object HomePageViewResponse extends CirceFormatters {
-  final case class Article(title: String, description: String, picture: URL, link: URL)
+  final case class PostResponse(title: String, description: String, picture: URL, alt: Option[String], link: URL)
+  object PostResponse {
+    def fromIndexedPost(post: IndexedPost): PostResponse =
+      PostResponse(
+        title = post.name,
+        description = post.summary,
+        picture = post.thumbnailUrl,
+        alt = post.thumbnailAlt,
+        link = post.sourceUrl
+      )
+
+  }
   final case class Highlights(participantsCount: Int, proposalsCount: Int, partnersCount: Int)
 
-  implicit val articleEncoder: Encoder[Article] = deriveEncoder
+  implicit val postEncoder: Encoder[PostResponse] = deriveEncoder
   implicit val highlightsEncoder: Encoder[Highlights] = deriveEncoder
   implicit val encoder: Encoder[HomePageViewResponse] = deriveEncoder
 }

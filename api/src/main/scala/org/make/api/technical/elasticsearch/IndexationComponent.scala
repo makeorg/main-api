@@ -31,11 +31,12 @@ import eu.timepit.refined.auto._
 import org.make.api.ActorSystemComponent
 import org.make.api.idea._
 import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
+import org.make.api.post.PostServiceComponent
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
 import org.make.api.technical.{ReadJournalComponent, TimeSettings}
 import org.make.core.idea.Idea
-import org.make.core.job.Job.JobId.Reindex
+import org.make.core.job.Job.JobId.{Reindex, ReindexPosts}
 import org.make.core.operation.OperationOfQuestion
 import org.make.core.proposal.ProposalId
 import org.make.core.user.User
@@ -53,6 +54,7 @@ case object IndexIdeas extends EntitiesToIndex
 case object IndexOrganisations extends EntitiesToIndex
 case object IndexProposals extends EntitiesToIndex
 case object IndexOperationOfQuestions extends EntitiesToIndex
+case object IndexPost extends EntitiesToIndex
 
 trait IndexationService {
   def reindexData(
@@ -61,6 +63,7 @@ trait IndexationService {
     forceProposals: Boolean,
     forceOperationOfQuestions: Boolean
   ): Future[JobAcceptance]
+  def reindexPostsData(): Future[JobAcceptance]
   def indicesToReindex(
     forceIdeas: Boolean,
     forceOrganisations: Boolean,
@@ -75,7 +78,8 @@ trait DefaultIndexationComponent
     with IdeaIndexationStream
     with OrganisationIndexationStream
     with ProposalIndexationStream
-    with OperationOfQuestionIndexationStream {
+    with OperationOfQuestionIndexationStream
+    with PostIndexationStream {
 
   this: ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
@@ -83,7 +87,8 @@ trait DefaultIndexationComponent
     with ActorSystemComponent
     with JobCoordinatorServiceComponent
     with ReadJournalComponent
-    with PersistentOperationOfQuestionServiceComponent =>
+    with PersistentOperationOfQuestionServiceComponent
+    with PostServiceComponent =>
 
   override lazy val indexationService: IndexationService = new DefaultIndexationService
 
@@ -184,6 +189,19 @@ trait DefaultIndexationComponent
             _ <- futureOperationOfQuestionsIndexation
           } yield ()
         }
+      }
+
+    override def reindexPostsData(): Future[JobAcceptance] =
+      jobCoordinatorService.start(ReindexPosts) { report =>
+        logger.info(s"Elasticsearch Posts Reindexation")
+        val postIndexName = elasticsearchClient.createIndexName(elasticsearchConfiguration.postAliasName)
+        for {
+          _ <- executeCreateIndex(elasticsearchConfiguration.postAliasName, postIndexName)
+          _ <- report(33d)
+          _ <- executeIndexPosts(postIndexName)
+          _ <- report(66d)
+          _ <- executeSetAlias(elasticsearchConfiguration.postAliasName, postIndexName)
+        } yield {}
       }
 
     override def indicesToReindex(
@@ -328,7 +346,7 @@ trait DefaultIndexationComponent
         .flatMap { operationOfQuestions =>
           logger.info(s"Operation of questions to index: ${operationOfQuestions.size}")
           Source[OperationOfQuestion](operationOfQuestions)
-            .via(OperationOfQuestionStream.flowIndexOrganisations(indexName))
+            .via(OperationOfQuestionStream.flowIndexOperationOfQuestions(indexName))
             .runWith(Sink.ignore)
         }
 
@@ -337,6 +355,28 @@ trait DefaultIndexationComponent
           logger.info("Operation of questions indexation success in {} ms", System.currentTimeMillis() - start)
         case Failure(e) =>
           logger.error(s"Operation of questions indexation failed in ${System.currentTimeMillis() - start} ms", e)
+      }
+
+      result
+    }
+
+    private def executeIndexPosts(indexName: String)(implicit mat: Materializer): Future[Done] = {
+      val start = System.currentTimeMillis()
+
+      val result = Source
+        .future(postService.fetchPostsForHome())
+        .wireTap { posts =>
+          logger.info(s"Posts to index: ${posts.size}")
+        }
+        .mapConcat(identity)
+        .via(PostStream.flowIndexPosts(indexName))
+        .runWith(Sink.ignore)
+
+      result.onComplete {
+        case Success(_) =>
+          logger.info("Posts indexation success in {} ms", System.currentTimeMillis() - start)
+        case Failure(e) =>
+          logger.error(s"Posts indexation failed in ${System.currentTimeMillis() - start} ms", e)
       }
 
       result

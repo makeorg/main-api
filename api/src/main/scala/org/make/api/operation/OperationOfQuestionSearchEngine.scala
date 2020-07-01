@@ -141,7 +141,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         }
         .recover {
           case e: Exception =>
-            logger.error(s"Indexing organisation ${record.questionId} failed", e)
+            logger.error(s"Indexing operation of question ${record.questionId} failed", e)
             IndexationStatus.Failed(e)
         }
     }
@@ -160,7 +160,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         }
         .recover {
           case e: Exception =>
-            logger.error(s"Indexing ${records.size} organisations failed", e)
+            logger.error(s"Indexing ${records.size} operations of questions failed", e)
             IndexationStatus.Failed(e)
         }
     }
@@ -175,7 +175,7 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         .map(_ => IndexationStatus.Completed)
         .recover {
           case e: Exception =>
-            logger.error(s"Indexing updated organisation ${record.questionId} failed", e)
+            logger.error(s"Indexing updated operation of question ${record.questionId} failed", e)
             IndexationStatus.Failed(e)
         }
     }

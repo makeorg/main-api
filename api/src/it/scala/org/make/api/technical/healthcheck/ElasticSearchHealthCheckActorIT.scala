@@ -202,6 +202,7 @@ object ElasticSearchHealthCheckActorIT {
        |  organisation-alias-name = "organisation"
        |  proposal-alias-name = "proposal"
        |  operation-of-question-alias-name = "operation-of-question"
+       |  post-alias-name = "post"
        |  buffer-size = 100
        |  bulk-size = 100
        |}

@@ -22,23 +22,28 @@ package org.make.api.operation
 import java.time.ZonedDateTime
 import java.util.UUID
 
-import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question._
-import org.make.api.sequence.{PersistentSequenceConfigurationComponent, PersistentSequenceConfigurationService}
+import org.make.api.sequence.{
+  PersistentSequenceConfigurationComponent,
+  PersistentSequenceConfigurationService,
+  SequenceConfiguration
+}
 import org.make.api.technical.IdGeneratorComponent
+import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.DateHelper
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
-import org.make.core.question.QuestionId
+import org.make.core.question.{Question, QuestionId}
+import org.make.core.sequence.SequenceId
 import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
-import org.mockito.Mockito
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class OperationOfQuestionServiceTest
     extends MakeUnitTest
@@ -239,8 +244,84 @@ class OperationOfQuestionServiceTest
     }
   }
 
-  feature("delete") {}
-  feature("create") {}
+  feature("delete") {
+    scenario("delete OperationOfQuestion and associated objects") {
+      val questionId = QuestionId("question-id")
+      Mockito
+        .when(persistentOperationOfQuestionService.delete(ArgumentMatchers.eq(questionId)))
+        .thenReturn(Future.successful({}))
+      Mockito
+        .when(persistentSequenceConfigurationService.delete(ArgumentMatchers.eq(questionId)))
+        .thenReturn(Future.successful({}))
+      Mockito.when(persistentQuestionService.delete(ArgumentMatchers.eq(questionId))).thenReturn(Future.successful({}))
+      whenReady(operationOfQuestionService.delete(questionId), Timeout(3.seconds)) { _ shouldBe () }
+    }
+    scenario("delete fake questionId") {
+      val questionId = QuestionId("fake")
+      Mockito
+        .when(persistentOperationOfQuestionService.delete(ArgumentMatchers.eq(questionId)))
+        .thenReturn(Future.successful({}))
+      Mockito
+        .when(persistentSequenceConfigurationService.delete(ArgumentMatchers.eq(questionId)))
+        .thenReturn(Future.successful({}))
+      Mockito.when(persistentQuestionService.delete(ArgumentMatchers.eq(questionId))).thenReturn(Future.successful({}))
+      whenReady(operationOfQuestionService.delete(questionId), Timeout(3.seconds)) { _ shouldBe () }
+    }
+  }
+
+  feature("create") {
+    scenario("create OperationOfQuestion and associated objects") {
+
+      val operationId = OperationId("some-operation-id")
+      val questionId = QuestionId("some-question-id")
+      val sequenceId = SequenceId("some-sequence-id")
+      val questionCreate: Question = question(questionId, operationId = Some(operationId))
+      val operationOfQuestionCreate: OperationOfQuestion =
+        operationOfQuestion(
+          questionId,
+          operationId,
+          landingSequenceId = sequenceId,
+          metas = Metas(None, None, None),
+          proposalsCount = 0,
+          participantsCount = 0,
+          featured = false
+        )
+      val sequenceConfiguration = SequenceConfiguration(sequenceId = sequenceId, questionId = questionId)
+
+      Mockito.when(idGenerator.nextQuestionId()).thenReturn(questionId)
+      Mockito.when(idGenerator.nextSequenceId()).thenReturn(sequenceConfiguration.sequenceId)
+      Mockito
+        .when(persistentQuestionService.persist(ArgumentMatchers.eq(questionCreate)))
+        .thenReturn(Future.successful(questionCreate))
+      Mockito
+        .when(persistentSequenceConfigurationService.persist(ArgumentMatchers.eq(sequenceConfiguration)))
+        .thenReturn(Future.successful(true))
+      Mockito
+        .when(persistentOperationOfQuestionService.persist(ArgumentMatchers.eq(operationOfQuestionCreate)))
+        .thenReturn(Future.successful(operationOfQuestionCreate))
+
+      val createParameters = CreateOperationOfQuestion(
+        operationId = operationId,
+        startDate = operationOfQuestionCreate.startDate,
+        endDate = operationOfQuestionCreate.endDate,
+        operationTitle = operationOfQuestionCreate.operationTitle,
+        slug = questionCreate.slug,
+        country = questionCreate.country,
+        language = questionCreate.language,
+        question = questionCreate.question,
+        shortTitle = questionCreate.shortTitle,
+        consultationImage = operationOfQuestionCreate.consultationImage,
+        descriptionImage = operationOfQuestionCreate.descriptionImage,
+        actions = operationOfQuestionCreate.actions
+      )
+      whenReady(operationOfQuestionService.create(createParameters), Timeout(3.seconds)) { ooq =>
+        ooq.questionId shouldBe questionId
+        ooq.operationId shouldBe operationId
+        ooq.landingSequenceId shouldBe sequenceId
+      }
+    }
+  }
+
   feature("count") {
     scenario("count from query") {
       val query = SearchOperationsOfQuestions(questionIds =

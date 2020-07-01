@@ -52,6 +52,7 @@ import org.make.api.partner.{
   DefaultPersistentPartnerServiceComponent
 }
 import org.make.api.personality._
+import org.make.api.post.{DefaultPostSearchEngineComponent, DefaultPostServiceComponent}
 import org.make.api.proposal._
 import org.make.api.question._
 import org.make.api.segment.DefaultSegmentServiceComponent
@@ -87,17 +88,12 @@ import org.make.api.technical.generator.fixtures.{
   FixturesApi
 }
 import org.make.api.technical.healthcheck._
-import org.make.api.technical.job.{
-  DefaultJobApiComponent,
-  DefaultJobCoordinatorServiceComponent,
-  JobApi,
-  JobCoordinator,
-  JobCoordinatorComponent
-}
+import org.make.api.technical.job._
 import org.make.api.technical.monitoring.DefaultMonitoringService
 import org.make.api.technical.security.{DefaultSecurityApiComponent, DefaultSecurityConfigurationComponent, SecurityApi}
 import org.make.api.technical.storage._
 import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi}
+import org.make.api.technical.webflow.{DefaultWebflowClientComponent, DefaultWebflowConfigurationComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user._
 import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
@@ -136,6 +132,8 @@ trait MakeApi
     with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
     with DefaultAdminViewApiComponent
+    with DefaultPostSearchEngineComponent
+    with DefaultPostServiceComponent
     with DefaultAuthenticationApiComponent
     with DefaultClientServiceComponent
     with DefaultConfigurationsApiComponent
@@ -255,6 +253,8 @@ trait MakeApi
     with DefaultUserServiceComponent
     with DefaultUserTokenGeneratorComponent
     with DefaultWidgetApiComponent
+    with DefaultWebflowClientComponent
+    with DefaultWebflowConfigurationComponent
     with DefaultWidgetServiceComponent
     with HealthCheckComponent
     with JobCoordinatorComponent

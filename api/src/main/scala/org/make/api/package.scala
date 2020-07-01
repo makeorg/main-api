@@ -25,5 +25,6 @@ package object api {
   val elasticsearchDispatcher: String = "make-api.elasticSearch.dispatcher"
   val mailJetDispatcher: String = "make-api.mail-jet.dispatcher"
   val semanticDispatcher: String = "make-api.semantic.dispatcher"
+  val webflowDispatcher: String = "make-api.webflow.dispatcher"
 
 }

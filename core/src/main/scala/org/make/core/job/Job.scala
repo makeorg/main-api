@@ -84,6 +84,7 @@ object Job {
   object JobId {
 
     val Reindex: JobId = JobId("Reindex")
+    val ReindexPosts: JobId = JobId("ReindexPosts")
     val SyncCrmData: JobId = JobId("SyncCrmData")
 
     implicit val jobIdFormatter: JsonFormat[JobId] = new JsonFormat[JobId] {

@@ -113,9 +113,13 @@ create a file `local.sbt` in the base directory, and add in it:
 This local.sbt file can be used to add some custom sbt config that will not be shared between users.
 _Use with care, it will not be on the CI server, so everything must work even without it._
 
-## Sending emails
+## Secrets conf
 
-Create the file `/etc/make/make-api.conf` with the following content:
+Some parts of the configuration contain sensitive pieces of information and are defined
+in the secrets of the API. The following explains how to define these informations locally.  
+
+In order to send mails via Mailjet or pull data from Webflow, create
+the file `/etc/make/make-api.conf` with the following content:
 
 ```hocon
 make-api {
@@ -132,6 +136,11 @@ make-api {
     basic-auth-login = ${?MAILJET_AUTH_LOGIN}
     basic-auth-password = "mail-jet-callback-password"
     basic-auth-password = ${?MAILJET_AUTH_PASSWORD}
+  }
+
+  webflow {
+    token = "webflow-token"
+    token = ${?WEBFLOW_TOKEN}
   }
 }
 ```
