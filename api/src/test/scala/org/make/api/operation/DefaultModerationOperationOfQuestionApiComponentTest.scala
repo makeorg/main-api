@@ -83,7 +83,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         consultationImageAlt = None,
         descriptionImage = None,
         descriptionImageAlt = None,
-        displayResults = false,
         resultsLink = None,
         proposalsCount = 42,
         participantsCount = 84,
@@ -127,7 +126,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           consultationImageAlt = None,
           descriptionImage = None,
           descriptionImageAlt = None,
-          displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
           participantsCount = 84,
@@ -197,7 +195,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           consultationImageAlt = None,
           descriptionImage = None,
           descriptionImageAlt = None,
-          displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
           participantsCount = 84,
@@ -234,7 +231,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           consultationImageAlt = None,
           descriptionImage = None,
           descriptionImageAlt = None,
-          displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
           participantsCount = 84,
@@ -322,7 +318,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           consultationImageAlt = None,
           descriptionImage = None,
           descriptionImageAlt = None,
-          displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
           participantsCount = 84,
@@ -359,7 +354,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           consultationImageAlt = None,
           descriptionImage = None,
           descriptionImageAlt = None,
-          displayResults = false,
           resultsLink = None,
           proposalsCount = 42,
           participantsCount = 84,
@@ -570,7 +564,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             consultationImageAlt = None,
             descriptionImage = None,
             descriptionImageAlt = None,
-            resultsLink = Some("https://example.com/results"),
+            resultsLink =
+              Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
             actions = Some("some actions"),
             featured = false
           ).asJson.toString()
@@ -725,7 +720,10 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | },
             | "description": "description",
             | "displayResults": false,
-            | "resultsLink": "http://example.com/results",
+            | "resultsLink": {
+            |   "kind": "external",
+            |   "value": "http://example.com/results"
+            | },
             | "consultationImage": "https://example",
             | "featured": true
           }""".stripMargin) ~> routes ~> check {

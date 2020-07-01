@@ -233,7 +233,6 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         consultationImageAlt = parameters.consultationImageAlt,
         descriptionImage = parameters.descriptionImage,
         descriptionImageAlt = parameters.descriptionImageAlt,
-        displayResults = false,
         resultsLink = None,
         proposalsCount = 0,
         participantsCount = 0,

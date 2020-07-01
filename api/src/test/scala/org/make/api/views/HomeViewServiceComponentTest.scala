@@ -120,7 +120,6 @@ class HomeViewServiceComponentTest
     language = Language("fr"),
     operationKind = "",
     aboutUrl = Some("http://about"),
-    displayResults = false,
     resultsLink = None,
     proposalsCount = 42,
     participantsCount = 84,

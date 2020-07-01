@@ -27,6 +27,7 @@ import io.swagger.annotations.ApiModelProperty
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
+import org.make.api.operation.ResultsLinkResponse
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.partner.{Partner, PartnerKind}
@@ -257,7 +258,7 @@ object QuestionDetailsResponse extends CirceFormatters {
     consultationImageAlt = operationOfQuestion.consultationImageAlt,
     descriptionImage = operationOfQuestion.descriptionImage,
     descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
-    displayResults = operationOfQuestion.displayResults,
+    displayResults = operationOfQuestion.resultsLink.isDefined,
     operation = QuestionsOfOperationResponse(questionsOfOperation),
     activeFeatures = activeFeatures
   )
@@ -285,7 +286,7 @@ final case class QuestionOfOperationResponse(
   endDate: Option[ZonedDateTime],
   theme: QuestionThemeResponse,
   displayResults: Boolean,
-  resultsLink: Option[String],
+  resultsLink: Option[ResultsLinkResponse],
   aboutUrl: Option[String],
   actions: Option[String],
   featured: Boolean,
@@ -308,8 +309,10 @@ object QuestionOfOperationResponse {
       startDate = indexedOperationOfQuestion.startDate,
       endDate = indexedOperationOfQuestion.endDate,
       theme = QuestionThemeResponse.fromQuestionTheme(indexedOperationOfQuestion.theme),
-      displayResults = indexedOperationOfQuestion.displayResults,
-      resultsLink = indexedOperationOfQuestion.resultsLink,
+      displayResults = indexedOperationOfQuestion.resultsLink.isDefined,
+      resultsLink = indexedOperationOfQuestion.resultsLink
+        .flatMap(ResultsLink.parse)
+        .map(ResultsLinkResponse.apply),
       aboutUrl = indexedOperationOfQuestion.aboutUrl,
       actions = indexedOperationOfQuestion.actions,
       featured = indexedOperationOfQuestion.featured,

@@ -111,7 +111,8 @@ class OperationServiceTest
           questionId = QuestionId("foo2"),
           operationId = OperationId("foo"),
           operationTitle = "first operation",
-          landingSequenceId = SequenceId("first-sequence-id-GB")
+          landingSequenceId = SequenceId("first-sequence-id-GB"),
+          resultsLink = Some(ResultsLink.Internal.TopIdeas)
         )
       )
     )

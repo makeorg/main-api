@@ -374,12 +374,11 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 metas = request.metas,
                                 theme = request.theme,
                                 description = request.description,
-                                displayResults = request.displayResults,
                                 consultationImage = request.consultationImage.map(_.value),
                                 consultationImageAlt = request.consultationImageAlt,
                                 descriptionImage = request.descriptionImage.map(_.value),
                                 descriptionImageAlt = request.descriptionImageAlt,
-                                resultsLink = request.resultsLink.map(_.value),
+                                resultsLink = request.resultsLink.flatMap(_.resultsLink),
                                 actions = request.actions,
                                 featured = request.featured
                               ),
@@ -477,8 +476,7 @@ final case class ModifyOperationOfQuestionRequest(
   descriptionImage: Option[String Refined Url],
   @(ApiModelProperty @field)(dataType = "string")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
-  @(ApiModelProperty @field)(dataType = "string")
-  resultsLink: Option[String Refined Url],
+  resultsLink: Option[ResultsLinkRequest],
   actions: Option[String],
   featured: Boolean
 ) {
@@ -607,7 +605,7 @@ final case class OperationOfQuestionResponse(
   descriptionImage: Option[String],
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
-  resultsLink: Option[String],
+  resultsLink: Option[ResultsLinkResponse],
   actions: Option[String],
   featured: Boolean
 )
@@ -639,8 +637,8 @@ object OperationOfQuestionResponse extends CirceFormatters {
       consultationImageAlt = operationOfQuestion.consultationImageAlt,
       descriptionImage = operationOfQuestion.descriptionImage,
       descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
-      displayResults = operationOfQuestion.displayResults,
-      resultsLink = operationOfQuestion.resultsLink,
+      displayResults = operationOfQuestion.resultsLink.isDefined,
+      resultsLink = operationOfQuestion.resultsLink.map(ResultsLinkResponse.apply),
       actions = operationOfQuestion.actions,
       featured = operationOfQuestion.featured
     )

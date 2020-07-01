@@ -19,6 +19,7 @@
 
 package org.make.api.operation
 
+import java.net.URL
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -105,7 +106,7 @@ class OperationApiTest
           operationId = OperationId("firstOperation"),
           operationTitle = "first operation",
           landingSequenceId = SequenceId("first-sequence-id-BR"),
-          resultsLink = Some("http://example.com/results"),
+          resultsLink = Some(ResultsLink.External(new URL("http://example.com/results"))),
           proposalsCount = 420,
           participantsCount = 840,
           actions = Some("some actions"),
@@ -147,7 +148,8 @@ class OperationApiTest
           questionId = QuestionId("second-question"),
           operationId = OperationId("secondOperation"),
           operationTitle = "secondo operazione",
-          landingSequenceId = SequenceId("second-sequence-id")
+          landingSequenceId = SequenceId("second-sequence-id"),
+          resultsLink = Some(ResultsLink.Internal.Results)
         )
       )
     )
