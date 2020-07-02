@@ -182,7 +182,7 @@ object SearchFilters extends ElasticDsl {
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.title, text)
 
     query match {
-      case None => Some(ElasticApi.matchAllQuery)
+      case None => Some(ElasticApi.matchAllQuery())
       case _    => query
     }
   }
@@ -194,7 +194,7 @@ object SearchFilters extends ElasticDsl {
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.slug, text)
 
     query match {
-      case None => Some(ElasticApi.matchAllQuery)
+      case None => Some(ElasticApi.matchAllQuery())
       case _    => query
     }
   }
@@ -223,7 +223,7 @@ object SearchFilters extends ElasticDsl {
     } yield ElasticApi.matchQuery(SequenceElasticsearchFieldNames.searchable, searchable)
 
     query match {
-      case None => Some(ElasticApi.matchAllQuery)
+      case None => Some(ElasticApi.matchAllQuery())
       case _    => query
     }
   }

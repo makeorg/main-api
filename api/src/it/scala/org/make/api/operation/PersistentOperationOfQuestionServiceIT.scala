@@ -234,4 +234,45 @@ class PersistentOperationOfQuestionServiceIT
       }
     }
   }
+
+  feature("questionIdFromSequenceId") {
+    scenario("existing sequenceId") {
+      val sequenceId = SequenceId("existing sequenceId")
+      val questionId = QuestionId("existing sequenceId")
+      val operationId = OperationId("existing sequenceId")
+      val future =
+        (for {
+          _ <- persistentQuestionService.persist(
+            Question(questionId, "existing-sequence-id", Country("FR"), Language("fr"), "", None, None)
+          )
+          _ <- persistentOperationService.persist(
+            SimpleOperation(
+              operationId,
+              OperationStatus.Active,
+              "-my-slug",
+              Seq.empty,
+              Language("fr"),
+              OperationKind.PublicConsultation,
+              Some(DateHelper.now()),
+              Some(DateHelper.now())
+            )
+          )
+          _ <- persistentOperationOfQuestionService.persist(
+            operationOfQuestion(questionId = questionId, landingSequenceId = sequenceId, operationId = operationId)
+          )
+          maybeQuestion <- persistentOperationOfQuestionService.questionIdFromSequenceId(sequenceId)
+        } yield maybeQuestion)
+      whenReady(future, Timeout(10.seconds))(_ should contain(questionId))
+    }
+
+    scenario("unknown sequenceId") {
+      whenReady(
+        persistentOperationOfQuestionService.questionIdFromSequenceId(SequenceId("unknown-sequence")),
+        Timeout(10.seconds)
+      ) {
+        _ should be(None)
+      }
+    }
+
+  }
 }

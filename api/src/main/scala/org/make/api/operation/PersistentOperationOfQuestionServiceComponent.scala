@@ -64,6 +64,8 @@ trait PersistentOperationOfQuestionService {
     operationIds: Option[Seq[OperationId]],
     openAt: Option[ZonedDateTime]
   ): Future[Int]
+  // TODO: delete this method once the calling batch was run in production
+  def questionIdFromSequenceId(sequenceId: SequenceId): Future[Option[QuestionId]]
 }
 
 trait PersistentOperationOfQuestionServiceComponent {
@@ -309,8 +311,21 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
         }.map(_.int(1)).single.apply().getOrElse(0)
       })
     }
-  }
 
+    override def questionIdFromSequenceId(sequenceId: SequenceId): Future[Option[QuestionId]] = {
+      implicit val context: EC = readExecutionContext
+      val ooq = PersistentOperationOfQuestion.alias
+      Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select(ooq.questionId)
+            .from(PersistentOperationOfQuestion.as(ooq))
+            .where(sqls.eq(ooq.landingSequenceId, sequenceId.value))
+        }.map { resultSet =>
+          QuestionId(resultSet.string(1))
+        }.single().apply()
+      })
+    }
+  }
 }
 
 object DefaultPersistentOperationOfQuestionServiceComponent {
