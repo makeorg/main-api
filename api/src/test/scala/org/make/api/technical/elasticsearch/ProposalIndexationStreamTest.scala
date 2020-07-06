@@ -40,7 +40,6 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedTag
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceId
 import org.make.core.tag._
 import org.make.core.user.UserId
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -63,21 +62,6 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
   override val userService: UserService = mock[UserService]
   override val questionService: QuestionService = mock[QuestionService]
   override lazy val actorSystem: ActorSystem = ActorSystem()
-
-  private val emptySequenceConfiguration = SequenceCardsConfiguration(
-    IntroCard(enabled = false, title = None, description = None),
-    PushProposalCard(false),
-    SignUpCard(enabled = false, title = None, nextCtaText = None),
-    FinalCard(
-      enabled = false,
-      sharingEnabled = false,
-      title = None,
-      shareDescription = None,
-      learnMoreTitle = None,
-      learnMoreTextButton = None,
-      linkUrl = None
-    )
-  )
 
   Mockito
     .when(userService.getUser(ArgumentMatchers.any[UserId]))
@@ -105,30 +89,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
     .when(operationOfQuestionService.findByQuestionId(QuestionId("question")))
     .thenReturn(
       Future.successful(
-        Some(
-          OperationOfQuestion(
-            questionId = QuestionId("question"),
-            operationId = OperationId("operation"),
-            startDate = None,
-            endDate = None,
-            operationTitle = "operation title",
-            landingSequenceId = SequenceId("sequence"),
-            canPropose = true,
-            sequenceCardsConfiguration = emptySequenceConfiguration,
-            aboutUrl = None,
-            metas = Metas(None, None, None),
-            theme = QuestionTheme("", "", "", "", None, None),
-            description = "description",
-            consultationImage = None,
-            descriptionImage = None,
-            displayResults = false,
-            resultsLink = None,
-            proposalsCount = 42,
-            participantsCount = 84,
-            actions = None,
-            featured = true
-          )
-        )
+        Some(operationOfQuestion(questionId = QuestionId("question"), operationId = OperationId("operation")))
       )
     )
 

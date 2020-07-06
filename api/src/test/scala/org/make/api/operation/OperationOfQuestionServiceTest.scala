@@ -190,7 +190,7 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(Some(operation)))
 
       Mockito
-        .when(elasticsearchOperationOfQuestionAPI.updateOperationOfQuestion(indexed, None))
+        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Completed))
 
       whenReady(operationOfQuestionService.update(operationOfQuestion), Timeout(3.seconds)) { result =>
@@ -232,7 +232,7 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(Some(operation)))
 
       Mockito
-        .when(elasticsearchOperationOfQuestionAPI.updateOperationOfQuestion(indexed, None))
+        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Completed))
 
       operationOfQuestionService.updateWithQuestion(operationOfQuestion, withQuestion)
@@ -287,6 +287,12 @@ class OperationOfQuestionServiceTest
           featured = false
         )
       val sequenceConfiguration = SequenceConfiguration(sequenceId = sequenceId, questionId = questionId)
+      val operationCreate = TestUtils.simpleOperation(id = operationId)
+      val indexed = IndexedOperationOfQuestion.createFromOperationOfQuestion(
+        operationOfQuestionCreate,
+        operationCreate,
+        questionCreate
+      )
 
       Mockito.when(idGenerator.nextQuestionId()).thenReturn(questionId)
       Mockito.when(idGenerator.nextSequenceId()).thenReturn(sequenceConfiguration.sequenceId)
@@ -299,6 +305,21 @@ class OperationOfQuestionServiceTest
       Mockito
         .when(persistentOperationOfQuestionService.persist(ArgumentMatchers.eq(operationOfQuestionCreate)))
         .thenReturn(Future.successful(operationOfQuestionCreate))
+      Mockito
+        .when(questionService.getQuestion(questionId))
+        .thenReturn(
+          Future
+            .successful(Some(questionCreate))
+        )
+      Mockito
+        .when(persistentOperationOfQuestionService.getById(questionId))
+        .thenReturn(Future.successful(Some(operationOfQuestionCreate)))
+      Mockito
+        .when(operationService.findOneSimple(operationId))
+        .thenReturn(Future.successful(Some(operationCreate)))
+      Mockito
+        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
+        .thenReturn(Future.successful(IndexationStatus.Completed))
 
       val createParameters = CreateOperationOfQuestion(
         operationId = operationId,
@@ -311,7 +332,9 @@ class OperationOfQuestionServiceTest
         question = questionCreate.question,
         shortTitle = questionCreate.shortTitle,
         consultationImage = operationOfQuestionCreate.consultationImage,
+        consultationImageAlt = operationOfQuestionCreate.consultationImageAlt,
         descriptionImage = operationOfQuestionCreate.descriptionImage,
+        descriptionImageAlt = operationOfQuestionCreate.descriptionImageAlt,
         actions = operationOfQuestionCreate.actions
       )
       whenReady(operationOfQuestionService.create(createParameters), Timeout(3.seconds)) { ooq =>
@@ -388,7 +411,7 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(Some(operation)))
 
       Mockito
-        .when(elasticsearchOperationOfQuestionAPI.updateOperationOfQuestion(indexed, None))
+        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Failed(new IllegalStateException("whatever exception"))))
 
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) { result =>
@@ -418,7 +441,7 @@ class OperationOfQuestionServiceTest
         .thenReturn(Future.successful(Some(operation)))
 
       Mockito
-        .when(elasticsearchOperationOfQuestionAPI.updateOperationOfQuestion(indexed, None))
+        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Completed))
 
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) { result =>

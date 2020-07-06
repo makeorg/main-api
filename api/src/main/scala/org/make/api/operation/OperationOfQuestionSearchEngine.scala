@@ -56,10 +56,6 @@ trait OperationOfQuestionSearchEngine {
     records: Seq[IndexedOperationOfQuestion],
     maybeIndex: Option[IndexAndType]
   ): Future[IndexationStatus]
-  def updateOperationOfQuestion(
-    record: IndexedOperationOfQuestion,
-    maybeIndex: Option[IndexAndType]
-  ): Future[IndexationStatus]
   def highlights(): Future[Highlights]
 }
 
@@ -136,12 +132,10 @@ trait DefaultOperationOfQuestionSearchEngineComponent
       val index = maybeIndex.getOrElse(operationOfQuestionAlias)
       client
         .executeAsFuture(indexInto(index).doc(record).refresh(RefreshPolicy.IMMEDIATE).id(record.questionId.value))
-        .map { _ =>
-          IndexationStatus.Completed
-        }
+        .map(_ => IndexationStatus.Completed)
         .recover {
           case e: Exception =>
-            logger.error(s"Indexing operation of question ${record.questionId} failed", e)
+            logger.error(s"Indexing upserted operation of question ${record.questionId} failed", e)
             IndexationStatus.Failed(e)
         }
     }
@@ -161,21 +155,6 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         .recover {
           case e: Exception =>
             logger.error(s"Indexing ${records.size} operations of questions failed", e)
-            IndexationStatus.Failed(e)
-        }
-    }
-
-    override def updateOperationOfQuestion(
-      record: IndexedOperationOfQuestion,
-      maybeIndex: Option[IndexAndType]
-    ): Future[IndexationStatus] = {
-      val index = maybeIndex.getOrElse(operationOfQuestionAlias)
-      client
-        .executeAsFuture((update(id = record.questionId.value) in index).doc(record).refresh(RefreshPolicy.IMMEDIATE))
-        .map(_ => IndexationStatus.Completed)
-        .recover {
-          case e: Exception =>
-            logger.error(s"Indexing updated operation of question ${record.questionId} failed", e)
             IndexationStatus.Failed(e)
         }
     }

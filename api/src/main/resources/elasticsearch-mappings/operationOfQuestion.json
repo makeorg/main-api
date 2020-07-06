@@ -665,7 +665,15 @@
           "type": "text",
           "index": false
         },
+        "consultationImageAlt": {
+          "type": "text",
+          "index": false
+        },
         "descriptionImage": {
+          "type": "text",
+          "index": false
+        },
+        "descriptionImageAlt": {
           "type": "text",
           "index": false
         },

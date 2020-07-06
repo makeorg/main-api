@@ -22,7 +22,11 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import io.circe.refined._
 import io.swagger.annotations.ApiModelProperty
+import eu.timepit.refined.W
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.MaxSize
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
 import org.make.core.partner.{Partner, PartnerKind}
@@ -209,7 +213,9 @@ case class QuestionDetailsResponse(
   partners: Seq[QuestionPartnerResponse],
   theme: QuestionThemeResponse,
   consultationImage: Option[String],
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   descriptionImage: Option[String],
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
   operation: QuestionsOfOperationResponse,
   activeFeatures: Seq[String]
@@ -248,7 +254,9 @@ object QuestionDetailsResponse extends CirceFormatters {
     partners = partners.map(QuestionPartnerResponse.apply),
     theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme),
     consultationImage = operationOfQuestion.consultationImage,
+    consultationImageAlt = operationOfQuestion.consultationImageAlt,
     descriptionImage = operationOfQuestion.descriptionImage,
+    descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
     displayResults = operationOfQuestion.displayResults,
     operation = QuestionsOfOperationResponse(questionsOfOperation),
     activeFeatures = activeFeatures

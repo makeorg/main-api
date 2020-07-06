@@ -23,6 +23,9 @@ import java.time.ZonedDateTime
 
 import enumeratum.{Enum, EnumEntry}
 import enumeratum.Circe
+import eu.timepit.refined.W
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.MaxSize
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
@@ -188,7 +191,9 @@ final case class OperationOfQuestion(
   theme: QuestionTheme,
   description: String,
   consultationImage: Option[String],
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   descriptionImage: Option[String],
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
   resultsLink: Option[String],
   proposalsCount: Int,

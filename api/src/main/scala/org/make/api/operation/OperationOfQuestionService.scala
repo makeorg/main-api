@@ -22,6 +22,9 @@ import java.time.ZonedDateTime
 
 import cats.data.OptionT
 import cats.implicits._
+import eu.timepit.refined.W
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection.MaxSize
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.question.{PersistentQuestionServiceComponent, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sequence.{PersistentSequenceConfigurationComponent, SequenceConfiguration}
@@ -85,7 +88,9 @@ final case class CreateOperationOfQuestion(
   question: String,
   shortTitle: Option[String],
   consultationImage: Option[String],
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   descriptionImage: Option[String],
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   actions: Option[String]
 )
 
@@ -225,7 +230,9 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         theme = QuestionTheme.default,
         description = OperationOfQuestion.defaultDescription,
         consultationImage = parameters.consultationImage,
+        consultationImageAlt = parameters.consultationImageAlt,
         descriptionImage = parameters.descriptionImage,
+        descriptionImageAlt = parameters.descriptionImageAlt,
         displayResults = false,
         resultsLink = None,
         proposalsCount = 0,
@@ -241,7 +248,9 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
         _         <- persistentQuestionService.persist(question)
         _         <- persistentSequenceConfigurationService.persist(sequenceConfiguration)
         persisted <- persistentOperationOfQuestionService.persist(operationOfQuestion)
+        _         <- indexById(questionId)
       } yield persisted
+
     }
 
     override def count(request: SearchOperationsOfQuestions): Future[Int] = {
@@ -257,7 +266,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       futureIndexedOperationOfQuestion.flatMap {
         case None => Future.successful(None)
         case Some(operationOfQuestion) =>
-          elasticsearchOperationOfQuestionAPI.updateOperationOfQuestion(operationOfQuestion, None).map(Some(_))
+          elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(operationOfQuestion, None).map(Some(_))
       }
 
     }

@@ -376,7 +376,9 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 description = request.description,
                                 displayResults = request.displayResults,
                                 consultationImage = request.consultationImage.map(_.value),
+                                consultationImageAlt = request.consultationImageAlt,
                                 descriptionImage = request.descriptionImage.map(_.value),
+                                descriptionImageAlt = request.descriptionImageAlt,
                                 resultsLink = request.resultsLink.map(_.value),
                                 actions = request.actions,
                                 featured = request.featured
@@ -430,7 +432,9 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         question = body.question,
                         shortTitle = body.shortTitle.map(_.value),
                         consultationImage = body.consultationImage.map(_.value),
+                        consultationImageAlt = body.consultationImageAlt,
                         descriptionImage = body.descriptionImage.map(_.value),
+                        descriptionImageAlt = body.descriptionImageAlt,
                         actions = body.actions
                       )
                     )
@@ -465,8 +469,15 @@ final case class ModifyOperationOfQuestionRequest(
   theme: QuestionTheme,
   description: String,
   displayResults: Boolean,
+  @(ApiModelProperty @field)(dataType = "string")
   consultationImage: Option[String Refined Url],
+  @(ApiModelProperty @field)(dataType = "string")
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
+  @(ApiModelProperty @field)(dataType = "string")
   descriptionImage: Option[String Refined Url],
+  @(ApiModelProperty @field)(dataType = "string")
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
+  @(ApiModelProperty @field)(dataType = "string")
   resultsLink: Option[String Refined Url],
   actions: Option[String],
   featured: Boolean
@@ -527,10 +538,17 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   question: String,
+  @(ApiModelProperty @field)(dataType = "string")
   shortTitle: Option[String Refined MaxSize[W.`30`.T]],
   questionSlug: String,
+  @(ApiModelProperty @field)(dataType = "string")
   consultationImage: Option[String Refined Url],
+  @(ApiModelProperty @field)(dataType = "string")
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
+  @(ApiModelProperty @field)(dataType = "string")
   descriptionImage: Option[String Refined Url] = None,
+  @(ApiModelProperty @field)(dataType = "string")
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]] = None,
   actions: Option[String]
 ) {
   validate(
@@ -585,7 +603,9 @@ final case class OperationOfQuestionResponse(
   theme: QuestionTheme,
   description: String,
   consultationImage: Option[String],
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   descriptionImage: Option[String],
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
   resultsLink: Option[String],
   actions: Option[String],
@@ -616,7 +636,9 @@ object OperationOfQuestionResponse extends CirceFormatters {
       theme = operationOfQuestion.theme,
       description = operationOfQuestion.description,
       consultationImage = operationOfQuestion.consultationImage,
+      consultationImageAlt = operationOfQuestion.consultationImageAlt,
       descriptionImage = operationOfQuestion.descriptionImage,
+      descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
       displayResults = operationOfQuestion.displayResults,
       resultsLink = operationOfQuestion.resultsLink,
       actions = operationOfQuestion.actions,
