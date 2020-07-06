@@ -32,23 +32,22 @@ import io.swagger.annotations.{Authorization, _}
 import javax.ws.rs.Path
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
-import org.make.api.operation.OperationServiceComponent
-import org.make.api.proposal.{ProposalCoordinatorComponent, ProposalServiceComponent, SnapshotProposal}
+import org.make.api.operation.{OperationServiceComponent, PersistentOperationOfQuestionServiceComponent}
+import org.make.api.proposal.{ProposalCoordinatorComponent, SnapshotProposal}
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
-import org.make.api.technical.crm.{CrmServiceComponent, QuestionResolver}
+import org.make.api.technical.crm.QuestionResolver
 import org.make.api.technical.storage.StorageConfigurationComponent
 import org.make.api.user.UserServiceComponent
-import org.make.api.userhistory.{LogRegisterCitizenEvent, UserHistoryEvent, UserUploadAvatarEvent}
+import org.make.api.userhistory._
+import org.make.core._
 import org.make.core.profile.Profile
 import org.make.core.proposal.ProposalId
 import org.make.core.question.Question
-import org.make.core.reference.Country
 import org.make.core.session.SessionId
 import org.make.core.tag.{Tag => _}
 import org.make.core.user.{User, UserId}
-import org.make.core._
 
 import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -119,7 +118,6 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with MakeSettingsComponent
     with ActorSystemComponent
     with SessionHistoryCoordinatorServiceComponent
-    with CrmServiceComponent
     with MailJetConfigurationComponent
     with UserServiceComponent
     with ReadJournalComponent
@@ -127,7 +125,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
     with QuestionServiceComponent
     with EventBusServiceComponent
     with StorageConfigurationComponent
-    with ProposalServiceComponent
+    with PersistentOperationOfQuestionServiceComponent
     with ProposalCoordinatorComponent =>
 
   override lazy val migrationApi: MigrationApi = new DefaultMigrationApi
@@ -150,85 +148,46 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
       } yield new QuestionResolver(questions, operations)
     }
 
-    private val campaignResolver: Map[String, String] = Map(
-      "mve" -> "mieux-vivre-ensemble",
-      "mvelaunch" -> "mieux-vivre-ensemble",
-      "blabla" -> "mieux-vivre-ensemble",
-      "mveresults1" -> "mieux-vivre-ensemble",
-      "mveresults2" -> "mieux-vivre-ensemble",
-      "welcomemve" -> "mieux-vivre-ensemble",
-      "cpt" -> "culture",
-      "culton" -> "culture",
-      "aixlaunchcpc" -> "lpae",
-      "lpaeresults1" -> "lpae",
-      "lpaeresults1" -> "lpae",
-      "welcomelpae" -> "lpae",
-      "caj" -> "chance-aux-jeunes",
-      "cajresults1" -> "chance-aux-jeunes",
-      "chancejeunelaunch" -> "chance-aux-jeunes",
-      "chancejeuneslaunch" -> "chance-aux-jeunes",
-      "jeunes" -> "chance-aux-jeunes",
-      "welcomechance" -> "chance-aux-jeunes",
-      "vfflaunchbrand" -> "vff",
-      "vfflaunchconv" -> "vff",
-      "vfflaunchcpc" -> "vff",
-      "vffresults1" -> "vff",
-      "vfflaunchbrand" -> "vff"
-    )
-
-    private def resolveQuestionFromUtms(context: RequestContext, resolver: QuestionResolver): Option[Question] = {
-      val maybeUtm: Option[String] = context.getParameters.flatMap(_.get("utm_campaign"))
-      maybeUtm match {
-        case None => None
-        case Some(campaign) =>
-          val resolvedSlug: String = campaignResolver.getOrElse(campaign, campaign)
-          val finalSlug = if (resolvedSlug == "vff") {
-            context.country match {
-              case Some(Country("IT")) => "vff-it"
-              case Some(Country("GB")) => "vff-gb"
-              case _                   => "vff"
-            }
-          } else {
-            resolvedSlug
-          }
-          resolver.findQuestionWithOperation(_.slug == finalSlug)
-      }
-
-    }
-
     private def resolveQuestionFromEvents(
       questionResolver: QuestionResolver,
       events: Seq[UserHistoryEvent[_]],
       userCreationDate: Option[ZonedDateTime]
     ): Future[Option[Question]] = {
-      val maybeRegistration: Option[LogRegisterCitizenEvent] = events.collectFirst {
-        case e: LogRegisterCitizenEvent => e
-      }
 
-      maybeRegistration match {
-        case None =>
-          val maybeSession: Option[SessionId] = events
-            .filter(
-              // Ignore events that are too far away from the creation date
-              event => userCreationDate.exists(date => Math.abs(ChronoUnit.DAYS.between(date, event.action.date)) < 2)
-            )
-            .sortBy(_.action.date.toString())
-            .headOption
-            .map(_.requestContext.sessionId)
+      val maybeSession: Option[SessionId] = events
+        .filter(
+          // Ignore events that are too far away from the creation date
+          event => userCreationDate.exists(date => Math.abs(ChronoUnit.DAYS.between(date, event.action.date)) < 2)
+        )
+        .sortBy(_.action.date.toString())
+        .headOption
+        .map(_.requestContext.sessionId)
 
-          val registerSessionEvents = events
-            .filter(event => maybeSession.contains(event.requestContext.sessionId))
-            .sortBy(_.action.date)
+      val registerSessionEvents: Seq[UserHistoryEvent[_]] = events
+        .filter(event => maybeSession.contains(event.requestContext.sessionId))
+        .sortBy(_.action.date)
 
-          Source(registerSessionEvents)
-            .map(event => resolveQuestionFromUtms(event.requestContext, questionResolver))
-            .collect {
-              case Some(question) => question
-            }
-            .runWith(Sink.headOption[Question])
+      Source(registerSessionEvents)
+        .mapAsync(1)(event => resolveRegisterQuestionFromStartSequence(event, questionResolver))
+        .collect {
+          case Some(question) => question
+        }
+        .runWith(Sink.headOption[Question])
+    }
 
-        case Some(event) =>
-          Future.successful(resolveQuestionFromUtms(event.requestContext, questionResolver))
+    private def resolveRegisterQuestionFromStartSequence(
+      event: UserHistoryEvent[_],
+      questionResolver: QuestionResolver
+    ): Future[Option[Question]] = {
+      event match {
+        case LogUserStartSequenceEvent(_, _, UserAction(_, _, StartSequenceParameters(_, _, Some(sequenceId), _))) =>
+          persistentOperationOfQuestionService.questionIdFromSequenceId(sequenceId).map {
+            case None             => None
+            case Some(questionId) => questionResolver.findQuestionWithOperation(_.questionId == questionId)
+          }
+        case LogUserStartSequenceEvent(_, _, UserAction(_, _, StartSequenceParameters(_, Some(questionId), _, _))) =>
+          Future.successful(questionResolver.findQuestionWithOperation(_.questionId == questionId))
+        case _ => Future.successful(None)
       }
     }
 
