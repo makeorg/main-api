@@ -1,4 +1,7 @@
 {
+  "settings": {
+    "number_of_shards": 5
+  },
   "mappings": {
     "post": {
       "dynamic": "strict",
