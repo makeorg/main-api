@@ -38,6 +38,7 @@ libraryDependencies ++= Seq(
   Dependencies.akkaSlf4j,
   Dependencies.akkaStream,
   Dependencies.akkaPersistence,
+  Dependencies.akkaPersistenceQuery,
   Dependencies.akkaHttp,
   Dependencies.akkaHttp2Support,
   Dependencies.akkaHttpSwagger,

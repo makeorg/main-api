@@ -17,24 +17,14 @@
  *
  */
 
-name := "make-core"
+package org.make.api.technical
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistenceQuery,
-  Dependencies.akkaClusterSharding,
-  Dependencies.akkaHttpSwagger, // TODO: import only swagger not akka-http
-  Dependencies.elastic4s,
-  Dependencies.elastic4sHttp,
-  Dependencies.enumeratum,
-  Dependencies.enumeratumCirce,
-  Dependencies.enumeratumScalacheck,
-  Dependencies.avro4s,
-  Dependencies.circeGeneric,
-  Dependencies.refinedCirce,
-  Dependencies.refinedScala,
-  Dependencies.stamina,
-  Dependencies.slugify,
-  Dependencies.jsoup,
-  Dependencies.refinedScalaCheck,
-  Dependencies.scalaCheck
-)
+import akka.cluster.sharding.typed.{HashCodeNoEnvelopeMessageExtractor, ShardingMessageExtractor}
+import org.make.core.StringValue
+
+object ShardingNoEnvelopeMessageExtractor {
+  def apply[M <: ActorCommand[StringValue]](numberOfShards: Int): ShardingMessageExtractor[M, M] =
+    new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
+      def entityId(message: M): String = message.id.value
+    }
+}

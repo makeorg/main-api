@@ -21,9 +21,9 @@ package org.make.api.technical.elasticsearch
 
 import java.time.ZonedDateTime
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import cats.data.NonEmptyList
-import org.make.api.MakeUnitTest
 import org.make.api.operation.{OperationOfQuestionService, OperationService}
 import org.make.api.organisation.OrganisationService
 import org.make.api.proposal.{ProposalCoordinatorService, ProposalSearchEngine}
@@ -34,6 +34,7 @@ import org.make.api.sequence.{SequenceConfiguration, SequenceConfigurationServic
 import org.make.api.tag.TagService
 import org.make.api.tagtype.TagTypeService
 import org.make.api.user.UserService
+import org.make.api.{ActorSystemTypedComponent, MakeUnitTest}
 import org.make.core.RequestContext
 import org.make.core.idea.IdeaId
 import org.make.core.operation._
@@ -48,7 +49,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationStream {
+class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationStream with ActorSystemTypedComponent {
   override val segmentService: SegmentService = mock[SegmentService]
   override val tagService: TagService = mock[TagService]
   override val tagTypeService: TagTypeService = mock[TagTypeService]
@@ -61,7 +62,8 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
   override val sequenceConfigurationService: SequenceConfigurationService = mock[SequenceConfigurationService]
   override val userService: UserService = mock[UserService]
   override val questionService: QuestionService = mock[QuestionService]
-  override lazy val actorSystem: ActorSystem = ActorSystem()
+  override implicit val actorSystemTyped: ActorSystem[Nothing] =
+    ActorSystem(Behaviors.empty, "ProposalIndexationStreamTest")
 
   when(userService.getUser(any[UserId])).thenAnswer { userId: UserId =>
     Future.successful(Some(user(userId)))

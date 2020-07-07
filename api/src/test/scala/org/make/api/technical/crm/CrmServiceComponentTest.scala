@@ -29,7 +29,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.{EventEnvelope, Offset}
-import akka.stream.scaladsl
 import akka.stream.scaladsl.Source
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
@@ -59,6 +58,7 @@ import org.mockito.verification.After
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import scala.io.{Source => IOSource}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -537,7 +537,7 @@ class CrmServiceComponentTest
 
   when(userJournal.currentEventsByPersistenceId(eqTo(fooUser.userId.value), any[Long], any[Long]))
     .thenReturn(
-      scaladsl.Source(
+      Source(
         List(
           registerCitizenEventEnvelope,
           userProposalEventEnvelope,
@@ -555,7 +555,7 @@ class CrmServiceComponentTest
     fooUser.copy(userId = UserId("user-without-registered-event"), createdAt = Some(zonedDateTimeNow))
 
   when(userJournal.currentEventsByPersistenceId(eqTo(userWithoutRegisteredEvent.userId.value), any[Long], any[Long]))
-    .thenReturn(scaladsl.Source(List.empty))
+    .thenReturn(Source(List.empty))
 
   Feature("data normalization") {
     Scenario("users properties are normalized when user has no register event") {
@@ -1441,7 +1441,7 @@ class CrmServiceComponentTest
         Timeout(30.seconds)
       ) { fileList =>
         val file = fileList.head
-        val bufferedFile = io.Source.fromFile(file.toFile)
+        val bufferedFile = IOSource.fromFile(file.toFile)
         val fileToSeq = bufferedFile.getLines.toSeq
         val lineCount = fileToSeq.size
         val firstLine = fileToSeq.head

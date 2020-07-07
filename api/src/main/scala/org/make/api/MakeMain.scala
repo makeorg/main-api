@@ -22,10 +22,13 @@ package org.make.api
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, PoisonPill}
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.{ExtendedActorSystem, PoisonPill, ActorSystem => ClassicActorSystem}
 import akka.cluster.Cluster
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.{Http, HttpConnectionContext}
+import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
@@ -42,8 +45,6 @@ import org.make.api.userhistory.ShardedUserHistory
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters._
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.HttpConnectionContext
 
 @SuppressWarnings(Array("org.wartremover.warts.While"))
 object MakeMain extends App with StrictLogging with MakeApi {
@@ -80,7 +81,9 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   override implicit val actorSystem: ExtendedActorSystem =
-    ActorSystem.apply("make-api", configuration).asInstanceOf[ExtendedActorSystem]
+    ClassicActorSystem.apply("make-api", configuration).asInstanceOf[ExtendedActorSystem]
+
+  override val actorSystemTyped: ActorSystem[Nothing] = actorSystem.toTyped
 
   // Wait until cluster is connected before initializing clustered actors
   while (Cluster(actorSystem).state.leader.isEmpty) {

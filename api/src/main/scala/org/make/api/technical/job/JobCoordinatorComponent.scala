@@ -19,14 +19,14 @@
 
 package org.make.api.technical.job
 
-import akka.actor.ActorRef
-import akka.pattern.ask
+import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.technical.job.JobActor.Protocol.Command._
 import org.make.api.technical.job.JobActor.Protocol.Response._
 import org.make.api.technical.job.JobReportingActor.JobReportingActorFacade
-import org.make.api.technical.{IdGeneratorComponent, TimeSettings}
+import org.make.api.technical.{IdGeneratorComponent, SpawnActorServiceComponent, TimeSettings}
 import org.make.core.job.Job
 import org.make.core.job.Job.{JobId, Progress}
 
@@ -35,7 +35,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 trait JobCoordinatorComponent {
-  def jobCoordinator: ActorRef
+  def jobCoordinator: ActorRef[JobActor.Protocol.Command]
 }
 
 trait JobCoordinatorService {
@@ -53,7 +53,10 @@ trait JobCoordinatorServiceComponent {
 }
 
 trait DefaultJobCoordinatorServiceComponent extends JobCoordinatorServiceComponent {
-  self: ActorSystemComponent with IdGeneratorComponent with JobCoordinatorComponent =>
+  self: ActorSystemTypedComponent
+    with IdGeneratorComponent
+    with JobCoordinatorComponent
+    with SpawnActorServiceComponent =>
 
   override lazy val jobCoordinatorService: JobCoordinatorService = new DefaultJobCoordinatorService
 
@@ -64,23 +67,33 @@ trait DefaultJobCoordinatorServiceComponent extends JobCoordinatorServiceCompone
     override def start(id: JobId, heartRate: FiniteDuration)(
       work: JobReportingActorFacade => Future[Unit]
     ): Future[JobAcceptance] = {
-      (jobCoordinator ? Start(id)).mapTo[JobAcceptance].map { acceptance =>
-        if (acceptance.isAccepted) {
-          actorSystem.actorOf(JobReportingActor.props(id, work, jobCoordinatorService, heartRate))
-        }
-        acceptance
+      (jobCoordinator ? (Start(id, _))).flatMap {
+        case acceptance @ JobAcceptance(true) =>
+          spawnActorService
+            .spawn(
+              behavior = JobReportingActor(id, work, jobCoordinatorService, heartRate),
+              name = s"JobReportingActor-${id.value}"
+            )
+            .map(_ => acceptance)
+        case acceptance => Future.successful(acceptance)
       }
     }
 
-    override def heartbeat(id: JobId): Future[Unit] = (jobCoordinator ? Heartbeat(id)).mapTo[Ack.type].map(_ => ())
+    override def heartbeat(id: JobId): Future[Unit] = {
+      (jobCoordinator ? (Heartbeat(id, _))).map(_ => ())
+    }
 
-    override def report(id: JobId, progress: Progress): Future[Unit] =
-      (jobCoordinator ? Report(id, progress)).mapTo[Ack.type].map(_ => ())
+    override def report(id: JobId, progress: Progress): Future[Unit] = {
+      (jobCoordinator ? (Report(id, progress, _))).map(_ => ())
+    }
 
-    override def finish(id: JobId, outcome: Option[Throwable]): Future[Unit] =
-      (jobCoordinator ? Finish(id, outcome)).mapTo[Ack.type].map(_ => ())
+    override def finish(id: JobId, outcome: Option[Throwable]): Future[Unit] = {
+      (jobCoordinator ? (Finish(id, outcome, _))).map(_ => ())
+    }
 
-    override def get(id: JobId): Future[Option[Job]] = (jobCoordinator ? Get(id)).mapTo[State].map(_.value)
+    override def get(id: JobId): Future[Option[Job]] = {
+      (jobCoordinator ? (Get(id, _))).map(_.value)
+    }
 
   }
 

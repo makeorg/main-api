@@ -23,7 +23,7 @@ enablePlugins(UniversalPlugin)
 enablePlugins(JavaServerAppPackaging)
 enablePlugins(DockerPlugin)
 
-dockerBaseImage := "azul/zulu-openjdk-centos:13"
+dockerBaseImage := "azul/zulu-openjdk-centos:14"
 // Open 4k for jmx and 9k for http
 dockerExposedPorts := Seq(4000, 9000)
 dockerRepository   := Some("nexus.prod.makeorg.tech")

@@ -33,11 +33,12 @@ class ShardingActorTest(actorSystem: ActorSystem = TestHelper.defaultActorSystem
 object TestHelper {
   val halfNumberOfPorts: Int = 32768
   val counter = new AtomicInteger(halfNumberOfPorts)
+  val actorSystemName: String = "test_system"
   def configuration: String = {
     val port = counter.getAndIncrement()
     s"""
        |akka {
-       |  cluster.seed-nodes = ["akka://test-system@localhost:$port"]
+       |  cluster.seed-nodes = ["akka://$actorSystemName@localhost:$port"]
        |  cluster.jmx.multi-mbeans-in-same-jvm = on
        |
        |  persistence {
@@ -95,7 +96,7 @@ object TestHelper {
       .resolve()
 
   def defaultActorSystem(conf: Config = fullConfiguration): ActorSystem = {
-    ActorSystem("test-system", conf)
+    ActorSystem(actorSystemName, conf)
   }
 
 }
