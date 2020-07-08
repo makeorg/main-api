@@ -117,6 +117,8 @@ class DatabaseConfiguration(override protected val configuration: Config)
   val baselineVersion: MigrationVersion =
     MigrationVersion.fromVersion(configuration.getString("database.migration.baseline-version"))
 
+  val repair: Boolean = configuration.getBoolean("database.migration.repair")
+
   var flywayBuilder: FluentConfiguration = Flyway
     .configure()
     .dataSource(writeDatasource)
@@ -138,6 +140,12 @@ class DatabaseConfiguration(override protected val configuration: Config)
   }
 
   val flyway: Flyway = flywayBuilder.load()
+  if (repair) {
+    Try(flyway.repair()) match {
+      case Success(_) => logger.info("Repairing SQL migrations history: success")
+      case Failure(e) => logger.warn("Cannot repair SQL migrations history:", e)
+    }
+  }
   flyway.migrate()
   Try(flyway.validate()) match {
     case Success(_) => logger.info("SQL migrations: success")

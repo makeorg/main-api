@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE operation_of_question (
   question_id STRING(256) NOT NULL PRIMARY KEY,
   operation_id STRING(256) NOT NULL,

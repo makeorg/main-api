@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS personality(
     id STRING NOT NULL PRIMARY KEY,
     user_id STRING,

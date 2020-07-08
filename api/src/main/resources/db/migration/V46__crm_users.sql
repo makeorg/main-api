@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE crm_user(
   user_id STRING NOT NULL PRIMARY KEY,
   email STRING NOT NULL,

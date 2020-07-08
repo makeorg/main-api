@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE operation ADD COLUMN IF NOT EXISTS allowed_sources STRING[];
 
 COMMIT;

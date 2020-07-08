@@ -1,9 +1,11 @@
-alter table question rename column country to countries;
+BEGIN;
 
-alter table idea drop column country;
-alter table idea drop column language;
+ALTER TABLE question rename COLUMN country TO countries;
 
-alter table tag drop column country;
-alter table tag drop column language;
+ALTER TABLE idea DROP COLUMN country;
+ALTER TABLE idea DROP COLUMN language;
 
-commit;
+ALTER TABLE tag DROP COLUMN country;
+ALTER TABLE tag DROP COLUMN language;
+
+COMMIT;

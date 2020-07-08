@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE tag
     ADD CONSTRAINT tag_type_fk FOREIGN KEY (tag_type_id) REFERENCES tag_type (id) ON DELETE RESTRICT,
     ADD CONSTRAINT operation_fk FOREIGN KEY (operation_id) REFERENCES operation (uuid) ON DELETE RESTRICT,

@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE INDEX ON make_user(email);
 CREATE INDEX ON make_user(verification_token);
 CREATE INDEX ON make_user(reset_token);

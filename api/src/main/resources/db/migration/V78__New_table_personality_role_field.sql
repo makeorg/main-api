@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS personality_role_field(
   id STRING NOT NULL PRIMARY KEY,
   personality_role_id STRING NOT NULL,

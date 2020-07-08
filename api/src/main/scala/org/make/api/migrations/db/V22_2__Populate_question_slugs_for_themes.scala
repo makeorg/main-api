@@ -19,13 +19,12 @@
 
 package org.make.api.migrations.db
 
-import org.flywaydb.core.api.migration._
+import java.sql.Connection
 
-class V22_2__Populate_question_slugs_for_themes extends BaseJavaMigration {
+class V22_2__Populate_question_slugs_for_themes extends Migration {
 
   @SuppressWarnings(Array("org.wartremover.warts.While"))
-  override def migrate(context: Context): Unit = {
-    val connection = context.getConnection
+  override def migrate(connection: Connection): Unit = {
     val resultSet = connection
       .prepareStatement("SELECT slug, theme_uuid AS theme_id FROM theme_translation")
       .executeQuery()
@@ -38,8 +37,5 @@ class V22_2__Populate_question_slugs_for_themes extends BaseJavaMigration {
       statement.setString(2, themeId)
       statement.execute()
     }
-
-    connection.commit()
-
   }
 }

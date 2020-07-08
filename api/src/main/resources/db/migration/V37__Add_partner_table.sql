@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE partner(
   id STRING NOT NULL PRIMARY KEY,
   name STRING,

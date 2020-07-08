@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS current_operation(
     id STRING NOT NULL PRIMARY KEY,
     question_id STRING,

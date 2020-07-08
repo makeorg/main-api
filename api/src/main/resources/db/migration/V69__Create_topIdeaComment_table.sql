@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS top_idea_comment(
   id STRING NOT NULL PRIMARY KEY,
   top_idea_id STRING NOT NULL,

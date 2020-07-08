@@ -1,3 +1,5 @@
+BEGIN;
+
 UPDATE tag_type SET weight_type = 10 WHERE id = 'c0d8d858-8b04-4dd9-add6-fa65443b622b'; -- Stake
 UPDATE tag_type SET weight_type = 20 WHERE id = 'cc6a16a5-cfa7-495b-a235-08affb3551af'; -- Solution
 UPDATE tag_type SET weight_type = 30 WHERE id = '5e539923-c265-45d2-9d0b-77f29c8b0a06'; -- Moment

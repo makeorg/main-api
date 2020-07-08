@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE IF EXISTS sequence_configuration
   ALTER COLUMN tested_proposals_engagement_threshold DROP NOT NULL,
   ALTER COLUMN tested_proposals_score_threshold DROP NOT NULL,

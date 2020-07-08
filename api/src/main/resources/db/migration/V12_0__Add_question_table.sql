@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS question(
     question_id STRING(256) NOT NULL PRIMARY KEY,
     country STRING(256) NOT NULL,

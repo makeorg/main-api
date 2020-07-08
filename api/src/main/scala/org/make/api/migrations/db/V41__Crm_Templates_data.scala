@@ -19,17 +19,15 @@
 
 package org.make.api.migrations.db
 
+import java.sql.Connection
 import java.util.UUID
 
-import org.flywaydb.core.api.migration._
-
-class V41__Crm_Templates_data extends BaseJavaMigration {
+class V41__Crm_Templates_data extends Migration {
 
   @SuppressWarnings(Array("org.wartremover.warts.While"))
-  override def migrate(context: Context): Unit = {
+  override def migrate(connection: Connection): Unit = {
     val isProd = System.getenv("ENV_NAME") == "prod"
 
-    val connection = context.getConnection
     val resultSet = connection
       .prepareStatement("SELECT question_id, slug FROM question")
       .executeQuery()
@@ -107,8 +105,6 @@ class V41__Crm_Templates_data extends BaseJavaMigration {
           s"forgotten_password_organisation) VALUES  $valuesToInsert"
       )
     statement.execute()
-
-    connection.commit()
 
   }
 }

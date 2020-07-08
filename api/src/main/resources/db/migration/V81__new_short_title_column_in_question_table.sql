@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE question ADD COLUMN short_title STRING(30);
 
 COMMIT;
