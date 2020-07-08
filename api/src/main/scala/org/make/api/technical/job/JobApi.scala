@@ -102,9 +102,9 @@ trait DefaultJobApiComponent extends JobApiComponent with MakeAuthenticationDire
 final case class JobResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
   id: JobId,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   createdAt: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   updatedAt: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "finished")
   status: JobResponse.Status,

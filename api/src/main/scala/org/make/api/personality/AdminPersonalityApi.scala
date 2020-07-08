@@ -75,8 +75,8 @@ trait AdminPersonalityApi extends Directives {
   @ApiOperation(value = "get-personalities", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
@@ -101,7 +101,8 @@ trait AdminPersonalityApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityResponse]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[PersonalityResponse]))
   )
   @Path(value = "/")
   def createPersonality: Route
@@ -327,17 +328,17 @@ trait DefaultAdminPersonalityApiComponent
 }
 
 final case class CreatePersonalityRequest(
-  email: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
-  @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") description: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
+  description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "F,M,O") gender: Option[Gender],
+  genderName: Option[String],
   politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
   validate(
@@ -357,17 +358,17 @@ object CreatePersonalityRequest {
 }
 
 final case class UpdatePersonalityRequest(
-  email: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: Option[String],
   firstName: Option[String],
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") description: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
+  description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "F,M,O") gender: Option[Gender],
+  genderName: Option[String],
   politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
   private val maxLanguageLength = 3
@@ -390,17 +391,17 @@ object UpdatePersonalityRequest {
 
 case class PersonalityResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
-  email: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
-  @(ApiModelProperty @field)(dataType = "string") avatarUrl: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") description: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") gender: Option[Gender],
-  @(ApiModelProperty @field)(dataType = "string") genderName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
+  description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "F,M,O") gender: Option[Gender],
+  genderName: Option[String],
   politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String]
 ) {
   validate(

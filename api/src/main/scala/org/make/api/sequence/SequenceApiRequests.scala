@@ -25,48 +25,10 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.proposal.SelectionAlgorithmName
 import org.make.core.common.indexed.SortRequest
 import org.make.core.operation.OperationId
-import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.sequence._
 
 import scala.annotation.meta.field
-
-// ToDo: handle translations
-@ApiModel
-final case class CreateSequenceRequest(
-  @(ApiModelProperty @field)(example = "ma séquence") title: String,
-  operationId: Option[OperationId],
-  searchable: Boolean
-)
-
-object CreateSequenceRequest {
-  implicit val decoder: Decoder[CreateSequenceRequest] = deriveDecoder[CreateSequenceRequest]
-}
-
-@ApiModel
-final case class AddProposalSequenceRequest(
-  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId]
-)
-
-object AddProposalSequenceRequest {
-  implicit val decoder: Decoder[AddProposalSequenceRequest] = deriveDecoder[AddProposalSequenceRequest]
-}
-
-@ApiModel
-final case class RemoveProposalSequenceRequest(
-  @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId]
-)
-
-object RemoveProposalSequenceRequest {
-  implicit val decoder: Decoder[RemoveProposalSequenceRequest] = deriveDecoder[RemoveProposalSequenceRequest]
-}
-
-@ApiModel
-final case class UpdateSequenceRequest(title: Option[String], status: Option[String], operation: Option[OperationId])
-
-object UpdateSequenceRequest {
-  implicit val decoder: Decoder[UpdateSequenceRequest] = deriveDecoder[UpdateSequenceRequest]
-}
 
 @ApiModel
 final case class ExhaustiveSearchRequest(
@@ -112,22 +74,6 @@ final case class ContextFilterRequest(
 
 object ContextFilterRequest {
   implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
-}
-
-final case class SearchStartSequenceRequest(slug: String) {
-  def toSearchQuery: SearchQuery = {
-    val filters: Option[SearchFilters] =
-      SearchFilters.parse(
-        status = Some(StatusSearchFilter.apply(SequenceStatus.Published)),
-        slug = Some(SlugSearchFilter(slug))
-      )
-
-    SearchQuery(filters = filters, limit = Some(1))
-  }
-}
-
-object SearchStartSequenceRequest {
-  implicit val decoder: Decoder[SearchStartSequenceRequest] = deriveDecoder[SearchStartSequenceRequest]
 }
 
 final case class SequenceConfigurationRequest(

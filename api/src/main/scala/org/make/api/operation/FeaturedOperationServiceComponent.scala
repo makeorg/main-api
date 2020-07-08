@@ -19,6 +19,7 @@
 
 package org.make.api.operation
 
+import eu.timepit.refined.auto._
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.{FeaturedOperation, FeaturedOperationId}
 
@@ -59,7 +60,7 @@ trait DefaultFeaturedOperationServiceComponent extends FeaturedOperationServiceC
         label = request.label,
         buttonLabel = request.buttonLabel,
         internalLink = request.internalLink,
-        externalLink = request.externalLink,
+        externalLink = request.externalLink.map(_.value),
         slot = request.slot
       )
       persistentFeaturedOperationService.persist(featuredOperation)
@@ -83,7 +84,7 @@ trait DefaultFeaturedOperationServiceComponent extends FeaturedOperationServiceC
                 label = request.label,
                 buttonLabel = request.buttonLabel,
                 internalLink = request.internalLink,
-                externalLink = request.externalLink,
+                externalLink = request.externalLink.map(_.value),
                 slot = request.slot
               )
             )

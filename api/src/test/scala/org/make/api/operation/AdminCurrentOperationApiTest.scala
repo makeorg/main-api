@@ -48,7 +48,7 @@ class AdminCurrentOperationApiTest
     questionId = QuestionId("question-id"),
     description = "description",
     label = "label",
-    picture = "picture.png",
+    picture = "https://example.com/picture.png",
     altPicture = "alt picture",
     linkLabel = "Grande cause",
     internalLink = Some("Consultation"),
@@ -154,7 +154,7 @@ class AdminCurrentOperationApiTest
                                                                   | "questionId": "question-id",
                                                                   | "description": "description",
                                                                   | "label": "label",
-                                                                  | "picture": "picture.png",
+                                                                  | "picture": "https://example.com/picture.png",
                                                                   | "altPicture": "alt picture",
                                                                   | "linkLabel": "Grande cause",
                                                                   | "internalLink": "Consultation"
@@ -186,7 +186,7 @@ class AdminCurrentOperationApiTest
               | "questionId": "question-id",
               | "description": "description is way too loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
               | "label": "label",
-              | "picture": "picture.png",
+              | "picture": "https://example.com/picture.png",
               | "altPicture": "alt picture aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               | "linkLabel": "Grande cause",
               | "internalLink": "Consultation"
@@ -204,7 +204,7 @@ class AdminCurrentOperationApiTest
                                                                   | "questionId": "question-id",
                                                                   | "description": "description",
                                                                   | "label": "label",
-                                                                  | "picture": "picture.png",
+                                                                  | "picture": "https://example.com/picture.png",
                                                                   | "altPicture": "alt picture",
                                                                   | "linkLabel": "Grande cause",
                                                                   | "internalLink": "Consultation",
@@ -227,7 +227,7 @@ class AdminCurrentOperationApiTest
                                                                   | "questionId": "question-id",
                                                                   | "description": "description",
                                                                   | "label": "label",
-                                                                  | "picture": "picture.png",
+                                                                  | "picture": "https://example.com/picture.png",
                                                                   | "altPicture": "alt picture",
                                                                   | "linkLabel": "Grande cause",
                                                                   | "internalLink": "Consultation"
@@ -248,7 +248,7 @@ class AdminCurrentOperationApiTest
                                                                   | "questionId": "question-id",
                                                                   | "description": "description",
                                                                   | "label": "label",
-                                                                  | "picture": "picture.png",
+                                                                  | "picture": "https://example.com/picture.png",
                                                                   | "altPicture": "alt picture",
                                                                   | "linkLabel": "Grande cause",
                                                                   | "internalLink": "Consultation"
@@ -262,7 +262,7 @@ class AdminCurrentOperationApiTest
       Put("/admin/views/home/current-operations/current-operation-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "questionId": "question-id",
-                                                                  | "picture": "picture.png"
+                                                                  | "picture": "https://example.com/picture.png"
                                                                   |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
@@ -278,7 +278,7 @@ class AdminCurrentOperationApiTest
               | "questionId": "question-id",
               | "description": "description is way too loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
               | "label": "label",
-              | "picture": "picture.png",
+              | "picture": "https://example.com/picture.png",
               | "altPicture": "alt picture aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
               | "linkLabel": "Grande cause",
               | "internalLink": "Consultation"
@@ -296,7 +296,7 @@ class AdminCurrentOperationApiTest
                                                                   | "questionId": "question-id",
                                                                   | "description": "description",
                                                                   | "label": "label",
-                                                                  | "picture": "picture.png",
+                                                                  | "picture": "https://example.com/picture.png",
                                                                   | "altPicture": "alt picture",
                                                                   | "linkLabel": "Grande cause",
                                                                   | "internalLink": "Consultation",

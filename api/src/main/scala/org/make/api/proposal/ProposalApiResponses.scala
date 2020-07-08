@@ -46,9 +46,11 @@ final case class ModerationProposalAuthorResponse(
   firstName: Option[String],
   lastName: Option[String],
   displayName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345")
   postalCode: Option[String],
   @(ApiModelProperty @field)(dataType = "int")
   age: Option[Int],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
   organisationName: Option[String],
   organisationSlug: Option[String]
@@ -99,6 +101,7 @@ final case class ModerationProposalResponse(
   labels: Seq[LabelId],
   @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
   status: ProposalStatus,
+  @(ApiModelProperty @field)(dataType = "string", example = "other")
   refusalReason: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "list[string]")
   tags: Seq[TagId] = Seq.empty,
@@ -133,7 +136,6 @@ final case class ProposalActionResponse(
   date: ZonedDateTime,
   user: Option[UserResponse],
   actionType: String,
-  @(ApiModelProperty @field)(dataType = "java.util.Map")
   arguments: Map[String, String]
 )
 
@@ -158,10 +160,13 @@ final case class AuthorResponse(
   displayName: Option[String],
   organisationName: Option[String],
   organisationSlug: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345")
   postalCode: Option[String],
-  @(ApiModelProperty @field)(example = "21", dataType = "int")
+  @(ApiModelProperty @field)(dataType = "int", example = "21")
   age: Option[Int],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "USER", allowableValues = "USER,ORGANISATION,PERSONALITY")
   userType: Option[UserType]
 )
 
@@ -261,9 +266,9 @@ final case class ProposalResponse(
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
   status: ProposalStatus,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   createdAt: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   updatedAt: Option[ZonedDateTime],
   votes: Seq[VoteResponse],
   context: Option[ProposalContextResponse],
@@ -361,7 +366,7 @@ final case class ProposalResultWithUserVote(
   proposal: ProposalResponse,
   @(ApiModelProperty @field)(dataType = "string", example = "agree")
   vote: VoteKey,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T12:12:12.012Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   voteDate: ZonedDateTime,
   voteDetails: Option[VoteResponse]
 )
@@ -477,9 +482,11 @@ object DuplicateResponse {
 final case class TagForProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "tag-slug") id: TagId,
   label: String,
-  @(ApiModelProperty @field)(dataType = "string") tagTypeId: TagTypeId,
+  @(ApiModelProperty @field)(dataType = "string", example = "8405aba4-4192-41d2-9a0d-b5aa6cb98d37") tagTypeId: TagTypeId,
   weight: Float,
-  @(ApiModelProperty @field)(dataType = "string") questionId: Option[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "c1a3222e-b0d0-4142-a051-eb6ff774ed33") questionId: Option[
+    QuestionId
+  ],
   checked: Boolean,
   predicted: Boolean
 )
@@ -500,11 +507,14 @@ object TagForProposalResponse {
     )
 }
 
-final case class TagsForProposalResponse(tags: Seq[TagForProposalResponse], modelName: String)
+final case class TagsForProposalResponse(
+  tags: Seq[TagForProposalResponse],
+  @(ApiModelProperty @field)(dataType = "string", example = "auto") modelName: String
+)
 
 object TagsForProposalResponse {
   implicit val encoder: Encoder[TagsForProposalResponse] = deriveEncoder[TagsForProposalResponse]
   implicit val decoder: Decoder[TagsForProposalResponse] = deriveDecoder[TagsForProposalResponse]
 
-  val empty = TagsForProposalResponse(tags = Seq.empty, modelName = "")
+  val empty: TagsForProposalResponse = TagsForProposalResponse(tags = Seq.empty, modelName = "")
 }

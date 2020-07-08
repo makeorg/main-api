@@ -281,7 +281,6 @@ class MakeDataHandlerComponentTest
 
       Given("a valid client")
       val clientCredential = ClientCredential(clientId = clientWithRolesId, clientSecret = secret)
-      println(clientCredential.toString)
       And("a valid user in a valid request")
 
       When("findUser is called")
@@ -290,7 +289,6 @@ class MakeDataHandlerComponentTest
 
       Then("the User is returned")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
-        println(maybeUser)
         maybeUser.isDefined shouldBe true
       }
     }

@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,13 +17,16 @@
  *
  */
 
-package org.make.core;
+package org.make.core
 
-public class HttpCodes {
+import akka.http.scaladsl.common.RepeatedValueReceptacle
+import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.directives.ParameterDirectives.{ParamDef, ParamDefAux}
 
-    public static final int OK = 200;
-    public static final int NoContent = 204;
-    public static final int Created = 201;
-    public static final int Accepted = 202;
-    public static final int Conflict = 409;
+object ApiParamMagnetHelper {
+  implicit def repeatedCsvFlatteningParamMagnet[T](
+    implicit aux: ParamDefAux[RepeatedValueReceptacle[Seq[T]], Directive1[Iterable[Seq[T]]]]
+  ): ParamDefAux[RepeatedValueReceptacle[Seq[T]], Directive1[Option[Seq[T]]]] = ParamDef.paramDef { repeated =>
+    aux.apply(repeated).map(nested => if (nested.isEmpty) None else Some(nested.flatten.toSeq))
+  }
 }

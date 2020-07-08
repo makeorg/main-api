@@ -36,7 +36,7 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.Future
 
-@Api(value = "Crm Template - Admin")
+@Api(value = "Admin Crm Templates")
 @Path(value = "/admin/crm/templates")
 trait AdminCrmTemplateApi extends Directives {
 
@@ -126,9 +126,9 @@ trait AdminCrmTemplateApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "locale", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "locale", paramType = "query", dataType = "string", example = "fr_FR"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string")
     )
   )

@@ -19,6 +19,7 @@
 
 package org.make.api.operation
 
+import eu.timepit.refined.auto._
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.{CurrentOperation, CurrentOperationId}
 
@@ -57,7 +58,7 @@ trait DefaultCurrentOperationServiceComponent extends CurrentOperationServiceCom
         altPicture = request.altPicture,
         linkLabel = request.linkLabel,
         internalLink = request.internalLink,
-        externalLink = request.externalLink
+        externalLink = request.externalLink.map(_.value)
       )
       persistentCurrentOperationService.persist(currentOperation)
     }
@@ -77,7 +78,7 @@ trait DefaultCurrentOperationServiceComponent extends CurrentOperationServiceCom
                 altPicture = request.altPicture,
                 linkLabel = request.linkLabel,
                 internalLink = request.internalLink,
-                externalLink = request.externalLink
+                externalLink = request.externalLink.map(_.value)
               )
             )
             .map(Some.apply)

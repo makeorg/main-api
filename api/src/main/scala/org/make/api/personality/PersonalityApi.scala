@@ -107,7 +107,7 @@ trait PersonalityApi extends Directives {
   def modifyPersonalityProfile: Route
 
   @Path("/{userId}/comments")
-  @ApiOperation(value = "create-top-idea-comments-for-personality", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "create-top-idea-comments-for-personality", httpMethod = "POST", code = HttpCodes.Created)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -118,14 +118,15 @@ trait PersonalityApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.Created, message = "Ok", response = classOf[TopIdeaCommentResponse]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[TopIdeaCommentResponse]))
   )
   def createComment: Route
 
   @ApiOperation(value = "get-personality-opinions", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[PersonalityOpinionResponse]]))
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[PersonalityOpinionResponse]]))
   )
   @ApiImplicitParams(
     value = Array(
@@ -298,9 +299,12 @@ trait DefaultPersonalityApiComponent
 final case class PersonalityProfileResponse(
   firstName: Option[String],
   lastName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
   description: Option[String],
+  @(ApiModelProperty @field)(dataType = "boolean")
   optInNewsletter: Option[Boolean],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String],
   politicalParty: Option[String]
 )
@@ -359,9 +363,13 @@ final case class CreateTopIdeaCommentRequest(
   comment1: Option[String],
   comment2: Option[String],
   comment3: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  @(ApiModelProperty @field)(dataType = "string", example = "agree", allowableValues = "agree,disagree,other")
   vote: CommentVoteKey,
-  @(ApiModelProperty @field)(dataType = "string", example = "doable")
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    example = "doable",
+    allowableValues = "priority,doable,noWay,nonPriority,exists,toBePrecised"
+  )
   qualification: Option[CommentQualificationKey]
 ) {
   Validation.validateOptional(
@@ -395,9 +403,13 @@ final case class TopIdeaCommentResponse(
   comment1: Option[String],
   comment2: Option[String],
   comment3: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  @(ApiModelProperty @field)(dataType = "string", example = "agree", allowableValues = "agree,disagree,other")
   vote: CommentVoteKey,
-  @(ApiModelProperty @field)(dataType = "string", example = "doable")
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    example = "doable",
+    allowableValues = "priority,doable,noWay,nonPriority,exists,toBePrecised"
+  )
   qualification: Option[CommentQualificationKey]
 )
 
@@ -420,9 +432,11 @@ object TopIdeaCommentResponse {
 
 @ApiModel
 final case class PersonalityOpinionResponse(
-  question: SimpleQuestionResponse,
-  topIdea: QuestionTopIdeaWithAvatarResponse,
-  comment: Option[TopIdeaCommentResponse]
+  @(ApiModelProperty @field)(dataType = "org.make.api.question.SimpleQuestionResponse") question: SimpleQuestionResponse,
+  @(ApiModelProperty @field)(dataType = "org.make.api.question.QuestionTopIdeaWithAvatarResponse") topIdea: QuestionTopIdeaWithAvatarResponse,
+  @(ApiModelProperty @field)(dataType = "org.make.api.personality.TopIdeaCommentResponse") comment: Option[
+    TopIdeaCommentResponse
+  ]
 )
 
 object PersonalityOpinionResponse {

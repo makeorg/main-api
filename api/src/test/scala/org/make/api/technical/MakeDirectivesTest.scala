@@ -115,7 +115,6 @@ class MakeDirectivesTest
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
-        println(cookiesHeaders.map(_.name).mkString(" - "))
         val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-session")
         val maybeSessionExpirationCookie: Option[HttpCookie] =
           cookiesHeaders.find(_.name == "cookie-session-expiration")

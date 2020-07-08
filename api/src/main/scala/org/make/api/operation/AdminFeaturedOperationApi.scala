@@ -19,6 +19,10 @@
 
 package org.make.api.operation
 
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
+import eu.timepit.refined.auto._
+import io.circe.refined._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
@@ -49,7 +53,7 @@ import scala.annotation.meta.field
 )
 @Path(value = "/admin/views/home/featured-operations")
 trait AdminFeaturedOperationApi extends Directives {
-  @ApiOperation(value = "post-featured-operation", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "post-featured-operation", httpMethod = "POST", code = HttpCodes.Created)
   @ApiResponses(
     value = Array(
       new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[FeaturedOperationIdResponse])
@@ -102,8 +106,8 @@ trait AdminFeaturedOperationApi extends Directives {
   @Path(value = "/{featuredOperationId}")
   def adminGetFeaturedOperation: Route
 
-  @ApiOperation(value = "delete-featured-operation", httpMethod = "DELETE", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @ApiOperation(value = "delete-featured-operation", httpMethod = "DELETE", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "featuredOperationId", paramType = "path", dataType = "string"))
   )
@@ -243,13 +247,16 @@ final case class CreateFeaturedOperationRequest(
   questionId: Option[QuestionId],
   title: String,
   description: Option[String],
-  landscapePicture: String,
-  portraitPicture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/landscape-picture.png")
+  landscapePicture: String Refined Url,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/portrait-picture.png")
+  portraitPicture: String Refined Url,
   altPicture: String,
   label: String,
   buttonLabel: String,
   internalLink: Option[String],
-  externalLink: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external-link")
+  externalLink: Option[String Refined Url],
   slot: Int
 ) {
   validate(
@@ -282,13 +289,16 @@ final case class UpdateFeaturedOperationRequest(
   questionId: Option[QuestionId],
   title: String,
   description: Option[String],
-  landscapePicture: String,
-  portraitPicture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/landscape-picture.png")
+  landscapePicture: String Refined Url,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/portrait-picture.png")
+  portraitPicture: String Refined Url,
   altPicture: String,
   label: String,
   buttonLabel: String,
   internalLink: Option[String],
-  externalLink: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external-link")
+  externalLink: Option[String Refined Url],
   slot: Int
 ) {
   validate(
@@ -323,12 +333,15 @@ final case class FeaturedOperationResponse(
   questionId: Option[QuestionId],
   title: String,
   description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/landscape-picture.png")
   landscapePicture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/portrait-picture.png")
   portraitPicture: String,
   altPicture: String,
   label: String,
   buttonLabel: String,
   internalLink: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external-link")
   externalLink: Option[String],
   slot: Int
 )

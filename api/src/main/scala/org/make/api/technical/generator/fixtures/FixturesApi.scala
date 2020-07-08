@@ -39,7 +39,7 @@ import scala.annotation.meta.field
 @Api(value = "Fixtures")
 @Path(value = "/fixtures")
 trait FixturesApi extends Directives {
-  @ApiOperation(value = "generate-fixtures", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "generate-fixtures", httpMethod = "POST", code = HttpCodes.Created)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -97,7 +97,7 @@ case class GenerateFixturesRequest(
   operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "ad27fa8e-9cd4-4986-b1b4-7969c064322f")
   questionId: Option[QuestionId],
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "EMPTY,TINY,BIG")
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "TINY,BIG")
   fillMode: Option[FillMode]
 )
 object GenerateFixturesRequest {

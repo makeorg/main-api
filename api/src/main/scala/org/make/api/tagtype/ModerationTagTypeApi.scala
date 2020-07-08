@@ -102,8 +102,8 @@ trait ModerationTagTypeApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tagtype.UpdateTagTypeRequest"),
-      new ApiImplicitParam(name = "tagTypeId", paramType = "path", dataType = "string")
+      new ApiImplicitParam(name = "tagTypeId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.tagtype.UpdateTagTypeRequest")
     )
   )
   @ApiResponses(
@@ -128,8 +128,8 @@ trait ModerationTagTypeApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "label", paramType = "query", dataType = "string")

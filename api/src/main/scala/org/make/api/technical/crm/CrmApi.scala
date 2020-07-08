@@ -49,7 +49,7 @@ trait CrmApi extends Directives {
     code = HttpCodes.OK,
     authorizations = Array(new Authorization(value = "basicAuth"))
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[String])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok")))
   @Path(value = "/technical/mailjet")
   @ApiImplicitParams(
     value = Array(
@@ -61,7 +61,7 @@ trait CrmApi extends Directives {
   @ApiOperation(
     value = "sync-crm-data",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.Accepted,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -69,14 +69,19 @@ trait CrmApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Ok", response = classOf[String])))
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(code = HttpCodes.Accepted, message = "Accepted"),
+      new ApiResponse(code = HttpCodes.Conflict, message = "Conflict")
+    )
+  )
   @Path(value = "/technical/crm/synchronize")
   def syncCrmData: Route
 
   @ApiOperation(
     value = "anonymize-users",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.Accepted,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -84,14 +89,14 @@ trait CrmApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Ok", response = classOf[String])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
   @Path(value = "/technical/crm/anonymize")
   def anonymizeUsers: Route
 
   @ApiOperation(
     value = "send-list",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.Accepted,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -99,7 +104,7 @@ trait CrmApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Ok", response = classOf[String])))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -111,7 +116,7 @@ trait CrmApi extends Directives {
       )
     )
   )
-  @Path(value = "/technical/crm/{list}/synchronize")
+  @Path(value = "/technical/crm/{crmList}/synchronize")
   def sendListToCrm: Route
 
   def routes: Route = webHook ~ syncCrmData ~ anonymizeUsers ~ sendListToCrm

@@ -37,7 +37,6 @@ import org.make.core.question.QuestionId
 import scala.annotation.meta.field
 
 final case class HomeViewResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   popularProposals: Seq[ProposalResponse],
   controverseProposals: Seq[ProposalResponse],
   businessConsultations: Seq[BusinessConsultationResponse],
@@ -57,7 +56,13 @@ final case class HomePageViewResponse(
 )
 
 object HomePageViewResponse extends CirceFormatters {
-  final case class PostResponse(title: String, description: String, picture: URL, alt: Option[String], link: URL)
+  final case class PostResponse(
+    title: String,
+    description: String,
+    @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/picture.png") picture: URL,
+    @(ApiModelProperty @field)(dataType = "string", example = "picture alternative") alt: Option[String],
+    @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link") link: URL
+  )
   object PostResponse {
     def fromIndexedPost(post: IndexedPost): PostResponse =
       PostResponse(
@@ -86,10 +91,10 @@ object BusinessConsultationThemeResponse {
 
 final case class BusinessConsultationResponse(
   theme: BusinessConsultationThemeResponse,
-  startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime") startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime") endDate: Option[ZonedDateTime],
   slug: Option[String],
-  aboutUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about") aboutUrl: Option[String],
   question: String
 )
 
@@ -104,13 +109,15 @@ final case class FeaturedConsultationResponse(
   questionSlug: Option[String],
   title: String,
   description: Option[String],
-  landscapePicture: String,
-  portraitPicture: String,
-  altPicture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/landscape-picture.png") landscapePicture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/portrait-picture.png") portraitPicture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "picture alternative") altPicture: String,
   label: String,
   buttonLabel: String,
   internalLink: Option[String],
-  externalLink: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external") externalLink: Option[
+    String
+  ],
   slot: Int
 )
 
@@ -139,16 +146,18 @@ final case class CurrentConsultationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fd7dedff-79ba-4eef-8c3a-c12002d3453e")
   questionId: Option[QuestionId],
   questionSlug: Option[String],
-  picture: String,
-  altPicture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/picture.png") picture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "picture alternative") altPicture: String,
   description: String,
   label: String,
   linkLabel: String,
   internalLink: Option[String],
-  externalLink: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external") externalLink: Option[
+    String
+  ],
   proposalsNumber: Long,
-  startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime]
+  @(ApiModelProperty @field)(dataType = "dateTime") startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime") endDate: Option[ZonedDateTime]
 )
 
 object CurrentConsultationResponse extends CirceFormatters {

@@ -50,7 +50,7 @@ import scala.annotation.meta.field
 @Path(value = "/admin/question-personalities")
 trait AdminQuestionPersonalityApi extends Directives {
 
-  @ApiOperation(value = "post-question-personality", httpMethod = "POST", code = HttpCodes.Created)
+  @ApiOperation(value = "admin-post-question-personality", httpMethod = "POST", code = HttpCodes.Created)
   @ApiResponses(
     value =
       Array(new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[PersonalityIdResponse]))
@@ -67,33 +67,33 @@ trait AdminQuestionPersonalityApi extends Directives {
   @Path(value = "/")
   def adminPostQuestionPersonality: Route
 
-  @ApiOperation(value = "put-question-personality", httpMethod = "PUT", code = HttpCodes.OK)
+  @ApiOperation(value = "admin-put-question-personality", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityIdResponse]))
   )
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "personalityId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(
         name = "body",
         paramType = "body",
         dataType = "org.make.api.personality.UpdateQuestionPersonalityRequest"
-      ),
-      new ApiImplicitParam(name = "personalityId", paramType = "path", dataType = "string")
+      )
     )
   )
   @Path(value = "/{personalityId}")
   def adminPutQuestionPersonality: Route
 
-  @ApiOperation(value = "get-question-personalities", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(value = "admin-get-question-personalities", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
     value = Array(
-      new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[QuestionPersonalityResponse]])
+      new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[AdminQuestionPersonalityResponse]])
     )
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "userId", paramType = "query", required = false, dataType = "string"),
@@ -110,9 +110,10 @@ trait AdminQuestionPersonalityApi extends Directives {
   @Path(value = "/")
   def adminGetQuestionPersonalities: Route
 
-  @ApiOperation(value = "get-question-personality", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiOperation(value = "admin-get-question-personality", httpMethod = "GET", code = HttpCodes.OK)
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[QuestionPersonalityResponse]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[AdminQuestionPersonalityResponse]))
   )
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "personalityId", paramType = "path", dataType = "string"))
@@ -120,8 +121,8 @@ trait AdminQuestionPersonalityApi extends Directives {
   @Path(value = "/{personalityId}")
   def adminGetQuestionPersonality: Route
 
-  @ApiOperation(value = "delete-question-personality", httpMethod = "DELETE", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "OK")))
+  @ApiOperation(value = "admin-delete-question-personality", httpMethod = "DELETE", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "personalityId", paramType = "path", dataType = "string"))
   )
@@ -263,7 +264,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                             personalityRoles
                               .find(role => role.personalityRoleId == personality.personalityRoleId) match {
                               case Some(personalityRole) =>
-                                QuestionPersonalityResponse(personality, personalityRole)
+                                AdminQuestionPersonalityResponse(personality, personalityRole)
                               case None =>
                                 throw new IllegalStateException(
                                   s"Unable to find the personality role with id ${personality.personalityRoleId}"
@@ -293,7 +294,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                     case None =>
                       throw new IllegalStateException(s"Personality with the id $personalityId does not exist")
                     case Some(personalityRole) =>
-                      complete(QuestionPersonalityResponse(personality, personalityRole))
+                      complete(AdminQuestionPersonalityResponse(personality, personalityRole))
                   }
                 }
               }
@@ -345,7 +346,7 @@ object UpdateQuestionPersonalityRequest {
   implicit val decoder: Decoder[UpdateQuestionPersonalityRequest] = deriveDecoder[UpdateQuestionPersonalityRequest]
 }
 
-final case class QuestionPersonalityResponse(
+final case class AdminQuestionPersonalityResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "5c95a5b1-3722-4f49-93ec-2c2fcb5da051")
   id: PersonalityId,
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
@@ -354,16 +355,16 @@ final case class QuestionPersonalityResponse(
   personalityRoleId: PersonalityRoleId
 )
 
-object QuestionPersonalityResponse {
-  def apply(personality: Personality, personalityRole: PersonalityRole): QuestionPersonalityResponse =
-    QuestionPersonalityResponse(
+object AdminQuestionPersonalityResponse {
+  def apply(personality: Personality, personalityRole: PersonalityRole): AdminQuestionPersonalityResponse =
+    AdminQuestionPersonalityResponse(
       id = personality.personalityId,
       userId = personality.userId,
       personalityRoleId = personalityRole.personalityRoleId
     )
 
-  implicit val decoder: Decoder[QuestionPersonalityResponse] = deriveDecoder[QuestionPersonalityResponse]
-  implicit val encoder: Encoder[QuestionPersonalityResponse] = deriveEncoder[QuestionPersonalityResponse]
+  implicit val decoder: Decoder[AdminQuestionPersonalityResponse] = deriveDecoder[AdminQuestionPersonalityResponse]
+  implicit val encoder: Encoder[AdminQuestionPersonalityResponse] = deriveEncoder[AdminQuestionPersonalityResponse]
 }
 
 final case class PersonalityIdResponse(

@@ -110,6 +110,7 @@ final case class FinalCard(
   shareDescription: Option[String],
   learnMoreTitle: Option[String],
   learnMoreTextButton: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
   linkUrl: Option[String]
 )
 object FinalCard extends CirceFormatters {
@@ -144,7 +145,12 @@ object SequenceCardsConfiguration extends CirceFormatters {
   )
 }
 
-final case class Metas(title: Option[String], description: Option[String], picture: Option[String])
+final case class Metas(
+  title: Option[String],
+  description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/picture.png")
+  picture: Option[String]
+)
 
 object Metas extends CirceFormatters {
   implicit val encoder: Encoder[Metas] = deriveEncoder[Metas]
@@ -152,11 +158,17 @@ object Metas extends CirceFormatters {
 }
 
 final case class QuestionTheme(
+  @(ApiModelProperty @field)(dataType = "string", example = "#214284")
   gradientStart: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#428421")
   gradientEnd: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#842142")
   color: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#ff0000")
   fontColor: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#00ff00")
   secondaryColor: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "#0000ff")
   secondaryFontColor: Option[String]
 )
 

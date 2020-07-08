@@ -43,6 +43,7 @@ trait ElasticSearchApi extends Directives {
   @ApiOperation(
     value = "reindex",
     httpMethod = "POST",
+    code = HttpCodes.Accepted,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -59,13 +60,19 @@ trait ElasticSearchApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(code = HttpCodes.Accepted, message = "Ok"),
+      new ApiResponse(code = HttpCodes.Conflict, message = "Conflict")
+    )
+  )
   @Path(value = "/reindex")
   def reindex: Route
 
   @ApiOperation(
     value = "reindex-posts",
     httpMethod = "POST",
+    code = HttpCodes.Accepted,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -73,7 +80,12 @@ trait ElasticSearchApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Accepted, message = "Accepted")))
+  @ApiResponses(
+    value = Array(
+      new ApiResponse(code = HttpCodes.Accepted, message = "Accepted"),
+      new ApiResponse(code = HttpCodes.Conflict, message = "Conflict")
+    )
+  )
   @Path(value = "/reindex-posts")
   def reindexPosts: Route
 

@@ -35,8 +35,7 @@ import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
-
-import scala.collection.immutable
+import org.make.core.ApiParamMagnetHelper._
 
 @Api(
   value = "Moderation Operation",
@@ -102,12 +101,18 @@ trait ModerationOperationApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "slug", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "operationKind", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(
+        name = "operationKind",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
+        allowMultiple = true
+      )
     )
   )
   @Path(value = "/")
@@ -202,7 +207,7 @@ trait DefaultModerationOperationApiComponent
                             operationId = operationId,
                             userId = auth.user.userId,
                             slug = Some(request.slug),
-                            status = OperationStatus.statusMap.get(request.status),
+                            status = request.status,
                             defaultLanguage = Some(request.defaultLanguage),
                             allowedSources = Some(request.allowedSources),
                             operationKind = Some(request.operationKind)
@@ -249,7 +254,7 @@ trait DefaultModerationOperationApiComponent
                 "_sort".?,
                 "_order".?,
                 "slug".?,
-                "operationKind".as[immutable.Seq[OperationKind]].?
+                "operationKind".as[Seq[OperationKind]].*
               )
             ) {
               (

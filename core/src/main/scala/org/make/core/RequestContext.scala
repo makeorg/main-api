@@ -108,13 +108,15 @@ final case class RequestContext(
   currentTheme: Option[ThemeId],
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
   userId: Option[UserId] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "40ab2307-8ebf-4da6-8eb5-9e23b7c4deb0")
   requestId: String,
   @(ApiModelProperty @field)(dataType = "string", example = "af938667-a15a-482b-bd0f-681f09c83e51")
   sessionId: SessionId,
   @(ApiModelProperty @field)(dataType = "string", example = "e52d2ac3-a929-43ec-acfa-fb1f486a8c75")
   visitorId: Option[VisitorId] = None,
-  @(ApiModelProperty @field)(dataType = "date", example = "2019-07-18T10:26:39.582Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   visitorCreatedAt: Option[ZonedDateTime] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "cc3b8732-b8c6-4bf8-9f4f-5b2ba8e4e8c4")
   externalId: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country],
@@ -128,12 +130,17 @@ final case class RequestContext(
   location: Option[String],
   question: Option[String],
   hostname: Option[String] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "0.0.0.0")
   ipAddress: Option[String] = None,
   getParameters: Option[Map[String, String]] = None,
   userAgent: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "main-front")
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    example = "main-front",
+    allowableValues = "main-front,legacy-front,backoffice,widget,widget-manager,dial,bi-batchs,dial-batchs,infra"
+  )
   applicationName: Option[ApplicationName] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "main-front")
   referrer: Option[String] = None,

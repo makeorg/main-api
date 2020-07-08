@@ -82,28 +82,33 @@ trait AdminPartnerApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "organisationId", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string")
+      new ApiImplicitParam(
+        name = "partnerKind",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "MEDIA,ACTION_PARTNER,FOUNDER,ACTOR"
+      )
     )
   )
   @Path(value = "/")
   def adminGetPartners: Route
 
   @ApiOperation(value = "get-partner", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "partnerId", paramType = "path", dataType = "string")))
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PartnerResponse]))
   )
-  @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "partnerId", paramType = "path", dataType = "string")))
   @Path(value = "/{partnerId}")
   def adminGetPartner: Route
 
-  @ApiOperation(value = "delete-partner", httpMethod = "DELETE", code = HttpCodes.OK)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @ApiOperation(value = "delete-partner", httpMethod = "DELETE", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "partnerId", paramType = "path", dataType = "string")))
   @Path(value = "/{partnerId}")
   def adminDeletePartner: Route
@@ -251,7 +256,9 @@ trait DefaultAdminPartnerApiComponent
 
 final case class CreatePartnerRequest(
   name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.png")
   logo: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
   link: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   organisationId: Option[UserId],
@@ -283,7 +290,9 @@ object CreatePartnerRequest {
 
 final case class UpdatePartnerRequest(
   name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.png")
   logo: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
   link: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   organisationId: Option[UserId],
@@ -315,7 +324,9 @@ final case class PartnerResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "5c95a5b1-3722-4f49-93ec-2c2fcb5da051")
   id: PartnerId,
   name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.png")
   logo: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
   link: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   organisationId: Option[UserId],

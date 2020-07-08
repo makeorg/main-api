@@ -29,6 +29,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import eu.timepit.refined.auto._
 
 class CurrentOperationServiceTest
     extends MakeUnitTest
@@ -45,11 +46,11 @@ class CurrentOperationServiceTest
     questionId = QuestionId("question-id"),
     description = "description",
     label = "label",
-    picture = "picture.png",
+    picture = "https://example.com/picture.png",
     altPicture = "alt",
     linkLabel = "linkLabel",
     internalLink = None,
-    externalLink = Some("link.com")
+    externalLink = Some("https://example.com/link")
   )
 
   feature("create current operation") {
@@ -65,11 +66,11 @@ class CurrentOperationServiceTest
             questionId = QuestionId("question-id"),
             description = "description",
             label = "label",
-            picture = "picture.png",
+            picture = "https://example.com/picture.png",
             altPicture = "alt",
             linkLabel = "linkLabel",
             internalLink = None,
-            externalLink = Some("link.com")
+            externalLink = Some("https://example.com/link")
           )
         ),
         Timeout(2.seconds)
@@ -92,11 +93,11 @@ class CurrentOperationServiceTest
             questionId = QuestionId("question-id"),
             description = "description",
             label = "label",
-            picture = "picture.png",
+            picture = "https://example.com/picture.png",
             altPicture = "alt",
             linkLabel = "linkLabel",
             internalLink = None,
-            externalLink = Some("link.com")
+            externalLink = Some("https://example.com/link")
           )
         ),
         Timeout(2.seconds)
@@ -123,11 +124,11 @@ class CurrentOperationServiceTest
             questionId = QuestionId("question-id"),
             description = "description",
             label = "updated label",
-            picture = "picture.png",
+            picture = "https://example.com/picture.png",
             altPicture = "alt",
             linkLabel = "linkLabel",
             internalLink = None,
-            externalLink = Some("link.com")
+            externalLink = Some("https://example.com/link")
           )
         ),
         Timeout(2.seconds)

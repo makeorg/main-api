@@ -76,12 +76,16 @@ case class IndexedOperationOfQuestion(
   startDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
   endDate: Option[ZonedDateTime],
-  status: OperationOfQuestion.Status,
+  @(ApiModelProperty @field)(dataType = "string", example = "Finished") status: OperationOfQuestion.Status,
   theme: QuestionTheme,
   description: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation-image.png")
   consultationImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "consultation image alternative")
   consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description-image.png")
   descriptionImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "description image alternative")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
@@ -91,7 +95,9 @@ case class IndexedOperationOfQuestion(
   operationId: OperationId,
   operationTitle: String,
   operationKind: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about")
   aboutUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/results")
   resultsLink: Option[String],
   proposalsCount: Int,
   participantsCount: Int,

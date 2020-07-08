@@ -47,9 +47,9 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.Role.RoleAdmin
 import scalaoauth2.provider.AuthInfo
+import org.make.core.ApiParamMagnetHelper._
 
 import scala.annotation.meta.field
-import scala.collection.immutable
 
 @Api(value = "Moderation Operation of question")
 @Path(value = "/moderation/operations-of-questions")
@@ -76,13 +76,20 @@ trait ModerationOperationOfQuestionApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", required = false, dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", required = false, dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "questionId", paramType = "query", required = false, dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", required = false, dataType = "string"),
-      new ApiImplicitParam(name = "operationKind", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(
+        name = "operationKind",
+        paramType = "query",
+        required = false,
+        dataType = "string",
+        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
+        allowMultiple = true
+      ),
       new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string")
     )
   )
@@ -146,7 +153,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
   @ApiOperation(
     value = "delete-operation-of-question",
     httpMethod = "DELETE",
-    code = HttpCodes.OK,
+    code = HttpCodes.NoContent,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -157,9 +164,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
       )
     )
   )
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content", response = classOf[Unit]))
-  )
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(new ApiImplicitParam(name = "questionId", paramType = "path", required = true, dataType = "string"))
   )
@@ -240,9 +245,9 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   "_end".as[Int].?,
                   "_sort".?,
                   "_order".?,
-                  "questionId".as[immutable.Seq[QuestionId]].?,
+                  "questionId".as[Seq[QuestionId]].?,
                   "operationId".as[OperationId].?,
-                  "operationKind".as[immutable.Seq[OperationKind]].?,
+                  "operationKind".as[Seq[OperationKind]].*,
                   "openAt".as[ZonedDateTime].?
                 )
               ) {
@@ -253,7 +258,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   order: Option[String],
                   questionIds,
                   operationId,
-                  operationKind,
+                  operationKinds,
                   openAt
                 ) =>
                   order.foreach { orderValue =>
@@ -281,7 +286,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         SearchOperationsOfQuestions(
                           resolvedQuestions,
                           operationId.map(opId => Seq(opId)),
-                          operationKind,
+                          operationKinds,
                           openAt
                         )
                       )
@@ -292,7 +297,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                           SearchOperationsOfQuestions(
                             resolvedQuestions,
                             operationId.map(opId => Seq(opId)),
-                            operationKind,
+                            operationKinds,
                             openAt
                           )
                         )
@@ -462,21 +467,23 @@ final case class ModifyOperationOfQuestionRequest(
   endDate: Option[ZonedDateTime],
   operationTitle: String,
   question: String,
+  @(ApiModelProperty @field)(dataType = "string")
   shortTitle: Option[String Refined MaxSize[W.`30`.T]],
   canPropose: Boolean,
   sequenceCardsConfiguration: SequenceCardsConfiguration,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about")
   aboutUrl: Option[String],
   metas: Metas,
   theme: QuestionTheme,
   description: String,
   displayResults: Boolean,
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation-image.png")
   consultationImage: Option[String Refined Url],
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "consultation image alternative")
   consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description-image.png")
   descriptionImage: Option[String Refined Url],
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "description image alternative")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   resultsLink: Option[ResultsLinkRequest],
   actions: Option[String],
@@ -535,13 +542,13 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string")
   shortTitle: Option[String Refined MaxSize[W.`30`.T]],
   questionSlug: String,
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation-image.png")
   consultationImage: Option[String Refined Url],
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "consultation image alternative")
   consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description-image.png")
   descriptionImage: Option[String Refined Url] = None,
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "description image alternative")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]] = None,
   actions: Option[String]
 ) {
@@ -592,13 +599,18 @@ final case class OperationOfQuestionResponse(
   language: Language,
   canPropose: Boolean,
   sequenceCardsConfiguration: SequenceCardsConfiguration,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about")
   aboutUrl: Option[String],
   metas: Metas,
   theme: QuestionTheme,
   description: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation-image.png")
   consultationImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "consultation image alternative")
   consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description-image.png")
   descriptionImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "description image alternative")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
   resultsLink: Option[ResultsLinkResponse],

@@ -44,8 +44,8 @@ trait TagApi extends Directives {
   @ApiOperation(value = "list-tags", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "questionId", paramType = "query", dataType = "string")
     )
   )

@@ -53,7 +53,7 @@ trait AdminOperationOfQuestionApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", required = true, dataType = "string"),

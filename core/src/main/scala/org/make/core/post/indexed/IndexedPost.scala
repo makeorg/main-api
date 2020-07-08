@@ -46,7 +46,7 @@ case class IndexedPost(
   name: String,
   slug: String,
   displayHome: Boolean,
-  @(ApiModelProperty @field)(example = "1970-01-23T14:42:84.294Z") postDate: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "dateTime") postDate: ZonedDateTime,
   thumbnailUrl: URL,
   thumbnailAlt: Option[String],
   sourceUrl: URL,

@@ -24,12 +24,15 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import io.circe._
 import io.circe.generic.semiauto._
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserType.{UserTypeOrganisation, UserTypePersonality, UserTypeUser}
 import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
 import spray.json.{JsString, JsValue, JsonFormat}
+
+import scala.annotation.meta.field
 
 sealed trait Role {
   def shortName: String
@@ -242,8 +245,10 @@ object ConnectionMode {
 case class ReconnectInfo(
   reconnectToken: String,
   firstName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
-  hiddenMail: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "y**********t@make.org") hiddenMail: String,
+  @(ApiModelProperty @field)(dataType = "list[string]", allowableValues = "MAIL,FACEBOOK,GOOGLE")
   connectionMode: Seq[ConnectionMode]
 )
 

@@ -22,7 +22,7 @@ package org.make.api.question
 import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder}
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.CirceFormatters
 import org.make.core.question.QuestionId
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
@@ -33,17 +33,19 @@ import org.make.core.user.UserId
 
 import scala.annotation.meta.field
 
+@ApiModel
 final case class SimpleQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   questionId: QuestionId,
   slug: String,
+  @(ApiModelProperty @field)(dataType = "org.make.api.question.SimpleQuestionWordingResponse")
   wording: SimpleQuestionWordingResponse,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
-  startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime]
+  @(ApiModelProperty @field)(dataType = "dateTime") startDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime") endDate: Option[ZonedDateTime]
 )
 
 object SimpleQuestionResponse extends CirceFormatters {
@@ -81,12 +83,12 @@ object QuestionPersonalityResponseWithTotal {
 }
 
 final case class QuestionPersonalityResponse(
-  userId: UserId,
+  @(ApiModelProperty @field)(dataType = "string", example = "1dc8d341-bffc-4baa-b225-e10be9913b44") userId: UserId,
   firstName: Option[String],
   lastName: Option[String],
   politicalParty: Option[String],
-  avatarUrl: Option[String],
-  gender: Option[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "F,M,O") gender: Option[String]
 )
 
 object QuestionPersonalityResponse {
@@ -94,6 +96,7 @@ object QuestionPersonalityResponse {
   implicit val encoder: Encoder[QuestionPersonalityResponse] = deriveEncoder[QuestionPersonalityResponse]
 }
 
+@ApiModel
 final case class QuestionTopIdeaWithAvatarResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "5c935d31-fda8-4d36-927c-3b2c26666a42")
   id: TopIdeaId,
@@ -103,6 +106,7 @@ final case class QuestionTopIdeaWithAvatarResponse(
   questionId: QuestionId,
   name: String,
   label: String,
+  @(ApiModelProperty @field)(dataType = "org.make.core.idea.TopIdeaScores")
   scores: TopIdeaScores,
   proposalsCount: Int,
   avatars: Seq[String],
@@ -119,6 +123,7 @@ final case class QuestionTopIdeaCommentsPersonalityResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
   personalityId: UserId,
   displayName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
   politicalParty: Option[String]
 )

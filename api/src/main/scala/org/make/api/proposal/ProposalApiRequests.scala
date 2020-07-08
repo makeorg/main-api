@@ -99,7 +99,7 @@ final case class ValidateProposalRequest(
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "list[string]")
   predictedTags: Option[Seq[TagId]],
-  @(ApiModelProperty @field)(dataType = "string")
+  @(ApiModelProperty @field)(dataType = "string", example = "auto")
   predictedTagsModelName: Option[String]
 ) {
   validateOptional(newContent.map(value => validateUserInput("newContent", value, None)))
@@ -111,7 +111,12 @@ object ValidateProposalRequest {
 }
 
 final case class UpdateQualificationRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    example = "likeIt",
+    allowableValues =
+      "likeIt,doable,platitudeAgree,noWay,impossible,platitudeDisagree,doNotUnderstand,noOpinion,doNotCare"
+  )
   key: QualificationKey,
   @(ApiModelProperty @field)(dataType = "int")
   count: Option[Int] = None,
@@ -131,7 +136,7 @@ object UpdateQualificationRequest {
 }
 
 final case class UpdateVoteRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "agree")
+  @(ApiModelProperty @field)(dataType = "string", example = "agree", allowableValues = "agree,disagree,neutral")
   key: VoteKey,
   @(ApiModelProperty @field)(dataType = "int")
   count: Option[Int] = None,
@@ -159,7 +164,11 @@ object UpdateProposalVotesRequest {
     deriveEncoder[UpdateProposalVotesRequest]
 }
 
-final case class RefuseProposalRequest(sendNotificationEmail: Boolean, refusalReason: Option[String]) {
+final case class RefuseProposalRequest(
+  sendNotificationEmail: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", example = "other")
+  refusalReason: Option[String]
+) {
   validate(Validation.mandatoryField("refusalReason", refusalReason))
   validateOptional(refusalReason.map(value => validateUserInput("refusalReason", value, None)))
 }
@@ -348,20 +357,25 @@ final case class PatchProposalRequest(
   author: Option[UserId] = None,
   @(ApiModelProperty @field)(dataType = "list[string]")
   labels: Option[Seq[LabelId]] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "Accepted")
+  @(ApiModelProperty @field)(
+    dataType = "string",
+    example = "Accepted",
+    allowableValues = "Pending,Accepted,Refused,Postponed,Archived"
+  )
   status: Option[ProposalStatus] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "other")
   refusalReason: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "list[string]")
   tags: Option[Seq[TagId]] = None,
   creationContext: Option[PatchRequestContext] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operation: Option[OperationId] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  country: Option[Country] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Option[Language] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
-  questionId: Option[QuestionId] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Option[Country] = None
+  questionId: Option[QuestionId] = None
 )
 
 object PatchProposalRequest {
@@ -369,11 +383,13 @@ object PatchProposalRequest {
 }
 
 final case class PatchRequestContext(
+  @(ApiModelProperty @field)(dataType = "string", example = "5b13da67-17bb-413f-9f4f-e73699383153")
   requestId: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "af938667-a15a-482b-bd0f-681f09c83e51")
   sessionId: Option[SessionId] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "e52d2ac3-a929-43ec-acfa-fb1f486a8c75")
   visitorId: Option[VisitorId] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "ea3caa65-0bc3-430a-9af9-e8c473730601")
   externalId: Option[String] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country] = None,
@@ -385,6 +401,7 @@ final case class PatchRequestContext(
   location: Option[String] = None,
   question: Option[String] = None,
   hostname: Option[String] = None,
+  @(ApiModelProperty @field)(dataType = "string", example = "0.0.0.0")
   ipAddress: Option[String] = None,
   getParameters: Option[Map[String, String]] = None,
   userAgent: Option[String] = None
@@ -397,7 +414,7 @@ object PatchRequestContext {
 @ApiModel
 final case class PatchProposalsIdeaRequest(
   @(ApiModelProperty @field)(dataType = "list[string]") proposalIds: Seq[ProposalId],
-  @(ApiModelProperty @field)(dataType = "string") ideaId: IdeaId
+  @(ApiModelProperty @field)(dataType = "string", example = "f335b26e-f917-4247-99f2-dc63bdb2f99a") ideaId: IdeaId
 )
 object PatchProposalsIdeaRequest {
   implicit val decoder: Decoder[PatchProposalsIdeaRequest] = deriveDecoder[PatchProposalsIdeaRequest]

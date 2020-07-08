@@ -47,7 +47,7 @@ import scalaoauth2.provider.AuthInfo
 import scala.annotation.meta.field
 import scala.concurrent.Future
 
-@Api(value = "Admin Moderator")
+@Api(value = "Admin Users")
 @Path(value = "/admin")
 trait AdminUserApi extends Directives {
 
@@ -64,13 +64,25 @@ trait AdminUserApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "role", paramType = "query", dataType = "string", defaultValue = "ROLE_MODERATOR"),
-      new ApiImplicitParam(name = "userType", paramType = "query", dataType = "string", defaultValue = "USER")
+      new ApiImplicitParam(
+        name = "role",
+        paramType = "query",
+        dataType = "string",
+        defaultValue = "ROLE_MODERATOR",
+        allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN,ROLE_POLITICAL,ROLE_ACTOR"
+      ),
+      new ApiImplicitParam(
+        name = "userType",
+        paramType = "query",
+        dataType = "string",
+        defaultValue = "USER",
+        allowableValues = "USER,ORGANISATION,PERSONALITY"
+      )
     )
   )
   @ApiResponses(
@@ -92,13 +104,13 @@ trait AdminUserApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.AdminUpdateUserRequest"),
       new ApiImplicitParam(
         name = "userId",
         paramType = "path",
         dataType = "string",
         example = "d22c8e70-f709-42ff-8a52-9398d159c753"
-      )
+      ),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.AdminUpdateUserRequest")
     )
   )
   @ApiResponses(
@@ -174,8 +186,8 @@ trait AdminUserApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "email", paramType = "query", dataType = "string"),
@@ -226,13 +238,13 @@ trait AdminUserApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateModeratorRequest"),
       new ApiImplicitParam(
         name = "userId",
         paramType = "path",
         dataType = "string",
         example = "d22c8e70-f709-42ff-8a52-9398d159c753"
-      )
+      ),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.UpdateModeratorRequest")
     )
   )
   @ApiResponses(
@@ -300,7 +312,13 @@ trait AdminUserApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "userType", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userType",
+        paramType = "path",
+        dataType = "string",
+        defaultValue = "USER",
+        allowableValues = "USER,ORGANISATION,PERSONALITY"
+      ),
       new ApiImplicitParam(name = "data", paramType = "formData", dataType = "file")
     )
   )
@@ -810,10 +828,10 @@ trait DefaultAdminUserApiComponent
 }
 
 final case class CreateModeratorRequest(
-  email: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],
   lastName: Option[String],
-  roles: Option[Seq[String]],
+  @(ApiModelProperty @field)(dataType = "list[string]") roles: Option[Seq[String]],
   password: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
@@ -843,10 +861,10 @@ object CreateModeratorRequest {
 }
 
 final case class UpdateModeratorRequest(
-  email: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: Option[String],
   firstName: Option[String],
   lastName: Option[String],
-  roles: Option[Seq[String]],
+  @(ApiModelProperty @field)(dataType = "list[string]") roles: Option[Seq[String]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
@@ -888,7 +906,7 @@ object AnonymizeUserRequest {
 
 case class ModeratorResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
-  email: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
@@ -922,16 +940,18 @@ object ModeratorResponse extends CirceFormatters {
 
 case class AdminUserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,
   firstName: Option[String],
   lastName: Option[String],
   organisationName: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") userType: UserType,
+  @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType,
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "list[string]")
   availableQuestions: Seq[QuestionId],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com")
   website: Option[String],
   politicalParty: Option[String]
 ) {
@@ -959,17 +979,20 @@ object AdminUserResponse extends CirceFormatters {
 }
 
 final case class AdminUpdateUserRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: Option[String],
   firstName: Option[String],
   lastName: Option[String],
   organisationName: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") userType: UserType,
+  @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType,
   roles: Option[Seq[String]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
   availableQuestions: Seq[QuestionId],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[
+    String Refined Url
+  ],
   politicalParty: Option[String]
 ) {
   private val maxLanguageLength = 3
@@ -987,7 +1010,10 @@ object AdminUpdateUserRequest {
   implicit lazy val decoder: Decoder[AdminUpdateUserRequest] = deriveDecoder[AdminUpdateUserRequest]
 }
 
-final case class AdminUpdateUserEmail(oldEmail: String, newEmail: String) {
+final case class AdminUpdateUserEmail(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+old@make.org") oldEmail: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+new@make.org") newEmail: String
+) {
   validate(validateEmail("oldEmail", oldEmail.toLowerCase), validateEmail("newEmail", newEmail.toLowerCase))
 }
 
@@ -997,7 +1023,7 @@ object AdminUpdateUserEmail {
 }
 
 final case class UpdateUserRolesRequest(
-  email: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role]
 ) {
   validate(
