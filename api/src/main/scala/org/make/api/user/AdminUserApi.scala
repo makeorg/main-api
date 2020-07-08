@@ -832,7 +832,7 @@ final case class CreateModeratorRequest(
     validateField(
       "password",
       "invalid_password",
-      password.exists(_.length >= 8),
+      password.forall(_.length >= 8),
       "Password must be at least 8 characters"
     )
   )
