@@ -34,7 +34,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.storage.{Content, StorageConfigurationComponent, StorageServiceComponent, UploadResponse}
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
-import org.make.core.Validation._
+import org.make.core.Validation.{validateField, _}
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
@@ -600,7 +600,7 @@ trait DefaultAdminUserApiComponent
                           email = request.email,
                           firstName = request.firstName,
                           lastName = request.lastName,
-                          password = None,
+                          password = request.password,
                           lastIp = None,
                           country = request.country,
                           language = request.language,
@@ -814,6 +814,7 @@ final case class CreateModeratorRequest(
   firstName: Option[String],
   lastName: Option[String],
   roles: Option[Seq[String]],
+  password: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
@@ -827,7 +828,13 @@ final case class CreateModeratorRequest(
     validateEmail("email", email.toLowerCase),
     validateUserInput("email", email, None),
     mandatoryField("language", language),
-    mandatoryField("country", country)
+    mandatoryField("country", country),
+    validateField(
+      "password",
+      "invalid_password",
+      password.exists(_.length >= 8),
+      "Password must be at least 8 characters"
+    )
   )
 }
 
