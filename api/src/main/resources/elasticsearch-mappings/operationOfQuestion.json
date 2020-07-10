@@ -701,10 +701,6 @@
           "type": "text",
           "index": false
         },
-        "displayResults": {
-          "type": "boolean",
-          "index": false
-        },
         "resultsLink": {
           "type": "text",
           "index": false

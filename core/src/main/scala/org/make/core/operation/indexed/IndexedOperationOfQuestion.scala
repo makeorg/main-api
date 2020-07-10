@@ -21,6 +21,7 @@ package org.make.core.operation.indexed
 
 import java.time.ZonedDateTime
 
+import cats.Show
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
@@ -29,7 +30,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.{BusinessConfig, CirceFormatters}
-import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, SimpleOperation}
+import org.make.core.operation.{OperationId, OperationOfQuestion, QuestionTheme, ResultsLink, SimpleOperation}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
@@ -91,7 +92,6 @@ case class IndexedOperationOfQuestion(
   operationTitle: String,
   operationKind: String,
   aboutUrl: Option[String],
-  displayResults: Boolean,
   resultsLink: Option[String],
   proposalsCount: Int,
   participantsCount: Int,
@@ -128,8 +128,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       operationTitle = operationOfQuestion.operationTitle,
       operationKind = operation.operationKind.shortName,
       aboutUrl = operationOfQuestion.aboutUrl,
-      displayResults = operationOfQuestion.displayResults,
-      resultsLink = operationOfQuestion.resultsLink,
+      resultsLink = operationOfQuestion.resultsLink.map(Show[ResultsLink].show),
       proposalsCount = operationOfQuestion.proposalsCount,
       participantsCount = operationOfQuestion.participantsCount,
       actions = operationOfQuestion.actions,

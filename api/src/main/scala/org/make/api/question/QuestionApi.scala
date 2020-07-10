@@ -30,7 +30,7 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{ActiveFeatureServiceComponent, FeatureServiceComponent}
 import org.make.api.idea.topIdeaComments.TopIdeaCommentServiceComponent
-import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
+import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent, ResultsLinkResponse}
 import org.make.api.organisation.OrganisationsSearchResultResponse
 import org.make.api.partner.PartnerServiceComponent
 import org.make.api.personality.PersonalityRoleServiceComponent
@@ -338,8 +338,8 @@ trait DefaultQuestionApiComponent
               startDate = operationOfQuestion.startDate,
               endDate = operationOfQuestion.endDate,
               theme = QuestionThemeResponse.fromQuestionTheme(operationOfQuestion.theme),
-              displayResults = operationOfQuestion.displayResults,
-              resultsLink = operationOfQuestion.resultsLink,
+              displayResults = operationOfQuestion.resultsLink.isDefined,
+              resultsLink = operationOfQuestion.resultsLink.map(ResultsLinkResponse.apply),
               aboutUrl = operationOfQuestion.aboutUrl,
               actions = operationOfQuestion.actions,
               featured = operationOfQuestion.featured,

@@ -101,7 +101,6 @@ trait OperationHelper {
             consultationImageAlt = None,
             descriptionImage = None,
             descriptionImageAlt = None,
-            displayResults = false,
             resultsLink = None,
             proposalsCount = 0,
             participantsCount = 0,

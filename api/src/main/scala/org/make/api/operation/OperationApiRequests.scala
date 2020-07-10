@@ -19,15 +19,20 @@
 
 package org.make.api.operation
 
+import java.net.URL
+
+import enumeratum.{Circe, Enum, EnumEntry}
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api.operation.ResultsLinkRequest.ResultsLinkKind
 import org.make.core.Validation
 import org.make.core.Validation.{validateUserInput, _}
-import org.make.core.operation.{OperationId, OperationKind, OperationStatus}
+import org.make.core.operation.{OperationId, OperationKind, OperationStatus, ResultsLink}
 import org.make.core.reference.Language
 
 import scala.annotation.meta.field
+import scala.util.Try
 
 @ApiModel
 final case class ModerationCreateOperationRequest(
@@ -99,4 +104,46 @@ private object OperationValidation {
     }
     validate(validChoices(fieldName = "status", userChoices = Seq(status), validChoices = validStatusChoices))
   }
+}
+
+final case class ResultsLinkRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "internal") kind: ResultsLinkKind,
+  @(ApiModelProperty @field)(dataType = "string", example = "results") value: String
+) {
+
+  validate(kind match {
+    case ResultsLinkKind.External =>
+      validateField("value", "invalid_content", Try(new URL(value)).isSuccess, s"Invalid URL: '$value'")
+    case ResultsLinkKind.Internal =>
+      validChoices(
+        "value",
+        Some(s"Invalid internal link: '$value'"),
+        Seq(value),
+        ResultsLink.Internal.values.map(_.value)
+      )
+  })
+
+  @ApiModelProperty(hidden = true)
+  val resultsLink: Option[ResultsLink] = ResultsLink.parse(value)
+
+}
+
+object ResultsLinkRequest {
+
+  sealed abstract class ResultsLinkKind extends EnumEntry
+
+  object ResultsLinkKind extends Enum[ResultsLinkKind] {
+
+    case object External extends ResultsLinkKind
+    case object Internal extends ResultsLinkKind
+
+    override val values: IndexedSeq[ResultsLinkKind] = findValues
+
+    implicit val decoder: Decoder[ResultsLinkKind] = Circe.decodeCaseInsensitive(this)
+    implicit val encoder: Encoder[ResultsLinkKind] = Circe.encoderLowercase(this)
+  }
+
+  implicit val decoder: Decoder[ResultsLinkRequest] = deriveDecoder
+  implicit val encoder: Encoder[ResultsLinkRequest] = deriveEncoder
+
 }

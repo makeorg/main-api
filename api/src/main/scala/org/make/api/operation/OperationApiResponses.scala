@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import org.make.api.operation.ResultsLinkRequest.ResultsLinkKind
 import org.make.core.CirceFormatters
 import org.make.core.operation._
 import org.make.core.question.QuestionId
@@ -115,4 +116,14 @@ object ModerationOperationResponse extends CirceFormatters {
       operationKind = operation.operationKind
     )
   }
+}
+
+final case class ResultsLinkResponse(kind: ResultsLinkKind, value: String)
+object ResultsLinkResponse {
+  def apply(resultsLink: ResultsLink): ResultsLinkResponse = resultsLink match {
+    case ResultsLink.External(url)   => ResultsLinkResponse(ResultsLinkKind.External, url.toString)
+    case ResultsLink.Internal(value) => ResultsLinkResponse(ResultsLinkKind.Internal, value)
+  }
+  implicit val decoder: Decoder[ResultsLinkResponse] = deriveDecoder
+  implicit val encoder: Encoder[ResultsLinkResponse] = deriveEncoder
 }

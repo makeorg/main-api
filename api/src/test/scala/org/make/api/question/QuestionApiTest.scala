@@ -126,7 +126,8 @@ class QuestionApiTest
     startDate = Some(ZonedDateTime.parse("2018-10-21T10:15:30+00:00")),
     endDate = None,
     operationTitle = "operation title",
-    landingSequenceId = SequenceId("sequenceId")
+    landingSequenceId = SequenceId("sequenceId"),
+    resultsLink = Some(ResultsLink.Internal.TopIdeas)
   )
 
   val now = DateHelper.now()
@@ -263,6 +264,9 @@ class QuestionApiTest
         questionDetailsResponse.endDate should be(baseOperationOfQuestion.endDate)
         questionDetailsResponse.operation.questions.size should be(1)
         questionDetailsResponse.operation.questions.map(_.questionId) should contain(baseQuestion.questionId)
+        questionDetailsResponse.operation.questions.flatMap(_.resultsLink) should contain(
+          ResultsLinkResponse(ResultsLinkRequest.ResultsLinkKind.Internal, ResultsLink.Internal.TopIdeas.value)
+        )
         questionDetailsResponse.activeFeatures should be(Seq("f1"))
       }
     }

@@ -20,6 +20,7 @@
 package org.make.core.technical
 package generator
 
+import java.net.URL
 import java.time.temporal.ChronoUnit
 import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.api.RefType
@@ -36,6 +37,7 @@ import org.make.core.operation.{
   OperationOfQuestion,
   OperationStatus,
   QuestionTheme,
+  ResultsLink,
   SequenceCardsConfiguration,
   SimpleOperation
 }
@@ -43,6 +45,7 @@ import org.make.core.proposal.{Proposal, ProposalStatus, Qualification, Qualific
 import org.make.core.question.Question
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
+import org.make.core.technical.generator.CustomGenerators.ImageUrl
 import org.make.core.user.{Role, User, UserType}
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
@@ -100,7 +103,7 @@ trait EntitiesGen {
       endDate           <- Gen.option(CustomGenerators.Time.zonedDateTime.suchThat(date => startDate.forall(_.isBefore(date))))
       title             <- CustomGenerators.LoremIpsumGen.sentence()
       canPropose        <- arbitrary[Boolean]
-      displayResults    <- arbitrary[Boolean]
+      resultsLink       <- Gen.option(genResultsLink)
       proposalsCount    <- arbitrary[NonNegInt]
       participantsCount <- arbitrary[NonNegInt]
       featured          <- arbitrary[Boolean]
@@ -121,13 +124,17 @@ trait EntitiesGen {
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      displayResults = displayResults,
-      resultsLink = None,
+      resultsLink = resultsLink,
       proposalsCount = proposalsCount,
       participantsCount = participantsCount,
       actions = None,
       featured = featured
     )
+
+  val genResultsLink: Gen[ResultsLink] = Gen.frequency(
+    (4, Gen.oneOf(ResultsLink.Internal.values)),
+    (1, ImageUrl.gen(100, 100).map(url => ResultsLink.External(new URL(url))))
+  )
 
   def genRoles: Gen[Seq[Role]] = {
     val roles = Gen.frequency(

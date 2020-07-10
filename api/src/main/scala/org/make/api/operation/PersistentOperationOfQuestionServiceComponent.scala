@@ -20,6 +20,7 @@
 package org.make.api.operation
 import java.time.ZonedDateTime
 
+import cats.Show
 import cats.data.NonEmptyList
 import eu.timepit.refined.W
 import eu.timepit.refined.auto._
@@ -29,6 +30,7 @@ import eu.timepit.refined.collection.MaxSize
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion
+import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion.resultsLinkBinders
 import org.make.api.operation.DefaultPersistentOperationServiceComponent.PersistentOperation
 import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
 import org.make.api.technical.DatabaseTransactions._
@@ -178,7 +180,6 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.consultationImageAlt -> operationOfQuestion.consultationImageAlt,
               PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
               PersistentOperationOfQuestion.column.descriptionImageAlt -> operationOfQuestion.descriptionImageAlt,
-              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults,
               PersistentOperationOfQuestion.column.resultsLink -> operationOfQuestion.resultsLink,
               PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
               PersistentOperationOfQuestion.column.participantsCount -> operationOfQuestion.participantsCount,
@@ -230,7 +231,6 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
               PersistentOperationOfQuestion.column.consultationImageAlt -> operationOfQuestion.consultationImageAlt,
               PersistentOperationOfQuestion.column.descriptionImage -> operationOfQuestion.descriptionImage,
               PersistentOperationOfQuestion.column.descriptionImageAlt -> operationOfQuestion.descriptionImageAlt,
-              PersistentOperationOfQuestion.column.displayResults -> operationOfQuestion.displayResults,
               PersistentOperationOfQuestion.column.resultsLink -> operationOfQuestion.resultsLink,
               PersistentOperationOfQuestion.column.proposalsCount -> operationOfQuestion.proposalsCount,
               PersistentOperationOfQuestion.column.participantsCount -> operationOfQuestion.participantsCount,
@@ -369,8 +369,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
     consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
     descriptionImage: Option[String],
     descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
-    displayResults: Boolean,
-    resultsLink: Option[String],
+    resultsLink: Option[ResultsLink],
     proposalsCount: Int,
     participantsCount: Int,
     actions: Option[String],
@@ -421,7 +420,6 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       consultationImageAlt = this.consultationImageAlt,
       descriptionImage = this.descriptionImage,
       descriptionImageAlt = this.descriptionImageAlt,
-      displayResults = this.displayResults,
       resultsLink = this.resultsLink,
       proposalsCount = this.proposalsCount,
       participantsCount = this.participantsCount,
@@ -434,6 +432,9 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       extends PersistentCompanion[PersistentOperationOfQuestion, OperationOfQuestion]
       with ShortenedNames
       with StrictLogging {
+
+    implicit val resultsLinkBinders: Binders[Option[ResultsLink]] =
+      Binders.string.xmap(s => Option(s).flatMap(ResultsLink.parse), _.map(Show[ResultsLink].show).orNull)
 
     final case class FlatQuestionWithDetails(
       questionId: String,
@@ -477,8 +478,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
       descriptionImage: Option[String],
       descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
-      displayResults: Boolean,
-      resultsLink: Option[String],
+      resultsLink: Option[ResultsLink],
       proposalsCount: Int,
       participantsCount: Int,
       actions: Option[String],
@@ -534,7 +534,6 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
             consultationImageAlt = this.consultationImageAlt,
             descriptionImage = this.descriptionImage,
             descriptionImageAlt = this.descriptionImageAlt,
-            displayResults = this.displayResults,
             resultsLink = this.resultsLink,
             proposalsCount = this.proposalsCount,
             participantsCount = this.participantsCount,
@@ -602,8 +601,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         consultationImageAlt = resultSet.get(operationOfQuestionAlias.consultationImageAlt),
         descriptionImage = resultSet.stringOpt(operationOfQuestionAlias.descriptionImage),
         descriptionImageAlt = resultSet.get(operationOfQuestionAlias.descriptionImageAlt),
-        displayResults = resultSet.boolean(operationOfQuestionAlias.displayResults),
-        resultsLink = resultSet.stringOpt(operationOfQuestionAlias.resultsLink),
+        resultsLink = resultSet.get(operationOfQuestionAlias.resultsLink),
         proposalsCount = resultSet.int(operationOfQuestionAlias.proposalsCount),
         participantsCount = resultSet.int(operationOfQuestionAlias.participantsCount),
         actions = resultSet.stringOpt(operationOfQuestionAlias.actions),
@@ -707,8 +705,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         consultationImageAlt = resultSet.get(resultName.consultationImageAlt),
         descriptionImage = resultSet.stringOpt(resultName.descriptionImage),
         descriptionImageAlt = resultSet.get(resultName.descriptionImageAlt),
-        displayResults = resultSet.boolean(resultName.displayResults),
-        resultsLink = resultSet.stringOpt(resultName.resultsLink),
+        resultsLink = resultSet.get(resultName.resultsLink),
         proposalsCount = resultSet.int(resultName.proposalsCount),
         participantsCount = resultSet.int(resultName.participantsCount),
         actions = resultSet.stringOpt(resultName.actions),

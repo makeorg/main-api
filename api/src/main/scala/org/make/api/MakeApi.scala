@@ -506,18 +506,14 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
       case MalformedRequestContentRejection(_, ValidationFailedError(messages)) =>
         complete(StatusCodes.BadRequest -> messages)
       case MalformedRequestContentRejection(_, DecodingFailures(failures)) =>
-        val errors: Seq[ValidationError] = failures.toList.flatMap { failure =>
-          failure.history.flatMap {
-            case DownField(field) =>
-              val errorMessage: String = if (failure.message == "Attempt to decode value on failed cursor") {
-                s"The field [.$field] is missing."
-              } else {
-                failure.message
-              }
-              Seq(ValidationError(field, "malformed", Option(errorMessage)))
-
-            case _ => Nil
+        val errors: Seq[ValidationError] = failures.toList.map { failure =>
+          val path = failure.history.collect { case DownField(field) => field }.reverse.mkString(".")
+          val errorMessage: String = if (failure.message == "Attempt to decode value on failed cursor") {
+            s"The field [.$path] is missing."
+          } else {
+            failure.message
           }
+          ValidationError(path, "malformed", Option(errorMessage))
         }
         complete(StatusCodes.BadRequest -> errors)
       case MalformedRequestContentRejection(_, e) =>
