@@ -22,7 +22,7 @@ package org.make.core.proposal
 import java.time.ZonedDateTime
 
 import com.sksamuel.avro4s.AvroSortPriority
-import com.typesafe.scalalogging.StrictLogging
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto._
 import io.swagger.annotations.ApiModelProperty
@@ -120,73 +120,39 @@ object ProposalAction {
     DefaultJsonProtocol.jsonFormat4(ProposalAction.apply)
 }
 
-sealed trait ProposalActionType { val name: String }
-case object ProposalProposeAction extends ProposalActionType { override val name: String = "propose" }
-case object ProposalUpdateAction extends ProposalActionType { override val name: String = "update" }
-case object ProposalUpdateVoteVerifiedAction extends ProposalActionType {
-  override val name: String = "update-votes-verified"
+sealed abstract class ProposalActionType(val value: String) extends StringEnumEntry
+
+object ProposalActionType extends StringEnum[ProposalActionType] {
+
+  case object ProposalProposeAction extends ProposalActionType("propose")
+  case object ProposalUpdateAction extends ProposalActionType("update")
+  case object ProposalUpdateVoteVerifiedAction extends ProposalActionType("update-votes-verified")
+  case object ProposalAcceptAction extends ProposalActionType("accept")
+  case object ProposalVoteAction extends ProposalActionType("vote")
+  case object ProposalUnvoteAction extends ProposalActionType("unvote")
+  case object ProposalQualifyAction extends ProposalActionType("qualify")
+  case object ProposalUnqualifyAction extends ProposalActionType("unqualify")
+
+  override def values: IndexedSeq[ProposalActionType] = findValues
+
 }
-case object ProposalAcceptAction extends ProposalActionType { override val name: String = "accept" }
-case object ProposalVoteAction extends ProposalActionType { override val name: String = "vote" }
-case object ProposalUnvoteAction extends ProposalActionType { override val name: String = "unvote" }
-case object ProposalQualifyAction extends ProposalActionType { override val name: String = "qualify" }
-case object ProposalUnqualifyAction extends ProposalActionType { override val name: String = "unqualify" }
 
-sealed trait QualificationKey { val shortName: String }
+sealed abstract class QualificationKey(val value: String) extends StringEnumEntry
 
-object QualificationKey extends StrictLogging {
-  val qualificationKeys: Map[String, QualificationKey] = Map(
-    LikeIt.shortName -> LikeIt,
-    Doable.shortName -> Doable,
-    PlatitudeAgree.shortName -> PlatitudeAgree,
-    NoWay.shortName -> NoWay,
-    Impossible.shortName -> Impossible,
-    PlatitudeDisagree.shortName -> PlatitudeDisagree,
-    DoNotUnderstand.shortName -> DoNotUnderstand,
-    NoOpinion.shortName -> NoOpinion,
-    DoNotCare.shortName -> DoNotCare
-  )
+object QualificationKey extends StringEnum[QualificationKey] with StringCirceEnum[QualificationKey] {
 
-  implicit val qualificationKeyEncoder: Encoder[QualificationKey] =
-    (qualificationKey: QualificationKey) => Json.fromString(qualificationKey.shortName)
-  implicit val qualificationKeyDecoder: Decoder[QualificationKey] =
-    Decoder.decodeString.emap(
-      qualificationKey =>
-        QualificationKey
-          .matchQualificationKey(qualificationKey)
-          .map(Right.apply)
-          .getOrElse(Left(s"$qualificationKey is not a QualificationKey"))
-    )
+  case object LikeIt extends QualificationKey("likeIt")
+  case object Doable extends QualificationKey("doable")
+  case object PlatitudeAgree extends QualificationKey("platitudeAgree")
+  case object NoWay extends QualificationKey("noWay")
+  case object Impossible extends QualificationKey("impossible")
+  case object PlatitudeDisagree extends QualificationKey("platitudeDisagree")
+  case object DoNotUnderstand extends QualificationKey("doNotUnderstand")
+  case object NoOpinion extends QualificationKey("noOpinion")
+  case object DoNotCare extends QualificationKey("doNotCare")
 
-  implicit val qualificationKeyFormatter: JsonFormat[QualificationKey] = new JsonFormat[QualificationKey] {
-    override def read(json: JsValue): QualificationKey = json match {
-      case JsString(s) =>
-        QualificationKey.qualificationKeys.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
-      case other => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  override def values: IndexedSeq[QualificationKey] = findValues
 
-    override def write(obj: QualificationKey): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  def matchQualificationKey(qualificationKey: String): Option[QualificationKey] = {
-    val maybeQualificationKey = qualificationKeys.get(qualificationKey)
-    if (maybeQualificationKey.isEmpty) {
-      logger.warn(s"$qualificationKey is not a qualification key")
-    }
-    maybeQualificationKey
-  }
-
-  case object LikeIt extends QualificationKey { override val shortName: String = "likeIt" }
-  case object Doable extends QualificationKey { override val shortName: String = "doable" }
-  case object PlatitudeAgree extends QualificationKey { override val shortName: String = "platitudeAgree" }
-  case object NoWay extends QualificationKey { override val shortName: String = "noWay" }
-  case object Impossible extends QualificationKey { override val shortName: String = "impossible" }
-  case object PlatitudeDisagree extends QualificationKey { override val shortName: String = "platitudeDisagree" }
-  case object DoNotUnderstand extends QualificationKey { override val shortName: String = "doNotUnderstand" }
-  case object NoOpinion extends QualificationKey { override val shortName: String = "noOpinion" }
-  case object DoNotCare extends QualificationKey { override val shortName: String = "doNotCare" }
 }
 
 trait BaseQualification {
@@ -244,100 +210,37 @@ object Vote {
   def empty(key: VoteKey): Vote = Vote(key, 0, 0, 0, 0, Seq.empty)
 }
 
-sealed trait VoteKey { val shortName: String }
+sealed abstract class VoteKey(val value: String) extends StringEnumEntry
 
-object VoteKey extends StrictLogging {
-  val voteKeys: Map[String, VoteKey] =
-    Map(Agree.shortName -> Agree, Disagree.shortName -> Disagree, Neutral.shortName -> Neutral)
+object VoteKey extends StringEnum[VoteKey] with StringCirceEnum[VoteKey] {
 
-  implicit lazy val voteKeyEncoder: Encoder[VoteKey] =
-    (voteKey: VoteKey) => Json.fromString(voteKey.shortName)
-  implicit lazy val voteKeyDecoder: Decoder[VoteKey] =
-    Decoder.decodeString.emap(
-      voteKey => VoteKey.matchVoteKey(voteKey).map(Right.apply).getOrElse(Left(s"$voteKey is not a VoteKey"))
-    )
+  case object Agree extends VoteKey("agree")
+  case object Disagree extends VoteKey("disagree")
+  case object Neutral extends VoteKey("neutral")
 
-  implicit val voteKeyFormatter: JsonFormat[VoteKey] = new JsonFormat[VoteKey] {
-    override def read(json: JsValue): VoteKey = json match {
-      case JsString(s) => VoteKey.voteKeys.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  override def values: IndexedSeq[VoteKey] = findValues
 
-    override def write(obj: VoteKey): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  def matchVoteKey(voteKey: String): Option[VoteKey] = {
-    val maybeVoteKey = voteKeys.get(voteKey)
-    if (maybeVoteKey.isEmpty) {
-      logger.warn(s"$voteKey is not a voteKey")
-    }
-    maybeVoteKey
-  }
-
-  case object Agree extends VoteKey { override val shortName: String = "agree" }
-  case object Disagree extends VoteKey { override val shortName: String = "disagree" }
-  case object Neutral extends VoteKey { override val shortName: String = "neutral" }
 }
 
-sealed trait ProposalStatus {
-  def shortName: String
-}
+sealed abstract class ProposalStatus(val value: String) extends StringEnumEntry
 
-object ProposalStatus {
-  val statusMap: Map[String, ProposalStatus] =
-    Map(
-      Pending.shortName -> Pending,
-      Postponed.shortName -> Postponed,
-      Accepted.shortName -> Accepted,
-      Refused.shortName -> Refused,
-      Archived.shortName -> Archived
-    )
-
-  implicit lazy val proposalStatusEncoder: Encoder[ProposalStatus] = (status: ProposalStatus) =>
-    Json.fromString(status.shortName)
-  implicit lazy val proposalStatusDecoder: Decoder[ProposalStatus] =
-    Decoder.decodeString.emap { value: String =>
-      statusMap.get(value) match {
-        case Some(status) => Right(status)
-        case None         => Left(s"$value is not a proposal status")
-      }
-    }
-
-  implicit val proposalStatusFormatted: JsonFormat[ProposalStatus] = new JsonFormat[ProposalStatus] {
-    override def read(json: JsValue): ProposalStatus = json match {
-      case JsString(s) => ProposalStatus.statusMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: ProposalStatus): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
+object ProposalStatus extends StringEnum[ProposalStatus] with StringCirceEnum[ProposalStatus] {
 
   @AvroSortPriority(5)
-  case object Pending extends ProposalStatus {
-    override val shortName = "Pending"
-  }
+  case object Pending extends ProposalStatus("Pending")
 
   @AvroSortPriority(1)
-  case object Accepted extends ProposalStatus {
-    override val shortName = "Accepted"
-  }
+  case object Accepted extends ProposalStatus("Accepted")
 
   @AvroSortPriority(3)
-  case object Refused extends ProposalStatus {
-    override val shortName = "Refused"
-  }
+  case object Refused extends ProposalStatus("Refused")
 
   @AvroSortPriority(4)
-  case object Postponed extends ProposalStatus {
-    override val shortName = "Postponed"
-  }
+  case object Postponed extends ProposalStatus("Postponed")
 
   @AvroSortPriority(2)
-  case object Archived extends ProposalStatus {
-    override val shortName = "Archived"
-  }
+  case object Archived extends ProposalStatus("Archived")
+
+  override def values: IndexedSeq[ProposalStatus] = findValues
+
 }

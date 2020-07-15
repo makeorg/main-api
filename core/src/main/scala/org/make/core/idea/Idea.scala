@@ -21,6 +21,7 @@ package org.make.core.idea
 
 import java.time.ZonedDateTime
 
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
@@ -74,39 +75,13 @@ object IdeaId {
   }
 }
 
-sealed trait IdeaStatus {
-  def shortName: String
-}
+sealed abstract class IdeaStatus(val value: String) extends StringEnumEntry
 
-object IdeaStatus {
-  val statusMap: Map[String, IdeaStatus] =
-    Map(Activated.shortName -> Activated, Archived.shortName -> Archived)
+object IdeaStatus extends StringEnum[IdeaStatus] with StringCirceEnum[IdeaStatus] {
 
-  implicit lazy val ideaStatusEncoder: Encoder[IdeaStatus] = (status: IdeaStatus) => Json.fromString(status.shortName)
-  implicit lazy val ideaStatusDecoder: Decoder[IdeaStatus] =
-    Decoder.decodeString.emap { value: String =>
-      statusMap.get(value) match {
-        case Some(status) => Right(status)
-        case None         => Left(s"$value is not an idea status")
-      }
-    }
+  case object Archived extends IdeaStatus("Archived")
+  case object Activated extends IdeaStatus("Activated")
 
-  implicit val ideaStatusFormatted: JsonFormat[IdeaStatus] = new JsonFormat[IdeaStatus] {
-    override def read(json: JsValue): IdeaStatus = json match {
-      case JsString(s) => IdeaStatus.statusMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  override def values: IndexedSeq[IdeaStatus] = findValues
 
-    override def write(obj: IdeaStatus): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  case object Archived extends IdeaStatus {
-    override val shortName = "Archived"
-  }
-
-  case object Activated extends IdeaStatus {
-    override val shortName = "Activated"
-  }
 }

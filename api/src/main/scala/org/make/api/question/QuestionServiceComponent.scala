@@ -213,7 +213,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
               lastName = user.lastName,
               politicalParty = user.profile.flatMap(_.politicalParty),
               avatarUrl = user.profile.flatMap(_.avatarUrl),
-              gender = user.profile.flatMap(_.gender.map(_.shortName))
+              gender = user.profile.flatMap(_.gender.map(_.value))
             )
         }
         .runWith(Sink.seq[QuestionPersonalityResponse])

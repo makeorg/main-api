@@ -26,7 +26,9 @@ import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, WeightScore}
 import com.sksamuel.elastic4s.searches.sort.{ScoreSort, SortOrder}
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import org.make.core.user.UserType
 
 sealed trait SortAlgorithm {
@@ -46,7 +48,6 @@ final case class RandomAlgorithm(override val seed: Int) extends SortAlgorithm w
 
   }
 }
-object RandomAlgorithm { val shortName: String = "random" }
 
 /*
  * This algorithm aims to show hot quality content to the user.
@@ -75,10 +76,6 @@ final case class TaggedFirstAlgorithm(override val seed: Int) extends SortAlgori
           .boostMode(CombineFunction.Replace)
       )
   }
-}
-
-object TaggedFirstAlgorithm {
-  val shortName: String = "taggedFirst"
 }
 
 /*
@@ -116,8 +113,6 @@ final case class TaggedFirstLegacyAlgorithm(override val seed: Int) extends Sort
   }
 }
 
-object TaggedFirstLegacyAlgorithm { val shortName: String = "taggedFirstLegacy" }
-
 // Sorts the proposals by most actor votes and then randomly from the given seed
 final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorithm with RandomBaseAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
@@ -135,7 +130,6 @@ final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorith
     }.getOrElse(request)
   }
 }
-object ActorVoteAlgorithm { val shortName: String = "actorVote" }
 
 // Sort proposal by their controversy score
 case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
@@ -152,7 +146,6 @@ case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) ext
       )
   }
 }
-case object ControversyAlgorithm { val shortName: String = "controversy" }
 
 // Sort proposal by their top score
 case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
@@ -162,8 +155,6 @@ case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
       .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountThreshold))
   }
 }
-
-case object PopularAlgorithm { val shortName: String = "popular" }
 
 // Sort proposal by their realistic score
 case class RealisticAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
@@ -180,12 +171,11 @@ case class RealisticAlgorithm(threshold: Double, votesCountThreshold: Int) exten
       )
   }
 }
-case object RealisticAlgorithm { val shortName: String = "realistic" }
 
 case object B2BFirstAlgorithm extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     val userTypeScript =
-      s"""doc['${ProposalElasticsearchFieldNames.authorUserType}'].value == \"${UserType.UserTypeUser.shortName}\" ? 1 : 100"""
+      s"""doc['${ProposalElasticsearchFieldNames.authorUserType}'].value == \"${UserType.UserTypeUser.value}\" ? 1 : 100"""
     request.query.map { query =>
       request
         .query(
@@ -197,35 +187,44 @@ case object B2BFirstAlgorithm extends SortAlgorithm {
         .sortBy(ScoreSort(SortOrder.DESC) +: request.sorts)
     }.getOrElse(request)
   }
-
-  val shortName: String = "B2BFirst"
 }
 
-case object AlgorithmSelector {
-  val sortAlgorithmsName: Seq[String] = Seq(
-    RandomAlgorithm.shortName,
-    ActorVoteAlgorithm.shortName,
-    ControversyAlgorithm.shortName,
-    PopularAlgorithm.shortName,
-    TaggedFirstLegacyAlgorithm.shortName,
-    TaggedFirstAlgorithm.shortName,
-    RealisticAlgorithm.shortName,
-    B2BFirstAlgorithm.shortName
-  )
+sealed abstract class AlgorithmSelector(
+  val value: String,
+  val build: (Int, SortAlgorithmConfiguration) => SortAlgorithm
+) extends StringEnumEntry
+
+case object AlgorithmSelector extends StringEnum[AlgorithmSelector] with StringEnumKeys[AlgorithmSelector] {
+
+  case object Random extends AlgorithmSelector("random", (randomSeed, _) => RandomAlgorithm(randomSeed))
+
+  case object TaggedFirst extends AlgorithmSelector("taggedFirst", (randomSeed, _) => TaggedFirstAlgorithm(randomSeed))
+
+  case object TaggedFirstLegacy
+      extends AlgorithmSelector("taggedFirstLegacy", (randomSeed, _) => TaggedFirstLegacyAlgorithm(randomSeed))
+
+  case object ActorVote extends AlgorithmSelector("actorVote", (randomSeed, _) => ActorVoteAlgorithm(randomSeed))
+
+  case object Controversy
+      extends AlgorithmSelector(
+        "controversy",
+        (_, conf) => ControversyAlgorithm(conf.controversyThreshold, conf.controversyVoteCountThreshold)
+      )
+
+  case object Popular
+      extends AlgorithmSelector("popular", (_, conf) => PopularAlgorithm(conf.popularVoteCountThreshold))
+
+  case object Realistic
+      extends AlgorithmSelector(
+        "realistic",
+        (_, conf) => RealisticAlgorithm(conf.realisticThreshold, conf.realisticVoteCountThreshold)
+      )
+
+  case object B2BFirst extends AlgorithmSelector("B2BFirst", (_, _) => B2BFirstAlgorithm)
+
+  override def values: IndexedSeq[AlgorithmSelector] = findValues
 
   def select(sortAlgorithm: Option[String], randomSeed: Int, conf: SortAlgorithmConfiguration): Option[SortAlgorithm] =
-    sortAlgorithm match {
-      case Some(RandomAlgorithm.shortName)    => Some(RandomAlgorithm(randomSeed))
-      case Some(ActorVoteAlgorithm.shortName) => Some(ActorVoteAlgorithm(randomSeed))
-      case Some(ControversyAlgorithm.shortName) =>
-        Some(ControversyAlgorithm(conf.controversyThreshold, conf.controversyVoteCountThreshold))
-      case Some(PopularAlgorithm.shortName)           => Some(PopularAlgorithm(conf.popularVoteCountThreshold))
-      case Some(TaggedFirstLegacyAlgorithm.shortName) => Some(TaggedFirstLegacyAlgorithm(randomSeed))
-      case Some(TaggedFirstAlgorithm.shortName)       => Some(TaggedFirstAlgorithm(randomSeed))
-      case Some(RealisticAlgorithm.shortName) =>
-        Some(RealisticAlgorithm(conf.realisticThreshold, conf.realisticVoteCountThreshold))
-      case Some(B2BFirstAlgorithm.shortName) => Some(B2BFirstAlgorithm)
-      case _                                 => None
-    }
+    sortAlgorithm.flatMap(withValueOpt).map(_.build(randomSeed, conf))
 
 }

@@ -35,6 +35,7 @@ import org.make.core.SprayJsonFormatters._
 import org.make.core._
 import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.proposal.ProposalStatus.{Accepted, Postponed, Refused}
+import org.make.core.proposal.ProposalActionType._
 import org.make.core.proposal.QualificationKey._
 import org.make.core.proposal.VoteKey._
 import org.make.core.proposal.{Qualification, Vote, _}
@@ -232,7 +233,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         requestContext = event.requestContext,
         action = SessionAction(
           date = event.eventDate,
-          actionType = ProposalVoteAction.name,
+          actionType = ProposalVoteAction.value,
           SessionVote(proposalId = event.id, voteKey = event.voteKey, trust = event.voteTrust)
         )
       )
@@ -246,7 +247,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         requestContext = event.requestContext,
         action = SessionAction(
           date = event.eventDate,
-          actionType = ProposalUnvoteAction.name,
+          actionType = ProposalUnvoteAction.value,
           SessionUnvote(proposalId = event.id, voteKey = event.voteKey, trust = event.voteTrust)
         )
       )
@@ -260,7 +261,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         requestContext = event.requestContext,
         action = SessionAction(
           date = event.eventDate,
-          actionType = ProposalQualifyAction.name,
+          actionType = ProposalQualifyAction.value,
           SessionQualification(
             proposalId = event.id,
             qualificationKey = event.qualificationKey,
@@ -278,7 +279,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         requestContext = event.requestContext,
         action = SessionAction(
           date = event.eventDate,
-          actionType = ProposalUnqualifyAction.name,
+          actionType = ProposalUnqualifyAction.value,
           SessionUnqualification(
             proposalId = event.id,
             qualificationKey = event.qualificationKey,
@@ -755,7 +756,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             ProposalAction(
               date = e.eventDate,
               user = e.userId,
-              actionType = ProposalProposeAction.name,
+              actionType = ProposalProposeAction.value,
               arguments = Map("content" -> e.content)
             )
           ),
@@ -824,7 +825,7 @@ object ProposalActor {
       ProposalAction(
         date = event.eventDate,
         user = moderator,
-        actionType = ProposalUpdateAction.name,
+        actionType = ProposalUpdateAction.value,
         arguments = arguments
       )
     val proposal =
@@ -888,7 +889,7 @@ object ProposalActor {
       ProposalAction(
         date = event.eventDate,
         user = event.moderator,
-        actionType = ProposalAcceptAction.name,
+        actionType = ProposalAcceptAction.value,
         arguments = arguments
       )
     val proposal =

@@ -29,6 +29,7 @@ import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent.PersistentT
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
+import org.make.api.technical.ScalikeSupport._
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -159,11 +160,11 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
             .on(tagAlias.tagTypeId, tagTypeAlias.id)
             .where(
               sqls
-                .eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                .eq(tagAlias.display, TagDisplay.Displayed)
                 .or(
                   sqls
-                    .eq(tagAlias.display, TagDisplay.Inherit.shortName)
-                    .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+                    .eq(tagAlias.display, TagDisplay.Inherit)
+                    .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed))
                 )
             )
             .orderBy(tagAlias.weight, tagAlias.label)
@@ -211,7 +212,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
             .namedValues(
               column.id -> tag.tagId.value,
               column.label -> tag.label,
-              column.display -> tag.display.shortName,
+              column.display -> tag.display,
               column.tagTypeId -> tag.tagTypeId.value,
               column.operationId -> tag.operationId.map(_.value),
               column.questionId -> tag.questionId.map(_.value),
@@ -234,7 +235,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
             .update(PersistentTag)
             .set(
               column.label -> tag.label,
-              column.display -> tag.display.shortName,
+              column.display -> tag.display,
               column.tagTypeId -> tag.tagTypeId.value,
               column.operationId -> tag.operationId.map(_.value),
               column.questionId -> tag.questionId.map(_.value),
@@ -306,11 +307,11 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                   if (onlyDisplayed) {
                     Some(
                       sqls
-                        .eq(tagAlias.display, TagDisplay.Displayed.shortName)
+                        .eq(tagAlias.display, TagDisplay.Displayed)
                         .or(
                           sqls
-                            .eq(tagAlias.display, TagDisplay.Inherit.shortName)
-                            .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed.shortName))
+                            .eq(tagAlias.display, TagDisplay.Inherit)
+                            .and(sqls.eq(tagTypeAlias.display, TagDisplay.Displayed))
                         )
                     )
                   } else {
@@ -407,7 +408,7 @@ object DefaultPersistentTagServiceComponent {
       PersistentTag.apply(
         id = resultSet.string(tagResultName.id),
         label = resultSet.string(tagResultName.label),
-        display = TagDisplay.matchTagDisplayOrDefault(resultSet.string(tagResultName.display)),
+        display = TagDisplay(resultSet.string(tagResultName.display)),
         tagTypeId = resultSet.string(tagResultName.tagTypeId),
         operationId = resultSet.stringOpt(tagResultName.operationId),
         questionId = resultSet.stringOpt(tagResultName.questionId),

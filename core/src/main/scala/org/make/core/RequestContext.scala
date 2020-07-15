@@ -23,8 +23,9 @@ import java.time.ZonedDateTime
 
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{RecordFormat, SchemaFor}
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
@@ -32,75 +33,26 @@ import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.annotation.meta.field
 
-sealed trait ApplicationName {
-  def shortName: String
-}
+sealed abstract class ApplicationName(val value: String) extends StringEnumEntry
 
-object ApplicationName {
-  case object MainFrontend extends ApplicationName {
-    val shortName: String = "main-front"
-  }
-  case object LegacyFrontend extends ApplicationName {
-    val shortName: String = "legacy-front"
-  }
-  case object Backoffice extends ApplicationName {
-    val shortName: String = "backoffice"
-  }
-  case object Widget extends ApplicationName {
-    val shortName: String = "widget"
-  }
-  case object WidgetManager extends ApplicationName {
-    val shortName: String = "widget-manager"
-  }
-  case object Dial extends ApplicationName {
-    val shortName: String = "dial"
-  }
-  case object BiBatchs extends ApplicationName {
-    val shortName: String = "bi-batchs"
-  }
-  case object DialBatchs extends ApplicationName {
-    val shortName: String = "dial-batchs"
-  }
-  case object Infrastructure extends ApplicationName {
-    val shortName: String = "infra"
-  }
-  val applicationMap: Map[String, ApplicationName] =
-    Map(
-      MainFrontend.shortName -> MainFrontend,
-      LegacyFrontend.shortName -> LegacyFrontend,
-      Backoffice.shortName -> Backoffice,
-      Widget.shortName -> Widget,
-      WidgetManager.shortName -> WidgetManager,
-      Dial.shortName -> Dial,
-      BiBatchs.shortName -> BiBatchs,
-      DialBatchs.shortName -> DialBatchs,
-      Infrastructure.shortName -> Infrastructure
-    )
+object ApplicationName extends StringEnum[ApplicationName] with StringCirceEnum[ApplicationName] {
 
-  implicit lazy val encoder: Encoder[ApplicationName] = (applicationName: ApplicationName) =>
-    Json.fromString(applicationName.shortName)
-  implicit lazy val decoder: Decoder[ApplicationName] =
-    Decoder.decodeString.emap { value: String =>
-      applicationMap.get(value) match {
-        case Some(application) => Right(application)
-        case None              => Left(s"$value is not an application name")
-      }
-    }
+  case object MainFrontend extends ApplicationName("main-front")
+  case object LegacyFrontend extends ApplicationName("legacy-front")
+  case object Backoffice extends ApplicationName("backoffice")
+  case object Widget extends ApplicationName("widget")
+  case object WidgetManager extends ApplicationName("widget-manager")
+  case object Dial extends ApplicationName("dial")
+  case object BiBatchs extends ApplicationName("bi-batchs")
+  case object DialBatchs extends ApplicationName("dial-batchs")
+  case object Infrastructure extends ApplicationName("infra")
 
-  implicit val applicationNameFormatter: JsonFormat[ApplicationName] = new JsonFormat[ApplicationName] {
-    override def read(json: JsValue): ApplicationName = json match {
-      case JsString(s) => applicationMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  override def values: IndexedSeq[ApplicationName] = findValues
 
-    override def write(obj: ApplicationName): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
 }
 
 final case class RequestContext(

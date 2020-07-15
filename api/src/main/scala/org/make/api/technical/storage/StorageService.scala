@@ -165,7 +165,7 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
     ): Future[String] = {
       val date = DateHelper.now()
       val name =
-        s"${date.getYear}/${date.getMonthValue}/${userType.shortName.toLowerCase}/${idGenerator.nextId()}.$extension"
+        s"${date.getYear}/${date.getMonthValue}/${userType.value.toLowerCase}/${idGenerator.nextId()}.$extension"
       storageService.uploadFile(FileType.Avatar, name, contentType, content)
 
     }

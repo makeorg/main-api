@@ -452,15 +452,15 @@ object SearchFilters extends ElasticDsl {
     val query: Option[Query] = filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(proposalStatus)) =>
-          ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, proposalStatus.shortName)
+          ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, proposalStatus.value)
         case StatusSearchFilter(proposalStatuses) =>
-          ElasticApi.termsQuery(ProposalElasticsearchFieldNames.status, proposalStatuses.map(_.shortName))
+          ElasticApi.termsQuery(ProposalElasticsearchFieldNames.status, proposalStatuses.map(_.value))
       }
     }
 
     query match {
       case None =>
-        Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Accepted.shortName))
+        Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Accepted.value))
       case _ => query
     }
   }
@@ -552,7 +552,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.sequencePool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool.shortName))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool.value))
         case _ => None
       }
     }
@@ -562,7 +562,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.sequenceSegmentPool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequenceSegmentPool, sequencePool.shortName))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequenceSegmentPool, sequencePool.value))
         case _ => None
       }
     }
@@ -573,9 +573,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.operationKinds match {
         case Some(OperationKindsSearchFilter(Seq(operationKind))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationKind, operationKind.shortName))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationKind, operationKind.value))
         case Some(OperationKindsSearchFilter(operationKinds)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.operationKind, operationKinds.map(_.shortName)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.operationKind, operationKinds.map(_.value)))
         case _ => None
       }
     }
@@ -605,9 +605,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.userTypes match {
         case Some(UserTypesSearchFilter(Seq(userType))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorUserType, userType.shortName))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorUserType, userType.value))
         case Some(UserTypesSearchFilter(userTypes)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.authorUserType, userTypes.map(_.shortName)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.authorUserType, userTypes.map(_.value)))
         case _ => None
       }
     }

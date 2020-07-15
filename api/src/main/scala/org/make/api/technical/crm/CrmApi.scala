@@ -22,14 +22,13 @@ package org.make.api.technical.crm
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.directives.Credentials.Provided
-import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
+import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.{MailJetConfigurationComponent, MakeSettingsComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.api.technical.crm.CrmList.{HardBounce, OptIn, OptOut}
 import org.make.api.technical.{EventBusServiceComponent, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.job.Job.JobId.SyncCrmData
@@ -255,7 +254,7 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
     }
 
     override def sendListToCrm: Route = post {
-      path("technical" / "crm" / crmList / "synchronize") { list =>
+      path("technical" / "crm" / CrmList / "synchronize") { list =>
         makeOperation("CrmSendList") { _ =>
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireAdminRole(auth.user) {
@@ -271,12 +270,12 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
                     case Success(_) =>
                       logger
                         .info(
-                          s"Synchronizing list ${list.name} succeeded in ${System.currentTimeMillis() - startTime}ms"
+                          s"Synchronizing list ${list.value} succeeded in ${System.currentTimeMillis() - startTime}ms"
                         )
                     case Failure(e) =>
                       logger
                         .error(
-                          s"Synchronizing list ${list.name} failed in ${System.currentTimeMillis() - startTime}ms",
+                          s"Synchronizing list ${list.value} failed in ${System.currentTimeMillis() - startTime}ms",
                           e
                         )
                   }
@@ -288,11 +287,5 @@ trait DefaultCrmApiComponent extends CrmApiComponent with MakeAuthenticationDire
       }
     }
 
-    val crmList: PathMatcher1[CrmList] = Segment.flatMap {
-      case OptIn.name      => Some(OptIn)
-      case OptOut.name     => Some(OptOut)
-      case HardBounce.name => Some(HardBounce)
-      case _               => None
-    }
   }
 }

@@ -27,6 +27,7 @@ import org.make.api.tag.PersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.operation.OperationActionType._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 
@@ -150,7 +151,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
           .addActionToOperation(
             OperationAction(
               makeUserId = userId,
-              actionType = OperationCreateAction.name,
+              actionType = OperationCreateAction.value,
               arguments = Map("operation" -> operationToString(operation))
             ),
             persisted.operationId
@@ -189,7 +190,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
                 .addActionToOperation(
                   OperationAction(
                     makeUserId = userId,
-                    actionType = OperationUpdateAction.name,
+                    actionType = OperationUpdateAction.value,
                     arguments = Map("operation" -> operationToString(operationUpdated))
                   ),
                   operationUpdated.operationId
@@ -203,7 +204,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       scala.collection
         .Map[String, String](
           "operationId" -> operation.operationId.value,
-          "status" -> operation.status.shortName,
+          "status" -> operation.status.value,
           "defaultLanguage" -> operation.defaultLanguage.value
         )
         .asJson

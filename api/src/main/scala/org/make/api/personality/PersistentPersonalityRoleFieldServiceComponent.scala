@@ -25,6 +25,7 @@ import org.make.api.personality.DefaultPersistentPersonalityRoleFieldServiceComp
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
+import org.make.api.technical.ScalikeSupport._
 import org.make.core.personality.{FieldType, PersonalityRoleField, PersonalityRoleFieldId, PersonalityRoleId}
 import scalikejdbc._
 
@@ -82,7 +83,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
               column.id -> personalityRoleField.personalityRoleFieldId.value,
               column.personalityRoleId -> personalityRoleField.personalityRoleId.value,
               column.name -> personalityRoleField.name,
-              column.fieldType -> personalityRoleField.fieldType.shortName,
+              column.fieldType -> personalityRoleField.fieldType,
               column.required -> personalityRoleField.required
             )
         }.execute().apply()
@@ -96,7 +97,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
           update(PersistentPersonalityRoleField)
             .set(
               column.name -> personalityRoleField.name,
-              column.fieldType -> personalityRoleField.fieldType.shortName,
+              column.fieldType -> personalityRoleField.fieldType,
               column.required -> personalityRoleField.required
             )
             .where(sqls.eq(column.id, personalityRoleField.personalityRoleFieldId.value))
@@ -143,7 +144,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
                   personalityRoleId => sqls.eq(personalityRoleFieldAlias.personalityRoleId, personalityRoleId.value)
                 ),
                 maybeName.map(name           => sqls.eq(personalityRoleFieldAlias.name, name)),
-                maybeFieldType.map(fieldType => sqls.eq(personalityRoleFieldAlias.fieldType, fieldType.shortName)),
+                maybeFieldType.map(fieldType => sqls.eq(personalityRoleFieldAlias.fieldType, fieldType)),
                 maybeRequired.map(required   => sqls.eq(personalityRoleFieldAlias.required, required))
               )
             )
@@ -169,7 +170,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
                   personalityRoleId => sqls.eq(personalityRoleFieldAlias.personalityRoleId, personalityRoleId.value)
                 ),
                 maybeName.map(name           => sqls.eq(personalityRoleFieldAlias.name, name)),
-                maybeFieldType.map(fieldType => sqls.eq(personalityRoleFieldAlias.fieldType, fieldType.shortName)),
+                maybeFieldType.map(fieldType => sqls.eq(personalityRoleFieldAlias.fieldType, fieldType)),
                 maybeRequired.map(required   => sqls.eq(personalityRoleFieldAlias.required, required))
               )
             )
@@ -204,9 +205,7 @@ object DefaultPersistentPersonalityRoleFieldServiceComponent {
         personalityRoleFieldId = PersonalityRoleFieldId(id),
         personalityRoleId = PersonalityRoleId(personalityRoleId),
         name = name,
-        fieldType = FieldType
-          .matchFieldType(fieldType)
-          .getOrElse(throw new IllegalArgumentException(s"$fieldType is not a valid field type")),
+        fieldType = FieldType.withValue(fieldType),
         required = required
       )
     }

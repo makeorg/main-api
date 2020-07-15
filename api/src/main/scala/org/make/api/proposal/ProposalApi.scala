@@ -360,24 +360,23 @@ trait DefaultProposalApiComponent
                   }, order.map { orderValue =>
                     Validation.validChoices(
                       fieldName = "order",
-                      message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                      message = Some(s"Invalid order. Expected one of: ${Order.keys}"),
                       Seq(orderValue),
-                      Order.orders.keys.toSeq
+                      Order.keys
                     )
                   }, sortAlgorithm.map { sortAlgo =>
                     Validation.validChoices(
                       fieldName = "sortAlgorithm",
-                      message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.sortAlgorithmsName}"),
+                      message = Some(s"Invalid algorithm. Expected one of: ${AlgorithmSelector.keys}"),
                       Seq(sortAlgo),
-                      AlgorithmSelector.sortAlgorithmsName
+                      AlgorithmSelector.keys
                     )
                   }, operationKinds.map { opKinds =>
                     Validation.validChoices(
                       fieldName = "operationKinds",
-                      message =
-                        Some(s"Invalid operation kind. Expected one of: ${OperationKind.kindMap.keys.mkString(", ")}"),
+                      message = Some(s"Invalid operation kind. Expected one of: ${OperationKind.keys.mkString(", ")}"),
                       opKinds,
-                      OperationKind.kindMap.keys.toSeq
+                      OperationKind.keys
                     )
                   }).flatten: _*)
 
@@ -387,7 +386,7 @@ trait DefaultProposalApiComponent
                     }
                   val sortRequest: Option[SortRequest] =
                     sort.orElse(order).map { _ =>
-                      SortRequest(sort, order.flatMap(Order.matchOrder))
+                      SortRequest(sort, order.flatMap(Order.parse))
                     }
                   val searchRequest: SearchRequest = SearchRequest(
                     proposalIds = proposalIds,

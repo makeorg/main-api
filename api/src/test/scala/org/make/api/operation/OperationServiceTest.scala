@@ -70,7 +70,7 @@ class OperationServiceTest
       OperationAction(
         date = now,
         makeUserId = userId,
-        actionType = OperationCreateAction.name,
+        actionType = OperationActionType.OperationCreateAction.value,
         arguments = Map("arg1" -> "valueArg1")
       )
     ),

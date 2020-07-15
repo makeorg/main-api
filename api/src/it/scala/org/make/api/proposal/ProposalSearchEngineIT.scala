@@ -1703,7 +1703,7 @@ class ProposalSearchEngineIT
       val query = SearchQuery(filters = Some(
         SearchFilters(
           userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation))),
-          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+          status = Some(StatusSearchFilter(ProposalStatus.values))
         )
       )
       )
@@ -1784,7 +1784,7 @@ class ProposalSearchEngineIT
       val query = SearchQuery(filters = Some(
         SearchFilters(
           userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation, UserType.UserTypePersonality))),
-          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+          status = Some(StatusSearchFilter(ProposalStatus.values))
         )
       )
       )

@@ -23,6 +23,7 @@ import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
+import org.make.core.SprayJsonFormatters
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationId
 import org.make.core.sequence.indexed.SequenceElasticsearchFieldNames
@@ -203,15 +204,15 @@ object SearchFilters extends ElasticDsl {
     val query: Option[Query] = searchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(SequenceStatus.Unpublished) =>
-          ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Unpublished.shortName)
+          ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Unpublished.value)
         case StatusSearchFilter(SequenceStatus.Published) =>
-          ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Published.shortName)
+          ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Published.value)
       }
     }
 
     query match {
       case None =>
-        Some(ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Published.shortName))
+        Some(ElasticApi.matchQuery(SequenceElasticsearchFieldNames.status, SequenceStatus.Published.value))
       case _ => query
     }
   }
@@ -251,7 +252,7 @@ object SlugSearchFilter {
 }
 
 case class StatusSearchFilter(status: SequenceStatus)
-object StatusSearchFilter {
+object StatusSearchFilter extends SprayJsonFormatters {
   implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
 

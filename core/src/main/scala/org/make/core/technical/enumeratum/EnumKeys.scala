@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,24 +17,14 @@
  *
  */
 
-name := "make-core"
+package org.make.core.technical.enumeratum
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistence,
-  Dependencies.akkaClusterSharding,
-  Dependencies.akkaHttpSwagger, // TODO: import only swagger not akka-http
-  Dependencies.elastic4s,
-  Dependencies.elastic4sHttp,
-  Dependencies.enumeratum,
-  Dependencies.enumeratumCirce,
-  Dependencies.enumeratumScalacheck,
-  Dependencies.avro4s,
-  Dependencies.circeGeneric,
-  Dependencies.refinedCirce,
-  Dependencies.refinedScala,
-  Dependencies.stamina,
-  Dependencies.slugify,
-  Dependencies.jsoup,
-  Dependencies.refinedScalaCheck,
-  Dependencies.scalaCheck
-)
+import enumeratum.values.{StringEnumEntry, ValueEnum, ValueEnumEntry}
+
+trait EnumKeys[A, B <: ValueEnumEntry[A]] { self: ValueEnum[A, B] =>
+  def keys: IndexedSeq[A] = values.map(_.value)
+}
+
+object EnumKeys {
+  type StringEnumKeys[A <: StringEnumEntry] = EnumKeys[String, A]
+}

@@ -23,6 +23,7 @@ import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
 import com.sksamuel.elastic4s.searches.sort.SortOrder
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import spray.json._
 
 trait SprayJsonFormatters {
@@ -74,6 +75,16 @@ trait SprayJsonFormatters {
       }
     }
   }
+
+  implicit def stringEnumFormatter[A <: StringEnumEntry](implicit enum: StringEnum[A]): JsonFormat[A] =
+    new JsonFormat[A] {
+      override def read(json: JsValue): A = json match {
+        case JsString(s) => enum.withValueOpt(s).getOrElse(throw new IllegalArgumentException(s"Unable to convert $s"))
+        case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+      }
+
+      override def write(a: A): JsValue = JsString(a.value)
+    }
 
 }
 

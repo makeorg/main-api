@@ -30,10 +30,12 @@ import org.make.api.proposal.PublishedProposalEvent.{
 import org.make.api.userhistory
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
 import org.make.core.RequestContext
-import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
+import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
+import org.make.core.proposal.ProposalActionType._
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.sequence.{SearchQuery, SequenceId, SequenceStatus}
 import org.make.core.tag.TagId
@@ -72,7 +74,7 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       requestContext = requestContext,
       action = UserAction(
         date = eventDate,
-        actionType = ProposalUnvoteAction.name,
+        actionType = ProposalUnvoteAction.value,
         arguments = UserUnvote(proposalId = ProposalId("proposal-id"), voteKey = VoteKey.Neutral, trust = Trusted)
       )
     )
@@ -122,7 +124,7 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       requestContext = requestContext,
       action = UserAction(
         date = eventDate,
-        actionType = ProposalQualifyAction.name,
+        actionType = ProposalQualifyAction.value,
         arguments = UserQualification(
           proposalId = ProposalId("proposal-id"),
           qualificationKey = QualificationKey.Doable,
@@ -177,7 +179,7 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       requestContext = requestContext,
       action = UserAction(
         date = eventDate,
-        actionType = ProposalVoteAction.name,
+        actionType = ProposalVoteAction.value,
         arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Neutral, trust = Trusted)
       )
     )
@@ -215,7 +217,7 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
       requestContext = requestContext,
       action = UserAction(
         date = eventDate,
-        actionType = ProposalUnqualifyAction.name,
+        actionType = ProposalUnqualifyAction.value,
         arguments = UserUnqualification(
           proposalId = ProposalId("proposal-id"),
           qualificationKey = QualificationKey.LikeIt,

@@ -26,6 +26,7 @@ import org.make.api.partner.DefaultPersistentPartnerServiceComponent.PersistentP
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
+import org.make.api.technical.ScalikeSupport._
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
@@ -81,7 +82,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
               column.logo -> partner.logo,
               column.link -> partner.link,
               column.organisationId -> partner.organisationId.map(_.value),
-              column.partnerKind -> partner.partnerKind.shortName,
+              column.partnerKind -> partner.partnerKind,
               column.questionId -> partner.questionId.value,
               column.weight -> partner.weight
             )
@@ -99,7 +100,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
               column.logo -> partner.logo,
               column.link -> partner.link,
               column.organisationId -> partner.organisationId.map(_.value),
-              column.partnerKind -> partner.partnerKind.shortName,
+              column.partnerKind -> partner.partnerKind,
               column.questionId -> partner.questionId.value,
               column.weight -> partner.weight
             )
@@ -137,7 +138,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
               sqls.toAndConditionOpt(
                 questionId.map(questionId         => sqls.eq(partnerAlias.questionId, questionId.value)),
                 organisationId.map(organisationId => sqls.eq(partnerAlias.organisationId, organisationId.value)),
-                partnerKind.map(kind              => sqls.eq(partnerAlias.partnerKind, kind.shortName))
+                partnerKind.map(kind              => sqls.eq(partnerAlias.partnerKind, kind))
               )
             )
 
@@ -160,7 +161,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
               sqls.toAndConditionOpt(
                 questionId.map(questionId         => sqls.eq(partnerAlias.questionId, questionId.value)),
                 organisationId.map(organisationId => sqls.eq(partnerAlias.organisationId, organisationId.value)),
-                partnerKind.map(kind              => sqls.eq(partnerAlias.partnerKind, kind.shortName))
+                partnerKind.map(kind              => sqls.eq(partnerAlias.partnerKind, kind))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)
@@ -199,7 +200,7 @@ object DefaultPersistentPartnerServiceComponent {
         logo = logo,
         link = link,
         organisationId = organisationId.map(UserId(_)),
-        partnerKind = PartnerKind.kindMap(partnerKind),
+        partnerKind = PartnerKind.withValue(partnerKind),
         questionId = QuestionId(questionId),
         weight = weight
       )

@@ -537,7 +537,9 @@ class UserApiTest
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val genderError = errors.find(_.field == "gender")
-        genderError should be(Some(ValidationError("gender", "malformed", Some("S is not a Gender"))))
+        genderError.map(_.field) should be(Some("gender"))
+        genderError.map(_.key) should be(Some("malformed"))
+        // TODO have some nicer error message
       }
     }
 
@@ -1232,9 +1234,7 @@ class UserApiTest
               filters = Some(
                 SearchFilters(
                   user = Some(UserSearchFilter(userId = sylvain.userId)),
-                  status = Some(StatusSearchFilter(status = ProposalStatus.statusMap.values.filter { status =>
-                    status != ProposalStatus.Archived
-                  }.toSeq))
+                  status = Some(StatusSearchFilter(status = ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
                 )
               ),
               sort = Some(Sort(field = Some("createdAt"), mode = Some(Desc)))

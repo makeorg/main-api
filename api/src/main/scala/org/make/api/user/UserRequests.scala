@@ -36,6 +36,7 @@ import org.make.core.Validation.{
   mandatoryField,
   maxLength,
   requireNonEmpty,
+  validChoices,
   validate,
   validateAge,
   validateEmail,
@@ -86,13 +87,12 @@ case class ProfileRequest(
           profession = RequestHelper.updateValue(profile.profession, profession),
           phoneNumber = RequestHelper.updateValue(profile.phoneNumber, phoneNumber),
           description = RequestHelper.updateValue(profile.description, description.map(_.value)),
-          gender = gender.collect { case g if !g.shortName.isEmpty => g }.orElse(profile.gender),
+          gender = gender.orElse(profile.gender),
           genderName = RequestHelper.updateValue(profile.genderName, genderName),
           postalCode = RequestHelper.updateValue(profile.postalCode, postalCode),
           locale = RequestHelper.updateValue(profile.locale, locale),
           optInNewsletter = optInNewsletter,
-          socioProfessionalCategory = socioProfessionalCategory.collect { case spc if !spc.shortName.isEmpty => spc }
-            .orElse(profile.socioProfessionalCategory),
+          socioProfessionalCategory = socioProfessionalCategory.orElse(profile.socioProfessionalCategory),
           optInPartner = optInPartner.orElse(profile.optInPartner),
           politicalParty = RequestHelper.updateValue(profile.politicalParty, politicalParty),
           website = RequestHelper.updateValue(profile.website, website.map(_.value))
@@ -268,20 +268,20 @@ case class UpdateUserRequest(
     country.map(country  => maxLength("country", maxCountryLength, country.value)),
     gender.map(
       value =>
-        validateField(
+        validChoices(
           "gender",
-          "invalid_value",
-          value == "" || Gender.matchGender(value).isDefined,
-          s"gender should be on of this specified values: ${Gender.genders.keys.mkString(",")}"
+          Some(s"gender should be on of this specified values: ${Gender.keys.mkString(",")}"),
+          Seq(value),
+          Gender.keys :+ ""
         )
     ),
     socioProfessionalCategory.map(
       value =>
-        validateField(
+        validChoices(
           "socio professional category",
-          "invalid_value",
-          value == "" || SocioProfessionalCategory.matchSocioProfessionalCategory(value).isDefined,
-          s"CSP should be on of this specified values: ${SocioProfessionalCategory.socioProfessionalCategories.keys.mkString(",")}"
+          Some(s"CSP should be on of this specified values: ${SocioProfessionalCategory.keys.mkString(",")}"),
+          Seq(value),
+          SocioProfessionalCategory.keys :+ ""
         )
     ),
     description.map(value => maxLength("description", maxDescriptionLength, value)),

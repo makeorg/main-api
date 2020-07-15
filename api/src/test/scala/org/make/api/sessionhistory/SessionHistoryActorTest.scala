@@ -27,7 +27,7 @@ import org.make.api.ShardingActorTest
 import org.make.api.sessionhistory.SessionHistoryActor.{SessionHistory, SessionVotesValues}
 import org.make.api.userhistory.{StartSequenceParameters, UserHistoryEnvelope}
 import org.make.api.userhistory.UserHistoryActor.{InjectSessionEvents, LogAcknowledged, SessionEventsInjected}
-import org.make.core.history.HistoryActions.Trusted
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId

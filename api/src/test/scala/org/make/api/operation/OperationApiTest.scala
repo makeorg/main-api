@@ -30,6 +30,7 @@ import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.`X-Make-Country`
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.operation.OperationActionType.OperationCreateAction
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -65,7 +66,7 @@ class OperationApiTest
       OperationAction(
         date = now,
         makeUserId = userId,
-        actionType = OperationCreateAction.name,
+        actionType = OperationCreateAction.value,
         arguments = Map("arg1" -> "valueArg1")
       )
     ),
@@ -125,7 +126,7 @@ class OperationApiTest
       OperationAction(
         date = now,
         makeUserId = userId,
-        actionType = OperationCreateAction.name,
+        actionType = OperationCreateAction.value,
         arguments = Map("arg1" -> "valueArg1")
       )
     ),

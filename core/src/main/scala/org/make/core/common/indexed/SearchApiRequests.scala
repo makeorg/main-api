@@ -20,36 +20,37 @@
 package org.make.core.common.indexed
 
 import com.sksamuel.elastic4s.searches.sort.SortOrder
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder}
 import org.make.core.SprayJsonFormatters._
+import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
-sealed trait Order { val shortName: String }
+sealed abstract class Order(val value: String) extends StringEnumEntry
 
-case object OrderAsc extends Order { override val shortName: String = "ASC" }
-case object OrderDesc extends Order { override val shortName: String = "DESC" }
+object Order extends StringEnum[Order] with StringEnumKeys[Order] {
 
-object Order {
-  implicit lazy val orderEncoder: Encoder[Order] = (order: Order) => Json.fromString(order.shortName)
-  implicit lazy val orderDecoder: Decoder[Order] =
-    Decoder.decodeString.emap(order => matchOrder(order).map(Right.apply).getOrElse(Left(s"$order is not a Order")))
+  def parse(order: String): Option[Order] = withValueOpt(order.toUpperCase)
 
-  val orders: Map[String, Order] = Map(OrderAsc.shortName -> OrderAsc, OrderDesc.shortName -> OrderDesc)
+  case object OrderAsc extends Order("ASC")
+  case object OrderDesc extends Order("DESC")
 
-  def matchOrder(order: String): Option[Order] = {
-    val maybeOrder = orders.get(order.toUpperCase)
-    maybeOrder
-  }
+  override def values: IndexedSeq[Order] = findValues
+
+  implicit val orderDecoder: Decoder[Order] =
+    Decoder[String].emap(order => parse(order).toRight(s"$order is not a Order"))
+  implicit val orderEncoder: Encoder[Order] = Encoder[String].contramap(_.value)
+
 }
 
 final case class SortRequest(field: Option[String], direction: Option[Order]) {
   def toSort: Sort = {
     val maybeOrderDirection = direction match {
-      case Some(OrderAsc)  => Some(SortOrder.ASC)
-      case Some(OrderDesc) => Some(SortOrder.DESC)
-      case None            => None
+      case Some(Order.OrderAsc)  => Some(SortOrder.ASC)
+      case Some(Order.OrderDesc) => Some(SortOrder.DESC)
+      case None                  => None
     }
 
     Sort(field, maybeOrderDirection)

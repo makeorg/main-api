@@ -28,6 +28,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
+import org.make.api.technical.ScalikeSupport._
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
 import org.make.core.DateHelper
@@ -112,13 +113,13 @@ object PersistentUserServiceComponent {
         hashedPassword = Option(hashedPassword),
         enabled = enabled,
         emailVerified = emailVerified,
-        userType = UserType.matchUserType(userType),
+        userType = UserType(userType),
         lastConnection = lastConnection,
         verificationToken = verificationToken,
         verificationTokenExpiresAt = verificationTokenExpiresAt,
         resetToken = resetToken,
         resetTokenExpiresAt = resetTokenExpiresAt,
-        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.matchRole),
+        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.apply),
         country = Country(country),
         language = Language(language),
         profile = toProfile,
@@ -138,15 +139,15 @@ object PersistentUserServiceComponent {
     def toUserRights: UserRights = {
       UserRights(
         userId = UserId(uuid),
-        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.matchRole),
+        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.apply),
         availableQuestions = availableQuestions.toSeq.map(QuestionId.apply),
         emailVerified = emailVerified
       )
     }
 
-    private def toGender: String                    => Option[Gender] = Gender.matchGender
+    private def toGender: String                    => Option[Gender] = Gender.withValueOpt
     private def toSocioProfessionalCategory: String => Option[SocioProfessionalCategory] =
-      SocioProfessionalCategory.matchSocioProfessionalCategory
+      SocioProfessionalCategory.withValueOpt
 
     private def toProfile: Option[Profile] = {
       Profile.parseProfile(
@@ -503,7 +504,7 @@ trait DefaultPersistentUserServiceComponent
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.uuid, userId.value).and(sqls.eq(userAlias.userType, userType.shortName)))
+            .where(sqls.eq(userAlias.uuid, userId.value).and(sqls.eq(userAlias.userType, userType)))
         }.map(PersistentUser.apply()).single.apply
       })
 
@@ -570,8 +571,8 @@ trait DefaultPersistentUserServiceComponent
                   lastName =>
                     sqls.like(sqls.lower(userAlias.lastName), s"%${lastName.replace("%", "\\%").toLowerCase}%")
                 ),
-                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.shortName}%")),
-                maybeUserType.map(userType => sqls.eq(userAlias.userType, userType.shortName))
+                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.value}%")),
+                maybeUserType.map(userType => sqls.eq(userAlias.userType, userType))
               )
             )
 
@@ -588,7 +589,7 @@ trait DefaultPersistentUserServiceComponent
         withSQL {
           select
             .from(PersistentUser.as(userAlias))
-            .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation.shortName))
+            .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation))
         }.map(PersistentUser.apply()).list.apply
       })
 
@@ -611,7 +612,7 @@ trait DefaultPersistentUserServiceComponent
               .from(PersistentUser.as(userAlias))
               .where(
                 sqls
-                  .eq(userAlias.userType, UserType.UserTypeOrganisation.shortName)
+                  .eq(userAlias.userType, UserType.UserTypeOrganisation)
                   .and(
                     organisationName.map(
                       organisationName =>
@@ -763,13 +764,13 @@ trait DefaultPersistentUserServiceComponent
               column.hashedPassword -> user.hashedPassword,
               column.enabled -> user.enabled,
               column.emailVerified -> user.emailVerified,
-              column.userType -> user.userType.shortName,
+              column.userType -> user.userType,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
               column.resetToken -> user.resetToken,
               column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
-              column.roles -> user.roles.map(_.shortName).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
+              column.roles -> user.roles.map(_.value).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
               column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
               column.profession -> user.profile.flatMap(_.profession),
               column.phoneNumber -> user.profile.flatMap(_.phoneNumber),
@@ -777,7 +778,7 @@ trait DefaultPersistentUserServiceComponent
               column.twitterId -> user.profile.flatMap(_.twitterId),
               column.facebookId -> user.profile.flatMap(_.facebookId),
               column.googleId -> user.profile.flatMap(_.googleId),
-              column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
+              column.gender -> user.profile.flatMap(_.gender),
               column.genderName -> user.profile.flatMap(_.genderName),
               column.postalCode -> user.profile.flatMap(_.postalCode),
               column.country -> user.country.value,
@@ -791,7 +792,7 @@ trait DefaultPersistentUserServiceComponent
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
               column.organisationName -> user.organisationName,
               column.publicProfile -> user.publicProfile,
-              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory),
               column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
               column.optInPartner -> user.profile.flatMap(_.optInPartner),
               column.availableQuestions -> session.connection
@@ -850,13 +851,13 @@ trait DefaultPersistentUserServiceComponent
               column.lastIp -> user.lastIp,
               column.enabled -> user.enabled,
               column.emailVerified -> user.emailVerified,
-              column.userType -> user.userType.shortName,
+              column.userType -> user.userType,
               column.lastConnection -> user.lastConnection,
               column.verificationToken -> user.verificationToken,
               column.verificationTokenExpiresAt -> user.verificationTokenExpiresAt,
               column.resetToken -> user.resetToken,
               column.resetTokenExpiresAt -> user.resetTokenExpiresAt,
-              column.roles -> user.roles.map(_.shortName).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
+              column.roles -> user.roles.map(_.value).mkString(PersistentUserServiceComponent.ROLE_SEPARATOR),
               column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
               column.profession -> user.profile.flatMap(_.profession),
               column.phoneNumber -> user.profile.flatMap(_.phoneNumber),
@@ -864,7 +865,7 @@ trait DefaultPersistentUserServiceComponent
               column.twitterId -> user.profile.flatMap(_.twitterId),
               column.facebookId -> user.profile.flatMap(_.facebookId),
               column.googleId -> user.profile.flatMap(_.googleId),
-              column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
+              column.gender -> user.profile.flatMap(_.gender),
               column.genderName -> user.profile.flatMap(_.genderName),
               column.postalCode -> user.profile.flatMap(_.postalCode),
               column.country -> user.country.value,
@@ -878,7 +879,7 @@ trait DefaultPersistentUserServiceComponent
               column.lastMailingErrorMessage -> user.lastMailingError.map(_.error),
               column.organisationName -> user.organisationName,
               column.publicProfile -> user.publicProfile,
-              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory),
               column.registerQuestionId -> user.profile.flatMap(_.registerQuestionId.map(_.value)),
               column.optInPartner -> user.profile.flatMap(_.optInPartner),
               column.availableQuestions -> session.connection
@@ -1071,11 +1072,11 @@ trait DefaultPersistentUserServiceComponent
               column.avatarUrl -> user.profile.flatMap(_.avatarUrl),
               column.facebookId -> user.profile.flatMap(_.facebookId),
               column.googleId -> user.profile.flatMap(_.googleId),
-              column.gender -> user.profile.flatMap(_.gender.map(_.shortName)),
+              column.gender -> user.profile.flatMap(_.gender),
               column.genderName -> user.profile.flatMap(_.genderName),
               column.country -> user.country.value,
               column.language -> user.language.value,
-              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+              column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory),
               column.emailVerified -> user.emailVerified,
               column.hashedPassword -> user.hashedPassword
             )
@@ -1142,7 +1143,7 @@ trait DefaultPersistentUserServiceComponent
             .from(PersistentUser.as(userAlias))
             .where(
               sqls
-                .eq(userAlias.userType, UserType.UserTypeOrganisation.shortName)
+                .eq(userAlias.userType, UserType.UserTypeOrganisation)
                 .and(
                   organisationName.map(
                     organisationName =>
@@ -1174,8 +1175,8 @@ trait DefaultPersistentUserServiceComponent
                 email.map(email            => sqls.like(userAlias.email, s"%${email.replace("%", "\\%")}%")),
                 firstName.map(firstName    => sqls.like(userAlias.firstName, s"%${firstName.replace("%", "\\%")}%")),
                 lastName.map(lastName      => sqls.like(userAlias.lastName, s"%${lastName.replace("%", "\\%")}%")),
-                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.shortName}%")),
-                maybeUserType.map(userType => sqls.eq(userAlias.userType, userType.shortName))
+                maybeRole.map(role         => sqls.like(userAlias.roles, s"%${role.value}%")),
+                maybeUserType.map(userType => sqls.eq(userAlias.userType, userType))
               )
             )
         }.map(_.int(1)).single.apply().getOrElse(0)

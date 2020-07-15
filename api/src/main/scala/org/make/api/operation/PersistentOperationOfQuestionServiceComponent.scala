@@ -114,7 +114,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                   questionIds => sqls.in(PersistentOperationOfQuestion.column.questionId, questionIds.map(_.value))
                 ),
                 operationKind
-                  .map(operationKind => sqls.in(operationAlias.operationKind, operationKind.map(_.shortName))),
+                  .map(operationKind => sqls.in(operationAlias.operationKind, operationKind)),
                 openAt.map(
                   openAt =>
                     sqls

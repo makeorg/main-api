@@ -20,7 +20,7 @@
 package org.make.api.proposal
 
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Decoder, Encoder, Json}
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.sequence.SequenceConfiguration
 import org.make.api.technical.MakeRandom
@@ -85,20 +85,14 @@ object UniformRandom extends ProposalChooser with StrictLogging {
 
 }
 
-sealed trait SelectionAlgorithmName { val shortName: String }
-object SelectionAlgorithmName {
-  final case object Bandit extends SelectionAlgorithmName { override val shortName: String = "Bandit" }
-  final case object RoundRobin extends SelectionAlgorithmName { override val shortName: String = "RoundRobin" }
+sealed abstract class SelectionAlgorithmName(val value: String) extends StringEnumEntry
+object SelectionAlgorithmName extends StringEnum[SelectionAlgorithmName] with StringCirceEnum[SelectionAlgorithmName] {
 
-  val selectionAlgorithms: Map[String, SelectionAlgorithmName] =
-    Map(Bandit.shortName -> Bandit, RoundRobin.shortName -> RoundRobin)
+  final case object Bandit extends SelectionAlgorithmName("Bandit")
+  final case object RoundRobin extends SelectionAlgorithmName("RoundRobin")
 
-  implicit val encoder: Encoder[SelectionAlgorithmName] = (name: SelectionAlgorithmName) =>
-    Json.fromString(name.shortName)
-  implicit val decoder: Decoder[SelectionAlgorithmName] =
-    Decoder.decodeString.emap(
-      name => selectionAlgorithms.get(name).map(Right.apply).getOrElse(Left(s"$name is not a SelectionAlgorithmName"))
-    )
+  override def values: IndexedSeq[SelectionAlgorithmName] = findValues
+
 }
 
 trait SelectionAlgorithmComponent {

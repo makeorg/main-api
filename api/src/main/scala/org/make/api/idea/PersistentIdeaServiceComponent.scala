@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.DefaultPersistentIdeaServiceComponent.PersistentIdea
 import org.make.api.technical.DatabaseTransactions._
+import org.make.api.technical.ScalikeSupport._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
@@ -130,7 +131,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               column.question -> idea.question,
               column.questionId -> idea.questionId.map(_.value),
               column.operationId -> idea.operationId.map(_.value),
-              column.status -> idea.status.shortName,
+              column.status -> idea.status,
               column.createdAt -> DateHelper.now,
               column.updatedAt -> DateHelper.now
             )
@@ -143,7 +144,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentIdea)
-            .set(column.name -> name, column.updatedAt -> DateHelper.now, column.status -> status.shortName)
+            .set(column.name -> name, column.updatedAt -> DateHelper.now, column.status -> status)
             .where(
               sqls
                 .eq(column.id, ideaId.value)
@@ -164,7 +165,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               column.country -> idea.country.map(_.value),
               column.language -> idea.language.map(_.value),
               column.question -> idea.question,
-              column.status -> idea.status.shortName,
+              column.status -> idea.status,
               column.updatedAt -> DateHelper.now
             )
             .where(
@@ -200,7 +201,7 @@ object DefaultPersistentIdeaServiceComponent {
         question = question,
         questionId = questionId.map(QuestionId.apply),
         operationId = operationId.map(OperationId.apply),
-        status = status.flatMap(IdeaStatus.statusMap.get).getOrElse(IdeaStatus.Activated),
+        status = status.flatMap(IdeaStatus.withValueOpt).getOrElse(IdeaStatus.Activated),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt)
       )

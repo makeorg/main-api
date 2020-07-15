@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceComponent.PersistentTopIdeaComment
 import org.make.api.technical.DatabaseTransactions._
+import org.make.api.technical.ScalikeSupport._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.idea._
@@ -92,8 +93,8 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
               column.comment1 -> topIdeaComment.comment1,
               column.comment2 -> topIdeaComment.comment2,
               column.comment3 -> topIdeaComment.comment3,
-              column.vote -> topIdeaComment.vote.shortName,
-              column.qualification -> topIdeaComment.qualification.map(_.shortName),
+              column.vote -> topIdeaComment.vote,
+              column.qualification -> topIdeaComment.qualification,
               column.createdAt -> DateHelper.now()
             )
         }.execute().apply()
@@ -111,8 +112,8 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
               column.comment1 -> topIdeaComment.comment1,
               column.comment2 -> topIdeaComment.comment2,
               column.comment3 -> topIdeaComment.comment3,
-              column.vote -> topIdeaComment.vote.shortName,
-              column.qualification -> topIdeaComment.qualification.map(_.shortName),
+              column.vote -> topIdeaComment.vote,
+              column.qualification -> topIdeaComment.qualification,
               column.updatedAt -> DateHelper.now()
             )
             .where(
@@ -220,10 +221,8 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
         comment1 = comment1,
         comment2 = comment2,
         comment3 = comment3,
-        vote = CommentVoteKey
-          .matchCommentVoteKey(vote)
-          .getOrElse(throw new IllegalArgumentException(s"$vote is not a valid voteKey")),
-        qualification = qualification.flatMap(CommentQualificationKey.matchCommentQualificationKey),
+        vote = CommentVoteKey.withValue(vote),
+        qualification = qualification.flatMap(CommentQualificationKey.withValueOpt),
         createdAt = createdAt,
         updatedAt = updatedAt
       )

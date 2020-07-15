@@ -62,7 +62,7 @@ trait TagHelper {
           TagsDataLine(
             label = label,
             tagTypeId = TagTypeId(tagType),
-            tagDisplay = TagDisplay.matchTagDisplayOrDefault(tagDisplay),
+            tagDisplay = TagDisplay(tagDisplay),
             weight = weight.toFloat,
             country = Country(country),
             language = Language(language)

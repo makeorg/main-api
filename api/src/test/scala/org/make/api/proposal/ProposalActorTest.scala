@@ -26,8 +26,10 @@ import akka.testkit.TestKit
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
 import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.core.history.HistoryActions._
+import org.make.core.history.HistoryActions.VoteTrust._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{Operation, OperationId, OperationKind, OperationStatus}
+import org.make.core.proposal.ProposalActionType.ProposalProposeAction
 import org.make.core.proposal.ProposalStatus.{Accepted, Pending, Postponed, Refused}
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal._
@@ -149,7 +151,7 @@ class ProposalActorTest extends ShardingActorTest {
         ProposalAction(
           date = mainCreatedAt.get,
           user = mainUserId,
-          actionType = ProposalProposeAction.name,
+          actionType = ProposalProposeAction.value,
           arguments = Map("content" -> content)
         )
       )

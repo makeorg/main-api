@@ -19,6 +19,7 @@
 
 package org.make.core.question
 
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json, KeyDecoder, KeyEncoder}
 import org.make.core.StringValue
 import org.make.core.operation.OperationId
@@ -64,31 +65,13 @@ object QuestionId {
   }
 }
 
-sealed trait TopProposalsMode {
-  def shortName: String
-}
+sealed abstract class TopProposalsMode(val value: String) extends StringEnumEntry
 
-object TopProposalsMode {
+object TopProposalsMode extends StringEnum[TopProposalsMode] with StringCirceEnum[TopProposalsMode] {
 
-  implicit lazy val voteKeyEncoder: Encoder[TopProposalsMode] =
-    (mode: TopProposalsMode) => Json.fromString(mode.shortName)
-  implicit lazy val voteKeyDecoder: Decoder[TopProposalsMode] =
-    Decoder.decodeString.emap(
-      mode => TopProposalsMode.matchMode(mode).map(Right.apply).getOrElse(Left(s"$mode is not a valid mode"))
-    )
+  case object IdeaMode extends TopProposalsMode("idea")
+  case object StakeTagMode extends TopProposalsMode("tag")
 
-  val modes: Map[String, TopProposalsMode] = Map(IdeaMode.shortName -> IdeaMode, StakeTagMode.shortName -> StakeTagMode)
-
-  def matchMode(mode: String): Option[TopProposalsMode] = {
-    modes.get(mode)
-  }
-
-  case object IdeaMode extends TopProposalsMode {
-    val shortName = "idea"
-  }
-
-  case object StakeTagMode extends TopProposalsMode {
-    val shortName = "tag"
-  }
+  override def values: IndexedSeq[TopProposalsMode] = findValues
 
 }

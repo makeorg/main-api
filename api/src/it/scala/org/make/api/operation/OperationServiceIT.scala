@@ -29,6 +29,7 @@ import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.operation._
+import org.make.core.operation.OperationActionType._
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
@@ -130,7 +131,7 @@ class OperationServiceIT
         operation.operationKind shouldBe OperationKind.GreatCause
         And("operations events should contain a create event")
         operation.events
-          .filter(_.actionType == OperationCreateAction.name)
+          .filter(_.actionType == OperationCreateAction.value)
           .head
           .arguments
           .get("operation")
@@ -141,7 +142,7 @@ class OperationServiceIT
             |})""".stripMargin)
         And("operations events should contain an update event")
         operation.events
-          .filter(_.actionType == OperationUpdateAction.name)
+          .filter(_.actionType == OperationUpdateAction.value)
           .head
           .arguments
           .get("operation")

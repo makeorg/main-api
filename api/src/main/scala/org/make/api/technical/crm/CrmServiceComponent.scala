@@ -36,6 +36,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.{ByteString, Timeout}
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import eu.timepit.refined.auto._
 import io.circe.Decoder
 import org.make.api.ActorSystemComponent
@@ -519,7 +520,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         lastCountryActivity = Some(user.country.value),
         countriesActivity = Seq(user.country.value),
         accountCreationSlug = question.map(_.slug),
-        accountType = Some(user.userType.shortName)
+        accountType = Some(user.userType.value)
       )
     }
 
@@ -831,13 +832,12 @@ object ContactMail {
   implicit val decoder: Decoder[ContactMail] = Decoder.forProduct2("Email", "ID")(ContactMail.apply)
 }
 
-sealed trait CrmList {
-  def name: String
+sealed abstract class CrmList(val value: String) extends StringEnumEntry {
   def hardBounced: Boolean
   def unsubscribed: Option[Boolean]
 
   def targetDirectory(csvDirectory: String): Path = {
-    Paths.get(csvDirectory, name)
+    Paths.get(csvDirectory, value)
   }
 
   def actionOnHardBounce: ManageContactAction
@@ -845,9 +845,8 @@ sealed trait CrmList {
   def actionOnOptOut: ManageContactAction
 }
 
-object CrmList {
-  case object HardBounce extends CrmList {
-    override val name: String = "hardBounce"
+object CrmList extends StringEnum[CrmList] {
+  case object HardBounce extends CrmList("hardBounce") {
     override val hardBounced: Boolean = true
     override val unsubscribed: Option[Boolean] = None
 
@@ -856,8 +855,7 @@ object CrmList {
     override val actionOnOptOut: ManageContactAction = Remove
   }
 
-  case object OptIn extends CrmList {
-    override val name: String = "optIn"
+  case object OptIn extends CrmList("optIn") {
     override val hardBounced: Boolean = false
     override val unsubscribed: Option[Boolean] = Some(false)
 
@@ -866,8 +864,7 @@ object CrmList {
     override val actionOnOptOut: ManageContactAction = Remove
   }
 
-  case object OptOut extends CrmList {
-    override val name: String = "optOut"
+  case object OptOut extends CrmList("optOut") {
     override val hardBounced: Boolean = false
     override val unsubscribed: Option[Boolean] = Some(true)
 
@@ -875,4 +872,6 @@ object CrmList {
     override val actionOnOptIn: ManageContactAction = Remove
     override val actionOnOptOut: ManageContactAction = AddNoForce
   }
+
+  override def values: IndexedSeq[CrmList] = findValues
 }

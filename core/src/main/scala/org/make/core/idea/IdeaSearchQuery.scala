@@ -182,11 +182,11 @@ object IdeaSearchFilters extends ElasticDsl {
     val query: Option[Query] = ideaSearchQuery.filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(status)) =>
-          ElasticApi.termQuery(IdeaElasticsearchFieldNames.status, status.shortName)
+          ElasticApi.termQuery(IdeaElasticsearchFieldNames.status, status.value)
         case StatusSearchFilter(status) =>
-          ElasticApi.termsQuery(IdeaElasticsearchFieldNames.status, status.map(_.shortName))
+          ElasticApi.termsQuery(IdeaElasticsearchFieldNames.status, status.map(_.value))
         case _ =>
-          ElasticApi.termsQuery(IdeaElasticsearchFieldNames.status, IdeaStatus.Activated.shortName)
+          ElasticApi.termsQuery(IdeaElasticsearchFieldNames.status, IdeaStatus.Activated.value)
       }
     }
 

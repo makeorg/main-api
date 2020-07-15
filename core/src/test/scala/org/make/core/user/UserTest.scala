@@ -58,7 +58,7 @@ class UserTest extends MakeUnitTest {
     Scenario("pass ROLE_ADMIN string to matchRole function") {
       Given("a Role as a string")
       When("call matchRole with ROLE_ADMIN as Role string")
-      val role = Role.matchRole("ROLE_ADMIN")
+      val role = Role("ROLE_ADMIN")
       Then("Role object are returned")
       role shouldBe RoleAdmin
     }
@@ -66,7 +66,7 @@ class UserTest extends MakeUnitTest {
     Scenario("pass ROLE_MODERATOR string to matchRole function") {
       Given("a Role as a string")
       When("call matchRole with ROLE_MODERATOR as Role string")
-      val role = Role.matchRole("ROLE_MODERATOR")
+      val role = Role("ROLE_MODERATOR")
       Then("Role object are returned")
       role shouldBe RoleModerator
     }
@@ -74,7 +74,7 @@ class UserTest extends MakeUnitTest {
     Scenario("pass ROLE_POLITICAL string to matchRole function") {
       Given("a Role as a string")
       When("call matchRole with ROLE_POLITICAL as Role string")
-      val role = Role.matchRole("ROLE_POLITICAL")
+      val role = Role("ROLE_POLITICAL")
       Then("Role object are returned")
       role shouldBe RolePolitical
     }
@@ -82,7 +82,7 @@ class UserTest extends MakeUnitTest {
     Scenario("pass ROLE_CITIZEN string to matchRole function") {
       Given("a Role as a string")
       When("call matchRole with ROLE_CITIZEN as Role string")
-      val role = Role.matchRole("ROLE_CITIZEN")
+      val role = Role("ROLE_CITIZEN")
       Then("Role object are returned")
       role shouldBe RoleCitizen
     }
@@ -90,7 +90,7 @@ class UserTest extends MakeUnitTest {
     Scenario("pass ROLE_ACTOR string to matchRole function") {
       Given("a Role as a string")
       When("call matchRole with ROLE_ACTOR as Role string")
-      val role = Role.matchRole("ROLE_ACTOR")
+      val role = Role("ROLE_ACTOR")
       Then("Role object are returned")
       role shouldBe RoleActor
     }
@@ -98,7 +98,7 @@ class UserTest extends MakeUnitTest {
     Scenario("pass any custom role string to matchRole function") {
       Given("a Role as a string")
       When("call matchRole with CUSTOM_ROLE_FOR_OAUTH as Role string")
-      val role = Role.matchRole("CUSTOM_ROLE_FOR_OAUTH")
+      val role = Role("CUSTOM_ROLE_FOR_OAUTH")
       Then("Role object are returned")
       role shouldBe CustomRole("CUSTOM_ROLE_FOR_OAUTH")
     }

@@ -21,64 +21,48 @@ package org.make.core.history
 
 import java.time.ZonedDateTime
 
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 object HistoryActions {
 
-  sealed trait VoteTrust {
-    def shortName: String
+  sealed abstract class VoteTrust(val value: String) extends StringEnumEntry {
     def isTrusted: Boolean
     def isInSequence: Boolean
     def isInSegment: Boolean
   }
-  object VoteTrust {
-    val trustValue: Map[String, VoteTrust] = Map(
-      Trusted.shortName -> Trusted,
-      Troll.shortName -> Troll,
-      Sequence.shortName -> Sequence,
-      Segment.shortName -> Segment
-    )
 
-    implicit val formatter: RootJsonFormat[VoteTrust] = new RootJsonFormat[VoteTrust] {
-      override def write(obj: VoteTrust): JsValue = JsString(obj.shortName)
-      override def read(json: JsValue): VoteTrust = {
-        json match {
-          case JsString(value) => trustValue(value)
-          case other           => throw new IllegalArgumentException(s"Unable to convert $other")
-        }
-      }
+  object VoteTrust extends StringEnum[VoteTrust] {
+
+    case object Trusted extends VoteTrust("trusted") {
+      override val isTrusted: Boolean = true
+      override val isInSequence: Boolean = false
+      override val isInSegment: Boolean = false
     }
-  }
 
-  case object Trusted extends VoteTrust {
-    override val shortName: String = "trusted"
-    override val isTrusted: Boolean = true
-    override val isInSequence: Boolean = false
-    override val isInSegment: Boolean = false
-  }
+    case object Troll extends VoteTrust("troll") {
+      override val isTrusted: Boolean = false
+      override val isInSequence: Boolean = false
+      override val isInSegment: Boolean = false
+    }
 
-  case object Troll extends VoteTrust {
-    override val shortName: String = "troll"
-    override val isTrusted: Boolean = false
-    override val isInSequence: Boolean = false
-    override val isInSegment: Boolean = false
-  }
+    case object Sequence extends VoteTrust("sequence") {
+      override val isTrusted: Boolean = true
+      override val isInSequence: Boolean = true
+      override val isInSegment: Boolean = false
+    }
 
-  case object Sequence extends VoteTrust {
-    override val shortName: String = "sequence"
-    override val isTrusted: Boolean = true
-    override val isInSequence: Boolean = true
-    override val isInSegment: Boolean = false
-  }
+    case object Segment extends VoteTrust("segment") {
+      override val isTrusted: Boolean = true
+      override val isInSequence: Boolean = true
+      override val isInSegment: Boolean = true
+    }
 
-  case object Segment extends VoteTrust {
-    override val shortName: String = "segment"
-    override val isTrusted: Boolean = true
-    override val isInSequence: Boolean = true
-    override val isInSegment: Boolean = true
+    override def values: IndexedSeq[VoteTrust] = findValues
+
   }
 
   final case class VoteAndQualifications(

@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import enumeratum.{Enum, EnumEntry}
 import enumeratum.Circe
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
@@ -35,6 +36,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
+import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
@@ -284,51 +286,32 @@ object OperationAction {
     DefaultJsonProtocol.jsonFormat4(OperationAction.apply)
 }
 
-sealed trait OperationActionType { val name: String }
-case object OperationCreateAction extends OperationActionType { override val name: String = "create" }
-case object OperationUpdateAction extends OperationActionType { override val name: String = "update" }
-case object OperationActivateAction extends OperationActionType { override val name: String = "activate" }
-case object OperationArchiveAction extends OperationActionType { override val name: String = "archive" }
+sealed abstract class OperationActionType(val value: String) extends StringEnumEntry
 
-sealed trait OperationStatus {
-  def shortName: String
+object OperationActionType extends StringEnum[OperationActionType] {
+
+  case object OperationCreateAction extends OperationActionType("create")
+  case object OperationUpdateAction extends OperationActionType("update")
+  case object OperationActivateAction extends OperationActionType("activate")
+  case object OperationArchiveAction extends OperationActionType("archive")
+
+  override def values: IndexedSeq[OperationActionType] = findValues
+
 }
 
-object OperationStatus {
-  val statusMap: Map[String, OperationStatus] =
-    Map(Pending.shortName -> Pending, Active.shortName -> Active, Archived.shortName -> Archived)
+sealed abstract class OperationStatus(val value: String) extends StringEnumEntry
 
-  implicit lazy val operationStatusEncoder: Encoder[OperationStatus] = (status: OperationStatus) =>
-    Json.fromString(status.shortName)
+object OperationStatus
+    extends StringEnum[OperationStatus]
+    with StringCirceEnum[OperationStatus]
+    with StringEnumKeys[OperationStatus] {
 
-  implicit lazy val operationStatusDecoder: Decoder[OperationStatus] =
-    Decoder.decodeString.emap { value: String =>
-      statusMap.get(value) match {
-        case Some(operation) => Right(operation)
-        case None            => Left(s"$value is not a operation status")
-      }
-    }
+  case object Pending extends OperationStatus("Pending")
+  case object Active extends OperationStatus("Active")
+  case object Archived extends OperationStatus("Archived")
 
-  implicit val operationStatusFormatted: JsonFormat[OperationStatus] = new JsonFormat[OperationStatus] {
-    override def read(json: JsValue): OperationStatus = json match {
-      case JsString(s) => OperationStatus.statusMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  override def values: IndexedSeq[OperationStatus] = findValues
 
-    override def write(obj: OperationStatus): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  case object Pending extends OperationStatus {
-    override val shortName = "Pending"
-  }
-  case object Active extends OperationStatus {
-    override val shortName = "Active"
-  }
-  case object Archived extends OperationStatus {
-    override val shortName = "Archived"
-  }
 }
 
 case class SimpleOperation(
@@ -347,43 +330,20 @@ object SimpleOperation extends CirceFormatters {
   implicit val decoder: Decoder[SimpleOperation] = deriveDecoder[SimpleOperation]
 }
 
-sealed trait OperationKind { def shortName: String }
+sealed abstract class OperationKind(val value: String) extends StringEnumEntry
 
-object OperationKind {
-  val kindMap: Map[String, OperationKind] =
-    Map(
-      GreatCause.shortName -> GreatCause,
-      PublicConsultation.shortName -> PublicConsultation,
-      PrivateConsultation.shortName -> PrivateConsultation,
-      BusinessConsultation.shortName -> BusinessConsultation
-    )
+object OperationKind
+    extends StringEnum[OperationKind]
+    with StringCirceEnum[OperationKind]
+    with StringEnumKeys[OperationKind] {
 
-  implicit lazy val operationKindEncoder: Encoder[OperationKind] = (kind: OperationKind) =>
-    Json.fromString(kind.shortName)
+  case object GreatCause extends OperationKind("GREAT_CAUSE")
+  case object PublicConsultation extends OperationKind("PUBLIC_CONSULTATION")
+  case object PrivateConsultation extends OperationKind("PRIVATE_CONSULTATION")
+  case object BusinessConsultation extends OperationKind("BUSINESS_CONSULTATION")
 
-  implicit lazy val operationKindDecoder: Decoder[OperationKind] =
-    Decoder.decodeString.emap { value: String =>
-      kindMap.get(value) match {
-        case Some(kind) => Right(kind)
-        case None       => Left(s"$value is not a operation kind")
-      }
-    }
+  override def values: IndexedSeq[OperationKind] = findValues
 
-  implicit val operationKindFormatted: JsonFormat[OperationKind] = new JsonFormat[OperationKind] {
-    override def read(json: JsValue): OperationKind = json match {
-      case JsString(s) => OperationKind.kindMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: OperationKind): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  case object GreatCause extends OperationKind { override val shortName: String = "GREAT_CAUSE" }
-  case object PublicConsultation extends OperationKind { override val shortName: String = "PUBLIC_CONSULTATION" }
-  case object PrivateConsultation extends OperationKind { override val shortName: String = "PRIVATE_CONSULTATION" }
-  case object BusinessConsultation extends OperationKind { override val shortName: String = "BUSINESS_CONSULTATION" }
 }
 
 case class FeaturedOperation(

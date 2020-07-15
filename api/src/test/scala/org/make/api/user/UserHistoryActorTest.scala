@@ -28,7 +28,7 @@ import akka.persistence.serialization.{Snapshot, SnapshotSerializer}
 import org.make.api.ShardingActorTest
 import org.make.api.userhistory.UserHistoryActor._
 import org.make.api.userhistory.{LogUserVoteEvent, _}
-import org.make.core.history.HistoryActions.Trusted
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}

@@ -43,7 +43,8 @@ import org.make.api.user.{UserResponse, UserServiceComponent}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
-import org.make.core.history.HistoryActions.{Segment, Sequence, Troll, Trusted, VoteAndQualifications, VoteTrust}
+import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
+import org.make.core.history.HistoryActions.VoteTrust._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Pending
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
@@ -757,7 +758,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
         .withTags(
           TagSet.from(
             Map(
-              "application" -> requestContext.applicationName.map(_.shortName).getOrElse("unknown"),
+              "application" -> requestContext.applicationName.map(_.value).getOrElse("unknown"),
               "location" -> requestContext.location.flatMap(_.split(" ").headOption).getOrElse("unknown")
             )
           )
@@ -1137,7 +1138,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           filters = Some(
             SearchFilters(
               user = Some(UserSearchFilter(userId)),
-              status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
+              status = Some(StatusSearchFilter(ProposalStatus.values))
             )
           ),
           limit = Some(10000)
@@ -1264,10 +1265,8 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     }
 
     private def searchUserProposals(userId: UserId): Future[ProposalsSearchResult] = {
-      val filters = SearchFilters(
-        user = Some(UserSearchFilter(userId)),
-        status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-      )
+      val filters =
+        SearchFilters(user = Some(UserSearchFilter(userId)), status = Some(StatusSearchFilter(ProposalStatus.values)))
       elasticsearchProposalAPI
         .countProposals(SearchQuery(filters = Some(filters)))
         .flatMap { count =>

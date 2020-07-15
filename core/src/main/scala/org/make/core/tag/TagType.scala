@@ -19,10 +19,11 @@
 
 package org.make.core.tag
 
-import com.typesafe.scalalogging.StrictLogging
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
+import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
 import spray.json.{JsString, JsValue, JsonFormat}
 
 final case class TagTypeId(value: String) extends StringValue
@@ -44,39 +45,17 @@ object TagTypeId {
 
 }
 
-sealed trait TagTypeDisplay { val shortName: String }
+sealed abstract class TagTypeDisplay(val value: String) extends StringEnumEntry
 
-object TagTypeDisplay extends StrictLogging {
-  val tagTypeDisplayDefault: TagTypeDisplay = Hidden
-  val tagTypeDisplays: Map[String, TagTypeDisplay] =
-    Map(Displayed.shortName -> Displayed, Hidden.shortName -> Hidden)
+object TagTypeDisplay extends StringEnum[TagTypeDisplay] with FallbackingStringCirceEnum[TagTypeDisplay] {
 
-  implicit lazy val tagTypeDisplayEncoder: Encoder[TagTypeDisplay] =
-    (tagTypeDisplay: TagTypeDisplay) => Json.fromString(tagTypeDisplay.shortName)
-  implicit lazy val tagTypeDisplayDecoder: Decoder[TagTypeDisplay] =
-    Decoder.decodeString.emap(tagTypeDisplay => Right(TagTypeDisplay.matchTagTypeDisplayOrDefault(tagTypeDisplay)))
+  override def default(value: String): TagTypeDisplay = Hidden
 
-  implicit val tagTypeDisplayFormatter: JsonFormat[TagTypeDisplay] = new JsonFormat[TagTypeDisplay] {
-    override def read(json: JsValue): TagTypeDisplay = json match {
-      case JsString(s) =>
-        TagTypeDisplay.tagTypeDisplays.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
-      case other => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  case object Displayed extends TagTypeDisplay("DISPLAYED")
+  case object Hidden extends TagTypeDisplay("HIDDEN")
 
-    override def write(obj: TagTypeDisplay): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
+  override def values: IndexedSeq[TagTypeDisplay] = findValues
 
-  def matchTagTypeDisplayOrDefault(tagTypeDisplay: String): TagTypeDisplay = {
-    tagTypeDisplays.getOrElse(tagTypeDisplay, {
-      logger.warn(s"$tagTypeDisplay is not a tagTypeDisplay")
-      tagTypeDisplayDefault
-    })
-  }
-
-  case object Displayed extends TagTypeDisplay { override val shortName: String = "DISPLAYED" }
-  case object Hidden extends TagTypeDisplay { override val shortName: String = "HIDDEN" }
 }
 
 final case class TagType(

@@ -102,7 +102,7 @@ class ModerationOperationApiTest
       OperationAction(
         date = now,
         makeUserId = john.userId,
-        actionType = OperationCreateAction.name,
+        actionType = OperationActionType.OperationCreateAction.value,
         arguments = Map("arg1" -> "valueArg1")
       )
     ),

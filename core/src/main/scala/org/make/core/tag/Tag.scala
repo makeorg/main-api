@@ -19,13 +19,14 @@
 
 package org.make.core.tag
 
-import com.typesafe.scalalogging.StrictLogging
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
+import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
 import org.make.core.{MakeSerializable, StringValue}
 import spray.json.{JsString, JsValue, JsonFormat}
 
@@ -52,46 +53,18 @@ object TagId {
 
 }
 
-sealed trait TagDisplay { val shortName: String }
+sealed abstract class TagDisplay(val value: String) extends StringEnumEntry
 
-object TagDisplay extends StrictLogging {
-  val tagDisplayDefault: TagDisplay = Inherit
-  val tagDisplays: Map[String, TagDisplay] =
-    Map(Displayed.shortName -> Displayed, Hidden.shortName -> Hidden, Inherit.shortName -> Inherit)
+object TagDisplay extends StringEnum[TagDisplay] with FallbackingStringCirceEnum[TagDisplay] {
 
-  implicit lazy val tagDisplayEncoder: Encoder[TagDisplay] =
-    (tagDisplay: TagDisplay) => Json.fromString(tagDisplay.shortName)
-  implicit lazy val tagDisplayDecoder: Decoder[TagDisplay] =
-    Decoder.decodeString.emap(
-      tagDisplay =>
-        Right(
-          TagDisplay
-            .matchTagDisplayOrDefault(tagDisplay)
-        )
-    )
+  override def default(value: String): TagDisplay = Inherit
 
-  implicit val tagDisplayFormatter: JsonFormat[TagDisplay] = new JsonFormat[TagDisplay] {
-    override def read(json: JsValue): TagDisplay = json match {
-      case JsString(s) =>
-        TagDisplay.tagDisplays.getOrElse(s, throw new IllegalArgumentException(s"Unable to convert $s"))
-      case other => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  case object Displayed extends TagDisplay("DISPLAYED")
+  case object Hidden extends TagDisplay("HIDDEN")
+  case object Inherit extends TagDisplay("INHERIT")
 
-    override def write(obj: TagDisplay): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
+  override def values: IndexedSeq[TagDisplay] = findValues
 
-  def matchTagDisplayOrDefault(tagDisplay: String): TagDisplay = {
-    tagDisplays.getOrElse(tagDisplay, {
-      logger.warn(s"$tagDisplay is not a tagDisplay")
-      tagDisplayDefault
-    })
-  }
-
-  case object Displayed extends TagDisplay { override val shortName: String = "DISPLAYED" }
-  case object Hidden extends TagDisplay { override val shortName: String = "HIDDEN" }
-  case object Inherit extends TagDisplay { override val shortName: String = "INHERIT" }
 }
 
 final case class Tag(

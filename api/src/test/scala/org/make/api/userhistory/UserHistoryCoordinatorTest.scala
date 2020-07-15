@@ -25,16 +25,19 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util
 import com.typesafe.config.{Config, ConfigFactory}
+import enumeratum.values.scalacheck._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues, UserVotedProposals}
 import org.make.api.{ActorSystemComponent, ShardingActorTest, TestHelper}
 import org.make.core.history.HistoryActions
-import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
+import org.make.core.history.HistoryActions.VoteTrust
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.{ProposalId, VoteKey}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 import org.scalacheck.rng.Seed
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
@@ -71,8 +74,8 @@ class UserHistoryCoordinatorTest
   private implicit val arbVotes: Arbitrary[Seq[UserVote]] = Arbitrary {
     val userVoteGen = for {
       proposalId <- Gen.resultOf[Unit, ProposalId](_ => idGenerator.nextProposalId())
-      voteKey    <- Gen.oneOf(VoteKey.voteKeys.values.toSeq)
-      voteTrust  <- Gen.oneOf(VoteTrust.trustValue.values.toSeq)
+      voteKey    <- arbitrary[VoteKey]
+      voteTrust  <- arbitrary[VoteTrust]
     } yield UserVote(proposalId, voteKey, voteTrust)
     Gen.listOf(userVoteGen)
   }
@@ -118,8 +121,7 @@ class UserHistoryCoordinatorTest
 
     Scenario("too large votes") {
       val userVotes: Seq[UserVote] = {
-        val userVoteGen =
-          Gen.oneOf(VoteKey.voteKeys.values.toSeq).map(UserVote(idGenerator.nextProposalId(), _, Trusted))
+        val userVoteGen = arbitrary[VoteKey].map(UserVote(idGenerator.nextProposalId(), _, Trusted))
         Gen.listOfN(3195, userVoteGen).pureApply(Gen.Parameters.default, Seed.random())
       }
       val userId = idGenerator.nextUserId()

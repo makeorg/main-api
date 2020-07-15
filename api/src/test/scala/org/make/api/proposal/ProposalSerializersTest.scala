@@ -25,7 +25,7 @@ import org.make.api.proposal.ProposalActor.{Lock, ProposalState}
 import org.make.api.proposal.ProposalEvent.{SimilarProposalRemoved, SimilarProposalsCleared}
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.RequestContext
-import org.make.core.history.HistoryActions.Trusted
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.QualificationKey.{

@@ -285,9 +285,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
           .searchProposals(searchQuery = SearchQuery(filters = Some(
             SearchFilters(
               user = Some(UserSearchFilter(userId = organisationId)),
-              status = Some(StatusSearchFilter(ProposalStatus.statusMap.filter {
-                case (_, status) => status != ProposalStatus.Archived
-              }.values.toSeq))
+              status = Some(StatusSearchFilter(ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
             )
           )
           )

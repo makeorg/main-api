@@ -19,12 +19,19 @@
 
 package org.make.api.technical
 
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import eu.timepit.refined.api.{RefType, Refined, Validate}
 import eu.timepit.refined.refineV
 import org.make.core.StringValue
-import scalikejdbc.{ParameterBinderFactory, TypeBinder}
+import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
 
 object ScalikeSupport {
+
+  implicit def stringEnumBinders[A <: StringEnumEntry](implicit enum: StringEnum[A]): Binders[A] =
+    Binders.string.xmap(enum.withValue, _.value)
+
+  implicit def stringEnumEntryParameterBinderFactory[A <: StringEnumEntry, B <: A]: ParameterBinderFactory[B] =
+    ParameterBinderFactory.stringParameterBinderFactory.contramap(_.value)
 
   implicit def stringValueParameterBinderFactory[A <: StringValue]: ParameterBinderFactory[A] =
     ParameterBinderFactory.stringParameterBinderFactory.contramap(_.value)
