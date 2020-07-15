@@ -649,7 +649,6 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         "consultation_image_alt",
         "description_image",
         "description_image_alt",
-        "display_results",
         "results_link",
         "proposals_count",
         "participants_count",
