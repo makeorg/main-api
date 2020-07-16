@@ -271,7 +271,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                 .map { user =>
                   val avatarUrl = user.profile.flatMap(_.avatarUrl).get
                   val largeAvatarUrl = avatarUrl match {
-                    case url if url.startsWith("https://graph.facebook.com/v3.0/") => s"$url?width=512&height=512"
+                    case url if url.startsWith("https://graph.facebook.com/v7.0/") => s"$url?width=512&height=512"
                     case url if url.contains("google")                             => url.replace("s96-c", "s512-c")
                     case _                                                         => avatarUrl
                   }

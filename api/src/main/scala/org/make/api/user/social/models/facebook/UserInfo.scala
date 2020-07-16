@@ -22,7 +22,7 @@ package org.make.api.user.social.models.facebook
 import io.circe.Decoder
 
 final case class UserInfo(id: String, email: Option[String], firstName: Option[String], lastName: Option[String]) {
-  def pictureUrl: String = s"https://graph.facebook.com/v3.0/$id/picture?width=512&height=512"
+  def pictureUrl: String = s"https://graph.facebook.com/v7.0/$id/picture?width=512&height=512"
 }
 
 object UserInfo {

@@ -389,7 +389,7 @@ class SocialServiceComponentTest
         language = "fr",
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v3.0/444444/picture?width=512&height=512")
+        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512")
       )
 
       Mockito
@@ -430,7 +430,7 @@ class SocialServiceComponentTest
             language = "fr",
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture?width=512&height=512")
+            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -467,7 +467,7 @@ class SocialServiceComponentTest
         language = "fr",
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v3.0/444444/picture?width=512&height=512")
+        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512")
       )
 
       Mockito
@@ -509,7 +509,7 @@ class SocialServiceComponentTest
             language = "fr",
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v3.0/${facebookData.id}/picture?width=512&height=512")
+            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512")
           )
 
         verify(userService).createOrUpdateUserFromSocial(
