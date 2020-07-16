@@ -173,7 +173,7 @@ class CrmServiceComponentTest
     email = "alex.terrieur@gmail.com",
     firstName = Some("Alex"),
     lastName = Some("Terrieur"),
-    profile = Profile.parseProfile(optInNewsletter = true)
+    profile = Profile.parseProfile()
   )
 
   val handledUserIds: Seq[UserId] = Seq(UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"))
@@ -329,24 +329,25 @@ class CrmServiceComponentTest
   when(operationService.find(slug = None, country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(operations))
 
-  val fooProfile = Profile(
-    dateOfBirth = Some(LocalDate.parse("2000-01-01")),
-    avatarUrl = Some("https://www.example.com"),
-    profession = Some("profession"),
-    phoneNumber = Some("010101"),
-    description = Some("Resume of who I am"),
-    twitterId = Some("@twitterid"),
-    facebookId = Some("facebookid"),
-    googleId = Some("googleId"),
-    gender = Some(Gender.Male),
-    genderName = Some("other"),
-    postalCode = Some("93"),
-    karmaLevel = Some(2),
-    locale = Some("fr_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
-    website = Some("http://example.com"),
-    politicalParty = Some("PP")
-  )
+  val fooProfile: Some[Profile] = Profile
+    .parseProfile(
+      dateOfBirth = Some(LocalDate.parse("2000-01-01")),
+      avatarUrl = Some("https://www.example.com"),
+      profession = Some("profession"),
+      phoneNumber = Some("010101"),
+      description = Some("Resume of who I am"),
+      twitterId = Some("@twitterid"),
+      facebookId = Some("facebookid"),
+      googleId = Some("googleId"),
+      gender = Some(Gender.Male),
+      genderName = Some("other"),
+      postalCode = Some("93"),
+      karmaLevel = Some(2),
+      locale = Some("fr_FR"),
+      socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
+      website = Some("http://example.com"),
+      politicalParty = Some("PP")
+    )
 
   val fooUser = TestUtils.user(
     id = UserId("1"),
@@ -359,7 +360,7 @@ class CrmServiceComponentTest
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(zonedDateTimeInThePast),
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    profile = Some(fooProfile),
+    profile = fooProfile,
     createdAt = Some(zonedDateTimeInThePast)
   )
 

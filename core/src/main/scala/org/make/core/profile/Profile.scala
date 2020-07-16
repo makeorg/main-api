@@ -163,7 +163,9 @@ case class Profile(
   registerQuestionId: Option[QuestionId] = None,
   optInPartner: Option[Boolean] = None,
   politicalParty: Option[String],
-  website: Option[String]
+  website: Option[String],
+  legalMinorConsent: Option[Boolean],
+  legalAdvisorApproval: Option[Boolean]
 )
 
 object Profile extends CirceFormatters {
@@ -189,8 +191,10 @@ object Profile extends CirceFormatters {
     registerQuestionId: Option[QuestionId] = None,
     optInPartner: Option[Boolean] = None,
     politicalParty: Option[String] = None,
-    website: Option[String] = None
-  ): Option[Profile] = {
+    website: Option[String] = None,
+    legalMinorConsent: Option[Boolean] = None,
+    legalAdvisorApproval: Option[Boolean] = None
+  ): Some[Profile] = {
 
     val profile = Profile(
       dateOfBirth = dateOfBirth,
@@ -211,7 +215,9 @@ object Profile extends CirceFormatters {
       registerQuestionId = registerQuestionId,
       optInPartner = optInPartner,
       politicalParty = politicalParty,
-      website = website
+      website = website,
+      legalMinorConsent = legalMinorConsent,
+      legalAdvisorApproval = legalAdvisorApproval
     )
     Some(profile)
   }

@@ -19,7 +19,7 @@
 
 package org.make.api.operation
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
@@ -28,7 +28,6 @@ import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.operation._
-import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
@@ -51,24 +50,6 @@ class PersistentOperationServiceIT
 
   override protected val cockroachExposedPort: Int = 40008
 
-  val profile = Profile(
-    dateOfBirth = Some(LocalDate.parse("2000-01-01")),
-    avatarUrl = Some("https://www.example.com"),
-    profession = Some("profession"),
-    phoneNumber = Some("010101"),
-    description = Some("Resume of who I am"),
-    twitterId = Some("@twitterid"),
-    facebookId = Some("facebookid"),
-    googleId = Some("googleId"),
-    gender = Some(Gender.Male),
-    genderName = Some("other"),
-    postalCode = Some("93"),
-    karmaLevel = Some(2),
-    locale = Some("FR_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
-    politicalParty = None,
-    website = None
-  )
   val userId: UserId = idGenerator.nextUserId()
   val johnDoe: User = TestUtilsIT.user(
     id = userId,
@@ -81,7 +62,7 @@ class PersistentOperationServiceIT
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z")),
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    profile = Some(profile)
+    profile = None
   )
 
   def newTag(label: String): Tag = Tag(

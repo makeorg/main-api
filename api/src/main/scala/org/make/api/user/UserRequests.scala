@@ -40,6 +40,7 @@ import org.make.core.Validation.{
   validateAge,
   validateEmail,
   validateField,
+  validateLegalConsent,
   validateOptional,
   validateOptionalUserInput,
   validatePostalCode,
@@ -177,7 +178,7 @@ case class RegisterUserRequest(
   email: String,
   @(ApiModelProperty @field)(dataType = "string", example = "p4ssw0rd")
   password: String,
-  @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: LocalDate,
   firstName: Option[String],
   lastName: Option[String],
   profession: Option[String],
@@ -197,7 +198,9 @@ case class RegisterUserRequest(
   politicalParty: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[
     String Refined Url
-  ]
+  ],
+  @(ApiModelProperty @field)(dataType = "boolean") legalMinorConsent: Option[Boolean],
+  @(ApiModelProperty @field)(dataType = "boolean") legalAdvisorApproval: Option[Boolean]
 ) {
 
   validate(
@@ -218,7 +221,9 @@ case class RegisterUserRequest(
     validateOptionalUserInput("postalCode", postalCode, None),
     mandatoryField("language", language),
     mandatoryField("country", country),
-    validateAge("dateOfBirth", dateOfBirth)
+    validateAge("dateOfBirth", Some(dateOfBirth)),
+    validateLegalConsent("legalMinorConsent", dateOfBirth, legalMinorConsent),
+    validateLegalConsent("legalAdvisorApproval", dateOfBirth, legalAdvisorApproval)
   )
   validateOptional(postalCode.map(value => validatePostalCode("postalCode", value, None)))
 }

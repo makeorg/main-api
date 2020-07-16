@@ -297,6 +297,61 @@ class UserApiTest
       }
     }
 
+    scenario("successful register user from minor child") {
+      Mockito
+        .when(
+          userService
+            .register(any[UserRegisterData], any[RequestContext])
+        )
+        .thenReturn(Future.successful(fakeUser))
+      val dateOfBirth = LocalDate.now().minusYears(9L)
+      val request =
+        s"""
+          |{
+          | "email": "foo@bar.com",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "dateOfBirth": "$dateOfBirth",
+          | "gender": "M",
+          | "socioProfessionalCategory": "EMPL",
+          | "optInPartner": true,
+          | "questionId": "thequestionid",
+          | "country": "FR",
+          | "language": "fr",
+          | "legalMinorConsent": true,
+          | "legalAdvisorApproval": true
+          |}
+        """.stripMargin
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.1")
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        status should be(StatusCodes.Created)
+        verify(userService).register(
+          matches(
+            UserRegisterData(
+              email = "foo@bar.com",
+              firstName = Some("olive"),
+              lastName = Some("tom"),
+              password = Some("mypassss"),
+              lastIp = Some("192.0.0.1"),
+              dateOfBirth = Some(dateOfBirth),
+              country = Country("FR"),
+              language = Language("fr"),
+              gender = Some(Gender.Male),
+              socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
+              optInPartner = Some(true),
+              questionId = Some(QuestionId("thequestionid")),
+              legalMinorConsent = Some(true),
+              legalAdvisorApproval = Some(true)
+            )
+          ),
+          any[RequestContext]
+        )
+      }
+    }
+
     scenario("successful register user from proposal context") {
       Mockito
         .when(
@@ -541,25 +596,70 @@ class UserApiTest
     }
 
     scenario("validation failed for invalid date of birth") {
-      val request =
-        """
+      val underage: LocalDate = LocalDate.now().minusYears(5L)
+      val overage: LocalDate = LocalDate.now().minusYears(121L)
+      def request(dateOfBirth: LocalDate) =
+        s"""
           |{
           | "email": "foo@baz.fr",
           | "firstName": "olive",
           | "lastName": "tom",
           | "password": "mypassss",
-          | "dateOfBirth": "-1069916-12-23",
+          | "dateOfBirth": "${dateOfBirth.toString}",
           | "country": "FR",
           | "language": "fr"
           |}
         """.stripMargin
 
-      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request(underage))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
         val errors = entityAs[Seq[ValidationError]]
         val dateOfBirthError = errors.find(_.field == "dateOfBirth")
         dateOfBirthError should be(
-          Some(ValidationError("dateOfBirth", "invalid_age", Some("Invalid date: age must be between 13 and 120")))
+          Some(ValidationError("dateOfBirth", "invalid_age", Some("Invalid date: age must be between 8 and 120")))
+        )
+      }
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request(overage))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val dateOfBirthError = errors.find(_.field == "dateOfBirth")
+        dateOfBirthError should be(
+          Some(ValidationError("dateOfBirth", "invalid_age", Some("Invalid date: age must be between 8 and 120")))
+        )
+      }
+    }
+
+    scenario("validation failed for invalid consent from minor child") {
+      val nineYearsOld: LocalDate = LocalDate.now().minusYears(9L)
+      def request(dateOfBirth: LocalDate) =
+        s"""
+          |{
+          | "email": "foo@baz.fr",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "dateOfBirth": "${dateOfBirth.toString}",
+          | "country": "FR",
+          | "language": "fr"
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request(nineYearsOld))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val legalMinorConsentError = errors.find(_.field == "legalMinorConsent")
+        val legalAdvisorApprovalError = errors.find(_.field == "legalAdvisorApproval")
+        legalMinorConsentError should be(
+          Some(ValidationError("legalMinorConsent", "legal_consent", Some("Field legalMinorConsent must be approved.")))
+        )
+        legalAdvisorApprovalError should be(
+          Some(
+            ValidationError(
+              "legalAdvisorApproval",
+              "legal_consent",
+              Some("Field legalAdvisorApproval must be approved.")
+            )
+          )
         )
       }
     }
