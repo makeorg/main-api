@@ -693,46 +693,6 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         errors(1).field shouldBe "descriptionImage"
       }
     }
-
-    scenario("update with resultsLink even if displayResults is false") {
-      Put("/moderation/operations-of-questions/my-question")
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
-        .withEntity(ContentTypes.`application/json`, """{
-            | "startDate": "2018-12-01T10:15:30.000Z",
-            | "canPropose": true,
-            | "question": "question ?",
-            | "operationTitle": "title",
-            | "sequenceCardsConfiguration": {
-            |   "introCard": { "enabled": true },
-            |   "pushProposalCard": { "enabled": true },
-            |   "signUpCard": { "enabled": true },
-            |   "finalCard": {
-            |     "enabled": true,
-            |     "sharingEnabled": false
-            |   }
-            | },
-            | "metas": { "title": "metas" },
-            | "theme": {
-            |   "gradientStart": "#424242",
-            |   "gradientEnd": "#000000",
-            |   "color": "#000000",
-            |   "fontColor": "#000000"
-            | },
-            | "description": "description",
-            | "displayResults": false,
-            | "resultsLink": {
-            |   "kind": "external",
-            |   "value": "http://example.com/results"
-            | },
-            | "consultationImage": "https://example",
-            | "featured": true
-          }""".stripMargin) ~> routes ~> check {
-        status should be(StatusCodes.BadRequest)
-        val errors = entityAs[Seq[ValidationError]]
-        errors.size should be(1)
-        errors.head.field shouldBe "resultsLink"
-      }
-    }
   }
 
   feature("delete operationOfQuestion") {

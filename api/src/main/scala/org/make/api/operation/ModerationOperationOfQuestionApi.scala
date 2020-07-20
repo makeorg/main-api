@@ -378,7 +378,9 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 consultationImageAlt = request.consultationImageAlt,
                                 descriptionImage = request.descriptionImage.map(_.value),
                                 descriptionImageAlt = request.descriptionImageAlt,
-                                resultsLink = request.resultsLink.flatMap(_.resultsLink),
+                                resultsLink = Option
+                                  .when(request.displayResults)(request.resultsLink.flatMap(_.resultsLink))
+                                  .flatten,
                                 actions = request.actions,
                                 featured = request.featured
                               ),
@@ -502,12 +504,6 @@ final case class ModifyOperationOfQuestionRequest(
         "not_secure",
         descriptionImage.forall(_.value.startsWith("https://")),
         "descriptionImage must be a secure https url"
-      ),
-      validateField(
-        "resultsLink",
-        "invalid_value",
-        displayResults || resultsLink.isEmpty,
-        "resultsLink must be empty if results are not displayed (i.e. displayResults == false)"
       )
     ) ++
       theme.secondaryColor
