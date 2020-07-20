@@ -29,8 +29,6 @@ import org.make.api.MakeApiTestBase
 import org.make.api.technical.generator.EntitiesGen.genJob
 import org.make.core.job.Job
 import org.make.core.job.Job.JobId
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
 import org.scalacheck.Arbitrary
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
@@ -51,10 +49,10 @@ class JobApiTest
 
   val routes: Route = sealRoute(jobApi.routes)
 
-  feature("get job status") {
-    scenario("it works") {
+  Feature("get job status") {
+    Scenario("it works") {
       forAll { job: Job =>
-        when(jobCoordinatorService.get(ArgumentMatchers.eq(job.id))).thenReturn(Future.successful(Some(job)))
+        when(jobCoordinatorService.get(eqTo(job.id))).thenReturn(Future.successful(Some(job)))
 
         Get(s"/admin/jobs/${job.id.value}") ~> routes ~> check {
           status should be(StatusCodes.Unauthorized)

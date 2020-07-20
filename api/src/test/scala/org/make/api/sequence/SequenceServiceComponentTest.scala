@@ -73,5 +73,5 @@ class SequenceServiceComponentTest
   val defaultSize = 12
   val proposalIds: Seq[ProposalId] = (1 to defaultSize).map(i => ProposalId(s"proposal$i"))
 
-  feature("Starting a sequence") {}
+  Feature("Starting a sequence") {}
 }

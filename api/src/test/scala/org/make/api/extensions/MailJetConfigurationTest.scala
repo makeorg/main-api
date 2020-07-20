@@ -22,7 +22,7 @@ package org.make.api.extensions
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, FeatureSpecLike, Matchers}
+import org.make.api.MakeUnitTest
 
 class MailJetConfigurationTest
     extends TestKit(
@@ -57,10 +57,8 @@ class MailJetConfigurationTest
       """.stripMargin)
       )
     )
-    with FeatureSpecLike
-    with Matchers
-    with MailJetConfigurationComponent
-    with BeforeAndAfterAll {
+    with MakeUnitTest
+    with MailJetConfigurationComponent {
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -68,7 +66,7 @@ class MailJetConfigurationTest
 
   val mailJetConfiguration: MailJetConfiguration = MailJetConfiguration(system)
 
-  scenario("Register user and create proposal") {
+  Scenario("Register user and create proposal") {
     mailJetConfiguration.apiKey shouldBe ("apikey")
     mailJetConfiguration.basicAuthLogin shouldBe ("basicauthlogin")
     mailJetConfiguration.basicAuthPassword shouldBe ("basicauthpassword")

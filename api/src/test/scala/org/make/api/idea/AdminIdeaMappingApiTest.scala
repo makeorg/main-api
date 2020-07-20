@@ -29,7 +29,6 @@ import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -45,9 +44,9 @@ class AdminIdeaMappingApiTest
 
   val routes: Route = sealRoute(adminIdeaMappingApi.routes)
 
-  feature("create idea mapping") {
+  Feature("create idea mapping") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Post("/admin/idea-mappings") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -65,7 +64,7 @@ class AdminIdeaMappingApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(ideaMappingService.create(QuestionId("question-id"), None, None, IdeaId("idea-id")))
         .thenReturn(
@@ -94,9 +93,9 @@ class AdminIdeaMappingApiTest
 
   }
 
-  feature("update idea mapping") {
+  Feature("update idea mapping") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Put("/admin/idea-mappings/456") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -114,7 +113,7 @@ class AdminIdeaMappingApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(
         ideaMappingService
@@ -148,7 +147,7 @@ class AdminIdeaMappingApiTest
 
     }
 
-    scenario("No mapping found") {
+    Scenario("No mapping found") {
       when(
         ideaMappingService
           .changeIdea(
@@ -178,9 +177,9 @@ class AdminIdeaMappingApiTest
 
   }
 
-  feature("get single idea mapping") {
+  Feature("get single idea mapping") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Get("/admin/idea-mappings/123") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -198,7 +197,7 @@ class AdminIdeaMappingApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(ideaMappingService.getById(IdeaMappingId("123")))
         .thenReturn(
@@ -218,9 +217,9 @@ class AdminIdeaMappingApiTest
 
   }
 
-  feature("search idea mapping") {
+  Feature("search idea mapping") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Get("/admin/idea-mappings") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -238,7 +237,7 @@ class AdminIdeaMappingApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(
         ideaMappingService

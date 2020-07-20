@@ -182,60 +182,60 @@ class ProposalScorerHelperTest extends MakeUnitTest {
       impossibleCount = 1
     )
 
-  feature("counts") {
-    scenario("count vote when proposal has no vote") {
+  Feature("counts") {
+    Scenario("count vote when proposal has no vote") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).neutralCount should be(0)
     }
 
-    scenario("count vote when proposal has vote") {
+    Scenario("count vote when proposal has vote") {
       ScoreCounts.fromSequenceVotes(proposalWithVote.votes).neutralCount should be(20)
     }
 
-    scenario("count qualification when proposal has no vote") {
+    Scenario("count qualification when proposal has no vote") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).realistic() should be(0)
     }
 
-    scenario("count vote when proposal has vote and qualification") {
+    Scenario("count vote when proposal has vote and qualification") {
       ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).loveCount should be(10)
     }
   }
 
-  feature("scores") {
-    scenario("calculate engagement") {
+  Feature("scores") {
+    Scenario("calculate engagement") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).engagement() should equal(0.66 +- 0.01)
       ScoreCounts.fromSequenceVotes(proposalWithVote.votes).engagement() should equal(0.87 +- 0.01)
       ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).engagement() should equal(0.87 +- 0.01)
       scoreCounts.engagement() should equal(0.79 +- 0.01)
     }
 
-    scenario("calculate adhesion") {
+    Scenario("calculate adhesion") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).adhesion() should equal(0.0)
       ScoreCounts.fromSequenceVotes(proposalWithVote.votes).adhesion() should equal(0.0)
       ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).adhesion() should equal(-0.14 +- 0.01)
       scoreCounts.adhesion() should equal(0.41 +- 0.01)
     }
 
-    scenario("calculate realistic") {
+    Scenario("calculate realistic") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).realistic() should equal(0.0)
       ScoreCounts.fromSequenceVotes(proposalWithVote.votes).realistic() should equal(0.0)
       ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).realistic() should equal(0.07 +- 0.01)
       scoreCounts.realistic() should equal(0.23 +- 0.01)
     }
 
-    scenario("calculate topScore from proposal") {
+    Scenario("calculate topScore from proposal") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).topScore() should equal(-1.84 +- 0.01)
       ScoreCounts.fromSequenceVotes(proposalWithVote.votes).topScore() should equal(-0.62 +- 0.01)
       ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes).topScore() should equal(-4.16 +- 0.01)
       scoreCounts.topScore() should equal(-2.80 +- 0.01)
     }
 
-    scenario("calculate controversy from proposal") {
+    Scenario("calculate controversy from proposal") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).controversy() should equal(0.01 +- 0.01)
       ScoreCounts.fromSequenceVotes(proposalWithVote.votes).controversy() should equal(0.01 +- 0.01)
       scoreCounts.controversy() should equal(0.17 +- 0.01)
     }
 
-    scenario("calculate rejection") {
+    Scenario("calculate rejection") {
       ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes).rejection() should equal(0.0)
       ScoreCounts.fromSequenceVotes(proposalWithVote.votes).rejection() should equal(0.0)
       ScoreCounts
@@ -245,7 +245,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     }
   }
 
-  feature("score confidence interval") {
+  Feature("score confidence interval") {
     val rgen = Random
     rgen.setSeed(0)
     val nTrials = 1000
@@ -286,8 +286,8 @@ class ProposalScorerHelperTest extends MakeUnitTest {
     success should be(0.95 +- 0.05)
   }
 
-  feature("proposal pool") {
-    scenario("news proposal") {
+  Feature("proposal pool") {
+    Scenario("news proposal") {
       val configuration = SequenceConfiguration(SequenceId("fake"), QuestionId("fake-too"))
       ProposalScorerHelper
         .sequencePool(configuration, Accepted, ScoreCounts.fromSequenceVotes(proposalWithoutvote.votes)) should be(
@@ -297,7 +297,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
 
   }
 
-  feature("score counts") {
+  Feature("score counts") {
     def votes(
       agree: Int,
       disagree: Int,
@@ -327,31 +327,31 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         Qualification(Doable, 0, 0, doable, 0),
         Qualification(Impossible, 0, 0, impossible, 0)
       )
-    scenario("votes") {
+    Scenario("votes") {
       ScoreCounts.fromSequenceVotes(votes(1, 2, 3)).votes shouldBe 6
       ScoreCounts.fromSequenceVotes(votes(10, 20, 30)).votes shouldBe 60
       ScoreCounts.fromSequenceVotes(votes(17, 15, 10)).votes shouldBe 42
     }
 
-    scenario("agreeCount") {
+    Scenario("agreeCount") {
       ScoreCounts.fromSequenceVotes(votes(42, 0, 1)).agreeCount shouldBe 42
       ScoreCounts.fromSequenceVotes(votes(0, 1, 2)).agreeCount shouldBe 0
       ScoreCounts.fromSequenceVotes(votes(1, 564, 126)).agreeCount shouldBe 1
     }
 
-    scenario("disagreeCount") {
+    Scenario("disagreeCount") {
       ScoreCounts.fromSequenceVotes(votes(42, 0, 1)).disagreeCount shouldBe 0
       ScoreCounts.fromSequenceVotes(votes(0, 1, 2)).disagreeCount shouldBe 1
       ScoreCounts.fromSequenceVotes(votes(1, 564, 126)).disagreeCount shouldBe 564
     }
 
-    scenario("neutralCount") {
+    Scenario("neutralCount") {
       ScoreCounts.fromSequenceVotes(votes(42, 0, 0)).neutralCount shouldBe 0
       ScoreCounts.fromSequenceVotes(votes(0, 1, 2)).neutralCount shouldBe 2
       ScoreCounts.fromSequenceVotes(votes(1, 564, 126)).neutralCount shouldBe 126
     }
 
-    scenario("platitudeAgreeCount") {
+    Scenario("platitudeAgreeCount") {
       ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).platitudeAgreeCount shouldBe 0
       ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(42, 0, 0, 0, 0, 0))).platitudeAgreeCount shouldBe 42
       ScoreCounts
@@ -359,7 +359,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         .platitudeAgreeCount shouldBe 500
     }
 
-    scenario("platitudeDisagreeCount") {
+    Scenario("platitudeDisagreeCount") {
       ScoreCounts
         .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
         .platitudeDisagreeCount shouldBe 0
@@ -371,7 +371,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         .platitudeDisagreeCount shouldBe 12
     }
 
-    scenario("loveCount") {
+    Scenario("loveCount") {
       ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).loveCount shouldBe 0
       ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 42, 0, 0, 0))).loveCount shouldBe 42
       ScoreCounts
@@ -379,7 +379,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         .loveCount shouldBe 423
     }
 
-    scenario("hateCount") {
+    Scenario("hateCount") {
       ScoreCounts
         .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
         .hateCount shouldBe 0
@@ -391,7 +391,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         .hateCount shouldBe 14
     }
 
-    scenario("doableCount") {
+    Scenario("doableCount") {
       ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 0, 0))).doableCount shouldBe 0
       ScoreCounts.fromSequenceVotes(votes(0, 0, 0, qualifications(0, 0, 0, 0, 42, 0))).doableCount shouldBe 42
       ScoreCounts
@@ -399,7 +399,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         .doableCount shouldBe 324
     }
 
-    scenario("impossibleCount") {
+    Scenario("impossibleCount") {
       ScoreCounts
         .fromSequenceVotes(votes(0, 0, 0, Seq.empty, Seq.empty, qualifications(0, 0, 0, 0, 0, 0)))
         .impossibleCount shouldBe 0
@@ -411,7 +411,7 @@ class ProposalScorerHelperTest extends MakeUnitTest {
         .impossibleCount shouldBe 210
     }
 
-    scenario("combined top score") {
+    Scenario("combined top score") {
       val counts1 = ScoreCounts.fromSequenceVotes(proposalWithVote.votes)
       val counts2 = ScoreCounts.fromSequenceVotes(proposalWithVoteandQualification.votes)
 

@@ -30,23 +30,18 @@ import org.make.api.technical.job.JobActor.Protocol.Response._
 import org.make.core.job.Job
 import org.make.core.job.Job.JobStatus._
 import org.make.core.job.Job.{JobId, Progress}
-import org.scalatest.GivenWhenThen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
-class JobActorTest
-    extends ShardingActorTest
-    with GivenWhenThen
-    with DefaultIdGeneratorComponent
-    with ScalaCheckDrivenPropertyChecks {
+class JobActorTest extends ShardingActorTest with DefaultIdGeneratorComponent with ScalaCheckDrivenPropertyChecks {
 
   private val heartRate: Duration = 10.milliseconds
   private val coordinator: ActorRef = system.actorOf(JobCoordinator.props(heartRate), JobCoordinator.name)
 
-  feature("start a job") {
+  Feature("start a job") {
 
-    scenario("start a non-existent job") {
+    Scenario("start a non-existent job") {
       val id = idGenerator.nextJobId()
 
       Given("an empty state")
@@ -66,7 +61,7 @@ class JobActorTest
       getJob(id).status should be(Running(0d))
     }
 
-    scenario("fail to start a running job") {
+    Scenario("fail to start a running job") {
       val id = idGenerator.nextJobId()
 
       Given("a job")
@@ -81,7 +76,7 @@ class JobActorTest
       expectMsg(State(Some(job)))
     }
 
-    scenario("restart a stuck job") {
+    Scenario("restart a stuck job") {
       val id = idGenerator.nextJobId()
 
       Given("a job")
@@ -99,7 +94,7 @@ class JobActorTest
       assert(current.updatedAt.get.isAfter(previous.updatedAt.get))
     }
 
-    scenario("restart a finished job") {
+    Scenario("restart a finished job") {
       forAll { outcome: Option[Throwable] =>
         val id = idGenerator.nextJobId()
 
@@ -122,9 +117,9 @@ class JobActorTest
     }
   }
 
-  feature("report progress") {
+  Feature("report progress") {
 
-    scenario("for a non-existent job") {
+    Scenario("for a non-existent job") {
       forAll { progress: Progress =>
         val id = idGenerator.nextJobId()
 
@@ -136,7 +131,7 @@ class JobActorTest
       }
     }
 
-    scenario("for a running job") {
+    Scenario("for a running job") {
       forAll { progress: Progress =>
         val id = idGenerator.nextJobId()
 
@@ -151,7 +146,7 @@ class JobActorTest
       }
     }
 
-    scenario("for a finished job") {
+    Scenario("for a finished job") {
       forAll { (progress: Progress, outcome: Option[Throwable]) =>
         val id = idGenerator.nextJobId()
 
@@ -171,8 +166,8 @@ class JobActorTest
     }
   }
 
-  feature("heartbeat") {
-    scenario("heartbeating unstucks job") {
+  Feature("heartbeat") {
+    Scenario("heartbeating unstucks job") {
       val id = idGenerator.nextJobId()
 
       Given("a job")

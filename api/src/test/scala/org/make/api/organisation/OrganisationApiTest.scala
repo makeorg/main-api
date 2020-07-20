@@ -39,8 +39,6 @@ import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers._
-import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -82,24 +80,21 @@ class OrganisationApiTest
 
   val now: ZonedDateTime = DateHelper.now()
 
-  Mockito
-    .when(organisationService.getOrganisation(UserId("make-org")))
+  when(organisationService.getOrganisation(UserId("make-org")))
     .thenReturn(Future.successful(Some(returnedOrganisation)))
 
-  Mockito
-    .when(organisationService.getOrganisation(UserId("classic-user")))
+  when(organisationService.getOrganisation(UserId("classic-user")))
     .thenReturn(Future.successful(None))
 
-  Mockito
-    .when(organisationService.getOrganisation(UserId("non-existant")))
+  when(organisationService.getOrganisation(UserId("non-existant")))
     .thenReturn(Future.successful(None))
 
-  Mockito
-    .when(
-      organisationService
-        .update(any[User], any[Option[UserId]], any[String], any[RequestContext])
-    )
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0).userId))
+  when(
+    organisationService
+      .update(any[User], any[Option[UserId]], any[String], any[RequestContext])
+  ).thenAnswer { user: User =>
+    Future.successful(user.userId)
+  }
 
   val proposalsList = ProposalsResultSeededResponse(
     total = 4,
@@ -272,12 +267,11 @@ class OrganisationApiTest
     None
   )
 
-  Mockito
-    .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
+  when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
     .thenReturn(Future.successful(proposalsList))
 
-  feature("get organisation") {
-    scenario("get existing organisation") {
+  Feature("get organisation") {
+    Scenario("get existing organisation") {
       Get("/organisations/make-org") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisation: UserResponse = entityAs[UserResponse]
@@ -285,79 +279,43 @@ class OrganisationApiTest
       }
     }
 
-    scenario("get non existing organisation") {
+    Scenario("get non existing organisation") {
       Get("/organisations/non-existant") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
   }
 
-  feature("search organisations") {
-    Mockito
-      .when(
-        organisationService
-          .search(
-            ArgumentMatchers.eq(Some("Make.org")),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None)
-          )
-      )
-      .thenReturn(
-        Future.successful(
-          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
-        )
-      )
-    Mockito
-      .when(
-        organisationService
-          .search(
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(Some("make-org")),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None)
-          )
-      )
-      .thenReturn(
-        Future.successful(
-          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
-        )
-      )
-    Mockito
-      .when(
-        organisationService
-          .search(
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(Some(Seq(UserId("make-org"), UserId("toto")))),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None)
-          )
-      )
-      .thenReturn(
-        Future.successful(
-          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
-        )
-      )
-    Mockito
-      .when(
-        organisationService
-          .search(
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(Some(Country("FR"))),
-            ArgumentMatchers.eq(Some(Language("fr")))
-          )
-      )
-      .thenReturn(
-        Future.successful(
-          OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation)))
-        )
-      )
-    scenario("search by organisation name") {
+  Feature("search organisations") {
+    when(
+      organisationService
+        .search(eqTo(Some("Make.org")), eqTo(None), eqTo(None), eqTo(None), eqTo(None))
+    ).thenReturn(
+      Future
+        .successful(OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))))
+    )
+    when(
+      organisationService
+        .search(eqTo(None), eqTo(Some("make-org")), eqTo(None), eqTo(None), eqTo(None))
+    ).thenReturn(
+      Future
+        .successful(OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))))
+    )
+    when(
+      organisationService
+        .search(eqTo(None), eqTo(None), eqTo(Some(Seq(UserId("make-org"), UserId("toto")))), eqTo(None), eqTo(None))
+    ).thenReturn(
+      Future
+        .successful(OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))))
+    )
+    when(
+      organisationService
+        .search(eqTo(None), eqTo(None), eqTo(None), eqTo(Some(Country("FR"))), eqTo(Some(Language("fr"))))
+    ).thenReturn(
+      Future
+        .successful(OrganisationSearchResult(1, Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))))
+    )
+    Scenario("search by organisation name") {
       Get("/organisations?organisationName=Make.org") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
@@ -366,7 +324,7 @@ class OrganisationApiTest
       }
     }
 
-    scenario("search by slug") {
+    Scenario("search by slug") {
       Get("/organisations?slug=make-org") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
@@ -374,7 +332,7 @@ class OrganisationApiTest
         organisationResults.results.head.organisationId should be(UserId("make-org"))
       }
     }
-    scenario("search by organisationIds") {
+    Scenario("search by organisationIds") {
       Get("/organisations?organisationIds=make-org,toto") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
@@ -382,7 +340,7 @@ class OrganisationApiTest
         organisationResults.results.head.organisationId should be(UserId("make-org"))
       }
     }
-    scenario("search by organisation country") {
+    Scenario("search by organisation country") {
       Get("/organisations?country=FR&language=fr") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val organisationResults: OrganisationsSearchResultResponse = entityAs[OrganisationsSearchResultResponse]
@@ -392,14 +350,14 @@ class OrganisationApiTest
     }
   }
 
-  feature("Get list of organisation proposals") {
-    scenario("organisationId does not correspond to an organisation") {
+  Feature("Get list of organisation proposals") {
+    Scenario("organisationId does not correspond to an organisation") {
       Get("/organisations/classic-user/proposals") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
-    scenario("search organisation proposals unauthenticated") {
+    Scenario("search organisation proposals unauthenticated") {
       Get("/organisations/make-org/proposals") ~> routes ~> check {
         status shouldBe StatusCodes.OK
         val proposalsSearchResult: ProposalsResultSeededResponse = entityAs[ProposalsResultSeededResponse]
@@ -409,7 +367,7 @@ class OrganisationApiTest
       }
     }
 
-    scenario("search organisation proposals authenticated") {
+    Scenario("search organisation proposals authenticated") {
       Get("/organisations/make-org/proposals")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
@@ -420,7 +378,7 @@ class OrganisationApiTest
       }
     }
 
-    scenario("search ordered organisation proposals with uppercase order") {
+    Scenario("search ordered organisation proposals with uppercase order") {
       Get("/organisations/make-org/proposals?sort=createdAt&order=DESC")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
@@ -430,7 +388,7 @@ class OrganisationApiTest
     }
   }
 
-  feature("get votes of an organisation") {
+  Feature("get votes of an organisation") {
 
     val proposalListWithVote = ProposalsResultWithUserVoteSeededResponse(
       total = proposalsList.total,
@@ -446,22 +404,20 @@ class OrganisationApiTest
       seed = None
     )
 
-    Mockito
-      .when(
-        organisationService.getVotedProposals(
-          organisationId = ArgumentMatchers.any[UserId],
-          maybeUserId = ArgumentMatchers.any[Option[UserId]],
-          filterVotes = ArgumentMatchers.eq(None),
-          filterQualifications = ArgumentMatchers.eq(None),
-          sort = ArgumentMatchers.eq(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
-          limit = ArgumentMatchers.eq(None),
-          skip = ArgumentMatchers.eq(None),
-          requestContext = ArgumentMatchers.any[RequestContext]
-        )
+    when(
+      organisationService.getVotedProposals(
+        organisationId = any[UserId],
+        maybeUserId = any[Option[UserId]],
+        filterVotes = eqTo(None),
+        filterQualifications = eqTo(None),
+        sort = eqTo(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
+        limit = eqTo(None),
+        skip = eqTo(None),
+        requestContext = any[RequestContext]
       )
-      .thenReturn(Future.successful(proposalListWithVote))
+    ).thenReturn(Future.successful(proposalListWithVote))
 
-    scenario("get proposals voted from existing organisation unauthenticated") {
+    Scenario("get proposals voted from existing organisation unauthenticated") {
       Get("/organisations/make-org/votes") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val votedProposals: ProposalsResultWithUserVoteSeededResponse =
@@ -470,7 +426,7 @@ class OrganisationApiTest
       }
     }
 
-    scenario("get proposals voted from existing organisation authenticated") {
+    Scenario("get proposals voted from existing organisation authenticated") {
       Get("/organisations/make-org/votes")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -480,27 +436,27 @@ class OrganisationApiTest
       }
     }
 
-    scenario("get proposals voted from non organisation user") {
+    Scenario("get proposals voted from non organisation user") {
       Get("/organisations/classic-user/votes") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
   }
 
-  feature("get an organisation profile") {
-    scenario("nonexisting organisation") {
+  Feature("get an organisation profile") {
+    Scenario("nonexisting organisation") {
       Get("/organisations/non-existant/profile") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
-    scenario("user used as an organisation") {
+    Scenario("user used as an organisation") {
       Get("/organisations/classic-user/profile") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
-    scenario("existing organisation") {
+    Scenario("existing organisation") {
       Get("/organisations/make-org/profile") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val response = responseAs[OrganisationProfileResponse]
@@ -514,7 +470,7 @@ class OrganisationApiTest
 
   }
 
-  feature("update an organisation profile") {
+  Feature("update an organisation profile") {
     val validModification = """{
       |  "organisationName": "Make.org (TM)",
       |  "description": "Let's make the world a better place",
@@ -523,14 +479,14 @@ class OrganisationApiTest
       |  "optInNewsletter": false
       |}""".stripMargin
 
-    scenario("unauthentified modification") {
+    Scenario("unauthentified modification") {
       Put("/organisations/make-org/profile")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validModification)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("authentified modification") {
+    Scenario("authentified modification") {
 
       Put("/organisations/make-org/profile")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validModification))
@@ -546,7 +502,7 @@ class OrganisationApiTest
       }
     }
 
-    scenario("authentified modification with the wrong user") {
+    Scenario("authentified modification with the wrong user") {
 
       Put("/organisations/make-org/profile")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validModification))
@@ -556,7 +512,7 @@ class OrganisationApiTest
       }
     }
 
-    scenario("bad request") {
+    Scenario("bad request") {
       val invalidModification = """{
         |  "optInNewsletter": false
         |}""".stripMargin

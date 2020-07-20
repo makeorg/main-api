@@ -117,8 +117,8 @@ class PersistentOperationOfQuestionServiceIT
     } yield result
   }
 
-  feature("An operationOfQuestion can be persisted") {
-    scenario("Persist an operationOfQuestion and retrieve it") {
+  Feature("An operationOfQuestion can be persisted") {
+    Scenario("Persist an operationOfQuestion and retrieve it") {
       val baseOperationOfQuestion = generateOperationOfQuestion
 
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
@@ -140,8 +140,8 @@ class PersistentOperationOfQuestionServiceIT
     }
   }
 
-  feature("search operation of question") {
-    scenario("no filter") {
+  Feature("search operation of question") {
+    Scenario("no filter") {
       val operationOfQuestion1 = generateOperationOfQuestion
       val operationOfQuestion2 = generateOperationOfQuestion
 
@@ -156,7 +156,7 @@ class PersistentOperationOfQuestionServiceIT
       }
     }
 
-    scenario("questionIds filter") {
+    Scenario("questionIds filter") {
       val operationOfQuestion3 = generateOperationOfQuestion.copy(questionId = QuestionId("toBeFiltered"))
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
@@ -179,8 +179,8 @@ class PersistentOperationOfQuestionServiceIT
     }
   }
 
-  feature("Find an operationOfQuestion by operation") {
-    scenario("Persist an operationOfQuestion and find it by its operationId") {
+  Feature("Find an operationOfQuestion by operation") {
+    Scenario("Persist an operationOfQuestion and find it by its operationId") {
       val baseOperationOfQuestion = generateOperationOfQuestion
 
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
@@ -197,8 +197,8 @@ class PersistentOperationOfQuestionServiceIT
     }
   }
 
-  feature("Modify an operationOfQuestion") {
-    scenario("Persist an operationOfQuestion and modify it") {
+  Feature("Modify an operationOfQuestion") {
+    Scenario("Persist an operationOfQuestion and modify it") {
       val baseOperationOfQuestion = generateOperationOfQuestion
 
       val futureOperationOfQuestion: Future[Option[OperationOfQuestion]] = for {
@@ -234,8 +234,8 @@ class PersistentOperationOfQuestionServiceIT
     }
   }
 
-  feature("questionIdFromSequenceId") {
-    scenario("existing sequenceId") {
+  Feature("questionIdFromSequenceId") {
+    Scenario("existing sequenceId") {
       val sequenceId = SequenceId("existing sequenceId")
       val questionId = QuestionId("existing sequenceId")
       val operationId = OperationId("existing sequenceId")
@@ -264,7 +264,7 @@ class PersistentOperationOfQuestionServiceIT
       whenReady(future, Timeout(10.seconds))(_ should contain(questionId))
     }
 
-    scenario("unknown sequenceId") {
+    Scenario("unknown sequenceId") {
       whenReady(
         persistentOperationOfQuestionService.questionIdFromSequenceId(SequenceId("unknown-sequence")),
         Timeout(10.seconds)

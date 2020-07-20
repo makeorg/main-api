@@ -25,8 +25,6 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -39,16 +37,16 @@ class AdminActiveFeatureApiTest
 
   val routes: Route = sealRoute(adminActiveFeatureApi.routes)
 
-  feature("create an activeFeature") {
+  Feature("create an activeFeature") {
     val validActiveFeature =
       ActiveFeature(ActiveFeatureId("valid-active-feature"), FeatureId("feature"), Some(QuestionId("question")))
 
     when(
       activeFeatureService
-        .createActiveFeature(ArgumentMatchers.any[FeatureId], ArgumentMatchers.any[Option[QuestionId]])
+        .createActiveFeature(any[FeatureId], any[Option[QuestionId]])
     ).thenReturn(Future.successful(validActiveFeature))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Post("/admin/active-features").withEntity(
         HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "questionId": "question"}""")
       ) ~>
@@ -57,7 +55,7 @@ class AdminActiveFeatureApiTest
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Post("/admin/active-features")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "questionId": "question"}""")
@@ -67,7 +65,7 @@ class AdminActiveFeatureApiTest
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Post("/admin/active-features")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"featureId": "feature", "questionId": "question"}""")
@@ -77,7 +75,7 @@ class AdminActiveFeatureApiTest
       }
     }
 
-    scenario("allow authenticated admin") {
+    Scenario("allow authenticated admin") {
 
       Post("/admin/active-features")
         .withEntity(
@@ -89,36 +87,36 @@ class AdminActiveFeatureApiTest
     }
   }
 
-  feature("read a activeFeature") {
+  Feature("read a activeFeature") {
     val helloActiveFeature =
       ActiveFeature(ActiveFeatureId("hello-active-feature"), FeatureId("feature"), Some(QuestionId("question")))
 
-    when(activeFeatureService.getActiveFeature(ArgumentMatchers.eq(helloActiveFeature.activeFeatureId)))
+    when(activeFeatureService.getActiveFeature(eqTo(helloActiveFeature.activeFeatureId)))
       .thenReturn(Future.successful(Some(helloActiveFeature)))
-    when(activeFeatureService.getActiveFeature(ArgumentMatchers.eq(ActiveFeatureId("fake-active-feature"))))
+    when(activeFeatureService.getActiveFeature(eqTo(ActiveFeatureId("fake-active-feature"))))
       .thenReturn(Future.successful(None))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Get("/admin/active-features/hello-active-feature") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Get("/admin/active-features/hello-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Get("/admin/active-features/hello-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allow authenticated admin on existing activeFeature") {
+    Scenario("allow authenticated admin on existing activeFeature") {
       Get("/admin/active-features/hello-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -129,7 +127,7 @@ class AdminActiveFeatureApiTest
       }
     }
 
-    scenario("not found and allow authenticated admin on a non existing activeFeature") {
+    Scenario("not found and allow authenticated admin on a non existing activeFeature") {
       Get("/admin/active-features/fake-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
@@ -137,45 +135,45 @@ class AdminActiveFeatureApiTest
     }
   }
 
-  feature("delete a activeFeature") {
+  Feature("delete a activeFeature") {
     val helloActiveFeature =
       ActiveFeature(ActiveFeatureId("hello-active-feature"), FeatureId("feature"), Some(QuestionId("question")))
 
-    when(activeFeatureService.getActiveFeature(ArgumentMatchers.eq(helloActiveFeature.activeFeatureId)))
+    when(activeFeatureService.getActiveFeature(eqTo(helloActiveFeature.activeFeatureId)))
       .thenReturn(Future.successful(Some(helloActiveFeature)))
-    when(activeFeatureService.getActiveFeature(ArgumentMatchers.eq(ActiveFeatureId("fake-active-feature"))))
+    when(activeFeatureService.getActiveFeature(eqTo(ActiveFeatureId("fake-active-feature"))))
       .thenReturn(Future.successful(None))
-    when(activeFeatureService.deleteActiveFeature(ArgumentMatchers.eq(helloActiveFeature.activeFeatureId)))
+    when(activeFeatureService.deleteActiveFeature(eqTo(helloActiveFeature.activeFeatureId)))
       .thenReturn(Future.successful({}))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Delete("/admin/active-features/hello-active-feature") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Delete("/admin/active-features/hello-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Delete("/admin/active-features/hello-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allow authenticated admin on existing activeFeature") {
+    Scenario("allow authenticated admin on existing activeFeature") {
       Delete("/admin/active-features/hello-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
 
-    scenario("not found and allow authenticated admin on a non existing activeFeature") {
+    Scenario("not found and allow authenticated admin on a non existing activeFeature") {
       Get("/admin/active-features/fake-active-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)

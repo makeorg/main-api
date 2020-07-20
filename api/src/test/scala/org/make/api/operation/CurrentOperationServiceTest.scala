@@ -24,7 +24,6 @@ import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.{CurrentOperation, CurrentOperationId}
 import org.make.core.question.QuestionId
 import org.make.core.technical.IdGenerator
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -53,11 +52,10 @@ class CurrentOperationServiceTest
     externalLink = Some("https://example.com/link")
   )
 
-  feature("create current operation") {
-    scenario("creation") {
-      Mockito.when(idGenerator.nextCurrentOperationId()).thenReturn(CurrentOperationId("current-operation-id"))
-      Mockito
-        .when(persistentCurrentOperationService.persist(currentOperation))
+  Feature("create current operation") {
+    Scenario("creation") {
+      when(idGenerator.nextCurrentOperationId()).thenReturn(CurrentOperationId("current-operation-id"))
+      when(persistentCurrentOperationService.persist(currentOperation))
         .thenReturn(Future.successful(currentOperation))
 
       whenReady(
@@ -80,10 +78,9 @@ class CurrentOperationServiceTest
     }
   }
 
-  feature("update current operation") {
-    scenario("update when current operation is not found") {
-      Mockito
-        .when(persistentCurrentOperationService.getById(CurrentOperationId("not-found")))
+  Feature("update current operation") {
+    Scenario("update when current operation is not found") {
+      when(persistentCurrentOperationService.getById(CurrentOperationId("not-found")))
         .thenReturn(Future.successful(None))
 
       whenReady(
@@ -106,15 +103,13 @@ class CurrentOperationServiceTest
       }
     }
 
-    scenario("update when current operation is found") {
+    Scenario("update when current operation is found") {
 
       val updatedCurrentOperation: CurrentOperation = currentOperation.copy(label = "updated label")
 
-      Mockito
-        .when(persistentCurrentOperationService.getById(CurrentOperationId("current-operation-id")))
+      when(persistentCurrentOperationService.getById(CurrentOperationId("current-operation-id")))
         .thenReturn(Future.successful(Some(currentOperation)))
-      Mockito
-        .when(persistentCurrentOperationService.modify(updatedCurrentOperation))
+      when(persistentCurrentOperationService.modify(updatedCurrentOperation))
         .thenReturn(Future.successful(updatedCurrentOperation))
 
       whenReady(

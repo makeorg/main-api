@@ -21,8 +21,7 @@ package org.make.api.feature
 
 import org.make.api.MakeUnitTest
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.core.feature._
-import org.mockito.{ArgumentMatchers, Mockito}
+import org.make.core.feature.{Feature => Feat, FeatureId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -36,51 +35,47 @@ class FeatureServiceTest
 
   override val persistentFeatureService: PersistentFeatureService = mock[PersistentFeatureService]
 
-  feature("get feature") {
-    scenario("get feature from FeatureId") {
+  Feature("get feature") {
+    Scenario("get feature from FeatureId") {
       featureService.getFeature(FeatureId("valid-feature"))
 
-      Mockito.verify(persistentFeatureService).get(FeatureId("valid-feature"))
+      verify(persistentFeatureService).get(FeatureId("valid-feature"))
     }
   }
 
-  feature("create feature") {
-    scenario("creating a feature success") {
-      Mockito
-        .when(persistentFeatureService.get(ArgumentMatchers.any[FeatureId]))
+  Feature("create feature") {
+    Scenario("creating a feature success") {
+      when(persistentFeatureService.get(any[FeatureId]))
         .thenReturn(Future.successful(None))
 
       val feature =
-        Feature(featureId = FeatureId("new-feature"), slug = "new-feature", name = "new feature name")
+        Feat(featureId = FeatureId("new-feature"), slug = "new-feature", name = "new feature name")
 
-      Mockito
-        .when(persistentFeatureService.persist(ArgumentMatchers.any[Feature]))
+      when(persistentFeatureService.persist(any[Feat]))
         .thenReturn(Future.successful(feature))
 
-      val futureNewFeature: Future[Feature] = featureService.createFeature("new-feature", "new feature name")
+      val futureNewFeature: Future[Feat] = featureService.createFeature("new-feature", "new feature name")
 
       whenReady(futureNewFeature, Timeout(3.seconds)) { _ =>
-        Mockito.verify(persistentFeatureService).persist(ArgumentMatchers.any[Feature])
+        verify(persistentFeatureService).persist(any[Feat])
       }
     }
   }
 
-  feature("find features") {
+  Feature("find features") {
 
-    scenario("find features by slug") {
+    Scenario("find features by slug") {
       val feature1 =
-        Feature(featureId = FeatureId("find-feature-1"), slug = "feature-1", name = "Feature 1")
+        Feat(featureId = FeatureId("find-feature-1"), slug = "feature-1", name = "Feature 1")
       val feature2 =
-        Feature(featureId = FeatureId("find-feature-2"), slug = "feature-2", name = "Feature 2")
-      Mockito.reset(persistentFeatureService)
-      Mockito
-        .when(persistentFeatureService.findAll())
+        Feat(featureId = FeatureId("find-feature-2"), slug = "feature-2", name = "Feature 2")
+      reset(persistentFeatureService)
+      when(persistentFeatureService.findAll())
         .thenReturn(Future.successful(Seq(feature1, feature2)))
-      Mockito
-        .when(persistentFeatureService.findBySlug(ArgumentMatchers.eq("feature-1")))
+      when(persistentFeatureService.findBySlug(eqTo("feature-1")))
         .thenReturn(Future.successful(Seq(feature1)))
 
-      val futureFeatures: Future[Seq[Feature]] =
+      val futureFeatures: Future[Seq[Feat]] =
         featureService.findBySlug("feature-1")
 
       whenReady(futureFeatures, Timeout(3.seconds)) { features =>
@@ -91,18 +86,16 @@ class FeatureServiceTest
     }
   }
 
-  feature("update a feature") {
-    scenario("update a feature") {
-      val oldFeature = Feature(FeatureId("1234567890"), "old-feature", "old Feature name")
-      val newFeature = Feature(FeatureId("1234567890"), "new-feature", "new Feature name")
-      Mockito
-        .when(persistentFeatureService.get(FeatureId("1234567890")))
+  Feature("update a feature") {
+    Scenario("update a feature") {
+      val oldFeature = Feat(FeatureId("1234567890"), "old-feature", "old Feature name")
+      val newFeature = Feat(FeatureId("1234567890"), "new-feature", "new Feature name")
+      when(persistentFeatureService.get(FeatureId("1234567890")))
         .thenReturn(Future.successful(Some(oldFeature)))
-      Mockito
-        .when(persistentFeatureService.update(ArgumentMatchers.any[Feature]))
+      when(persistentFeatureService.update(any[Feat]))
         .thenReturn(Future.successful(Some(newFeature)))
 
-      val futureFeature: Future[Option[Feature]] =
+      val futureFeature: Future[Option[Feat]] =
         featureService.updateFeature(featureId = oldFeature.featureId, slug = "new-feature", name = "new Feature name")
 
       whenReady(futureFeature, Timeout(3.seconds)) { feature =>
@@ -110,10 +103,10 @@ class FeatureServiceTest
       }
     }
 
-    scenario("update an non existent feature ") {
-      Mockito.when(persistentFeatureService.get(FeatureId("non-existent-feature"))).thenReturn(Future.successful(None))
+    Scenario("update an non existent feature ") {
+      when(persistentFeatureService.get(FeatureId("non-existent-feature"))).thenReturn(Future.successful(None))
 
-      val futureFeature: Future[Option[Feature]] = featureService.updateFeature(
+      val futureFeature: Future[Option[Feat]] = featureService.updateFeature(
         featureId = FeatureId("non-existent-feature"),
         slug = "new-non-existent-feature",
         name = "whatever name"

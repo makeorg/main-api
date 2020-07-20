@@ -41,7 +41,7 @@ import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature, FeatureId}
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature => Feat, FeatureId}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, _}
@@ -55,17 +55,12 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.when
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 class QuestionApiTest
     extends MakeApiTestBase
-    with MockitoSugar
     with DefaultQuestionApiComponent
     with QuestionServiceComponent
     with MakeDataHandlerComponent
@@ -159,38 +154,38 @@ class QuestionApiTest
   val indexedOperationOfQuestions =
     Seq(openOperationOfQuestion, finishedOperationOfQuestion, upcomingOperationOfQuestion)
 
-  when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery])).thenAnswer { invocation =>
-    val query = invocation.getArgument[OperationOfQuestionSearchQuery](0)
-    val result =
-      indexedOperationOfQuestions.filter(i => query.filters.flatMap(_.status).map(_.status).fold(true)(_ == i.status))
-    Future.successful(OperationOfQuestionSearchResult(result.size, result))
+  when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery])).thenAnswer {
+    query: OperationOfQuestionSearchQuery =>
+      val result =
+        indexedOperationOfQuestions.filter(i => query.filters.flatMap(_.status).map(_.status).fold(true)(_ == i.status))
+      Future.successful(OperationOfQuestionSearchResult(result.size, result))
   }
 
-  feature("start sequence by question id") {
-    scenario("valid question") {
+  Feature("start sequence by question id") {
+    Scenario("valid question") {
       val questionId = QuestionId("question-id")
       when(
         sequenceService.startNewSequence(
-          maybeUserId = ArgumentMatchers.any[Option[UserId]],
-          questionId = matches(questionId),
-          includedProposals = ArgumentMatchers.any[Seq[ProposalId]],
-          tagsIds = ArgumentMatchers.any[Option[Seq[TagId]]],
-          requestContext = ArgumentMatchers.any[RequestContext]
+          maybeUserId = any[Option[UserId]],
+          questionId = eqTo(questionId),
+          includedProposals = any[Seq[ProposalId]],
+          tagsIds = any[Option[Seq[TagId]]],
+          requestContext = any[RequestContext]
         )
       ).thenReturn(Future.successful(Some(SequenceResult(SequenceId("sequence-id"), "title", "slug", Seq.empty))))
       Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
-    scenario("invalid question") {
+    Scenario("invalid question") {
       val questionId = QuestionId("invalid-question-id")
       when(
         sequenceService.startNewSequence(
-          maybeUserId = ArgumentMatchers.any[Option[UserId]],
-          questionId = matches(questionId),
-          includedProposals = ArgumentMatchers.any[Seq[ProposalId]],
-          tagsIds = ArgumentMatchers.any[Option[Seq[TagId]]],
-          requestContext = ArgumentMatchers.any[RequestContext]
+          maybeUserId = any[Option[UserId]],
+          questionId = eqTo(questionId),
+          includedProposals = any[Seq[ProposalId]],
+          tagsIds = any[Option[Seq[TagId]]],
+          requestContext = any[RequestContext]
         )
       ).thenReturn(Future.successful(None))
       Get(s"/questions/${questionId.value}/start-sequence") ~> routes ~> check {
@@ -199,7 +194,7 @@ class QuestionApiTest
     }
   }
 
-  feature("get question details") {
+  Feature("get question details") {
 
     val partner: Partner = Partner(
       partnerId = PartnerId("partner1"),
@@ -217,7 +212,7 @@ class QuestionApiTest
       featureId = FeatureId("f1"),
       maybeQuestionId = Some(baseQuestion.questionId)
     )
-    val feature1 = Feature(featureId = FeatureId("f1"), name = "feature 1", slug = "f1")
+    val feature1 = Feat(featureId = FeatureId("f1"), name = "feature 1", slug = "f1")
 
     when(questionService.getQuestionByQuestionIdValueOrSlug(baseQuestion.slug))
       .thenReturn(Future.successful(Some(baseQuestion)))
@@ -247,7 +242,7 @@ class QuestionApiTest
 
     when(questionService.getQuestions(Seq(baseQuestion.questionId))).thenReturn(Future.successful(Seq(baseQuestion)))
 
-    scenario("get by id") {
+    Scenario("get by id") {
       Given("a registered question")
       When("I get question details by id")
       Then("I get a question with details")
@@ -270,7 +265,7 @@ class QuestionApiTest
         questionDetailsResponse.activeFeatures should be(Seq("f1"))
       }
     }
-    scenario("get by slug") {
+    Scenario("get by slug") {
       Given("a registered question")
       When("I get question details by slug")
       Then("I get a question with details")
@@ -282,9 +277,9 @@ class QuestionApiTest
     }
   }
 
-  feature("search question") {
+  Feature("search question") {
 
-    scenario("search all") {
+    Scenario("search all") {
       Get("/questions/search") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val res: OperationOfQuestionSearchResult = entityAs[OperationOfQuestionSearchResult]
@@ -293,7 +288,7 @@ class QuestionApiTest
       }
     }
 
-    scenario("search all full valid params") {
+    Scenario("search all full valid params") {
       Get(
         "/questions/search?questionIds=1234,5678&questionContent=content&description=desc&startDate=2042-04-02T00:00:00.000Z&endDate=2042-04-20T00:00:00.000Z&operationKinds=BUSINESS_CONSULTATION,GREAT_CAUSE&language=fr&country=FR&limit=42&skip=1&sort=question&order=ASC"
       ) ~> routes ~> check {
@@ -304,22 +299,22 @@ class QuestionApiTest
       }
     }
 
-    scenario("validation error on sort") {
+    Scenario("validation error on sort") {
       Get("/questions/search?sort=invalid") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
 
-    scenario("validation error on order") {
+    Scenario("validation error on order") {
       Get("/questions/search?order=invalid") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
   }
 
-  feature("popular tags") {
-    scenario("fake question") {
-      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("fake")))).thenReturn(Future.successful(None))
+  Feature("popular tags") {
+    Scenario("fake question") {
+      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/popular-tags") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
@@ -332,13 +327,13 @@ class QuestionApiTest
     val tag2 = newTag("tag2")
     val tag3 = newTag("tag3")
 
-    when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("question-id"))))
+    when(questionService.getQuestion(eqTo(QuestionId("question-id"))))
       .thenReturn(Future.successful(Some(baseQuestion)))
 
-    scenario("all tags") {
+    Scenario("all tags") {
       when(
         elasticsearchProposalAPI
-          .getPopularTagsByProposal(ArgumentMatchers.eq(QuestionId("question-id")), ArgumentMatchers.eq(Int.MaxValue))
+          .getPopularTagsByProposal(eqTo(QuestionId("question-id")), eqTo(Int.MaxValue))
       ).thenReturn(
         Future.successful(
           Seq(
@@ -348,7 +343,7 @@ class QuestionApiTest
           )
         )
       )
-      when(tagService.findByTagIds(ArgumentMatchers.eq(Seq(TagId("tag2"), TagId("tag3"), TagId("tag1")))))
+      when(tagService.findByTagIds(eqTo(Seq(TagId("tag2"), TagId("tag3"), TagId("tag1")))))
         .thenReturn(Future.successful(Seq(tag1, tag2, tag3)))
 
       Get("/questions/question-id/popular-tags") ~> routes ~> check {
@@ -361,10 +356,10 @@ class QuestionApiTest
       }
     }
 
-    scenario("with limit and skip") {
+    Scenario("with limit and skip") {
       when(
         elasticsearchProposalAPI
-          .getPopularTagsByProposal(ArgumentMatchers.eq(QuestionId("question-id")), ArgumentMatchers.eq(3))
+          .getPopularTagsByProposal(eqTo(QuestionId("question-id")), eqTo(3))
       ).thenReturn(
         Future.successful(
           Seq(
@@ -374,7 +369,7 @@ class QuestionApiTest
           )
         )
       )
-      when(tagService.findByTagIds(ArgumentMatchers.eq(Seq(TagId("tag3"), TagId("tag1")))))
+      when(tagService.findByTagIds(eqTo(Seq(TagId("tag3"), TagId("tag1")))))
         .thenReturn(Future.successful(Seq(tag3, tag1)))
 
       Get("/questions/question-id/popular-tags?limit=2&skip=1") ~> routes ~> check {
@@ -387,16 +382,16 @@ class QuestionApiTest
     }
   }
 
-  feature("get top proposals") {
-    scenario("fake question") {
-      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("fake")))).thenReturn(Future.successful(None))
+  Feature("get top proposals") {
+    Scenario("fake question") {
+      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/top-proposals") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
-    scenario("get top proposals") {
-      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("question-id"))))
+    Scenario("get top proposals") {
+      when(questionService.getQuestion(eqTo(QuestionId("question-id"))))
         .thenReturn(Future.successful(Some(baseQuestion)))
 
       when(
@@ -417,9 +412,9 @@ class QuestionApiTest
     }
   }
 
-  feature("get partners") {
-    scenario("fake question") {
-      when(questionService.getQuestion(ArgumentMatchers.eq(QuestionId("fake")))).thenReturn(Future.successful(None))
+  Feature("get partners") {
+    Scenario("fake question") {
+      when(questionService.getQuestion(eqTo(QuestionId("fake")))).thenReturn(Future.successful(None))
       Get("/questions/fake/partners") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
@@ -437,22 +432,22 @@ class QuestionApiTest
         0f
       )
 
-    scenario("invalid sortAlgorithm") {
+    Scenario("invalid sortAlgorithm") {
       Get("/questions/question-id/partners?sortAlgorithm=fake") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
 
-    scenario("partners without organisationId") {
+    Scenario("partners without organisationId") {
       when(
         partnerService.find(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(Some(1000)),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(QuestionId("question-id"))),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None)
+          eqTo(0),
+          eqTo(Some(1000)),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(QuestionId("question-id"))),
+          eqTo(None),
+          eqTo(None)
         )
       ).thenReturn(
         Future.successful(
@@ -460,13 +455,8 @@ class QuestionApiTest
         )
       )
       when(
-        questionService.getPartners(
-          ArgumentMatchers.eq(QuestionId("question-id")),
-          ArgumentMatchers.eq(Seq.empty),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None)
-        )
+        questionService
+          .getPartners(eqTo(QuestionId("question-id")), eqTo(Seq.empty), eqTo(None), eqTo(None), eqTo(None))
       ).thenReturn(Future.successful(OrganisationSearchResult(0L, Seq.empty)))
 
       Get("/questions/question-id/partners") ~> routes ~> check {
@@ -476,7 +466,7 @@ class QuestionApiTest
       }
     }
 
-    scenario("all partners with participation algorithm and partnerKind") {
+    Scenario("all partners with participation algorithm and partnerKind") {
       def newIndexedOrganisation(organisationId: String) =
         IndexedOrganisation(
           UserId(organisationId),
@@ -494,13 +484,13 @@ class QuestionApiTest
         )
       when(
         partnerService.find(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(Some(1000)),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(QuestionId("question-id"))),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(PartnerKind.Actor))
+          eqTo(0),
+          eqTo(Some(1000)),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(QuestionId("question-id"))),
+          eqTo(None),
+          eqTo(Some(PartnerKind.Actor))
         )
       ).thenReturn(
         Future.successful(
@@ -513,11 +503,11 @@ class QuestionApiTest
       )
       when(
         questionService.getPartners(
-          ArgumentMatchers.eq(QuestionId("question-id")),
-          ArgumentMatchers.eq(Seq(UserId("organisation-1"), UserId("organisation-2"))),
-          ArgumentMatchers.eq(Some(ParticipationAlgorithm(QuestionId("question-id")))),
-          ArgumentMatchers.eq(Some(42)),
-          ArgumentMatchers.eq(Some(14))
+          eqTo(QuestionId("question-id")),
+          eqTo(Seq(UserId("organisation-1"), UserId("organisation-2"))),
+          eqTo(Some(ParticipationAlgorithm(QuestionId("question-id")))),
+          eqTo(Some(42)),
+          eqTo(Some(14))
         )
       ).thenReturn(
         Future.successful(
@@ -538,8 +528,8 @@ class QuestionApiTest
     }
   }
 
-  feature("get question personalities") {
-    scenario("bad request") {
+  Feature("get question personalities") {
+    Scenario("bad request") {
 
       when(
         personalityRoleService
@@ -551,7 +541,7 @@ class QuestionApiTest
       }
     }
 
-    scenario("ok response") {
+    Scenario("ok response") {
       when(
         questionService.getQuestionPersonalities(
           start = 0,
@@ -569,15 +559,15 @@ class QuestionApiTest
     }
   }
 
-  feature("get question top ideas") {
+  Feature("get question top ideas") {
 
-    scenario("ok response") {
+    Scenario("ok response") {
       when(
         questionService.getTopIdeas(
-          start = matches(0),
-          end = matches(None),
-          seed = matches(None),
-          questionId = matches(QuestionId("question-id"))
+          start = eqTo(0),
+          end = eqTo(None),
+          seed = eqTo(None),
+          questionId = eqTo(QuestionId("question-id"))
         )
       ).thenReturn(Future.successful(QuestionTopIdeasResponseWithSeed(Seq.empty, 42)))
 
@@ -587,30 +577,29 @@ class QuestionApiTest
     }
   }
 
-  feature("get topIdea by id") {
-    scenario("ok response") {
-      when(
-        questionService.getTopIdea(matches(TopIdeaId("top-idea-id")), matches(QuestionId("question-id")), matches(None))
-      ).thenReturn(
-        Future.successful(
-          Some(
-            QuestionTopIdeaResultWithSeed(
-              topIdea = TopIdea(
-                topIdeaId = TopIdeaId("top-idea-id"),
-                ideaId = IdeaId("idea-id"),
-                questionId = QuestionId("question-id"),
-                name = "name",
-                label = "label",
-                scores = TopIdeaScores(0, 0, 0),
-                weight = 0
-              ),
-              avatars = Seq.empty,
-              proposalsCount = 0,
-              seed = 42
+  Feature("get topIdea by id") {
+    Scenario("ok response") {
+      when(questionService.getTopIdea(eqTo(TopIdeaId("top-idea-id")), eqTo(QuestionId("question-id")), eqTo(None)))
+        .thenReturn(
+          Future.successful(
+            Some(
+              QuestionTopIdeaResultWithSeed(
+                topIdea = TopIdea(
+                  topIdeaId = TopIdeaId("top-idea-id"),
+                  ideaId = IdeaId("idea-id"),
+                  questionId = QuestionId("question-id"),
+                  name = "name",
+                  label = "label",
+                  scores = TopIdeaScores(0, 0, 0),
+                  weight = 0
+                ),
+                avatars = Seq.empty,
+                proposalsCount = 0,
+                seed = 42
+              )
             )
           )
         )
-      )
 
       when(topIdeaCommentService.getCommentsWithPersonality(topIdeaIds = Seq(TopIdeaId("top-idea-id"))))
         .thenReturn(Future.successful(Seq.empty))
@@ -620,10 +609,9 @@ class QuestionApiTest
       }
     }
 
-    scenario("not found") {
-      when(
-        questionService.getTopIdea(matches(TopIdeaId("not-found")), matches(QuestionId("question-id")), matches(None))
-      ).thenReturn(Future.successful(None))
+    Scenario("not found") {
+      when(questionService.getTopIdea(eqTo(TopIdeaId("not-found")), eqTo(QuestionId("question-id")), eqTo(None)))
+        .thenReturn(Future.successful(None))
 
       Get("/questions/question-id/top-ideas/not-found") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
@@ -631,9 +619,9 @@ class QuestionApiTest
     }
   }
 
-  feature("list") {
+  Feature("list") {
 
-    scenario("all statuses") {
+    Scenario("all statuses") {
       Get("/questions?country=FR&language=fr") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val response = entityAs[QuestionListResponse]
@@ -643,7 +631,7 @@ class QuestionApiTest
       }
     }
 
-    scenario("one status") {
+    Scenario("one status") {
       Get("/questions?country=FR&language=fr&status=open") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val response = entityAs[QuestionListResponse]
@@ -651,7 +639,7 @@ class QuestionApiTest
       }
     }
 
-    scenario("invalid status") {
+    Scenario("invalid status") {
       Get("/questions?country=FR&language=fr&status=foo") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }

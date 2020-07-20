@@ -25,8 +25,6 @@ import org.make.api.MakeApiTestBase
 import org.make.api.technical._
 import org.make.api.technical.auth.MakeAuthentication
 import org.make.api.technical.monitoring.{MonitoringService, MonitoringServiceComponent}
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.verify
 
 class TrackingApiTest
     extends MakeApiTestBase
@@ -59,8 +57,8 @@ class TrackingApiTest
       |}
       """.stripMargin
 
-  feature("generate front event") {
-    scenario("valid request") {
+  Feature("generate front event") {
+    Scenario("valid request") {
       Post("/tracking/front", HttpEntity(ContentTypes.`application/json`, frontRequest)) ~>
         routes ~> check {
         status should be(StatusCodes.NoContent)
@@ -68,7 +66,7 @@ class TrackingApiTest
       }
     }
 
-    scenario("failed request") {
+    Scenario("failed request") {
       Post("/tracking/front", HttpEntity(ContentTypes.`application/json`, failedFrontRequest)) ~>
         routes ~> check {
         status should be(StatusCodes.BadRequest)

@@ -24,11 +24,11 @@ import org.scalatest.time.{Seconds, Span}
 import scala.concurrent.Future
 
 class DefaultTokenGeneratorComponentTest extends MakeUnitTest with DefaultTokenGeneratorComponent {
-  feature("Generate a hash from a token") {
+  Feature("Generate a hash from a token") {
     info("As a programmer")
     info("I want to be able to generate a hash from a Token")
 
-    scenario("simple case") {
+    Scenario("simple case") {
       Given("a list of tokens \"MYTOKEN\", \"TT\", \"@!\"'PZERzer10\"")
       When("tokenToHash is called for each")
       val tokens = Seq[String]("MYTOKEN", "TT", "@!\"'PZERzer10")
@@ -42,11 +42,11 @@ class DefaultTokenGeneratorComponentTest extends MakeUnitTest with DefaultTokenG
     }
   }
 
-  feature("Generate a token") {
+  Feature("Generate a token") {
     info("As a programmer")
     info("I want to be able to generate a token and his hash version")
 
-    scenario("simple case") {
+    Scenario("simple case") {
       Given("a tokenExists Function")
       def tokenExists: (String) => Future[Boolean] = { _ =>
         Future.successful(false)

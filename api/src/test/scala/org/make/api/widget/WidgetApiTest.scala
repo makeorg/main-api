@@ -34,8 +34,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -62,15 +60,15 @@ class WidgetApiTest
 
   when(
     widgetService.startNewWidgetSequence(
-      ArgumentMatchers.any[Option[UserId]],
-      ArgumentMatchers.any[QuestionId],
-      ArgumentMatchers.any[Option[Seq[TagId]]],
-      ArgumentMatchers.any[Option[Int]],
-      ArgumentMatchers.any[RequestContext]
+      any[Option[UserId]],
+      any[QuestionId],
+      any[Option[Seq[TagId]]],
+      any[Option[Int]],
+      any[RequestContext]
     )
   ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
 
-  feature("start sequence by question slug") {
+  Feature("start sequence by question slug") {
     val baseQuestion =
       Question(
         questionId = QuestionId("question-id"),
@@ -82,8 +80,8 @@ class WidgetApiTest
         operationId = None
       )
 
-    scenario("valid question") {
-      when(persistentQuestionService.find(ArgumentMatchers.any[SearchQuestionRequest]))
+    Scenario("valid question") {
+      when(persistentQuestionService.find(any[SearchQuestionRequest]))
         .thenReturn(Future.successful(Seq(baseQuestion)))
 
       Get("/widget/questions/slug/start-sequence") ~> routes ~> check {
@@ -91,8 +89,8 @@ class WidgetApiTest
       }
     }
 
-    scenario("invalid question") {
-      when(persistentQuestionService.find(ArgumentMatchers.any[SearchQuestionRequest]))
+    Scenario("invalid question") {
+      when(persistentQuestionService.find(any[SearchQuestionRequest]))
         .thenReturn(Future.successful(Seq()))
 
       Get("/widget/questions/slug/start-sequence") ~> routes ~> check {

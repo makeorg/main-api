@@ -37,7 +37,6 @@ import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.CirceFormatters
 import org.make.core.post.PostId
 import org.make.core.post.indexed._
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -65,9 +64,9 @@ class PostSearchEngineIT
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.postAliasName).thenReturn(eSIndexName)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
+  when(elasticsearchConfiguration.postAliasName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -137,8 +136,8 @@ class PostSearchEngineIT
     Await.result(responseRefreshIdeaFuture, 5.seconds)
   }
 
-  feature("get post by id") {
-    scenario("find by postId") {
+  Feature("get post by id") {
+    Scenario("find by postId") {
       whenReady(elasticsearchPostAPI.findPostById(PostId("post-2")), Timeout(3.seconds)) {
         case Some(post) => post.postId should equal(PostId("post-2"))
         case None       => fail("post not found by id")
@@ -146,8 +145,8 @@ class PostSearchEngineIT
     }
   }
 
-  feature("search posts") {
-    scenario("search multiple post ids") {
+  Feature("search posts") {
+    Scenario("search multiple post ids") {
       val query = PostSearchQuery(filters =
         Some(PostSearchFilters(postIds = Some(PostIdsSearchFilter(Seq(PostId("post-4"), PostId("post-2"))))))
       )
@@ -158,7 +157,7 @@ class PostSearchEngineIT
       }
     }
 
-    scenario("search by displayHome ordered by postDate DESC") {
+    Scenario("search by displayHome ordered by postDate DESC") {
       val query = PostSearchQuery(
         filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
         sort = Some(PostElasticsearchFieldNames.postDate),

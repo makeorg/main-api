@@ -39,7 +39,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.sequence.SequenceId
 import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -76,8 +75,8 @@ class OperationOfQuestionServiceTest
   val userId: UserId = UserId(UUID.randomUUID().toString)
   val now: ZonedDateTime = DateHelper.now()
 
-  feature("find operations of questions") {
-    scenario("find all") {
+  Feature("find operations of questions") {
+    Scenario("find all") {
       val req = SearchOperationsOfQuestions(
         questionIds = Some(Seq(QuestionId("q-id"))),
         operationIds = Some(Seq(OperationId("o-id"))),
@@ -86,8 +85,7 @@ class OperationOfQuestionServiceTest
       )
       operationOfQuestionService.find(42, Some(84), None, Some("ASC"), req)
 
-      Mockito
-        .verify(persistentOperationOfQuestionService)
+      verify(persistentOperationOfQuestionService)
         .search(
           42,
           Some(84),
@@ -100,27 +98,25 @@ class OperationOfQuestionServiceTest
         )
     }
 
-    scenario("find by questionId") {
+    Scenario("find by questionId") {
       operationOfQuestionService.findByQuestionId(QuestionId("question-id"))
 
-      Mockito.verify(persistentOperationOfQuestionService).getById(QuestionId("question-id"))
+      verify(persistentOperationOfQuestionService).getById(QuestionId("question-id"))
     }
 
-    scenario("find by OperationId") {
+    Scenario("find by OperationId") {
       operationOfQuestionService.findByOperationId(OperationId("operation-id"))
 
-      Mockito.verify(persistentOperationOfQuestionService).find(Some(OperationId("operation-id")))
+      verify(persistentOperationOfQuestionService).find(Some(OperationId("operation-id")))
     }
 
-    scenario("find by question slug") {
-      Mockito
-        .when(persistentQuestionService.find(SearchQuestionRequest(maybeSlug = Some("specific-question-slug"))))
+    Scenario("find by question slug") {
+      when(persistentQuestionService.find(SearchQuestionRequest(maybeSlug = Some("specific-question-slug"))))
         .thenReturn(
           Future.successful(Seq(TestUtils.question(id = QuestionId("slug-id"), slug = "specific-question-slug")))
         )
 
-      Mockito
-        .when(persistentOperationOfQuestionService.getById(QuestionId("slug-id")))
+      when(persistentOperationOfQuestionService.getById(QuestionId("slug-id")))
         .thenReturn(
           Future.successful(
             Some(
@@ -135,9 +131,8 @@ class OperationOfQuestionServiceTest
       }
     }
 
-    scenario("find fake by question slug") {
-      Mockito
-        .when(persistentQuestionService.find(SearchQuestionRequest(maybeSlug = Some("fake-question-slug"))))
+    Scenario("find fake by question slug") {
+      when(persistentQuestionService.find(SearchQuestionRequest(maybeSlug = Some("fake-question-slug"))))
         .thenReturn(Future.successful(Seq.empty))
 
       whenReady(operationOfQuestionService.findByQuestionSlug("fake-question-slug"), Timeout(3.seconds)) {
@@ -147,8 +142,8 @@ class OperationOfQuestionServiceTest
     }
   }
 
-  feature("search") {
-    scenario("search with query") {
+  Feature("search") {
+    Scenario("search with query") {
       val query = OperationOfQuestionSearchQuery(filters = Some(
         OperationOfQuestionSearchFilters(questionIds =
           Some(QuestionIdsSearchFilter(Seq(QuestionId("first-question-id"), QuestionId("second-question-id"))))
@@ -158,12 +153,12 @@ class OperationOfQuestionServiceTest
 
       operationOfQuestionService.search(query)
 
-      Mockito.verify(elasticsearchOperationOfQuestionAPI).searchOperationOfQuestions(query)
+      verify(elasticsearchOperationOfQuestionAPI).searchOperationOfQuestions(query)
     }
   }
 
-  feature("update") {
-    scenario("update simple") {
+  Feature("update") {
+    Scenario("update simple") {
       val questionId = QuestionId("update-question-id")
       val operationId = OperationId("update-operation-id")
       val operationOfQuestion =
@@ -172,25 +167,21 @@ class OperationOfQuestionServiceTest
       val operation = TestUtils.simpleOperation(id = operationId)
       val indexed = IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, question)
 
-      Mockito
-        .when(persistentOperationOfQuestionService.modify(operationOfQuestion))
+      when(persistentOperationOfQuestionService.modify(operationOfQuestion))
         .thenReturn(Future.successful(operationOfQuestion))
 
-      Mockito
-        .when(questionService.getQuestion(questionId))
+      when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
             .successful(Some(question))
         )
-      Mockito
-        .when(persistentOperationOfQuestionService.getById(questionId))
+      when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(Future.successful(Some(operationOfQuestion)))
-      Mockito
-        .when(operationService.findOneSimple(operationId))
+
+      when(operationService.findOneSimple(operationId))
         .thenReturn(Future.successful(Some(operation)))
 
-      Mockito
-        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
+      when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Completed))
 
       whenReady(operationOfQuestionService.update(operationOfQuestion), Timeout(3.seconds)) { result =>
@@ -199,7 +190,7 @@ class OperationOfQuestionServiceTest
 
     }
 
-    scenario("update with question") {
+    Scenario("update with question") {
       val questionId = QuestionId("update-with-question-question-id")
       val operationId = OperationId("update-with-question-operation-id")
       val operationOfQuestion = TestUtils.operationOfQuestion(
@@ -212,27 +203,21 @@ class OperationOfQuestionServiceTest
       val indexed =
         IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, withQuestion)
 
-      Mockito
-        .when(persistentQuestionService.modify(withQuestion))
+      when(persistentQuestionService.modify(withQuestion))
         .thenReturn(Future.successful(withQuestion))
-      Mockito
-        .when(persistentOperationOfQuestionService.modify(operationOfQuestion))
+      when(persistentOperationOfQuestionService.modify(operationOfQuestion))
         .thenReturn(Future.successful(operationOfQuestion))
-      Mockito
-        .when(questionService.getQuestion(questionId))
+      when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
             .successful(Some(withQuestion))
         )
-      Mockito
-        .when(persistentOperationOfQuestionService.getById(questionId))
+      when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(Future.successful(Some(operationOfQuestion)))
-      Mockito
-        .when(operationService.findOneSimple(operationId))
+      when(operationService.findOneSimple(operationId))
         .thenReturn(Future.successful(Some(operation)))
 
-      Mockito
-        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
+      when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Completed))
 
       operationOfQuestionService.updateWithQuestion(operationOfQuestion, withQuestion)
@@ -244,33 +229,29 @@ class OperationOfQuestionServiceTest
     }
   }
 
-  feature("delete") {
-    scenario("delete OperationOfQuestion and associated objects") {
+  Feature("delete") {
+    Scenario("delete OperationOfQuestion and associated objects") {
       val questionId = QuestionId("question-id")
-      Mockito
-        .when(persistentOperationOfQuestionService.delete(ArgumentMatchers.eq(questionId)))
+      when(persistentOperationOfQuestionService.delete(eqTo(questionId)))
         .thenReturn(Future.successful({}))
-      Mockito
-        .when(persistentSequenceConfigurationService.delete(ArgumentMatchers.eq(questionId)))
+      when(persistentSequenceConfigurationService.delete(eqTo(questionId)))
         .thenReturn(Future.successful({}))
-      Mockito.when(persistentQuestionService.delete(ArgumentMatchers.eq(questionId))).thenReturn(Future.successful({}))
+      when(persistentQuestionService.delete(eqTo(questionId))).thenReturn(Future.successful({}))
       whenReady(operationOfQuestionService.delete(questionId), Timeout(3.seconds)) { _ shouldBe () }
     }
-    scenario("delete fake questionId") {
+    Scenario("delete fake questionId") {
       val questionId = QuestionId("fake")
-      Mockito
-        .when(persistentOperationOfQuestionService.delete(ArgumentMatchers.eq(questionId)))
+      when(persistentOperationOfQuestionService.delete(eqTo(questionId)))
         .thenReturn(Future.successful({}))
-      Mockito
-        .when(persistentSequenceConfigurationService.delete(ArgumentMatchers.eq(questionId)))
+      when(persistentSequenceConfigurationService.delete(eqTo(questionId)))
         .thenReturn(Future.successful({}))
-      Mockito.when(persistentQuestionService.delete(ArgumentMatchers.eq(questionId))).thenReturn(Future.successful({}))
+      when(persistentQuestionService.delete(eqTo(questionId))).thenReturn(Future.successful({}))
       whenReady(operationOfQuestionService.delete(questionId), Timeout(3.seconds)) { _ shouldBe () }
     }
   }
 
-  feature("create") {
-    scenario("create OperationOfQuestion and associated objects") {
+  Feature("create") {
+    Scenario("create OperationOfQuestion and associated objects") {
 
       val operationId = OperationId("some-operation-id")
       val questionId = QuestionId("some-question-id")
@@ -294,31 +275,24 @@ class OperationOfQuestionServiceTest
         questionCreate
       )
 
-      Mockito.when(idGenerator.nextQuestionId()).thenReturn(questionId)
-      Mockito.when(idGenerator.nextSequenceId()).thenReturn(sequenceConfiguration.sequenceId)
-      Mockito
-        .when(persistentQuestionService.persist(ArgumentMatchers.eq(questionCreate)))
+      when(idGenerator.nextQuestionId()).thenReturn(questionId)
+      when(idGenerator.nextSequenceId()).thenReturn(sequenceConfiguration.sequenceId)
+      when(persistentQuestionService.persist(eqTo(questionCreate)))
         .thenReturn(Future.successful(questionCreate))
-      Mockito
-        .when(persistentSequenceConfigurationService.persist(ArgumentMatchers.eq(sequenceConfiguration)))
+      when(persistentSequenceConfigurationService.persist(eqTo(sequenceConfiguration)))
         .thenReturn(Future.successful(true))
-      Mockito
-        .when(persistentOperationOfQuestionService.persist(ArgumentMatchers.eq(operationOfQuestionCreate)))
+      when(persistentOperationOfQuestionService.persist(eqTo(operationOfQuestionCreate)))
         .thenReturn(Future.successful(operationOfQuestionCreate))
-      Mockito
-        .when(questionService.getQuestion(questionId))
+      when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
             .successful(Some(questionCreate))
         )
-      Mockito
-        .when(persistentOperationOfQuestionService.getById(questionId))
+      when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(Future.successful(Some(operationOfQuestionCreate)))
-      Mockito
-        .when(operationService.findOneSimple(operationId))
+      when(operationService.findOneSimple(operationId))
         .thenReturn(Future.successful(Some(operationCreate)))
-      Mockito
-        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
+      when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Completed))
 
       val createParameters = CreateOperationOfQuestion(
@@ -345,73 +319,66 @@ class OperationOfQuestionServiceTest
     }
   }
 
-  feature("count") {
-    scenario("count from query") {
+  Feature("count") {
+    Scenario("count from query") {
       val query = SearchOperationsOfQuestions(questionIds =
         Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id")))
       )
 
       operationOfQuestionService.count(query)
 
-      Mockito
-        .verify(persistentOperationOfQuestionService)
+      verify(persistentOperationOfQuestionService)
         .count(Some(Seq(QuestionId("first-question-id"), QuestionId("second-question-id"))), None, None)
     }
   }
 
-  feature("index") {
-    scenario("missing question") {
+  Feature("index") {
+    Scenario("missing question") {
       val questionId = QuestionId("fake-question")
-      Mockito.when(questionService.getQuestion(questionId)).thenReturn(Future.successful(None))
+      when(questionService.getQuestion(questionId)).thenReturn(Future.successful(None))
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) {
         _ shouldBe empty
       }
     }
 
-    scenario("missing operation") {
+    Scenario("missing operation") {
       val questionId = QuestionId("missing-operation")
-      Mockito
-        .when(questionService.getQuestion(questionId))
+      when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
             .successful(Some(TestUtils.question(id = questionId, operationId = Some(OperationId("fake-operation")))))
         )
-      Mockito
-        .when(persistentOperationOfQuestionService.getById(questionId))
+      when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(
           Future.successful(
             Some(TestUtils.operationOfQuestion(questionId = questionId, operationId = OperationId("fake-operation")))
           )
         )
-      Mockito.when(operationService.findOneSimple(OperationId("fake-operation"))).thenReturn(Future.successful(None))
+      when(operationService.findOneSimple(OperationId("fake-operation"))).thenReturn(Future.successful(None))
 
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) {
         _ shouldBe empty
       }
     }
 
-    scenario("indexing fail") {
+    Scenario("indexing fail") {
       val questionId = QuestionId("indexing-fail-question-id")
       val operationId = OperationId("indexing-fail-operation-id")
       val operationOfQuestion = TestUtils.operationOfQuestion(questionId = questionId, operationId = operationId)
       val question = TestUtils.question(id = questionId, operationId = Some(operationId))
       val operation = TestUtils.simpleOperation(id = operationId)
       val indexed = IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, question)
-      Mockito
-        .when(questionService.getQuestion(questionId))
+      when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
             .successful(Some(question))
         )
-      Mockito
-        .when(persistentOperationOfQuestionService.getById(questionId))
+      when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(Future.successful(Some(operationOfQuestion)))
-      Mockito
-        .when(operationService.findOneSimple(operationId))
+      when(operationService.findOneSimple(operationId))
         .thenReturn(Future.successful(Some(operation)))
 
-      Mockito
-        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
+      when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Failed(new IllegalStateException("whatever exception"))))
 
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) { result =>
@@ -420,28 +387,24 @@ class OperationOfQuestionServiceTest
       }
     }
 
-    scenario("index successful") {
+    Scenario("index successful") {
       val questionId = QuestionId("indexing-successful-question-id")
       val operationId = OperationId("indexing-successful-operation-id")
       val operationOfQuestion = TestUtils.operationOfQuestion(questionId = questionId, operationId = operationId)
       val question = TestUtils.question(id = questionId, operationId = Some(operationId))
       val operation = TestUtils.simpleOperation(id = operationId)
       val indexed = IndexedOperationOfQuestion.createFromOperationOfQuestion(operationOfQuestion, operation, question)
-      Mockito
-        .when(questionService.getQuestion(questionId))
+      when(questionService.getQuestion(questionId))
         .thenReturn(
           Future
             .successful(Some(question))
         )
-      Mockito
-        .when(persistentOperationOfQuestionService.getById(questionId))
+      when(persistentOperationOfQuestionService.getById(questionId))
         .thenReturn(Future.successful(Some(operationOfQuestion)))
-      Mockito
-        .when(operationService.findOneSimple(operationId))
+      when(operationService.findOneSimple(operationId))
         .thenReturn(Future.successful(Some(operation)))
 
-      Mockito
-        .when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
+      when(elasticsearchOperationOfQuestionAPI.indexOperationOfQuestion(indexed, None))
         .thenReturn(Future.successful(IndexationStatus.Completed))
 
       whenReady(operationOfQuestionService.indexById(questionId), Timeout(3.seconds)) { result =>

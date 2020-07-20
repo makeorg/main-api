@@ -45,8 +45,8 @@ class ZookeeperHealthCheckActorIT
   override val zookeeperName: String = "zookeeper-health-check"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
-  feature("Check Zookeeper status") {
-    scenario("write current timestamp in zookeeper ephemeral path and read it") {
+  Feature("Check Zookeeper status") {
+    Scenario("write current timestamp in zookeeper ephemeral path and read it") {
       Given("a zookeeper health check actor")
       val actorSystem = system
       val healthCheckExecutionContext = ExecutionContext.Implicits.global

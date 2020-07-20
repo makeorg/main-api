@@ -42,7 +42,6 @@ import org.make.core.operation.OperationOfQuestion.Status._
 import org.make.core.operation.SortAlgorithm._
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.mockito.Mockito
 import org.scalatest.Assertion
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -72,9 +71,9 @@ class OperationOfQuestionSearchEngineIT
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.operationOfQuestionAliasName).thenReturn(eSIndexName)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
+  when(elasticsearchConfiguration.operationOfQuestionAliasName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -333,9 +332,9 @@ class OperationOfQuestionSearchEngineIT
     Await.result(responseRefreshIdeaFuture, 5.seconds)
   }
 
-  feature("get operation of question by id") {
+  Feature("get operation of question by id") {
     val questionId = indexedOperationOfQuestions.head.questionId
-    scenario("should return an operation of question") {
+    Scenario("should return an operation of question") {
       whenReady(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId), Timeout(3.seconds)) {
         case Some(operationOfQuestion) => operationOfQuestion.questionId should equal(questionId)
         case None                      => fail("operation of question not found by id")
@@ -343,8 +342,8 @@ class OperationOfQuestionSearchEngineIT
     }
   }
 
-  feature("search by question") {
-    scenario("should return a list of operation of question") {
+  Feature("search by question") {
+    Scenario("should return a list of operation of question") {
       val query = OperationOfQuestionSearchQuery(filters =
         Some(OperationOfQuestionSearchFilters(question = Some(QuestionContentSearchFilter(text = "question"))))
       )
@@ -353,7 +352,7 @@ class OperationOfQuestionSearchEngineIT
       }
     }
 
-    scenario("search without accent on accented content should return the accented question") {
+    Scenario("search without accent on accented content should return the accented question") {
       val query = OperationOfQuestionSearchQuery(filters = Some(
         OperationOfQuestionSearchFilters(
           question = Some(QuestionContentSearchFilter(text = "aines")),
@@ -367,7 +366,7 @@ class OperationOfQuestionSearchEngineIT
       }
     }
 
-    scenario("search in italian should not return french results") {
+    Scenario("search in italian should not return french results") {
       val query = OperationOfQuestionSearchQuery(filters = Some(
         OperationOfQuestionSearchFilters(
           question = Some(QuestionContentSearchFilter(text = "aines")),
@@ -381,13 +380,13 @@ class OperationOfQuestionSearchEngineIT
     }
   }
 
-  feature("sort algorithms") {
+  Feature("sort algorithms") {
 
     def resultsAreSorted(results: Seq[IndexedOperationOfQuestion]): Assertion = {
       results.sortBy(result => (result.endDate.fold(Long.MinValue)(-_.toEpochSecond), result.slug)) should be(results)
     }
 
-    scenario("chronological") {
+    Scenario("chronological") {
       val query = OperationOfQuestionSearchQuery(sortAlgorithm = Some(Chronological))
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be(6)
@@ -395,7 +394,7 @@ class OperationOfQuestionSearchEngineIT
       }
     }
 
-    scenario("featured") {
+    Scenario("featured") {
       val query = OperationOfQuestionSearchQuery(sortAlgorithm = Some(Featured))
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be(6)
@@ -409,9 +408,9 @@ class OperationOfQuestionSearchEngineIT
 
   }
 
-  feature("highlights") {
+  Feature("highlights") {
 
-    scenario("get them") {
+    Scenario("get them") {
       whenReady(elasticsearchOperationOfQuestionAPI.highlights(), Timeout(3.seconds)) { result =>
         result should be(
           Highlights(

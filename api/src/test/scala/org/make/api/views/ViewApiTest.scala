@@ -59,7 +59,6 @@ import org.make.core.operation.indexed.OperationOfQuestionSearchResult
 import org.make.core.proposal.{ContentSearchFilter, OperationKindsSearchFilter, SearchFilters, SearchQuery}
 import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery}
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.Future
 
@@ -92,82 +91,76 @@ class ViewApiTest
 
   val routes: Route = sealRoute(viewApi.routes)
 
-  feature("search") {
+  Feature("search") {
 
-    scenario("without content") {
+    Scenario("without content") {
       Get("/views/search") ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
-    scenario("valid content") {
-      Mockito
-        .when(
-          proposalService.searchForUser(
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(
-              SearchQuery(
-                filters = Some(
-                  SearchFilters(
-                    content = Some(ContentSearchFilter("toto")),
-                    operationKinds = Some(
-                      OperationKindsSearchFilter(
-                        Seq(
-                          OperationKind.GreatCause,
-                          OperationKind.PublicConsultation,
-                          OperationKind.BusinessConsultation
-                        )
+    Scenario("valid content") {
+      when(
+        proposalService.searchForUser(
+          eqTo(None),
+          eqTo(
+            SearchQuery(
+              filters = Some(
+                SearchFilters(
+                  content = Some(ContentSearchFilter("toto")),
+                  operationKinds = Some(
+                    OperationKindsSearchFilter(
+                      Seq(
+                        OperationKind.GreatCause,
+                        OperationKind.PublicConsultation,
+                        OperationKind.BusinessConsultation
                       )
-                    ),
-                    country = None,
-                    language = None
-                  )
-                ),
-                limit = None
-              )
-            ),
-            ArgumentMatchers.any[RequestContext]
-          )
+                    )
+                  ),
+                  country = None,
+                  language = None
+                )
+              ),
+              limit = None
+            )
+          ),
+          any[RequestContext]
         )
-        .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 2, results = Seq.empty, seed = None)))
-      Mockito
-        .when(
-          operationOfQuestionService.search(
-            ArgumentMatchers.eq(
-              OperationOfQuestionSearchQuery(
-                filters = Some(
-                  OperationOfQuestionSearchFilters(
-                    question = Some(QuestionContentSearchFilter("toto", fuzzy = Some(Fuzziness.Auto))),
-                    operationKinds = Some(
-                      operation.OperationKindsSearchFilter(
-                        Seq(
-                          OperationKind.GreatCause,
-                          OperationKind.PublicConsultation,
-                          OperationKind.BusinessConsultation
-                        )
+      ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 2, results = Seq.empty, seed = None)))
+      when(
+        operationOfQuestionService.search(
+          eqTo(
+            OperationOfQuestionSearchQuery(
+              filters = Some(
+                OperationOfQuestionSearchFilters(
+                  question = Some(QuestionContentSearchFilter("toto", fuzzy = Some(Fuzziness.Auto))),
+                  operationKinds = Some(
+                    operation.OperationKindsSearchFilter(
+                      Seq(
+                        OperationKind.GreatCause,
+                        OperationKind.PublicConsultation,
+                        OperationKind.BusinessConsultation
                       )
                     )
                   )
-                ),
-                limit = None
-              )
+                )
+              ),
+              limit = None
             )
           )
         )
-        .thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 2, results = Seq.empty)))
-      Mockito
-        .when(
-          organisationService.searchWithQuery(
-            ArgumentMatchers.eq(
-              OrganisationSearchQuery(
-                filters =
-                  Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter(text = "toto")))),
-                limit = None
-              )
+      ).thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 2, results = Seq.empty)))
+      when(
+        organisationService.searchWithQuery(
+          eqTo(
+            OrganisationSearchQuery(
+              filters =
+                Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter(text = "toto")))),
+              limit = None
             )
           )
         )
-        .thenReturn(Future.successful(OrganisationSearchResult(total = 1, results = Seq.empty)))
+      ).thenReturn(Future.successful(OrganisationSearchResult(total = 1, results = Seq.empty)))
 
       Get("/views/search?content=toto").withHeaders(Accept(MediaTypes.`application/json`)) ~> routes ~> check {
 
@@ -179,76 +172,69 @@ class ViewApiTest
       }
     }
 
-    scenario("valid content but empty result") {
-      Mockito
-        .when(
-          proposalService.searchForUser(
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(
-              SearchQuery(
-                filters = Some(
-                  SearchFilters(
-                    content = Some(ContentSearchFilter("lownoresults")),
-                    operationKinds = Some(
-                      OperationKindsSearchFilter(
-                        Seq(
-                          OperationKind.GreatCause,
-                          OperationKind.PublicConsultation,
-                          OperationKind.BusinessConsultation
-                        )
+    Scenario("valid content but empty result") {
+      when(
+        proposalService.searchForUser(
+          eqTo(None),
+          eqTo(
+            SearchQuery(
+              filters = Some(
+                SearchFilters(
+                  content = Some(ContentSearchFilter("lownoresults")),
+                  operationKinds = Some(
+                    OperationKindsSearchFilter(
+                      Seq(
+                        OperationKind.GreatCause,
+                        OperationKind.PublicConsultation,
+                        OperationKind.BusinessConsultation
                       )
-                    ),
-                    country = None,
-                    language = None
-                  )
-                ),
-                limit = None
-              )
-            ),
-            ArgumentMatchers.any[RequestContext]
-          )
+                    )
+                  ),
+                  country = None,
+                  language = None
+                )
+              ),
+              limit = None
+            )
+          ),
+          any[RequestContext]
         )
-        .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
-      Mockito
-        .when(
-          operationOfQuestionService.search(
-            ArgumentMatchers.eq(
-              OperationOfQuestionSearchQuery(
-                filters = Some(
-                  OperationOfQuestionSearchFilters(
-                    question = Some(QuestionContentSearchFilter("lownoresults", fuzzy = Some(Fuzziness.Auto))),
-                    operationKinds = Some(
-                      operation.OperationKindsSearchFilter(
-                        Seq(
-                          OperationKind.GreatCause,
-                          OperationKind.PublicConsultation,
-                          OperationKind.BusinessConsultation
-                        )
+      ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 0, results = Seq.empty, seed = None)))
+      when(
+        operationOfQuestionService.search(
+          eqTo(
+            OperationOfQuestionSearchQuery(
+              filters = Some(
+                OperationOfQuestionSearchFilters(
+                  question = Some(QuestionContentSearchFilter("lownoresults", fuzzy = Some(Fuzziness.Auto))),
+                  operationKinds = Some(
+                    operation.OperationKindsSearchFilter(
+                      Seq(
+                        OperationKind.GreatCause,
+                        OperationKind.PublicConsultation,
+                        OperationKind.BusinessConsultation
                       )
                     )
                   )
-                ),
-                limit = None
-              )
+                )
+              ),
+              limit = None
             )
           )
         )
-        .thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 0, results = Seq.empty)))
-      Mockito
-        .when(
-          organisationService.searchWithQuery(
-            ArgumentMatchers.eq(
-              OrganisationSearchQuery(
-                filters = Some(
-                  OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter(text = "lownoresults"))
-                  )
-                ),
-                limit = None
-              )
+      ).thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 0, results = Seq.empty)))
+      when(
+        organisationService.searchWithQuery(
+          eqTo(
+            OrganisationSearchQuery(
+              filters = Some(
+                OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter(text = "lownoresults")))
+              ),
+              limit = None
             )
           )
         )
-        .thenReturn(Future.successful(OrganisationSearchResult(total = 0, results = Seq.empty)))
+      ).thenReturn(Future.successful(OrganisationSearchResult(total = 0, results = Seq.empty)))
 
       Get("/views/search?content=LOWnoResults").withHeaders(Accept(MediaTypes.`application/json`)) ~> routes ~> check {
 

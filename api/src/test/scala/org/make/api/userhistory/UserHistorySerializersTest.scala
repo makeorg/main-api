@@ -38,11 +38,11 @@ import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.sequence.{SearchQuery, SequenceId, SequenceStatus}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
 import stamina.{Persisters, V1, V2}
 
-class UserHistorySerializersTest extends WordSpec with StaminaTestKit {
+class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
   val persisters = Persisters(UserHistorySerializers.serializers.toList)
   val userId = UserId("my-user-id")

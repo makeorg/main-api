@@ -40,8 +40,6 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.technical.IdGenerator
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult, ProposalsAndVotesCountsByQuestion}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
@@ -91,8 +89,8 @@ class QuestionServiceTest
   val user1 = TestUtils.user(id = UserId("user-1"))
   val user2 = TestUtils.user(id = UserId("user-2"))
 
-  feature("Get question personalities") {
-    scenario("Get question personalities") {
+  Feature("Get question personalities") {
+    Scenario("Get question personalities") {
       when(
         questionPersonalityService.find(
           start = 0,
@@ -122,7 +120,7 @@ class QuestionServiceTest
     }
   }
 
-  feature("get question partners") {
+  Feature("get question partners") {
     def newIndexedOrganisation(organisationId: String, scoreQuestion: Int) =
       IndexedOrganisation(
         UserId(organisationId),
@@ -139,10 +137,10 @@ class QuestionServiceTest
         Seq(ProposalsAndVotesCountsByQuestion(QuestionId("question-id"), scoreQuestion, 0))
       )
 
-    scenario("sort partners by counts") {
+    Scenario("sort partners by counts") {
       when(
         elasticsearchOrganisationAPI.searchOrganisations(
-          ArgumentMatchers.eq(
+          eqTo(
             OrganisationSearchQuery(
               filters = Some(
                 OrganisationSearchFilters(organisationIds =
@@ -181,8 +179,8 @@ class QuestionServiceTest
     }
   }
 
-  feature("get top ideas") {
-    scenario("get top ideas") {
+  Feature("get top ideas") {
+    Scenario("get top ideas") {
       when(
         topIdeaService
           .search(start = 0, end = None, ideaId = None, questionIds = Some(Seq(QuestionId("question-id"))), name = None)
@@ -244,7 +242,7 @@ class QuestionServiceTest
       }
     }
 
-    scenario("get top ideas if no proposals found") {
+    Scenario("get top ideas if no proposals found") {
       when(
         topIdeaService
           .search(start = 0, end = None, ideaId = None, questionIds = Some(Seq(QuestionId("question-id"))), name = None)
@@ -289,8 +287,8 @@ class QuestionServiceTest
     }
   }
 
-  feature("get top idea by id") {
-    scenario("top idea exists") {
+  Feature("get top idea by id") {
+    Scenario("top idea exists") {
       when(persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("top-idea-id"), QuestionId("question-id")))
         .thenReturn(
           Future.successful(
@@ -331,7 +329,7 @@ class QuestionServiceTest
       }
     }
 
-    scenario("top idea exists without proposal") {
+    Scenario("top idea exists without proposal") {
       when(
         persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("top-idea-id-no-proposal"), QuestionId("question-id"))
       ).thenReturn(
@@ -368,7 +366,7 @@ class QuestionServiceTest
       }
     }
 
-    scenario("top idea doesn't exist") {
+    Scenario("top idea doesn't exist") {
       when(persistentTopIdeaService.getByIdAndQuestionId(TopIdeaId("not-found"), QuestionId("question-id")))
         .thenReturn(Future.successful(None))
 

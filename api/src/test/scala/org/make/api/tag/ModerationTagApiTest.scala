@@ -29,17 +29,12 @@ import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 
 class ModerationTagApiTest
     extends MakeApiTestBase
     with DefaultModerationTagApiComponent
-    with MockitoSugar
     with TagServiceComponent
     with QuestionServiceComponent {
 
@@ -88,42 +83,34 @@ class ModerationTagApiTest
   val tag1: Tag = newTag("tag1", TagId("tag1"))
   val tag2: Tag = newTag("tag2", TagId("tag2"))
 
-  when(
-    tagService.createTag(ArgumentMatchers.eq(validTagText), any[TagTypeId], any[Question], any[TagDisplay], any[Float])
-  ).thenReturn(Future.successful(validTag))
+  when(tagService.createTag(eqTo(validTagText), any[TagTypeId], any[Question], any[TagDisplay], any[Float]))
+    .thenReturn(Future.successful(validTag))
   when(
     tagService
-      .createTag(ArgumentMatchers.eq(s"new$validTagText"), any[TagTypeId], any[Question], any[TagDisplay], any[Float])
+      .createTag(eqTo(s"new$validTagText"), any[TagTypeId], any[Question], any[TagDisplay], any[Float])
   ).thenReturn(Future.successful(newValidTag))
-  when(tagService.findByLabel(ArgumentMatchers.eq(validTagText), any[Boolean]))
+  when(tagService.findByLabel(eqTo(validTagText), any[Boolean]))
     .thenReturn(Future.successful(Seq(validTag)))
-  when(tagService.findByLabel(ArgumentMatchers.eq(s"$validTagText UPDATED"), any[Boolean]))
+  when(tagService.findByLabel(eqTo(s"$validTagText UPDATED"), any[Boolean]))
     .thenReturn(Future.successful(Seq.empty))
-  when(tagService.findByLabel(ArgumentMatchers.eq(s"new$validTagText"), any[Boolean]))
+  when(tagService.findByLabel(eqTo(s"new$validTagText"), any[Boolean]))
     .thenReturn(Future.successful(Seq.empty))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTagText))))
+  when(tagService.getTag(eqTo(TagId(fakeTagText))))
     .thenReturn(Future.successful(None))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId("valid-tag"))))
+  when(tagService.getTag(eqTo(TagId("valid-tag"))))
     .thenReturn(Future.successful(Some(validTag)))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagId))))
+  when(tagService.getTag(eqTo(TagId(helloWorldTagId))))
     .thenReturn(Future.successful(Some(helloWorldTag)))
   when(tagService.findAll())
     .thenReturn(Future.successful(Seq(tag1, tag2)))
   when(
-    tagService.find(
-      any[Int],
-      any[Option[Int]],
-      ArgumentMatchers.eq(Some("label")),
-      ArgumentMatchers.eq(Some("ASC")),
-      any[Boolean],
-      any[TagFilter]
-    )
+    tagService.find(any[Int], any[Option[Int]], eqTo(Some("label")), eqTo(Some("ASC")), any[Boolean], any[TagFilter])
   ).thenReturn(Future.successful(Seq(tag1, tag2)))
 
   when(
     tagService.updateTag(
-      ArgumentMatchers.eq(TagId(helloWorldTagId)),
-      ArgumentMatchers.eq(s"$validTagText UPDATED"),
+      eqTo(TagId(helloWorldTagId)),
+      eqTo(s"$validTagText UPDATED"),
       any[TagDisplay],
       any[TagTypeId],
       any[Float],
@@ -138,8 +125,8 @@ class ModerationTagApiTest
 
   when(
     tagService.updateTag(
-      ArgumentMatchers.eq(TagId(fakeTagText)),
-      ArgumentMatchers.eq(s"$validTagText UPDATED"),
+      eqTo(TagId(fakeTagText)),
+      eqTo(s"$validTagText UPDATED"),
       any[TagDisplay],
       any[TagTypeId],
       any[Float],
@@ -152,8 +139,8 @@ class ModerationTagApiTest
 
   val routes: Route = sealRoute(moderationTagApi.routes)
 
-  feature("create a tag") {
-    scenario("unauthenticated") {
+  Feature("create a tag") {
+    Scenario("unauthenticated") {
       Given("an un authenticated user")
       When("the user wants to create a tag")
       Then("he should get an unauthorized (401) return code")
@@ -165,7 +152,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("authenticated citizen") {
+    Scenario("authenticated citizen") {
       Given("an authenticated user with the citizen role")
       When("the user wants to create a tag")
       Then("he should get an forbidden (403) return code")
@@ -177,7 +164,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("authenticated moderator") {
+    Scenario("authenticated moderator") {
       Given("an authenticated user with the moderator role")
       When("the user wants to create a tag")
       Then("he should get an forbidden (403) return code")
@@ -189,7 +176,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("authenticated admin") {
+    Scenario("authenticated admin") {
       Given("an authenticated user with the admin role")
       When("the user wants to create a tag")
       Then("the tag should be saved if valid")
@@ -242,9 +229,9 @@ class ModerationTagApiTest
     }
   }
 
-  feature("get a tag") {
+  Feature("get a tag") {
 
-    scenario("tag not exist") {
+    Scenario("tag not exist") {
       Given("an anonymous user")
       When(s"she wants to get a tag from id '$fakeTagText'")
       Then("she should get a not authorized response")
@@ -272,7 +259,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("valid tag") {
+    Scenario("valid tag") {
       Given(s"a registered tag with a label '$helloWorldTagText' and an id '$helloWorldTagSlug'")
       When(s"I get a tag from id '$helloWorldTagId'")
       Then("I should get an ok response")
@@ -288,7 +275,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("list tag") {
+    Scenario("list tag") {
       Given("an anonymous user")
       Given("when she wants to get the list tag")
       Then("she should get a not authorized response")
@@ -322,7 +309,7 @@ class ModerationTagApiTest
     }
   }
 
-  feature("update a tag") {
+  Feature("update a tag") {
     val updateTagRequest =
       s"""{
          |"label": "$validTagText UPDATED",
@@ -332,7 +319,7 @@ class ModerationTagApiTest
          |"weight": "0"
        }""".stripMargin
 
-    scenario("update tag with anonymous user") {
+    Scenario("update tag with anonymous user") {
       Given("unauthenticated user")
       When(s"I update tag from id '$fakeTag")
       Then("I get an unauthorized response")
@@ -341,7 +328,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("update tag with citizen user") {
+    Scenario("update tag with citizen user") {
       Given("an authenticated user with role citizen")
       When(s"I update tag from id '$fakeTag")
       Then("I get a forbidden response")
@@ -351,7 +338,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("update tag with admin user") {
+    Scenario("update tag with admin user") {
       Given("an authenticated user with role admin")
       When(s"I update tag from id '$fakeTag")
       Then("I get a forbidden response")
@@ -361,7 +348,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("update non existing tag as admin") {
+    Scenario("update non existing tag as admin") {
       Given("an authenticated user with role admin")
       When("I update non existing tag")
       Then("I get a not found response")
@@ -372,7 +359,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("update tag with an invalid request") {
+    Scenario("update tag with an invalid request") {
       Given("a registered tag")
       When("I update tag with an invalid body")
       Then("I get a bad request response")
@@ -382,7 +369,7 @@ class ModerationTagApiTest
       }
     }
 
-    scenario("update tag") {
+    Scenario("update tag") {
       Given("a registered tag 'hello-world'")
       When("I update tag label to 'hello-world UPDATED'")
       Then("I get an OK response")

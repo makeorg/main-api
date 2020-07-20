@@ -32,11 +32,8 @@ import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
-import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -118,31 +115,14 @@ class OperationServiceTest
     )
   )
 
-  val fooTag = Tag(
-    tagId = TagId("fooTag"),
-    label = "foo",
-    display = TagDisplay.Displayed,
-    tagTypeId = TagTypeId("tagType"),
-    weight = 1,
-    operationId = None,
-    country = Country("GB"),
-    language = Language("en"),
-    questionId = None
-  )
-
-  feature("find operations") {
-    scenario("find operations and get the right tags") {
+  Feature("find operations") {
+    Scenario("find operations and get the right tags") {
       Given("a list of operations")
       When("fetch this list")
       Then("tags are fetched from persistent service")
 
-      Mockito
-        .when(persistentOperationService.find(any[Option[String]], any[Option[Country]], any[Option[LocalDate]]))
+      when(persistentOperationService.find(any[Option[String]], any[Option[Country]], any[Option[LocalDate]]))
         .thenReturn(Future.successful(Seq(fooOperation)))
-
-      Mockito
-        .when(persistentTagService.findByQuestion(ArgumentMatchers.eq(QuestionId("foo-question"))))
-        .thenReturn(Future.successful(Seq(fooTag)))
 
       val futureOperations: Future[Seq[Operation]] =
         operationService.find(slug = None, country = None, maybeSource = None, openAt = None)

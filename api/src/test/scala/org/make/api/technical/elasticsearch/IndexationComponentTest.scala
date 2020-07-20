@@ -45,8 +45,6 @@ import org.make.api.user._
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.RequestContext
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -127,23 +125,23 @@ class IndexationComponentTest
   private val proposalHash = "proposal#hash"
   private val operationOfQuestionHash = "operationOfQuestion#hash"
 
-  when(segmentService.resolveSegment(ArgumentMatchers.any[RequestContext])).thenReturn(Future.successful(None))
+  when(segmentService.resolveSegment(any[RequestContext])).thenReturn(Future.successful(None))
 
   when(elasticsearchClient.getHashFromIndex(ideaHash)).thenReturn(ideaHash)
   when(elasticsearchClient.getHashFromIndex(organisationHash)).thenReturn(organisationHash)
   when(elasticsearchClient.getHashFromIndex(proposalHash)).thenReturn(proposalHash)
   when(elasticsearchClient.getHashFromIndex(operationOfQuestionHash)).thenReturn(operationOfQuestionHash)
 
-  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("idea"))).thenReturn(ideaHash)
-  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("organisation"))).thenReturn(organisationHash)
-  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn(proposalHash)
-  when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("operation-of-question")))
+  when(elasticsearchClient.hashForAlias(eqTo("idea"))).thenReturn(ideaHash)
+  when(elasticsearchClient.hashForAlias(eqTo("organisation"))).thenReturn(organisationHash)
+  when(elasticsearchClient.hashForAlias(eqTo("proposal"))).thenReturn(proposalHash)
+  when(elasticsearchClient.hashForAlias(eqTo("operation-of-question")))
     .thenReturn(operationOfQuestionHash)
 
   when(elasticsearchConfiguration.connectionString).thenReturn("fake:3232")
 
-  feature("Check if ES schema is up to date") {
-    scenario("schema is up to date") {
+  Feature("Check if ES schema is up to date") {
+    Scenario("schema is up to date") {
       Given("a defined hash of indices")
       when(elasticsearchClient.getCurrentIndicesName)
         .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, operationOfQuestionHash)))
@@ -163,7 +161,7 @@ class IndexationComponentTest
       }
     }
 
-    scenario("schema is up to date but force proposal indexation") {
+    Scenario("schema is up to date but force proposal indexation") {
       Given("a defined hash of indices")
       when(elasticsearchClient.getCurrentIndicesName)
         .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, operationOfQuestionHash)))
@@ -184,9 +182,9 @@ class IndexationComponentTest
       }
     }
 
-    scenario("schema is not up to date on the proposal index") {
+    Scenario("schema is not up to date on the proposal index") {
       Given("a defined hash of indices and an old hash for the proposal index")
-      when(elasticsearchClient.hashForAlias(ArgumentMatchers.eq("proposal"))).thenReturn("old-hash")
+      when(elasticsearchClient.hashForAlias(eqTo("proposal"))).thenReturn("old-hash")
       when(elasticsearchClient.getCurrentIndicesName)
         .thenReturn(Future.successful(Seq(ideaHash, organisationHash, proposalHash, operationOfQuestionHash)))
       When("I ask which indices are to update")

@@ -110,8 +110,8 @@ class PersistentTagServiceIT
     newTag("Lancaster", questionId = developementDurableQuestion)
   val byron: Tag = newTag("Byron", QuestionId("Byron"))
 
-  feature("One tag can be persisted and retrieved") {
-    scenario("Get tag by tagId") {
+  Feature("One tag can be persisted and retrieved") {
+    Scenario("Get tag by tagId") {
       Given(s"""a persisted tag "${stark.label}"""")
       When(s"""I search the tag by tagId "${stark.tagId.value}"""")
       val futureTag: Future[Option[Tag]] = for {
@@ -129,7 +129,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("Get tag by tagId that does not exists") {
+    Scenario("Get tag by tagId that does not exists") {
       Given("""a nonexistent tag "fake"""")
       When("""I search the tag from tagId "fake"""")
       val futureTagId: Future[Option[Tag]] = persistentTagService.get(TagId("fake"))
@@ -141,8 +141,8 @@ class PersistentTagServiceIT
     }
   }
 
-  feature("A list of tags can be retrieved") {
-    scenario("Get a list of all tags") {
+  Feature("A list of tags can be retrieved") {
+    Scenario("Get a list of all tags") {
       Given(s"""a list of persisted tags:
                |label = ${targaryen.label}, tagId = ${targaryen.tagId.value}
                |label = ${lannister.label}, tagId = ${lannister.tagId.value}
@@ -170,8 +170,8 @@ class PersistentTagServiceIT
     }
   }
 
-  feature("Find a tag") {
-    scenario("find from normal label") {
+  Feature("Find a tag") {
+    Scenario("find from normal label") {
       Given(s"""a persisted tag "${bron.label}"""")
       When(s"""I search the tag by a part of its label: "${bron.label.take(3)}"""")
       val futureTag: Future[Seq[Tag]] = for {
@@ -188,7 +188,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("find from label with the % character") {
+    Scenario("find from label with the % character") {
       Given(s"""a persisted tag "${weirdTag.label}"""")
       When(s"""I search the tag by a part of its label: "${weirdTag.label.take(3)}"""")
       val futureTag: Future[Seq[Tag]] = for {
@@ -205,7 +205,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("find a tag with exact label") {
+    Scenario("find a tag with exact label") {
       Given(s"""a persisted tag "${baratheon.label}"""")
       When(s"""I search the tag by its label: "${baratheon.label}"""")
       val futureTag1: Future[Seq[Tag]] = for {
@@ -234,7 +234,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("find from operationId") {
+    Scenario("find from operationId") {
       Given(s"""a persisted tag "${snow.label}" and a persisted operation "${fakeOperation.slug}"""")
       When("""I search the tag by its operation""")
       val futureTag: Future[Seq[Tag]] = for {
@@ -253,7 +253,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("find from themeId") {
+    Scenario("find from themeId") {
       Given(s"""a persisted tag "${lancaster.label}"""")
       When("""I search the tag by its theme""")
       val futureTag: Future[Seq[Tag]] = for {
@@ -271,8 +271,8 @@ class PersistentTagServiceIT
     }
   }
 
-  feature("update a tag") {
-    scenario("update an existing tag") {
+  Feature("update a tag") {
+    Scenario("update an existing tag") {
       Given(s"""a persisted tag "${byron.label}" """)
       When("""I update this tag label to "not a got character"""")
       val futureTag: Future[Option[Tag]] = for {
@@ -288,7 +288,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("update a non existing tag") {
+    Scenario("update a non existing tag") {
       Given("a non existing tag")
       When("""I update this tag label to "not here"""")
       val futureTag: Future[Option[Tag]] = persistentTagService.update(newTag("not here", QuestionId("not-here")))
@@ -300,7 +300,7 @@ class PersistentTagServiceIT
     }
   }
 
-  feature("Search tags") {
+  Feature("Search tags") {
     val tagTypeFirst: TagType =
       TagType(TagTypeId("first"), label = "First", display = TagTypeDisplay.Displayed, requiredForEnrichment = true)
     val tagTypeSecond: TagType =
@@ -381,7 +381,7 @@ class PersistentTagServiceIT
     val calliope: Tag =
       targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeEighth.tagTypeId, label = "calliopelabel")
 
-    scenario("Search tags by label") {
+    Scenario("Search tags by label") {
 
       Given(s"a persisted tag: '${calliope.label}'")
 
@@ -407,7 +407,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("Search tags by operation") {
+    Scenario("Search tags by operation") {
 
       Given(s"a list of persisted tags: \n ${Seq(hestia, athena).mkString("\n")}")
 
@@ -458,7 +458,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("Search tags by tagType") {
+    Scenario("Search tags by tagType") {
 
       Given(s"a persisted tag: \n ${clio.label}")
 
@@ -483,7 +483,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("Search tags by theme") {
+    Scenario("Search tags by theme") {
 
       Given(s"a persisted tag: \n ${thalia.label}")
 
@@ -507,7 +507,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("Search tags by onlyDisplayed") {
+    Scenario("Search tags by onlyDisplayed") {
       // TODO: since this test relies on data inserted by other tests,
       // there is no guarantee on the expected number of tags
       Given("a list of persisted tags")
@@ -530,7 +530,7 @@ class PersistentTagServiceIT
       }
     }
 
-    scenario("Search tags by multi filters") {
+    Scenario("Search tags by multi filters") {
       Given(s"a persisted tag: ${hera.label}")
       When(s"""I search tags by
            |tagTypeId = '${hera.tagTypeId.value}',
@@ -561,7 +561,7 @@ class PersistentTagServiceIT
     }
   }
 
-  feature("count tags") {
+  Feature("count tags") {
     val fooTagType: TagType =
       TagType(TagTypeId("foo"), label = "Foo", display = TagTypeDisplay.Displayed, requiredForEnrichment = false)
     val barTagType: TagType =
@@ -602,7 +602,7 @@ class PersistentTagServiceIT
         language = Language("fr")
       )
 
-    scenario("Search tags by label") {
+    Scenario("Search tags by label") {
 
       val fooOperation = fakeOperation.copy(operationId = fooOperationId, slug = "foo-operation")
       val persistedTags: Future[Seq[Tag]] = for {

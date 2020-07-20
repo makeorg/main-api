@@ -21,23 +21,23 @@ package org.make.api.technical.monitoring
 import org.make.api.MakeUnitTest
 
 class MonitoringMessageHelperTest extends MakeUnitTest {
-  feature("monitoring message format") {
-    scenario("value string") {
+  Feature("monitoring message format") {
+    Scenario("value string") {
       val input = "value"
       MonitoringMessageHelper.format(input) shouldBe input
     }
 
-    scenario("quoted string") {
+    Scenario("quoted string") {
       val input = "'v' = 'alue'"
       MonitoringMessageHelper.format(input) shouldBe input
     }
 
-    scenario("double quoted string") {
+    Scenario("double quoted string") {
       val input = "\"json\": \"value\""
       MonitoringMessageHelper.format(input) shouldBe "\\\"json\\\": \\\"value\\\""
     }
 
-    scenario("unordinary spaced string") {
+    Scenario("unordinary spaced string") {
       val input = "\tweird \rvalue\n"
       MonitoringMessageHelper.format(input) shouldBe "weird value"
     }

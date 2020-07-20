@@ -31,7 +31,6 @@ import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor}
 import org.make.core.proposal.ProposalId
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
-import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
@@ -71,32 +70,30 @@ class ProposalUserHistoryConsumerActorIT
     super.afterAll()
   }
 
-  feature("consume Proposal event") {
+  Feature("consume Proposal event") {
 
-    scenario("Reacting to ProposalProposed") {
+    Scenario("Reacting to ProposalProposed") {
       val probe = TestProbe()
       val now: ZonedDateTime = DateHelper.now()
 
-      Mockito
-        .when(
-          userHistoryCoordinatorService.logHistory(
-            ArgumentMatchers.eq(
-              LogUserProposalEvent(
-                userId = UserId("user-id"),
-                requestContext = RequestContext.empty,
-                action = UserAction(
-                  date = now,
-                  actionType = LogUserProposalEvent.action,
-                  arguments = UserProposal(content = "content", None)
-                )
+      when(
+        userHistoryCoordinatorService.logHistory(
+          eqTo(
+            LogUserProposalEvent(
+              userId = UserId("user-id"),
+              requestContext = RequestContext.empty,
+              action = UserAction(
+                date = now,
+                actionType = LogUserProposalEvent.action,
+                arguments = UserProposal(content = "content", None)
               )
             )
           )
         )
-        .thenAnswer(_ => {
-          probe.ref ! "LogUserProposalProposedEvent called"
-          Future.successful(true)
-        })
+      ).thenAnswer { _: LogUserProposalEvent =>
+        probe.ref ! "LogUserProposalProposedEvent called"
+        Future.successful(true)
+      }
 
       val eventProposed: ProposalProposed = ProposalProposed(
         id = ProposalId("proposal-id"),
@@ -126,7 +123,7 @@ class ProposalUserHistoryConsumerActorIT
 
     }
 
-    scenario("Reacting to ProposalAccepted") {
+    Scenario("Reacting to ProposalAccepted") {
       val probe = TestProbe()
       val now: ZonedDateTime = DateHelper.now()
 
@@ -153,22 +150,20 @@ class ProposalUserHistoryConsumerActorIT
         eventType = eventAccepted.getClass.getSimpleName
       )
 
-      Mockito
-        .when(
-          userHistoryCoordinatorService.logHistory(
-            ArgumentMatchers.eq(
-              LogAcceptProposalEvent(
-                userId = UserId("moderator-id"),
-                requestContext = RequestContext.empty,
-                action = UserAction(date = now, actionType = ProposalAccepted.actionType, arguments = eventAccepted)
-              )
+      when(
+        userHistoryCoordinatorService.logHistory(
+          eqTo(
+            LogAcceptProposalEvent(
+              userId = UserId("moderator-id"),
+              requestContext = RequestContext.empty,
+              action = UserAction(date = now, actionType = ProposalAccepted.actionType, arguments = eventAccepted)
             )
           )
         )
-        .thenAnswer(_ => {
-          probe.ref ! "LogUserProposalAcceptedEvent called"
-          Future.successful(true)
-        })
+      ).thenAnswer { _: LogAcceptProposalEvent =>
+        probe.ref ! "LogUserProposalAcceptedEvent called"
+        Future.successful(true)
+      }
 
       send(wrappedProposalAccepted)
 
@@ -176,7 +171,7 @@ class ProposalUserHistoryConsumerActorIT
 
     }
 
-    scenario("Reacting to ProposalRefused") {
+    Scenario("Reacting to ProposalRefused") {
       val probe = TestProbe()
       val now: ZonedDateTime = DateHelper.now()
 
@@ -197,22 +192,20 @@ class ProposalUserHistoryConsumerActorIT
         eventType = eventRefused.getClass.getSimpleName
       )
 
-      Mockito
-        .when(
-          userHistoryCoordinatorService.logHistory(
-            ArgumentMatchers.eq(
-              LogRefuseProposalEvent(
-                userId = UserId("moderator-id"),
-                requestContext = RequestContext.empty,
-                action = UserAction(date = now, actionType = ProposalRefused.actionType, arguments = eventRefused)
-              )
+      when(
+        userHistoryCoordinatorService.logHistory(
+          eqTo(
+            LogRefuseProposalEvent(
+              userId = UserId("moderator-id"),
+              requestContext = RequestContext.empty,
+              action = UserAction(date = now, actionType = ProposalRefused.actionType, arguments = eventRefused)
             )
           )
         )
-        .thenAnswer(_ => {
-          probe.ref ! "LogUserProposalRefusedEvent called"
-          Future.successful(true)
-        })
+      ).thenAnswer { _: LogRefuseProposalEvent =>
+        probe.ref ! "LogUserProposalRefusedEvent called"
+        Future.successful(true)
+      }
 
       send(wrappedProposalRefused)
 
@@ -220,7 +213,7 @@ class ProposalUserHistoryConsumerActorIT
 
     }
 
-    scenario("Reacting to ProposalPostponed") {
+    Scenario("Reacting to ProposalPostponed") {
       val probe = TestProbe()
       val now: ZonedDateTime = DateHelper.now()
 
@@ -238,22 +231,20 @@ class ProposalUserHistoryConsumerActorIT
         eventType = eventPostponed.getClass.getSimpleName
       )
 
-      Mockito
-        .when(
-          userHistoryCoordinatorService.logHistory(
-            ArgumentMatchers.eq(
-              LogPostponeProposalEvent(
-                userId = UserId("moderator-id"),
-                requestContext = RequestContext.empty,
-                action = UserAction(date = now, actionType = ProposalPostponed.actionType, arguments = eventPostponed)
-              )
+      when(
+        userHistoryCoordinatorService.logHistory(
+          eqTo(
+            LogPostponeProposalEvent(
+              userId = UserId("moderator-id"),
+              requestContext = RequestContext.empty,
+              action = UserAction(date = now, actionType = ProposalPostponed.actionType, arguments = eventPostponed)
             )
           )
         )
-        .thenAnswer(_ => {
-          probe.ref ! "LogUserProposalPostponedEvent called"
-          Future.successful(true)
-        })
+      ).thenAnswer { _: LogPostponeProposalEvent =>
+        probe.ref ! "LogUserProposalPostponedEvent called"
+        Future.successful(true)
+      }
 
       send(wrappedProposalPostponed)
 
@@ -261,7 +252,7 @@ class ProposalUserHistoryConsumerActorIT
 
     }
 
-    scenario("Reacting to ProposalLocked") {
+    Scenario("Reacting to ProposalLocked") {
       val probe = TestProbe()
       val now: ZonedDateTime = DateHelper.now()
 
@@ -280,23 +271,21 @@ class ProposalUserHistoryConsumerActorIT
         eventType = eventLocked.getClass.getSimpleName
       )
 
-      Mockito
-        .when(
-          userHistoryCoordinatorService.logHistory(
-            ArgumentMatchers.eq(
-              LogLockProposalEvent(
-                userId = UserId("moderator-id"),
-                requestContext = RequestContext.empty,
-                action = UserAction(date = now, actionType = ProposalLocked.actionType, arguments = eventLocked),
-                moderatorName = None
-              )
+      when(
+        userHistoryCoordinatorService.logHistory(
+          eqTo(
+            LogLockProposalEvent(
+              userId = UserId("moderator-id"),
+              requestContext = RequestContext.empty,
+              action = UserAction(date = now, actionType = ProposalLocked.actionType, arguments = eventLocked),
+              moderatorName = None
             )
           )
         )
-        .thenAnswer(_ => {
-          probe.ref ! "LogUserProposalLockedEvent called"
-          Future.successful(true)
-        })
+      ).thenAnswer { _: LogLockProposalEvent =>
+        probe.ref ! "LogUserProposalLockedEvent called"
+        Future.successful(true)
+      }
 
       send(wrappedProposalLocked)
 

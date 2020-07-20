@@ -31,9 +31,6 @@ import org.make.core.RequestContext
 import org.make.core.auth.UserRights
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
-import org.mockito.{ArgumentMatchers, Mockito}
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo, TokenEndpoint}
 
 import scala.concurrent.Future
@@ -48,12 +45,12 @@ class AuthenticationApiTest
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))
     .thenReturn(Future.successful {})
 
-  Mockito.reset(oauth2DataHandler)
+  reset(oauth2DataHandler)
 
   val routes: Route = sealRoute(authenticationApi.routes)
 
-  feature("get a token user") {
-    scenario("successful get token") {
+  Feature("get a token user") {
+    Scenario("successful get token") {
       val token = "TOKEN"
       val accessToken: AccessToken =
         AccessToken("ACCESS_TOKEN", None, None, None, Date.from(Instant.now))
@@ -64,11 +61,11 @@ class AuthenticationApiTest
           None,
           None
         )
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
+      when(oauth2DataHandler.findAccessToken(eqTo(token)))
         .thenReturn(Future.successful(Some(accessToken)))
-      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(eqTo(accessToken)))
         .thenReturn(Future.successful(Some(fakeAuthInfo)))
-      when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.eq(fakeAuthInfo)))
+      when(oauth2DataHandler.getStoredAccessToken(eqTo(fakeAuthInfo)))
         .thenReturn(Future.successful(Some(accessToken)))
 
       When("access token is called")
@@ -83,10 +80,10 @@ class AuthenticationApiTest
     }
   }
 
-  scenario("unauthorize an empty authentication") {
+  Scenario("unauthorize an empty authentication") {
     Given("an invalid authentication")
     val invalidToken: String = "FAULTY_TOKEN"
-    when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
+    when(oauth2DataHandler.findAccessToken(same(invalidToken)))
       .thenReturn(Future.successful(None))
 
     When("access token is called")
@@ -100,8 +97,8 @@ class AuthenticationApiTest
     }
   }
 
-  feature("logout user by deleting its token") {
-    scenario("successful logout") {
+  Feature("logout user by deleting its token") {
+    Scenario("successful logout") {
       Given("a valid authentication")
       val token = "TOKEN"
       val accessToken: AccessToken =
@@ -113,13 +110,13 @@ class AuthenticationApiTest
           None,
           None
         )
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
+      when(oauth2DataHandler.findAccessToken(eqTo(token)))
         .thenReturn(Future.successful(Some(accessToken)))
-      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(accessToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(eqTo(accessToken)))
         .thenReturn(Future.successful(Some(fakeAuthInfo)))
-      when(oauth2DataHandler.getStoredAccessToken(ArgumentMatchers.eq(fakeAuthInfo)))
+      when(oauth2DataHandler.getStoredAccessToken(eqTo(fakeAuthInfo)))
         .thenReturn(Future.successful(Some(accessToken)))
-      when(oauth2DataHandler.removeToken(ArgumentMatchers.eq("TOKEN")))
+      when(oauth2DataHandler.removeToken(eqTo("TOKEN")))
         .thenReturn(Future.successful {})
 
       When("logout is called")
@@ -132,10 +129,10 @@ class AuthenticationApiTest
       }
     }
 
-    scenario("logout an invalid user") {
+    Scenario("logout an invalid user") {
       Given("an invalid authentication")
       val invalidToken: String = "FAULTY_TOKEN"
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(invalidToken)))
+      when(oauth2DataHandler.findAccessToken(same(invalidToken)))
         .thenReturn(Future.successful(None))
 
       When("logout is called")
@@ -148,7 +145,7 @@ class AuthenticationApiTest
       }
     }
 
-    scenario("logout an anonymous visitor") {
+    Scenario("logout an anonymous visitor") {
       When("logout is called without authentication")
       val logoutRoute: RouteTestResult = Post("/logout") ~> routes
 
@@ -158,10 +155,9 @@ class AuthenticationApiTest
       }
     }
 
-    scenario("reset all cookies") {
+    Scenario("reset all cookies") {
       When("reset is called ")
-      when(idGenerator.nextId).thenAnswer(_ => UUID.randomUUID.toString)
-      val sessionId = idGenerator.nextId
+      val sessionId = UUID.randomUUID.toString
       val resetRoute: RouteTestResult = Post("/resetCookies").withHeaders(
         Cookie(makeSettings.SessionCookie.name, sessionId)
       ) ~> routes

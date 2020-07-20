@@ -30,9 +30,7 @@ import org.make.api.technical.webflow._
 import org.make.api.{ActorSystemComponent, MakeUnitTest}
 import org.make.core.post.PostId
 import org.make.core.post.indexed.PostSearchQuery
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -43,8 +41,7 @@ class PostServiceTest
     with PostSearchEngineComponent
     with WebflowClientComponent
     with ActorSystemComponent
-    with WebflowConfigurationComponent
-    with MockitoSugar {
+    with WebflowConfigurationComponent {
 
   override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
@@ -55,7 +52,7 @@ class PostServiceTest
   override val webflowClient: WebflowClient = (_: UpToOneHundred, offset: Int) =>
     if (offset > 0) Future.successful(Seq.empty[WebflowPost]) else webflowResult
 
-  Mockito.when(webflowConfiguration.blogUrl).thenReturn(new URL("https://example.com/webflow-url"))
+  when(webflowConfiguration.blogUrl).thenReturn(new URL("https://example.com/webflow-url"))
 
   val defaultImageRef: WebflowImageRef = WebflowImageRef(url = "https://example.com/image", alt = Some("image alt"))
   def webflowPost(
@@ -77,16 +74,16 @@ class PostServiceTest
       summary = summary
     )
 
-  feature("search") {
-    scenario("search posts") {
+  Feature("search") {
+    Scenario("search posts") {
       val query = PostSearchQuery()
       postService.search(query)
-      Mockito.verify(elasticsearchPostAPI).searchPosts(query)
+      verify(elasticsearchPostAPI).searchPosts(query)
     }
   }
 
-  feature("fetch posts for home") {
-    scenario("webflow returns only valid results") {
+  Feature("fetch posts for home") {
+    Scenario("webflow returns only valid results") {
       webflowResult = Future.successful(Seq(webflowPost("post-id-1"), webflowPost("post-id-2")))
 
       whenReady(postService.fetchPostsForHome(), Timeout(3.seconds)) { posts =>
@@ -94,7 +91,7 @@ class PostServiceTest
       }
     }
 
-    scenario("webflow returns displayHome false results") {
+    Scenario("webflow returns displayHome false results") {
       webflowResult = Future.successful(Seq(webflowPost("post-id-hide-1", displayHome = Some(false))))
 
       whenReady(postService.fetchPostsForHome(), Timeout(3.seconds)) { posts =>
@@ -102,7 +99,7 @@ class PostServiceTest
       }
     }
 
-    scenario("webflow returns no results") {
+    Scenario("webflow returns no results") {
       webflowResult = Future.successful(Seq.empty[WebflowPost])
 
       whenReady(postService.fetchPostsForHome(), Timeout(3.seconds)) { posts =>
@@ -110,7 +107,7 @@ class PostServiceTest
       }
     }
 
-    scenario("webflow returns results with invalid thumbnail url") {
+    Scenario("webflow returns results with invalid thumbnail url") {
       webflowResult = Future.successful(
         Seq(
           webflowPost("post-id-invalid-thumbnail", thumbnailImage = Some(defaultImageRef.copy(url = "invalid url"))),
@@ -125,7 +122,7 @@ class PostServiceTest
       }
     }
 
-    scenario("webflow fails for whatever reason") {
+    Scenario("webflow fails for whatever reason") {
       webflowResult = Future.failed(
         WebflowClientException
           .RequestException("getItemsFromCollection [posts]", StatusCodes.BadRequest, "Some error message")

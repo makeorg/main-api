@@ -21,8 +21,8 @@ package org.make.api.userhistory
 import org.make.api.{MakeUnitTest, StaminaTestUtils}
 
 class UserHistoryTest extends MakeUnitTest {
-  feature("source value of register event after deserialization") {
-    scenario("I get 'core' as source value with an event without source in context and action date after 2018-09-01") {
+  Feature("source value of register event after deserialization") {
+    Scenario("I get 'core' as source value with an event without source in context and action date after 2018-09-01") {
       val eventType = "user-history-registered"
       val registeredEventWithoutContext =
         """{"userId":"a6d005b8-8d7b-425d-a976-ac23847cc15d","context":{"externalId":"1ad17dfe-06e4-4689-8747-ad865c921f81","hostname":"make.org","visitorId":"39165851-9d01-4b24-aa3b-4ca01e36c104","country":"FR","userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/604.5.6 (KHTML, like Gecko) Version/11.0.3 Safari/604.5.6","language":"fr","ipAddress":"82.225.145.221","sessionId":"f4e2f42d-d9d0-41e1-a5ac-95218a4576b8","requestId":"1ad17dfe-06e4-4689-8747-ad865c921f81","detectedCountry":"FR"},"action":{"date":"2018-08-24T17:26:18.711Z","actionType":"register","arguments":{"email":"panamebh@gmail.com","country":"FR","lastName":"Beatbox Hustlers","firstName":"Paname","language":"fr"}}}"""
@@ -33,7 +33,7 @@ class UserHistoryTest extends MakeUnitTest {
       registerEvent.requestContext.source should be(Some("core"))
     }
 
-    scenario(
+    Scenario(
       "I get 'core' as source value with an event without source in context, action date after 2018-09-01 and V3 version"
     ) {
       val serialized =

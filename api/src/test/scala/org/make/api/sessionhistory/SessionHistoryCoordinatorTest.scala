@@ -25,7 +25,6 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util
 import com.typesafe.config.{Config, ConfigFactory}
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
 import org.make.api.{ActorSystemComponent, ShardingActorTest, TestHelper}
@@ -34,12 +33,10 @@ import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
 import org.make.core.proposal.{ProposalId, VoteKey}
 import org.make.core.session.SessionId
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.Mockito.when
 import org.scalacheck.rng.Seed
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.Future
@@ -47,9 +44,7 @@ import scala.concurrent.duration.DurationInt
 
 class SessionHistoryCoordinatorTest
     extends ShardingActorTest(SessionHistoryCoordinatorTest.actorSystem)
-    with MockitoSugar
     with ScalaFutures
-    with StrictLogging
     with ScalaCheckDrivenPropertyChecks
     with ImplicitSender
     with DefaultSessionHistoryCoordinatorServiceComponent
@@ -93,8 +88,8 @@ class SessionHistoryCoordinatorTest
     Gen.resultOf[Unit, SessionId](_ => SessionId(idGenerator.nextId()))
   )
 
-  feature("get all votes") {
-    scenario("arbitrary votes") {
+  Feature("get all votes") {
+    Scenario("arbitrary votes") {
       forAll { (sessionVotes: Seq[SessionVote], sessionId: SessionId) =>
         val futureHasVoted = Source(sessionVotes)
           .mapAsync(5) { sessionVote =>
@@ -126,7 +121,7 @@ class SessionHistoryCoordinatorTest
       }
     }
 
-    scenario("too large votes") {
+    Scenario("too large votes") {
       val sessionVotes: Seq[SessionVote] = {
         val sessionVoteGen =
           Gen.oneOf(VoteKey.voteKeys.values.toSeq).map(SessionVote(idGenerator.nextProposalId(), _, Trusted))

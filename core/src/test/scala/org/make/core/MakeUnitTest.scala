@@ -17,21 +17,11 @@
  *
  */
 
-package org.make.api.technical
+package org.make.core
 
-import akka.util.Timeout
-import org.scalatest.matchers.Matcher
-import org.scalatest.Assertion
+import org.mockito.scalatest.MockitoSugar
+import org.scalatest.featurespec.AnyFeatureSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.GivenWhenThen
 
-import scala.concurrent.{Await, Future}
-
-package object job {
-
-  implicit class FutureShould[A](val f: Future[A]) extends Matchers {
-    def will(matcher: Matcher[A])(implicit timeout: Timeout): Assertion = {
-      Await.result(f, timeout.duration) should matcher
-    }
-  }
-
-}
+trait MakeUnitTest extends AnyFeatureSpecLike with GivenWhenThen with Matchers with MockitoSugar

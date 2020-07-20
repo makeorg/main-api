@@ -23,7 +23,6 @@ import java.time.temporal.ChronoUnit
 
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.sessionhistory.SessionHistoryActor.{SessionHistory, SessionVotesValues}
 import org.make.api.userhistory.{StartSequenceParameters, UserHistoryEnvelope}
@@ -34,11 +33,10 @@ import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
-import org.scalatest.GivenWhenThen
 
 import scala.concurrent.duration.DurationInt
 
-class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
+class SessionHistoryActorTest extends ShardingActorTest {
 
   val userCoordinatorProbe: TestProbe = TestProbe()(system)
 
@@ -48,13 +46,13 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       SessionHistoryCoordinator.name
     )
 
-  feature("Vote retrieval") {
-    scenario("no vote history") {
+  Feature("Vote retrieval") {
+    Scenario("no vote history") {
       coordinator ! RequestSessionVoteValues(SessionId("no-vote-history"), Seq(ProposalId("proposal1")))
       expectMsg(SessionVotesValues(Map.empty))
     }
 
-    scenario("vote on proposal") {
+    Scenario("vote on proposal") {
       val sessionId = SessionId("vote-on-proposal")
       val proposalId = ProposalId("proposal1")
       val event = LogSessionVoteEvent(
@@ -72,7 +70,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       response(proposalId).qualificationKeys shouldBe Map.empty
     }
 
-    scenario("vote then unvote proposal") {
+    Scenario("vote then unvote proposal") {
       val sessionId = SessionId("vote-then-unvote-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogSessionVoteEvent(
@@ -101,7 +99,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(SessionVotesValues(Map.empty))
     }
 
-    scenario("vote then unvote then vote proposal") {
+    Scenario("vote then unvote then vote proposal") {
       val sessionId = SessionId("vote-then-unvote-then-vote-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogSessionVoteEvent(
@@ -145,7 +143,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       response(proposalId).qualificationKeys shouldBe Map.empty
     }
 
-    scenario("vote then one qualification proposal") {
+    Scenario("vote then one qualification proposal") {
       val sessionId = SessionId("vote-then-one-qualification-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogSessionVoteEvent(
@@ -180,7 +178,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       response(proposalId).qualificationKeys shouldBe Map(QualificationKey.LikeIt -> Trusted)
     }
 
-    scenario("vote then two qualifications proposal") {
+    Scenario("vote then two qualifications proposal") {
       val sessionId = SessionId("vote-then-two-qualification-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogSessionVoteEvent(
@@ -231,7 +229,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       )
     }
 
-    scenario("vote then three qualification proposal") {
+    Scenario("vote then three qualification proposal") {
       val sessionId = SessionId("vote-then-three-qualification-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogSessionVoteEvent(
@@ -296,7 +294,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       )
     }
 
-    scenario("vote then qualif then unqualif then requalif proposal") {
+    Scenario("vote then qualif then unqualif then requalif proposal") {
       val sessionId = SessionId("vote-then-qualif-then-unqualif-then-requalif-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogSessionVoteEvent(
@@ -373,7 +371,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       )
     }
 
-    scenario("vote on many proposal") {
+    Scenario("vote on many proposal") {
       val sessionId = SessionId("vote-on-many-proposal")
       val proposalId1 = ProposalId("proposal1")
       val proposalId2 = ProposalId("proposal2")
@@ -427,7 +425,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       response(proposalId3).qualificationKeys shouldBe Map.empty
     }
 
-    scenario("vote and qualif on many proposal") {
+    Scenario("vote and qualif on many proposal") {
       val sessionId = SessionId("vote-and-qualif-on-many-proposal")
       val proposalId1 = ProposalId("proposal1")
       val proposalId2 = ProposalId("proposal2")
@@ -524,8 +522,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
     }
   }
 
-  feature("session transformation") {
-    scenario("normal case") {
+  Feature("session transformation") {
+    Scenario("normal case") {
       val sessionId = SessionId("normal-session-transformation")
       val userId = UserId("normal-user-id")
       val now = DateHelper.now()
@@ -592,8 +590,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
 
   }
 
-  feature("locking for votes") {
-    scenario("locking for vote") {
+  Feature("locking for votes") {
+    Scenario("locking for vote") {
       val sessionId = SessionId("locking-for-vote")
       val proposalId = ProposalId("locking-for-vote")
 
@@ -612,7 +610,7 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
       expectMsg(LockAcquired)
     }
 
-    scenario("deadline security") {
+    Scenario("deadline security") {
       val sessionId = SessionId("deadline-security")
       val proposalId = ProposalId("deadline-security")
 
@@ -626,8 +624,8 @@ class SessionHistoryActorTest extends ShardingActorTest with GivenWhenThen with 
     }
   }
 
-  feature("locking qualifications") {
-    scenario("multiple qualifications") {
+  Feature("locking qualifications") {
+    Scenario("multiple qualifications") {
       val sessionId = SessionId("locking-for-qualification")
       val proposalId = ProposalId("locking-for-qualification")
 

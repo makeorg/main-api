@@ -63,9 +63,6 @@ import org.make.core.session.SessionId
 import org.make.core.tag._
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationFailedError}
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.{never, times, verify}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.make.core.proposal.Vote
 
@@ -117,9 +114,9 @@ class ProposalServiceTest
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val segmentService: SegmentService = mock[SegmentService]
 
-  Mockito.when(segmentService.resolveSegment(any[RequestContext])).thenReturn(Future.successful(None))
+  when(segmentService.resolveSegment(any[RequestContext])).thenReturn(Future.successful(None))
 
-  Mockito.when(securityConfiguration.secureHashSalt).thenReturn("some-hashed-supposed-to-be-secure")
+  when(securityConfiguration.secureHashSalt).thenReturn("some-hashed-supposed-to-be-secure")
 
   def generateHash(proposalId: ProposalId, requestContext: RequestContext): String = {
     SecurityHelper.generateProposalKeyHash(
@@ -130,12 +127,10 @@ class ProposalServiceTest
     )
   }
 
-  Mockito
-    .when(userService.getUsersByUserIds(Seq.empty))
+  when(userService.getUsersByUserIds(Seq.empty))
     .thenReturn(Future.successful(Seq.empty))
 
-  Mockito
-    .when(tagTypeService.findAll())
+  when(tagTypeService.findAll())
     .thenReturn(
       Future.successful(
         Seq(
@@ -146,8 +141,7 @@ class ProposalServiceTest
       )
     )
 
-  Mockito
-    .when(tagService.findByTagIds(Seq.empty))
+  when(tagService.findByTagIds(Seq.empty))
     .thenReturn(Future.successful(Seq.empty))
 
   val moderatorId: UserId = UserId("moderator-id")
@@ -160,8 +154,7 @@ class ProposalServiceTest
     roles = Seq(Role.RoleCitizen, Role.RoleModerator)
   )
 
-  Mockito
-    .when(userService.getUser(moderatorId))
+  when(userService.getUser(moderatorId))
     .thenReturn(Future.successful(Some(moderator)))
 
   def user(id: UserId): User = {
@@ -179,18 +172,15 @@ class ProposalServiceTest
     )
   }
 
-  Mockito
-    .when(sessionHistoryCoordinatorService.unlockSessionForVote(any[SessionId], any[ProposalId]))
+  when(sessionHistoryCoordinatorService.unlockSessionForVote(any[SessionId], any[ProposalId]))
     .thenReturn(Future.successful {})
 
-  Mockito
-    .when(
-      sessionHistoryCoordinatorService
-        .unlockSessionForQualification(any[SessionId], any[ProposalId], any[QualificationKey])
-    )
-    .thenReturn(Future.successful {})
+  when(
+    sessionHistoryCoordinatorService
+      .unlockSessionForQualification(any[SessionId], any[ProposalId], any[QualificationKey])
+  ).thenReturn(Future.successful {})
 
-  feature("next proposal to moderate") {
+  Feature("next proposal to moderate") {
 
     def searchQuery(question: String): SearchQuery = SearchQuery(
       filters = Some(
@@ -204,12 +194,11 @@ class ProposalServiceTest
       sortAlgorithm = Some(B2BFirstAlgorithm)
     )
 
-    scenario("no proposal matching criteria") {
+    Scenario("no proposal matching criteria") {
 
       val question = "next proposal to moderate - no proposal matching criteria"
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
 
       whenReady(
@@ -227,7 +216,7 @@ class ProposalServiceTest
       }
     }
 
-    scenario("no proposal can be locked") {
+    Scenario("no proposal can be locked") {
       val question = "next proposal to moderate - no proposal can be locked"
 
       val proposal1 =
@@ -255,8 +244,7 @@ class ProposalServiceTest
           status = Pending
         )
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
@@ -273,27 +261,20 @@ class ProposalServiceTest
         )
 
       Seq(proposal1, proposal2, proposal3, proposal4).foreach { proposal =>
-        Mockito
-          .when(
-            proposalCoordinatorService.lock(
-              matches(
-                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-              )
-            )
+        when(
+          proposalCoordinatorService.lock(
+            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
           )
-          .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+        ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
-        Mockito
-          .when(proposalCoordinatorService.getProposal(proposal.proposalId))
+        when(proposalCoordinatorService.getProposal(proposal.proposalId))
           .thenReturn(Future.successful(Some(proposal)))
 
-        Mockito
-          .when(userService.getUser(proposal.author))
+        when(userService.getUser(proposal.author))
           .thenReturn(Future.successful(Some(user(proposal.author))))
       }
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
       whenReady(
@@ -312,7 +293,7 @@ class ProposalServiceTest
 
     }
 
-    scenario("second proposal can be locked") {
+    Scenario("second proposal can be locked") {
       val question = "next proposal to moderate - second proposal can be locked"
 
       val unlockable = proposal(
@@ -324,8 +305,7 @@ class ProposalServiceTest
       val lockable =
         proposal(id = ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Pending)
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
@@ -341,38 +321,27 @@ class ProposalServiceTest
             )
         )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-            )
-          )
+      when(
+        proposalCoordinatorService.lock(
+          eqTo(LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
         )
-        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+      ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-            )
-          )
+      when(
+        proposalCoordinatorService.lock(
+          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
         )
-        .thenReturn(Future.successful(Some(moderatorId)))
+      ).thenReturn(Future.successful(Some(moderatorId)))
 
       Seq(unlockable, lockable).foreach { proposal =>
-        Mockito
-          .when(proposalCoordinatorService.getProposal(matches(proposal.proposalId)))
+        when(proposalCoordinatorService.getProposal(eqTo(proposal.proposalId)))
           .thenReturn(Future.successful(Some(proposal)))
 
-        Mockito
-          .when(userService.getUser(proposal.author))
+        when(userService.getUser(proposal.author))
           .thenReturn(Future.successful(Some(user(proposal.author))))
       }
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
       whenReady(
@@ -391,7 +360,7 @@ class ProposalServiceTest
       }
     }
 
-    scenario("first proposal is already moderated") {
+    Scenario("first proposal is already moderated") {
       val question = "next proposal to moderate - first proposal is already moderated"
 
       val moderated = proposal(
@@ -403,8 +372,7 @@ class ProposalServiceTest
       val lockable =
         proposal(id = ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Pending)
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
@@ -421,27 +389,20 @@ class ProposalServiceTest
         )
 
       Seq(moderated, lockable).foreach { proposal =>
-        Mockito
-          .when(proposalCoordinatorService.getProposal(matches(proposal.proposalId)))
+        when(proposalCoordinatorService.getProposal(eqTo(proposal.proposalId)))
           .thenReturn(Future.successful(Some(proposal)))
 
-        Mockito
-          .when(userService.getUser(proposal.author))
+        when(userService.getUser(proposal.author))
           .thenReturn(Future.successful(Some(user(proposal.author))))
 
-        Mockito
-          .when(
-            proposalCoordinatorService.lock(
-              matches(
-                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-              )
-            )
+        when(
+          proposalCoordinatorService.lock(
+            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
           )
-          .thenReturn(Future.successful(Some(moderatorId)))
+        ).thenReturn(Future.successful(Some(moderatorId)))
       }
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
       whenReady(
@@ -461,39 +422,31 @@ class ProposalServiceTest
 
     }
 
-    scenario("first proposal can be locked") {
+    Scenario("first proposal can be locked") {
       val question = "next proposal to moderate - first proposal can be locked"
 
       val lockable =
         proposal(id = ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Pending)
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(lockable.proposalId))))
         )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-            )
-          )
+      when(
+        proposalCoordinatorService.lock(
+          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
         )
-        .thenReturn(Future.successful(Some(moderatorId)))
+      ).thenReturn(Future.successful(Some(moderatorId)))
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(lockable.proposalId))
+      when(proposalCoordinatorService.getProposal(lockable.proposalId))
         .thenReturn(Future.successful(Some(lockable)))
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
-      Mockito
-        .when(userService.getUser(lockable.author))
+      when(userService.getUser(lockable.author))
         .thenReturn(Future.successful(Some(user(lockable.author))))
 
       whenReady(
@@ -514,7 +467,7 @@ class ProposalServiceTest
     }
   }
 
-  feature("next proposal to enrich") {
+  Feature("next proposal to enrich") {
 
     def searchQuery(question: String): SearchQuery = SearchQuery(
       filters = Some(
@@ -544,19 +497,16 @@ class ProposalServiceTest
 
     val tagTypes = Seq(stake, otherTagType)
 
-    Mockito
-      .when(tagTypeService.findAll(requiredForEnrichmentFilter = Some(true)))
+    when(tagTypeService.findAll(requiredForEnrichmentFilter = Some(true)))
       .thenReturn(Future.successful(tagTypes))
 
-    Mockito
-      .when(tagService.findByTagIds(Seq.empty[TagId]))
+    when(tagService.findByTagIds(Seq.empty[TagId]))
       .thenReturn(Future.successful(Seq.empty[Tag]))
 
-    scenario("no proposal matching criteria") {
+    Scenario("no proposal matching criteria") {
       val question = "next proposal to enrich - no proposal matching criteria"
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(Future.successful(ProposalsSearchResult(total = 0, results = Seq.empty)))
 
       whenReady(
@@ -574,7 +524,7 @@ class ProposalServiceTest
       }
     }
 
-    scenario("no proposal can be locked") {
+    Scenario("no proposal can be locked") {
       val question = "next proposal to enrich - no proposal can be locked"
 
       val proposal1 = proposal(
@@ -598,8 +548,7 @@ class ProposalServiceTest
         status = Accepted
       )
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
@@ -616,28 +565,21 @@ class ProposalServiceTest
         )
 
       Seq(proposal1, proposal2, proposal3, proposal4).foreach { proposal =>
-        Mockito
-          .when(proposalCoordinatorService.getProposal(proposal.proposalId))
+        when(proposalCoordinatorService.getProposal(proposal.proposalId))
           .thenReturn(Future.successful(Some(proposal)))
 
-        Mockito
-          .when(
-            proposalCoordinatorService.lock(
-              matches(
-                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-              )
-            )
+        when(
+          proposalCoordinatorService.lock(
+            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
           )
-          .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+        ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
-        Mockito
-          .when(userService.getUser(proposal.author))
+        when(userService.getUser(proposal.author))
           .thenReturn(Future.successful(Some(user(proposal.author))))
 
       }
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
       whenReady(
@@ -656,7 +598,7 @@ class ProposalServiceTest
 
     }
 
-    scenario("second proposal can be locked") {
+    Scenario("second proposal can be locked") {
       val question = "next proposal to enrich - second proposal can be locked"
 
       val unlockable =
@@ -668,8 +610,7 @@ class ProposalServiceTest
       val lockable =
         proposal(ProposalId(s"$question - lockable"), author = UserId(s"$question-user-lockable"), status = Accepted)
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
@@ -685,41 +626,29 @@ class ProposalServiceTest
             )
         )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-            )
-          )
+      when(
+        proposalCoordinatorService.lock(
+          eqTo(LockProposalCommand(unlockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
         )
-        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+      ).thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-            )
-          )
+      when(
+        proposalCoordinatorService.lock(
+          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
         )
-        .thenReturn(Future.successful(Some(moderatorId)))
+      ).thenReturn(Future.successful(Some(moderatorId)))
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(matches(unlockable.proposalId)))
+      when(proposalCoordinatorService.getProposal(eqTo(unlockable.proposalId)))
         .thenReturn(Future.successful(Some(unlockable)))
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(lockable.proposalId))
+      when(proposalCoordinatorService.getProposal(lockable.proposalId))
         .thenReturn(Future.successful(Some(lockable)))
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
       Seq(lockable, unlockable).foreach { proposal =>
-        Mockito
-          .when(userService.getUser(proposal.author))
+        when(userService.getUser(proposal.author))
           .thenReturn(Future.successful(Some(user(proposal.author))))
       }
 
@@ -740,7 +669,7 @@ class ProposalServiceTest
 
     }
 
-    scenario("first proposal is already enriched") {
+    Scenario("first proposal is already enriched") {
       val question = "next proposal to enrich - first proposal is already enriched"
 
       val tagId = TagId("a-stake-tag")
@@ -754,8 +683,7 @@ class ProposalServiceTest
       val lockable =
         proposal(ProposalId(s"$question - lockable"), author = UserId(s"$question-user-lockable"), status = Accepted)
 
-      Mockito
-        .when(tagService.findByTagIds(Seq(tagId)))
+      when(tagService.findByTagIds(Seq(tagId)))
         .thenReturn(
           Future.successful(
             Seq(
@@ -774,8 +702,7 @@ class ProposalServiceTest
           )
         )
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(
@@ -792,27 +719,20 @@ class ProposalServiceTest
         )
 
       Seq(enriched, lockable).foreach { proposal =>
-        Mockito
-          .when(
-            proposalCoordinatorService.lock(
-              matches(
-                LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-              )
-            )
+        when(
+          proposalCoordinatorService.lock(
+            eqTo(LockProposalCommand(proposal.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
           )
-          .thenReturn(Future.successful(Some(moderatorId)))
+        ).thenReturn(Future.successful(Some(moderatorId)))
 
-        Mockito
-          .when(proposalCoordinatorService.getProposal(matches(proposal.proposalId)))
+        when(proposalCoordinatorService.getProposal(eqTo(proposal.proposalId)))
           .thenReturn(Future.successful(Some(proposal)))
 
-        Mockito
-          .when(userService.getUser(proposal.author))
+        when(userService.getUser(proposal.author))
           .thenReturn(Future.successful(Some(user(proposal.author))))
       }
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
       whenReady(
@@ -832,38 +752,30 @@ class ProposalServiceTest
 
     }
 
-    scenario("first proposal can be locked") {
+    Scenario("first proposal can be locked") {
       val question = "lock-first"
       val lockable =
         proposal(ProposalId(s"$question-lockable"), author = UserId(s"$question-user-lockable"), status = Accepted)
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
+      when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
         .thenReturn(
           Future
             .successful(ProposalsSearchResult(total = 1, results = Seq(indexedProposal(lockable.proposalId))))
         )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.lock(
-            matches(
-              LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty)
-            )
-          )
+      when(
+        proposalCoordinatorService.lock(
+          eqTo(LockProposalCommand(lockable.proposalId, moderator.userId, moderator.fullName, RequestContext.empty))
         )
-        .thenReturn(Future.successful(Some(moderatorId)))
+      ).thenReturn(Future.successful(Some(moderatorId)))
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(lockable.proposalId))
+      when(proposalCoordinatorService.getProposal(lockable.proposalId))
         .thenReturn(Future.successful(Some(lockable)))
 
-      Mockito
-        .when(userService.getUser(moderatorId))
+      when(userService.getUser(moderatorId))
         .thenReturn(Future.successful(Some(moderator)))
 
-      Mockito
-        .when(userService.getUser(lockable.author))
+      when(userService.getUser(lockable.author))
         .thenReturn(Future.successful(Some(user(lockable.author))))
 
       whenReady(
@@ -884,19 +796,16 @@ class ProposalServiceTest
     }
   }
 
-  feature("search proposals voted by user") {
+  Feature("search proposals voted by user") {
 
     val paul: User = user(UserId("paul-user-id"))
-    scenario("user has no votes on the proposals") {
-      Mockito
-        .when(
-          userHistoryCoordinatorService
-            .retrieveVotedProposals(ArgumentMatchers.eq(RequestUserVotedProposals(userId = paul.userId)))
-        )
-        .thenReturn(Future.successful(Seq.empty))
+    Scenario("user has no votes on the proposals") {
+      when(
+        userHistoryCoordinatorService
+          .retrieveVotedProposals(eqTo(RequestUserVotedProposals(userId = paul.userId)))
+      ).thenReturn(Future.successful(Seq.empty))
 
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
       whenReady(
@@ -916,29 +825,20 @@ class ProposalServiceTest
       }
     }
 
-    scenario("user has votes on some proposals") {
+    Scenario("user has votes on some proposals") {
 
       val gilProposal1 = indexedProposal(ProposalId("gil-1"))
       val gilProposal2 = indexedProposal(ProposalId("gil-2"))
       val gil: User = user(UserId("gil-user-id"))
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVotedProposals(
-              ArgumentMatchers.eq(RequestSessionVotedProposals(sessionId = SessionId("my-session")))
-            )
-        )
-        .thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
-      Mockito
-        .when(
-          userHistoryCoordinatorService
-            .retrieveVotedProposals(ArgumentMatchers.eq(RequestUserVotedProposals(gil.userId)))
-        )
-        .thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestSessionVoteValues])
-        )
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVotedProposals(eqTo(RequestSessionVotedProposals(sessionId = SessionId("my-session"))))
+      ).thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
+      when(
+        userHistoryCoordinatorService
+          .retrieveVotedProposals(eqTo(RequestUserVotedProposals(gil.userId)))
+      ).thenReturn(Future.successful(Seq(gilProposal1.id, gilProposal2.id)))
+      when(sessionHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestSessionVoteValues]))
         .thenReturn(
           Future.successful(
             Map(
@@ -958,8 +858,7 @@ class ProposalServiceTest
           )
         )
 
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(ArgumentMatchers.any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(
           Future.successful(
             Map(
@@ -988,8 +887,7 @@ class ProposalServiceTest
         skip = None
       )
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(query))
+      when(elasticsearchProposalAPI.searchProposals(query))
         .thenReturn(Future.successful(ProposalsSearchResult(total = 2, results = Seq(gilProposal2, gilProposal1))))
 
       whenReady(
@@ -1011,8 +909,8 @@ class ProposalServiceTest
     }
   }
 
-  feature("createInitialProposal") {
-    scenario("createInitialProposal") {
+  Feature("createInitialProposal") {
+    Scenario("createInitialProposal") {
 
       val question =
         Question(
@@ -1025,54 +923,45 @@ class ProposalServiceTest
           operationId = None
         )
 
-      Mockito
-        .when(userService.retrieveOrCreateVirtualUser(any[AuthorRequest], any[Country], any[Language]))
+      when(userService.retrieveOrCreateVirtualUser(any[AuthorRequest], any[Country], any[Language]))
         .thenReturn(Future.successful(user(UserId("user"))))
 
-      Mockito
-        .when(userService.getUser(any[UserId]))
+      when(userService.getUser(any[UserId]))
         .thenReturn(Future.successful(Some(user(UserId("user")))))
 
-      Mockito
-        .when(proposalCoordinatorService.propose(any[ProposeCommand]))
+      when(proposalCoordinatorService.propose(any[ProposeCommand]))
         .thenReturn(Future.successful(ProposalId("my-proposal")))
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("my-proposal")))
+      when(proposalCoordinatorService.getProposal(ProposalId("my-proposal")))
         .thenReturn(Future.successful(Some(simpleProposal(ProposalId("my-proposal")))))
 
-      Mockito
-        .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
+      when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
         .thenReturn(
           Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
         )
 
-      Mockito
-        .when(tagService.findByTagIds(Seq(TagId("my-tag"))))
+      when(tagService.findByTagIds(Seq(TagId("my-tag"))))
         .thenReturn(Future.successful(Seq.empty))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.accept(
-            matches(
-              AcceptProposalCommand(
-                proposalId = ProposalId("my-proposal"),
-                moderator = moderatorId,
-                requestContext = RequestContext.empty,
-                sendNotificationEmail = false,
-                newContent = None,
-                question = question,
-                labels = Seq.empty,
-                tags = Seq(TagId("my-tag")),
-                idea = Some(IdeaId("my-idea"))
-              )
+      when(
+        proposalCoordinatorService.accept(
+          eqTo(
+            AcceptProposalCommand(
+              proposalId = ProposalId("my-proposal"),
+              moderator = moderatorId,
+              requestContext = RequestContext.empty,
+              sendNotificationEmail = false,
+              newContent = None,
+              question = question,
+              labels = Seq.empty,
+              tags = Seq(TagId("my-tag")),
+              idea = Some(IdeaId("my-idea"))
             )
           )
         )
-        .thenReturn(Future.successful(None))
+      ).thenReturn(Future.successful(None))
 
-      Mockito
-        .when(tagService.findByTagIds(Seq(TagId("my-tag"))))
+      when(tagService.findByTagIds(Seq(TagId("my-tag"))))
         .thenReturn(Future.successful(Seq.empty))
 
       val result = proposalService.createInitialProposal(
@@ -1090,7 +979,7 @@ class ProposalServiceTest
     }
   }
 
-  feature("get tags for proposal") {
+  Feature("get tags for proposal") {
     def tag(id: String): Tag = Tag(
       tagId = TagId(id),
       label = "label",
@@ -1117,12 +1006,10 @@ class ProposalServiceTest
       events = List.empty
     )
 
-    scenario("proposal without tags") {
-      Mockito
-        .when(tagService.findByQuestionId(any[QuestionId]))
+    Scenario("proposal without tags") {
+      when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
-      Mockito
-        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
+      when(semanticService.getPredictedTagsForProposal(any[Proposal]))
         .thenReturn(
           Future.successful(
             GetPredictedTagsResponse(
@@ -1154,9 +1041,8 @@ class ProposalServiceTest
         tag3.predicted shouldBe true
       }
     }
-    scenario("proposal with tags") {
-      Mockito
-        .when(tagService.findByQuestionId(any[QuestionId]))
+    Scenario("proposal with tags") {
+      when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
 
       val result: Future[TagsForProposalResponse] =
@@ -1183,19 +1069,17 @@ class ProposalServiceTest
         tagsWithModel.modelName should be("none")
       }
     }
-    scenario("proposal without question") {
+    Scenario("proposal without question") {
       val result: Future[TagsForProposalResponse] =
         proposalService.getTagsForProposal(proposal(None, Seq.empty))
       whenReady(result, Timeout(5.seconds)) { tagsForProposal =>
         tagsForProposal.tags.isEmpty shouldBe true
       }
     }
-    scenario("proposal without tags in question") {
-      Mockito
-        .when(tagService.findByQuestionId(any[QuestionId]))
+    Scenario("proposal without tags in question") {
+      when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq.empty))
-      Mockito
-        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
+      when(semanticService.getPredictedTagsForProposal(any[Proposal]))
         .thenReturn(Future.successful(GetPredictedTagsResponse.none))
 
       val result: Future[TagsForProposalResponse] =
@@ -1204,12 +1088,10 @@ class ProposalServiceTest
         tagsForProposal.tags.isEmpty shouldBe true
       }
     }
-    scenario("semantic fails to return a result") {
-      Mockito
-        .when(tagService.findByQuestionId(any[QuestionId]))
+    Scenario("semantic fails to return a result") {
+      when(tagService.findByQuestionId(any[QuestionId]))
         .thenReturn(Future.successful(Seq(tag("id-1"), tag("id-2"), tag("id-3"))))
-      Mockito
-        .when(semanticService.getPredictedTagsForProposal(any[Proposal]))
+      when(semanticService.getPredictedTagsForProposal(any[Proposal]))
         .thenReturn(Future.failed(new RuntimeException("This is an expected exception.")))
 
       val result: Future[TagsForProposalResponse] =
@@ -1238,7 +1120,7 @@ class ProposalServiceTest
     }
   }
 
-  feature("validate proposal") {
+  Feature("validate proposal") {
     val proposalId = ProposalId("validate-proposal")
 
     val question = Question(
@@ -1253,37 +1135,33 @@ class ProposalServiceTest
 
     val validatedProposal = simpleProposal(proposalId)
 
-    Mockito
-      .when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
+    when(ideaMappingService.getOrCreateMapping(question.questionId, None, None))
       .thenReturn(
         Future.successful(IdeaMapping(IdeaMappingId("mapping"), question.questionId, None, None, IdeaId("my-idea")))
       )
 
-    Mockito
-      .when(proposalCoordinatorService.getProposal(proposalId))
+    when(proposalCoordinatorService.getProposal(proposalId))
       .thenReturn(Future.successful(Some(validatedProposal)))
 
-    Mockito
-      .when(
-        proposalCoordinatorService.accept(
-          matches(
-            AcceptProposalCommand(
-              proposalId = proposalId,
-              moderator = moderatorId,
-              requestContext = RequestContext.empty,
-              sendNotificationEmail = false,
-              newContent = None,
-              question = question,
-              labels = Seq.empty,
-              tags = Seq.empty,
-              idea = None
-            )
+    when(
+      proposalCoordinatorService.accept(
+        eqTo(
+          AcceptProposalCommand(
+            proposalId = proposalId,
+            moderator = moderatorId,
+            requestContext = RequestContext.empty,
+            sendNotificationEmail = false,
+            newContent = None,
+            question = question,
+            labels = Seq.empty,
+            tags = Seq.empty,
+            idea = None
           )
         )
       )
-      .thenReturn(Future.successful(Some(validatedProposal)))
+    ).thenReturn(Future.successful(Some(validatedProposal)))
 
-    scenario("validate without predicted tags") {
+    Scenario("validate without predicted tags") {
       whenReady(
         proposalService.validateProposal(
           proposalId = proposalId,
@@ -1304,7 +1182,7 @@ class ProposalServiceTest
       }
     }
 
-    scenario("validate with predicted tags") {
+    Scenario("validate with predicted tags") {
       whenReady(
         proposalService.validateProposal(
           proposalId = proposalId,
@@ -1321,28 +1199,25 @@ class ProposalServiceTest
         Timeout(3.seconds)
       ) { maybeProposal =>
         verify(eventBusService, times(1))
-          .publish(matches(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
+          .publish(eqTo(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
         maybeProposal.isDefined should be(true)
         maybeProposal.map(_.proposalId) should be(Some(proposalId))
       }
     }
   }
 
-  feature("update proposal") {
-    scenario("update proposal with both tags") {
+  Feature("update proposal") {
+    Scenario("update proposal with both tags") {
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal")))
+      when(proposalCoordinatorService.getProposal(ProposalId("update-proposal")))
         .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal")))))
 
-      Mockito
-        .when(userService.getUser(UserId("user-update-proposal")))
+      when(userService.getUser(UserId("user-update-proposal")))
         .thenReturn(Future.successful(Some(user(UserId("user-update-proposal")))))
 
       val tagIds = Seq(TagId("stake-1"), TagId("stake-2"), TagId("solution-1"), TagId("solution-2"), TagId("other"))
 
-      Mockito
-        .when(tagService.findByTagIds(tagIds))
+      when(tagService.findByTagIds(tagIds))
         .thenReturn(
           Future.successful(
             Seq(
@@ -1405,22 +1280,20 @@ class ProposalServiceTest
           )
         )
 
-      Mockito
-        .when(
-          ideaMappingService
-            .getOrCreateMapping(QuestionId("update-proposal"), Some(TagId("stake-2")), Some(TagId("solution-1")))
-        )
-        .thenReturn(
-          Future.successful(
-            IdeaMapping(
-              IdeaMappingId("result"),
-              QuestionId("update-proposal"),
-              Some(TagId("stake-2")),
-              Some(TagId("solution-1")),
-              IdeaId("update-idea")
-            )
+      when(
+        ideaMappingService
+          .getOrCreateMapping(QuestionId("update-proposal"), Some(TagId("stake-2")), Some(TagId("solution-1")))
+      ).thenReturn(
+        Future.successful(
+          IdeaMapping(
+            IdeaMappingId("result"),
+            QuestionId("update-proposal"),
+            Some(TagId("stake-2")),
+            Some(TagId("solution-1")),
+            IdeaId("update-idea")
           )
         )
+      )
 
       val question = Question(
         QuestionId("update-proposal"),
@@ -1432,27 +1305,25 @@ class ProposalServiceTest
         None
       )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.update(
-            UpdateProposalCommand(
-              moderatorId,
-              ProposalId("update-proposal"),
-              RequestContext.empty,
-              ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-              None,
-              Seq.empty,
-              tagIds,
-              Some(IdeaId("update-idea")),
-              question
-            )
+      when(
+        proposalCoordinatorService.update(
+          UpdateProposalCommand(
+            moderatorId,
+            ProposalId("update-proposal"),
+            RequestContext.empty,
+            ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+            None,
+            Seq.empty,
+            tagIds,
+            Some(IdeaId("update-idea")),
+            question
           )
         )
-        .thenReturn(
-          Future.successful(
-            Some(simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea"))))
-          )
+      ).thenReturn(
+        Future.successful(
+          Some(simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea"))))
         )
+      )
 
       val update = proposalService.update(
         ProposalId("update-proposal"),
@@ -1473,14 +1344,12 @@ class ProposalServiceTest
 
     }
 
-    scenario("update proposal when the moderator provides an idea, use it") {
+    Scenario("update proposal when the moderator provides an idea, use it") {
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-3")))
+      when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-3")))
         .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal-3")))))
 
-      Mockito
-        .when(userService.getUser(UserId("user-update-proposal-3")))
+      when(userService.getUser(UserId("user-update-proposal-3")))
         .thenReturn(Future.successful(Some(user(UserId("user-update-proposal-3")))))
 
       val tagIds = Seq(TagId("stake-1"), TagId("stake-2"), TagId("solution-1"), TagId("solution-2"), TagId("other"))
@@ -1495,29 +1364,27 @@ class ProposalServiceTest
         None
       )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.update(
-            UpdateProposalCommand(
-              moderatorId,
-              ProposalId("update-proposal-3"),
-              RequestContext.empty,
-              ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-              None,
-              Seq.empty,
-              tagIds,
-              Some(IdeaId("moderator-idea")),
-              question
-            )
+      when(
+        proposalCoordinatorService.update(
+          UpdateProposalCommand(
+            moderatorId,
+            ProposalId("update-proposal-3"),
+            RequestContext.empty,
+            ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+            None,
+            Seq.empty,
+            tagIds,
+            Some(IdeaId("moderator-idea")),
+            question
           )
         )
-        .thenReturn(
-          Future.successful(
-            Some(
-              simpleProposal(ProposalId("update-proposal-3")).copy(tags = tagIds, idea = Some(IdeaId("moderator-idea")))
-            )
+      ).thenReturn(
+        Future.successful(
+          Some(
+            simpleProposal(ProposalId("update-proposal-3")).copy(tags = tagIds, idea = Some(IdeaId("moderator-idea")))
           )
         )
+      )
 
       val update = proposalService.update(
         ProposalId("update-proposal-3"),
@@ -1538,20 +1405,17 @@ class ProposalServiceTest
 
     }
 
-    scenario("update proposal with no stake tags") {
+    Scenario("update proposal with no stake tags") {
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-4")))
+      when(proposalCoordinatorService.getProposal(ProposalId("update-proposal-4")))
         .thenReturn(Future.successful(Some(simpleProposal(ProposalId("update-proposal-4")))))
 
-      Mockito
-        .when(userService.getUser(UserId("user-update-proposal-4")))
+      when(userService.getUser(UserId("user-update-proposal-4")))
         .thenReturn(Future.successful(Some(user(UserId("user-update-proposal-4")))))
 
       val tagIds = Seq(TagId("solution-1"), TagId("solution-2"), TagId("other"))
 
-      Mockito
-        .when(tagService.findByTagIds(tagIds))
+      when(tagService.findByTagIds(tagIds))
         .thenReturn(
           Future.successful(
             Seq(
@@ -1592,22 +1456,20 @@ class ProposalServiceTest
           )
         )
 
-      Mockito
-        .when(
-          ideaMappingService
-            .getOrCreateMapping(QuestionId("update-proposal"), None, Some(TagId("solution-1")))
-        )
-        .thenReturn(
-          Future.successful(
-            IdeaMapping(
-              IdeaMappingId("result-2"),
-              QuestionId("update-proposal"),
-              None,
-              Some(TagId("solution-1")),
-              IdeaId("update-idea-2")
-            )
+      when(
+        ideaMappingService
+          .getOrCreateMapping(QuestionId("update-proposal"), None, Some(TagId("solution-1")))
+      ).thenReturn(
+        Future.successful(
+          IdeaMapping(
+            IdeaMappingId("result-2"),
+            QuestionId("update-proposal"),
+            None,
+            Some(TagId("solution-1")),
+            IdeaId("update-idea-2")
           )
         )
+      )
 
       val question = Question(
         QuestionId("update-proposal"),
@@ -1619,29 +1481,25 @@ class ProposalServiceTest
         None
       )
 
-      Mockito
-        .when(
-          proposalCoordinatorService.update(
-            UpdateProposalCommand(
-              moderatorId,
-              ProposalId("update-proposal-4"),
-              RequestContext.empty,
-              ZonedDateTime.parse("2019-01-16T16:48:00Z"),
-              None,
-              Seq.empty,
-              tagIds,
-              Some(IdeaId("update-idea-2")),
-              question
-            )
+      when(
+        proposalCoordinatorService.update(
+          UpdateProposalCommand(
+            moderatorId,
+            ProposalId("update-proposal-4"),
+            RequestContext.empty,
+            ZonedDateTime.parse("2019-01-16T16:48:00Z"),
+            None,
+            Seq.empty,
+            tagIds,
+            Some(IdeaId("update-idea-2")),
+            question
           )
         )
-        .thenReturn(
-          Future.successful(
-            Some(
-              simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea-2")))
-            )
-          )
+      ).thenReturn(
+        Future.successful(
+          Some(simpleProposal(ProposalId("update-proposal")).copy(tags = tagIds, idea = Some(IdeaId("update-idea-2"))))
         )
+      )
 
       val update = proposalService.update(
         ProposalId("update-proposal-4"),
@@ -1678,31 +1536,28 @@ class ProposalServiceTest
 
     val updatedProposal = simpleProposal(proposalId)
 
-    Mockito
-      .when(proposalCoordinatorService.update(any[UpdateProposalCommand]))
+    when(proposalCoordinatorService.update(any[UpdateProposalCommand]))
       .thenReturn(Future.successful(Some(updatedProposal)))
 
-    Mockito
-      .when(
-        proposalCoordinatorService.update(
-          matches(
-            UpdateProposalCommand(
-              proposalId = proposalId,
-              moderator = moderatorId,
-              requestContext = RequestContext.empty,
-              updatedAt = now,
-              newContent = None,
-              question = question,
-              labels = Seq.empty,
-              tags = Seq.empty,
-              idea = None
-            )
+    when(
+      proposalCoordinatorService.update(
+        eqTo(
+          UpdateProposalCommand(
+            proposalId = proposalId,
+            moderator = moderatorId,
+            requestContext = RequestContext.empty,
+            updatedAt = now,
+            newContent = None,
+            question = question,
+            labels = Seq.empty,
+            tags = Seq.empty,
+            idea = None
           )
         )
       )
-      .thenReturn(Future.successful(Some(updatedProposal)))
+    ).thenReturn(Future.successful(Some(updatedProposal)))
 
-    scenario("update without predicted tags") {
+    Scenario("update without predicted tags") {
       whenReady(
         proposalService.update(
           proposalId = proposalId,
@@ -1723,7 +1578,7 @@ class ProposalServiceTest
       }
     }
 
-    scenario("update with predicted tags") {
+    Scenario("update with predicted tags") {
       whenReady(
         proposalService.update(
           proposalId = proposalId,
@@ -1740,38 +1595,32 @@ class ProposalServiceTest
         Timeout(3.seconds)
       ) { maybeProposal =>
         verify(eventBusService, times(1))
-          .publish(matches(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
+          .publish(eqTo(PredictedTagsEvent(proposalId, Seq(TagId("predicted-tag-id")), Seq.empty, "auto")))
         maybeProposal.isDefined should be(true)
         maybeProposal.map(_.proposalId) should be(Some(proposalId))
       }
     }
   }
 
-  feature("vote") {
-    scenario("vote ok unlogged") {
+  Feature("vote") {
+    Scenario("vote ok unlogged") {
       val sessionId = SessionId("vote-ok")
       val proposalId = ProposalId("vote-ok")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
-      Mockito
-        .when(
-          proposalCoordinatorService
-            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
-        )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        proposalCoordinatorService
+          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+      ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1783,32 +1632,26 @@ class ProposalServiceTest
       }
     }
 
-    scenario("already voted unlogged") {
+    Scenario("already voted unlogged") {
       val sessionId = SessionId("already-voted")
       val proposalId = ProposalId("already-voted")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
       val votes = VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map(proposalId -> votes)))
-      Mockito
-        .when(
-          proposalCoordinatorService
-            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
-        )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map(proposalId -> votes)))
+      when(
+        proposalCoordinatorService
+          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
+      ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1821,30 +1664,24 @@ class ProposalServiceTest
 
     }
 
-    scenario("vote failed voted unlogged") {
+    Scenario("vote failed voted unlogged") {
       val sessionId = SessionId("vote-failed-voted-unlogged")
       val proposalId = ProposalId("vote-failed-voted-unlogged")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
-      Mockito
-        .when(
-          proposalCoordinatorService
-            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
-        )
-        .thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        proposalCoordinatorService
+          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+      ).thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
 
       whenReady(
         proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
@@ -1854,25 +1691,23 @@ class ProposalServiceTest
       }
     }
 
-    scenario("vote failed on lock not acquired") {
+    Scenario("vote failed on lock not acquired") {
       val sessionId = SessionId("vote-failed-on-lock-not-acquired")
       val proposalId = ProposalId("vote-failed-on-lock-not-acquired")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.failed(ConcurrentModification("talk to my hand")))
 
       whenReady(
         proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
         Timeout(5.seconds)
       ) { _ =>
-        verify(sessionHistoryCoordinatorService, never()).unlockSessionForVote(sessionId, proposalId)
-        verify(proposalCoordinatorService, never()).vote(
+        verify(sessionHistoryCoordinatorService, never).unlockSessionForVote(sessionId, proposalId)
+        verify(proposalCoordinatorService, never).vote(
           VoteProposalCommand(
             proposalId = proposalId,
             maybeUserId = None,
@@ -1886,30 +1721,24 @@ class ProposalServiceTest
       }
     }
 
-    scenario("vote with bad proposal key") {
+    Scenario("vote with bad proposal key") {
       val sessionId = SessionId("vote-with-bad-vote-key")
       val proposalId = ProposalId("vote-with-bad-vote-key")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
-      Mockito
-        .when(
-          proposalCoordinatorService
-            .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Troll))
-        )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 0, 0, 0, Seq.empty))))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        proposalCoordinatorService
+          .vote(VoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Troll))
+      ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 0, 0, 0, Seq.empty))))
 
       whenReady(
         proposalService.voteProposal(proposalId, None, requestContext, VoteKey.Agree, Some("fake")),
@@ -1920,31 +1749,25 @@ class ProposalServiceTest
     }
   }
 
-  feature("unvote") {
-    scenario("unvote ok unlogged") {
+  Feature("unvote") {
+    Scenario("unvote ok unlogged") {
       val sessionId = SessionId("unvote-ok")
       val proposalId = ProposalId("unvote-ok")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
-      Mockito
-        .when(
-          proposalCoordinatorService
-            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
-        )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        proposalCoordinatorService
+          .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+      ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1956,32 +1779,26 @@ class ProposalServiceTest
       }
     }
 
-    scenario("already unvoted unlogged") {
+    Scenario("already unvoted unlogged") {
       val sessionId = SessionId("already-unvoted")
       val proposalId = ProposalId("already-unvoted")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
       val votes = VoteAndQualifications(VoteKey.Agree, Map.empty, DateHelper.now(), Trusted)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map(proposalId -> votes)))
-      Mockito
-        .when(
-          proposalCoordinatorService
-            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
-        )
-        .thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map(proposalId -> votes)))
+      when(
+        proposalCoordinatorService
+          .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, Some(votes), Trusted))
+      ).thenReturn(Future.successful(Some(Vote(VoteKey.Agree, 1, 1, 1, 1, Seq.empty))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -1994,30 +1811,24 @@ class ProposalServiceTest
 
     }
 
-    scenario("unvote failed unvoted unlogged") {
+    Scenario("unvote failed unvoted unlogged") {
       val sessionId = SessionId("unvote-failed-unvoted-unlogged")
       val proposalId = ProposalId("unvote-failed-unvoted-unlogged")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.successful {})
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
-      Mockito
-        .when(
-          proposalCoordinatorService
-            .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
-        )
-        .thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        proposalCoordinatorService
+          .unvote(UnvoteProposalCommand(proposalId, None, requestContext, VoteKey.Agree, None, None, Trusted))
+      ).thenReturn(Future.failed(new IllegalArgumentException("You shall not, vote!")))
 
       whenReady(
         proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
@@ -2027,25 +1838,23 @@ class ProposalServiceTest
       }
     }
 
-    scenario("unvote failed on lock not acquired") {
+    Scenario("unvote failed on lock not acquired") {
       val sessionId = SessionId("unvote-failed-on-lock-not-acquired")
       val proposalId = ProposalId("unvote-failed-on-lock-not-acquired")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
+      when(sessionHistoryCoordinatorService.lockSessionForVote(sessionId, proposalId))
         .thenReturn(Future.failed(ConcurrentModification("talk to my hand")))
 
       whenReady(
         proposalService.unvoteProposal(proposalId, None, requestContext, VoteKey.Agree, None).failed,
         Timeout(5.seconds)
       ) { _ =>
-        verify(sessionHistoryCoordinatorService, never()).unlockSessionForVote(sessionId, proposalId)
-        verify(proposalCoordinatorService, never()).unvote(
+        verify(sessionHistoryCoordinatorService, never).unlockSessionForVote(sessionId, proposalId)
+        verify(proposalCoordinatorService, never).unvote(
           UnvoteProposalCommand(
             proposalId = proposalId,
             maybeUserId = None,
@@ -2060,44 +1869,36 @@ class ProposalServiceTest
     }
   }
 
-  feature("qualify proposal") {
-    scenario("successful qualification") {
+  Feature("qualify proposal") {
+    Scenario("successful qualification") {
       val sessionId = SessionId("successful-qualification")
       val proposalId = ProposalId("successful-qualification")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
-        )
+      when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
         .thenReturn(Future.successful {})
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.qualification(
-            QualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = None,
-              requestContext = requestContext,
-              voteKey = VoteKey.Agree,
-              qualificationKey = QualificationKey.LikeIt,
-              vote = None,
-              voteTrust = Trusted
-            )
+      when(
+        proposalCoordinatorService.qualification(
+          QualifyVoteCommand(
+            proposalId = proposalId,
+            maybeUserId = None,
+            requestContext = requestContext,
+            voteKey = VoteKey.Agree,
+            qualificationKey = QualificationKey.LikeIt,
+            vote = None,
+            voteTrust = Trusted
           )
         )
-        .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
+      ).thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -2114,43 +1915,35 @@ class ProposalServiceTest
       }
     }
 
-    scenario("qualification failed") {
+    Scenario("qualification failed") {
       val sessionId = SessionId("qualification-failed")
       val proposalId = ProposalId("qualification-failed")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
-        )
+      when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
         .thenReturn(Future.successful {})
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.qualification(
-            QualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = None,
-              requestContext = requestContext,
-              voteKey = VoteKey.Agree,
-              qualificationKey = QualificationKey.LikeIt,
-              vote = None,
-              voteTrust = Trusted
-            )
+      when(
+        proposalCoordinatorService.qualification(
+          QualifyVoteCommand(
+            proposalId = proposalId,
+            maybeUserId = None,
+            requestContext = requestContext,
+            voteKey = VoteKey.Agree,
+            qualificationKey = QualificationKey.LikeIt,
+            vote = None,
+            voteTrust = Trusted
           )
         )
-        .thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
+      ).thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
 
       whenReady(
         proposalService
@@ -2166,15 +1959,12 @@ class ProposalServiceTest
       }
     }
 
-    scenario("failed to acquire qualification lock") {
+    Scenario("failed to acquire qualification lock") {
       val sessionId = SessionId("failed-to-acquire-qualification-lock")
       val proposalId = ProposalId("failed-to-acquire-qualification-lock")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
-        )
+      when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
         .thenReturn(Future.failed(ConcurrentModification("Try again later")))
 
       whenReady(
@@ -2183,10 +1973,10 @@ class ProposalServiceTest
           .failed,
         Timeout(5.seconds)
       ) { _ =>
-        verify(sessionHistoryCoordinatorService, never())
+        verify(sessionHistoryCoordinatorService, never)
           .unlockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
 
-        verify(proposalCoordinatorService, never())
+        verify(proposalCoordinatorService, never)
           .qualification(
             QualifyVoteCommand(
               proposalId = proposalId,
@@ -2202,44 +1992,36 @@ class ProposalServiceTest
     }
   }
 
-  feature("remove qualification") {
-    scenario("successful qualification removal") {
+  Feature("remove qualification") {
+    Scenario("successful qualification removal") {
       val sessionId = SessionId("successful-qualification-removal")
       val proposalId = ProposalId("successful-qualification-removal")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId))))
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
-        )
+      when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
         .thenReturn(Future.successful {})
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.unqualification(
-            UnqualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = None,
-              requestContext = requestContext,
-              voteKey = VoteKey.Agree,
-              qualificationKey = QualificationKey.LikeIt,
-              vote = None,
-              voteTrust = Trusted
-            )
+      when(
+        proposalCoordinatorService.unqualification(
+          UnqualifyVoteCommand(
+            proposalId = proposalId,
+            maybeUserId = None,
+            requestContext = requestContext,
+            voteKey = VoteKey.Agree,
+            qualificationKey = QualificationKey.LikeIt,
+            vote = None,
+            voteTrust = Trusted
           )
         )
-        .thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
+      ).thenReturn(Future.successful(Some(Qualification(QualificationKey.LikeIt, 1, 1, 1, 1))))
 
       val hash = generateHash(proposalId, requestContext)
 
@@ -2256,39 +2038,32 @@ class ProposalServiceTest
       }
     }
 
-    scenario("qualification removal failed") {
+    Scenario("qualification removal failed") {
       val sessionId = SessionId("qualification-removal-failed")
       val proposalId = ProposalId("qualification-removal-failed")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
-        )
+      when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
         .thenReturn(Future.successful {})
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
-        )
-        .thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(RequestSessionVoteValues(sessionId, Seq(proposalId)))
+      ).thenReturn(Future.successful(Map.empty[ProposalId, VoteAndQualifications]))
 
-      Mockito
-        .when(
-          proposalCoordinatorService.unqualification(
-            UnqualifyVoteCommand(
-              proposalId = proposalId,
-              maybeUserId = None,
-              requestContext = requestContext,
-              voteKey = VoteKey.Agree,
-              qualificationKey = QualificationKey.LikeIt,
-              vote = None,
-              voteTrust = Trusted
-            )
+      when(
+        proposalCoordinatorService.unqualification(
+          UnqualifyVoteCommand(
+            proposalId = proposalId,
+            maybeUserId = None,
+            requestContext = requestContext,
+            voteKey = VoteKey.Agree,
+            qualificationKey = QualificationKey.LikeIt,
+            vote = None,
+            voteTrust = Trusted
           )
         )
-        .thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
+      ).thenReturn(Future.failed(new IllegalStateException("Thou shall not qualify!")))
 
       whenReady(
         proposalService
@@ -2304,15 +2079,12 @@ class ProposalServiceTest
       }
     }
 
-    scenario("failed to acquire qualification removal lock") {
+    Scenario("failed to acquire qualification removal lock") {
       val sessionId = SessionId("failed-to-acquire-qualification-removal-lock")
       val proposalId = ProposalId("failed-to-acquire-qualification-removal-lock")
       val requestContext = RequestContext.empty.copy(sessionId = sessionId)
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
-        )
+      when(sessionHistoryCoordinatorService.lockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt))
         .thenReturn(Future.failed(ConcurrentModification("Try again later")))
 
       whenReady(
@@ -2321,10 +2093,10 @@ class ProposalServiceTest
           .failed,
         Timeout(5.seconds)
       ) { _ =>
-        verify(sessionHistoryCoordinatorService, never())
+        verify(sessionHistoryCoordinatorService, never)
           .unlockSessionForQualification(sessionId, proposalId, QualificationKey.LikeIt)
 
-        verify(proposalCoordinatorService, never())
+        verify(proposalCoordinatorService, never)
           .unqualification(
             UnqualifyVoteCommand(
               proposalId = proposalId,
@@ -2340,7 +2112,7 @@ class ProposalServiceTest
     }
   }
 
-  feature("trust resolution") {
+  Feature("trust resolution") {
 
     def key(proposalId: ProposalId, requestContext: RequestContext): String = SecurityHelper.generateProposalKeyHash(
       proposalId,
@@ -2349,7 +2121,7 @@ class ProposalServiceTest
       securityConfiguration.secureVoteSalt
     )
 
-    scenario("in segment") {
+    Scenario("in segment") {
       val proposalId = ProposalId("in segment")
       val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
 
@@ -2362,7 +2134,7 @@ class ProposalServiceTest
       ) should be(Segment)
     }
 
-    scenario("segments do not match") {
+    Scenario("segments do not match") {
       val proposalId = ProposalId("segments do not match")
       val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
 
@@ -2375,7 +2147,7 @@ class ProposalServiceTest
       ) should be(Sequence)
     }
 
-    scenario("no segment") {
+    Scenario("no segment") {
       val proposalId = ProposalId("no segment")
       val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
 
@@ -2384,7 +2156,7 @@ class ProposalServiceTest
       )
     }
 
-    scenario("not in sequence") {
+    Scenario("not in sequence") {
       val proposalId = ProposalId("not in sequence")
       val requestContext = RequestContext.empty.copy(location = Some("operation-page 123456"))
 
@@ -2394,7 +2166,7 @@ class ProposalServiceTest
       )
     }
 
-    scenario("not in sequence but in segment") {
+    Scenario("not in sequence but in segment") {
       val proposalId = ProposalId("not in sequence but in segment")
       val requestContext = RequestContext.empty.copy(location = Some("operation-page 123456"))
 
@@ -2408,7 +2180,7 @@ class ProposalServiceTest
         ) should be(Trusted)
     }
 
-    scenario("bad proposal key") {
+    Scenario("bad proposal key") {
       val proposalId = ProposalId("bad proposal key")
       val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
 
@@ -2418,7 +2190,7 @@ class ProposalServiceTest
       )
     }
 
-    scenario("no proposal key") {
+    Scenario("no proposal key") {
       val proposalId = ProposalId("no proposal key")
       val requestContext = RequestContext.empty.copy(location = Some("sequence 123456"))
 
@@ -2427,31 +2199,28 @@ class ProposalServiceTest
     }
   }
 
-  feature("search for user") {
-    scenario("test all") {
+  Feature("search for user") {
+    Scenario("test all") {
       val unvoted: IndexedProposal = {
         val tmp = indexedProposal(ProposalId("unvoted"))
         tmp.copy(author = tmp.author.copy(anonymousParticipation = true))
       }
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(SearchQuery()))
+      when(elasticsearchProposalAPI.searchProposals(SearchQuery()))
         .thenReturn(
           Future
             .successful(ProposalsSearchResult(total = 2, results = Seq(indexedProposal(ProposalId("voted")), unvoted)))
         )
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("unvoted")))
-            )
-        )
-        .thenReturn(
-          Future
-            .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
-        )
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("unvoted")))
+          )
+      ).thenReturn(
+        Future
+          .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+      )
 
       val search = proposalService.searchForUser(
         None,
@@ -2482,30 +2251,24 @@ class ProposalServiceTest
     }
   }
 
-  feature("get top proposals") {
+  Feature("get top proposals") {
 
-    scenario("get top proposals by stake tag") {
+    Scenario("get top proposals by stake tag") {
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
-            )
-        )
-        .thenReturn(
-          Future
-            .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
-        )
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
+          )
+      ).thenReturn(
+        Future
+          .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+      )
 
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .getTopProposals(QuestionId("question-id"), size = 10, ProposalElasticsearchFieldNames.selectedStakeTagId)
-        )
-        .thenReturn(
-          Future.successful(Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote"))))
-        )
+      when(
+        elasticsearchProposalAPI
+          .getTopProposals(QuestionId("question-id"), size = 10, ProposalElasticsearchFieldNames.selectedStakeTagId)
+      ).thenReturn(Future.successful(Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote")))))
 
       val topProposals = proposalService.getTopProposals(
         None,
@@ -2522,28 +2285,22 @@ class ProposalServiceTest
       }
     }
 
-    scenario("get top proposals by idea") {
+    Scenario("get top proposals by idea") {
 
-      Mockito
-        .when(
-          sessionHistoryCoordinatorService
-            .retrieveVoteAndQualifications(
-              RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
-            )
-        )
-        .thenReturn(
-          Future
-            .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
-        )
+      when(
+        sessionHistoryCoordinatorService
+          .retrieveVoteAndQualifications(
+            RequestSessionVoteValues(SessionId("my-session"), Seq(ProposalId("voted"), ProposalId("no-vote")))
+          )
+      ).thenReturn(
+        Future
+          .successful(Map(ProposalId("voted") -> VoteAndQualifications(Agree, Map.empty, DateHelper.now(), Trusted)))
+      )
 
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .getTopProposals(QuestionId("question-id"), size = 10, ProposalElasticsearchFieldNames.ideaId)
-        )
-        .thenReturn(
-          Future.successful(Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote"))))
-        )
+      when(
+        elasticsearchProposalAPI
+          .getTopProposals(QuestionId("question-id"), size = 10, ProposalElasticsearchFieldNames.ideaId)
+      ).thenReturn(Future.successful(Seq(indexedProposal(ProposalId("voted")), indexedProposal(ProposalId("no-vote")))))
 
       val topProposals = proposalService.getTopProposals(
         maybeUserId = None,
@@ -2561,8 +2318,8 @@ class ProposalServiceTest
     }
   }
 
-  feature("get moderation proposal by id") {
-    scenario("regular participation") {
+  Feature("get moderation proposal by id") {
+    Scenario("regular participation") {
 
       val proposalId = ProposalId("regular-participation")
       val author = {
@@ -2580,12 +2337,10 @@ class ProposalServiceTest
         )
       }
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId).copy(author = author.userId))))
 
-      Mockito
-        .when(userService.getUser(author.userId))
+      when(userService.getUser(author.userId))
         .thenReturn(Future.successful(Some(author)))
 
       whenReady(proposalService.getModerationProposalById(proposalId), Timeout(2.seconds)) { maybeProposal =>
@@ -2599,7 +2354,7 @@ class ProposalServiceTest
         proposal.author.organisationSlug should contain("regular-participation-organisation-name")
       }
     }
-    scenario("anonymous participation") {
+    Scenario("anonymous participation") {
       val proposalId = ProposalId("anonymous-participation")
       val author = {
         val baseUser = user(UserId("anonymous-participation"))
@@ -2616,12 +2371,10 @@ class ProposalServiceTest
         )
       }
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(simpleProposal(proposalId).copy(author = author.userId))))
 
-      Mockito
-        .when(userService.getUser(author.userId))
+      when(userService.getUser(author.userId))
         .thenReturn(Future.successful(Some(author)))
 
       whenReady(proposalService.getModerationProposalById(proposalId), Timeout(2.seconds)) { maybeProposal =>
@@ -2637,11 +2390,11 @@ class ProposalServiceTest
     }
   }
 
-  feature("need reset votes") {
+  Feature("need reset votes") {
     val adminId = UserId("admin")
     val requestContext = RequestContext.empty
 
-    scenario("trolled proposal on votes") {
+    Scenario("trolled proposal on votes") {
       val votes: Seq[Vote] = Seq(
         Vote(
           key = Agree,
@@ -2691,7 +2444,7 @@ class ProposalServiceTest
       updates.votes.flatMap(_.qualifications).isEmpty shouldBe true
     }
 
-    scenario("trolled proposal on qualifications") {
+    Scenario("trolled proposal on qualifications") {
       val votes: Seq[Vote] = Seq(
         Vote(
           key = Agree,
@@ -2741,7 +2494,7 @@ class ProposalServiceTest
       updates.votes.head.qualifications.head.count shouldBe Some(1)
     }
 
-    scenario("not trolled proposal") {
+    Scenario("not trolled proposal") {
       val votes: Seq[Vote] = Seq(
         Vote(
           key = Agree,
@@ -2784,13 +2537,13 @@ class ProposalServiceTest
       proposalService.needVoteReset(proposal) shouldBe false
     }
 
-    scenario("not accepted proposal") {
+    Scenario("not accepted proposal") {
       val proposal = TestUtils.proposal(id = ProposalId("not-accepted"), status = ProposalStatus.Pending)
       proposalService.needVoteReset(proposal) shouldBe false
     }
   }
 
-  feature("resolve question from vote event") {
+  Feature("resolve question from vote event") {
     val question = Question(
       questionId = QuestionId("some-question"),
       slug = "some-question",
@@ -2803,7 +2556,7 @@ class ProposalServiceTest
 
     val resolver = new QuestionResolver(Seq(question), Map.empty)
 
-    scenario("question resolved from request context") {
+    Scenario("question resolved from request context") {
       val requestContext: RequestContext = RequestContext.empty.copy(questionId = Some(question.questionId))
       val proposalId: ProposalId = ProposalId("whatever")
 
@@ -2812,12 +2565,11 @@ class ProposalServiceTest
       }
     }
 
-    scenario("question resolved from proposal") {
+    Scenario("question resolved from proposal") {
       val requestContext: RequestContext = RequestContext.empty
       val proposalId: ProposalId = ProposalId("question resolved from proposal")
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(proposal(id = proposalId, questionId = question.questionId))))
 
       whenReady(proposalService.resolveQuestionFromVoteEvent(resolver, requestContext, proposalId), Timeout(3.seconds)) {
@@ -2825,12 +2577,11 @@ class ProposalServiceTest
       }
     }
 
-    scenario("unable to resolve the question") {
+    Scenario("unable to resolve the question") {
       val requestContext: RequestContext = RequestContext.empty
       val proposalId: ProposalId = ProposalId("unable to resolve the question")
 
-      Mockito
-        .when(proposalCoordinatorService.getProposal(proposalId))
+      when(proposalCoordinatorService.getProposal(proposalId))
         .thenReturn(Future.successful(Some(proposal(id = proposalId, questionId = QuestionId("other")))))
 
       whenReady(proposalService.resolveQuestionFromVoteEvent(resolver, requestContext, proposalId), Timeout(3.seconds)) {
@@ -2839,7 +2590,7 @@ class ProposalServiceTest
     }
   }
 
-  feature("resolve question from proposal event") {
+  Feature("resolve question from proposal event") {
     val question = Question(
       questionId = QuestionId("some-question"),
       slug = "some-question",
@@ -2852,7 +2603,7 @@ class ProposalServiceTest
 
     val resolver = new QuestionResolver(Seq(question), Map.empty)
 
-    scenario("question resolved by request context") {
+    Scenario("question resolved by request context") {
       val requestContext = RequestContext.empty.copy(questionId = Some(question.questionId))
       val userId = UserId("question resolved by request context")
 
@@ -2864,7 +2615,7 @@ class ProposalServiceTest
       }
     }
 
-    scenario("user has no proposal") {
+    Scenario("user has no proposal") {
       val requestContext = RequestContext.empty
       val userId = UserId("user has no proposal")
       val date = DateHelper.now().minusHours(5)
@@ -2874,12 +2625,10 @@ class ProposalServiceTest
         status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
       )
 
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .countProposals(SearchQuery(filters = Some(filters)))
-        )
-        .thenReturn(Future.successful(0L))
+      when(
+        elasticsearchProposalAPI
+          .countProposals(SearchQuery(filters = Some(filters)))
+      ).thenReturn(Future.successful(0L))
 
       whenReady(
         proposalService.resolveQuestionFromUserProposal(resolver, requestContext, userId, date),
@@ -2889,7 +2638,7 @@ class ProposalServiceTest
       }
     }
 
-    scenario("proposal found") {
+    Scenario("proposal found") {
       val requestContext = RequestContext.empty
       val userId = UserId("proposal found")
       val date = DateHelper.now().minusHours(5)
@@ -2902,23 +2651,20 @@ class ProposalServiceTest
       )
       )
 
-      Mockito
-        .when(elasticsearchProposalAPI.countProposals(query))
+      when(elasticsearchProposalAPI.countProposals(query))
         .thenReturn(Future.successful(2L))
 
-      Mockito
-        .when(elasticsearchProposalAPI.searchProposals(query.copy(limit = Some(2))))
-        .thenReturn {
-          Future.successful(
-            ProposalsSearchResult(
-              total = 2L,
-              results = Seq(
-                indexedProposal(ProposalId("proposal-one")),
-                indexedProposal(ProposalId("proposal-two"), questionId = question.questionId, createdAt = date)
-              )
+      when(elasticsearchProposalAPI.searchProposals(query.copy(limit = Some(2)))).thenReturn {
+        Future.successful(
+          ProposalsSearchResult(
+            total = 2L,
+            results = Seq(
+              indexedProposal(ProposalId("proposal-one")),
+              indexedProposal(ProposalId("proposal-two"), questionId = question.questionId, createdAt = date)
             )
           )
-        }
+        )
+      }
 
       val result = proposalService.resolveQuestionFromUserProposal(resolver, requestContext, userId, date)
       whenReady(result, Timeout(2.seconds)) {

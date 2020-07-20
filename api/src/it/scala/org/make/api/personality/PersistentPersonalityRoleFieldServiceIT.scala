@@ -42,8 +42,8 @@ class PersistentPersonalityRoleFieldServiceIT
       required = true
     )
 
-  feature("get personality role field by id") {
-    scenario("get existing personality role field") {
+  Feature("get personality role field by id") {
+    Scenario("get existing personality role field") {
       val futurePersonalityRoleField = for {
         _ <- persistentPersonalityRoleService.persist(
           PersonalityRole(PersonalityRoleId("candidate"), name = "CANDIDATE_TEST")
@@ -60,7 +60,7 @@ class PersistentPersonalityRoleFieldServiceIT
       }
     }
 
-    scenario("get non existing personality role field") {
+    Scenario("get non existing personality role field") {
       whenReady(
         persistentPersonalityRoleFieldService
           .getById(PersonalityRoleFieldId("not-found"), PersonalityRoleId("candidate")),
@@ -71,8 +71,8 @@ class PersistentPersonalityRoleFieldServiceIT
     }
   }
 
-  feature("search personality role fields") {
-    scenario("search all") {
+  Feature("search personality role fields") {
+    Scenario("search all") {
       val futurePersonalityRoleFields = for {
         _ <- persistentPersonalityRoleFieldService.persist(
           personalityRoleField
@@ -101,7 +101,7 @@ class PersistentPersonalityRoleFieldServiceIT
       }
     }
 
-    scenario("search by name") {
+    Scenario("search by name") {
       val futurePersonalityRoleField =
         persistentPersonalityRoleFieldService.find(
           start = 0,
@@ -121,8 +121,8 @@ class PersistentPersonalityRoleFieldServiceIT
 
   }
 
-  feature("count personality role fields") {
-    scenario("count") {
+  Feature("count personality role fields") {
+    Scenario("count") {
 
       val futurePersonalityRoleFieldCount =
         persistentPersonalityRoleFieldService.count(
@@ -139,8 +139,8 @@ class PersistentPersonalityRoleFieldServiceIT
 
   }
 
-  feature("update personality role field") {
-    scenario("update existing personality role field") {
+  Feature("update personality role field") {
+    Scenario("update existing personality role field") {
       val updatedPersonalityRoleField =
         personalityRoleField.copy(name = "Field updated")
 

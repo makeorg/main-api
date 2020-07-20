@@ -31,8 +31,6 @@ import org.make.api.technical.auth._
 import org.make.api.technical.crm._
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.core.session.VisitorId
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -113,8 +111,8 @@ class CrmApiTest
       |
       """.stripMargin
 
-  feature("callback requests") {
-    scenario("json decoding") {
+  Feature("callback requests") {
+    Scenario("json decoding") {
       val maybeJson = jawn.parse(requestMultipleEvents)
 
       val parseResult = maybeJson match {
@@ -145,30 +143,30 @@ class CrmApiTest
     }
   }
 
-  feature("callback api") {
-    scenario("should refuse service if no credentials are supplied with a 401 return code") {
+  Feature("callback api") {
+    Scenario("should refuse service if no credentials are supplied with a 401 return code") {
       Post("/technical/mailjet") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
-    scenario("should refuse service if bad credentials are supplied with a 401 return code") {
+    Scenario("should refuse service if bad credentials are supplied with a 401 return code") {
       Post("/technical/mailjet").withHeaders(Authorization(BasicHttpCredentials("fake", "fake"))) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
-    scenario("should refuse service if credentials are supplied but no content with a 400 return code") {
+    Scenario("should refuse service if credentials are supplied but no content with a 400 return code") {
       Post("/technical/mailjet").withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
-    scenario("should send parsed events in event bus with multiple events") {
+    Scenario("should send parsed events in event bus with multiple events") {
       Post("/technical/mailjet", HttpEntity(ContentTypes.`application/json`, requestMultipleEvents))
         .withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(eventBusService, times(2)).publish(any[AnyRef])
       }
     }
-    scenario("should send parsed events in event bus with single event") {
+    Scenario("should send parsed events in event bus with single event") {
       Post("/technical/mailjet", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
         .withHeaders(Authorization(BasicHttpCredentials("login", "password"))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -177,9 +175,9 @@ class CrmApiTest
     }
   }
 
-  feature("crm synchro") {
+  Feature("crm synchro") {
     when(crmService.synchronizeContactsWithCrm()).thenReturn(Future.successful(JobAcceptance(true)))
-    scenario("admin triggers sync") {
+    Scenario("admin triggers sync") {
       implicit val timeout: RouteTestTimeout = RouteTestTimeout(15.seconds.dilated)
 
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
@@ -188,19 +186,19 @@ class CrmApiTest
         verify(crmService, times(1)).synchronizeContactsWithCrm()
       }
     }
-    scenario("moderator triggers sync") {
+    Scenario("moderator triggers sync") {
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("user triggers sync") {
+    Scenario("user triggers sync") {
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("non connected triggers sync") {
+    Scenario("non connected triggers sync") {
       Post("/technical/crm/synchronize", HttpEntity(ContentTypes.`application/json`, requestSingleEvent)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }

@@ -38,7 +38,6 @@ import org.make.core.idea.{IdeaId, IdeaSearchQuery, IdeaStatus}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.{CirceFormatters, DateHelper}
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
@@ -67,9 +66,9 @@ class IdeaSearchEngineIT
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.ideaAliasName).thenReturn(eSIndexName)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
+  when(elasticsearchConfiguration.ideaAliasName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -172,8 +171,8 @@ class IdeaSearchEngineIT
     Await.result(responseRefreshIdeaFuture, 5.seconds)
   }
 
-  feature("get idea list") {
-    scenario("get idea list ordered by name") {
+  Feature("get idea list") {
+    Scenario("get idea list ordered by name") {
       Given("""a list of idea named "a_idea02", "b_idea03" and "c_idea01" """)
       When("I get idea list ordered by name with an order desc")
       Then("""The result should be "a_idea02", "b_idea03" and "c_idea01" """)

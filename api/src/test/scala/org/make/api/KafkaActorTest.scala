@@ -23,14 +23,10 @@ import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.scalatest._
 
 class KafkaActorTest(kafkaConnection: String, schemaRegistry: String)
     extends TestKit(KafkaActorTest.defaultActorSystem(KafkaActorTest.configuration(kafkaConnection, schemaRegistry)))
-    with FeatureSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
+    with MakeUnitTest
     with ImplicitSender
 
 object KafkaActorTest {

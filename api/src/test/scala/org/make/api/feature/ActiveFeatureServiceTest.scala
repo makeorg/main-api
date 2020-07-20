@@ -24,7 +24,6 @@ import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.feature._
 import org.make.core.question.QuestionId
 import org.make.core.technical.IdGenerator
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -40,16 +39,16 @@ class ActiveFeatureServiceTest
 
   override lazy val idGenerator: IdGenerator = mock[IdGenerator]
 
-  feature("get activeFeature") {
-    scenario("get activeFeature from ActiveFeatureId") {
+  Feature("get activeFeature") {
+    Scenario("get activeFeature from ActiveFeatureId") {
       activeFeatureService.getActiveFeature(ActiveFeatureId("valid-activeFeature"))
 
-      Mockito.verify(persistentActiveFeatureService).get(ActiveFeatureId("valid-activeFeature"))
+      verify(persistentActiveFeatureService).get(ActiveFeatureId("valid-activeFeature"))
     }
   }
 
-  feature("create activeFeature") {
-    scenario("creating a activeFeature success") {
+  Feature("create activeFeature") {
+    Scenario("creating a activeFeature success") {
 
       val activeFeature =
         ActiveFeature(
@@ -58,20 +57,18 @@ class ActiveFeatureServiceTest
           maybeQuestionId = Some(QuestionId("question"))
         )
 
-      Mockito
-        .when(persistentActiveFeatureService.persist(ArgumentMatchers.any[ActiveFeature]))
+      when(persistentActiveFeatureService.persist(any[ActiveFeature]))
         .thenReturn(Future.successful(activeFeature))
 
-      Mockito.when(idGenerator.nextActiveFeatureId()).thenReturn(ActiveFeatureId("new-activeFeature"))
+      when(idGenerator.nextActiveFeatureId()).thenReturn(ActiveFeatureId("new-activeFeature"))
 
       val futureNewActiveFeature: Future[ActiveFeature] =
         activeFeatureService.createActiveFeature(FeatureId("feature"), Some(QuestionId("question")))
 
       whenReady(futureNewActiveFeature, Timeout(3.seconds)) { _ =>
-        Mockito
-          .verify(persistentActiveFeatureService)
+        verify(persistentActiveFeatureService)
           .persist(
-            ArgumentMatchers.eq(
+            eqTo(
               ActiveFeature(
                 activeFeatureId = ActiveFeatureId("new-activeFeature"),
                 featureId = FeatureId("feature"),
@@ -83,9 +80,9 @@ class ActiveFeatureServiceTest
     }
   }
 
-  feature("find activeFeatures") {
+  Feature("find activeFeatures") {
 
-    scenario("find activeFeatures by featureId") {
+    Scenario("find activeFeatures by featureId") {
       val activeFeature1 =
         ActiveFeature(
           activeFeatureId = ActiveFeatureId("find-activeFeature-1"),
@@ -98,18 +95,16 @@ class ActiveFeatureServiceTest
           featureId = FeatureId("feature"),
           maybeQuestionId = None
         )
-      Mockito.reset(persistentActiveFeatureService)
-      Mockito
-        .when(
-          persistentActiveFeatureService.find(
-            ArgumentMatchers.any[Int],
-            ArgumentMatchers.any[Option[Int]],
-            ArgumentMatchers.any[Option[String]],
-            ArgumentMatchers.any[Option[String]],
-            ArgumentMatchers.eq(Some(QuestionId("find-activeFeature-1")))
-          )
+      reset(persistentActiveFeatureService)
+      when(
+        persistentActiveFeatureService.find(
+          any[Int],
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[String]],
+          eqTo(Some(QuestionId("find-activeFeature-1")))
         )
-        .thenReturn(Future.successful(Seq(activeFeature1)))
+      ).thenReturn(Future.successful(Seq(activeFeature1)))
 
       val futureActiveFeatures = activeFeatureService.find(maybeQuestionId = Some(QuestionId("find-activeFeature-1")))
 

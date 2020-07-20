@@ -43,8 +43,8 @@ class AvroHealthCheckActorIT
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  feature("Check Avro status") {
-    scenario("get all subjects") {
+  Feature("Check Avro status") {
+    Scenario("get all subjects") {
       val schemaRegistryUrl: String = system.settings.config.getString("make-api.kafka.schema-registry")
       val restService = new RestService(schemaRegistryUrl)
       restService.registerSchema("{\"type\": \"string\"}", "test-schema")

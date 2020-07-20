@@ -23,7 +23,6 @@ import org.make.api.MakeUnitTest
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.{FeaturedOperation, FeaturedOperationId}
 import org.make.core.technical.IdGenerator
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -55,11 +54,10 @@ class FeaturedOperationServiceTest
     slot = 1
   )
 
-  feature("create featured operation") {
-    scenario("creation") {
-      Mockito.when(idGenerator.nextFeaturedOperationId()).thenReturn(FeaturedOperationId("featured-operation-id"))
-      Mockito
-        .when(persistentFeaturedOperationService.persist(featuredOperation))
+  Feature("create featured operation") {
+    Scenario("creation") {
+      when(idGenerator.nextFeaturedOperationId()).thenReturn(FeaturedOperationId("featured-operation-id"))
+      when(persistentFeaturedOperationService.persist(featuredOperation))
         .thenReturn(Future.successful(featuredOperation))
 
       whenReady(
@@ -85,10 +83,9 @@ class FeaturedOperationServiceTest
     }
   }
 
-  feature("update featured operation") {
-    scenario("update when featured operation is not found") {
-      Mockito
-        .when(persistentFeaturedOperationService.getById(FeaturedOperationId("not-found")))
+  Feature("update featured operation") {
+    Scenario("update when featured operation is not found") {
+      when(persistentFeaturedOperationService.getById(FeaturedOperationId("not-found")))
         .thenReturn(Future.successful(None))
 
       whenReady(
@@ -114,15 +111,13 @@ class FeaturedOperationServiceTest
       }
     }
 
-    scenario("update when featured operation is found") {
+    Scenario("update when featured operation is found") {
 
       val updatedFeaturedOperation: FeaturedOperation = featuredOperation.copy(title = "updated title")
 
-      Mockito
-        .when(persistentFeaturedOperationService.getById(FeaturedOperationId("featured-operation-id")))
+      when(persistentFeaturedOperationService.getById(FeaturedOperationId("featured-operation-id")))
         .thenReturn(Future.successful(Some(featuredOperation)))
-      Mockito
-        .when(persistentFeaturedOperationService.modify(updatedFeaturedOperation))
+      when(persistentFeaturedOperationService.modify(updatedFeaturedOperation))
         .thenReturn(Future.successful(updatedFeaturedOperation))
 
       whenReady(
@@ -149,27 +144,23 @@ class FeaturedOperationServiceTest
     }
   }
 
-  feature("delete featured operation") {
-    scenario("delete featured operation") {
+  Feature("delete featured operation") {
+    Scenario("delete featured operation") {
       val featuredOperation1 = featuredOperation
       val featuredOperation3 =
         featuredOperation.copy(featuredOperationId = FeaturedOperationId("ope-3"), title = "title 3", slot = 3)
 
-      Mockito
-        .when(persistentFeaturedOperationService.delete(FeaturedOperationId("to-delete")))
+      when(persistentFeaturedOperationService.delete(FeaturedOperationId("to-delete")))
         .thenReturn(Future.successful({}))
 
-      Mockito
-        .when(persistentFeaturedOperationService.getAll)
+      when(persistentFeaturedOperationService.getAll)
         .thenReturn(Future.successful(Seq(featuredOperation1, featuredOperation3)))
 
       whenReady(featuredOperationService.delete(FeaturedOperationId("to-delete")), Timeout(2.seconds)) { _ =>
-        Mockito
-          .verify(persistentFeaturedOperationService)
+        verify(persistentFeaturedOperationService)
           .modify(featuredOperation1)
 
-        Mockito
-          .verify(persistentFeaturedOperationService)
+        verify(persistentFeaturedOperationService)
           .modify(featuredOperation3.copy(slot = 2))
       }
 

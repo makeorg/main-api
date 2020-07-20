@@ -20,26 +20,23 @@
 package org.make.core
 import java.time.LocalDate
 
-import org.scalatest.Matchers._
-import org.scalatest.{FeatureSpec, _}
-
-class ValidationTest extends FeatureSpec {
-  feature("email validation") {
+class ValidationTest extends MakeUnitTest {
+  Feature("email validation") {
     val fieldName = "email"
 
-    scenario("valid email") {
+    Scenario("valid email") {
       val emailValue = "yopmail@make.org"
       def validation(): Unit = Validation.validate(Validation.validateEmail(fieldName, emailValue))
 
-      Matchers.noException should be thrownBy validation()
+      noException should be thrownBy validation()
     }
-    scenario("invalid email") {
+    Scenario("invalid email") {
       val emailValue = "invalid"
       def validation(): Unit = Validation.validate(Validation.validateEmail(fieldName, emailValue))
 
       an[ValidationFailedError] should be thrownBy validation()
     }
-    scenario("invalid email with space") {
+    Scenario("invalid email with space") {
       val emailValue = "invalid yopmail@make.org"
       def validation(): Unit = Validation.validate(Validation.validateEmail(fieldName, emailValue))
 
@@ -47,52 +44,52 @@ class ValidationTest extends FeatureSpec {
     }
   }
 
-  feature("user input validation") {
+  Feature("user input validation") {
     val fieldName = "userInput"
 
-    scenario("valid input") {
+    Scenario("valid input") {
       val inputValue = "valid input"
       def validation(): Unit = Validation.validate(Validation.validateUserInput(fieldName, inputValue, None))
 
-      Matchers.noException should be thrownBy validation()
+      noException should be thrownBy validation()
     }
 
-    scenario("invalid input") {
+    Scenario("invalid input") {
       val inputValue = "<a>invalid input</a>"
       def validation(): Unit = Validation.validate(Validation.validateUserInput(fieldName, inputValue, None))
 
       a[ValidationFailedError] should be thrownBy validation()
     }
 
-    scenario("valid input with < / >") {
+    Scenario("valid input with < / >") {
       val inputValue = "< & >"
       def validation(): Unit = Validation.validate(Validation.validateUserInput(fieldName, inputValue, None))
 
-      Matchers.noException should be thrownBy validation()
+      noException should be thrownBy validation()
     }
   }
 
-  feature("age validation") {
+  Feature("age validation") {
     val fieldName = "dateOfBirth"
 
-    scenario("valid datesOfBirth") {
+    Scenario("valid datesOfBirth") {
       val aged13 = LocalDate.now.minusYears(13)
       def validation13(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged13)))
-      Matchers.noException should be thrownBy validation13()
+      noException should be thrownBy validation13()
 
       val aged14 = LocalDate.now.minusYears(14)
       def validation14(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged14)))
-      Matchers.noException should be thrownBy validation14()
+      noException should be thrownBy validation14()
 
       val aged119 = LocalDate.now.minusYears(119)
       def validation119(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged119)))
-      Matchers.noException should be thrownBy validation119()
+      noException should be thrownBy validation119()
 
       def validationNone(): Unit = Validation.validate(Validation.validateAge(fieldName, None))
-      Matchers.noException should be thrownBy validationNone()
+      noException should be thrownBy validationNone()
     }
 
-    scenario("invalid datesOfBirth") {
+    Scenario("invalid datesOfBirth") {
       val aged7 = LocalDate.now.minusYears(7)
       def validation7(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged7)))
       an[ValidationFailedError] should be thrownBy validation7()
@@ -108,33 +105,33 @@ class ValidationTest extends FeatureSpec {
 
   }
 
-  feature("legal consent validation") {
+  Feature("legal consent validation") {
     val fieldName = "legal"
 
-    scenario("valid") {
+    Scenario("valid") {
       val aged14 = LocalDate.now.minusYears(14)
       def validation14(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged14, Some(true)))
-      Matchers.noException should be thrownBy validation14()
+      noException should be thrownBy validation14()
 
       val aged15 = LocalDate.now.minusYears(15)
       def validation15(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged15, None))
-      Matchers.noException should be thrownBy validation15()
+      noException should be thrownBy validation15()
 
       val aged120 = LocalDate.now.minusYears(120)
       def validation120(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged120, Some(true)))
-      Matchers.noException should be thrownBy validation120()
+      noException should be thrownBy validation120()
 
       val agedReallyOld = LocalDate.now.minusYears(10000)
       def validationReallyOld(): Unit =
         Validation.validate(Validation.validateLegalConsent(fieldName, agedReallyOld, None))
-      Matchers.noException should be thrownBy validationReallyOld()
+      noException should be thrownBy validationReallyOld()
 
       val aged8 = LocalDate.now.minusYears(8)
       def validation8(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged8, Some(true)))
-      Matchers.noException should be thrownBy validation8()
+      noException should be thrownBy validation8()
     }
 
-    scenario("invalid") {
+    Scenario("invalid") {
       val aged7 = LocalDate.now.minusYears(7)
       def validation7(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged7, Some(true)))
       an[ValidationFailedError] should be thrownBy validation7()
@@ -160,15 +157,15 @@ class ValidationTest extends FeatureSpec {
 
   }
 
-  feature("color validation") {
+  Feature("color validation") {
     val fieldName = "colorInput"
-    scenario("valid color") {
+    Scenario("valid color") {
       val color = "#424242"
       def validation(): Unit = Validation.validate(Validation.validateColor(fieldName, color, None))
-      Matchers.noException should be thrownBy validation()
+      noException should be thrownBy validation()
     }
 
-    scenario("invalid color") {
+    Scenario("invalid color") {
       val color1 = "red"
       def validation1(): Unit = Validation.validate(Validation.validateColor(fieldName, color1, None))
       an[ValidationFailedError] should be thrownBy validation1()

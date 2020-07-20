@@ -25,8 +25,6 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.user.{CustomRole, UserId}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -36,7 +34,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
 
   val routes: Route = sealRoute(adminClientApi.routes)
 
-  feature("create a client") {
+  Feature("create a client") {
     val validClient = Client(
       clientId = ClientId("apiclient"),
       name = "client",
@@ -52,39 +50,39 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     when(
       clientService
         .createClient(
-          name = ArgumentMatchers.eq("client"),
-          allowedGrantTypes = ArgumentMatchers.eq(Seq("grant_type")),
-          secret = ArgumentMatchers.eq(Some("secret")),
-          scope = ArgumentMatchers.eq(Some("scope")),
-          redirectUri = ArgumentMatchers.eq(Some("http://redirect-uri.com")),
-          defaultUserId = ArgumentMatchers.eq(Some(UserId("123456-12345"))),
-          roles = ArgumentMatchers.eq(Seq(CustomRole("role_custom"), CustomRole("role_default"))),
-          tokenExpirationSeconds = ArgumentMatchers.eq(300)
+          name = eqTo("client"),
+          allowedGrantTypes = eqTo(Seq("grant_type")),
+          secret = eqTo(Some("secret")),
+          scope = eqTo(Some("scope")),
+          redirectUri = eqTo(Some("http://redirect-uri.com")),
+          defaultUserId = eqTo(Some(UserId("123456-12345"))),
+          roles = eqTo(Seq(CustomRole("role_custom"), CustomRole("role_default"))),
+          tokenExpirationSeconds = eqTo(300)
         )
     ).thenReturn(Future.successful(validClient))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Post("/admin/clients") ~>
         routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Post("/admin/clients")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Post("/admin/clients")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allow authenticated admin") {
+    Scenario("allow authenticated admin") {
       Post("/admin/clients")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
               |  "name" : "client",
@@ -102,7 +100,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     }
   }
 
-  feature("get a client") {
+  Feature("get a client") {
     val client = Client(
       clientId = ClientId("apiclient"),
       name = "client",
@@ -115,30 +113,30 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       tokenExpirationSeconds = 300
     )
 
-    when(clientService.getClient(ArgumentMatchers.eq(client.clientId)))
+    when(clientService.getClient(eqTo(client.clientId)))
       .thenReturn(Future.successful(Some(client)))
-    when(clientService.getClient(ArgumentMatchers.eq(ClientId("fake-client"))))
+    when(clientService.getClient(eqTo(ClientId("fake-client"))))
       .thenReturn(Future.successful(None))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Get("/admin/clients/apiclient") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Get("/admin/clients/apiclient").withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Get("/admin/clients/apiclient").withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allow authenticated admin on existing oauth client") {
+    Scenario("allow authenticated admin on existing oauth client") {
       Get("/admin/clients/apiclient")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -148,7 +146,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       }
     }
 
-    scenario("not found and allow authenticated admin on a non existing oauth client") {
+    Scenario("not found and allow authenticated admin on a non existing oauth client") {
       Get("/admin/clients/fake-client")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
@@ -156,7 +154,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
     }
   }
 
-  feature("update a client") {
+  Feature("update a client") {
     val client = Client(
       clientId = ClientId("apiclient"),
       name = "client",
@@ -180,56 +178,56 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       tokenExpirationSeconds = 300
     )
 
-    when(clientService.getClient(ArgumentMatchers.eq(client.clientId)))
+    when(clientService.getClient(eqTo(client.clientId)))
       .thenReturn(Future.successful(Some(client)))
     when(
       clientService.updateClient(
-        ArgumentMatchers.eq(ClientId("apiclient")),
-        ArgumentMatchers.eq("updated client"),
-        ArgumentMatchers.eq(Seq("first_grant_type", "second_grant_type")),
-        ArgumentMatchers.eq(Some("secret")),
-        ArgumentMatchers.eq(None),
-        ArgumentMatchers.eq(None),
-        ArgumentMatchers.eq(None),
-        ArgumentMatchers.eq(Seq.empty),
-        ArgumentMatchers.eq(300)
+        eqTo(ClientId("apiclient")),
+        eqTo("updated client"),
+        eqTo(Seq("first_grant_type", "second_grant_type")),
+        eqTo(Some("secret")),
+        eqTo(None),
+        eqTo(None),
+        eqTo(None),
+        eqTo(Seq.empty),
+        eqTo(300)
       )
     ).thenReturn(Future.successful(Some(updatedClient)))
     when(
       clientService.updateClient(
-        ArgumentMatchers.eq(ClientId("fake-client")),
-        ArgumentMatchers.any[String],
-        ArgumentMatchers.any[Seq[String]],
-        ArgumentMatchers.any[Option[String]],
-        ArgumentMatchers.any[Option[String]],
-        ArgumentMatchers.any[Option[String]],
-        ArgumentMatchers.any[Option[UserId]],
-        ArgumentMatchers.any[Seq[CustomRole]],
-        ArgumentMatchers.any[Int]
+        eqTo(ClientId("fake-client")),
+        any[String],
+        any[Seq[String]],
+        any[Option[String]],
+        any[Option[String]],
+        any[Option[String]],
+        any[Option[UserId]],
+        any[Seq[CustomRole]],
+        any[Int]
       )
     ).thenReturn(Future.successful(None))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Put("/admin/clients/apiclient") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Put("/admin/clients/apiclient")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Put("/admin/clients/apiclient")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allow authenticated admin on existing oauth client") {
+    Scenario("allow authenticated admin on existing oauth client") {
       Put("/admin/clients/apiclient")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{
@@ -251,7 +249,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
       }
     }
 
-    scenario("not found and allow authenticated admin on a non existing oauth client") {
+    Scenario("not found and allow authenticated admin on a non existing oauth client") {
       Put("/admin/clients/fake-client")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{

@@ -57,8 +57,8 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
     accountType = Some("USER")
   )
 
-  feature("persist crm users") {
-    scenario("persist a user") {
+  Feature("persist crm users") {
+    Scenario("persist a user") {
 
       whenReady(persistentCrmUserService.persist(Seq(defaultUser)), Timeout(5.seconds)) { _ =>
         ()
@@ -75,8 +75,8 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
     }
   }
 
-  feature("truncate table") {
-    scenario("truncate table") {
+  Feature("truncate table") {
+    Scenario("truncate table") {
 
       whenReady(persistentCrmUserService.persist(Seq(defaultUser.copy(userId = "truncate table"))), Timeout(5.seconds)) {
         _ =>
@@ -107,8 +107,8 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
     }
   }
 
-  feature("list users") {
-    scenario("list users") {
+  Feature("list users") {
+    Scenario("list users") {
 
       val insertUsers =
         persistentCrmUserService.persist(

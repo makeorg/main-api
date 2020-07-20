@@ -40,8 +40,6 @@ import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -66,23 +64,22 @@ class ProposalApiTest
   override val securityConfiguration: SecurityConfiguration = mock[SecurityConfiguration]
   override val sortAlgorithmConfiguration: SortAlgorithmConfiguration = mock[SortAlgorithmConfiguration]
 
-  when(questionService.findQuestion(any[Option[OperationId]], any[Country], any[Language]))
-    .thenAnswer(
-      invocation =>
-        Future.successful(
-          Some(
-            Question(
-              QuestionId("my-question"),
-              slug = "my-question",
-              country = invocation.getArgument[Country](2),
-              language = invocation.getArgument[Language](3),
-              question = "my question",
-              shortTitle = None,
-              operationId = invocation.getArgument[Option[OperationId]](1)
-            )
+  when(questionService.findQuestion(any[Option[OperationId]], any[Country], any[Language])).thenAnswer {
+    (operationId: Option[OperationId], country: Country, language: Language) =>
+      Future.successful(
+        Some(
+          Question(
+            QuestionId("my-question"),
+            slug = "my-question",
+            country = country,
+            language = language,
+            question = "my question",
+            shortTitle = None,
+            operationId = operationId
           )
         )
-    )
+      )
+  }
 
   when(questionService.getQuestion(any[QuestionId])).thenReturn(
     Future.successful(
@@ -137,14 +134,7 @@ class ProposalApiTest
 
   when(
     proposalService
-      .propose(
-        any[User],
-        any[RequestContext],
-        any[ZonedDateTime],
-        matches(validProposalText),
-        any[Question],
-        any[Boolean]
-      )
+      .propose(any[User], any[RequestContext], any[ZonedDateTime], eqTo(validProposalText), any[Question], any[Boolean])
   ).thenReturn(Future.successful(ProposalId("my-proposal-id")))
 
   val proposalResult: ProposalResponse = ProposalResponse(
@@ -203,11 +193,11 @@ class ProposalApiTest
 
   when(
     questionService
-      .getQuestion(matches(QuestionId("not-found")))
+      .getQuestion(eqTo(QuestionId("not-found")))
   ).thenReturn(Future.successful(None))
 
-  feature("proposing") {
-    scenario("unauthenticated proposal") {
+  Feature("proposing") {
+    Scenario("unauthenticated proposal") {
       Given("an un authenticated user")
       When("the user wants to propose")
       Then("he should get an unauthorized (401) return code")
@@ -216,7 +206,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("authenticated proposal") {
+    Scenario("authenticated proposal") {
       Given("an authenticated user")
       When("the user wants to propose")
       Then("the proposal should be saved if valid")
@@ -233,7 +223,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("invalid proposal due to max length") {
+    Scenario("invalid proposal due to max length") {
       Given("an authenticated user")
       When("the user wants to propose a long proposal")
       Then("the proposal should be rejected if invalid")
@@ -255,7 +245,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("invalid proposal due to min length") {
+    Scenario("invalid proposal due to min length") {
       Given("an authenticated user")
       When("the user wants to propose a short proposal")
       Then("the proposal should be rejected if invalid")
@@ -277,7 +267,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("invalid proposal with question not found") {
+    Scenario("invalid proposal with question not found") {
       Given("an authenticated user")
       And("a question not found")
       When("the user want to propose")
@@ -299,7 +289,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("invalid proposal without language") {
+    Scenario("invalid proposal without language") {
       Given("an authenticated user")
       And("an empty language")
       When("the user want to propose without language")
@@ -321,7 +311,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("invalid proposal without country") {
+    Scenario("invalid proposal without country") {
       Given("an authenticated user")
       And("an empty country")
       When("the user want to propose without country")
@@ -341,7 +331,7 @@ class ProposalApiTest
       }
     }
 
-    scenario("valid proposal with question, language and country") {
+    Scenario("valid proposal with question, language and country") {
       Given("an authenticated user")
       And("a valid operationId")
       When("the user want to propose in an operation context")

@@ -25,8 +25,6 @@ import org.make.core.DateHelper
 import org.make.core.idea.indexed.IdeaSearchResult
 import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery}
 import org.make.core.reference.Language
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -44,14 +42,13 @@ class IdeaServiceTest
   override val persistentIdeaService: PersistentIdeaService = mock[PersistentIdeaService]
   override val elasticsearchIdeaAPI: IdeaSearchEngine = mock[IdeaSearchEngine]
 
-  feature("fetch all ideas") {
-    scenario("get all ideas") {
+  Feature("fetch all ideas") {
+    Scenario("get all ideas") {
       Given("a list of idea")
       When("fetch this list")
       Then("Elastic search idea Api will be callend")
 
-      Mockito
-        .when(elasticsearchIdeaAPI.searchIdeas(any[IdeaSearchQuery]))
+      when(elasticsearchIdeaAPI.searchIdeas(any[IdeaSearchQuery]))
         .thenReturn(Future.successful(IdeaSearchResult.empty))
 
       val futureIdeas =
@@ -65,8 +62,8 @@ class IdeaServiceTest
     }
   }
 
-  feature("fetch one idea") {
-    scenario("get on idea") {
+  Feature("fetch one idea") {
+    Scenario("get on idea") {
       Given("an idea")
       When("i fetch the idea")
       Then("Persistent Idea service will be called")
@@ -74,8 +71,7 @@ class IdeaServiceTest
       val persistentIdea =
         Idea(IdeaId("foo-idea"), "fooIdea", createdAt = Some(DateHelper.now()), updatedAt = Some(DateHelper.now()))
 
-      Mockito
-        .when(persistentIdeaService.findOne(any[IdeaId]))
+      when(persistentIdeaService.findOne(any[IdeaId]))
         .thenReturn(Future.successful(Some(persistentIdea)))
 
       val futureIdea = ideaService.fetchOne(IdeaId("foo-idea"))

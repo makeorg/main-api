@@ -38,6 +38,7 @@ object Dependencies {
   val kanelaVersion: String = "1.0.4"
   val swaggerUiVersion: String = "3.20.9"
   private val refinedVersion: String = "0.9.12"
+  private val staminaVersion: String = "0.1.5+1-74109b8e"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % "2.11.0"
@@ -120,27 +121,29 @@ object Dependencies {
   val elastic4sAkka: ModuleID = "com.sksamuel.elastic4s"  %% "elastic4s-akka"  % elastic4sVersion
   val elastic4sCirce: ModuleID = "com.sksamuel.elastic4s" %% "elastic4s-circe" % elastic4sVersion
 
-  val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % "0.1.5"
+  val stamina: ModuleID = "com.scalapenos"    %% "stamina-json" % staminaVersion
   val sprayJson: ModuleID = "io.spray"        %% "spray-json"   % "1.3.5"
   val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"
   val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.14.0"
 
   // Test related dependencies
-  val akkaTest: ModuleID = "com.typesafe.akka"       %% "akka-testkit"             % akkaVersion     % "it,test"
-  val akkaStreamTest: ModuleID = "com.typesafe.akka" %% "akka-stream-testkit"      % akkaVersion     % "it,test"
-  val scalaTest: ModuleID = "org.scalatest"          %% "scalatest"                % "3.0.8"         % "it,test"
-  val akkaHttpTest: ModuleID = "com.typesafe.akka"   %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"              % "mockito-core"              % "2.24.5"        % "it,test"
-  val dockerScalatest: ModuleID = "com.whisk"        %% "docker-testkit-scalatest" % "0.9.9"         % "it"
+  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion     % "it,test"
+  val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion     % "it,test"
+  val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.1.2"         % "it,test"
+  val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-14"          % "3.1.2.0"       % "it,test"
+  val akkaHttpTest: ModuleID = "com.typesafe.akka"        %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
+  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % "1.14.8"        % "it,test"
+  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % "1.14.8"        % "it,test"
+  val dockerScalatest: ModuleID = "com.whisk"             %% "docker-testkit-scalatest" % "0.9.9"         % "it"
   val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9" % "it")
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-transport-native-epoll")
 
   // Needed to use the client....
-  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"     % "it"
-  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"     % "it"
-  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2" % "it,test"
-  val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % "0.1.5"    % "test"
+  val jerseyServer: ModuleID = "org.glassfish.jersey.core"      % "jersey-server"              % "2.26"         % "it"
+  val jerseyHk2: ModuleID = "org.glassfish.jersey.inject"       % "jersey-hk2"                 % "2.26"         % "it"
+  val akkaPersistenceInMemory: ModuleID = "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"     % "it,test"
+  val staminaTestKit: ModuleID = "com.scalapenos"               %% "stamina-testkit"           % staminaVersion % "test"
 
   // apache math
   val apacheMath: ModuleID = "org.apache.commons" % "commons-math3" % "3.6.1"

@@ -31,11 +31,11 @@ import scala.concurrent.duration.DurationInt
 class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceComponent with ActorSystemComponent {
   override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
 
-  feature("download image") {
+  Feature("download image") {
     def destFn(contentType: ContentType): File =
       Files.createTempFile("tmp", s".${contentType.mediaType.subType}").toFile
 
-    scenario("correct image url") {
+    Scenario("correct image url") {
       val imageUrl = "https://via.placeholder.com/150"
       val futureImage = downloadService.downloadImage(imageUrl, destFn)
       whenReady(futureImage, Timeout(3.seconds)) {
@@ -44,7 +44,7 @@ class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceCompon
       }
     }
 
-    scenario("not an image") {
+    Scenario("not an image") {
       val imageUrl = "https://google.com"
       val futureImage = downloadService.downloadImage(imageUrl, destFn)
 
@@ -58,7 +58,7 @@ class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceCompon
 
     }
 
-    scenario("URL not found") {
+    Scenario("URL not found") {
       val imageUrl = "https://api.make.org/404"
       val futureImage = downloadService.downloadImage(imageUrl, destFn)
 
@@ -72,7 +72,7 @@ class DownloadServiceTest extends MakeUnitTest with DefaultDownloadServiceCompon
 
     }
 
-    scenario("empty URL") {
+    Scenario("empty URL") {
       val imageUrl = ""
       val futureImage = downloadService.downloadImage(imageUrl, destFn)
 

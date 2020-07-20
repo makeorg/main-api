@@ -22,7 +22,6 @@ package org.make.api.tagtype
 import org.make.api.MakeUnitTest
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.tag._
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -36,18 +35,17 @@ class TagTypeServiceTest
 
   override val persistentTagTypeService: PersistentTagTypeService = mock[PersistentTagTypeService]
 
-  feature("get tagType") {
-    scenario("get tagType from TagTypeId") {
+  Feature("get tagType") {
+    Scenario("get tagType from TagTypeId") {
       tagTypeService.getTagType(TagTypeId("valid-tagType"))
 
-      Mockito.verify(persistentTagTypeService).get(TagTypeId("valid-tagType"))
+      verify(persistentTagTypeService).get(TagTypeId("valid-tagType"))
     }
   }
 
-  feature("create tagType") {
-    scenario("creating a tagType success") {
-      Mockito
-        .when(persistentTagTypeService.get(ArgumentMatchers.any[TagTypeId]))
+  Feature("create tagType") {
+    Scenario("creating a tagType success") {
+      when(persistentTagTypeService.get(any[TagTypeId]))
         .thenReturn(Future.successful(None))
 
       val tagType =
@@ -58,30 +56,29 @@ class TagTypeServiceTest
           requiredForEnrichment = false
         )
 
-      Mockito
-        .when(persistentTagTypeService.persist(ArgumentMatchers.any[TagType]))
+      when(persistentTagTypeService.persist(any[TagType]))
         .thenReturn(Future.successful(tagType))
 
       val futureNewTagType: Future[TagType] =
         tagTypeService.createTagType("new tagType", TagTypeDisplay.Displayed, 0, requiredForEnrichment = false)
 
       whenReady(futureNewTagType, Timeout(3.seconds)) { _ =>
-        Mockito.verify(persistentTagTypeService).persist(ArgumentMatchers.any[TagType])
+        verify(persistentTagTypeService).persist(any[TagType])
       }
     }
   }
 
-  feature("find tagTypes") {
-    scenario("find all tagTypes") {
+  Feature("find tagTypes") {
+    Scenario("find all tagTypes") {
       tagTypeService.findAll()
 
-      Mockito.verify(persistentTagTypeService).findAll(ArgumentMatchers.eq(None))
+      verify(persistentTagTypeService).findAll(eqTo(None))
 
       tagTypeService.findAll(Some(true))
-      Mockito.verify(persistentTagTypeService).findAll(ArgumentMatchers.eq(Some(true)))
+      verify(persistentTagTypeService).findAll(eqTo(Some(true)))
     }
 
-    scenario("find tagTypes with ids 'find-tagType1' and 'find-tagType2'") {
+    Scenario("find tagTypes with ids 'find-tagType1' and 'find-tagType2'") {
       val tagType1 =
         TagType(
           tagTypeId = TagTypeId("find-tatType-1"),
@@ -96,9 +93,8 @@ class TagTypeServiceTest
           display = TagTypeDisplay.Displayed,
           requiredForEnrichment = false
         )
-      Mockito.reset(persistentTagTypeService)
-      Mockito
-        .when(persistentTagTypeService.findAllFromIds(ArgumentMatchers.any[Seq[TagTypeId]]))
+      reset(persistentTagTypeService)
+      when(persistentTagTypeService.findAllFromIds(any[Seq[TagTypeId]]))
         .thenReturn(Future.successful(Seq(tagType1, tagType2)))
 
       val futureTagTypes: Future[Seq[TagType]] =
@@ -112,17 +108,15 @@ class TagTypeServiceTest
     }
   }
 
-  feature("update a tagType") {
-    scenario("update a tagType") {
+  Feature("update a tagType") {
+    Scenario("update a tagType") {
       val oldTagType =
         TagType(TagTypeId("1234567890"), "old TagType", TagTypeDisplay.Hidden, requiredForEnrichment = false)
       val newTagType =
         TagType(TagTypeId("1234567890"), "new TagType", TagTypeDisplay.Displayed, requiredForEnrichment = true)
-      Mockito
-        .when(persistentTagTypeService.get(TagTypeId("1234567890")))
+      when(persistentTagTypeService.get(TagTypeId("1234567890")))
         .thenReturn(Future.successful(Some(oldTagType)))
-      Mockito
-        .when(persistentTagTypeService.update(ArgumentMatchers.any[TagType]))
+      when(persistentTagTypeService.update(any[TagType]))
         .thenReturn(Future.successful(Some(newTagType)))
 
       val futureTagType: Future[Option[TagType]] = tagTypeService.updateTagType(
@@ -138,8 +132,8 @@ class TagTypeServiceTest
       }
     }
 
-    scenario("update an non existent tagType ") {
-      Mockito.when(persistentTagTypeService.get(TagTypeId("non-existent-tagType"))).thenReturn(Future.successful(None))
+    Scenario("update an non existent tagType ") {
+      when(persistentTagTypeService.get(TagTypeId("non-existent-tagType"))).thenReturn(Future.successful(None))
 
       val futureTagType: Future[Option[TagType]] = tagTypeService.updateTagType(
         tagTypeId = TagTypeId("non-existent-tagType"),

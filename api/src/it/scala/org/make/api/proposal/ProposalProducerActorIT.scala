@@ -38,8 +38,8 @@ class ProposalProducerActorIT
     with ImplicitSender
     with AvroSerializers {
 
-  feature("Proposal producer") {
-    scenario("send wrapped event into kafka") {
+  Feature("Proposal producer") {
+    Scenario("send wrapped event into kafka") {
       Given("a producer on the proposal topic and a consumer on the same topic")
       val actorSystem = system
       val producer: ActorRef = actorSystem.actorOf(ProposalProducerActor.props, ProposalProducerActor.name)

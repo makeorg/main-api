@@ -30,8 +30,6 @@ import org.make.api.technical.IdGeneratorComponent
 import org.make.core.ValidationError
 import org.make.core.operation._
 import org.make.core.question.QuestionId
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -44,46 +42,45 @@ class DefaultAdminOperationOfQuestionApiComponentTest
 
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
 
-  when(operationOfQuestionService.findByQuestionId(any[QuestionId])).thenAnswer { invocation =>
-    val questionId = invocation.getArgument[QuestionId](0)
+  when(operationOfQuestionService.findByQuestionId(any[QuestionId])).thenAnswer { questionId: QuestionId =>
     Future.successful(Some(operationOfQuestion(questionId = questionId, operationId = OperationId("some-operation"))))
   }
 
-  when(operationOfQuestionService.update(any[OperationOfQuestion])).thenAnswer { invocation =>
-    Future.successful(invocation.getArgument[OperationOfQuestion](0))
+  when(operationOfQuestionService.update(any[OperationOfQuestion])).thenAnswer { ooq: OperationOfQuestion =>
+    Future.successful(ooq)
   }
 
   val routes: Route = sealRoute(adminOperationOfQuestionApi.routes)
 
-  feature("update highlights") {
-    scenario("unauthenticated user") {
+  Feature("update highlights") {
+    Scenario("unauthenticated user") {
       Put("/admin/questions/some-question/highlights") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("invalid token") {
+    Scenario("invalid token") {
       Put("/admin/questions/some-question/highlights")
         .withHeaders(Authorization(OAuth2BearerToken("invalid-token"))) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("citizen user") {
+    Scenario("citizen user") {
       Put("/admin/questions/some-question/highlights")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("moderator user") {
+    Scenario("moderator user") {
       Put("/admin/questions/some-question/highlights")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("update highlights as admin") {
+    Scenario("update highlights as admin") {
       Put("/admin/questions/some-question/highlights")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
@@ -95,7 +92,7 @@ class DefaultAdminOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("update with negative int") {
+    Scenario("update with negative int") {
       Put("/admin/questions/some-question/highlights")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{

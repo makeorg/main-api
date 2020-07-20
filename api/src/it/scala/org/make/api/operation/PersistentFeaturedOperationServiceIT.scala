@@ -47,8 +47,8 @@ class PersistentFeaturedOperationServiceIT
     slot = 1
   )
 
-  feature("get by id") {
-    scenario("get existing featured operation") {
+  Feature("get by id") {
+    Scenario("get existing featured operation") {
       val futureFeaturedOperation: Future[Option[FeaturedOperation]] =
         for {
           _                 <- persistentFeaturedOperationService.persist(featuredOperation)
@@ -60,7 +60,7 @@ class PersistentFeaturedOperationServiceIT
       }
     }
 
-    scenario("get non existing featured operation") {
+    Scenario("get non existing featured operation") {
       whenReady(persistentFeaturedOperationService.getById(FeaturedOperationId("not-found")), Timeout(2.seconds)) {
         featuredOperation =>
           featuredOperation should be(None)
@@ -68,8 +68,8 @@ class PersistentFeaturedOperationServiceIT
     }
   }
 
-  feature("search featured operation") {
-    scenario("search all") {
+  Feature("search featured operation") {
+    Scenario("search all") {
       val futureFeaturedOperations: Future[Seq[FeaturedOperation]] =
         for {
           _ <- persistentFeaturedOperationService.persist(
@@ -88,8 +88,8 @@ class PersistentFeaturedOperationServiceIT
     }
   }
 
-  feature("update featured operation") {
-    scenario("update existing featured operation") {
+  Feature("update featured operation") {
+    Scenario("update existing featured operation") {
       val updatedFeaturedOperation =
         featuredOperation.copy(title = "updated title")
 

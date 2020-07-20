@@ -33,37 +33,37 @@ import org.make.core.AvroSerializers
 
 class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with StrictLogging {
 
-  feature("avro schemas") {
+  Feature("avro schemas") {
 
-    scenario("check avro compatibility for SendEmail") {
+    Scenario("check avro compatibility for SendEmail") {
       val currentSchema: Schema = SendEmail.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "SendEmail")
     }
-    scenario("check avro compatibility for UserEventWrapper") {
+    Scenario("check avro compatibility for UserEventWrapper") {
       val currentSchema: Schema = UserEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "UserEventWrapper")
     }
-    scenario("check avro compatibility for ProposalEventWrapper") {
+    Scenario("check avro compatibility for ProposalEventWrapper") {
       val currentSchema: Schema = ProposalEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "ProposalEventWrapper")
     }
-    scenario("check avro compatibility for MailJetEventWrapper") {
+    Scenario("check avro compatibility for MailJetEventWrapper") {
       val currentSchema: Schema = MailJetEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "MailJetEventWrapper")
     }
-    scenario("check avro compatibility for TrackingEventWrapper") {
+    Scenario("check avro compatibility for TrackingEventWrapper") {
       val currentSchema: Schema = TrackingEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "TrackingEventWrapper")
     }
-    scenario("check avro compatibility for PredictionsEventWrapper") {
+    Scenario("check avro compatibility for PredictionsEventWrapper") {
       val currentSchema: Schema = PredictionsEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "PredictionsEventWrapper")
     }
-    scenario("check avro compatibility for IdeaEventWrapper") {
+    Scenario("check avro compatibility for IdeaEventWrapper") {
       val currentSchema: Schema = IdeaEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "IdeaEventWrapper")
     }
-    scenario("check avro compatibility for PredictDuplicateEventWrapper") {
+    Scenario("check avro compatibility for PredictDuplicateEventWrapper") {
       val currentSchema: Schema = PredictDuplicateEventWrapper.schemaFor.schema(DefaultFieldMapper)
       checkEntityType(currentSchema, "PredictDuplicateEventWrapper")
     }

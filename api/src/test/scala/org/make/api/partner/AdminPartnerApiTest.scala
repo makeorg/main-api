@@ -26,8 +26,6 @@ import org.make.api.MakeApiTestBase
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -52,14 +50,14 @@ class AdminPartnerApiTest
     weight = 20f
   )
 
-  feature("post partner") {
-    scenario("post partner unauthenticated") {
+  Feature("post partner") {
+    Scenario("post partner unauthenticated") {
       Post("/admin/partners").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("post partner without admin rights") {
+    Scenario("post partner without admin rights") {
       Post("/admin/partners")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -67,7 +65,7 @@ class AdminPartnerApiTest
       }
     }
 
-    scenario("post partner with admin rights") {
+    Scenario("post partner with admin rights") {
 
       when(partnerService.createPartner(any[CreatePartnerRequest])).thenReturn(Future.successful(partner))
 
@@ -85,7 +83,7 @@ class AdminPartnerApiTest
       }
     }
 
-    scenario("post scenario with wrong request") {
+    Scenario("post scenario with wrong request") {
       Post("/admin/partners")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
           | "name": "partner name",
@@ -99,15 +97,15 @@ class AdminPartnerApiTest
     }
   }
 
-  feature("put partner") {
-    scenario("put partner unauthenticated") {
+  Feature("put partner") {
+    Scenario("put partner unauthenticated") {
       Put("/admin/partners/partner-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("put partner without admin rights") {
+    Scenario("put partner without admin rights") {
       Put("/admin/partners/partner-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -115,9 +113,9 @@ class AdminPartnerApiTest
       }
     }
 
-    scenario("put partner with admin rights") {
+    Scenario("put partner with admin rights") {
 
-      when(partnerService.updatePartner(matches(PartnerId("partner-id")), any[UpdatePartnerRequest]))
+      when(partnerService.updatePartner(eqTo(PartnerId("partner-id")), any[UpdatePartnerRequest]))
         .thenReturn(Future.successful(Some(partner)))
 
       Put("/admin/partners/partner-id")
@@ -133,7 +131,7 @@ class AdminPartnerApiTest
       }
     }
 
-    scenario("put partner with wrong request") {
+    Scenario("put partner with wrong request") {
       Put("/admin/partners/partner-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
           | "name": "update name",
@@ -145,8 +143,8 @@ class AdminPartnerApiTest
       }
     }
 
-    scenario("put non existent partner") {
-      when(partnerService.updatePartner(matches(PartnerId("not-found")), any[UpdatePartnerRequest]))
+    Scenario("put non existent partner") {
+      when(partnerService.updatePartner(eqTo(PartnerId("not-found")), any[UpdatePartnerRequest]))
         .thenReturn(Future.successful(None))
 
       Put("/admin/partners/not-found")
@@ -163,21 +161,21 @@ class AdminPartnerApiTest
     }
   }
 
-  feature("get partners") {
-    scenario("get partners unauthenticated") {
+  Feature("get partners") {
+    Scenario("get partners unauthenticated") {
       Get("/admin/partners") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get partners without admin rights") {
+    Scenario("get partners without admin rights") {
       Get("/admin/partners")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get partners with admin rights") {
+    Scenario("get partners with admin rights") {
 
       when(
         partnerService.find(
@@ -200,23 +198,23 @@ class AdminPartnerApiTest
     }
   }
 
-  feature("get partner") {
-    scenario("get partner unauthenticated") {
+  Feature("get partner") {
+    Scenario("get partner unauthenticated") {
       Get("/admin/partners/partner-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get partners without admin rights") {
+    Scenario("get partners without admin rights") {
       Get("/admin/partners/partner-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get partner with admin rights") {
+    Scenario("get partner with admin rights") {
 
-      when(partnerService.getPartner(matches(PartnerId("partner-id"))))
+      when(partnerService.getPartner(eqTo(PartnerId("partner-id"))))
         .thenReturn(Future.successful(Some(partner)))
 
       Get("/admin/partners/partner-id")
@@ -225,9 +223,9 @@ class AdminPartnerApiTest
       }
     }
 
-    scenario("get non existent partner") {
+    Scenario("get non existent partner") {
 
-      when(partnerService.getPartner(matches(PartnerId("not-found"))))
+      when(partnerService.getPartner(eqTo(PartnerId("not-found"))))
         .thenReturn(Future.successful(None))
 
       Get("/admin/partners/not-found")

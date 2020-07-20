@@ -37,7 +37,6 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.{IndexedOrganisation, ProposalsAndVotesCountsByQuestion}
 import org.make.core.user._
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
@@ -65,9 +64,9 @@ class OrganisationSearchEngineIT
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.organisationAliasName).thenReturn(eSIndexName)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
+  when(elasticsearchConfiguration.organisationAliasName).thenReturn(eSIndexName)
+  when(elasticsearchConfiguration.indexName).thenReturn(eSIndexName)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -193,8 +192,8 @@ class OrganisationSearchEngineIT
     Await.result(responseRefreshOrganisationFuture, 5.seconds)
   }
 
-  feature("get organisation list") {
-    scenario("get organisation list ordered by name") {
+  Feature("get organisation list") {
+    Scenario("get organisation list ordered by name") {
       Given("""a list of organisation named "corp A", "corp B" and "corp C" """)
       When("I get organisation list ordered by name with an order desc")
       Then("""The result should be "corp A", "corp B" and "corp C" """)
@@ -209,7 +208,7 @@ class OrganisationSearchEngineIT
       }
     }
 
-    scenario("search by name with accent") {
+    Scenario("search by name with accent") {
       val organisationSearchQuery: OrganisationSearchQuery =
         OrganisationSearchQuery(filters =
           Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("aines"))))
@@ -222,23 +221,23 @@ class OrganisationSearchEngineIT
     }
   }
 
-  feature("find organisation by slug") {
-    scenario("find one result") {
+  Feature("find organisation by slug") {
+    Scenario("find one result") {
       whenReady(elasticsearchOrganisationAPI.findOrganisationBySlug("corp-b"), Timeout(5.seconds)) { result =>
         result.isDefined shouldBe true
         result.get.organisationName shouldBe Some("corp B")
       }
     }
 
-    scenario("fnid zero result") {
+    Scenario("fnid zero result") {
       whenReady(elasticsearchOrganisationAPI.findOrganisationBySlug("fake"), Timeout(5.seconds)) { result =>
         result.isDefined shouldBe false
       }
     }
   }
 
-  feature("sort organisation with sortAlgorithm") {
-    scenario("participation algorithm") {
+  Feature("sort organisation with sortAlgorithm") {
+    Scenario("participation algorithm") {
       whenReady(
         elasticsearchOrganisationAPI.searchOrganisations(
           OrganisationSearchQuery(sortAlgorithm = Some(ParticipationAlgorithm(QuestionId("question-id-1"))))

@@ -37,8 +37,8 @@ class MailJetCallbackProducerActorIT
     with ImplicitSender
     with AvroSerializers {
 
-  feature("MailJetCallback producer") {
-    scenario("send wrapped event into kafka") {
+  Feature("MailJetCallback producer") {
+    Scenario("send wrapped event into kafka") {
       Given("a producer on the Mailjet event topic and a consumer on the same topic")
       val actorSystem = system
       val producer: ActorRef =

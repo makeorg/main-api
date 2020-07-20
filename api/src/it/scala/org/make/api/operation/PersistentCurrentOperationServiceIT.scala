@@ -43,8 +43,8 @@ class PersistentCurrentOperationServiceIT extends DatabaseTest with DefaultPersi
     externalLink = Some("link.com")
   )
 
-  feature("get by id") {
-    scenario("get existing current operation") {
+  Feature("get by id") {
+    Scenario("get existing current operation") {
       val futureCurrentOperation: Future[Option[CurrentOperation]] =
         for {
           _                <- persistentCurrentOperationService.persist(currentOperation)
@@ -56,7 +56,7 @@ class PersistentCurrentOperationServiceIT extends DatabaseTest with DefaultPersi
       }
     }
 
-    scenario("get non existing current operation") {
+    Scenario("get non existing current operation") {
       whenReady(persistentCurrentOperationService.getById(CurrentOperationId("not-found")), Timeout(2.seconds)) {
         currentOperation =>
           currentOperation should be(None)
@@ -64,8 +64,8 @@ class PersistentCurrentOperationServiceIT extends DatabaseTest with DefaultPersi
     }
   }
 
-  feature("search current operation") {
-    scenario("search all") {
+  Feature("search current operation") {
+    Scenario("search all") {
       val futureCurrentOperations: Future[Seq[CurrentOperation]] =
         for {
           _ <- persistentCurrentOperationService.persist(
@@ -84,8 +84,8 @@ class PersistentCurrentOperationServiceIT extends DatabaseTest with DefaultPersi
     }
   }
 
-  feature("update current operation") {
-    scenario("update existing current operation") {
+  Feature("update current operation") {
+    Scenario("update existing current operation") {
       val updatedCurrentOperation =
         currentOperation.copy(label = "updated label")
 
@@ -97,8 +97,8 @@ class PersistentCurrentOperationServiceIT extends DatabaseTest with DefaultPersi
     }
   }
 
-  feature("delete current operation") {
-    scenario("delete existing current operation") {
+  Feature("delete current operation") {
+    Scenario("delete existing current operation") {
       val futureDelete: Future[(Option[CurrentOperation], Option[CurrentOperation])] = for {
         _ <- persistentCurrentOperationService.persist(
           currentOperation.copy(currentOperationId = CurrentOperationId("to-delete"))

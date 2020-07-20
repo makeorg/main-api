@@ -56,8 +56,8 @@ class PersistentPartnerServiceIT
     operationId = None
   )
 
-  feature("get partner by id") {
-    scenario("get existing partner") {
+  Feature("get partner by id") {
+    Scenario("get existing partner") {
       val futurePartner = for {
         _       <- persistentQuestionService.persist(question)
         _       <- persistentPartnerService.persist(partner)
@@ -69,15 +69,15 @@ class PersistentPartnerServiceIT
       }
     }
 
-    scenario("get non existing partner") {
+    Scenario("get non existing partner") {
       whenReady(persistentPartnerService.getById(PartnerId("not-found")), Timeout(2.seconds)) { partner =>
         partner should be(None)
       }
     }
   }
 
-  feature("search partners") {
-    scenario("search all") {
+  Feature("search partners") {
+    Scenario("search all") {
       val futurePartner = for {
         _ <- persistentPartnerService.persist(partner.copy(partnerId = PartnerId("partner2")))
         _ <- persistentPartnerService.persist(partner.copy(partnerId = PartnerId("partner3")))
@@ -97,7 +97,7 @@ class PersistentPartnerServiceIT
       }
     }
 
-    scenario("search by questionId") {
+    Scenario("search by questionId") {
       val futurePartner = for {
         _ <- persistentQuestionService.persist(question.copy(questionId = QuestionId("question2"), slug = "question-2"))
         _ <- persistentPartnerService.persist(
@@ -122,7 +122,7 @@ class PersistentPartnerServiceIT
       }
     }
 
-    scenario("search by partnerKind") {
+    Scenario("search by partnerKind") {
       val futurePartner = for {
         _ <- persistentPartnerService.persist(
           partner.copy(partnerId = PartnerId("partner6"), partnerKind = PartnerKind.Media)
@@ -149,8 +149,8 @@ class PersistentPartnerServiceIT
     }
   }
 
-  feature("count partners") {
-    scenario("count by questionId") {
+  Feature("count partners") {
+    Scenario("count by questionId") {
 
       val futurePartnerCount = for {
         _ <- persistentQuestionService.persist(
@@ -180,7 +180,7 @@ class PersistentPartnerServiceIT
       }
     }
 
-    scenario("count by partnerKind") {
+    Scenario("count by partnerKind") {
 
       val futurePartnerCount = for {
         _ <- persistentPartnerService.persist(
@@ -202,8 +202,8 @@ class PersistentPartnerServiceIT
     }
   }
 
-  feature("update partners") {
-    scenario("update existing partner") {
+  Feature("update partners") {
+    Scenario("update existing partner") {
       val updatedPartner =
         partner.copy(name = "updated name", partnerKind = PartnerKind.ActionPartner, weight = 42f)
 

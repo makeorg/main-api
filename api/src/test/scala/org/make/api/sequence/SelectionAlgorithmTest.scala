@@ -237,8 +237,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     )
   }
 
-  feature("bandit: proposal selection algorithm with new proposals") {
-    scenario("no duplicates with enough proposals only new proposals") {
+  Feature("bandit: proposal selection algorithm with new proposals") {
+    Scenario("no duplicates with enough proposals only new proposals") {
 
       val proposals: Seq[IndexedProposal] =
         banditProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
@@ -257,7 +257,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.toSet.size should be(banditSequenceConfiguration.sequenceSize)
     }
 
-    scenario("no duplicates with enough proposals and include list only new proposals") {
+    Scenario("no duplicates with enough proposals and include list only new proposals") {
 
       val included = Seq(
         fakeProposal(ProposalId("Included 1"), Map.empty, SequencePool.Tested),
@@ -287,7 +287,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
     }
 
-    scenario("duplicates with enough proposals only new proposals") {
+    Scenario("duplicates with enough proposals only new proposals") {
 
       val duplicates: Map[ProposalId, IdeaId] =
         Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("proposal2") -> IdeaId("TestIdea"))
@@ -314,7 +314,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
     }
 
-    scenario("duplicates from include list with enough proposals only new proposals") {
+    Scenario("duplicates from include list with enough proposals only new proposals") {
 
       val duplicates: Map[ProposalId, IdeaId] =
         Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("included1") -> IdeaId("TestIdea"))
@@ -344,9 +344,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     }
   }
 
-  feature("bandit: proposal selection algorithm with tested proposals") {
+  Feature("bandit: proposal selection algorithm with tested proposals") {
 
-    scenario("no duplicates with enough proposals only tested proposals") {
+    Scenario("no duplicates with enough proposals only tested proposals") {
 
       val testedProposals: Seq[IndexedProposal] =
         banditProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), SequencePool.Tested))
@@ -365,7 +365,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.toSet.size should be(banditSequenceConfiguration.sequenceSize)
     }
 
-    scenario("no duplicates with only already voted tested proposals") {
+    Scenario("no duplicates with only already voted tested proposals") {
 
       val testedProposals: Seq[IndexedProposal] =
         banditProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
@@ -383,7 +383,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.size should be(0)
     }
 
-    scenario("no duplicates with only already voted tested proposals without bandit") {
+    Scenario("no duplicates with only already voted tested proposals without bandit") {
 
       val testedProposals: Seq[IndexedProposal] =
         banditProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
@@ -401,7 +401,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.size should be(0)
     }
 
-    scenario("no duplicates with only already voted new proposals") {
+    Scenario("no duplicates with only already voted new proposals") {
 
       val newProposals: Seq[IndexedProposal] =
         banditProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
@@ -419,7 +419,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.size should be(0)
     }
 
-    scenario("no duplicates with only already voted new proposals without bandit") {
+    Scenario("no duplicates with only already voted new proposals without bandit") {
 
       val newProposals: Seq[IndexedProposal] =
         banditProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
@@ -437,7 +437,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.size should be(0)
     }
 
-    scenario("no duplicates with enough proposals and include list only tested proposals") {
+    Scenario("no duplicates with enough proposals and include list only tested proposals") {
 
       val proposals: Seq[IndexedProposal] =
         banditProposalIds.map(id => fakeProposal(id, Map(VoteKey.Agree -> 200), SequencePool.Tested))
@@ -465,7 +465,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
     }
 
-    scenario("duplicates with enough proposals only tested proposals") {
+    Scenario("duplicates with enough proposals only tested proposals") {
 
       val duplicates =
         Map(ProposalId("proposal1") -> IdeaId("TestId"), ProposalId("proposal2") -> IdeaId("TestId"))
@@ -494,7 +494,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
     }
 
-    scenario("duplicates from include list with enough proposals only tested proposals") {
+    Scenario("duplicates from include list with enough proposals only tested proposals") {
 
       val duplicates =
         Map(ProposalId("proposal1") -> IdeaId("TestId"), ProposalId("included1") -> IdeaId("TestId"))
@@ -527,9 +527,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
   }
 
-  feature("bandit: proposal selection algorithm with mixed new and tested proposals") {
+  Feature("bandit: proposal selection algorithm with mixed new and tested proposals") {
 
-    scenario("no duplicates with enough proposals") {
+    Scenario("no duplicates with enough proposals") {
 
       val newProposals: Seq[IndexedProposal] =
         banditProposalIds
@@ -555,7 +555,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.toSet.size should be(banditSequenceConfiguration.sequenceSize)
     }
 
-    scenario("no duplicates with enough proposals and include list") {
+    Scenario("no duplicates with enough proposals and include list") {
 
       val newProposals: Seq[IndexedProposal] =
         banditProposalIds
@@ -591,7 +591,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
 
     }
 
-    scenario("duplicates with enough proposals") {
+    Scenario("duplicates with enough proposals") {
 
       val duplicates =
         Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("proposal2") -> IdeaId("TestIdea"))
@@ -625,7 +625,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
     }
 
-    scenario("duplicates from include list with enough proposals") {
+    Scenario("duplicates from include list with enough proposals") {
 
       val duplicates =
         Map(ProposalId("proposal1") -> IdeaId("TestIdea"), ProposalId("included1") -> IdeaId("TestIdea"))
@@ -661,7 +661,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       sequenceProposals.map(_.id).contains(ProposalId("proposal1")) should be(false)
     }
 
-    scenario("check first in first out behavior") {
+    Scenario("check first in first out behavior") {
 
       val newProposalIds: Seq[ProposalId] =
         (1 to banditSequenceConfiguration.sequenceSize).map(i => ProposalId(s"newProposal$i"))
@@ -709,7 +709,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       sequenceProposals.map(_.id).contains(ProposalId("newProposal12")) should be(false)
     }
 
-    scenario("most engaging first") {
+    Scenario("most engaging first") {
 
       val newProposalIds: Seq[ProposalId] =
         (1 to banditSequenceConfiguration.sequenceSize / 2).map(i => ProposalId(s"newProposal$i"))
@@ -746,8 +746,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     }
   }
 
-  feature("bandit: allocate votes using soft min") {
-    scenario("power of 2 vote counts") {
+  Feature("bandit: allocate votes using soft min") {
+    Scenario("power of 2 vote counts") {
       val testedProposals: Seq[IndexedProposal] = (1 to 10).map { i =>
         fakeProposal(
           ProposalId(s"testedProposal$i"),
@@ -779,8 +779,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     }
   }
 
-  feature("bandit: allocate vote with bandit algorithm within idea") {
-    scenario("check proposal scorer") {
+  Feature("bandit: allocate vote with bandit algorithm within idea") {
+    Scenario("check proposal scorer") {
       val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
         VoteKey.Agree -> (50 -> Map(QualificationKey.LikeIt -> 20, QualificationKey.PlatitudeAgree -> 10)),
         VoteKey.Disagree -> (20 -> Map(QualificationKey.NoWay -> 10, QualificationKey.PlatitudeDisagree -> 5)),
@@ -801,7 +801,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       samples.sum / trials should be(testProposalScore +- 0.05)
     }
 
-    scenario("check proposal scorer with pathological proposal") {
+    Scenario("check proposal scorer with pathological proposal") {
       val votes: Map[VoteKey, (Int, Map[QualificationKey, Int])] = Map(
         VoteKey.Agree -> (0 -> Map.empty),
         VoteKey.Disagree -> (0 -> Map.empty),
@@ -820,7 +820,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       testProposalScoreSample should be > -10.0
     }
 
-    scenario("check bandit chooser for similars") {
+    Scenario("check bandit chooser for similars") {
       val testedProposals: Seq[IndexedProposal] = (1 to 20).map { i =>
         val a = MakeRandom.nextInt(100) + 1
         val d = MakeRandom.nextInt(100) + 1
@@ -883,7 +883,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       chosenCounts.slice(0, 10).contains(sortedProposals(19)) should be(false)
     }
 
-    scenario("check tested proposal chooser") {
+    Scenario("check tested proposal chooser") {
       val testedProposals: Map[IdeaId, Seq[IndexedProposal]] = (1 to 100).map { i =>
         val a = MakeRandom.nextInt(100) + 100
         val d = MakeRandom.nextInt(100) + 100
@@ -918,7 +918,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       chosen.length should be(10)
     }
 
-    scenario("check tested proposal chooser without bandit") {
+    Scenario("check tested proposal chooser without bandit") {
       val noBanditConfiguration = SequenceConfiguration(
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
@@ -966,7 +966,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       chosen.length should be(10)
     }
 
-    scenario("check tested proposal chooser with strict config") {
+    Scenario("check tested proposal chooser with strict config") {
       val noBanditRatioConfiguration = SequenceConfiguration(
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
@@ -1015,8 +1015,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     }
   }
 
-  feature("bandit: idea competition") {
-    scenario("check champion selection") {
+  Feature("bandit: idea competition") {
+    Scenario("check champion selection") {
       val testedProposals: Seq[IndexedProposal] = (1 to 20).map { i =>
         val a = 600
         val d = 200
@@ -1042,7 +1042,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       champion.id.value should be("testedProposal20")
     }
 
-    scenario("check idea selection") {
+    Scenario("check idea selection") {
       val ideasWithChampion: Map[IdeaId, IndexedProposal] = (1 to 20).map { i =>
         val a = 600
         val d = 200
@@ -1089,7 +1089,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       proportions(IdeaId("Idea15")) should equal(0.13 +- confidenceInterval)
     }
 
-    scenario("check controversial idea selection") {
+    Scenario("check controversial idea selection") {
       val ideasWithChampion: Map[IdeaId, IndexedProposal] = (1 to 20).map { i =>
         val a = 600
         val d = 200
@@ -1137,7 +1137,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       proportions(IdeaId("Idea7")) should equal(0.06 +- confidenceInterval)
     }
 
-    scenario("check tested idea selection with idea competition") {
+    Scenario("check tested idea selection with idea competition") {
       val ideaCompetitionConfiguration = SequenceConfiguration(
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
@@ -1196,7 +1196,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       proportions(ProposalId("testedProposal50")) should equal(0.15 +- confidenceInterval)
     }
 
-    scenario("check tested idea selection with idea competition with boost") {
+    Scenario("check tested idea selection with idea competition with boost") {
       val ideaCompetitionConfiguration = SequenceConfiguration(
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
@@ -1258,8 +1258,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     }
   }
 
-  feature("bandit: proposal sampling") {
-    scenario("check proposal sampling") {
+  Feature("bandit: proposal sampling") {
+    Scenario("check proposal sampling") {
       val sequenceConfiguration = SequenceConfiguration(
         sequenceId = SequenceId("test-sequence"),
         questionId = QuestionId("test-question"),
@@ -1317,8 +1317,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
     }
   }
 
-  feature("round-robin: proposal sampling") {
-    scenario("no proposals") {
+  Feature("round-robin: proposal sampling") {
+    Scenario("no proposals") {
       val chosen =
         roundRobinSelectionAlgorithm.selectProposalsForSequence(
           sequenceConfiguration = roundRobinSequenceConfiguration,
@@ -1331,7 +1331,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       chosen.length should be(0)
     }
 
-    scenario("with included proposals") {
+    Scenario("with included proposals") {
       val proposals: Seq[IndexedProposal] =
         roundRobinProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
 
@@ -1349,7 +1349,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.toSet.size should be(roundRobinSequenceConfiguration.sequenceSize)
     }
 
-    scenario("with voted proposals") {
+    Scenario("with voted proposals") {
       val testedProposals: Seq[IndexedProposal] =
         roundRobinProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested)) ++
           Seq(fakeProposal(ProposalId("other-proposal"), Map.empty, SequencePool.Tested))
@@ -1368,7 +1368,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.head.id should be(ProposalId("other-proposal"))
     }
 
-    scenario("no duplicates with only already voted tested proposals") {
+    Scenario("no duplicates with only already voted tested proposals") {
 
       val testedProposals: Seq[IndexedProposal] =
         roundRobinProposalIds.map(id => fakeProposal(id, Map.empty, SequencePool.Tested))
@@ -1386,7 +1386,7 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       selectedProposals.size should be(0)
     }
 
-    scenario("valid proposal sampling") {
+    Scenario("valid proposal sampling") {
 
       val testedProposals: Seq[IndexedProposal] =
         (1 to 1000).map { i =>

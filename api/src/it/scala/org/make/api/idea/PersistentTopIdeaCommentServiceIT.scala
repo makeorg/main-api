@@ -132,9 +132,9 @@ class PersistentTopIdeaCommentServiceIT
 
   def waitForCompletion(f: Future[_]): Unit = whenReady(f, Timeout(2.seconds))(_ => ())
 
-  feature("top idea comment CRUD") {
+  Feature("top idea comment CRUD") {
 
-    scenario("create top idea comment") {
+    Scenario("create top idea comment") {
       val insert = persistentTopIdeaCommentService.persist(
         TopIdeaComment(
           TopIdeaCommentId("create-1"),
@@ -153,7 +153,7 @@ class PersistentTopIdeaCommentServiceIT
       }
     }
 
-    scenario("update and get top idea comment") {
+    Scenario("update and get top idea comment") {
 
       val topIdeaComment =
         TopIdeaComment(
@@ -202,7 +202,7 @@ class PersistentTopIdeaCommentServiceIT
 
     }
 
-    scenario("search & count top idea comments") {
+    Scenario("search & count top idea comments") {
       val topIdeaComments: Seq[TopIdeaComment] = Seq(
         TopIdeaComment(
           TopIdeaCommentId("find-1"),

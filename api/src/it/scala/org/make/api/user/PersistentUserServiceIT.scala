@@ -255,11 +255,11 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
   var futureJohnMailing2: Future[User] = Future.failed(new IllegalStateException("I am no ready!!!!"))
 
-  feature("The app can persist and retrieve users") {
+  Feature("The app can persist and retrieve users") {
     info("As a programmer")
     info("I want to be able to persist a user")
 
-    scenario("Persist a user and get the persisted user") {
+    Scenario("Persist a user and get the persisted user") {
       Given("""a user John Doe with values:
           |    - firstName: John
           |    - lastName: Doe
@@ -334,7 +334,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("persist multiple users and get by multiple ids") {
+    Scenario("persist multiple users and get by multiple ids") {
       Given("""
           |Two users "Jenna Doo" and "Jane Dee"
         """.stripMargin)
@@ -361,7 +361,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("Persist a user with mailing params") {
+    Scenario("Persist a user with mailing params") {
       Given("""a user John Mailing with values:
               |    - email: johnmailing@example.com
               |    - isHardBounce: true
@@ -394,11 +394,11 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
   }
 
-  feature("The app can persist a user") {
+  Feature("The app can persist a user") {
     info("As a programmer")
     info("I want to be able to find a userId by email")
 
-    scenario("Retrieve a userId from an existing email") {
+    Scenario("Retrieve a userId from an existing email") {
       Given("""a persisted user John Doe with values:
               |    - firstName: John
               |    - lastName: Doe
@@ -417,7 +417,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("Retrieve a userId by nonexistent email") {
+    Scenario("Retrieve a userId by nonexistent email") {
       Given("a nonexistent email fake@example.com")
       When("I search the userId from email fake@example.com")
       val futureUserId: Future[Option[UserId]] = persistentUserService
@@ -430,8 +430,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("checking user password (findByEmailAndPassword)") {
-    scenario("return valid user") {
+  Feature("checking user password (findByEmailAndPassword)") {
+    Scenario("return valid user") {
 
       whenReady(persistentUserService.persist(passwordUser), Timeout(3.seconds)) { user =>
         whenReady(persistentUserService.findByEmailAndPassword(user.email, "123456"), Timeout(3.seconds)) { maybeUser =>
@@ -441,7 +441,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
       }
     }
-    scenario("return empty on invalid email") {
+    Scenario("return empty on invalid email") {
       whenReady(
         persistentUserService.findByEmailAndPassword("not-a-known-password@fake.org", "123456"),
         Timeout(3.seconds)
@@ -450,7 +450,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
 
     }
-    scenario("return empty if password is null") {
+    Scenario("return empty if password is null") {
       whenReady(persistentUserService.persist(socialUser), Timeout(3.seconds)) { user =>
         whenReady(persistentUserService.findByEmailAndPassword(user.email, "123456"), Timeout(3.seconds)) { maybeUser =>
           maybeUser should be(None)
@@ -460,8 +460,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("find user by id and type") {
-    scenario("return a personality user") {
+  Feature("find user by id and type") {
+    Scenario("return a personality user") {
       whenReady(persistentUserService.persist(personalityUser), Timeout(3.seconds)) { user =>
         whenReady(persistentUserService.findByUserIdAndUserType(user.userId, UserType.UserTypePersonality)) {
           maybeUser =>
@@ -471,8 +471,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("update an organisation") {
-    scenario("Update the organisation name") {
+  Feature("update an organisation") {
+    Scenario("Update the organisation name") {
       whenReady(persistentUserService.persist(userOrganisationDGSE), Timeout(3.seconds)) { organisation =>
         organisation.organisationName should be(Some("Direction Générale de la Sécurité Extérieure"))
         whenReady(
@@ -486,7 +486,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("Update the organisation name and the email") {
+    Scenario("Update the organisation name and the email") {
       whenReady(persistentUserService.persist(userOrganisationFSB), Timeout(3.seconds)) { organisation =>
         organisation.organisationName shouldBe Some("Federal Security Service")
         organisation.email shouldBe "fsb@secret-agency.com"
@@ -504,7 +504,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("Fail organisation update") {
+    Scenario("Fail organisation update") {
       whenReady(
         persistentUserService.modifyOrganisation(userOrganisationCSIS.copy(organisationName = Some("CSIS Updated"))),
         Timeout(3.seconds)
@@ -516,8 +516,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("find users by organisation") {
-    scenario("find all organisations") {
+  Feature("find users by organisation") {
+    Scenario("find all organisations") {
       val futureOrganisations = for {
         cia <- persistentUserService.persist(userOrganisationCIA)
         fbi <- persistentUserService.persist(userOrganisationFBI)
@@ -532,7 +532,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("find organisations with params") {
+    Scenario("find organisations with params") {
       whenReady(
         persistentUserService
           .findOrganisations(start = 0, end = Some(2), sort = Some("organisation_name"), order = Some("ASC"), None)
@@ -543,7 +543,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario(("find organisation with organisation name filter")) {
+    Scenario(("find organisation with organisation name filter")) {
       whenReady(persistentUserService.findOrganisations(start = 0, end = None, sort = None, order = None, Some("CIA"))) {
         organisations =>
           organisations.size should be(1)
@@ -551,7 +551,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario(("find organisation with organisation name filter - check case insensitivity")) {
+    Scenario(("find organisation with organisation name filter - check case insensitivity")) {
       whenReady(persistentUserService.findOrganisations(start = 0, end = None, sort = None, order = None, Some("cia"))) {
         organisations =>
           organisations.size should be(1)
@@ -560,8 +560,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("find moderators") {
-    scenario("find all moderators") {
+  Feature("find moderators") {
+    Scenario("find all moderators") {
       whenReady(
         persistentUserService.adminFindUsers(
           start = 0,
@@ -580,7 +580,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("find moderators with email filter") {
+    Scenario("find moderators with email filter") {
       whenReady(
         persistentUserService
           .adminFindUsers(
@@ -601,8 +601,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("register mailing data") {
-    scenario("update opt in newsletter with user id") {
+  Feature("register mailing data") {
+    Scenario("update opt in newsletter with user id") {
       Given("a user with a userId(7)")
       When("I update opt in newsletter to true")
       val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
@@ -627,7 +627,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("update opt in newsletter with user email") {
+    Scenario("update opt in newsletter with user email") {
       Given("a user with an email johnmailing2@example.com")
       When("I update opt in newsletter to true")
       val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
@@ -651,7 +651,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         maybeUser.get.profile.get.optInNewsletter shouldBe false
       }
     }
-    scenario("update hard bounce with user id") {
+    Scenario("update hard bounce with user id") {
       Given("a user with a userId(7)")
       When("I update hard bounce to true")
       val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
@@ -675,7 +675,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         maybeUser.get.isHardBounce shouldBe false
       }
     }
-    scenario("update hard bounce with user email") {
+    Scenario("update hard bounce with user email") {
       Given("a user with an email johnmailing2@example.com")
       When("I update hard bounce to true")
       val futureMaybeUserWithTrueValue: Future[Option[User]] = futureJohnMailing2.flatMap { user =>
@@ -699,7 +699,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         maybeUser.get.isHardBounce shouldBe false
       }
     }
-    scenario("update mailing error with user id") {
+    Scenario("update mailing error with user id") {
       Given("a user with a userId(7)")
       And("a mailing error my_error at 2018-01-02 12:03:30")
       val mailingError: MailingErrorLog =
@@ -727,7 +727,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         maybeUser.get.lastMailingError shouldBe None
       }
     }
-    scenario("update mailing error with user email") {
+    Scenario("update mailing error with user email") {
       Given("a user with an email johnmailing2@example.com")
       And("a mailing error my_error at 2018-01-02 12:03:30")
       val mailingError: MailingErrorLog =
@@ -758,8 +758,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
   }
 
-  feature("update existing social user") {
-    scenario("non existing user") {
+  Feature("update existing social user") {
+    Scenario("non existing user") {
       val futureUpdate: Future[Boolean] = for {
         user <- persistentUserService.persist(
           socialUser.copy(userId = UserId("new social"), email = "1" + socialUser.email)
@@ -771,7 +771,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("existing user updates") {
+    Scenario("existing user updates") {
       val futureUpdate: Future[Boolean] = for {
         user <- persistentUserService.persist(
           socialUser.copy(userId = UserId("new new social"), email = "2" + socialUser.email)
@@ -799,8 +799,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("update a user") {
-    scenario("Update the user properties") {
+  Feature("update a user") {
+    Scenario("Update the user properties") {
       whenReady(persistentUserService.persist(updateUser), Timeout(3.seconds)) { user =>
         user.userId.value should be("update-user-1")
         whenReady(
@@ -829,7 +829,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("Dont update not allowed field") {
+    Scenario("Dont update not allowed field") {
       whenReady(
         persistentUserService.updateUser(updateUser.copy(hashedPassword = Some("ABABABABABAB"))),
         Timeout(3.seconds)
@@ -842,9 +842,9 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("find user by email and password") {
+  Feature("find user by email and password") {
 
-    scenario("user with a hashed password") {
+    Scenario("user with a hashed password") {
       val jennaDooWithHashedPassword =
         jennaDoo.copy(
           userId = UserId("jenna-hashed-password"),
@@ -864,7 +864,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       }
     }
 
-    scenario("user without password") {
+    Scenario("user without password") {
       val jennaDooWithoutPassword =
         jennaDoo.copy(
           userId = UserId("jenna-without-password"),
@@ -884,8 +884,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("follow user") {
-    scenario("follow user") {
+  Feature("follow user") {
+    Scenario("follow user") {
       val johnDoe2 = johnDoe.copy(
         userId = UserId("johnDoe2"),
         email = "doe2@example.com",
@@ -910,8 +910,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("unfollow user") {
-    scenario("unfollow user") {
+  Feature("unfollow user") {
+    Scenario("unfollow user") {
       val johnDoe3 = johnDoe.copy(
         userId = UserId("johnDoe3"),
         email = "doe3@example.com",
@@ -940,8 +940,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("available questions") {
-    scenario("persist retrieve and update available questions") {
+  Feature("available questions") {
+    Scenario("persist retrieve and update available questions") {
 
       var user =
         johnDoe.copy(
@@ -970,8 +970,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("get users without operation creation") {
-    scenario("get users without operation creation") {
+  Feature("get users without operation creation") {
+    Scenario("get users without operation creation") {
 
       val usersWithoutRegisterQuestion: Future[Seq[User]] = for {
         _    <- persistentUserService.persist(noRegisterQuestionUser)
@@ -984,8 +984,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
   }
 
-  feature("update reconnect token") {
-    scenario("update reconnect token") {
+  Feature("update reconnect token") {
+    Scenario("update reconnect token") {
       val user = johnDoe.copy(userId = UserId("reconnect-token"), email = "reconnect-token@make.org")
 
       val userReconnectTokenUpdate: Future[Boolean] = for {

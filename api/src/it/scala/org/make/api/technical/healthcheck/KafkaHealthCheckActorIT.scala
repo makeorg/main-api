@@ -33,8 +33,8 @@ class KafkaHealthCheckActorIT extends TestKit(KafkaHealthCheckActorIT.actorSyste
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  feature("Check Kafka status") {
-    scenario("Kafka cluster is available") {
+  Feature("Check Kafka status") {
+    Scenario("Kafka cluster is available") {
       Given("a Kafka health check actor")
       val healthCheckExecutionContext = ExecutionContext.Implicits.global
       val healthCheckKafka: ActorRef =

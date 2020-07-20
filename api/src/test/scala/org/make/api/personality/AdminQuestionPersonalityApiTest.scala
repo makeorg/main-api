@@ -27,8 +27,6 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -51,7 +49,7 @@ class AdminQuestionPersonalityApiTest
     personalityRoleId = PersonalityRoleId("candidate")
   )
 
-  feature("post personality") {
+  Feature("post personality") {
 
     when(
       questionPersonalityService
@@ -66,13 +64,13 @@ class AdminQuestionPersonalityApiTest
         )
     ).thenReturn(Future.successful(Seq.empty))
 
-    scenario("post personality unauthenticated") {
+    Scenario("post personality unauthenticated") {
       Post("/admin/question-personalities").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("post personality without admin rights") {
+    Scenario("post personality without admin rights") {
       Post("/admin/question-personalities")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -80,7 +78,7 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("post personality with admin rights") {
+    Scenario("post personality with admin rights") {
 
       when(questionPersonalityService.createPersonality(any[CreateQuestionPersonalityRequest]))
         .thenReturn(Future.successful(personality))
@@ -96,7 +94,7 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("post personality with wrong request") {
+    Scenario("post personality with wrong request") {
       Post("/admin/question-personalities")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "questionId": "question-id"
@@ -106,7 +104,7 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("personality already exists") {
+    Scenario("personality already exists") {
 
       when(
         questionPersonalityService
@@ -115,8 +113,8 @@ class AdminQuestionPersonalityApiTest
             end = any[Option[Int]],
             sort = any[Option[String]],
             order = any[Option[String]],
-            userId = matches(Some(UserId("user-id"))),
-            questionId = matches(Some(QuestionId("question-id"))),
+            userId = eqTo(Some(UserId("user-id"))),
+            questionId = eqTo(Some(QuestionId("question-id"))),
             personalityRoleId = any[Option[PersonalityRoleId]]
           )
       ).thenReturn(
@@ -144,15 +142,15 @@ class AdminQuestionPersonalityApiTest
     }
   }
 
-  feature("put personality") {
-    scenario("put personality unauthenticated") {
+  Feature("put personality") {
+    Scenario("put personality unauthenticated") {
       Put("/admin/question-personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("put personality without admin rights") {
+    Scenario("put personality without admin rights") {
       Put("/admin/question-personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -160,11 +158,11 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("put personality with admin rights") {
+    Scenario("put personality with admin rights") {
 
       when(
         questionPersonalityService
-          .updatePersonality(matches(PersonalityId("personality-id")), any[UpdateQuestionPersonalityRequest])
+          .updatePersonality(eqTo(PersonalityId("personality-id")), any[UpdateQuestionPersonalityRequest])
       ).thenReturn(Future.successful(Some(personality)))
 
       Put("/admin/question-personalities/personality-id")
@@ -177,7 +175,7 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("put personality with wrong request") {
+    Scenario("put personality with wrong request") {
       Put("/admin/question-personalities/personality-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "personalityRoleId": "candidate"
@@ -187,10 +185,10 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("put non existent personality") {
+    Scenario("put non existent personality") {
       when(
         questionPersonalityService
-          .updatePersonality(matches(PersonalityId("not-found")), any[UpdateQuestionPersonalityRequest])
+          .updatePersonality(eqTo(PersonalityId("not-found")), any[UpdateQuestionPersonalityRequest])
       ).thenReturn(Future.successful(None))
 
       Put("/admin/question-personalities/not-found")
@@ -204,21 +202,21 @@ class AdminQuestionPersonalityApiTest
     }
   }
 
-  feature("get personalities") {
-    scenario("get personalities unauthenticated") {
+  Feature("get personalities") {
+    Scenario("get personalities unauthenticated") {
       Get("/admin/question-personalities") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get personalities without admin rights") {
+    Scenario("get personalities without admin rights") {
       Get("/admin/question-personalities")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get personalities with admin rights") {
+    Scenario("get personalities with admin rights") {
 
       when(
         questionPersonalityService.find(
@@ -254,23 +252,23 @@ class AdminQuestionPersonalityApiTest
     }
   }
 
-  feature("get personality") {
-    scenario("get personality unauthenticated") {
+  Feature("get personality") {
+    Scenario("get personality unauthenticated") {
       Get("/admin/question-personalities/personality-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get personalities without admin rights") {
+    Scenario("get personalities without admin rights") {
       Get("/admin/question-personalities/personality-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get personality with admin rights") {
+    Scenario("get personality with admin rights") {
 
-      when(questionPersonalityService.getPersonality(matches(PersonalityId("personality-id"))))
+      when(questionPersonalityService.getPersonality(eqTo(PersonalityId("personality-id"))))
         .thenReturn(Future.successful(Some(personality)))
       when(personalityRoleService.getPersonalityRole(personality.personalityRoleId))
         .thenReturn(
@@ -284,9 +282,9 @@ class AdminQuestionPersonalityApiTest
       }
     }
 
-    scenario("get non existent personality") {
+    Scenario("get non existent personality") {
 
-      when(questionPersonalityService.getPersonality(matches(PersonalityId("not-found"))))
+      when(questionPersonalityService.getPersonality(eqTo(PersonalityId("not-found"))))
         .thenReturn(Future.successful(None))
 
       Get("/admin/question-personalities/not-found")

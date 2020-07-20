@@ -29,7 +29,6 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.idea._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -49,9 +48,9 @@ class AdminTopIdeaApiTest
 
   val routes: Route = sealRoute(adminTopIdeaApi.routes)
 
-  feature("create top idea") {
+  Feature("create top idea") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Post("/admin/top-ideas") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -69,7 +68,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("question doesn't exists") {
+    Scenario("question doesn't exists") {
       when(questionService.getQuestion(QuestionId("not-found"))).thenReturn(Future.successful(None))
       when(ideaService.fetchOne(IdeaId("idea-id")))
         .thenReturn(
@@ -99,7 +98,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("idea doesn't exists") {
+    Scenario("idea doesn't exists") {
       when(questionService.getQuestion(QuestionId("question-id")))
         .thenReturn(
           Future.successful(
@@ -142,7 +141,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(questionService.getQuestion(QuestionId("question-id")))
         .thenReturn(
@@ -216,9 +215,9 @@ class AdminTopIdeaApiTest
 
   }
 
-  feature("update top idea") {
+  Feature("update top idea") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Put("/admin/top-ideas/top-idea-id") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -236,7 +235,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("question doesn't exists") {
+    Scenario("question doesn't exists") {
       when(topIdeaService.getById(TopIdeaId("top-idea-id"))).thenReturn(
         Future.successful(
           Some(
@@ -281,7 +280,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("idea doesn't exists") {
+    Scenario("idea doesn't exists") {
       when(topIdeaService.getById(TopIdeaId("top-idea-id"))).thenReturn(
         Future.successful(
           Some(
@@ -340,7 +339,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(topIdeaService.getById(TopIdeaId("top-idea-id"))).thenReturn(
         Future.successful(
@@ -409,7 +408,7 @@ class AdminTopIdeaApiTest
 
     }
 
-    scenario("No top idea found") {
+    Scenario("No top idea found") {
       when(
         topIdeaService
           .getById(TopIdeaId("not-found"))
@@ -440,9 +439,9 @@ class AdminTopIdeaApiTest
 
   }
 
-  feature("get top idea") {
+  Feature("get top idea") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Get("/admin/top-ideas/top-idea-id") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -460,7 +459,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(topIdeaService.getById(TopIdeaId("top-idea-id")))
         .thenReturn(
@@ -490,9 +489,9 @@ class AdminTopIdeaApiTest
 
   }
 
-  feature("search top idea") {
+  Feature("search top idea") {
 
-    scenario("access refused for user or moderator") {
+    Scenario("access refused for user or moderator") {
       Get("/admin/top-ideas") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -510,7 +509,7 @@ class AdminTopIdeaApiTest
         }
     }
 
-    scenario("access granted for admin") {
+    Scenario("access granted for admin") {
 
       when(
         topIdeaService

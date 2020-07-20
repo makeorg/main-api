@@ -49,7 +49,9 @@ lazy val commonSettings = Seq(
     Dependencies.loggerBridge,
     Dependencies.scalaLogging,
     Dependencies.scalaTest,
-    Dependencies.mockito
+    Dependencies.scalaTestScalaCheck,
+    Dependencies.mockito,
+    Dependencies.mockitoScalatest
   ),
   publishTo := {
     if (isSnapshot.value) {

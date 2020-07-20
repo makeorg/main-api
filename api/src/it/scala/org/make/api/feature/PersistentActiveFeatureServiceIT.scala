@@ -22,7 +22,7 @@ package org.make.api.feature
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.core.feature._
+import org.make.core.feature.{Feature => Feat, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -58,7 +58,7 @@ class PersistentActiveFeatureServiceIT
       ()
     }
     whenReady(
-      persistentFeatureService.persist(Feature(featureId = FeatureId("feature"), name = "Feature", slug = "feature")),
+      persistentFeatureService.persist(Feat(featureId = FeatureId("feature"), name = "Feature", slug = "feature")),
       Timeout(10.seconds)
     ) { _ =>
       ()
@@ -81,8 +81,8 @@ class PersistentActiveFeatureServiceIT
   val deleted: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
   val question: ActiveFeature = newActiveFeature(FeatureId("feature"), None)
 
-  feature("One active feature can be persisted and retrieved") {
-    scenario("Get activeFeature by activeFeatureId") {
+  Feature("One active feature can be persisted and retrieved") {
+    Scenario("Get activeFeature by activeFeatureId") {
       val futureFeature: Future[Option[ActiveFeature]] = for {
         _            <- persistentActiveFeatureService.persist(postalCode)
         featureStark <- persistentActiveFeatureService.get(postalCode.activeFeatureId)
@@ -93,7 +93,7 @@ class PersistentActiveFeatureServiceIT
       }
     }
 
-    scenario("Get active feature by activeFeatureId that does not exists") {
+    Scenario("Get active feature by activeFeatureId that does not exists") {
       val futureFeatureId: Future[Option[ActiveFeature]] = persistentActiveFeatureService.get(ActiveFeatureId("fake"))
 
       whenReady(futureFeatureId, Timeout(3.seconds)) { result =>
@@ -102,8 +102,8 @@ class PersistentActiveFeatureServiceIT
     }
   }
 
-  feature("A list of features can be retrieved") {
-    scenario("Get a list of all enabled features") {
+  Feature("A list of features can be retrieved") {
+    Scenario("Get a list of all enabled features") {
       val futurePersistedFeatureList: Future[Seq[ActiveFeature]] = for {
         _                <- persistentActiveFeatureService.persist(noVotes)
         featureLannister <- persistentActiveFeatureService.persist(fieldHelp)
@@ -130,7 +130,7 @@ class PersistentActiveFeatureServiceIT
       }
     }
 
-    scenario("Get a list of features by questionId") {
+    Scenario("Get a list of features by questionId") {
 
       val futureFeaturesLists: Future[Seq[ActiveFeature]] = for {
         _ <- persistentActiveFeatureService.persist(
@@ -157,8 +157,8 @@ class PersistentActiveFeatureServiceIT
     }
   }
 
-  feature("One active feature can be deleted") {
-    scenario("Delete active feature") {
+  Feature("One active feature can be deleted") {
+    Scenario("Delete active feature") {
       val futureFeaturePersisted: Future[Option[ActiveFeature]] = for {
         _              <- persistentActiveFeatureService.persist(deleted)
         featureDeleted <- persistentActiveFeatureService.get(deleted.activeFeatureId)

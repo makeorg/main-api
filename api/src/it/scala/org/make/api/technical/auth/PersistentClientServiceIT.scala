@@ -32,11 +32,11 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
 
   override protected val cockroachExposedPort: Int = 40006
 
-  feature("Persist a oauth client") {
+  Feature("Persist a oauth client") {
     info("As a programmer")
     info("I want to be able to persist a oauth client")
 
-    scenario("Persist a Client and get the persisted CLient") {
+    Scenario("Persist a Client and get the persisted CLient") {
       Given("""a client with the values:
           |    - clientId: apiclient
           |    - allowedGrantTypes: first_grant_type,second_grant_type
@@ -88,7 +88,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       }
     }
 
-    scenario("Persist a Client with a duplicate ClientId") {
+    Scenario("Persist a Client with a duplicate ClientId") {
       Given("""a client with the values:
           |
           |    - clientId: apiclient
@@ -120,7 +120,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
     }
   }
 
-  feature("A list of oauth clients can be retrieved") {
+  Feature("A list of oauth clients can be retrieved") {
     val baseClient = Client(
       clientId = ClientId("apiclient-base"),
       name = "client",
@@ -133,7 +133,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       tokenExpirationSeconds = 300
     )
 
-    scenario("Get a list of all oauth clients") {
+    Scenario("Get a list of all oauth clients") {
 
       val futurePersistedClientList: Future[Seq[Client]] = for {
         c1 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("apiclient-one")))
@@ -152,7 +152,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       }
     }
 
-    scenario("Search oauth clients from name") {
+    Scenario("Search oauth clients from name") {
 
       val futurePersistedClientList: Future[Seq[Client]] = for {
         c1 <- persistentClientService.persist(baseClient.copy(clientId = ClientId("42"), name = "name-toto-42"))
@@ -172,7 +172,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
     }
   }
 
-  feature("One client can be updated") {
+  Feature("One client can be updated") {
     val baseClient = Client(
       clientId = ClientId("update-apiclient-base"),
       name = "client",
@@ -185,7 +185,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       tokenExpirationSeconds = 300
     )
 
-    scenario("Update client") {
+    Scenario("Update client") {
       val futureClient: Future[Option[Client]] = for {
         _ <- persistentClientService.persist(baseClient)
         c <- persistentClientService.update(baseClient.copy(name = "updated name"))
@@ -197,7 +197,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       }
     }
 
-    scenario("Update client that does not exists") {
+    Scenario("Update client that does not exists") {
       val futureClientId: Future[Option[Client]] =
         persistentClientService.update(baseClient.copy(clientId = ClientId("fake")))
 
