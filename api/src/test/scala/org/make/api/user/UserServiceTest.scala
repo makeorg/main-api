@@ -28,12 +28,12 @@ import com.github.t3hnar.bcrypt._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.question.AuthorRequest
+import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth._
 import org.make.api.technical.crm.{CrmService, CrmServiceComponent}
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{StorageService, StorageServiceComponent}
-import org.make.api.technical._
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
@@ -116,24 +116,27 @@ class UserServiceTest
   }
 
   val zonedDateTimeInThePast: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
-  val fooProfile: Profile = Profile(
-    dateOfBirth = Some(LocalDate.parse("2000-01-01")),
-    avatarUrl = Some("https://www.example.com"),
-    profession = Some("profession"),
-    phoneNumber = Some("010101"),
-    description = None,
-    twitterId = Some("@twitterid"),
-    facebookId = Some("facebookid"),
-    googleId = Some("googleId"),
-    gender = Some(Gender.Male),
-    genderName = Some("other"),
-    postalCode = Some("93"),
-    karmaLevel = Some(2),
-    locale = Some("fr_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
-    website = Some("http://example.com"),
-    politicalParty = Some("PP")
-  )
+  val fooProfile: Some[Profile] = Profile
+    .parseProfile(
+      dateOfBirth = Some(LocalDate.parse("2000-01-01")),
+      avatarUrl = Some("https://www.example.com"),
+      profession = Some("profession"),
+      phoneNumber = Some("010101"),
+      description = None,
+      twitterId = Some("@twitterid"),
+      facebookId = Some("facebookid"),
+      googleId = Some("googleId"),
+      gender = Some(Gender.Male),
+      genderName = Some("other"),
+      postalCode = Some("93"),
+      karmaLevel = Some(2),
+      locale = Some("fr_FR"),
+      socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
+      website = Some("http://example.com"),
+      politicalParty = Some("PP"),
+      legalMinorConsent = Some(true),
+      legalAdvisorApproval = Some(true)
+    )
   val fooUser: User = TestUtils.user(
     id = UserId("1"),
     email = "foo@example.com",
@@ -145,28 +148,16 @@ class UserServiceTest
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(zonedDateTimeInThePast),
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    profile = Some(fooProfile),
+    profile = fooProfile,
     createdAt = Some(zonedDateTimeInThePast)
   )
 
-  val johnDoeProfile: Profile = Profile(
-    dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-    avatarUrl = Some("facebook.com/picture"),
-    profession = None,
-    phoneNumber = None,
-    description = None,
-    twitterId = None,
-    facebookId = Some("444444"),
-    googleId = None,
-    gender = None,
-    genderName = None,
-    postalCode = None,
-    karmaLevel = None,
-    locale = None,
-    socioProfessionalCategory = None,
-    website = None,
-    politicalParty = None
-  )
+  val johnDoeProfile: Some[Profile] = Profile
+    .parseProfile(
+      dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+      avatarUrl = Some("facebook.com/picture"),
+      facebookId = Some("444444")
+    )
 
   val johnDoeUser: User = TestUtils.user(
     id = UserId("AAA-BBB-CCC-DDD"),
@@ -178,7 +169,7 @@ class UserServiceTest
     lastConnection = DateHelper.now(),
     verificationToken = Some("Token"),
     verificationTokenExpiresAt = Some(DateHelper.now()),
-    profile = Some(johnDoeProfile)
+    profile = johnDoeProfile
   )
 
   val returnedPersonality: User = TestUtils.user(
@@ -264,25 +255,13 @@ class UserServiceTest
         picture = Some("facebook.com/picture")
       )
 
-      val returnedProfile = Profile(
-        dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-        avatarUrl = Some("facebook.com/picture"),
-        profession = None,
-        phoneNumber = None,
-        description = None,
-        twitterId = None,
-        facebookId = Some("444444"),
-        googleId = None,
-        gender = None,
-        genderName = None,
-        postalCode = None,
-        karmaLevel = None,
-        locale = None,
-        socioProfessionalCategory = None,
-        registerQuestionId = Some(QuestionId("question")),
-        website = None,
-        politicalParty = None
-      )
+      val returnedProfile = Profile
+        .parseProfile(
+          dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+          avatarUrl = Some("facebook.com/picture"),
+          facebookId = Some("444444"),
+          registerQuestionId = Some(QuestionId("question"))
+        )
 
       val returnedUser = TestUtils.user(
         id = UserId("AAA-BBB-CCC-DDD"),
@@ -293,7 +272,7 @@ class UserServiceTest
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        profile = Some(returnedProfile)
+        profile = returnedProfile
       )
 
       Mockito
@@ -342,23 +321,14 @@ class UserServiceTest
         language = "fr"
       )
 
-      val returnedProfileWithGender = Profile(
-        dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-        avatarUrl = Some("facebook.com/picture"),
-        profession = None,
-        phoneNumber = None,
-        description = None,
-        twitterId = None,
-        facebookId = Some("444444"),
-        googleId = None,
-        gender = Some(Female),
-        genderName = Some("female"),
-        postalCode = None,
-        karmaLevel = None,
-        locale = None,
-        website = None,
-        politicalParty = None
-      )
+      val returnedProfileWithGender = Profile
+        .parseProfile(
+          dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+          avatarUrl = Some("facebook.com/picture"),
+          facebookId = Some("444444"),
+          gender = Some(Female),
+          genderName = Some("female")
+        )
 
       val returnedUserWithGender = TestUtils.user(
         id = UserId("AAA-BBB-CCC-DDD-EEE"),
@@ -369,7 +339,7 @@ class UserServiceTest
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        profile = Some(returnedProfileWithGender)
+        profile = returnedProfileWithGender
       )
 
       Mockito
@@ -412,23 +382,12 @@ class UserServiceTest
         picture = Some("facebook.com/picture")
       )
 
-      val returnedProfile = Profile(
-        dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-        avatarUrl = Some("facebook.com/picture"),
-        profession = None,
-        phoneNumber = None,
-        description = None,
-        twitterId = None,
-        facebookId = Some("444444"),
-        googleId = None,
-        gender = None,
-        genderName = None,
-        postalCode = None,
-        karmaLevel = None,
-        locale = None,
-        website = None,
-        politicalParty = None
-      )
+      val returnedProfile = Profile
+        .parseProfile(
+          dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+          avatarUrl = Some("facebook.com/picture"),
+          facebookId = Some("444444")
+        )
 
       val returnedUser = TestUtils.user(
         id = UserId("AAA-BBB-CCC-DDD"),
@@ -439,7 +398,7 @@ class UserServiceTest
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        profile = Some(returnedProfile)
+        profile = returnedProfile
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -475,23 +434,12 @@ class UserServiceTest
         picture = Some("facebook.com/picture")
       )
 
-      val returnedProfile = Profile(
-        dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-        avatarUrl = Some("facebook.com/picture"),
-        profession = None,
-        phoneNumber = None,
-        description = None,
-        twitterId = None,
-        facebookId = Some("444444"),
-        googleId = None,
-        gender = None,
-        genderName = None,
-        postalCode = None,
-        karmaLevel = None,
-        locale = None,
-        website = None,
-        politicalParty = None
-      )
+      val returnedProfile = Profile
+        .parseProfile(
+          dateOfBirth = Some(LocalDate.parse("1984-10-11")),
+          avatarUrl = Some("facebook.com/picture"),
+          facebookId = Some("444444")
+        )
 
       val returnedUser = TestUtils.user(
         id = UserId("AAA-BBB-CCC-DDD"),
@@ -502,7 +450,7 @@ class UserServiceTest
         lastConnection = DateHelper.now(),
         verificationToken = Some("Token"),
         verificationTokenExpiresAt = Some(DateHelper.now()),
-        profile = Some(returnedProfile)
+        profile = returnedProfile
       )
 
       Mockito.when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))

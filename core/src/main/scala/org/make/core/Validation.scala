@@ -45,6 +45,10 @@ object Validation extends StrictLogging {
 
   val postalCodeRegex: Regex = "^\\d{5}$".r
 
+  val minAgeWithLegalConsent = 8
+  val maxAgeWithLegalConsent = 15
+  val maxAge = 120
+
   def validateOptional(maybeRequire: Option[Requirement]*): Unit = validate(maybeRequire.flatten: _*)
 
   def validate(require: Requirement*): Unit = {
@@ -223,16 +227,12 @@ object Validation extends StrictLogging {
   }
 
   def validateAge(fieldName: String, userDateInput: Option[LocalDate], message: Option[String] = None): Requirement = {
-    val condition: Boolean = userDateInput.forall(
-      date =>
-        LocalDate.now().minusYears(120).isBefore(date) &&
-          LocalDate.now().minusYears(13).plusDays(1).isAfter(date)
-    )
+    val condition: Boolean = userDateInput.forall(_.isAgeBetween(minAgeWithLegalConsent, maxAge))
     validateField(
       fieldName,
       "invalid_age",
       condition,
-      message.getOrElse("Invalid date: age must be between 13 and 120")
+      message.getOrElse(s"Invalid date: age must be between $minAgeWithLegalConsent and $maxAge")
     )
   }
 
@@ -244,6 +244,17 @@ object Validation extends StrictLogging {
       condition,
       message.getOrElse("Invalid color. Must be formatted '#123456'")
     )
+  }
+
+  def validateLegalConsent(
+    fieldName: String,
+    userDateInput: LocalDate,
+    userLegalConsent: Option[Boolean],
+    message: Option[String] = None
+  ): Requirement = {
+    val condition: Boolean = userDateInput.isAgeBetween(maxAgeWithLegalConsent, maxAge) ||
+      userDateInput.isAgeBetween(minAgeWithLegalConsent, maxAgeWithLegalConsent) && userLegalConsent.contains(true)
+    validateField(fieldName, "legal_consent", condition, message.getOrElse(s"Field $fieldName must be approved."))
   }
 
   def validatePostalCode(fieldName: String, userPostalCodeInput: => String, message: Option[String]): Requirement = {
@@ -260,6 +271,12 @@ object Validation extends StrictLogging {
     Option(value).isDefined
   }
 
+  implicit class LocalDateAgeOps(val dateOfBirth: LocalDate) extends AnyVal {
+    def isAgeBetween(inclusiveMin: Int, exclusiveMax: Int): Boolean = {
+      LocalDate.now().minusYears(exclusiveMax).isBefore(dateOfBirth) &&
+      LocalDate.now().minusYears(inclusiveMin).plusDays(1).isAfter(dateOfBirth)
+    }
+  }
 }
 
 case class Requirement(field: String, key: String, condition: () => Boolean, message: () => String)

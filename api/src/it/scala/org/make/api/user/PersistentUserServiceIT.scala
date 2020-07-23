@@ -22,13 +22,13 @@ package org.make.api.user
 import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import com.github.t3hnar.bcrypt._
-import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
+import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
+import org.make.core.user._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -40,28 +40,27 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
 
-  val profile = Profile(
-    dateOfBirth = Some(LocalDate.parse("2000-01-01")),
-    avatarUrl = Some("https://www.example.com"),
-    profession = Some("profession"),
-    phoneNumber = Some("010101"),
-    description = Some("Resume of who I am"),
-    twitterId = Some("@twitterid"),
-    facebookId = Some("facebookid"),
-    googleId = Some("googleId"),
-    gender = Some(Gender.Male),
-    genderName = Some("other"),
-    postalCode = Some("93"),
-    karmaLevel = Some(2),
-    locale = Some("FR_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
-    registerQuestionId = Some(QuestionId("the question")),
-    optInPartner = Some(true),
-    politicalParty = None,
-    website = None
-  )
+  val johnDoeProfile: Some[Profile] = Profile
+    .parseProfile(
+      dateOfBirth = Some(LocalDate.parse("2000-01-01")),
+      avatarUrl = Some("https://www.example.com"),
+      profession = Some("profession"),
+      phoneNumber = Some("010101"),
+      description = Some("Resume of who I am"),
+      twitterId = Some("@twitterid"),
+      facebookId = Some("facebookid"),
+      googleId = Some("googleId"),
+      gender = Some(Gender.Male),
+      genderName = Some("other"),
+      postalCode = Some("93"),
+      karmaLevel = Some(2),
+      locale = Some("FR_FR"),
+      socioProfessionalCategory = Some(SocioProfessionalCategory.Farmers),
+      registerQuestionId = Some(QuestionId("the question")),
+      optInPartner = Some(true)
+    )
 
-  val johnDoe = TestUtilsIT.user(
+  val johnDoe: User = TestUtilsIT.user(
     id = UserId("1"),
     email = "doe@example.com",
     firstName = Some("John"),
@@ -72,7 +71,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
     roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
-    profile = Some(profile),
+    profile = johnDoeProfile,
     anonymousParticipation = true
   )
 
@@ -181,7 +180,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
   val noRegisterQuestionUser: User = johnDoe.copy(
     email = "noregistration@question.com",
     userId = UserId("no-question"),
-    profile = Some(profile.copy(registerQuestionId = None))
+    profile = johnDoeProfile.map(_.copy(registerQuestionId = None))
   )
 
   val userOrganisationCIA = TestUtilsIT.user(
@@ -243,7 +242,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
     roles = Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen),
-    profile = Some(profile)
+    profile = johnDoeProfile
   )
 
   val personalityUser = TestUtilsIT.user(

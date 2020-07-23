@@ -19,7 +19,7 @@
 
 package org.make.api.operation
 
-import java.time.{LocalDate, ZonedDateTime}
+import java.time.ZonedDateTime
 import java.util.UUID
 
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
@@ -29,11 +29,10 @@ import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.operation._
-import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
-import org.make.core.user.{Role, UserId}
+import org.make.core.user.{Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -50,28 +49,10 @@ class OperationServiceIT
 
   override protected val cockroachExposedPort: Int = 40007
 
-  val profile = Profile(
-    dateOfBirth = Some(LocalDate.parse("2000-01-02")),
-    avatarUrl = Some("https://www.example.com"),
-    profession = Some("profession"),
-    phoneNumber = Some("010101"),
-    description = Some("Resume of who I am"),
-    twitterId = Some("@twitterid"),
-    facebookId = Some("facebookid"),
-    googleId = Some("googleId"),
-    gender = Some(Gender.Male),
-    genderName = Some("other"),
-    postalCode = Some("75"),
-    karmaLevel = Some(2),
-    locale = Some("FR_FR"),
-    socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
-    politicalParty = None,
-    website = None
-  )
   val userId: UserId = UserId(UUID.randomUUID().toString)
   private val languageFr: Language = Language("fr")
 
-  val johnDoe = TestUtilsIT.user(
+  val johnDoe: User = TestUtilsIT.user(
     id = userId,
     email = "doeOpeService@example.com",
     firstName = Some("John"),
@@ -82,7 +63,7 @@ class OperationServiceIT
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")),
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
-    profile = Some(profile)
+    profile = None
   )
   val sequenceId: SequenceId = SequenceId(UUID.randomUUID().toString)
   val operationId: OperationId = OperationId(UUID.randomUUID().toString)

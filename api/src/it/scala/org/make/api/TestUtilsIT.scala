@@ -20,12 +20,12 @@
 package org.make.api
 
 import java.net.URL
-import eu.timepit.refined.W
-import eu.timepit.refined.auto._
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.collection.MaxSize
 import java.time.ZonedDateTime
 
+import eu.timepit.refined.W
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto._
+import eu.timepit.refined.collection.MaxSize
 import org.make.core.idea.IdeaId
 import org.make.core.operation._
 import org.make.core.post.indexed.IndexedPost
@@ -337,7 +337,6 @@ trait TestUtilsIT {
       sourceUrl = sourceUrl,
       summary = summary
     )
-
 }
 
 object TestUtilsIT extends TestUtilsIT

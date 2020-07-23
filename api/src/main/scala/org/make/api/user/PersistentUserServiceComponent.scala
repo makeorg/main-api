@@ -96,7 +96,9 @@ object PersistentUserServiceComponent {
     reconnectTokenCreatedAt: Option[ZonedDateTime],
     anonymousParticipation: Boolean,
     politicalParty: Option[String],
-    website: Option[String]
+    website: Option[String],
+    legalMinorConsent: Option[Boolean],
+    legalAdvisorApproval: Option[Boolean]
   ) {
     def toUser: User = {
       User(
@@ -166,7 +168,9 @@ object PersistentUserServiceComponent {
         registerQuestionId = registerQuestionId.map(QuestionId.apply),
         optInPartner = optInPartner,
         politicalParty = politicalParty,
-        website = website
+        website = website,
+        legalMinorConsent = legalMinorConsent,
+        legalAdvisorApproval = legalAdvisorApproval
       )
     }
   }
@@ -195,7 +199,9 @@ object PersistentUserServiceComponent {
       "register_question_id",
       "opt_in_partner",
       "political_party",
-      "website"
+      "website",
+      "legal_minor_consent",
+      "legal_advisor_approval"
     )
 
     private val userColumnNames: Seq[String] = Seq(
@@ -290,7 +296,9 @@ object PersistentUserServiceComponent {
         reconnectTokenCreatedAt = resultSet.zonedDateTimeOpt(userResultName.reconnectTokenCreatedAt),
         anonymousParticipation = resultSet.boolean(userResultName.anonymousParticipation),
         politicalParty = resultSet.stringOpt(userResultName.politicalParty),
-        website = resultSet.stringOpt(userResultName.website)
+        website = resultSet.stringOpt(userResultName.website),
+        legalMinorConsent = resultSet.booleanOpt(userResultName.legalMinorConsent),
+        legalAdvisorApproval = resultSet.booleanOpt(userResultName.legalAdvisorApproval)
       )
     }
   }
@@ -790,7 +798,9 @@ trait DefaultPersistentUserServiceComponent
                 .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray),
               column.anonymousParticipation -> user.anonymousParticipation,
               column.politicalParty -> user.profile.flatMap(_.politicalParty),
-              column.website -> user.profile.flatMap(_.website)
+              column.website -> user.profile.flatMap(_.website),
+              column.legalMinorConsent -> user.profile.flatMap(_.legalMinorConsent),
+              column.legalAdvisorApproval -> user.profile.flatMap(_.legalAdvisorApproval)
             )
         }.execute().apply()
       }).map(_ => user)
@@ -808,7 +818,7 @@ trait DefaultPersistentUserServiceComponent
               column.avatarUrl -> organisation.profile.flatMap(_.avatarUrl),
               column.description -> organisation.profile.flatMap(_.description),
               column.website -> organisation.profile.flatMap(_.website),
-              column.optInNewsletter -> organisation.profile.map(_.optInNewsletter).getOrElse(true),
+              column.optInNewsletter -> organisation.profile.forall(_.optInNewsletter),
               column.updatedAt -> nowDate
             )
             .where(
@@ -875,7 +885,9 @@ trait DefaultPersistentUserServiceComponent
                 .createArrayOf("VARCHAR", user.availableQuestions.map(_.value).toArray),
               column.anonymousParticipation -> user.anonymousParticipation,
               column.politicalParty -> user.profile.flatMap(_.politicalParty),
-              column.website -> user.profile.flatMap(_.website)
+              column.website -> user.profile.flatMap(_.website),
+              column.legalMinorConsent -> user.profile.flatMap(_.legalMinorConsent),
+              column.legalAdvisorApproval -> user.profile.flatMap(_.legalAdvisorApproval)
             )
             .where(
               sqls

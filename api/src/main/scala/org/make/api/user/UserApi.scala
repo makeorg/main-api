@@ -802,7 +802,7 @@ trait DefaultUserApiComponent
                         lastName = request.lastName,
                         password = Some(request.password),
                         lastIp = requestContext.ipAddress,
-                        dateOfBirth = request.dateOfBirth,
+                        dateOfBirth = Some(request.dateOfBirth),
                         profession = request.profession,
                         postalCode = request.postalCode,
                         country = country,
@@ -813,7 +813,9 @@ trait DefaultUserApiComponent
                         optIn = request.optIn,
                         optInPartner = request.optInPartner,
                         politicalParty = request.politicalParty,
-                        website = request.website.map(_.value)
+                        website = request.website.map(_.value),
+                        legalMinorConsent = request.legalMinorConsent,
+                        legalAdvisorApproval = request.legalAdvisorApproval
                       ),
                       requestContext
                     )

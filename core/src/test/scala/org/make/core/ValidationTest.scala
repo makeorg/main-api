@@ -93,9 +93,9 @@ class ValidationTest extends FeatureSpec {
     }
 
     scenario("invalid datesOfBirth") {
-      val aged12 = LocalDate.now.minusYears(12)
-      def validation12(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged12)))
-      an[ValidationFailedError] should be thrownBy validation12()
+      val aged7 = LocalDate.now.minusYears(7)
+      def validation7(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged7)))
+      an[ValidationFailedError] should be thrownBy validation7()
 
       val aged120 = LocalDate.now.minusYears(120)
       def validation120(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged120)))
@@ -103,6 +103,61 @@ class ValidationTest extends FeatureSpec {
 
       val aged121 = LocalDate.now.minusYears(121)
       def validation121(): Unit = Validation.validate(Validation.validateAge(fieldName, Some(aged121)))
+      an[ValidationFailedError] should be thrownBy validation121()
+    }
+
+  }
+
+  feature("legal consent validation") {
+    val fieldName = "legal"
+
+    scenario("valid") {
+      val aged14 = LocalDate.now.minusYears(14)
+      def validation14(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged14, Some(true)))
+      Matchers.noException should be thrownBy validation14()
+
+      val aged15 = LocalDate.now.minusYears(15)
+      def validation15(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged15, None))
+      Matchers.noException should be thrownBy validation15()
+
+      val aged119 = LocalDate.now.minusYears(119)
+      def validation119(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged119, None))
+      Matchers.noException should be thrownBy validation119()
+
+      val aged8 = LocalDate.now.minusYears(8)
+      def validation8(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged8, Some(true)))
+      Matchers.noException should be thrownBy validation8()
+    }
+
+    scenario("invalid") {
+      val aged7 = LocalDate.now.minusYears(7)
+      def validation7(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged7, Some(true)))
+      an[ValidationFailedError] should be thrownBy validation7()
+
+      val aged8 = LocalDate.now.minusYears(8)
+      def validation8WithConsent(): Unit =
+        Validation.validate(Validation.validateLegalConsent(fieldName, aged8, Some(false)))
+      an[ValidationFailedError] should be thrownBy validation8WithConsent()
+
+      def validation8WithoutConsent(): Unit =
+        Validation.validate(Validation.validateLegalConsent(fieldName, aged8, None))
+      an[ValidationFailedError] should be thrownBy validation8WithoutConsent()
+
+      val aged14 = LocalDate.now.minusYears(14)
+      def validation14WithConsent(): Unit =
+        Validation.validate(Validation.validateLegalConsent(fieldName, aged14, Some(false)))
+      an[ValidationFailedError] should be thrownBy validation14WithConsent()
+
+      def validation14WithoutConsent(): Unit =
+        Validation.validate(Validation.validateLegalConsent(fieldName, aged14, None))
+      an[ValidationFailedError] should be thrownBy validation14WithoutConsent()
+
+      val aged120 = LocalDate.now.minusYears(120)
+      def validation120(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged120, Some(true)))
+      an[ValidationFailedError] should be thrownBy validation120()
+
+      val aged121 = LocalDate.now.minusYears(121)
+      def validation121(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged121, None))
       an[ValidationFailedError] should be thrownBy validation121()
     }
 

@@ -23,8 +23,8 @@ import java.net.URL
 import java.time.ZonedDateTime
 
 import eu.timepit.refined.W
-import eu.timepit.refined.auto._
 import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.core.idea.IdeaId
@@ -476,7 +476,6 @@ trait TestUtils {
       sourceUrl = sourceUrl,
       summary = summary
     )
-
 }
 
 object TestUtils extends TestUtils

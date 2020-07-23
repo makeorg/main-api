@@ -154,7 +154,9 @@ case class UserRegisterData(
   availableQuestions: Seq[QuestionId] = Seq.empty,
   politicalParty: Option[String] = None,
   website: Option[String] = None,
-  publicProfile: Boolean = false
+  publicProfile: Boolean = false,
+  legalMinorConsent: Option[Boolean] = None,
+  legalAdvisorApproval: Option[Boolean] = None
 )
 
 case class PersonalityRegisterData(

@@ -186,7 +186,7 @@ trait ModerationQuestionComponent {
 }
 
 final case class AuthorRequest(
-  @(ApiModelProperty @field)(dataType = "integer", example = "23")
+  @(ApiModelProperty @field)(dataType = "integer", example = "23", allowableValues = "range[8, 120)")
   age: Option[Int],
   firstName: String,
   lastName: Option[String],
