@@ -19,6 +19,10 @@
 
 package org.make.api.operation
 
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.string.Url
+import eu.timepit.refined.auto._
+import io.circe.refined._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
@@ -49,7 +53,7 @@ import scala.annotation.meta.field
 )
 @Path(value = "/admin/views/home/current-operations")
 trait AdminCurrentOperationApi extends Directives {
-  @ApiOperation(value = "post-current-operation", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "post-current-operation", httpMethod = "POST", code = HttpCodes.Created)
   @ApiResponses(
     value = Array(
       new ApiResponse(code = HttpCodes.Created, message = "Created", response = classOf[CurrentOperationIdResponse])
@@ -73,12 +77,12 @@ trait AdminCurrentOperationApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "currentOperationId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(
         name = "body",
         paramType = "body",
         dataType = "org.make.api.operation.UpdateCurrentOperationRequest"
-      ),
-      new ApiImplicitParam(name = "currentOperationId", paramType = "path", dataType = "string")
+      )
     )
   )
   @Path(value = "/{currentOperationId}")
@@ -245,11 +249,13 @@ final case class CreateCurrentOperationRequest(
   questionId: QuestionId,
   description: String,
   label: String,
-  picture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/picture.png")
+  picture: String Refined Url,
   altPicture: String,
   linkLabel: String,
   internalLink: Option[String],
-  externalLink: Option[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external-link")
+  externalLink: Option[String Refined Url]
 ) {
   validate(
     validateUserInput("description", description, None),
@@ -258,7 +264,7 @@ final case class CreateCurrentOperationRequest(
     validateUserInput("altPicture", altPicture, None),
     validateUserInput("linkLabel", linkLabel, None),
     validateOptionalUserInput("internalLink", internalLink, None),
-    validateOptionalUserInput("externalLink", externalLink, None),
+    validateOptionalUserInput("externalLink", externalLink.map(_.value), None),
     maxLength("description", 130, description),
     maxLength("label", 25, label),
     maxLength("altPicture", 80, altPicture),
@@ -281,11 +287,13 @@ final case class UpdateCurrentOperationRequest(
   questionId: QuestionId,
   description: String,
   label: String,
-  picture: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/picture.png")
+  picture: String Refined Url,
   altPicture: String,
   linkLabel: String,
   internalLink: Option[String],
-  externalLink: Option[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external-link")
+  externalLink: Option[String Refined Url]
 ) {
   validate(
     validateUserInput("description", description, None),
@@ -294,7 +302,7 @@ final case class UpdateCurrentOperationRequest(
     validateUserInput("altPicture", altPicture, None),
     validateUserInput("linkLabel", linkLabel, None),
     validateOptionalUserInput("internalLink", internalLink, None),
-    validateOptionalUserInput("externalLink", externalLink, None),
+    validateOptionalUserInput("externalLink", externalLink.map(_.value), None),
     maxLength("description", 130, description),
     maxLength("label", 25, label),
     maxLength("altPicture", 80, altPicture),
@@ -319,10 +327,12 @@ final case class CurrentOperationResponse(
   questionId: QuestionId,
   description: String,
   label: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/picture.png")
   picture: String,
   altPicture: String,
   linkLabel: String,
   internalLink: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external-link")
   externalLink: Option[String]
 )
 

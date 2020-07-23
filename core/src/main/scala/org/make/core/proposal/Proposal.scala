@@ -198,7 +198,7 @@ trait BaseQualification {
 }
 
 final case class Qualification(
-  @(ApiModelProperty @field)(dataType = "string", example = "LikeIt")
+  @(ApiModelProperty @field)(dataType = "string", example = "likeIt")
   override val key: QualificationKey,
   override val count: Int,
   override val countVerified: Int,

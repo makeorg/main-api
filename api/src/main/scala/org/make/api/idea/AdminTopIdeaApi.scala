@@ -57,8 +57,8 @@ trait AdminTopIdeaApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "ideaId", paramType = "query", dataType = "string"),

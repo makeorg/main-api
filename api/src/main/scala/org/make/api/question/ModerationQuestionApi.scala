@@ -73,8 +73,8 @@ trait ModerationQuestionApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "slug", paramType = "query", dataType = "string"),
@@ -120,7 +120,7 @@ trait ModerationQuestionApi extends Directives {
   @ApiOperation(
     value = "moderation-refuse-initial-proposal",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.NoContent,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -129,12 +129,12 @@ trait ModerationQuestionApi extends Directives {
     )
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string")))
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @Path(value = "/{questionId}/initial-proposals/refuse")
   def refuseInitialProposals: Route
 
   @ApiOperation(
-    value = "get-question",
+    value = "moderation-get-question",
     httpMethod = "GET",
     code = HttpCodes.OK,
     authorizations = Array(
@@ -155,7 +155,7 @@ trait ModerationQuestionApi extends Directives {
   def getQuestion: Route
 
   @ApiOperation(
-    value = "upload-operation-consultation-image",
+    value = "moderation-upload-operation-consultation-image",
     httpMethod = "POST",
     code = HttpCodes.OK,
     consumes = "multipart/form-data",
@@ -190,6 +190,7 @@ final case class AuthorRequest(
   age: Option[Int],
   firstName: String,
   lastName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345")
   postalCode: Option[String],
   profession: Option[String]
 ) {

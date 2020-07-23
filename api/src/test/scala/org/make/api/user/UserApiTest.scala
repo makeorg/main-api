@@ -1253,7 +1253,7 @@ class UserApiTest
       Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(`Remote-Address`(RemoteAddress(addr)))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
-        status should be(StatusCodes.NoContent)
+        status should be(StatusCodes.OK)
         verify(userService).update(
           matches(
             sylvain.copy(
@@ -1294,7 +1294,7 @@ class UserApiTest
       Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(`Remote-Address`(RemoteAddress(addr)))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
-        status should be(StatusCodes.NoContent)
+        status should be(StatusCodes.OK)
         verify(userService).update(
           matches(
             sylvain.copy(

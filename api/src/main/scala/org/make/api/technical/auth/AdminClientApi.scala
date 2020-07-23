@@ -76,12 +76,12 @@ trait AdminClientApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "clientId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(
         name = "body",
         paramType = "body",
         dataType = "org.make.api.technical.auth.AdminCreateClientRequest"
-      ),
-      new ApiImplicitParam(name = "clientId", paramType = "path", dataType = "string")
+      )
     )
   )
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ClientResponse])))
@@ -117,8 +117,8 @@ trait AdminClientApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "name", paramType = "query", dataType = "string")
     )
   )
@@ -254,7 +254,9 @@ final case class ClientResponse(
   clientId: ClientId,
   name: String,
   allowedGrantTypes: Seq[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "ebe271b8-236f-46da-94ca-fec0b83534ca")
   secret: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "3ffd4b4a-c603-4fbb-aada-639edd169836")
   scope: Option[String],
   redirectUri: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
@@ -284,12 +286,18 @@ object ClientResponse {
 
 final case class AdminCreateClientRequest(
   name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "ebe271b8-236f-46da-94ca-fec0b83534ca")
   secret: String,
   allowedGrantTypes: Seq[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "3ffd4b4a-c603-4fbb-aada-639edd169836")
   scope: Option[String],
   redirectUri: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "59043bc6-d540-4c8e-9c66-fe8601c2c67d")
   defaultUserId: Option[UserId],
+  @(ApiModelProperty @field)(
+    dataType = "list[string]",
+    allowableValues = "ROLE_ADMIN,ROLE_MODERATOR,ROLE_POLITICAL,ROLE_CITIZEN,ROLE_ACTOR"
+  )
   roles: Seq[String],
   @(ApiModelProperty @field)(dataType = "int", example = "300")
   tokenExpirationSeconds: Int

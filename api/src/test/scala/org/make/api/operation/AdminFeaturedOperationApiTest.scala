@@ -48,8 +48,8 @@ class AdminFeaturedOperationApiTest
     questionId = Some(QuestionId("question-id")),
     title = "featured operation",
     description = Some("description"),
-    landscapePicture = "landscape-picture.png",
-    portraitPicture = "portrait-picture.png",
+    landscapePicture = "https://example.com/landscape-picture.png",
+    portraitPicture = "https://example.com/portrait-picture.png",
     altPicture = "alt picture",
     label = "Grande cause",
     buttonLabel = "En savoir +",
@@ -153,18 +153,20 @@ class AdminFeaturedOperationApiTest
         .thenReturn(Future.successful(featuredOperation))
 
       Post("/admin/views/home/featured-operations")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{
             | "questionId": "question-id",
             | "title": "featured operation",
             | "description": "description",
-            | "landscapePicture": "landscape-picture.png",
-            | "portraitPicture": "portrait-picture.png",
+            | "landscapePicture": "https://example.com/landscape-picture.png",
+            | "portraitPicture": "https://example.com/portrait-picture.png",
             | "altPicture": "alt picture",
             | "label": "Grande cause",
             | "buttonLabel": "En savoir +",
             | "internalLink": "Consultation",
             | "slot": "1"
-            |}""".stripMargin))
+            |}""".stripMargin)
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.Created
       }
@@ -172,14 +174,16 @@ class AdminFeaturedOperationApiTest
 
     scenario("post featured operation - bad request: some mandatory field missing") {
       Post("/admin/views/home/featured-operations")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{
             | "questionId": "question-id",
-            | "landscapePicture": "landscape-picture.png",
+            | "landscapePicture": "https://example.com/landscape-picture.png",
             | "label": "Grande cause",
             | "buttonLabel": "En savoir +",
             | "internalLink": "Consultation",
             | "slot": "1"
-            |}""".stripMargin))
+            |}""".stripMargin)
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
@@ -194,8 +198,8 @@ class AdminFeaturedOperationApiTest
           | "questionId": "question-id",
           | "title": "featured operation with a title too looooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
           | "description": "description",
-          | "landscapePicture": "landscape-picture.png",
-          | "portraitPicture": "portrait-picture.png",
+          | "landscapePicture": "https://example.com/landscape-picture.png",
+          | "portraitPicture": "https://example.com/portrait-picture.png",
           | "altPicture": "alt picture aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +",
@@ -211,19 +215,21 @@ class AdminFeaturedOperationApiTest
 
     scenario("post featured operation - bad request: two link are defined") {
       Post("/admin/views/home/featured-operations")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{
           | "questionId": "question-id",
           | "title": "featured operation",
           | "description": "description",
-          | "landscapePicture": "landscape-picture.png",
-          | "portraitPicture": "portrait-picture.png",
+          | "landscapePicture": "https://example.com/landscape-picture.png",
+          | "portraitPicture": "https://example.com/portrait-picture.png",
           | "altPicture": "alt picture",
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +",
           | "internalLink": "Consultation",
           | "externalLink": "link.com",
           | "slot": "1"
-          |}""".stripMargin))
+          |}""".stripMargin)
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
@@ -237,18 +243,20 @@ class AdminFeaturedOperationApiTest
       ).thenReturn(Future.successful(Some(featuredOperation)))
 
       Put("/admin/views/home/featured-operations/featured-operation-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{
           | "questionId": "question-id",
           | "title": "featured operation",
           | "description": "description",
-          | "landscapePicture": "landscape-picture.png",
-          | "portraitPicture": "portrait-picture.png",
+          | "landscapePicture": "https://example.com/landscape-picture.png",
+          | "portraitPicture": "https://example.com/portrait-picture.png",
           | "altPicture": "alt picture",
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +",
           | "internalLink": "Consultation",
           | "slot": "1"
-          |}""".stripMargin))
+          |}""".stripMargin)
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.OK
       }
@@ -261,18 +269,20 @@ class AdminFeaturedOperationApiTest
       ).thenReturn(Future.successful(None))
 
       Put("/admin/views/home/featured-operations/not-found-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{
           | "questionId": "question-id",
           | "title": "featured operation",
           | "description": "description",
-          | "landscapePicture": "landscape-picture.png",
-          | "portraitPicture": "portrait-picture.png",
+          | "landscapePicture": "https://example.com/landscape-picture.png",
+          | "portraitPicture": "https://example.com/portrait-picture.png",
           | "altPicture": "alt picture",
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +",
           | "internalLink": "Consultation",
           | "slot": "1"
-          |}""".stripMargin))
+          |}""".stripMargin)
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
@@ -280,13 +290,15 @@ class AdminFeaturedOperationApiTest
 
     scenario("put featured operation - bad request: some mandatory field are missing") {
       Put("/admin/views/home/featured-operations/featured-operation-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{
           | "questionId": "question-id",
           | "description": "description",
-          | "landscapePicture": "landscape-picture.png",
+          | "landscapePicture": "https://example.com/landscape-picture.png",
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +"
-          |}""".stripMargin))
+          |}""".stripMargin)
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }
@@ -301,8 +313,8 @@ class AdminFeaturedOperationApiTest
           | "questionId": "question-id",
           | "title": "featured operation with a title too looooooooooooooooooooooooooooooooooooooooooooooooooooooooong",
           | "description": "description",
-          | "landscapePicture": "landscape-picture.png",
-          | "portraitPicture": "portrait-picture.png",
+          | "landscapePicture": "https://example.com/landscape-picture.png",
+          | "portraitPicture": "https://example.com/portrait-picture.png",
           | "altPicture": "alt picture aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +",
@@ -318,19 +330,21 @@ class AdminFeaturedOperationApiTest
 
     scenario("put featured operation - bad request: two link are defined") {
       Put("/admin/views/home/featured-operations/featured-operation-id")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, """{
+        .withEntity(
+          HttpEntity(ContentTypes.`application/json`, """{
           | "questionId": "question-id",
           | "title": "featured operation",
           | "description": "description",
-          | "landscapePicture": "landscape-picture.png",
-          | "portraitPicture": "portrait-picture.png",
+          | "landscapePicture": "https://example.com/landscape-picture.png",
+          | "portraitPicture": "https://example.com/portrait-picture.png",
           | "altPicture": "alt picture",
           | "label": "Grande cause",
           | "buttonLabel": "En savoir +",
           | "internalLink": "Consultation",
           | "externalLink": "link.com",
           | "slot": "1"
-          |}""".stripMargin))
+          |}""".stripMargin)
+        )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.BadRequest
       }

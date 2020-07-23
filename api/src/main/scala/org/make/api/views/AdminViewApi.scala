@@ -32,7 +32,7 @@ import org.make.core.{HttpCodes, ParameterExtractors}
 
 import scala.concurrent.Future
 
-@Api(value = "Admin Home Image")
+@Api(value = "Admin View")
 @Path(value = "/admin/views/home")
 trait AdminViewApi extends Directives {
 

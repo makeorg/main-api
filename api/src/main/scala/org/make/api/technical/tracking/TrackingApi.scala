@@ -38,7 +38,7 @@ import scala.annotation.meta.field
 @Path(value = "/tracking")
 trait TrackingApi extends Directives {
 
-  @ApiOperation(value = "front-events", httpMethod = "POST")
+  @ApiOperation(value = "front-events", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(
@@ -52,7 +52,7 @@ trait TrackingApi extends Directives {
   @Path(value = "/front")
   def frontTracking: Route
 
-  @ApiOperation(value = "front-performance", httpMethod = "POST")
+  @ApiOperation(value = "front-performance", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(

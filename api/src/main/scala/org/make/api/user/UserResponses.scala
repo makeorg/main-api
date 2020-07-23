@@ -47,26 +47,33 @@ import org.make.core.Validation.{
 
 case class UserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55") userId: UserId,
-  email: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],
   lastName: Option[String],
   organisationName: Option[String],
   enabled: Boolean,
   emailVerified: Boolean,
   isOrganisation: Boolean,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   lastConnection: ZonedDateTime,
-  @(ApiModelProperty @field)(dataType = "list[string]", allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN")
+  @(ApiModelProperty @field)(
+    dataType = "list[string]",
+    allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN,ROLE_POLITICAL,ROLE_ACTOR"
+  )
   roles: Seq[Role],
   profile: Option[ProfileResponse],
-  @(ApiModelProperty @field)(dataType = "string") country: Country,
-  @(ApiModelProperty @field)(dataType = "string") language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   isHardBounce: Boolean,
   @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse")
   lastMailingError: Option[MailingErrorLogResponse],
   hasPassword: Boolean,
-  @(ApiModelProperty @field)(dataType = "list[string]") followedUsers: Seq[UserId] = Seq.empty,
-  @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType
+  @(ApiModelProperty @field)(
+    dataType = "list[string]",
+    example = "dfd03792-cd78-4390-92c0-d3084f584d0b,3622a467-74d7-4dad-b203-144751e4bc05"
+  )
+  followedUsers: Seq[UserId] = Seq.empty,
+  @(ApiModelProperty @field)(dataType = "string", example = "USER", allowableValues = "USER,ORGANISATION,PERSONALITY") userType: UserType
 )
 
 object UserResponse extends CirceFormatters {
@@ -100,11 +107,15 @@ object UserResponse extends CirceFormatters {
 case class CurrentUserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
   userId: UserId,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,
   displayName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "USER")
   userType: UserType,
-  @(ApiModelProperty @field)(dataType = "list[string]", allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN")
+  @(ApiModelProperty @field)(
+    dataType = "list[string]",
+    allowableValues = "ROLE_CITIZEN,ROLE_MODERATOR,ROLE_ADMIN,ROLE_POLITICAL,ROLE_ACTOR"
+  )
   roles: Seq[Role],
   hasPassword: Boolean,
   enabled: Boolean,
@@ -113,6 +124,7 @@ case class CurrentUserResponse(
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String]
 )
 
@@ -125,12 +137,12 @@ case class UserProfileResponse(
   firstName: Option[String],
   lastName: Option[String],
   dateOfBirth: Option[LocalDate],
-  avatarUrl: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
   profession: Option[String],
   description: Option[String],
-  postalCode: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345") postalCode: Option[String],
   optInNewsletter: Boolean,
-  website: Option[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[String]
 )
 
 object UserProfileResponse {
@@ -146,9 +158,9 @@ case class UserProfileRequest(
   avatarUrl: Option[String Refined Url],
   profession: Option[String],
   description: Option[String],
-  postalCode: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345") postalCode: Option[String],
   optInNewsletter: Boolean,
-  @(ApiModelProperty @field)(dataType = "string", example = "https://make.org")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
   private val maxDescriptionLength = 450
@@ -171,10 +183,7 @@ object UserProfileRequest {
   implicit val decoder: Decoder[UserProfileRequest] = deriveDecoder[UserProfileRequest]
 }
 
-case class MailingErrorLogResponse(
-  error: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-21T16:33:21.523+01:00[Europe/Paris]") date: ZonedDateTime
-)
+case class MailingErrorLogResponse(error: String, @(ApiModelProperty @field)(dataType = "dateTime") date: ZonedDateTime)
 
 object MailingErrorLogResponse extends CirceFormatters {
   implicit val encoder: Encoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
@@ -185,13 +194,15 @@ object MailingErrorLogResponse extends CirceFormatters {
 }
 
 case class ProfileResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
   profession: Option[String],
   phoneNumber: Option[String],
   description: Option[String],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
   genderName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345")
   postalCode: Option[String],
   locale: Option[String],
   optInNewsletter: Boolean = true,
@@ -201,6 +212,7 @@ case class ProfileResponse(
   registerQuestionId: Option[QuestionId] = None,
   @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean] = None,
   politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String]
 )
 

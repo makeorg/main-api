@@ -75,8 +75,8 @@ trait AdminPersonalityRoleApi extends Directives {
   @ApiOperation(value = "list-personality-roles", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "name", paramType = "query", dataType = "string")
@@ -100,7 +100,8 @@ trait AdminPersonalityRoleApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityRoleResponse]))
+    value =
+      Array(new ApiResponse(code = HttpCodes.Created, message = "Ok", response = classOf[PersonalityRoleResponse]))
   )
   @Path(value = "/")
   def createPersonalityRole: Route
@@ -109,15 +110,15 @@ trait AdminPersonalityRoleApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.personality.UpdatePersonalityRoleRequest"
-      ),
-      new ApiImplicitParam(
         name = "personalityRoleId",
         paramType = "path",
         dataType = "string",
         example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      ),
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.personality.UpdatePersonalityRoleRequest"
       )
     )
   )
@@ -165,7 +166,7 @@ trait AdminPersonalityRoleApi extends Directives {
       )
     )
   )
-  @Path(value = "/{personalityRoleId}/fields/{personalityRoleFieldId")
+  @Path(value = "/{personalityRoleId}/fields/{personalityRoleFieldId}")
   def getPersonalityRoleField: Route
 
   @ApiOperation(value = "list-personality-role-fields", httpMethod = "GET", code = HttpCodes.OK)
@@ -177,12 +178,17 @@ trait AdminPersonalityRoleApi extends Directives {
         dataType = "string",
         example = "d22c8e70-f709-42ff-8a52-9398d159c753"
       ),
-      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "name", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "fieldType", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "fieldType",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "INT,STRING,BOOLEAN"
+      ),
       new ApiImplicitParam(name = "required", paramType = "query", dataType = "boolean")
     )
   )
@@ -198,21 +204,21 @@ trait AdminPersonalityRoleApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.personality.CreatePersonalityRoleFieldRequest"
-      ),
-      new ApiImplicitParam(
         name = "personalityRoleId",
         paramType = "path",
         dataType = "string",
         example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      ),
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.personality.CreatePersonalityRoleFieldRequest"
       )
     )
   )
   @ApiResponses(
     value =
-      Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[PersonalityRoleFieldResponse]))
+      Array(new ApiResponse(code = HttpCodes.Created, message = "Ok", response = classOf[PersonalityRoleFieldResponse]))
   )
   @Path(value = "/{personalityRoleId}/fields")
   def createPersonalityRoleField: Route
@@ -220,11 +226,6 @@ trait AdminPersonalityRoleApi extends Directives {
   @ApiOperation(value = "update-personality-role-field", httpMethod = "PUT", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.personality.UpdatePersonalityRoleFieldRequest"
-      ),
       new ApiImplicitParam(
         name = "personalityRoleId",
         paramType = "path",
@@ -236,6 +237,11 @@ trait AdminPersonalityRoleApi extends Directives {
         paramType = "path",
         dataType = "string",
         example = "d22c8e70-f709-42ff-8a52-9398d159c753"
+      ),
+      new ApiImplicitParam(
+        value = "body",
+        paramType = "body",
+        dataType = "org.make.api.personality.UpdatePersonalityRoleFieldRequest"
       )
     )
   )
@@ -574,7 +580,12 @@ object UpdatePersonalityRoleRequest {
   implicit val decoder: Decoder[UpdatePersonalityRoleRequest] = deriveDecoder[UpdatePersonalityRoleRequest]
 }
 
-final case class CreatePersonalityRoleFieldRequest(name: String, fieldType: FieldType, required: Boolean) {
+final case class CreatePersonalityRoleFieldRequest(
+  name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "STRING", allowableValues = "INT,STRING,BOOLEAN")
+  fieldType: FieldType,
+  required: Boolean
+) {
   validate(validateUserInput("name", name, None))
 }
 
@@ -582,7 +593,12 @@ object CreatePersonalityRoleFieldRequest {
   implicit val decoder: Decoder[CreatePersonalityRoleFieldRequest] = deriveDecoder[CreatePersonalityRoleFieldRequest]
 }
 
-final case class UpdatePersonalityRoleFieldRequest(name: String, fieldType: FieldType, required: Boolean) {
+final case class UpdatePersonalityRoleFieldRequest(
+  name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "STRING", allowableValues = "INT,STRING,BOOLEAN")
+  fieldType: FieldType,
+  required: Boolean
+) {
   validate(validateUserInput("name", name, None))
 }
 
@@ -615,9 +631,9 @@ object PersonalityRoleIdResponse {
 
 case class PersonalityRoleFieldResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: PersonalityRoleFieldId,
-  personalityRoleId: PersonalityRoleId,
+  @(ApiModelProperty @field)(dataType = "string", example = "0226897d-c137-4e20-ade0-af40426764a4") personalityRoleId: PersonalityRoleId,
   name: String,
-  fieldType: FieldType,
+  @(ApiModelProperty @field)(dataType = "string", example = "STRING") fieldType: FieldType,
   required: Boolean
 )
 

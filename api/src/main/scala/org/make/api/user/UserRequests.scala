@@ -54,14 +54,16 @@ import scala.annotation.meta.field
 import scala.util.{Success, Try}
 
 case class ProfileRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01")
+  @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]],
   profession: Option[String],
   phoneNumber: Option[String],
+  @(ApiModelProperty @field)(dataType = "string")
   description: Option[String Refined MaxSize[W.`450`.T]],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
   genderName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345")
   postalCode: Option[String],
   locale: Option[String],
   optInNewsletter: Boolean = true,
@@ -69,6 +71,7 @@ case class ProfileRequest(
   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
   @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean] = None,
   politicalParty: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
 
@@ -170,15 +173,18 @@ object ProfileRequest extends CirceFormatters {
 }
 
 case class RegisterUserRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "p4ssw0rd")
   password: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: Option[LocalDate],
   firstName: Option[String],
   lastName: Option[String],
   profession: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345")
   postalCode: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "boolean") optIn: Option[Boolean],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O") socioProfessionalCategory: Option[
@@ -189,7 +195,9 @@ case class RegisterUserRequest(
   ],
   @(ApiModelProperty @field)(dataType = "boolean") optInPartner: Option[Boolean],
   politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[String Refined Url]
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[
+    String Refined Url
+  ]
 ) {
 
   validate(
@@ -220,22 +228,22 @@ object RegisterUserRequest extends CirceFormatters {
 }
 
 case class UpdateUserRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01") dateOfBirth: Option[String],
+  @(ApiModelProperty @field)(dataType = "date") dateOfBirth: Option[String],
   firstName: Option[String],
   lastName: Option[String],
   organisationName: Option[String],
   profession: Option[String],
-  postalCode: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345") postalCode: Option[String],
   phoneNumber: Option[String],
   description: Option[String],
   @(ApiModelProperty @field)(dataType = "boolean") optInNewsletter: Option[Boolean],
-  gender: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[String],
   genderName: Option[String],
-  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   socioProfessionalCategory: Option[String],
   politicalParty: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com") website: Option[
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[
     String Refined Or[Url, Empty]
   ]
 ) {
@@ -292,10 +300,11 @@ object UpdateUserRequest extends CirceFormatters {
 }
 
 case class SocialLoginRequest(
-  provider: String,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "facebook,google") provider: String,
   token: String,
-  @(ApiModelProperty @field)(dataType = "string") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "888f7b51-469c-49b6-8bc2-4dafe1df6922")
   clientId: Option[ClientId]
 ) {
   validate(mandatoryField("language", language), mandatoryField("country", country))
@@ -305,7 +314,10 @@ object SocialLoginRequest {
   implicit val decoder: Decoder[SocialLoginRequest] = deriveDecoder[SocialLoginRequest]
 }
 
-final case class ResetPasswordRequest(email: String) {
+final case class ResetPasswordRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
+  email: String
+) {
   validate(
     mandatoryField("email", email),
     validateEmail("email", email.toLowerCase),
@@ -356,7 +368,10 @@ object DeleteUserRequest {
   implicit val decoder: Decoder[DeleteUserRequest] = deriveDecoder[DeleteUserRequest]
 }
 
-final case class SubscribeToNewsLetter(email: String) {
+final case class SubscribeToNewsLetter(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
+  email: String
+) {
   validate(
     mandatoryField("email", email),
     validateEmail("email", email.toLowerCase),
@@ -368,7 +383,10 @@ object SubscribeToNewsLetter {
   implicit val decoder: Decoder[SubscribeToNewsLetter] = deriveDecoder[SubscribeToNewsLetter]
 }
 
-final case class ResendValidationEmailRequest(email: String)
+final case class ResendValidationEmailRequest(
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
+  email: String
+)
 
 object ResendValidationEmailRequest {
   implicit val decoder: Decoder[ResendValidationEmailRequest] = deriveDecoder[ResendValidationEmailRequest]

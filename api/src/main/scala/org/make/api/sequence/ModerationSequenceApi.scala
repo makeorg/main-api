@@ -71,13 +71,13 @@ trait ModerationSequenceApi extends Directives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Boolean])))
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "sequenceId", paramType = "path", required = true, value = "", dataType = "string"),
+      new ApiImplicitParam(name = "questionId", paramType = "path", required = true, value = "", dataType = "string"),
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
         dataType = "org.make.api.sequence.SequenceConfigurationRequest"
-      ),
-      new ApiImplicitParam(name = "sequenceId", paramType = "path", required = true, value = "", dataType = "string"),
-      new ApiImplicitParam(name = "questionId", paramType = "path", required = true, value = "", dataType = "string")
+      )
     )
   )
   @Path(value = "/{sequenceId}/{questionId}/configuration")

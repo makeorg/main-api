@@ -49,9 +49,9 @@ import org.make.core.user.Role.RoleAdmin
 import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.ApiParamMagnetHelper._
 
 @Api(value = "User")
 @Path(value = "/user")
@@ -149,7 +149,7 @@ trait UserApi extends Directives {
   def currentUser: Route
 
   @Path(value = "/login/social")
-  @ApiOperation(value = "Login Social", httpMethod = "POST", code = HttpCodes.OK)
+  @ApiOperation(value = "social-login", httpMethod = "POST", code = HttpCodes.OK)
   @ApiImplicitParams(
     value =
       Array(new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.SocialLoginRequest"))
@@ -169,8 +169,21 @@ trait UserApi extends Directives {
         dataType = "string",
         example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55"
       ),
-      new ApiImplicitParam(name = "votes", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "qualifications", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "votes",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "agree,disagree,neutral",
+        allowMultiple = true
+      ),
+      new ApiImplicitParam(
+        name = "qualifications",
+        paramType = "query",
+        dataType = "string",
+        allowableValues =
+          "likeIt,doable,platitudeAgree,noWay,impossible,platitudeDisagree,doNotUnderstand,noOpinion,doNotCare",
+        allowMultiple = true
+      ),
       new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
@@ -185,13 +198,7 @@ trait UserApi extends Directives {
   @ApiOperation(value = "register-user", httpMethod = "POST", code = HttpCodes.Created)
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.RegisterUserRequest"),
-      new ApiImplicitParam(
-        value = "X-Forwarded-For",
-        paramType = "header",
-        dataType = "string",
-        name = "X-Forwarded-For"
-      )
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.user.RegisterUserRequest")
     )
   )
   @ApiResponses(
@@ -199,7 +206,7 @@ trait UserApi extends Directives {
   )
   def register: Route
 
-  @ApiOperation(value = "verifiy user email", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiOperation(value = "verifiy-user-email", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/{userId}/validate/:verificationToken")
   @ApiImplicitParams(
@@ -215,7 +222,7 @@ trait UserApi extends Directives {
   )
   def validateAccountRoute: Route
 
-  @ApiOperation(value = "Reset password request token", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiOperation(value = "reset-password-request-token", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/reset-password/request-reset")
   @ApiImplicitParams(
@@ -225,7 +232,7 @@ trait UserApi extends Directives {
   )
   def resetPasswordRequestRoute: Route
 
-  @ApiOperation(value = "Reset password token check", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiOperation(value = "reset-password-token-check", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/reset-password/check-validity/:userId/:resetToken")
   @ApiImplicitParams(
@@ -241,7 +248,7 @@ trait UserApi extends Directives {
   )
   def resetPasswordCheckRoute: Route
 
-  @ApiOperation(value = "Reset password", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiOperation(value = "reset-password", httpMethod = "POST", code = HttpCodes.NoContent)
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No content")))
   @Path(value = "/reset-password/change-password/:userId")
   @ApiImplicitParams(
@@ -468,10 +475,8 @@ trait UserApi extends Directives {
   @Path(value = "/{userId}/reconnect")
   def reconnectInfo: Route
 
-  @ApiOperation(value = "resend-validation-email", httpMethod = "POST")
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content", response = classOf[Unit]))
-  )
+  @ApiOperation(value = "resend-validation-email", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -733,8 +738,8 @@ trait DefaultUserApiComponent
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             parameters(
               (
-                "votes".as[immutable.Seq[VoteKey]].?,
-                "qualifications".as[immutable.Seq[QualificationKey]].?,
+                "votes".as[Seq[VoteKey]].*,
+                "qualifications".as[Seq[QualificationKey]].*,
                 "sort".?,
                 "order".as[SortOrder].?,
                 "limit".as[Int].?,
@@ -1096,7 +1101,7 @@ trait DefaultUserApiComponent
                         )
                       }
                       provideAsync(userService.getFollowedUsers(user.userId)) { followedUsers =>
-                        complete(StatusCodes.NoContent -> UserResponse(user, followedUsers))
+                        complete(StatusCodes.OK -> UserResponse(user, followedUsers))
                       }
                     }
                   }

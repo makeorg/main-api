@@ -19,7 +19,7 @@
 
 package org.make.api.organisation
 
-import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
+import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
@@ -39,14 +39,13 @@ import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationKind
+import org.make.core.profile.Profile
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import org.make.core.{HttpCodes, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
-
-import scala.collection.immutable
-import org.make.core.profile.Profile
+import org.make.core.ApiParamMagnetHelper._
 
 @Api(value = "Organisations")
 @Path(value = "/organisations")
@@ -107,8 +106,21 @@ trait OrganisationApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "votes", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "qualifications", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "votes",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "agree,disagree,neutral",
+        allowMultiple = true
+      ),
+      new ApiImplicitParam(
+        name = "qualifications",
+        paramType = "query",
+        dataType = "string",
+        allowableValues =
+          "likeIt,doable,platitudeAgree,noWay,impossible,platitudeDisagree,doNotUnderstand,noOpinion,doNotCare",
+        allowMultiple = true
+      ),
       new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
@@ -150,7 +162,7 @@ trait OrganisationApi extends Directives {
       )
     )
   )
-  @Path(value = "/{userId}/profile")
+  @Path(value = "/{organisationId}/profile")
   def updateProfile: Route
 
   def routes: Route =
@@ -202,7 +214,7 @@ trait DefaultOrganisationApiComponent
                   avatarUrl = organisation.profile.flatMap(_.avatarUrl),
                   description = organisation.profile.flatMap(_.description),
                   website = organisation.profile.flatMap(_.website),
-                  optInNewsletter = organisation.profile.map(_.optInNewsletter).getOrElse(true)
+                  optInNewsletter = organisation.profile.forall(_.optInNewsletter)
                 )
               )
             }
@@ -217,7 +229,7 @@ trait DefaultOrganisationApiComponent
           makeOperation("GetOrganisations") { _ =>
             parameters(
               (
-                "organisationIds".as[immutable.Seq[UserId]].?,
+                "organisationIds".as[Seq[UserId]].?,
                 "organisationName".as[String].?,
                 "slug".as[String].?,
                 "country".as[Country].?,
@@ -292,8 +304,8 @@ trait DefaultOrganisationApiComponent
               provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
                 parameters(
                   (
-                    "votes".as[immutable.Seq[VoteKey]].?,
-                    "qualifications".as[immutable.Seq[QualificationKey]].?,
+                    "votes".as[Seq[VoteKey]].*,
+                    "qualifications".as[Seq[QualificationKey]].*,
                     "sort".?,
                     "order".as[SortOrder].?,
                     "limit".as[Int].?,
@@ -369,7 +381,7 @@ trait DefaultOrganisationApiComponent
                             avatarUrl = modifiedOrganisation.profile.flatMap(_.avatarUrl),
                             description = modifiedOrganisation.profile.flatMap(_.description),
                             website = modifiedOrganisation.profile.flatMap(_.website),
-                            optInNewsletter = modifiedOrganisation.profile.map(_.optInNewsletter).getOrElse(true)
+                            optInNewsletter = modifiedOrganisation.profile.forall(_.optInNewsletter)
                           )
                         )
                       }

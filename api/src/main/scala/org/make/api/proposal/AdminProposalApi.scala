@@ -70,7 +70,7 @@ trait AdminProposalApi extends Directives {
   @ApiOperation(
     value = "reset-unverified-proposal-votes",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.Accepted,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",

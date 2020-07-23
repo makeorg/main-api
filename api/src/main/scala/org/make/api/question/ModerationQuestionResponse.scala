@@ -107,6 +107,7 @@ final case class FinalCardResponse(
   share: Option[String],
   learnMoreTitle: Option[String],
   learnMoreTextButton: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
   linkUrl: Option[String]
 )
 object FinalCardResponse extends CirceFormatters {
@@ -161,7 +162,9 @@ object OrganisationPartnerResponse {
 
 final case class QuestionPartnerResponse(
   name: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.png")
   logo: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/link")
   link: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
   organisation: Option[OrganisationPartnerResponse],
@@ -200,9 +203,9 @@ case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   allowedSources: Seq[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00:00.000Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "string", example = "1970-01-01T00:00:00.000Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   endDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
@@ -210,12 +213,17 @@ case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
   operationKind: OperationKind,
   sequenceConfig: SequenceCardsConfigurationResponse,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about")
   aboutUrl: Option[String],
   partners: Seq[QuestionPartnerResponse],
   theme: QuestionThemeResponse,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation.png")
   consultationImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "consultation alternative")
   consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description.png")
   descriptionImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "description alternative")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   displayResults: Boolean,
   operation: QuestionsOfOperationResponse,
@@ -274,19 +282,22 @@ final case class QuestionOfOperationResponse(
   question: String,
   shortTitle: Option[String],
   operationTitle: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation.png")
   consultationImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description.png")
   descriptionImage: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-11-08T17:23:00.000Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "string", example = "2020-01-08T17:23:00.000Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   endDate: Option[ZonedDateTime],
   theme: QuestionThemeResponse,
   displayResults: Boolean,
   resultsLink: Option[ResultsLinkResponse],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about")
   aboutUrl: Option[String],
   actions: Option[String],
   featured: Boolean,
@@ -325,12 +336,12 @@ object QuestionOfOperationResponse {
 }
 
 final case class QuestionThemeResponse(
-  gradientStart: String,
-  gradientEnd: String,
-  color: String,
-  fontColor: String,
-  secondaryColor: Option[String],
-  secondaryFontColor: Option[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "#214284") gradientStart: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#428421") gradientEnd: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#842142") color: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#ff0000") fontColor: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "#00ff00") secondaryColor: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "#0000ff") secondaryFontColor: Option[String]
 )
 
 object QuestionThemeResponse {

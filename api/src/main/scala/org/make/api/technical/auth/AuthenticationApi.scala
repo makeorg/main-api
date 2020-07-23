@@ -110,7 +110,7 @@ trait AuthenticationApi extends Directives {
   @ApiOperation(
     value = "logout",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.NoContent,
     consumes = "text/plain",
     authorizations = Array(
       new Authorization(

@@ -54,9 +54,9 @@ import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => 
 import org.make.core.{BusinessConfig, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.ApiParamMagnetHelper._
 
 trait QuestionApiComponent {
   def questionApi: QuestionApi
@@ -93,15 +93,20 @@ trait QuestionApi extends Directives {
       new ApiImplicitParam(name = "questionIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "questionContent", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "description", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "startDate", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "endDate", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "startDate", paramType = "query", dataType = "date"),
+      new ApiImplicitParam(name = "endDate", paramType = "query", dataType = "date"),
+      new ApiImplicitParam(
+        name = "operationKinds",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION"
+      ),
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string", allowableValues = "ASC,DESC")
     )
   )
   @ApiResponses(
@@ -115,12 +120,12 @@ trait QuestionApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer")
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Seq[PopularTagResponse]]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[PopularTagResponse]]))
   )
   @Path(value = "/{questionId}/popular-tags")
   def getPopularTags: Route
@@ -129,7 +134,7 @@ trait QuestionApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(
         name = "mode",
         paramType = "query",
@@ -142,17 +147,27 @@ trait QuestionApi extends Directives {
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[ProposalsResultResponse]))
   )
-  @Path(value = "/{questionId}/popular-tags")
+  @Path(value = "/{questionId}/top-proposals")
   def getTopProposals: Route
 
   @ApiOperation(value = "get-question-partners", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "partnerKind", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
+      new ApiImplicitParam(
+        name = "sortAlgorithm",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "participation"
+      ),
+      new ApiImplicitParam(
+        name = "partnerKind",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "MEDIA,ACTION_PARTNER,FOUNDER,ACTOR"
+      ),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer")
     )
   )
   @ApiResponses(
@@ -166,14 +181,9 @@ trait QuestionApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(
-        name = "personalityRoleId",
-        paramType = "query",
-        dataType = "string",
-        example = "0c3cbbf4-42c1-4801-b08a-d0e60d136041"
-      ),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "personalityRoleId", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer")
     )
   )
   @ApiResponses(
@@ -188,8 +198,8 @@ trait QuestionApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "questionId", paramType = "path", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "seed", paramType = "query", dataType = "string")
     )
   )
@@ -226,10 +236,20 @@ trait QuestionApi extends Directives {
         example = "fr",
         required = true
       ),
-      new ApiImplicitParam(name = "status", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string")
+      new ApiImplicitParam(
+        name = "status",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "Upcoming,Open,Finished"
+      ),
+      new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(
+        name = "sortAlgorithm",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "participation"
+      )
     )
   )
   @ApiResponses(
@@ -361,13 +381,13 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "start-sequence") { questionId =>
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters(Symbol("include").*) { includes =>
+            parameters("include".as[Seq[ProposalId]].*) { includes =>
               provideAsyncOrNotFound(
                 sequenceService
                   .startNewSequence(
                     maybeUserId = userAuth.map(_.user.userId),
                     questionId = questionId,
-                    includedProposals = includes.toSeq.map(ProposalId(_)),
+                    includedProposals = includes.getOrElse(Seq.empty),
                     tagsIds = None,
                     requestContext = requestContext
                   )
@@ -385,12 +405,12 @@ trait DefaultQuestionApiComponent
         makeOperation("GetQuestionDetails") { _ =>
           parameters(
             (
-              "questionIds".as[immutable.Seq[QuestionId]].?,
+              "questionIds".as[Seq[QuestionId]].?,
               "questionContent".?,
               "description".?,
               "startDate".as[ZonedDateTime].?,
               "endDate".as[ZonedDateTime].?,
-              "operationKinds".as[immutable.Seq[OperationKind]].?,
+              "operationKinds".as[Seq[OperationKind]].?,
               "language".as[Language].?,
               "country".as[Country].?,
               "limit".as[Int].?,

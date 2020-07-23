@@ -268,19 +268,21 @@ trait DefaultModerationOrganisationApiComponent
 
 @ApiModel
 final case class ModerationCreateOrganisationRequest(
+  @(ApiModelProperty @field)(dataType = "string")
   organisationName: String Refined MaxSize[W.`256`.T],
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,
   @(ApiModelProperty @field)(dataType = "string", required = false)
   password: Option[String],
   @(ApiModelProperty @field)(dataType = "string", required = false)
   description: Option[String Refined MaxSize[W.`450`.T]],
-  @(ApiModelProperty @field)(dataType = "string", required = false)
+  @(ApiModelProperty @field)(dataType = "string", required = false, example = "https://example.com/avatar.png")
   avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string", example = "http://example.com")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
   OrganisationValidation.validateCreate(
@@ -298,7 +300,7 @@ object ModerationCreateOrganisationRequest {
 final case class ModerationUpdateOrganisationRequest(
   @(ApiModelProperty @field)(dataType = "string", required = false)
   organisationName: String Refined MaxSize[W.`256`.T],
-  @(ApiModelProperty @field)(dataType = "string", required = false)
+  @(ApiModelProperty @field)(dataType = "string", required = false, example = "yopmail+test@make.org")
   email: Option[String] = None,
   profile: Option[ProfileRequest]
 ) {
@@ -347,6 +349,7 @@ private object OrganisationValidation {
 case class OrganisationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
   id: UserId,
+  @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,
   organisationName: Option[String],
   profile: Option[ProfileResponse],
@@ -372,7 +375,7 @@ object OrganisationResponse extends CirceFormatters {
 
 final case class OrganisationProfileRequest(
   organisationName: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar")
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String Refined Url],
   description: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
@@ -396,8 +399,10 @@ object OrganisationProfileRequest {
 
 final case class OrganisationProfileResponse(
   organisationName: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
   description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String],
   optInNewsletter: Boolean
 )

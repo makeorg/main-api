@@ -55,7 +55,7 @@ import org.make.core.{
 }
 import scalaoauth2.provider.AuthInfo
 
-import scala.collection.immutable
+import org.make.core.ApiParamMagnetHelper._
 
 @Api(value = "Proposal")
 @Path(value = "/proposals")
@@ -94,10 +94,26 @@ trait ProposalApi extends Directives {
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "isRandom", paramType = "query", dataType = "boolean"),
-      new ApiImplicitParam(name = "sortAlgorithm", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "operationKinds", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "sortAlgorithm",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "random,taggedFirst,taggedFirstLegacy,actorVote,controversy,popular,realistic,B2BFirst"
+      ),
+      new ApiImplicitParam(
+        name = "operationKinds",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
+        allowMultiple = true
+      ),
       new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean"),
-      new ApiImplicitParam(name = "userType", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userType",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "USER,ORGANISATION,PERSONALITY"
+      ),
       new ApiImplicitParam(name = "ideaIds", paramType = "query", dataType = "string")
     )
   )
@@ -263,9 +279,9 @@ trait DefaultProposalApiComponent
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               parameters(
                 (
-                  "proposalIds".as[immutable.Seq[ProposalId]].?,
-                  "questionId".as[immutable.Seq[QuestionId]].?,
-                  "tagsIds".as[immutable.Seq[TagId]].?,
+                  "proposalIds".as[Seq[ProposalId]].?,
+                  "questionId".as[Seq[QuestionId]].?,
+                  "tagsIds".as[Seq[TagId]].?,
                   "operationId".as[OperationId].?,
                   "content".?,
                   "slug".?,
@@ -281,10 +297,10 @@ trait DefaultProposalApiComponent
                   "skip".as[Int].?,
                   "isRandom".as[Boolean].?,
                   "sortAlgorithm".?,
-                  "operationKinds".as[immutable.Seq[OperationKind]].?,
+                  "operationKinds".as[Seq[OperationKind]].*,
                   "isOrganisation".as[Boolean].?,
-                  "userType".as[immutable.Seq[UserType]].?,
-                  "ideaIds".as[immutable.Seq[IdeaId]].?
+                  "userType".as[Seq[UserType]].?,
+                  "ideaIds".as[Seq[IdeaId]].?
                 )
               ) {
                 (

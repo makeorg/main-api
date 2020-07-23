@@ -32,6 +32,15 @@ import org.make.core.reference.Language
 import org.make.core.tag.TagId
 
 import scala.annotation.meta.field
+@ApiModel
+final case class OperationIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  operationId: OperationId
+)
+
+object OperationIdResponse {
+  implicit val encoder: Encoder[OperationIdResponse] = deriveEncoder[OperationIdResponse]
+}
 
 @ApiModel
 final case class OperationResponse(
@@ -91,9 +100,9 @@ final case class ModerationOperationResponse(
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   defaultLanguage: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T11:20:00.000Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   createdAt: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-01-23T11:20:00.000Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   updatedAt: Option[ZonedDateTime],
   allowedSources: Seq[String],
   @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
@@ -118,7 +127,11 @@ object ModerationOperationResponse extends CirceFormatters {
   }
 }
 
-final case class ResultsLinkResponse(kind: ResultsLinkKind, value: String)
+final case class ResultsLinkResponse(
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "External,Internal")
+  kind: ResultsLinkKind,
+  value: String
+)
 object ResultsLinkResponse {
   def apply(resultsLink: ResultsLink): ResultsLinkResponse = resultsLink match {
     case ResultsLink.External(url)   => ResultsLinkResponse(ResultsLinkKind.External, url.toString)

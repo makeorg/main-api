@@ -28,7 +28,7 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.operation.ResultsLinkRequest.ResultsLinkKind
 import org.make.core.Validation
 import org.make.core.Validation.{validateUserInput, _}
-import org.make.core.operation.{OperationId, OperationKind, OperationStatus, ResultsLink}
+import org.make.core.operation.{OperationKind, OperationStatus, ResultsLink}
 import org.make.core.reference.Language
 
 import scala.annotation.meta.field
@@ -43,7 +43,7 @@ final case class ModerationCreateOperationRequest(
   operationKind: OperationKind,
   allowedSources: Seq[String]
 ) {
-  OperationValidation.validateCreate(defaultLanguage = defaultLanguage, slug = slug, allowedSources = allowedSources)
+  OperationValidation.validateParams(defaultLanguage = defaultLanguage, slug = slug, allowedSources = allowedSources)
 }
 
 object ModerationCreateOperationRequest {
@@ -51,7 +51,8 @@ object ModerationCreateOperationRequest {
 }
 @ApiModel
 final case class ModerationUpdateOperationRequest(
-  status: String,
+  @(ApiModelProperty @field)(dataType = "string", example = "Active")
+  status: Option[OperationStatus],
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   defaultLanguage: Language,
@@ -59,32 +60,17 @@ final case class ModerationUpdateOperationRequest(
   operationKind: OperationKind,
   allowedSources: Seq[String]
 ) {
-  OperationValidation.validateUpdate(
-    defaultLanguage = defaultLanguage,
-    status = status,
-    slug = slug,
-    allowedSources = allowedSources
-  )
+  OperationValidation.validateParams(defaultLanguage = defaultLanguage, slug = slug, allowedSources = allowedSources)
 }
 
 object ModerationUpdateOperationRequest {
   implicit val decoder: Decoder[ModerationUpdateOperationRequest] = deriveDecoder[ModerationUpdateOperationRequest]
 }
 
-@ApiModel
-final case class OperationIdResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
-  operationId: OperationId
-)
-
-object OperationIdResponse {
-  implicit val encoder: Encoder[OperationIdResponse] = deriveEncoder[OperationIdResponse]
-}
-
 private object OperationValidation {
   private val maxLanguageLength = 3
 
-  def validateCreate(defaultLanguage: Language, slug: String, allowedSources: Seq[String]): Unit = {
+  def validateParams(defaultLanguage: Language, slug: String, allowedSources: Seq[String]): Unit = {
     allowedSources.foreach { source =>
       validate(validateUserInput("allowedSources", source, None))
     }
@@ -96,18 +82,10 @@ private object OperationValidation {
     )
     validate(Validation.requireNonEmpty("allowedSources", allowedSources))
   }
-
-  def validateUpdate(defaultLanguage: Language, status: String, slug: String, allowedSources: Seq[String]): Unit = {
-    validateCreate(defaultLanguage, slug, allowedSources)
-    val validStatusChoices: Seq[String] = OperationStatus.statusMap.toSeq.map {
-      case (name, _) => name
-    }
-    validate(validChoices(fieldName = "status", userChoices = Seq(status), validChoices = validStatusChoices))
-  }
 }
 
 final case class ResultsLinkRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "internal") kind: ResultsLinkKind,
+  @(ApiModelProperty @field)(dataType = "string", example = "Internal", allowableValues = "External,Internal") kind: ResultsLinkKind,
   @(ApiModelProperty @field)(dataType = "string", example = "results") value: String
 ) {
 

@@ -50,8 +50,8 @@ import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.UserType
 import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
+import org.make.core.ApiParamMagnetHelper._
 
-import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -101,7 +101,7 @@ trait ModerationProposalApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "proposalIds", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "createdBefore", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "createdBefore", paramType = "query", dataType = "date"),
       new ApiImplicitParam(name = "initialProposal", paramType = "query", dataType = "boolean"),
       new ApiImplicitParam(name = "tagsIds", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "operationId", paramType = "query", dataType = "string"),
@@ -112,16 +112,29 @@ trait ModerationProposalApi extends Directives {
       new ApiImplicitParam(name = "source", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "location", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "question", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "status", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "status",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "Pending,Accepted,Refused,Postponed,Archived",
+        allowMultiple = true
+      ),
       new ApiImplicitParam(name = "minVotesCount", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "toEnrich", paramType = "query", dataType = "boolean"),
-      new ApiImplicitParam(name = "minScore", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "minScore", paramType = "query", dataType = "float"),
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "limit", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "skip", paramType = "query", dataType = "integer"),
       new ApiImplicitParam(name = "sort", paramType = "query", dataType = "string"),
-      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string")
+      new ApiImplicitParam(name = "order", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(
+        name = "userTypes",
+        paramType = "query",
+        dataType = "string",
+        allowableValues = "USER,ORGANISATION,PERSONALITY",
+        allowMultiple = true
+      )
     )
   )
   def searchAllProposals: Route
@@ -202,12 +215,8 @@ trait ModerationProposalApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(
-        value = "body",
-        paramType = "body",
-        dataType = "org.make.api.proposal.RefuseProposalRequest"
-      ),
-      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")
+      new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(value = "body", paramType = "body", dataType = "org.make.api.proposal.RefuseProposalRequest")
     )
   )
   @ApiResponses(
@@ -240,7 +249,7 @@ trait ModerationProposalApi extends Directives {
   @ApiOperation(
     value = "lock-proposal",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.NoContent,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -252,7 +261,7 @@ trait ModerationProposalApi extends Directives {
     )
   )
   @ApiImplicitParams(value = Array(new ApiImplicitParam(name = "proposalId", paramType = "path", dataType = "string")))
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @Path(value = "/{proposalId}/lock")
   def lock: Route
 
@@ -286,7 +295,7 @@ trait ModerationProposalApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "Ok")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
@@ -416,18 +425,18 @@ trait DefaultModerationProposalApiComponent
               requireModerationRole(userAuth.user) {
                 parameters(
                   (
-                    "proposalIds".as[immutable.Seq[ProposalId]].?,
+                    "proposalIds".as[Seq[ProposalId]].?,
                     "createdBefore".as[ZonedDateTime].?,
                     "initialProposal".as[Boolean].?,
-                    "tagsIds".as[immutable.Seq[TagId]].?,
+                    "tagsIds".as[Seq[TagId]].?,
                     "operationId".as[OperationId].?,
-                    "questionId".as[immutable.Seq[QuestionId]].?,
-                    "ideaId".as[immutable.Seq[IdeaId]].?,
+                    "questionId".as[Seq[QuestionId]].?,
+                    "ideaId".as[Seq[IdeaId]].?,
                     "content".?,
                     "source".?,
                     "location".?,
                     "question".?,
-                    "status".as[immutable.Seq[ProposalStatus]].?,
+                    "status".as[Seq[ProposalStatus]].*,
                     "minVotesCount".as[Int].?,
                     "toEnrich".as[Boolean].?,
                     "minScore".as[Float].?,
@@ -437,7 +446,7 @@ trait DefaultModerationProposalApiComponent
                     "skip".as[Int].?,
                     "sort".?,
                     "order".?,
-                    "userType".as[immutable.Seq[UserType]].?
+                    "userType".as[Seq[UserType]].*
                   )
                 ) {
                   (

@@ -28,6 +28,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import eu.timepit.refined.auto._
 
 class FeaturedOperationServiceTest
     extends MakeUnitTest
@@ -44,13 +45,13 @@ class FeaturedOperationServiceTest
     questionId = None,
     title = "title",
     description = Some("description"),
-    landscapePicture = "landPic.png",
-    portraitPicture = "portPic.png",
+    landscapePicture = "https://example.com/landPic.png",
+    portraitPicture = "https://example.com/portPic.png",
     altPicture = "alt",
     label = "label",
     buttonLabel = "button",
     internalLink = None,
-    externalLink = Some("link.com"),
+    externalLink = Some("https://example.com/link"),
     slot = 1
   )
 
@@ -67,13 +68,13 @@ class FeaturedOperationServiceTest
             questionId = None,
             title = "title",
             description = Some("description"),
-            landscapePicture = "landPic.png",
-            portraitPicture = "portPic.png",
+            landscapePicture = "https://example.com/landPic.png",
+            portraitPicture = "https://example.com/portPic.png",
             altPicture = "alt",
             label = "label",
             buttonLabel = "button",
             internalLink = None,
-            externalLink = Some("link.com"),
+            externalLink = Some("https://example.com/link"),
             slot = 1
           )
         ),
@@ -97,13 +98,13 @@ class FeaturedOperationServiceTest
             questionId = None,
             title = "title",
             description = Some("description"),
-            landscapePicture = "landPic.png",
-            portraitPicture = "portPic.png",
+            landscapePicture = "https://example.com/landPic.png",
+            portraitPicture = "https://example.com/portPic.png",
             altPicture = "alt",
             label = "label",
             buttonLabel = "button",
             internalLink = None,
-            externalLink = Some("link.com"),
+            externalLink = Some("https://example.com/link"),
             slot = 1
           )
         ),
@@ -131,13 +132,13 @@ class FeaturedOperationServiceTest
             questionId = None,
             title = "updated title",
             description = Some("description"),
-            landscapePicture = "landPic.png",
-            portraitPicture = "portPic.png",
+            landscapePicture = "https://example.com/landPic.png",
+            portraitPicture = "https://example.com/portPic.png",
             altPicture = "alt",
             label = "label",
             buttonLabel = "button",
             internalLink = None,
-            externalLink = Some("link.com"),
+            externalLink = Some("https://example.com/link"),
             slot = 1
           )
         ),

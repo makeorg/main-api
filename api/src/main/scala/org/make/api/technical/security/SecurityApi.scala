@@ -66,7 +66,7 @@ trait SecurityApi extends Directives {
 
   @Path(value = "/security/secure-hash")
   @ApiOperation(value = "validate-secure-hash", httpMethod = "POST", code = HttpCodes.NoContent)
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(

@@ -35,6 +35,7 @@ case class OrganisationSearchResponse(
   organisationId: UserId,
   organisationName: Option[String],
   slug: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],
   description: Option[String],
   publicProfile: Boolean,
@@ -46,6 +47,7 @@ case class OrganisationSearchResponse(
   language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String],
   @(ApiModelProperty @field)(dataType = "Map[string,org.make.api.organisation.ProposalsAndVotesCountsResponse]")
   countsByQuestion: Map[QuestionId, ProposalsAndVotesCountsResponse]

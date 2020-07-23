@@ -63,7 +63,7 @@ trait MigrationApi extends Directives {
   @ApiOperation(
     value = "set-proper-signup-operation",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.NoContent,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -71,14 +71,14 @@ trait MigrationApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @Path(value = "/set-proper-signup-operation")
   def setProperSignUpOperation: Route
 
   @ApiOperation(
     value = "upload-all-avatars",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.NoContent,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -86,14 +86,14 @@ trait MigrationApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @Path(value = "/upload-all-avatars")
   def uploadAllAvatars: Route
 
   @ApiOperation(
     value = "snapshot-all-proposals",
     httpMethod = "POST",
-    code = HttpCodes.OK,
+    code = HttpCodes.NoContent,
     authorizations = Array(
       new Authorization(
         value = "MakeApi",
@@ -101,7 +101,7 @@ trait MigrationApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "NoContent")))
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
   @Path(value = "/snapshot-all-proposals")
   def snapshotAllProposals: Route
 
@@ -314,7 +314,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
 }
 
 final case class DeleteContactsRequest(
-  @(ApiModelProperty @field)(dataType = "string", example = "2019-07-11T11:21:40.508Z")
+  @(ApiModelProperty @field)(dataType = "dateTime")
   maxUpdatedAtBeforeDelete: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "boolean") deleteEmptyProperties: Boolean
 ) {
