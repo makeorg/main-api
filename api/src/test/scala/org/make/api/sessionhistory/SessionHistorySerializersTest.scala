@@ -29,11 +29,11 @@ import org.make.core.proposal._
 import org.make.core.sequence.SequenceId
 import org.make.core.session.SessionId
 import org.make.core.user.UserId
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import stamina.Persisters
 import stamina.testkit.StaminaTestKit
 
-class SessionHistorySerializersTest extends WordSpec with StaminaTestKit {
+class SessionHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
   val sessionId = SessionId("session-id")
   val persisters = Persisters(SessionHistorySerializers.serializers.toList)

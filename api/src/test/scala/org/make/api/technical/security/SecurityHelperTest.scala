@@ -26,8 +26,8 @@ import org.make.core.session.SessionId
 
 class SecurityHelperTest extends MakeUnitTest {
 
-  feature("sha512") {
-    scenario("hash with sha512") {
+  Feature("sha512") {
+    Scenario("hash with sha512") {
       SecurityHelper
         .defaultHash("testsha512")
         .shouldBe(
@@ -35,7 +35,7 @@ class SecurityHelperTest extends MakeUnitTest {
         )
     }
 
-    scenario("salted hash with sha512") {
+    Scenario("salted hash with sha512") {
       SecurityHelper
         .generateHash("testsha512", salt = "salt")
         .shouldBe(
@@ -43,15 +43,15 @@ class SecurityHelperTest extends MakeUnitTest {
         )
     }
 
-    scenario("base64 ") {
+    Scenario("base64 ") {
       SecurityHelper
         .base64Encode("testbase64")
         .shouldBe("dGVzdGJhc2U2NA==")
     }
   }
 
-  feature("proposal key") {
-    scenario("generate proposal key") {
+  Feature("proposal key") {
+    Scenario("generate proposal key") {
       SecurityHelper
         .generateProposalKeyHash(ProposalId("proposal-1"), SessionId("session-1"), Some("location"), "salt")
         .shouldBe(
@@ -60,14 +60,14 @@ class SecurityHelperTest extends MakeUnitTest {
     }
   }
 
-  feature("backward compatibility hashing") {
-    scenario("sha256") {
+  Feature("backward compatibility hashing") {
+    Scenario("sha256") {
       SecurityHelper
         .sha256("testsha256")
         .shouldBe("ad6c2d91c3bc6772e312d63d0e0528518580835685a653503df38173739d65b3")
     }
 
-    scenario("validate both deprecated and default hashes") {
+    Scenario("validate both deprecated and default hashes") {
       val value = "test"
       val salt = "salt"
       val base64 = "base64"
@@ -81,8 +81,8 @@ class SecurityHelperTest extends MakeUnitTest {
     }
   }
 
-  feature("email anonymization") {
-    scenario("email anonymization") {
+  Feature("email anonymization") {
+    Scenario("email anonymization") {
 
       val emailToAnonymize = "email-to-anonymize@example.com"
       SecurityHelper.anonymizeEmail(emailToAnonymize) should be("e****************e@example.com")

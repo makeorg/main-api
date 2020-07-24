@@ -22,7 +22,6 @@ package org.make.api.technical.auth
 import org.make.api.MakeUnitTest
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.auth.{Client, ClientId}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -36,18 +35,17 @@ class ClientServiceTest
 
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
 
-  feature("get client") {
-    scenario("get client from ClientId") {
+  Feature("get client") {
+    Scenario("get client from ClientId") {
       clientService.getClient(ClientId("valid-client"))
 
-      Mockito.verify(persistentClientService).get(ClientId("valid-client"))
+      verify(persistentClientService).get(ClientId("valid-client"))
     }
   }
 
-  feature("create client") {
-    scenario("creating a client success") {
-      Mockito
-        .when(persistentClientService.get(ArgumentMatchers.any[ClientId]))
+  Feature("create client") {
+    Scenario("creating a client success") {
+      when(persistentClientService.get(any[ClientId]))
         .thenReturn(Future.successful(None))
 
       val client =
@@ -63,8 +61,7 @@ class ClientServiceTest
           tokenExpirationSeconds = 300
         )
 
-      Mockito
-        .when(persistentClientService.persist(ArgumentMatchers.any[Client]))
+      when(persistentClientService.persist(any[Client]))
         .thenReturn(Future.successful(client))
 
       val futureNewClient: Future[Client] = clientService.createClient(
@@ -79,26 +76,25 @@ class ClientServiceTest
       )
 
       whenReady(futureNewClient, Timeout(3.seconds)) { _ =>
-        Mockito.verify(persistentClientService).persist(ArgumentMatchers.any[Client])
+        verify(persistentClientService).persist(any[Client])
       }
     }
   }
 
-  feature("find clients") {
-    scenario("find all clients") {
-      Mockito
-        .when(persistentClientService.search(start = 0, end = None, name = None))
+  Feature("find clients") {
+    Scenario("find all clients") {
+      when(persistentClientService.search(start = 0, end = None, name = None))
         .thenReturn(Future.successful(Seq.empty))
       val futureFindAll: Future[Seq[Client]] = clientService.search(start = 0, end = None, name = None)
 
       whenReady(futureFindAll, Timeout(3.seconds)) { _ =>
-        Mockito.verify(persistentClientService).search(start = 0, end = None, name = None)
+        verify(persistentClientService).search(start = 0, end = None, name = None)
       }
     }
   }
 
-  feature("update a client") {
-    scenario("update a client") {
+  Feature("update a client") {
+    Scenario("update a client") {
       val oldClient = Client(
         clientId = ClientId("client"),
         name = "old-client",
@@ -121,11 +117,9 @@ class ClientServiceTest
         roles = Seq.empty,
         tokenExpirationSeconds = 300
       )
-      Mockito
-        .when(persistentClientService.get(ClientId("client")))
+      when(persistentClientService.get(ClientId("client")))
         .thenReturn(Future.successful(Some(oldClient)))
-      Mockito
-        .when(persistentClientService.update(ArgumentMatchers.any[Client]))
+      when(persistentClientService.update(any[Client]))
         .thenReturn(Future.successful(Some(newClient)))
 
       val futureClient: Future[Option[Client]] = clientService.updateClient(
@@ -145,8 +139,8 @@ class ClientServiceTest
       }
     }
 
-    scenario("update an non existent client ") {
-      Mockito.when(persistentClientService.get(ClientId("non-existent-client"))).thenReturn(Future.successful(None))
+    Scenario("update an non existent client ") {
+      when(persistentClientService.get(ClientId("non-existent-client"))).thenReturn(Future.successful(None))
 
       val futureClient: Future[Option[Client]] = clientService.updateClient(
         clientId = ClientId("non-existent-client"),

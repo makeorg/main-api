@@ -27,17 +27,12 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 
 class AdminCrmTemplatesApiTest
     extends MakeApiTestBase
     with DefaultAdminCrmTemplatesApiComponent
-    with MockitoSugar
     with CrmTemplatesServiceComponent
     with QuestionServiceComponent {
 
@@ -78,8 +73,8 @@ class AdminCrmTemplatesApiTest
     registrationB2B = TemplateId("12349")
   )
 
-  when(crmTemplatesService.createCrmTemplates(ArgumentMatchers.any[CreateCrmTemplates])).thenAnswer { invocation =>
-    invocation.getArgument[CreateCrmTemplates](0) match {
+  when(crmTemplatesService.createCrmTemplates(any[CreateCrmTemplates])).thenAnswer { arg: CreateCrmTemplates =>
+    arg match {
       case create if create.questionId.contains(QuestionId("question-id")) =>
         Future.successful(validCrmTemplates)
       case create if create.questionId.isEmpty && create.locale.contains("fr_FR") =>
@@ -89,44 +84,44 @@ class AdminCrmTemplatesApiTest
     }
   }
 
-  when(crmTemplatesService.getCrmTemplates(ArgumentMatchers.eq(CrmTemplatesId("id"))))
+  when(crmTemplatesService.getCrmTemplates(eqTo(CrmTemplatesId("id"))))
     .thenReturn(Future.successful(Some(validCrmTemplates)))
 
-  when(crmTemplatesService.getCrmTemplates(ArgumentMatchers.eq(CrmTemplatesId("fake"))))
+  when(crmTemplatesService.getCrmTemplates(eqTo(CrmTemplatesId("fake"))))
     .thenReturn(Future.successful(None))
 
   when(
     crmTemplatesService
-      .find(any[Int], any[Option[Int]], ArgumentMatchers.eq(Some(QuestionId("id"))), ArgumentMatchers.eq(Some("fr_FR")))
+      .find(any[Int], any[Option[Int]], eqTo(Some(QuestionId("id"))), eqTo(Some("fr_FR")))
   ).thenReturn(Future.successful(Seq(validCrmTemplates)))
 
   when(
     crmTemplatesService
-      .find(any[Int], any[Option[Int]], ArgumentMatchers.eq(None), ArgumentMatchers.eq(None))
+      .find(any[Int], any[Option[Int]], eqTo(None), eqTo(None))
   ).thenReturn(Future.successful(Seq(validCrmTemplates, validCrmTemplates.copy(crmTemplatesId = CrmTemplatesId("2")))))
 
-  when(crmTemplatesService.updateCrmTemplates(ArgumentMatchers.any[UpdateCrmTemplates])).thenAnswer { invocation =>
-    invocation.getArgument[UpdateCrmTemplates](0).crmTemplatesId.value match {
+  when(crmTemplatesService.updateCrmTemplates(any[UpdateCrmTemplates])).thenAnswer { arg: UpdateCrmTemplates =>
+    arg.crmTemplatesId.value match {
       case "id"   => Future.successful(Some(validCrmTemplates.copy(registration = TemplateId("56789"))))
       case "fake" => Future.successful(None)
       case _      => throw new NullPointerException()
     }
   }
 
-  when(crmTemplatesService.count(ArgumentMatchers.eq(Some(QuestionId("question-id"))), ArgumentMatchers.eq(None)))
+  when(crmTemplatesService.count(eqTo(Some(QuestionId("question-id"))), eqTo(None)))
     .thenReturn(Future.successful(0))
 
   when(
     crmTemplatesService
-      .count(ArgumentMatchers.eq(Some(QuestionId("existing-question-id"))), ArgumentMatchers.eq(None))
+      .count(eqTo(Some(QuestionId("existing-question-id"))), eqTo(None))
   ).thenReturn(Future.successful(1))
 
   when(
     crmTemplatesService
-      .count(ArgumentMatchers.eq(None), ArgumentMatchers.eq(Some("fr_FR")))
+      .count(eqTo(None), eqTo(Some("fr_FR")))
   ).thenReturn(Future.successful(0))
 
-  when(crmTemplatesService.count(ArgumentMatchers.eq(None), ArgumentMatchers.eq(None)))
+  when(crmTemplatesService.count(eqTo(None), eqTo(None)))
     .thenReturn(Future.successful(2))
 
   val question =
@@ -146,7 +141,7 @@ class AdminCrmTemplatesApiTest
 
   val routes: Route = sealRoute(adminCrmTemplateApi.routes)
 
-  feature("create a crmTemplates") {
+  Feature("create a crmTemplates") {
     val crmTemplateData =
       """{
          |  "questionId": "question-id",
@@ -160,14 +155,14 @@ class AdminCrmTemplatesApiTest
          |  "proposalRefusedOrganisation": "12347",
          |  "forgottenPasswordOrganisation": "12348"
          |}""".stripMargin
-    scenario("unauthenticated") {
+    Scenario("unauthenticated") {
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, crmTemplateData)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("authenticated citizen") {
+    Scenario("authenticated citizen") {
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, crmTemplateData))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -175,7 +170,7 @@ class AdminCrmTemplatesApiTest
       }
     }
 
-    scenario("authenticated moderator") {
+    Scenario("authenticated moderator") {
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, crmTemplateData))
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
@@ -183,7 +178,7 @@ class AdminCrmTemplatesApiTest
       }
     }
 
-    scenario("authenticated admin") {
+    Scenario("authenticated admin") {
       Post("/admin/crm/templates")
         .withEntity(HttpEntity(ContentTypes.`application/json`, crmTemplateData))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -256,8 +251,8 @@ class AdminCrmTemplatesApiTest
     }
   }
 
-  feature("get crmTemplates") {
-    scenario("get crmTemplates") {
+  Feature("get crmTemplates") {
+    Scenario("get crmTemplates") {
       Get("/admin/crm/templates/id") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -283,7 +278,7 @@ class AdminCrmTemplatesApiTest
       }
     }
 
-    scenario("list crmTemplates") {
+    Scenario("list crmTemplates") {
       Get("/admin/crm/templates?_start=0&_end=10") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -310,7 +305,7 @@ class AdminCrmTemplatesApiTest
     }
   }
 
-  feature("update a crmTemplates") {
+  Feature("update a crmTemplates") {
     val updateCrmTemplateData =
       """{
          |  "registration": "999999",
@@ -324,7 +319,7 @@ class AdminCrmTemplatesApiTest
          |  "forgottenPasswordOrganisation": "12348"
          |}""".stripMargin
 
-    scenario("update fake crmTemplates") {
+    Scenario("update fake crmTemplates") {
       Put("/admin/crm/templates/fake") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -346,14 +341,14 @@ class AdminCrmTemplatesApiTest
       }
     }
 
-    scenario("update crmTemplates with an invalid request") {
+    Scenario("update crmTemplates with an invalid request") {
       Put("/admin/crm/templates/fake")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
 
-    scenario("update crmTemplates with an invalid template id") {
+    Scenario("update crmTemplates with an invalid template id") {
       val updateCrmTemplateData =
         """{
           |  "registration": "textual",
@@ -374,7 +369,7 @@ class AdminCrmTemplatesApiTest
       }
     }
 
-    scenario("update crmTemplates") {
+    Scenario("update crmTemplates") {
       Put("/admin/crm/templates/id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, updateCrmTemplateData))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {

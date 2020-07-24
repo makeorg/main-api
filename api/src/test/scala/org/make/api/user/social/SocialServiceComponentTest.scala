@@ -32,9 +32,6 @@ import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.verify
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
@@ -56,10 +53,10 @@ class SocialServiceComponentTest
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(userService)
-    Mockito.reset(oauth2DataHandler)
-    Mockito.reset(googleApi)
-    Mockito.reset(facebookApi)
+    reset(userService)
+    reset(oauth2DataHandler)
+    reset(googleApi)
+    reset(facebookApi)
   }
 
   val expireInSeconds = 123000
@@ -68,15 +65,13 @@ class SocialServiceComponentTest
 
   val defaultClient: Client =
     Client(ClientId("default-client-id"), "default", Seq.empty, None, None, None, None, None, None, Seq.empty, 300)
-  Mockito
-    .when(clientService.getClient(ArgumentMatchers.eq(ClientId("client"))))
+  when(clientService.getClient(eqTo(ClientId("client"))))
     .thenReturn(Future.successful(Some(defaultClient)))
-  Mockito
-    .when(clientService.getClient(ArgumentMatchers.eq(ClientId("fake-client"))))
+  when(clientService.getClient(eqTo(ClientId("fake-client"))))
     .thenReturn(Future.successful(None))
 
-  feature("login user from google provider") {
-    scenario("successful create UserInfo Object") {
+  Feature("login user from google provider") {
+    Scenario("successful create UserInfo Object") {
       Given("a user logged via google")
       val googleData = GoogleUserInfos(
         azp = None,
@@ -110,23 +105,19 @@ class SocialServiceComponentTest
         Map.empty
       )
 
-      Mockito
-        .when(googleApi.getUserInfo(matches("googleToken-a user logged via google")))
+      when(googleApi.getUserInfo(eqTo("googleToken-a user logged via google")))
         .thenReturn(Future.successful(googleData))
 
-      Mockito
-        .when(
-          userService.createOrUpdateUserFromSocial(
-            any[UserInfo],
-            any[Option[String]],
-            any[Option[QuestionId]],
-            any[RequestContext]
-          )
+      when(
+        userService.createOrUpdateUserFromSocial(
+          any[UserInfo],
+          any[Option[String]],
+          any[Option[QuestionId]],
+          any[RequestContext]
         )
-        .thenReturn(Future.successful((userFromGoogle, true)))
+      ).thenReturn(Future.successful((userFromGoogle, true)))
 
-      Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
+      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login google user")
@@ -157,15 +148,15 @@ class SocialServiceComponentTest
           )
 
         verify(userService).createOrUpdateUserFromSocial(
-          matches(userInfoFromGoogle),
-          matches(None),
-          matches(None),
+          eqTo(userInfoFromGoogle),
+          eqTo(None),
+          eqTo(None),
           any[RequestContext]
         )
       }
     }
 
-    scenario("successful create UserInfo Object without name") {
+    Scenario("successful create UserInfo Object without name") {
       Given("a user logged via google")
       val googleData = GoogleUserInfos(
         azp = None,
@@ -199,23 +190,19 @@ class SocialServiceComponentTest
         Map.empty
       )
 
-      Mockito
-        .when(googleApi.getUserInfo(matches("googleToken-a user logged via google")))
+      when(googleApi.getUserInfo(eqTo("googleToken-a user logged via google")))
         .thenReturn(Future.successful(googleData))
 
-      Mockito
-        .when(
-          userService.createOrUpdateUserFromSocial(
-            any[UserInfo],
-            any[Option[String]],
-            any[Option[QuestionId]],
-            any[RequestContext]
-          )
+      when(
+        userService.createOrUpdateUserFromSocial(
+          any[UserInfo],
+          any[Option[String]],
+          any[Option[QuestionId]],
+          any[RequestContext]
         )
-        .thenReturn(Future.successful((userFromGoogle, true)))
+      ).thenReturn(Future.successful((userFromGoogle, true)))
 
-      Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
+      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login google user")
@@ -246,15 +233,15 @@ class SocialServiceComponentTest
           )
 
         verify(userService).createOrUpdateUserFromSocial(
-          matches(userInfoFromGoogle),
-          matches(None),
-          matches(None),
+          eqTo(userInfoFromGoogle),
+          eqTo(None),
+          eqTo(None),
           any[RequestContext]
         )
       }
     }
 
-    scenario("successfully create access token for persistent user") {
+    Scenario("successfully create access token for persistent user") {
       Given("a user logged via google")
       val googleData = GoogleUserInfos(
         azp = None,
@@ -289,23 +276,19 @@ class SocialServiceComponentTest
         Map.empty
       )
 
-      Mockito
-        .when(googleApi.getUserInfo(any[String]))
+      when(googleApi.getUserInfo(any[String]))
         .thenReturn(Future.successful(googleData))
 
-      Mockito
-        .when(
-          userService.createOrUpdateUserFromSocial(
-            any[UserInfo],
-            any[Option[String]],
-            any[Option[QuestionId]],
-            any[RequestContext]
-          )
+      when(
+        userService.createOrUpdateUserFromSocial(
+          any[UserInfo],
+          any[Option[String]],
+          any[Option[QuestionId]],
+          any[RequestContext]
         )
-        .thenReturn(Future.successful((userFromGoogle, false)))
+      ).thenReturn(Future.successful((userFromGoogle, false)))
 
-      Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
+      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login user from google")
@@ -333,11 +316,10 @@ class SocialServiceComponentTest
       }
     }
 
-    scenario("social user has a bad token") {
+    Scenario("social user has a bad token") {
       Given("a user logged via google")
 
-      Mockito
-        .when(googleApi.getUserInfo(any[String]))
+      when(googleApi.getUserInfo(any[String]))
         .thenReturn(Future.failed(new Exception("invalid token from google")))
 
       When("login user from google")
@@ -360,8 +342,8 @@ class SocialServiceComponentTest
     }
   }
 
-  feature("login user from facebook provider") {
-    scenario("successful login social user") {
+  Feature("login user from facebook provider") {
+    Scenario("successful login social user") {
       Given("a user logged via facebook")
       val facebookData = FacebookUserInfos(
         id = "444444",
@@ -392,18 +374,13 @@ class SocialServiceComponentTest
         picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512")
       )
 
-      Mockito
-        .when(facebookApi.getUserInfo(matches("facebookToken-444444")))
+      when(facebookApi.getUserInfo(eqTo("facebookToken-444444")))
         .thenReturn(Future.successful(facebookData))
 
-      Mockito
-        .when(
-          userService.createOrUpdateUserFromSocial(matches(info), matches(None), matches(None), any[RequestContext])
-        )
+      when(userService.createOrUpdateUserFromSocial(eqTo(info), eqTo(None), eqTo(None), any[RequestContext]))
         .thenReturn(Future.successful((userFromFacebook, true)))
 
-      Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
+      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login facebook user")
@@ -434,16 +411,16 @@ class SocialServiceComponentTest
           )
 
         verify(userService).createOrUpdateUserFromSocial(
-          matches(userInfoFromFacebook),
-          matches(None),
-          matches(None),
+          eqTo(userInfoFromFacebook),
+          eqTo(None),
+          eqTo(None),
           any[RequestContext]
         )
       }
 
     }
 
-    scenario("successful login social user without name") {
+    Scenario("successful login social user without name") {
       Given("a user logged via facebook")
       val facebookData =
         FacebookUserInfos(id = "444444", email = Some("facebook@make.org"), firstName = None, lastName = None)
@@ -470,19 +447,15 @@ class SocialServiceComponentTest
         picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512")
       )
 
-      Mockito
-        .when(facebookApi.getUserInfo(matches("facebookToken-444444")))
+      when(facebookApi.getUserInfo(eqTo("facebookToken-444444")))
         .thenReturn(Future.successful(facebookData))
 
-      Mockito
-        .when(
-          userService
-            .createOrUpdateUserFromSocial(matches(info), matches(None), any[Option[QuestionId]], any[RequestContext])
-        )
-        .thenReturn(Future.successful((userFromFacebook, true)))
+      when(
+        userService
+          .createOrUpdateUserFromSocial(eqTo(info), eqTo(None), any[Option[QuestionId]], any[RequestContext])
+      ).thenReturn(Future.successful((userFromFacebook, true)))
 
-      Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
+      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login facebook user")
@@ -513,16 +486,16 @@ class SocialServiceComponentTest
           )
 
         verify(userService).createOrUpdateUserFromSocial(
-          matches(userInfoFromFacebook),
-          matches(None),
-          matches(None),
+          eqTo(userInfoFromFacebook),
+          eqTo(None),
+          eqTo(None),
           any[RequestContext]
         )
       }
 
     }
 
-    scenario("successfully create access token for persistent user") {
+    Scenario("successfully create access token for persistent user") {
       Given("a user logged via facebook")
       val facebookData = FacebookUserInfos(
         id = "444444",
@@ -544,23 +517,19 @@ class SocialServiceComponentTest
         Map.empty
       )
 
-      Mockito
-        .when(facebookApi.getUserInfo(matches("facebookToken2")))
+      when(facebookApi.getUserInfo(eqTo("facebookToken2")))
         .thenReturn(Future.successful(facebookData))
 
-      Mockito
-        .when(
-          userService.createOrUpdateUserFromSocial(
-            any[UserInfo],
-            any[Option[String]],
-            any[Option[QuestionId]],
-            any[RequestContext]
-          )
+      when(
+        userService.createOrUpdateUserFromSocial(
+          any[UserInfo],
+          any[Option[String]],
+          any[Option[QuestionId]],
+          any[RequestContext]
         )
-        .thenReturn(Future.successful((userFromFacebook, false)))
+      ).thenReturn(Future.successful((userFromFacebook, false)))
 
-      Mockito
-        .when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
+      when(oauth2DataHandler.createAccessToken(any[AuthInfo[UserRights]]))
         .thenReturn(Future.successful(accessToken))
 
       When("login user from facebook")
@@ -588,11 +557,10 @@ class SocialServiceComponentTest
       }
     }
 
-    scenario("social user has a bad token") {
+    Scenario("social user has a bad token") {
       Given("a user logged via facebook")
 
-      Mockito
-        .when(facebookApi.getUserInfo(matches("facebookToken3")))
+      when(facebookApi.getUserInfo(eqTo("facebookToken3")))
         .thenReturn(Future.failed(new Exception("invalid token from facebook")))
 
       When("login user from google")
@@ -615,8 +583,8 @@ class SocialServiceComponentTest
     }
   }
 
-  feature("login user from unknown provider") {
-    scenario("failed login from unkown provider") {
+  Feature("login user from unknown provider") {
+    Scenario("failed login from unkown provider") {
       Given("a user logged via instagram")
 
       When("login user from instagram")

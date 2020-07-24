@@ -63,8 +63,8 @@ class CassandraHealthCheckActorIT
       ProposalCoordinator.name
     )
 
-  feature("Check Cassandra status") {
-    scenario("query proposal journal") {
+  Feature("Check Cassandra status") {
+    Scenario("query proposal journal") {
       Given("a cassandra health check actor")
       val actorSystem = system
       val healthCheckExecutionContext = ExecutionContext.Implicits.global

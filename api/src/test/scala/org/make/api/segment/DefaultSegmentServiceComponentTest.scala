@@ -27,9 +27,8 @@ import org.make.api.feature.{
   FeatureServiceComponent
 }
 import org.make.core.RequestContext
-import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature, FeatureId}
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature => Feat, FeatureId}
 import org.make.core.question.QuestionId
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -44,19 +43,17 @@ class DefaultSegmentServiceComponentTest
   override val activeFeatureService: ActiveFeatureService = mock[ActiveFeatureService]
   override val featureService: FeatureService = mock[FeatureService]
 
-  feature("segment resolution") {
+  Feature("segment resolution") {
 
-    scenario("no question in request context") {
+    Scenario("no question in request context") {
       whenReady(segmentService.resolveSegment(RequestContext.empty), Timeout(2.seconds)) { _ should be(None) }
     }
 
-    scenario("no feature for the question") {
-      Mockito
-        .when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("no-feature"))))
+    Scenario("no feature for the question") {
+      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("no-feature"))))
         .thenReturn(Future.successful(Seq.empty))
 
-      Mockito
-        .when(featureService.findByFeatureIds(Seq.empty))
+      when(featureService.findByFeatureIds(Seq.empty))
         .thenReturn(Future.successful(Seq.empty))
 
       whenReady(
@@ -65,22 +62,19 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(None) }
     }
 
-    scenario("feature flip consultation-department-compulsory declared but no data in custom data") {
+    Scenario("feature flip consultation-department-compulsory declared but no data in custom data") {
       val featureId = FeatureId("got-feature")
 
-      Mockito
-        .when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature"))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature")))))
         )
 
-      Mockito
-        .when(featureService.findByFeatureIds(Seq(featureId)))
+      when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(
-            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
-          )
+          Future
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
         )
 
       whenReady(
@@ -89,22 +83,19 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(None) }
     }
 
-    scenario("feature flip consultation-department-compulsory declared and declared_department custom data") {
+    Scenario("feature flip consultation-department-compulsory declared and declared_department custom data") {
       val featureId = FeatureId("got-feature2")
 
-      Mockito
-        .when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature2"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature2"))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature2")))))
         )
 
-      Mockito
-        .when(featureService.findByFeatureIds(Seq(featureId)))
+      when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(
-            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
-          )
+          Future
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
         )
 
       whenReady(
@@ -116,22 +107,19 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(Some("29")) }
     }
 
-    scenario("feature flip consultation-department-compulsory declared and detected_department custom data") {
+    Scenario("feature flip consultation-department-compulsory declared and detected_department custom data") {
       val featureId = FeatureId("got-feature3")
 
-      Mockito
-        .when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature3"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature3"))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature3")))))
         )
 
-      Mockito
-        .when(featureService.findByFeatureIds(Seq(featureId)))
+      when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(
-            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
-          )
+          Future
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
         )
 
       whenReady(
@@ -143,24 +131,21 @@ class DefaultSegmentServiceComponentTest
       ) { _ should be(Some("35")) }
     }
 
-    scenario(
+    Scenario(
       "feature flip consultation-department-compulsory declared and declared_department + detected_department custom data"
     ) {
       val featureId = FeatureId("got-feature4")
 
-      Mockito
-        .when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature4"))))
+      when(activeFeatureService.find(maybeQuestionId = Some(QuestionId("got-feature4"))))
         .thenReturn(
           Future
             .successful(Seq(ActiveFeature(ActiveFeatureId("who cares?"), featureId, Some(QuestionId("got-feature4")))))
         )
 
-      Mockito
-        .when(featureService.findByFeatureIds(Seq(featureId)))
+      when(featureService.findByFeatureIds(Seq(featureId)))
         .thenReturn(
-          Future.successful(
-            Seq(Feature(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory"))
-          )
+          Future
+            .successful(Seq(Feat(featureId = featureId, name = "blabla", slug = "consultation-department-compulsory")))
         )
 
       whenReady(

@@ -30,7 +30,7 @@ class IdeaSearchEngineTest extends MakeUnitTest {
   private val ideaAlias: IndexAndType = "idea-index" / "idea-type"
   private val client = ElasticClient(ElasticProperties("http://fake:3232"))
 
-  feature("ordering in idea elastic search query") {
+  Feature("ordering in idea elastic search query") {
     ignore("any default sort is implemented") {
       Given("an IdeaSearchQuery with None order and None sort")
       val ideaSearchQuery: IdeaSearchQuery = IdeaSearchQuery(sort = None, order = None)

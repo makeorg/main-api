@@ -32,7 +32,6 @@ import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
 import org.make.api.{ActorSystemComponent, MakeBackoffSupervisor, ShardingActorTest}
 import org.make.core.job.Job.JobStatus._
 import org.make.core.job.Job.{JobId, Progress}
-import org.scalatest.GivenWhenThen
 import org.scalatest.concurrent.Eventually.eventually
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
@@ -45,7 +44,6 @@ class JobCoordinatorServiceTest
     extends ShardingActorTest
     with DefaultJobCoordinatorServiceComponent
     with DefaultIdGeneratorComponent
-    with GivenWhenThen
     with JobCoordinatorComponent
     with ActorSystemComponent
     with ScalaCheckDrivenPropertyChecks {
@@ -68,8 +66,8 @@ class JobCoordinatorServiceTest
 
   private implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  feature("Job monitoring") {
-    scenario("it works") {
+  Feature("Job monitoring") {
+    Scenario("it works") {
       forAll { (uuid: UUID, progress: Progress, outcome: Option[Exception]) =>
         val id = JobId(uuid.toString)
 

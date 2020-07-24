@@ -91,8 +91,8 @@ class OperationServiceIT
     operationKind = OperationKind.PublicConsultation
   )
 
-  feature("An operation can be created") {
-    scenario("Create an operation and get the operation") {
+  Feature("An operation can be created") {
+    Scenario("Create an operation and get the operation") {
       Given("""
                |an operation with
                |status = Pending

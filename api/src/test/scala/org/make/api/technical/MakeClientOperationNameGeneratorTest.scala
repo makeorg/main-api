@@ -20,12 +20,11 @@
 package org.make.api.technical
 
 import org.make.api.MakeUnitTest
-import org.scalatest.BeforeAndAfterEach
 import org.make.api.technical.tracing.Tracing
 import kamon.instrumentation.http.HttpMessage
 import kamon.Kamon
 
-class MakeClientOperationNameGeneratorTest extends MakeUnitTest with BeforeAndAfterEach {
+class MakeClientOperationNameGeneratorTest extends MakeUnitTest {
 
   val generator = new MakeClientOperationNameGenerator
 
@@ -44,13 +43,13 @@ class MakeClientOperationNameGeneratorTest extends MakeUnitTest with BeforeAndAf
     override def port: Int = 443
   }
 
-  feature("operation name generation") {
+  Feature("operation name generation") {
 
-    scenario("generation not inside a span") {
+    Scenario("generation not inside a span") {
       generator.name(request) should contain("make.org/FR-fr/consultation/environnement/selection")
     }
 
-    scenario("inside a span") {
+    Scenario("inside a span") {
       val span = Kamon.spanBuilder("test-operation").doNotTrackMetrics().start()
       Kamon.runWithSpan(span) {
         generator.name(request) should contain("test-operation")
@@ -58,7 +57,7 @@ class MakeClientOperationNameGeneratorTest extends MakeUnitTest with BeforeAndAf
       span.finish()
     }
 
-    scenario("inside a span with the same name as the main operation") {
+    Scenario("inside a span with the same name as the main operation") {
       val span = Kamon.spanBuilder("test-operation").start()
       Tracing.entrypoint("test-operation")
       Kamon.runWithSpan(Kamon.spanBuilder("test-operation").start()) {

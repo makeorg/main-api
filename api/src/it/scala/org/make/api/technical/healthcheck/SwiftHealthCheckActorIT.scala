@@ -42,7 +42,7 @@ class SwiftHealthCheckActorIT
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  feature("Check Swift status") {
+  Feature("Check Swift status") {
     ignore("list swift container") {
       Given("a swift health check actor")
       val healthCheckExecutionContext = ExecutionContext.Implicits.global

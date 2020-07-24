@@ -29,8 +29,6 @@ import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
 import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId, UserType}
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -60,8 +58,8 @@ class ModerationOrganisationApiTest
     userType = UserType.UserTypeOrganisation
   )
 
-  feature("register organisation") {
-    scenario("register organisation unauthenticate") {
+  Feature("register organisation") {
+    Scenario("register organisation unauthenticate") {
       Given("a unauthenticate user")
       When("I want to register an organisation")
       Then("I should get an unauthorized error")
@@ -70,7 +68,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("register organisation without admin rights") {
+    Scenario("register organisation without admin rights") {
       Given("a non admin user")
       When("I want to register an organisation")
       Then("I should get a forbidden error")
@@ -81,7 +79,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("register organisation with admin rights") {
+    Scenario("register organisation with admin rights") {
       Given("a admin user")
       When("I want to register an organisation")
       Then("I should get a Created status")
@@ -99,7 +97,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("register organisation with admin rights without password") {
+    Scenario("register organisation with admin rights without password") {
       Given("a admin user")
       When("I want to register an organisation without a password")
       Then("I should get a Created status")
@@ -114,7 +112,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("register organisation without organisation name") {
+    Scenario("register organisation without organisation name") {
       Given("a admin user")
       When("I want to register an organisation")
       Then("I should get a BadRequest status")
@@ -125,7 +123,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("register organisation with avatarUrl too long") {
+    Scenario("register organisation with avatarUrl too long") {
       Given("a admin user")
       When("I want to register an organisation with a too long avatarUrl")
       Then("I should get a BadRequest status")
@@ -143,28 +141,28 @@ class ModerationOrganisationApiTest
     }
   }
 
-  feature("get organisation") {
+  Feature("get organisation") {
 
-    when(organisationService.getOrganisation(matches(UserId("ABCD"))))
+    when(organisationService.getOrganisation(eqTo(UserId("ABCD"))))
       .thenReturn(Future.successful(Some(fakeOrganisation)))
 
-    when(organisationService.getOrganisation(matches(UserId("non-existant"))))
+    when(organisationService.getOrganisation(eqTo(UserId("non-existant"))))
       .thenReturn(Future.successful(None))
 
-    scenario("get moderation organisation unauthenticate") {
+    Scenario("get moderation organisation unauthenticate") {
       Get("/moderation/organisations/ABCD") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get moderation organisation without admin rights") {
+    Scenario("get moderation organisation without admin rights") {
       Get("/moderation/organisations/ABCD")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get existing organisation") {
+    Scenario("get existing organisation") {
       Get("/moderation/organisations/ABCD")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -173,7 +171,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("get non existing organisation") {
+    Scenario("get non existing organisation") {
       Get("/moderation/organisations/non-existant")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
@@ -181,8 +179,8 @@ class ModerationOrganisationApiTest
     }
   }
 
-  feature("update operation") {
-    scenario("update organisation unauthenticate") {
+  Feature("update operation") {
+    Scenario("update organisation unauthenticate") {
       Given("a unauthenticate user")
       When("I want to update an organisation")
       Then("I should get an unauthorized error")
@@ -192,7 +190,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("update organisation without admin rights") {
+    Scenario("update organisation without admin rights") {
       Given("a non admin user")
       When("I want to update an organisation")
       Then("I should get a not found error")
@@ -203,7 +201,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("update organisation with admin rights") {
+    Scenario("update organisation with admin rights") {
       Given("a admin user")
       When("I want to update an organisation")
       Then("I should get a OK status")
@@ -219,7 +217,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("update non organisation user") {
+    Scenario("update non organisation user") {
       Given("a admin user")
       When("I want to update a non organisation user")
       Then("I should get a Forbidden status")
@@ -232,7 +230,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("update non existing organisation") {
+    Scenario("update non existing organisation") {
       Given("a admin user")
       When("I want to update a non existing organisation")
       Then("I should get a NotFound status")
@@ -246,8 +244,8 @@ class ModerationOrganisationApiTest
     }
   }
 
-  feature("Get organisations") {
-    scenario("get organisations unauthenticated") {
+  Feature("Get organisations") {
+    Scenario("get organisations unauthenticated") {
       Given("a unauthenticate user")
       When("I want to get organisations")
       Then("I should get an unauthorized error")
@@ -256,7 +254,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("get organisations without moderation role") {
+    Scenario("get organisations without moderation role") {
       Given("a non admin user")
       When("I want to get organisations")
       Then("I should get a forbidden error")
@@ -266,7 +264,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("get organisations with moderation role") {
+    Scenario("get organisations with moderation role") {
 
       when(organisationService.count(None)).thenReturn(Future.successful(1))
 
@@ -283,7 +281,7 @@ class ModerationOrganisationApiTest
       }
     }
 
-    scenario("get organisations with admin role") {
+    Scenario("get organisations with admin role") {
 
       when(organisationService.count(None)).thenReturn(Future.successful(1))
 

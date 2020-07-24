@@ -41,8 +41,8 @@ class CockroachHealthCheckActorIT
   override protected val adminEmail: String = "admin@make.org"
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
-  feature("Check Cockroach status") {
-    scenario("read record where email is admin@make.org") {
+  Feature("Check Cockroach status") {
+    Scenario("read record where email is admin@make.org") {
       Given("a cockroach health check actor")
       val actorSystem = system
       val healthCheckExecutionContext = ExecutionContext.Implicits.global

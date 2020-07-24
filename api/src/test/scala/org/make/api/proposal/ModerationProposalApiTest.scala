@@ -42,8 +42,6 @@ import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -65,8 +63,9 @@ class ModerationProposalApiTest
   override val questionService: QuestionService = mock[QuestionService]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]
 
-  when(proposalCoordinatorService.getProposal(any[ProposalId]))
-    .thenAnswer(invocation => Future.successful(Some(proposal(invocation.getArgument[ProposalId](0)))))
+  when(proposalCoordinatorService.getProposal(any[ProposalId])).thenAnswer { id: ProposalId =>
+    Future.successful(Some(proposal(id)))
+  }
 
   private val john = TestUtils.user(
     id = UserId("my-user-id"),
@@ -158,7 +157,7 @@ class ModerationProposalApiTest
   when(
     proposalService
       .validateProposal(
-        matches(ProposalId("123456")),
+        eqTo(ProposalId("123456")),
         any[UserId],
         any[RequestContext],
         any[Question],
@@ -173,7 +172,7 @@ class ModerationProposalApiTest
   when(
     proposalService
       .validateProposal(
-        matches(ProposalId("987654")),
+        eqTo(ProposalId("987654")),
         any[UserId],
         any[RequestContext],
         any[Question],
@@ -188,7 +187,7 @@ class ModerationProposalApiTest
   when(
     proposalService
       .validateProposal(
-        matches(ProposalId("nop")),
+        eqTo(ProposalId("nop")),
         any[UserId],
         any[RequestContext],
         any[Question],
@@ -202,21 +201,21 @@ class ModerationProposalApiTest
   ).thenReturn(Future.failed(ValidationFailedError(Seq())))
   when(
     proposalService
-      .refuseProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
+      .refuseProposal(eqTo(ProposalId("123456")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("123456")))))
   when(
     proposalService
-      .refuseProposal(matches(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
+      .refuseProposal(eqTo(ProposalId("987654")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
   ).thenReturn(Future.successful(Some(proposalResponse(ProposalId("987654")))))
   when(
     proposalService
-      .lockProposal(matches(ProposalId("123456")), any[UserId], any[RequestContext])
+      .lockProposal(eqTo(ProposalId("123456")), any[UserId], any[RequestContext])
   ).thenReturn(
     Future.failed(ValidationFailedError(Seq(ValidationError("moderatorName", "already_locked", Some("mauderator")))))
   )
   when(
     proposalService
-      .lockProposal(matches(ProposalId("123456")), matches(tyrion.userId), any[RequestContext])
+      .lockProposal(eqTo(ProposalId("123456")), eqTo(tyrion.userId), any[RequestContext])
   ).thenReturn(Future.successful(Some(tyrion.userId)))
 
   val proposalSim123: Proposal = Proposal(
@@ -302,7 +301,7 @@ class ModerationProposalApiTest
 
   when(
     proposalService
-      .getModerationProposalById(matches(proposalSim123.proposalId))
+      .getModerationProposalById(eqTo(proposalSim123.proposalId))
   ).thenReturn(
     Future.successful(
       Some(
@@ -342,7 +341,7 @@ class ModerationProposalApiTest
 
   when(
     proposalService
-      .getModerationProposalById(matches(proposalSim124.proposalId))
+      .getModerationProposalById(eqTo(proposalSim124.proposalId))
   ).thenReturn(
     Future.successful(
       Some(
@@ -382,11 +381,11 @@ class ModerationProposalApiTest
 
   when(
     proposalService
-      .getModerationProposalById(matches(ProposalId("fake")))
+      .getModerationProposalById(eqTo(ProposalId("fake")))
   ).thenReturn(Future.successful(None))
   when(
     proposalService
-      .getModerationProposalById(matches(ProposalId("fake2")))
+      .getModerationProposalById(eqTo(ProposalId("fake2")))
   ).thenReturn(Future.successful(None))
 
   val proposalResult: ProposalResponse = ProposalResponse(
@@ -486,9 +485,9 @@ class ModerationProposalApiTest
     )
   }
 
-  when(ideaService.fetchOne(matches(IdeaId("fake"))))
+  when(ideaService.fetchOne(eqTo(IdeaId("fake"))))
     .thenReturn(Future.successful(None))
-  when(ideaService.fetchOne(matches(IdeaId("Idea 1"))))
+  when(ideaService.fetchOne(eqTo(IdeaId("Idea 1"))))
     .thenReturn(
       Future.successful(
         Some(
@@ -501,7 +500,7 @@ class ModerationProposalApiTest
         )
       )
     )
-  when(ideaService.fetchOne(matches(IdeaId("Idea 2"))))
+  when(ideaService.fetchOne(eqTo(IdeaId("Idea 2"))))
     .thenReturn(
       Future.successful(
         Some(
@@ -514,7 +513,7 @@ class ModerationProposalApiTest
         )
       )
     )
-  when(ideaService.fetchOne(matches(IdeaId("Idea 3"))))
+  when(ideaService.fetchOne(eqTo(IdeaId("Idea 3"))))
     .thenReturn(
       Future.successful(
         Some(
@@ -543,7 +542,7 @@ class ModerationProposalApiTest
     )
   )
 
-  when(proposalService.getProposalById(matches(ProposalId("123456")), any[RequestContext]))
+  when(proposalService.getProposalById(eqTo(ProposalId("123456")), any[RequestContext]))
     .thenReturn(Future.successful(Some(indexedProposal)))
 
   when(proposalService.getSimilar(any[UserId], any[IndexedProposal], any[RequestContext]))
@@ -559,29 +558,29 @@ class ModerationProposalApiTest
   when(
     proposalService
       .changeProposalsIdea(
-        matches(Seq(proposalSim123.proposalId, proposalSim124.proposalId)),
+        eqTo(Seq(proposalSim123.proposalId, proposalSim124.proposalId)),
         any[UserId],
-        matches(IdeaId("Idea 3"))
+        eqTo(IdeaId("Idea 3"))
       )
   ).thenReturn(Future.successful(Seq(proposalSim123, proposalSim124)))
 
   val routes: Route = sealRoute(moderationProposalApi.routes)
 
-  feature("proposal validation") {
-    scenario("unauthenticated validation") {
+  Feature("proposal validation") {
+    Scenario("unauthenticated validation") {
       Post("/moderation/proposals/123456/accept") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("validation with user role") {
+    Scenario("validation with user role") {
       Post("/moderation/proposals/123456/accept")
         .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("validation with moderation role without right on question") {
+    Scenario("validation with moderation role without right on question") {
 
       when(questionService.getQuestion(QuestionId("question-fire-and-ice"))).thenReturn(
         Future.successful(
@@ -606,7 +605,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("validation with moderation role") {
+    Scenario("validation with moderation role") {
       Post("/moderation/proposals/123456/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
@@ -614,7 +613,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("validation with admin role") {
+    Scenario("validation with admin role") {
 
       Post("/moderation/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
@@ -623,7 +622,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("validation of non existing with admin role") {
+    Scenario("validation of non existing with admin role") {
 
       Post("/moderation/proposals/nop/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntity))
@@ -632,7 +631,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("validation of proposal without Tag nor Idea") {
+    Scenario("validation of proposal without Tag nor Idea") {
 
       Post("/moderation/proposals/987654/accept")
         .withEntity(HttpEntity(ContentTypes.`application/json`, validateProposalEntityWithoutTagNorIdea))
@@ -642,21 +641,21 @@ class ModerationProposalApiTest
     }
   }
 
-  feature("proposal refuse") {
-    scenario("unauthenticated refuse") {
+  Feature("proposal refuse") {
+    Scenario("unauthenticated refuse") {
       Post("/moderation/proposals/123456/refuse") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("refuse with user role") {
+    Scenario("refuse with user role") {
       Post("/moderation/proposals/123456/refuse")
         .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("refusing with moderation role") {
+    Scenario("refusing with moderation role") {
       Post("/moderation/proposals/123456/refuse")
         .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
@@ -664,7 +663,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("refusing with admin role") {
+    Scenario("refusing with admin role") {
       Post("/moderation/proposals/987654/refuse")
         .withEntity(HttpEntity(ContentTypes.`application/json`, refuseProposalWithReasonEntity))
         .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
@@ -673,12 +672,12 @@ class ModerationProposalApiTest
     }
 
     // Todo: implement this test
-    scenario("refusing proposal without reason with admin role: this test should be done") {}
+    Scenario("refusing proposal without reason with admin role: this test should be done") {}
   }
 
   // Todo: implement this test suite. Test the behaviour of the service.
-  feature("get proposal for moderation") {
-    scenario("moderator get proposal by id") {
+  Feature("get proposal for moderation") {
+    Scenario("moderator get proposal by id") {
       Get("/moderation/proposals/sim-123")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -686,33 +685,33 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("moderator get proposal by id without right") {
+    Scenario("moderator get proposal by id without right") {
       Get("/moderation/proposals/sim-123")
         .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("moderator get proposal as admin") {
+    Scenario("moderator get proposal as admin") {
       Get("/moderation/proposals/sim-123")
         .withHeaders(Authorization(OAuth2BearerToken(tokenDaenerysAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
 
-    scenario("get new proposal without history") {}
-    scenario("get validated proposal gives history with moderator") {}
+    Scenario("get new proposal without history") {}
+    Scenario("get validated proposal gives history with moderator") {}
   }
 
-  feature("lock proposal") {
-    scenario("moderator can lock an unlocked proposal") {
+  Feature("lock proposal") {
+    Scenario("moderator can lock an unlocked proposal") {
       Post("/moderation/proposals/123456/lock")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
       }
     }
 
-    scenario("moderator can expand the time a proposal is locked by itself") {
+    Scenario("moderator can expand the time a proposal is locked by itself") {
       Post("/moderation/proposals/123456/lock")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.NoContent)
@@ -723,7 +722,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("user cannot lock an unlocked proposal") {
+    Scenario("user cannot lock an unlocked proposal") {
       Post("/moderation/proposals/123456/lock")
         .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
@@ -731,14 +730,14 @@ class ModerationProposalApiTest
     }
   }
 
-  feature("get duplicates") {
-    scenario("moderator without right") {
+  Feature("get duplicates") {
+    Scenario("moderator without right") {
       Get("/moderation/proposals/123456/duplicates")
         .withHeaders(Authorization(OAuth2BearerToken(tokenNoRightModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("moderator can fetch duplicate ideas") {
+    Scenario("moderator can fetch duplicate ideas") {
       Get("/moderation/proposals/123456/duplicates")
         .withHeaders(Authorization(OAuth2BearerToken(tokenTyrionModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -753,8 +752,8 @@ class ModerationProposalApiTest
     }
   }
 
-  feature("change idea of a proposal list") {
-    scenario("unauthenticated user") {
+  Feature("change idea of a proposal list") {
+    Scenario("unauthenticated user") {
       Given("an un authenticated user")
       When("the user change idea of proposals")
       Then("he should get an unauthorized (401) return code")
@@ -765,7 +764,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("authenticated user with citizen role") {
+    Scenario("authenticated user with citizen role") {
       Given("an authenticated user with citizen role")
       When("the user change idea of proposals")
       Then("he should get an forbidden (403) return code")
@@ -779,7 +778,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("change success") {
+    Scenario("change success") {
       Given("an authenticated user with admin role")
       When("the user change idea of proposals")
       Then("he should get an success (201) return code")
@@ -793,7 +792,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("invalid idea id") {
+    Scenario("invalid idea id") {
       Given("an authenticated user with admin role")
       And("an invalid ideaId")
       When("the user change idea of proposals using invalid ideaId")
@@ -811,7 +810,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("invalid proposal id") {
+    Scenario("invalid proposal id") {
       Given("an authenticated user with admin role")
       And("an invalid ideaId")
       When("the user change idea of proposals using invalid ideaId")
@@ -836,7 +835,7 @@ class ModerationProposalApiTest
 
   }
 
-  feature("next proposal to moderate") {
+  Feature("next proposal to moderate") {
 
     val validPayload =
       """
@@ -879,7 +878,7 @@ class ModerationProposalApiTest
         )
       )
 
-    scenario("unauthenticated call") {
+    Scenario("unauthenticated call") {
       Given("an unauthenticated user")
       When("the user requests the next proposal to moderate")
       Then("The return code should be 401")
@@ -891,7 +890,7 @@ class ModerationProposalApiTest
 
     }
 
-    scenario("calling with a user right") {
+    Scenario("calling with a user right") {
       Given("an authenticated user with the user role")
       When("the user requests the next proposal to moderate")
       Then("The return code should be 403")
@@ -903,7 +902,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("calling without right on question") {
+    Scenario("calling without right on question") {
       Given("an authenticated user with the moderator role, without rights")
       When("the user requests the next proposal to moderate")
       Then("The return code should be 403")
@@ -915,7 +914,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("no proposal to moderate") {
+    Scenario("no proposal to moderate") {
       Given("an authenticated user with the moderator role")
       When("the user requests the next proposal to moderate")
       And("there is no proposal matching criterias")
@@ -923,8 +922,8 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(QuestionId("question-vff")),
-          matches(tyrion.userId),
+          eqTo(QuestionId("question-vff")),
+          eqTo(tyrion.userId),
           any[RequestContext],
           any[Boolean],
           any[Option[Int]],
@@ -939,7 +938,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("normal case") {
+    Scenario("normal case") {
       Given("an authenticated user with the moderator role")
       When("the user requests the next proposal to moderate")
       And("there is a proposal matching criterias")
@@ -955,8 +954,8 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(QuestionId("question-mieux-vivre-ensemble")),
-          matches(tyrion.userId),
+          eqTo(QuestionId("question-mieux-vivre-ensemble")),
+          eqTo(tyrion.userId),
           any[RequestContext],
           any[Boolean],
           any[Option[Int]],
@@ -971,7 +970,7 @@ class ModerationProposalApiTest
       }
     }
 
-    scenario("invalid payload") {
+    Scenario("invalid payload") {
       Given("an authenticated user with the moderator role")
       When("the user requests the next proposal to moderate")
       And("there is a proposal matching criterias")
@@ -986,8 +985,8 @@ class ModerationProposalApiTest
 
       when(
         proposalService.searchAndLockProposalToModerate(
-          matches(QuestionId("question-mieux-vivre-ensemble")),
-          matches(tyrion.userId),
+          eqTo(QuestionId("question-mieux-vivre-ensemble")),
+          eqTo(tyrion.userId),
           any[RequestContext],
           any[Boolean],
           any[Option[Int]],
@@ -1003,8 +1002,8 @@ class ModerationProposalApiTest
     }
   }
 
-  feature("get proposals") {
-    scenario("get proposals by created at date") {
+  Feature("get proposals") {
+    Scenario("get proposals by created at date") {
       Given("an authenticated user with the moderator role")
       When("the user search proposals using created before")
       And("there is a proposal matching criterias")
@@ -1016,7 +1015,7 @@ class ModerationProposalApiTest
       when(
         proposalService.search(
           any[Option[UserId]],
-          matches(
+          eqTo(
             SearchQuery(filters = Some(
               SearchFilters(
                 createdAt = Some(CreatedAtSearchFilter(before = Some(beforeDate), after = None)),
@@ -1039,19 +1038,19 @@ class ModerationProposalApiTest
     }
   }
 
-  feature("get predicted tags for proposal") {
-    scenario("unauthorized user") {
+  Feature("get predicted tags for proposal") {
+    Scenario("unauthorized user") {
       Get("/moderation/proposals/123456/tags") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
-    scenario("forbidden citizen") {
+    Scenario("forbidden citizen") {
       Get("/moderation/proposals/123456/tags")
         .withHeaders(Authorization(OAuth2BearerToken(tokenJohnCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("allowed moderator") {
+    Scenario("allowed moderator") {
       when(proposalService.getTagsForProposal(any[Proposal]))
         .thenReturn(
           Future.successful(
@@ -1080,7 +1079,7 @@ class ModerationProposalApiTest
 
       }
     }
-    scenario("not allowed moderator") {
+    Scenario("not allowed moderator") {
       when(proposalService.getTagsForProposal(any[Proposal]))
         .thenReturn(
           Future.successful(
@@ -1105,7 +1104,7 @@ class ModerationProposalApiTest
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("proposal not found") {
+    Scenario("proposal not found") {
       when(proposalCoordinatorService.getProposal(any[ProposalId]))
         .thenReturn(Future.successful(None))
 

@@ -35,8 +35,6 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -164,8 +162,8 @@ class OperationApiTest
   when(operationService.find(slug = Some("first-operation"), country = None, maybeSource = None, openAt = None))
     .thenReturn(Future.successful(Seq(firstOperation)))
 
-  feature("get operations") {
-    scenario("get all operations") {
+  Feature("get operations") {
+    Scenario("get all operations") {
       Given("2 registered operations")
       When("I get all proposals")
       Then("I get a list of 2 operations")
@@ -176,7 +174,7 @@ class OperationApiTest
       }
     }
 
-    scenario("get an operation by slug") {
+    Scenario("get an operation by slug") {
       Given("2 registered operations and one of them with a slug 'second-operation' ")
       When("I get a proposal from slug 'second-operation' ")
       Then("I get 1 operation")
@@ -200,7 +198,7 @@ class OperationApiTest
       }
     }
 
-    scenario("get an operation by id") {
+    Scenario("get an operation by id") {
       Given("2 registered operations and one of them with an id 'firstOperation' ")
       When("I get a proposal from id 'firstOperation'")
       Then("I get 1 operation")
@@ -223,7 +221,7 @@ class OperationApiTest
       }
     }
 
-    scenario("get an operation by id and country") {
+    Scenario("get an operation by id and country") {
       Given("2 registered operations and one of them with an id 'firstOperation' ")
       When("I get a proposal from id 'firstOperation' with country header set as 'GB'")
       Then("I get 1 operation")
@@ -246,7 +244,7 @@ class OperationApiTest
         operationResponse.countriesConfiguration.head.tagIds should be(Seq.empty)
       }
     }
-    scenario("get an non existent operation by id") {
+    Scenario("get an non existent operation by id") {
       Given("2 registered operations")
       When("I get a proposal from a non existent id 'fakeid' ")
       Then("I get a not found status")

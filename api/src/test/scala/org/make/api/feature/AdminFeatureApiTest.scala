@@ -23,9 +23,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.core.feature.{Feature, FeatureId}
-import org.mockito.Mockito.when
-import org.mockito.{ArgumentMatchers, Mockito}
+import org.make.core.feature.{Feature => Feat, FeatureId}
 
 import scala.concurrent.Future
 
@@ -35,13 +33,13 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
 
   val routes: Route = sealRoute(adminFeatureApi.routes)
 
-  feature("create a feature") {
-    val validFeature = Feature(FeatureId("valid-feature"), "valid Feature", "valid-feature")
+  Feature("create a feature") {
+    val validFeature = Feat(FeatureId("valid-feature"), "valid Feature", "valid-feature")
 
-    when(featureService.createFeature(ArgumentMatchers.eq(validFeature.slug), ArgumentMatchers.eq(validFeature.name)))
+    when(featureService.createFeature(eqTo(validFeature.slug), eqTo(validFeature.name)))
       .thenReturn(Future.successful(validFeature))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Post("/admin/features").withEntity(
         HttpEntity(ContentTypes.`application/json`, """{"name": "Valid Feature", "slug": "valid-feature"}""")
       ) ~>
@@ -50,7 +48,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Post("/admin/features")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"name": "Valid Feature", "slug": "valid-feature"}""")
@@ -60,7 +58,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Post("/admin/features")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{"name": "Valid Feature", "slug": "valid-feature"}""")
@@ -70,15 +68,13 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("allow authenticated moderator") {
+    Scenario("allow authenticated moderator") {
 
-      Mockito
-        .when(featureService.findBySlug(ArgumentMatchers.eq("valid-feature")))
+      when(featureService.findBySlug(eqTo("valid-feature")))
         .thenReturn(Future.successful(Seq.empty))
 
-      Mockito
-        .when(featureService.createFeature(ArgumentMatchers.eq("valid-feature"), ArgumentMatchers.eq("Valid Feature")))
-        .thenReturn(Future.successful(Feature(FeatureId("featured-id"), "Valid Feature", "valid-feature")))
+      when(featureService.createFeature(eqTo("valid-feature"), eqTo("Valid Feature")))
+        .thenReturn(Future.successful(Feat(FeatureId("featured-id"), "Valid Feature", "valid-feature")))
 
       Post("/admin/features")
         .withEntity(
@@ -90,35 +86,35 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
     }
   }
 
-  feature("read a feature") {
-    val helloFeature = Feature(FeatureId("hello-feature"), "Hello Feature", "hello-feature")
+  Feature("read a feature") {
+    val helloFeature = Feat(FeatureId("hello-feature"), "Hello Feature", "hello-feature")
 
-    when(featureService.getFeature(ArgumentMatchers.eq(helloFeature.featureId)))
+    when(featureService.getFeature(eqTo(helloFeature.featureId)))
       .thenReturn(Future.successful(Some(helloFeature)))
-    when(featureService.getFeature(ArgumentMatchers.eq(FeatureId("fake-feature"))))
+    when(featureService.getFeature(eqTo(FeatureId("fake-feature"))))
       .thenReturn(Future.successful(None))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Get("/admin/features/hello-feature") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Get("/admin/features/hello-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Get("/admin/features/hello-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allow authenticated moderator on existing feature") {
+    Scenario("allow authenticated moderator on existing feature") {
       Get("/admin/features/hello-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -129,7 +125,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("not found and allow authenticated admin on a non existing feature") {
+    Scenario("not found and allow authenticated admin on a non existing feature") {
       Get("/admin/features/fake-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
@@ -137,40 +133,25 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
     }
   }
 
-  feature("update a feature") {
-    val helloFeature = Feature(FeatureId("hello-feature"), "hello feature", "hello-feature")
-    val newHelloFeature = Feature(FeatureId("hello-feature"), "new name", "new-slug")
-    val sameSlugFeature = Feature(FeatureId("same-slug"), "same slug", "same-slug")
+  Feature("update a feature") {
+    val helloFeature = Feat(FeatureId("hello-feature"), "hello feature", "hello-feature")
+    val newHelloFeature = Feat(FeatureId("hello-feature"), "new name", "new-slug")
+    val sameSlugFeature = Feat(FeatureId("same-slug"), "same slug", "same-slug")
 
-    when(featureService.findBySlug(ArgumentMatchers.eq(newHelloFeature.slug)))
+    when(featureService.findBySlug(eqTo(newHelloFeature.slug)))
       .thenReturn(Future.successful(Seq.empty))
-    when(featureService.findBySlug(ArgumentMatchers.eq(helloFeature.slug)))
+    when(featureService.findBySlug(eqTo(helloFeature.slug)))
       .thenReturn(Future.successful(Seq(helloFeature)))
-    when(featureService.findBySlug(ArgumentMatchers.eq(sameSlugFeature.slug)))
+    when(featureService.findBySlug(eqTo(sameSlugFeature.slug)))
       .thenReturn(Future.successful(Seq(sameSlugFeature)))
-    when(
-      featureService.updateFeature(
-        ArgumentMatchers.eq(FeatureId("fake-feature")),
-        ArgumentMatchers.any[String],
-        ArgumentMatchers.any[String]
-      )
-    ).thenReturn(Future.successful(None))
-    when(
-      featureService.updateFeature(
-        ArgumentMatchers.eq(helloFeature.featureId),
-        ArgumentMatchers.eq("new-slug"),
-        ArgumentMatchers.eq("new name")
-      )
-    ).thenReturn(Future.successful(Some(newHelloFeature)))
-    when(
-      featureService.updateFeature(
-        ArgumentMatchers.eq(sameSlugFeature.featureId),
-        ArgumentMatchers.eq("same-slug"),
-        ArgumentMatchers.eq("new name")
-      )
-    ).thenReturn(Future.successful(Some(sameSlugFeature)))
+    when(featureService.updateFeature(eqTo(FeatureId("fake-feature")), any[String], any[String]))
+      .thenReturn(Future.successful(None))
+    when(featureService.updateFeature(eqTo(helloFeature.featureId), eqTo("new-slug"), eqTo("new name")))
+      .thenReturn(Future.successful(Some(newHelloFeature)))
+    when(featureService.updateFeature(eqTo(sameSlugFeature.featureId), eqTo("same-slug"), eqTo("new name")))
+      .thenReturn(Future.successful(Some(sameSlugFeature)))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Put("/admin/features/hello-feature").withEntity(
         HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}""")
       ) ~> routes ~> check {
@@ -178,7 +159,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Put("/admin/features/hello-feature")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -186,7 +167,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Put("/admin/features/hello-feature")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
@@ -194,7 +175,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("allow authenticated admin on existing feature") {
+    Scenario("allow authenticated admin on existing feature") {
       Put("/admin/features/hello-feature")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -206,7 +187,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("not found and allow authenticated admin on a non existing feature") {
+    Scenario("not found and allow authenticated admin on a non existing feature") {
       Put("/admin/features/fake-feature")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "new-slug", "name": "new name"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -214,7 +195,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("slug already exists") {
+    Scenario("slug already exists") {
       Put("/admin/features/same-slug")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "hello-feature", "name": "new name"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -222,7 +203,7 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
       }
     }
 
-    scenario("changing only the name") {
+    Scenario("changing only the name") {
       Put("/admin/features/same-slug")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"slug": "same-slug", "name": "new name"}"""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -231,44 +212,44 @@ class AdminFeatureApiTest extends MakeApiTestBase with DefaultAdminFeatureApiCom
     }
   }
 
-  feature("delete a feature") {
-    val helloFeature = Feature(FeatureId("hello-feature"), "Hello Feature", "hello-feature")
+  Feature("delete a feature") {
+    val helloFeature = Feat(FeatureId("hello-feature"), "Hello Feature", "hello-feature")
 
-    when(featureService.getFeature(ArgumentMatchers.eq(helloFeature.featureId)))
+    when(featureService.getFeature(eqTo(helloFeature.featureId)))
       .thenReturn(Future.successful(Some(helloFeature)))
-    when(featureService.getFeature(ArgumentMatchers.eq(FeatureId("fake-feature"))))
+    when(featureService.getFeature(eqTo(FeatureId("fake-feature"))))
       .thenReturn(Future.successful(None))
-    when(featureService.deleteFeature(ArgumentMatchers.eq(helloFeature.featureId)))
+    when(featureService.deleteFeature(eqTo(helloFeature.featureId)))
       .thenReturn(Future.successful({}))
 
-    scenario("unauthorize unauthenticated") {
+    Scenario("unauthorize unauthenticated") {
       Delete("/admin/features/hello-feature") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbid authenticated citizen") {
+    Scenario("forbid authenticated citizen") {
       Delete("/admin/features/hello-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbid authenticated moderator") {
+    Scenario("forbid authenticated moderator") {
       Delete("/admin/features/hello-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allow authenticated moderator on existing feature") {
+    Scenario("allow authenticated moderator on existing feature") {
       Delete("/admin/features/hello-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
 
-    scenario("not found and allow authenticated admin on a non existing feature") {
+    Scenario("not found and allow authenticated admin on a non existing feature") {
       Get("/admin/features/fake-feature")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)

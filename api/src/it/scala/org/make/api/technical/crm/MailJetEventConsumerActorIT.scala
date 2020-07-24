@@ -29,7 +29,6 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor}
 import org.make.core.user.MailingErrorLog
 import org.make.core.{DateHelper, MakeSerializable}
-import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
@@ -67,29 +66,24 @@ class MailJetEventConsumerActorIT
     super.afterAll()
   }
 
-  feature("consume MailJet event") {
+  Feature("consume MailJet event") {
     val probe = TestProbe()
     val now: ZonedDateTime = DateHelper.now()
 
-    scenario("Reacting to MailJetBounceEvent") {
-      Mockito
-        .when(userService.updateIsHardBounce(ArgumentMatchers.eq("test@example.com"), ArgumentMatchers.eq(true)))
-        .thenAnswer(_ => {
-          probe.ref ! "userService.updateIsHardBounce called"
-          Future.successful(true)
-        })
-      Mockito
-        .when(
-          userService.updateLastMailingError(
-            ArgumentMatchers.eq("test@example.com"),
-            ArgumentMatchers
-              .eq[Option[MailingErrorLog]](Some(MailingErrorLog(error = MailJetError.InvalidDomaine.name, date = now)))
-          )
+    Scenario("Reacting to MailJetBounceEvent") {
+      when(userService.updateIsHardBounce(eqTo("test@example.com"), eqTo(true))).thenAnswer { (_: String, _: Boolean) =>
+        probe.ref ! "userService.updateIsHardBounce called"
+        Future.successful(true)
+      }
+      when(
+        userService.updateLastMailingError(
+          eqTo("test@example.com"),
+          eqTo[Option[MailingErrorLog]](Some(MailingErrorLog(error = MailJetError.InvalidDomaine.name, date = now)))
         )
-        .thenAnswer(_ => {
-          probe.ref ! "userService.updateLastMailingError called"
-          Future.successful(true)
-        })
+      ).thenAnswer { (_: String, _: Option[MailingErrorLog]) =>
+        probe.ref ! "userService.updateLastMailingError called"
+        Future.successful(true)
+      }
       Given("a bounce event to consume")
       val eventBounce: MailJetBounceEvent = MailJetBounceEvent(
         email = "test@example.com",
@@ -115,13 +109,12 @@ class MailJetEventConsumerActorIT
       probe.expectMsg(500.millis, "userService.updateLastMailingError called")
     }
 
-    scenario("Reacting to MailJetSpamEvent") {
-      Mockito
-        .when(userService.updateOptInNewsletter(ArgumentMatchers.eq("test@example.com"), ArgumentMatchers.eq(false)))
-        .thenAnswer(_ => {
+    Scenario("Reacting to MailJetSpamEvent") {
+      when(userService.updateOptInNewsletter(eqTo("test@example.com"), eqTo(false))).thenAnswer {
+        (_: String, _: Boolean) =>
           probe.ref ! "userService.updateOptInNewsletter called"
           Future.successful(true)
-        })
+      }
       Given("A spam event to consume")
       val eventSpam: MailJetSpamEvent = MailJetSpamEvent(
         email = "test@example.com",
@@ -149,16 +142,14 @@ class MailJetEventConsumerActorIT
       probe.expectMsg(500.millis, "userService.updateOptInNewsletter called")
     }
 
-    scenario("Reacting to MailJetUnsubscribeEvent") {
-      Mockito
-        .when(
-          userService
-            .updateOptInNewsletter(ArgumentMatchers.eq("test_unsubscribe@example.com"), ArgumentMatchers.eq(false))
-        )
-        .thenAnswer(_ => {
-          probe.ref ! "userService.updateOptInNewsletter called for unsubscribe event"
-          Future.successful(true)
-        })
+    Scenario("Reacting to MailJetUnsubscribeEvent") {
+      when(
+        userService
+          .updateOptInNewsletter(eqTo("test_unsubscribe@example.com"), eqTo(false))
+      ).thenAnswer { (_: String, _: Boolean) =>
+        probe.ref ! "userService.updateOptInNewsletter called for unsubscribe event"
+        Future.successful(true)
+      }
 
       Given("A unsubscribe event to consume")
       val eventUnsubscribe: MailJetUnsubscribeEvent = MailJetUnsubscribeEvent(

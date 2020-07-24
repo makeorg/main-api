@@ -38,7 +38,6 @@ import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user._
 import org.make.api.userhistory.{
   OrganisationEmailChangedEvent,
-  OrganisationInitializationEvent,
   OrganisationRegisteredEvent,
   OrganisationUpdatedEvent,
   UserHistoryCoordinatorService,
@@ -62,9 +61,6 @@ import org.make.core.user.Role.RoleActor
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{times, verify}
-import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mockito}
 import org.scalatest.RecoverMethods
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -100,23 +96,7 @@ class OrganisationServiceTest
   override val userTokenGenerator: UserTokenGenerator = mock[UserTokenGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
 
-  Mockito.when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
-
-  class MatchRegisterEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
-    override def matches(argument: AnyRef): Boolean =
-      argument match {
-        case i: OrganisationRegisteredEvent if maybeUserId.contains(i.userId) => true
-        case _                                                                => false
-      }
-  }
-
-  class MatchOrganisationAskPasswordEvents(maybeUserId: Option[UserId]) extends ArgumentMatcher[AnyRef] {
-    override def matches(argument: AnyRef): Boolean =
-      argument match {
-        case i: OrganisationInitializationEvent if maybeUserId.contains(i.userId) => true
-        case _                                                                    => false
-      }
-  }
+  when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
 
   val returnedOrganisation = TestUtils.user(
     id = UserId("AAA-BBB-CCC"),
@@ -143,10 +123,9 @@ class OrganisationServiceTest
     userType = UserType.UserTypeOrganisation
   )
 
-  feature("Get organisation") {
-    scenario("get organisation") {
-      Mockito
-        .when(persistentUserService.findByUserIdAndUserType(any[UserId], any[UserType]))
+  Feature("Get organisation") {
+    Scenario("get organisation") {
+      when(persistentUserService.findByUserIdAndUserType(any[UserId], any[UserType]))
         .thenReturn(Future.successful(Some(returnedOrganisation)))
 
       whenReady(organisationService.getOrganisation(UserId("AAA-BBB-CCC")), Timeout(2.seconds)) { user =>
@@ -157,19 +136,17 @@ class OrganisationServiceTest
     }
   }
 
-  feature("register organisation") {
-    scenario("successfully register an organisation with password") {
-      Mockito.reset(eventBusService)
-      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
+  Feature("register organisation") {
+    Scenario("successfully register an organisation with password") {
+      reset(eventBusService)
+      when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
 
-      Mockito
-        .when(
-          persistentUserService
-            .persist(any[User])
-        )
-        .thenReturn(Future.successful(returnedOrganisation))
+      when(
+        persistentUserService
+          .persist(any[User])
+      ).thenReturn(Future.successful(returnedOrganisation))
 
-      Mockito.when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
+      when(userTokenGenerator.generateResetToken()).thenReturn(Future.successful(("TOKEN", "HASHED_TOKEN")))
 
       val futureOrganisation = organisationService.register(
         OrganisationRegisterData(
@@ -191,16 +168,14 @@ class OrganisationServiceTest
         user.organisationName should be(Some("John Doe Corp."))
       }
 
-      verify(eventBusService, times(1))
-        .publish(
-          ArgumentMatchers
-            .argThat(new MatchRegisterEvents(Some(returnedOrganisation.userId)))
-        )
+      verify(eventBusService, times(1)).publish(argMatching[AnyRef]({
+        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _, _) =>
+      }))
     }
 
-    scenario("email already exists") {
-      Mockito.reset(eventBusService)
-      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
+    Scenario("email already exists") {
+      reset(eventBusService)
+      when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
 
       val futureOrganisation = organisationService.register(
         OrganisationRegisterData(
@@ -218,42 +193,33 @@ class OrganisationServiceTest
 
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
 
-      verify(eventBusService, times(0))
-        .publish(
-          ArgumentMatchers
-            .argThat(new MatchRegisterEvents(Some(returnedOrganisation.userId)))
-        )
+      verify(eventBusService, times(0)).publish(argMatching[AnyRef]({
+        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _, _) =>
+      }))
     }
   }
 
-  feature("update organisation") {
-    scenario("successfully update an organisation with an email update") {
+  Feature("update organisation") {
+    Scenario("successfully update an organisation with an email update") {
 
       val oldEmail = returnedOrganisation.email
       val updatedOrganisation = returnedOrganisation.copy(email = "new-email@example.com")
 
-      Mockito.reset(eventBusService)
-      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
-      Mockito
-        .when(persistentUserService.modifyOrganisation(any[User]))
+      reset(eventBusService)
+      when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
+      when(persistentUserService.modifyOrganisation(any[User]))
         .thenReturn(Future.successful(Right(updatedOrganisation)))
-      Mockito
-        .when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
+      when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
         .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .searchProposals(any[SearchQuery])
-        )
-        .thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
+      when(
+        elasticsearchProposalAPI
+          .searchProposals(any[SearchQuery])
+      ).thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
+      when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq.empty))
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
-      Mockito
-        .when(persistentUserToAnonymizeService.create(oldEmail))
+      when(persistentUserToAnonymizeService.create(oldEmail))
         .thenReturn(Future.successful({}))
 
       val futureOrganisation =
@@ -263,22 +229,19 @@ class OrganisationServiceTest
         organisation shouldBe a[UserId]
       }
       verify(eventBusService, times(1))
-        .publish(ArgumentMatchers.any(classOf[OrganisationEmailChangedEvent]))
+        .publish(argMatching[AnyRef]({ case _: OrganisationEmailChangedEvent => }))
       verify(eventBusService, times(1))
-        .publish(ArgumentMatchers.any(classOf[OrganisationUpdatedEvent]))
+        .publish(argMatching[AnyRef]({ case _: OrganisationUpdatedEvent => }))
     }
 
-    scenario("successfully update an organisation without changing anything") {
-      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
-      Mockito
-        .when(persistentUserService.modifyOrganisation(any[User]))
+    Scenario("successfully update an organisation without changing anything") {
+      when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
+      when(persistentUserService.modifyOrganisation(any[User]))
         .thenReturn(Future.successful(Right(returnedOrganisation)))
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .searchProposals(any[SearchQuery])
-        )
-        .thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
+      when(
+        elasticsearchProposalAPI
+          .searchProposals(any[SearchQuery])
+      ).thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
 
       val futureOrganisation =
         organisationService.update(returnedOrganisation, None, returnedOrganisation.email, RequestContext.empty)
@@ -288,8 +251,8 @@ class OrganisationServiceTest
       }
     }
 
-    scenario("try to update with mail already exists") {
-      Mockito.when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
+    Scenario("try to update with mail already exists") {
+      when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(true))
 
       val futureOrganisation =
         organisationService.update(returnedOrganisation, None, returnedOrganisation.email, RequestContext.empty)
@@ -297,9 +260,8 @@ class OrganisationServiceTest
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
     }
 
-    scenario("Fail update") {
-      Mockito
-        .when(persistentUserService.modifyOrganisation(any[User]))
+    Scenario("Fail update") {
+      when(persistentUserService.modifyOrganisation(any[User]))
         .thenReturn(Future.successful(Left(UpdateFailed())))
 
       val futureOrganisation =
@@ -309,10 +271,9 @@ class OrganisationServiceTest
     }
   }
 
-  feature("Get organisations") {
-    scenario("get organisations") {
-      Mockito
-        .when(persistentUserService.findAllOrganisations())
+  Feature("Get organisations") {
+    Scenario("get organisations") {
+      when(persistentUserService.findAllOrganisations())
         .thenReturn(Future.successful(Seq(returnedOrganisation, returnedOrganisation2)))
 
       whenReady(organisationService.getOrganisations, Timeout(2.seconds)) { organisationList =>
@@ -323,9 +284,8 @@ class OrganisationServiceTest
     }
   }
 
-  feature("search organisations") {
-    Mockito
-      .when(elasticsearchOrganisationAPI.searchOrganisations(ArgumentMatchers.eq(OrganisationSearchQuery())))
+  Feature("search organisations") {
+    when(elasticsearchOrganisationAPI.searchOrganisations(eqTo(OrganisationSearchQuery())))
       .thenReturn(
         Future.successful(
           OrganisationSearchResult(
@@ -337,67 +297,61 @@ class OrganisationServiceTest
           )
         )
       )
-    Mockito
-      .when(
-        elasticsearchOrganisationAPI.searchOrganisations(
-          ArgumentMatchers.eq(
-            OrganisationSearchQuery(filters =
-              Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("John Doe Corp."))))
+    when(
+      elasticsearchOrganisationAPI.searchOrganisations(
+        eqTo(
+          OrganisationSearchQuery(filters =
+            Some(OrganisationSearchFilters(organisationName = Some(OrganisationNameSearchFilter("John Doe Corp."))))
+          )
+        )
+      )
+    ).thenReturn(
+      Future.successful(
+        OrganisationSearchResult(
+          total = 1L,
+          results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
+        )
+      )
+    )
+    when(
+      elasticsearchOrganisationAPI.searchOrganisations(
+        eqTo(
+          OrganisationSearchQuery(filters = Some(
+            OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(Seq(UserId("AAA-BBB-CCC")))))
+          )
+          )
+        )
+      )
+    ).thenReturn(
+      Future.successful(
+        OrganisationSearchResult(
+          total = 1L,
+          results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
+        )
+      )
+    )
+    when(
+      elasticsearchOrganisationAPI.searchOrganisations(
+        eqTo(
+          OrganisationSearchQuery(filters = Some(
+            OrganisationSearchFilters(
+              country = Some(CountrySearchFilter(Country("FR"))),
+              language = Some(LanguageSearchFilter(Language("fr")))
             )
           )
-        )
-      )
-      .thenReturn(
-        Future.successful(
-          OrganisationSearchResult(
-            total = 1L,
-            results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
           )
         )
       )
-    Mockito
-      .when(
-        elasticsearchOrganisationAPI.searchOrganisations(
-          ArgumentMatchers.eq(
-            OrganisationSearchQuery(filters = Some(
-              OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(Seq(UserId("AAA-BBB-CCC")))))
-            )
-            )
-          )
+    ).thenReturn(
+      Future.successful(
+        OrganisationSearchResult(
+          total = 1L,
+          results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
         )
       )
-      .thenReturn(
-        Future.successful(
-          OrganisationSearchResult(
-            total = 1L,
-            results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
-          )
-        )
-      )
-    Mockito
-      .when(
-        elasticsearchOrganisationAPI.searchOrganisations(
-          ArgumentMatchers.eq(
-            OrganisationSearchQuery(filters = Some(
-              OrganisationSearchFilters(
-                country = Some(CountrySearchFilter(Country("FR"))),
-                language = Some(LanguageSearchFilter(Language("fr")))
-              )
-            )
-            )
-          )
-        )
-      )
-      .thenReturn(
-        Future.successful(
-          OrganisationSearchResult(
-            total = 1L,
-            results = Seq(IndexedOrganisation.createFromOrganisation(returnedOrganisation))
-          )
-        )
-      )
+    )
 
-    scenario("search all") {
+    Scenario("search all") {
       val futureAllOrganisation = organisationService.search(None, None, None, None, None)
 
       whenReady(futureAllOrganisation, Timeout(2.seconds)) { organisationsList =>
@@ -405,7 +359,7 @@ class OrganisationServiceTest
       }
     }
 
-    scenario("search by organisationName") {
+    Scenario("search by organisationName") {
       val futureJohnDoeCorp = organisationService.search(Some("John Doe Corp."), None, None, None, None)
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
@@ -414,7 +368,7 @@ class OrganisationServiceTest
       }
     }
 
-    scenario("search by organisationIds") {
+    Scenario("search by organisationIds") {
       val futureJohnDoeCorp = organisationService.search(None, None, Some(Seq(UserId("AAA-BBB-CCC"))), None, None)
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
@@ -423,7 +377,7 @@ class OrganisationServiceTest
       }
     }
 
-    scenario("search by country-language") {
+    Scenario("search by country-language") {
       val futureJohnDoeCorp = organisationService.search(None, None, None, Some(Country("FR")), Some(Language("fr")))
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
@@ -433,8 +387,8 @@ class OrganisationServiceTest
     }
   }
 
-  feature("get proposals voted") {
-    scenario("successfully get proposals voted") {
+  Feature("get proposals voted") {
+    Scenario("successfully get proposals voted") {
 
       def indexedProposal(id: ProposalId): IndexedProposal = {
         IndexedProposal(
@@ -484,11 +438,9 @@ class OrganisationServiceTest
         )
       }
 
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
+      when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq(ProposalId("proposal1"), ProposalId("proposal2"))))
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(
           Future.successful(
             Map(
@@ -508,14 +460,7 @@ class OrganisationServiceTest
           )
         )
 
-      Mockito
-        .when(
-          proposalService.searchForUser(
-            ArgumentMatchers.any[Option[UserId]],
-            ArgumentMatchers.any[SearchQuery],
-            ArgumentMatchers.any[RequestContext]
-          )
-        )
+      when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
         .thenReturn(
           Future.successful(
             ProposalsResultSeededResponse(
@@ -558,12 +503,10 @@ class OrganisationServiceTest
       }
     }
 
-    scenario("successful return when no proposal are voted") {
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
+    Scenario("successful return when no proposal are voted") {
+      when(userHistoryCoordinatorService.retrieveVotedProposals(any[RequestUserVotedProposals]))
         .thenReturn(Future.successful(Seq.empty))
-      Mockito
-        .when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
+      when(userHistoryCoordinatorService.retrieveVoteAndQualifications(any[RequestVoteValues]))
         .thenReturn(Future.successful(Map[ProposalId, VoteAndQualifications]()))
 
       val futureProposalsVoted =

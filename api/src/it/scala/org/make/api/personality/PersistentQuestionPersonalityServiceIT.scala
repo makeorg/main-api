@@ -59,8 +59,8 @@ class PersistentQuestionPersonalityServiceIT
 
   val user = TestUtilsIT.user(id = UserId("user-id"))
 
-  feature("get personality by id") {
-    scenario("get existing personality") {
+  Feature("get personality by id") {
+    Scenario("get existing personality") {
       val futurePersonality = for {
         _ <- persistentQuestionService.persist(question)
         _ <- persistentUserService.persist(user)
@@ -76,7 +76,7 @@ class PersistentQuestionPersonalityServiceIT
       }
     }
 
-    scenario("get non existing personality") {
+    Scenario("get non existing personality") {
       whenReady(persistentQuestionPersonalityService.getById(PersonalityId("not-found")), Timeout(2.seconds)) {
         personality =>
           personality should be(None)
@@ -84,8 +84,8 @@ class PersistentQuestionPersonalityServiceIT
     }
   }
 
-  feature("search personalities") {
-    scenario("search all") {
+  Feature("search personalities") {
+    Scenario("search all") {
       val futurePersonality = for {
         _ <- persistentUserService.persist(user.copy(userId = UserId("user-id-2"), email = "test-2@make.org"))
         _ <- persistentUserService.persist(user.copy(userId = UserId("user-id-3"), email = "test-3@make.org"))
@@ -111,7 +111,7 @@ class PersistentQuestionPersonalityServiceIT
       }
     }
 
-    scenario("search by questionId") {
+    Scenario("search by questionId") {
       val futurePersonality = for {
         _ <- persistentQuestionService.persist(question.copy(questionId = QuestionId("question2"), slug = "question-2"))
         _ <- persistentUserService.persist(user.copy(userId = UserId("user-id-4"), email = "test-4@make.org"))
@@ -148,8 +148,8 @@ class PersistentQuestionPersonalityServiceIT
 
   }
 
-  feature("count personalities") {
-    scenario("count by questionId") {
+  Feature("count personalities") {
+    Scenario("count by questionId") {
 
       val futurePersonalityCount = for {
         _ <- persistentQuestionService.persist(
@@ -185,8 +185,8 @@ class PersistentQuestionPersonalityServiceIT
 
   }
 
-  feature("update personalities") {
-    scenario("update existing personality") {
+  Feature("update personalities") {
+    Scenario("update existing personality") {
       val updatedPersonality =
         personality.copy(userId = UserId("updated-user"))
 

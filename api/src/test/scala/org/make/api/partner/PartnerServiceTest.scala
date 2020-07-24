@@ -24,7 +24,6 @@ import org.make.api.technical.IdGeneratorComponent
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
 import org.make.core.technical.IdGenerator
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -50,10 +49,10 @@ class PartnerServiceTest
     weight = 20f
   )
 
-  feature("create partner") {
-    scenario("creation") {
-      Mockito.when(idGenerator.nextPartnerId()).thenReturn(PartnerId("partner"))
-      Mockito.when(persistentPartnerService.persist(partner)).thenReturn(Future.successful(partner))
+  Feature("create partner") {
+    Scenario("creation") {
+      when(idGenerator.nextPartnerId()).thenReturn(PartnerId("partner"))
+      when(persistentPartnerService.persist(partner)).thenReturn(Future.successful(partner))
 
       whenReady(
         partnerService.createPartner(request = CreatePartnerRequest(
@@ -73,9 +72,9 @@ class PartnerServiceTest
     }
   }
 
-  feature("update partner") {
-    scenario("update when no partner is found") {
-      Mockito.when(persistentPartnerService.getById(PartnerId("not-found"))).thenReturn(Future.successful(None))
+  Feature("update partner") {
+    Scenario("update when no partner is found") {
+      when(persistentPartnerService.getById(PartnerId("not-found"))).thenReturn(Future.successful(None))
 
       whenReady(
         partnerService.updatePartner(
@@ -95,12 +94,11 @@ class PartnerServiceTest
       }
     }
 
-    scenario("update when partner is found") {
+    Scenario("update when partner is found") {
       val updatedPartner: Partner = partner.copy(name = "update-name")
 
-      Mockito.when(persistentPartnerService.getById(PartnerId("partner"))).thenReturn(Future.successful(Some(partner)))
-      Mockito
-        .when(persistentPartnerService.modify(updatedPartner))
+      when(persistentPartnerService.getById(PartnerId("partner"))).thenReturn(Future.successful(Some(partner)))
+      when(persistentPartnerService.modify(updatedPartner))
         .thenReturn(Future.successful(updatedPartner))
 
       whenReady(

@@ -27,8 +27,6 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.{FeaturedOperation, FeaturedOperationId}
 import org.make.core.question.QuestionId
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -58,8 +56,8 @@ class AdminFeaturedOperationApiTest
     slot = 1
   )
 
-  feature("Unauthenticated / unauthorized user") {
-    scenario("post featured operation") {
+  Feature("Unauthenticated / unauthorized user") {
+    Scenario("post featured operation") {
       Post("/admin/views/home/featured-operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
@@ -78,7 +76,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("put featured operation") {
+    Scenario("put featured operation") {
       Put("/admin/views/home/featured-operations/featured-operation-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
@@ -97,7 +95,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("get featured operation") {
+    Scenario("get featured operation") {
       Get("/admin/views/home/featured-operations/featured-operation-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
@@ -113,7 +111,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("get featured operations") {
+    Scenario("get featured operations") {
       Get("/admin/views/home/featured-operations") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
@@ -129,7 +127,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("delete featured operation") {
+    Scenario("delete featured operation") {
       Delete("/admin/views/home/featured-operations/featured-operation-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
@@ -146,8 +144,8 @@ class AdminFeaturedOperationApiTest
     }
   }
 
-  feature("admin user") {
-    scenario("post featured operation with admin rights") {
+  Feature("admin user") {
+    Scenario("post featured operation with admin rights") {
 
       when(featuredOperationService.create(any[CreateFeaturedOperationRequest]))
         .thenReturn(Future.successful(featuredOperation))
@@ -172,7 +170,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("post featured operation - bad request: some mandatory field missing") {
+    Scenario("post featured operation - bad request: some mandatory field missing") {
       Post("/admin/views/home/featured-operations")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{
@@ -189,7 +187,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("post featured operation - bad request: some field with length too long") {
+    Scenario("post featured operation - bad request: some field with length too long") {
       Post("/admin/views/home/featured-operations")
         .withEntity(
           HttpEntity(
@@ -213,7 +211,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("post featured operation - bad request: two link are defined") {
+    Scenario("post featured operation - bad request: two link are defined") {
       Post("/admin/views/home/featured-operations")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{
@@ -235,11 +233,11 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("put featured operation with admin rights") {
+    Scenario("put featured operation with admin rights") {
 
       when(
         featuredOperationService
-          .update(matches(FeaturedOperationId("featured-operation-id")), any[UpdateFeaturedOperationRequest])
+          .update(eqTo(FeaturedOperationId("featured-operation-id")), any[UpdateFeaturedOperationRequest])
       ).thenReturn(Future.successful(Some(featuredOperation)))
 
       Put("/admin/views/home/featured-operations/featured-operation-id")
@@ -262,10 +260,10 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("put featured operation - not found") {
+    Scenario("put featured operation - not found") {
       when(
         featuredOperationService
-          .update(matches(FeaturedOperationId("not-found-id")), any[UpdateFeaturedOperationRequest])
+          .update(eqTo(FeaturedOperationId("not-found-id")), any[UpdateFeaturedOperationRequest])
       ).thenReturn(Future.successful(None))
 
       Put("/admin/views/home/featured-operations/not-found-id")
@@ -288,7 +286,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("put featured operation - bad request: some mandatory field are missing") {
+    Scenario("put featured operation - bad request: some mandatory field are missing") {
       Put("/admin/views/home/featured-operations/featured-operation-id")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{
@@ -304,7 +302,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("put featured operation - bad request: some field with length too long") {
+    Scenario("put featured operation - bad request: some field with length too long") {
       Put("/admin/views/home/featured-operations/featured-operation-id")
         .withEntity(
           HttpEntity(
@@ -328,7 +326,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("put featured operation - bad request: two link are defined") {
+    Scenario("put featured operation - bad request: two link are defined") {
       Put("/admin/views/home/featured-operations/featured-operation-id")
         .withEntity(
           HttpEntity(ContentTypes.`application/json`, """{
@@ -350,11 +348,11 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("get featured operation with admin rights") {
+    Scenario("get featured operation with admin rights") {
 
       when(
         featuredOperationService
-          .getFeaturedOperation(matches(FeaturedOperationId("featured-operation-id")))
+          .getFeaturedOperation(eqTo(FeaturedOperationId("featured-operation-id")))
       ).thenReturn(Future.successful(Some(featuredOperation)))
 
       Get("/admin/views/home/featured-operations/featured-operation-id")
@@ -363,11 +361,11 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("get featured operation - not found") {
+    Scenario("get featured operation - not found") {
 
       when(
         featuredOperationService
-          .getFeaturedOperation(matches(FeaturedOperationId("not-found-id")))
+          .getFeaturedOperation(eqTo(FeaturedOperationId("not-found-id")))
       ).thenReturn(Future.successful(None))
 
       Get("/admin/views/home/featured-operations/not-found-id")
@@ -376,7 +374,7 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("get featured operations with admin rights") {
+    Scenario("get featured operations with admin rights") {
 
       when(featuredOperationService.getAll).thenReturn(Future.successful(Seq(featuredOperation)))
 
@@ -386,16 +384,16 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("delete featured operation with admin rights") {
+    Scenario("delete featured operation with admin rights") {
 
       when(
         featuredOperationService
-          .getFeaturedOperation(matches(FeaturedOperationId("featured-operation-id")))
+          .getFeaturedOperation(eqTo(FeaturedOperationId("featured-operation-id")))
       ).thenReturn(Future.successful(Some(featuredOperation)))
 
       when(
         featuredOperationService
-          .delete(matches(FeaturedOperationId("featured-operation-id")))
+          .delete(eqTo(FeaturedOperationId("featured-operation-id")))
       ).thenReturn(Future.successful({}))
 
       Delete("/admin/views/home/featured-operations/featured-operation-id")
@@ -404,11 +402,11 @@ class AdminFeaturedOperationApiTest
       }
     }
 
-    scenario("delete featured operation - not found") {
+    Scenario("delete featured operation - not found") {
 
       when(
         featuredOperationService
-          .getFeaturedOperation(matches(FeaturedOperationId("not-found-id")))
+          .getFeaturedOperation(eqTo(FeaturedOperationId("not-found-id")))
       ).thenReturn(Future.successful(None))
 
       Delete("/admin/views/home/featured-operations/not-found-id")

@@ -39,8 +39,8 @@ class DefaultUserRegistrationValidatorTest extends MakeUnitTest {
     language = Language("fr")
   )
 
-  feature("email validation") {
-    scenario("accept-all") {
+  Feature("email validation") {
+    Scenario("accept-all") {
       val configuration = ConfigFactory.parseString(DefaultUserRegistrationValidatorTest.defaultConfiguration)
       val validator = new DefaultUserRegistrationValidator(configuration)
       whenReady(validator.canRegister(data), Timeout(2.seconds)) {
@@ -48,7 +48,7 @@ class DefaultUserRegistrationValidatorTest extends MakeUnitTest {
       }
     }
 
-    scenario("refuse-all") {
+    Scenario("refuse-all") {
       val configuration = ConfigFactory.parseString(DefaultUserRegistrationValidatorTest.refusingConfiguration)
       val validator = new DefaultUserRegistrationValidator(configuration)
       whenReady(validator.canRegister(data), Timeout(2.seconds)) {
@@ -56,7 +56,7 @@ class DefaultUserRegistrationValidatorTest extends MakeUnitTest {
       }
     }
 
-    scenario("mixed") {
+    Scenario("mixed") {
       val configuration = ConfigFactory.parseString(DefaultUserRegistrationValidatorTest.mixedConfiguration)
       val validator = new DefaultUserRegistrationValidator(configuration)
       whenReady(validator.canRegister(data), Timeout(2.seconds)) {
@@ -64,7 +64,7 @@ class DefaultUserRegistrationValidatorTest extends MakeUnitTest {
       }
     }
 
-    scenario("with-configuration") {
+    Scenario("with-configuration") {
       val configuration = ConfigFactory.parseString(DefaultUserRegistrationValidatorTest.configuredConfiguration)
       val validator = new DefaultUserRegistrationValidator(configuration)
       whenReady(validator.canRegister(data), Timeout(2.seconds)) {

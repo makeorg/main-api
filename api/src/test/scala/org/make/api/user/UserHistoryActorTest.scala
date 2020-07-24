@@ -25,7 +25,6 @@ import akka.actor.Status.Success
 import akka.actor.{ActorRef, ExtendedActorSystem}
 import akka.persistence.inmemory.extension.{InMemorySnapshotStorage, StorageExtension, StorageExtensionImpl}
 import akka.persistence.serialization.{Snapshot, SnapshotSerializer}
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.ShardingActorTest
 import org.make.api.userhistory.UserHistoryActor._
 import org.make.api.userhistory.{LogUserVoteEvent, _}
@@ -33,11 +32,10 @@ import org.make.core.history.HistoryActions.Trusted
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext}
-import org.scalatest.GivenWhenThen
 
 import scala.concurrent.duration.DurationInt
 
-class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging {
+class UserHistoryActorTest extends ShardingActorTest {
 
   private val serializer: SnapshotSerializer = new SnapshotSerializer(system.asInstanceOf[ExtendedActorSystem])
   private val storageExtension: StorageExtensionImpl = StorageExtension.get(system)
@@ -45,13 +43,13 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
   val coordinator: ActorRef =
     system.actorOf(UserHistoryCoordinator.props, UserHistoryCoordinator.name)
 
-  feature("Vote retrieval") {
-    scenario("no vote history") {
+  Feature("Vote retrieval") {
+    Scenario("no vote history") {
       coordinator ! RequestVoteValues(UserId("no-vote-history"), Seq(ProposalId("proposal1")))
       expectMsg(UserVotesValues(Map.empty))
     }
 
-    scenario("vote on proposal") {
+    Scenario("vote on proposal") {
       val userId = UserId("vote-on-proposal")
       val proposalId = ProposalId("proposal1")
       val event = LogUserVoteEvent(
@@ -69,7 +67,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       response(proposalId).qualificationKeys shouldBe Map.empty
     }
 
-    scenario("vote then unvote proposal") {
+    Scenario("vote then unvote proposal") {
       val userId = UserId("vote-then-unvote-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogUserVoteEvent(
@@ -94,7 +92,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       expectMsg(UserVotesValues(Map.empty))
     }
 
-    scenario("vote then unvote then vote proposal") {
+    Scenario("vote then unvote then vote proposal") {
       val userId = UserId("vote-then-unvote-then-vote-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogUserVoteEvent(
@@ -138,7 +136,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       response(proposalId).qualificationKeys shouldBe Map.empty
     }
 
-    scenario("vote then one qualification proposal") {
+    Scenario("vote then one qualification proposal") {
       val userId = UserId("vote-then-one-qualification-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogUserVoteEvent(
@@ -165,7 +163,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       response(proposalId).qualificationKeys shouldBe Map(QualificationKey.LikeIt -> Trusted)
     }
 
-    scenario("vote then two qualifications proposal") {
+    Scenario("vote then two qualifications proposal") {
       val userId = UserId("vote-then-two-qualification-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogUserVoteEvent(
@@ -212,7 +210,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
     }
 
-    scenario("vote then three qualification proposal") {
+    Scenario("vote then three qualification proposal") {
       val userId = UserId("vote-then-three-qualification-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogUserVoteEvent(
@@ -273,7 +271,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
     }
 
-    scenario("vote then qualif then unqualif then requalif proposal") {
+    Scenario("vote then qualif then unqualif then requalif proposal") {
       val userId = UserId("vote-then-qualif-then-unqualif-then-requalif-proposal")
       val proposalId = ProposalId("proposal1")
       val event1 = LogUserVoteEvent(
@@ -346,7 +344,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
     }
 
-    scenario("vote on many proposal") {
+    Scenario("vote on many proposal") {
       val userId = UserId("vote-on-many-proposal")
       val proposalId1 = ProposalId("proposal1")
       val proposalId2 = ProposalId("proposal2")
@@ -400,7 +398,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       response(proposalId3).qualificationKeys shouldBe Map.empty
     }
 
-    scenario("vote and qualif on many proposal") {
+    Scenario("vote and qualif on many proposal") {
       val userId = UserId("vote-and-qualif-on-many-proposal")
       val proposalId1 = ProposalId("proposal1")
       val proposalId2 = ProposalId("proposal2")
@@ -497,9 +495,9 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
     }
   }
 
-  feature("recover from old snapshot") {
+  Feature("recover from old snapshot") {
 
-    scenario("empty user history") {
+    Scenario("empty user history") {
       val history = UserHistory(Nil)
 
       val encodedValue = serializer.toBinary(Snapshot(history))
@@ -512,7 +510,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       expectMsg(UserVotedProposals(Seq.empty[ProposalId]))
     }
 
-    scenario("user history with a vote") {
+    Scenario("user history with a vote") {
       val history = UserHistory(
         List(
           LogUserVoteEvent(
@@ -534,7 +532,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
     }
   }
 
-  feature("retrieve filtered user voted proposals") {
+  Feature("retrieve filtered user voted proposals") {
     Given("""6 proposals:
             |  Proposal1: likeIt|agree
             |  Proposal2: likeIt|disagree
@@ -647,7 +645,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       )
     )
 
-    scenario("no filters returns all proposals") {
+    Scenario("no filters returns all proposals") {
       val encodedValue = serializer.toBinary(Snapshot(history))
       storageExtension.snapshotStorage !
         InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)
@@ -659,7 +657,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       foundProposals.toSet == Set(proposal1, proposal2, proposal3, proposal4, proposal5, proposal6) shouldBe true
     }
 
-    scenario("filter on one vote") {
+    Scenario("filter on one vote") {
       val encodedValue = serializer.toBinary(Snapshot(history))
       storageExtension.snapshotStorage !
         InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)
@@ -675,7 +673,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       foundProposals.toSet == Set(proposal1, proposal3, proposal5, proposal6) shouldBe true
     }
 
-    scenario("filter on one of the qualifications") {
+    Scenario("filter on one of the qualifications") {
       val encodedValue = serializer.toBinary(Snapshot(history))
       storageExtension.snapshotStorage !
         InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)
@@ -691,7 +689,7 @@ class UserHistoryActorTest extends ShardingActorTest with GivenWhenThen with Str
       foundProposals.toSet.diff(Set(proposal1, proposal2, proposal3, proposal4, proposal6)) shouldBe Set.empty
     }
 
-    scenario("combine vote AND qualification filters") {
+    Scenario("combine vote AND qualification filters") {
       val encodedValue = serializer.toBinary(Snapshot(history))
       storageExtension.snapshotStorage !
         InMemorySnapshotStorage.Save("1", 0, DateHelper.now().toEpochSecond, encodedValue)

@@ -32,8 +32,8 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
   val personalityRole: PersonalityRole =
     PersonalityRole(personalityRoleId = PersonalityRoleId("candidate"), name = "CANDIDATE_TEST")
 
-  feature("get personality role by id") {
-    scenario("get existing personality role") {
+  Feature("get personality role by id") {
+    Scenario("get existing personality role") {
       val futurePersonalityRole = for {
         _ <- persistentPersonalityRoleService.persist(
           PersonalityRole(PersonalityRoleId("candidate"), name = "CANDIDATE_TEST")
@@ -46,7 +46,7 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
       }
     }
 
-    scenario("get non existing personality role") {
+    Scenario("get non existing personality role") {
       whenReady(persistentPersonalityRoleService.getById(PersonalityRoleId("not-found")), Timeout(2.seconds)) {
         personalityRole =>
           personalityRole should be(None)
@@ -54,8 +54,8 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
     }
   }
 
-  feature("search personality roles") {
-    scenario("search all") {
+  Feature("search personality roles") {
+    Scenario("search all") {
       val futurePersonalityRoles = for {
         _ <- persistentPersonalityRoleService.persist(
           personalityRole.copy(personalityRoleId = PersonalityRoleId("candidate-2"), name = "CANDIDATE_2")
@@ -80,7 +80,7 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
       }
     }
 
-    scenario("search by name") {
+    Scenario("search by name") {
       val futurePersonalityRole =
         persistentPersonalityRoleService.find(
           start = 0,
@@ -96,7 +96,7 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
       }
     }
 
-    scenario("search by ids") {
+    Scenario("search by ids") {
       val futurePersonalityRole =
         persistentPersonalityRoleService.find(
           start = 0,
@@ -116,8 +116,8 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
 
   }
 
-  feature("count personality roles") {
-    scenario("count") {
+  Feature("count personality roles") {
+    Scenario("count") {
 
       val futurePersonalityRoleCount = persistentPersonalityRoleService.count(maybeRoleIds = None, maybeName = None)
 
@@ -128,8 +128,8 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
 
   }
 
-  feature("update personality role") {
-    scenario("update existing personality role") {
+  Feature("update personality role") {
+    Scenario("update existing personality role") {
       val updatedPersonalityRole =
         personalityRole.copy(name = "CANDIDATE_UPDATED")
 

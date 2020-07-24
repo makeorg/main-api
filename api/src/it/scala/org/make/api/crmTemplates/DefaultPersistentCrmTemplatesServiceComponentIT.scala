@@ -47,8 +47,8 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
     operationId = None
   )
 
-  feature("CRUD crm templates") {
-    scenario("insert templates") {
+  Feature("CRUD crm templates") {
+    Scenario("insert templates") {
       val questionId = QuestionId("create-templates")
 
       val crmTemplates = CrmTemplates(
@@ -89,7 +89,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
       )
     }
 
-    scenario("update and get") {
+    Scenario("update and get") {
       val questionId = QuestionId("update-templates")
 
       val crmTemplates = CrmTemplates(
@@ -135,7 +135,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
       }
     }
 
-    scenario("finding and count templates") {
+    Scenario("finding and count templates") {
       val questionId1 = QuestionId("finding-templates-1")
       val questionId2 = QuestionId("finding-templates-2")
       val questionId3 = QuestionId("finding-templates-3")

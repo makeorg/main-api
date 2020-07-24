@@ -27,8 +27,6 @@ import akka.testkit.TestDuration
 import org.make.api.MakeApiTestBase
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -83,25 +81,25 @@ class ModerationSequenceApiTest
     intraIdeaProposalsRatio = .3
   )
 
-  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("myQuestion"))))
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(eqTo(SequenceId("myQuestion"))))
     .thenReturn(Future.successful(None))
 
-  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("unknown"))))
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(eqTo(SequenceId("unknown"))))
     .thenReturn(Future.successful(None))
 
-  when(sequenceConfigurationService.getPersistentSequenceConfiguration(matches(SequenceId("mySequence"))))
+  when(sequenceConfigurationService.getPersistentSequenceConfiguration(eqTo(SequenceId("mySequence"))))
     .thenReturn(Future.successful(Some(sequenceConfiguration)))
 
   when(sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(any[QuestionId]))
     .thenReturn(Future.successful(None))
 
-  when(sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(matches(QuestionId("myQuestion"))))
+  when(sequenceConfigurationService.getPersistentSequenceConfigurationByQuestionId(eqTo(QuestionId("myQuestion"))))
     .thenReturn(Future.successful(Some(sequenceConfiguration)))
 
   when(sequenceConfigurationService.setSequenceConfiguration(any[SequenceConfiguration]))
     .thenReturn(Future.successful(true))
 
-  feature("get sequence configuration") {
+  Feature("get sequence configuration") {
 
     def testSequenceConfigurationReadAccess(
       by: String,
@@ -110,7 +108,7 @@ class ModerationSequenceApiTest
       token: String,
       expected: StatusCode
     ): Unit =
-      scenario(s"get sequence config by $by id as $as") {
+      Scenario(s"get sequence config by $by id as $as") {
         Get(s"/moderation/sequences/$id/configuration")
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {
           status should be(expected)
@@ -127,7 +125,7 @@ class ModerationSequenceApiTest
 
   }
 
-  feature("set sequence configuration") {
+  Feature("set sequence configuration") {
 
     def testSequenceConfigurationWriteAccess(
       by: String,
@@ -137,7 +135,7 @@ class ModerationSequenceApiTest
       expected: StatusCode,
       payload: String = setSequenceConfigurationPayload
     ): Unit =
-      scenario(s"set sequence config by $by id as $as") {
+      Scenario(s"set sequence config by $by id as $as") {
         Put(s"/moderation/sequences/$id/configuration")
           .withEntity(HttpEntity(ContentTypes.`application/json`, payload))
           .withHeaders(Authorization(OAuth2BearerToken(token))) ~> routes ~> check {

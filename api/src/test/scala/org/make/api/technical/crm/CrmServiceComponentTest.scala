@@ -53,9 +53,7 @@ import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.{never, times, verify, when}
-import org.mockito.{ArgumentMatchers, Mockito}
+import org.mockito.Mockito.clearInvocations
 import org.mockito.verification.After
 import org.scalatest.PrivateMethodTester
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -183,12 +181,10 @@ class CrmServiceComponentTest
       .resolveQuestionFromUserProposal(
         any[QuestionResolver],
         any[RequestContext],
-        matches(UserId("50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74")),
+        eqTo(UserId("50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74")),
         any[ZonedDateTime]
       )
-  ).thenAnswer { invocation =>
-    val resolver = invocation.getArgument[QuestionResolver](0)
-    val requestContext = invocation.getArgument[RequestContext](1)
+  ).thenAnswer { (resolver: QuestionResolver, requestContext: RequestContext, _: UserId, _: ZonedDateTime) =>
     val maybeQuestion = resolver.extractQuestionWithOperationFromRequestContext(requestContext)
     Future.successful(maybeQuestion)
   }
@@ -198,16 +194,14 @@ class CrmServiceComponentTest
       .resolveQuestionFromUserProposal(
         any[QuestionResolver],
         any[RequestContext],
-        matches(UserId("1")),
+        eqTo(UserId("1")),
         any[ZonedDateTime]
       )
-  ).thenAnswer { invocation =>
-    val resolver = invocation.getArgument[QuestionResolver](0)
-    val requestContext = invocation.getArgument[RequestContext](1)
+  ).thenAnswer { (resolver: QuestionResolver, requestContext: RequestContext, _: UserId, _: ZonedDateTime) =>
     Future.successful(resolver.extractQuestionWithOperationFromRequestContext(requestContext))
   }
 
-  def readEvents(resource: String): Source[EventEnvelope, NotUsed] = {
+  def readEvents(resource: String, userId: UserId = user.userId): Source[EventEnvelope, NotUsed] = {
     val file = getClass.getClassLoader.getResourceAsStream(resource)
     val reader = new BufferedReader(new InputStreamReader(file))
     val events = reader
@@ -219,7 +213,7 @@ class CrmServiceComponentTest
       .toArray
       .toIndexedSeq
 
-    Source(events.map(EventEnvelope(Offset.noOffset, user.userId.value, 0L, _, DateHelper.now().toEpochSecond)))
+    Source(events.map(EventEnvelope(Offset.noOffset, userId.value, 0L, _, DateHelper.now().toEpochSecond)))
   }
 
   when(mailJetConfiguration.url).thenReturn("http://localhost:1234")
@@ -230,8 +224,9 @@ class CrmServiceComponentTest
   when(mailJetConfiguration.csvSize).thenReturn(300)
   when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
 
-  when(persistentUserToAnonymizeService.removeAllByEmails(any[Seq[String]]))
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[Seq[String]](0).size))
+  when(persistentUserToAnonymizeService.removeAllByEmails(any[Seq[String]])).thenAnswer { s: Seq[String] =>
+    Future.successful(s.size)
+  }
 
   val questionFr = Question(
     questionId = QuestionId("question-fr"),
@@ -288,10 +283,7 @@ class CrmServiceComponentTest
   when(
     proposalService
       .resolveQuestionFromVoteEvent(any[QuestionResolver], any[RequestContext], any[ProposalId])
-  ).thenAnswer { invocation =>
-    val questionResolver = invocation.getArgument[QuestionResolver](0)
-    val requestContext = invocation.getArgument[RequestContext](1)
-    val proposalId = invocation.getArgument[ProposalId](2)
+  ).thenAnswer { (questionResolver: QuestionResolver, requestContext: RequestContext, proposalId: ProposalId) =>
     val maybeProposal = proposals.get(proposalId)
     val maybeQuestion =
       questionResolver
@@ -545,7 +537,7 @@ class CrmServiceComponentTest
     timestamp = DateHelper.now().toEpochSecond
   )
 
-  when(userJournal.currentEventsByPersistenceId(matches(fooUser.userId.value), any[Long], any[Long]))
+  when(userJournal.currentEventsByPersistenceId(eqTo(fooUser.userId.value), any[Long], any[Long]))
     .thenReturn(
       scaladsl.Source(
         List(
@@ -564,11 +556,11 @@ class CrmServiceComponentTest
   val userWithoutRegisteredEventAfterDateFix: User =
     fooUser.copy(userId = UserId("user-without-registered-event"), createdAt = Some(zonedDateTimeNow))
 
-  when(userJournal.currentEventsByPersistenceId(matches(userWithoutRegisteredEvent.userId.value), any[Long], any[Long]))
+  when(userJournal.currentEventsByPersistenceId(eqTo(userWithoutRegisteredEvent.userId.value), any[Long], any[Long]))
     .thenReturn(scaladsl.Source(List.empty))
 
-  feature("data normalization") {
-    scenario("users properties are normalized when user has no register event") {
+  Feature("data normalization") {
+    Scenario("users properties are normalized when user has no register event") {
       Given("a registered user without register event")
       When("I get user properties")
 
@@ -608,7 +600,7 @@ class CrmServiceComponentTest
       }
     }
 
-    scenario("users properties are not normalized after date fix") {
+    Scenario("users properties are not normalized after date fix") {
       Given("a registered user without register event and with a recent creation date")
       When("I get user properties")
 
@@ -653,8 +645,8 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("add user to OptInList") {
-    scenario("get properties from user and his events") {
+  Feature("add user to OptInList") {
+    Scenario("get properties from user and his events") {
       Given("a registred user")
 
       When("I add a user into optInList")
@@ -754,15 +746,15 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("anonymize") {
+  Feature("anonymize") {
     val emails: Seq[String] = Seq("toto@tata.com", "tata@tata.com", "titi@tata.com")
 
-    scenario("all users anonymized") {
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+    Scenario("all users anonymized") {
+      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
 
       val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
@@ -773,12 +765,12 @@ class CrmServiceComponentTest
       }
     }
 
-    scenario("one users not found in mailjet") {
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+    Scenario("one users not found in mailjet") {
+      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(true))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
       val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
@@ -789,24 +781,24 @@ class CrmServiceComponentTest
       }
     }
 
-    scenario("zero users anonymized") {
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("toto@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+    Scenario("zero users anonymized") {
+      when(crmClient.deleteContactByEmail(eqTo("toto@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("tata@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("tata@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
-      when(crmClient.deleteContactByEmail(ArgumentMatchers.eq("titi@tata.com"))(ArgumentMatchers.any[ExecutionContext]))
+      when(crmClient.deleteContactByEmail(eqTo("titi@tata.com"))(any[ExecutionContext]))
         .thenReturn(Future.successful(false))
 
-      Mockito.clearInvocations(persistentUserToAnonymizeService)
+      clearInvocations(persistentUserToAnonymizeService)
 
       val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(emails)
 
       whenReady(futureRemovedEmails, Timeout(3.seconds)) { _ =>
-        verify(persistentUserToAnonymizeService, never()).removeAllByEmails(any[Seq[String]])
+        verify(persistentUserToAnonymizeService, never).removeAllByEmails(any[Seq[String]])
       }
     }
 
-    scenario("invalid email") {
+    Scenario("invalid email") {
 
       val futureRemovedEmails: Future[Unit] = crmService.deleteAnonymizedContacts(Seq("invalid"))
 
@@ -817,8 +809,8 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("read events") {
-    scenario("user 50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74") {
+  Feature("read events") {
+    Scenario("user 50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74") {
       val source = readEvents("events/user-50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74")
 
       val operationId = OperationId("a818ef52-cd54-4aa7-bd3d-67e7bf4c4ea5")
@@ -834,7 +826,7 @@ class CrmServiceComponentTest
       )
       val resolver = new QuestionResolver(Seq(question), Map())
 
-      when(userJournal.currentEventsByPersistenceId(matches(user.userId.value), any[Long], any[Long]))
+      when(userJournal.currentEventsByPersistenceId(eqTo(user.userId.value), any[Long], any[Long]))
         .thenReturn(source)
 
       whenReady(crmService.getPropertiesFromUser(user, resolver), Timeout(5.seconds)) { result =>
@@ -844,8 +836,9 @@ class CrmServiceComponentTest
         persistentUser.totalNumberProposals should contain(2)
       }
     }
-    scenario("user 8c0dcb2a-d4f8-4514-b1f1-8077ba314594") {
-      val source = readEvents("events/user-8c0dcb2a-d4f8-4514-b1f1-8077ba314594")
+    Scenario("user 8c0dcb2a-d4f8-4514-b1f1-8077ba314594") {
+      val userId = UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594")
+      val source = readEvents("events/user-8c0dcb2a-d4f8-4514-b1f1-8077ba314594", userId)
 
       val questionId1 = QuestionId("question-1")
       val questionId2 = QuestionId("question-2")
@@ -882,7 +875,7 @@ class CrmServiceComponentTest
       val proposals = Seq(
         IndexedProposal(
           id = ProposalId("proposal-1"),
-          userId = UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"),
+          userId = userId,
           content = "proposal 1",
           slug = "proposal-1",
           status = Accepted,
@@ -927,7 +920,7 @@ class CrmServiceComponentTest
         ),
         IndexedProposal(
           id = ProposalId("proposal-2"),
-          userId = UserId("8c0dcb2a-d4f8-4514-b1f1-8077ba314594"),
+          userId = userId,
           content = "proposal 2",
           slug = "proposal-2",
           status = Accepted,
@@ -973,16 +966,9 @@ class CrmServiceComponentTest
       )
 
       when(
-        proposalService.resolveQuestionFromUserProposal(
-          any[QuestionResolver],
-          any[RequestContext],
-          matches(user.userId),
-          any[ZonedDateTime]
-        )
-      ).thenAnswer { invocation =>
-        val resolver = invocation.getArgument[QuestionResolver](0)
-        val date = invocation.getArgument[ZonedDateTime](3)
-        val requestContext = invocation.getArgument[RequestContext](1)
+        proposalService
+          .resolveQuestionFromUserProposal(any[QuestionResolver], any[RequestContext], eqTo(userId), any[ZonedDateTime])
+      ).thenAnswer { (resolver: QuestionResolver, requestContext: RequestContext, _: UserId, date: ZonedDateTime) =>
         val maybeQuestion: Option[Question] =
           resolver.extractQuestionWithOperationFromRequestContext(requestContext).orElse {
             proposals.find(_.createdAt == date).flatMap(_.question).map(_.questionId).flatMap { questionId =>
@@ -992,23 +978,23 @@ class CrmServiceComponentTest
         Future.successful(maybeQuestion)
       }
 
-      when(userJournal.currentEventsByPersistenceId(matches(user.userId.value), any[Long], any[Long]))
+      when(userJournal.currentEventsByPersistenceId(eqTo(userId.value), any[Long], any[Long]))
         .thenReturn(source)
 
-      whenReady(crmService.getPropertiesFromUser(user, resolver), Timeout(5.seconds)) { result =>
+      whenReady(crmService.getPropertiesFromUser(user.copy(userId = userId), resolver), Timeout(5.seconds)) { result =>
         result.operationActivity.toSeq.flatMap(_.split(",").sorted) should be(Seq("question-1", "question-2"))
         result.totalProposals should contain(2)
       }
     }
 
-    scenario("Fallback to user's creation country when register event doesn't have one") {
+    Scenario("Fallback to user's creation country when register event doesn't have one") {
       val source = readEvents("events/user-without-registration-country")
 
       val resolver = new QuestionResolver(Nil, Map())
 
       val userWithCountry = user.copy(country = Country("BE"))
 
-      when(userJournal.currentEventsByPersistenceId(matches(userWithCountry.userId.value), any[Long], any[Long]))
+      when(userJournal.currentEventsByPersistenceId(eqTo(userWithCountry.userId.value), any[Long], any[Long]))
         .thenReturn(source)
 
       whenReady(crmService.getPropertiesFromUser(userWithCountry, resolver), Timeout(5.seconds)) { result =>
@@ -1016,14 +1002,14 @@ class CrmServiceComponentTest
       }
     }
 
-    scenario("User registered on a given location") {
+    Scenario("User registered on a given location") {
       val source = readEvents("events/user-with-location")
 
       val resolver = new QuestionResolver(Nil, Map())
 
       val userWithLocation = TestUtils.user(id = UserId("user-with-location"))
 
-      when(userJournal.currentEventsByPersistenceId(matches(userWithLocation.userId.value), any[Long], any[Long]))
+      when(userJournal.currentEventsByPersistenceId(eqTo(userWithLocation.userId.value), any[Long], any[Long]))
         .thenReturn(source)
 
       whenReady(crmService.getPropertiesFromUser(userWithLocation, resolver), Timeout(5.seconds)) { result =>
@@ -1032,8 +1018,8 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("createCrmUsers") {
-    scenario("single user") {
+  Feature("createCrmUsers") {
+    Scenario("single user") {
 
       val source = readEvents("events/user-50b3d4f6-4bfe-4102-94b1-bfcfdf12ef74")
 
@@ -1068,7 +1054,7 @@ class CrmServiceComponentTest
 
       when(questionService.searchQuestion(SearchQuestionRequest())).thenReturn(Future.successful(Seq(question)))
 
-      when(userJournal.currentEventsByPersistenceId(matches(user.userId.value), any[Long], any[Long]))
+      when(userJournal.currentEventsByPersistenceId(eqTo(user.userId.value), any[Long], any[Long]))
         .thenReturn(source)
 
       when(persistentCrmUserService.truncateCrmUsers()).thenReturn(Future.successful {})
@@ -1079,8 +1065,7 @@ class CrmServiceComponentTest
       when(userService.findUsersForCrmSynchro(None, None, 1, mailJetConfiguration.userListBatchSize))
         .thenReturn(Future.successful(Seq()))
 
-      when(persistentCrmUserService.persist(any[Seq[PersistentCrmUser]])).thenAnswer { invocation =>
-        val users = invocation.getArgument[Seq[PersistentCrmUser]](0)
+      when(persistentCrmUserService.persist(any[Seq[PersistentCrmUser]])).thenAnswer { users: Seq[PersistentCrmUser] =>
         if (users.forall(_.operationActivity.contains(question.slug))) {
           Future.successful(users)
         } else {
@@ -1100,8 +1085,8 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("question resolver") {
-    scenario("empty resolver") {
+  Feature("question resolver") {
+    Scenario("empty resolver") {
       val resolver = new QuestionResolver(Seq.empty, Map.empty)
       resolver.extractQuestionWithOperationFromRequestContext(RequestContext.empty) should be(None)
       resolver.extractQuestionWithOperationFromRequestContext(
@@ -1116,7 +1101,7 @@ class CrmServiceComponentTest
       ) should be(None)
     }
 
-    scenario("get by id") {
+    Scenario("get by id") {
       val questionId = QuestionId("my-question")
       val question =
         Question(
@@ -1141,7 +1126,7 @@ class CrmServiceComponentTest
       ) should be(None)
     }
 
-    scenario("get by operation") {
+    Scenario("get by operation") {
       val questionId = QuestionId("my-question")
       val question =
         Question(
@@ -1187,7 +1172,7 @@ class CrmServiceComponentTest
         RequestContext.empty.copy(operationId = Some(OperationId("unknown")))
       ) should be(None)
     }
-    scenario("get by operation slug") {
+    Scenario("get by operation slug") {
       val questionId = QuestionId("my-question")
       val question =
         Question(
@@ -1236,9 +1221,9 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("synchronizing list") {
+  Feature("synchronizing list") {
 
-    scenario("no user to synchronize") {
+    Scenario("no user to synchronize") {
       when(
         persistentCrmUserService.list(unsubscribed = Some(false), hardBounced = false, page = 0, numberPerPage = 1000)
       ).thenReturn(Future.successful(Seq.empty))
@@ -1255,8 +1240,8 @@ class CrmServiceComponentTest
       }
     }
 
-    scenario("multiple users") {
-      when(persistentCrmUserService.list(matches(Some(true)), matches(false), any[Int], any[Int]))
+    Scenario("multiple users") {
+      when(persistentCrmUserService.list(eqTo(Some(true)), eqTo(false), any[Int], any[Int]))
         .thenReturn(
           Future.successful(Seq(persistentCrmUser("1"), persistentCrmUser("2"))),
           Future.successful(Seq(persistentCrmUser("3"), persistentCrmUser("4"))),
@@ -1286,12 +1271,12 @@ class CrmServiceComponentTest
         )
       }
 
-      when(crmClient.manageContactListWithCsv(any[CsvImport])(any[ExecutionContext])).thenAnswer { invocation =>
-        val request = invocation.getArgument[CsvImport](0)
-        Future.successful(csvImportResponse(request.csvId.toLong * 10, request.csvId.toLong, 0, "Pending"))
+      when(crmClient.manageContactListWithCsv(any[CsvImport])(any[ExecutionContext])).thenAnswer {
+        (request: CsvImport) =>
+          Future.successful(csvImportResponse(request.csvId.toLong * 10, request.csvId.toLong, 0, "Pending"))
       }
 
-      when(crmClient.monitorCsvImport(matches(10L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(10L))(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
           Future.successful(csvImportResponse(10L, 1L, 0, "Pending")),
@@ -1300,7 +1285,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(10L, 1L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(matches(20L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(20L))(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
           Future.successful(csvImportResponse(20L, 2L, 0, "Pending")),
@@ -1309,7 +1294,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(20L, 2L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(matches(30L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(30L))(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
           Future.successful(csvImportResponse(30L, 3L, 0, "Pending")),
@@ -1318,7 +1303,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(30L, 3L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(matches(40L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(40L))(any[ExecutionContext]))
         .thenReturn(
           Future.failed(new IllegalStateException("Don't worry, this exception is fake")),
           Future.successful(csvImportResponse(40L, 4L, 0, "Pending")),
@@ -1327,7 +1312,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(40L, 4L, 0, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(matches(50L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(50L))(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
           Future.successful(csvImportResponse(50L, 5L, 0, "Pending")),
@@ -1336,7 +1321,7 @@ class CrmServiceComponentTest
           Future.successful(csvImportResponse(50L, 5L, 2, "Completed"))
         )
 
-      when(crmClient.monitorCsvImport(matches(60L))(any[ExecutionContext]))
+      when(crmClient.monitorCsvImport(eqTo(60L))(any[ExecutionContext]))
         .thenReturn(
           Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
           Future.successful(csvImportResponse(60L, 6L, 0, "Pending")),
@@ -1353,15 +1338,14 @@ class CrmServiceComponentTest
         ),
         Timeout(60.seconds)
       ) { _ =>
-        Mockito
-          .verify(crmClient, Mockito.times(30))
+        verify(crmClient, times(30))
           .monitorCsvImport(any[Long])(any[ExecutionContext])
       }
     }
   }
 
-  feature("create csv") {
-    scenario("create csv from contact") {
+  Feature("create csv") {
+    Scenario("create csv from contact") {
       val contact = Contact(
         email = "test@exemple.com",
         name = Some("test"),
@@ -1405,8 +1389,8 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("create csv stream") {
-    scenario("create one csv") {
+  Feature("create csv stream") {
+    Scenario("create one csv") {
       when(
         persistentCrmUserService
           .list(
@@ -1451,7 +1435,7 @@ class CrmServiceComponentTest
       }
     }
 
-    scenario("split into 2 csv") {
+    Scenario("split into 2 csv") {
 
       def crmUser(id: String) = {
         fooCrmUser.copy(userId = s"user-id-$id", email = s"foo$id@example.com")
@@ -1491,12 +1475,12 @@ class CrmServiceComponentTest
     }
   }
 
-  feature("Resend emails on error") {
+  Feature("Resend emails on error") {
 
-    scenario("sending email randomly fails") {
+    Scenario("sending email randomly fails") {
       forAll { (message: SendEmail, outcome: Either[Boolean, Unit]) =>
         Given("an unreliable email provider")
-        when(crmClient.sendEmail(matches(SendMessages(message)))(any[ExecutionContext]))
+        when(crmClient.sendEmail(eqTo(SendMessages(message)))(any[ExecutionContext]))
           .thenReturn(outcome match {
             case Left(clientError) =>
               Future.failed(
@@ -1513,7 +1497,7 @@ class CrmServiceComponentTest
         verify(eventBusService, new After(1000, times(outcome match {
           case Left(false) => 1
           case _           => 0
-        }))).publish(matches(message))
+        }))).publish(eqTo(message))
       }
     }
 

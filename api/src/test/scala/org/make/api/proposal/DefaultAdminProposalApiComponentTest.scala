@@ -49,8 +49,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
 
 import scala.concurrent.{Future, Promise}
 
@@ -70,28 +68,28 @@ class DefaultAdminProposalApiComponentTest
 
   val routes: Route = sealRoute(adminProposalApi.routes)
 
-  feature("update verified votes") {
-    scenario("unauthorized user") {
+  Feature("update verified votes") {
+    Scenario("unauthorized user") {
       Put("/admin/proposals/123456/fix-trolled-proposal") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbidden citizen") {
+    Scenario("forbidden citizen") {
       Put("/admin/proposals/123456/fix-trolled-proposal")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbidden moderator") {
+    Scenario("forbidden moderator") {
       Put("/admin/proposals/123456/fix-trolled-proposal")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("proposal not found") {
+    Scenario("proposal not found") {
       when(proposalCoordinatorService.getProposal(any[ProposalId]))
         .thenReturn(Future.successful(None))
 
@@ -105,7 +103,7 @@ class DefaultAdminProposalApiComponentTest
         }
     }
 
-    scenario("allowed admin") {
+    Scenario("allowed admin") {
 
       val proposalCounts123: Proposal = Proposal(
         proposalId = ProposalId("counts-123"),
@@ -283,28 +281,28 @@ class DefaultAdminProposalApiComponentTest
     }
   }
 
-  feature("reset votes") {
-    scenario("unauthorized user") {
+  Feature("reset votes") {
+    Scenario("unauthorized user") {
       Post("/admin/proposals/reset-votes") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbidden citizen") {
+    Scenario("forbidden citizen") {
       Post("/admin/proposals/reset-votes")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbidden moderator") {
+    Scenario("forbidden moderator") {
       Post("/admin/proposals/reset-votes")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("allowed admin") {
+    Scenario("allowed admin") {
       when(proposalService.resetVotes(any[UserId], any[RequestContext]))
         .thenReturn(Future.successful(Done))
       Post("/admin/proposals/reset-votes")
@@ -313,7 +311,7 @@ class DefaultAdminProposalApiComponentTest
       }
     }
 
-    scenario("allowed admin with a lot of proposals") {
+    Scenario("allowed admin with a lot of proposals") {
       when(proposalService.resetVotes(any[UserId], any[RequestContext]))
         .thenReturn(Promise[Done]().future)
       Post("/admin/proposals/reset-votes")

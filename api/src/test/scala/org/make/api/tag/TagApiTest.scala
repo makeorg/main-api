@@ -27,8 +27,6 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -57,16 +55,16 @@ class TagApiTest
     questionId = None
   )
 
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(fakeTag))))
+  when(tagService.getTag(eqTo(TagId(fakeTag))))
     .thenReturn(Future.successful(None))
-  when(tagService.getTag(ArgumentMatchers.eq(TagId(helloWorldTagId))))
+  when(tagService.getTag(eqTo(TagId(helloWorldTagId))))
     .thenReturn(Future.successful(Some(newTag(helloWorldTagText, Some(helloWorldTagId)))))
 
   val routes: Route = sealRoute(tagApi.routes)
 
-  feature("get a tag") {
+  Feature("get a tag") {
 
-    scenario("tag not exist") {
+    Scenario("tag not exist") {
       Given(s"a tag id '$fakeTag' that not exist")
       When(s"I get a tag from id '$fakeTag'")
       Then("I should get a not found response")
@@ -76,7 +74,7 @@ class TagApiTest
       }
     }
 
-    scenario("valid tag") {
+    Scenario("valid tag") {
       Given(s"a registered tag with a label '$helloWorldTagText' and an id '$helloWorldTagId'")
       When(s"I get a tag from id '$helloWorldTagId'")
       Then("I should get an ok response")
@@ -91,20 +89,20 @@ class TagApiTest
     }
   }
 
-  feature("list tags") {
-    scenario("list tag") {
+  Feature("list tags") {
+    Scenario("list tag") {
       Given("some registered tags")
       When("I get list tag")
       Then("I get a list of all tags")
 
       when(
         tagService.find(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(Some(2)),
-          ArgumentMatchers.any[Option[String]],
-          ArgumentMatchers.any[Option[String]],
-          ArgumentMatchers.eq(true),
-          ArgumentMatchers.eq(TagFilter(questionId = Some(QuestionId("foo"))))
+          eqTo(0),
+          eqTo(Some(2)),
+          any[Option[String]],
+          any[Option[String]],
+          eqTo(true),
+          eqTo(TagFilter(questionId = Some(QuestionId("foo"))))
         )
       ).thenReturn(Future.successful(Seq(newTag("tag1"), newTag("tag2"))))
 

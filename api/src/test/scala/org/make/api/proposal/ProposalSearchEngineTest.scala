@@ -33,7 +33,6 @@ import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{UserId, UserType}
-import org.mockito.Mockito
 
 import scala.collection.immutable.Seq
 
@@ -46,9 +45,9 @@ class ProposalSearchEngineTest
 
   override val elasticsearchClient: ElasticsearchClient = mock[ElasticsearchClient]
   override val elasticsearchConfiguration: ElasticsearchConfiguration = mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn("localhost:9200")
-  Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn("fakeAliasName")
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn("fakeIndexName")
+  when(elasticsearchConfiguration.connectionString).thenReturn("localhost:9200")
+  when(elasticsearchConfiguration.proposalAliasName).thenReturn("fakeAliasName")
+  when(elasticsearchConfiguration.indexName).thenReturn("fakeIndexName")
 
   def proposal(nbAgree: Int, nbDisagree: Int, nbNeutral: Int): IndexedProposal = IndexedProposal(
     id = ProposalId("99999999-9999-9999-9999-999999999999"),
@@ -133,16 +132,16 @@ class ProposalSearchEngineTest
   val popularProposal: IndexedProposal = proposal(84, 6, 10)
   val controversialProposal: IndexedProposal = proposal(42, 54, 4)
 
-  feature("define trending mode of a proposal") {
-    scenario("normal proposal") {
+  Feature("define trending mode of a proposal") {
+    Scenario("normal proposal") {
       elasticsearchProposalAPI.proposalTrendingMode(normalProposal) should be(None)
     }
 
-    scenario("popular proposal") {
+    Scenario("popular proposal") {
       elasticsearchProposalAPI.proposalTrendingMode(popularProposal) should be(Some("popular"))
     }
 
-    scenario("controversial proposal") {
+    Scenario("controversial proposal") {
       elasticsearchProposalAPI.proposalTrendingMode(controversialProposal) should be(Some("controversial"))
     }
   }

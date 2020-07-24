@@ -81,11 +81,11 @@ class PersistentTokenServiceIT
     client = exampleClient
   )
 
-  feature("The app can persist a token") {
+  Feature("The app can persist a token") {
     info("As a programmer")
     info("I want to be able to persist a Token")
 
-    scenario("Persist a Token and get the persisted Token") {
+    Scenario("Persist a Token and get the persisted Token") {
       Given("a user John Doe and a client apiclient")
       And("""a Token with the values:
           |
@@ -138,8 +138,8 @@ class PersistentTokenServiceIT
     }
   }
 
-  feature("Find a Token from a User") {
-    scenario("Find a Token from a valid user") {
+  Feature("Find a Token from a User") {
+    Scenario("Find a Token from a valid user") {
       Given("a valid User")
       When("a token is searched from this User")
       val futureFoundToken: Future[Option[Token]] = persistentTokenService.findByUserId(exampleUser.userId)
@@ -161,11 +161,11 @@ class PersistentTokenServiceIT
     }
   }
 
-  feature("Find a Token from an access token") {
+  Feature("Find a Token from an access token") {
     info("As a programmer")
     info("I want to be able to get a Token from an access token")
 
-    scenario("Find a Token from a valid access token") {
+    Scenario("Find a Token from a valid access token") {
       Given("a valid User")
       And("a persisted token")
       val accessToken = exampleToken.copy(accessToken = "VALID_TOKEN")
@@ -186,7 +186,7 @@ class PersistentTokenServiceIT
       }
     }
 
-    scenario("Find a Token from an nonexistent access token") {
+    Scenario("Find a Token from an nonexistent access token") {
       Given("an nonexistent access token")
       When("I get a Token from access token")
       val futureNotFoundToken = persistentTokenService.get("NON_TOKEN")
@@ -198,11 +198,11 @@ class PersistentTokenServiceIT
     }
   }
 
-  feature("Find a Token from a refresh token") {
+  Feature("Find a Token from a refresh token") {
     info("As a programmer")
     info("I want to be able to get a Token from a refresh token")
 
-    scenario("Find a Token from a valid refresh token") {
+    Scenario("Find a Token from a valid refresh token") {
       Given("a valid User")
       And("a persisted token")
       val accessToken = exampleToken.copy(accessToken = "VALID2_TOKEN", refreshToken = Some("VALID_REFRESH_TOKEN"))
@@ -225,7 +225,7 @@ class PersistentTokenServiceIT
       }
     }
 
-    scenario("Find a Token from an nonexistent refresh token") {
+    Scenario("Find a Token from an nonexistent refresh token") {
       Given("an nonexistent refresh token")
       When("I get a Token from access token")
       val futureNotFoundToken = persistentTokenService.findByRefreshToken("NON_TOKEN")

@@ -59,9 +59,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.{DateHelper, RequestContext, ValidationError}
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito._
-import org.mockito.{ArgumentMatchers, Mockito}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
@@ -178,25 +175,19 @@ class UserApiTest
       None
     )
 
-  Mockito.reset(oauth2DataHandler)
+  reset(oauth2DataHandler)
 
-  Mockito
-    .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(citizenToken)))
+  when(oauth2DataHandler.findAccessToken(same(citizenToken)))
     .thenReturn(Future.successful(Some(citizenAccessToken)))
-  Mockito
-    .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(citizenAccessToken)))
+  when(oauth2DataHandler.findAuthInfoByAccessToken(same(citizenAccessToken)))
     .thenReturn(Future.successful(Some(citizenFakeAuthInfo)))
-  Mockito
-    .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(moderatorToken)))
+  when(oauth2DataHandler.findAccessToken(same(moderatorToken)))
     .thenReturn(Future.successful(Some(moderatorAccessToken)))
-  Mockito
-    .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(moderatorAccessToken)))
+  when(oauth2DataHandler.findAuthInfoByAccessToken(same(moderatorAccessToken)))
     .thenReturn(Future.successful(Some(moderatorFakeAuthInfo)))
-  Mockito
-    .when(oauth2DataHandler.findAccessToken(ArgumentMatchers.same(adminToken)))
+  when(oauth2DataHandler.findAccessToken(same(adminToken)))
     .thenReturn(Future.successful(Some(adminAccessToken)))
-  Mockito
-    .when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.same(adminAccessToken)))
+  when(oauth2DataHandler.findAuthInfoByAccessToken(same(adminAccessToken)))
     .thenReturn(Future.successful(Some(adminFakeAuthInfo)))
 
   val publicUser = fakeUser.copy(userId = UserId("EFGH"), publicProfile = true)
@@ -207,30 +198,31 @@ class UserApiTest
     fakeUser.userId -> fakeUser,
     publicUser.userId -> publicUser
   )
-  when(userService.getUser(ArgumentMatchers.any[UserId]))
-    .thenAnswer(invocation => Future.successful(users.get(invocation.getArgument[UserId](0))))
+  when(userService.getUser(any[UserId])).thenAnswer { userId: UserId =>
+    Future.successful(users.get(userId))
+  }
 
-  when(userService.update(any[User], any[RequestContext]))
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0)))
+  when(userService.update(any[User], any[RequestContext])).thenAnswer { user: User =>
+    Future.successful(user)
+  }
 
-  Mockito
-    .when(
-      userService
-        .followUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId], ArgumentMatchers.any[RequestContext])
-    )
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[UserId](0)))
+  when(
+    userService
+      .followUser(any[UserId], any[UserId], any[RequestContext])
+  ).thenAnswer { id: UserId =>
+    Future.successful(id)
+  }
 
-  Mockito
-    .when(
-      userService
-        .unfollowUser(ArgumentMatchers.any[UserId], ArgumentMatchers.any[UserId], ArgumentMatchers.any[RequestContext])
-    )
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[UserId](0)))
+  when(
+    userService
+      .unfollowUser(any[UserId], any[UserId], any[RequestContext])
+  ).thenAnswer { id: UserId =>
+    Future.successful(id)
+  }
 
-  feature("register user") {
+  Feature("register user") {
 
-    Mockito
-      .when(questionService.getQuestion(ArgumentMatchers.any[QuestionId]))
+    when(questionService.getQuestion(any[QuestionId]))
       .thenReturn(
         Future.successful(
           Some(
@@ -247,13 +239,11 @@ class UserApiTest
         )
       )
 
-    scenario("successful register user") {
-      Mockito
-        .when(
-          userService
-            .register(any[UserRegisterData], any[RequestContext])
-        )
-        .thenReturn(Future.successful(fakeUser))
+    Scenario("successful register user") {
+      when(
+        userService
+          .register(any[UserRegisterData], any[RequestContext])
+      ).thenReturn(Future.successful(fakeUser))
       val request =
         """
           |{
@@ -276,7 +266,7 @@ class UserApiTest
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
-          matches(
+          eqTo(
             UserRegisterData(
               email = "foo@bar.com",
               firstName = Some("olive"),
@@ -297,13 +287,11 @@ class UserApiTest
       }
     }
 
-    scenario("successful register user from minor child") {
-      Mockito
-        .when(
-          userService
-            .register(any[UserRegisterData], any[RequestContext])
-        )
-        .thenReturn(Future.successful(fakeUser))
+    Scenario("successful register user from minor child") {
+      when(
+        userService
+          .register(any[UserRegisterData], any[RequestContext])
+      ).thenReturn(Future.successful(fakeUser))
       val dateOfBirth = LocalDate.now().minusYears(9L)
       val request =
         s"""
@@ -329,7 +317,7 @@ class UserApiTest
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
-          matches(
+          eqTo(
             UserRegisterData(
               email = "foo@bar.com",
               firstName = Some("olive"),
@@ -352,13 +340,11 @@ class UserApiTest
       }
     }
 
-    scenario("successful register user from proposal context") {
-      Mockito
-        .when(
-          userService
-            .register(any[UserRegisterData], any[RequestContext])
-        )
-        .thenReturn(Future.successful(fakeUser))
+    Scenario("successful register user from proposal context") {
+      when(
+        userService
+          .register(any[UserRegisterData], any[RequestContext])
+      ).thenReturn(Future.successful(fakeUser))
       val request =
         """
           |{
@@ -381,7 +367,7 @@ class UserApiTest
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
-          matches(
+          eqTo(
             UserRegisterData(
               email = "foo@bar.com",
               firstName = Some("olive"),
@@ -403,13 +389,11 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for existing email") {
-      Mockito
-        .when(
-          userService
-            .register(any[UserRegisterData], any[RequestContext])
-        )
-        .thenReturn(Future.failed(EmailAlreadyRegisteredException("foo@bar.com")))
+    Scenario("validation failed for existing email") {
+      when(
+        userService
+          .register(any[UserRegisterData], any[RequestContext])
+      ).thenReturn(Future.failed(EmailAlreadyRegisteredException("foo@bar.com")))
 
       val request =
         """
@@ -434,7 +418,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for missing country and/or language") {
+    Scenario("validation failed for missing country and/or language") {
       val request =
         """
           |{
@@ -456,7 +440,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for malformed email") {
+    Scenario("validation failed for malformed email") {
       val request =
         """
           |{
@@ -478,7 +462,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for postal code invalid") {
+    Scenario("validation failed for postal code invalid") {
       val request =
         """
           |{
@@ -505,7 +489,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for malformed date of birth") {
+    Scenario("validation failed for malformed date of birth") {
       val request =
         """
           |{
@@ -535,7 +519,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for invalid gender") {
+    Scenario("validation failed for invalid gender") {
       val request =
         """
           |{
@@ -557,7 +541,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for invalid website") {
+    Scenario("validation failed for invalid website") {
       val request =
         """
           |{
@@ -581,7 +565,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for required field") {
+    Scenario("validation failed for required field") {
       // todo: add parser of error messages
       val request =
         """
@@ -595,7 +579,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for invalid date of birth") {
+    Scenario("validation failed for invalid date of birth") {
       val underage: LocalDate = LocalDate.now().minusYears(5L)
       val overage: LocalDate = LocalDate.now().minusYears(121L)
       def request(dateOfBirth: LocalDate) =
@@ -629,7 +613,7 @@ class UserApiTest
       }
     }
 
-    scenario("validation failed for invalid consent from minor child") {
+    Scenario("validation failed for invalid consent from minor child") {
       val nineYearsOld: LocalDate = LocalDate.now().minusYears(9L)
       def request(dateOfBirth: LocalDate) =
         s"""
@@ -665,38 +649,36 @@ class UserApiTest
     }
   }
 
-  feature("login user from social") {
-    scenario("successful login user") {
-      Mockito
-        .when(
-          socialService
-            .login(
-              any[String],
-              any[String],
-              any[Country],
-              any[Language],
-              any[Option[String]],
-              any[Option[QuestionId]],
-              any[RequestContext],
-              any[ClientId]
-            )
-        )
-        .thenReturn(
-          Future.successful(
-            (
-              UserId("12347"),
-              SocialLoginResponse(
-                TokenResponse(
-                  token_type = "Bearer",
-                  access_token = "access_token",
-                  expires_in = expiresInSecond,
-                  refresh_token = "refresh_token"
-                ),
-                false
-              )
+  Feature("login user from social") {
+    Scenario("successful login user") {
+      when(
+        socialService
+          .login(
+            any[String],
+            any[String],
+            any[Country],
+            any[Language],
+            any[Option[String]],
+            any[Option[QuestionId]],
+            any[RequestContext],
+            any[ClientId]
+          )
+      ).thenReturn(
+        Future.successful(
+          (
+            UserId("12347"),
+            SocialLoginResponse(
+              TokenResponse(
+                token_type = "Bearer",
+                access_token = "access_token",
+                expires_in = expiresInSecond,
+                refresh_token = "refresh_token"
+              ),
+              false
             )
           )
         )
+      )
       val request =
         """
           |{
@@ -713,11 +695,11 @@ class UserApiTest
         status should be(StatusCodes.Created)
         header("Set-Cookie").get.value should include("cookie-secure")
         verify(socialService).login(
-          matches("google"),
-          matches("ABCDEFGHIJK"),
-          matches(Country("FR")),
-          matches(Language("fr")),
-          matches(Some("192.0.0.1")),
+          eqTo("google"),
+          eqTo("ABCDEFGHIJK"),
+          eqTo(Country("FR")),
+          eqTo(Language("fr")),
+          eqTo(Some("192.0.0.1")),
           any[Option[QuestionId]],
           any[RequestContext],
           any[ClientId]
@@ -725,37 +707,35 @@ class UserApiTest
       }
     }
 
-    scenario("bad request when login social user") {
-      Mockito
-        .when(
-          socialService
-            .login(
-              any[String],
-              any[String],
-              any[Country],
-              any[Language],
-              any[Option[String]],
-              any[Option[QuestionId]],
-              any[RequestContext],
-              any[ClientId]
-            )
-        )
-        .thenReturn(
-          Future.successful(
-            (
-              UserId("12347"),
-              SocialLoginResponse(
-                TokenResponse(
-                  token_type = "Bearer",
-                  access_token = "access_token",
-                  expires_in = expiresInSecond,
-                  refresh_token = "refresh_token"
-                ),
-                false
-              )
+    Scenario("bad request when login social user") {
+      when(
+        socialService
+          .login(
+            any[String],
+            any[String],
+            any[Country],
+            any[Language],
+            any[Option[String]],
+            any[Option[QuestionId]],
+            any[RequestContext],
+            any[ClientId]
+          )
+      ).thenReturn(
+        Future.successful(
+          (
+            UserId("12347"),
+            SocialLoginResponse(
+              TokenResponse(
+                token_type = "Bearer",
+                access_token = "access_token",
+                expires_in = expiresInSecond,
+                refresh_token = "refresh_token"
+              ),
+              false
             )
           )
         )
+      )
       val request =
         """
           |{
@@ -772,7 +752,7 @@ class UserApiTest
     }
   }
 
-  feature("reset password") {
+  Feature("reset password") {
     info("In order to reset a password")
     info("As a user with an email")
     info("I want to use api to reset my password")
@@ -789,21 +769,16 @@ class UserApiTest
       verificationToken = Some("token"),
       verificationTokenExpiresAt = Some(DateHelper.now())
     )
-    Mockito
-      .when(persistentUserService.findByEmail("john.doe@example.com"))
+    when(persistentUserService.findByEmail("john.doe@example.com"))
       .thenReturn(Future.successful(Some(johnDoeUser)))
-    Mockito
-      .when(persistentUserService.findUserIdByEmail("invalidexample.com"))
-      .thenAnswer(_ => throw new IllegalArgumentException("findUserIdByEmail should be called with valid email"))
-    when(eventBusService.publish(ArgumentMatchers.any[ResetPasswordEvent]))
-      .thenAnswer(
-        invocation =>
-          if (!invocation.getArgument[ResetPasswordEvent](0).userId.equals(johnDoeUser.userId)) {
-            throw new IllegalArgumentException("UserId not match")
-          }
-      )
-    Mockito
-      .when(persistentUserService.findByEmail("fake@example.com"))
+    when(persistentUserService.findUserIdByEmail("invalidexample.com"))
+      .thenThrow(new IllegalArgumentException("findUserIdByEmail should be called with valid email"))
+    when(eventBusService.publish(any[ResetPasswordEvent])).thenAnswer { event: ResetPasswordEvent =>
+      if (!event.userId.equals(johnDoeUser.userId)) {
+        throw new IllegalArgumentException("UserId not match")
+      }
+    }
+    when(persistentUserService.findByEmail("fake@example.com"))
       .thenReturn(Future.successful(None))
 
     val fooBarUserId = UserId("foo-bar")
@@ -829,22 +804,18 @@ class UserApiTest
       resetTokenExpiresAt = Some(DateHelper.now().plusDays(1))
     )
 
-    Mockito
-      .when(persistentUserService.findUserByUserIdAndResetToken(fooBarUserId, "baz-bar"))
+    when(persistentUserService.findUserByUserIdAndResetToken(fooBarUserId, "baz-bar"))
       .thenReturn(Future.successful(Some(fooBarUser)))
-    Mockito
-      .when(persistentUserService.findUserByUserIdAndResetToken(fooBarUserId, "bad-bad"))
+    when(persistentUserService.findUserByUserIdAndResetToken(fooBarUserId, "bad-bad"))
       .thenReturn(Future.successful(None))
-    Mockito
-      .when(persistentUserService.findUserByUserIdAndResetToken(UserId("bad-foo"), "baz-bar"))
+    when(persistentUserService.findUserByUserIdAndResetToken(UserId("bad-foo"), "baz-bar"))
       .thenReturn(Future.successful(None))
-    Mockito
-      .when(persistentUserService.findUserByUserIdAndResetToken(notExpiredResetTokenUserId, validResetToken))
+    when(persistentUserService.findUserByUserIdAndResetToken(notExpiredResetTokenUserId, validResetToken))
       .thenReturn(Future.successful(Some(notExpiredResetTokenUser)))
 
-    Mockito.when(userService.requestPasswordReset(any[UserId])).thenReturn(Future.successful(true))
+    when(userService.requestPasswordReset(any[UserId])).thenReturn(Future.successful(true))
 
-    scenario("Reset a password from an existing email") {
+    Scenario("Reset a password from an existing email") {
       Given("a registered user with an email john.doe@example.com")
       When("I reset password with john.doe@example.com")
       val request =
@@ -868,7 +839,7 @@ class UserApiTest
       And("a user Event ResetPasswordEvent is emitted")
     }
 
-    scenario("Reset a password from an nonexistent email") {
+    Scenario("Reset a password from an nonexistent email") {
       Given("an nonexistent email fake@example.com")
       When("I reset password with fake@example.com")
       val request =
@@ -891,7 +862,7 @@ class UserApiTest
       And("any user Event ResetPasswordEvent is emitted")
     }
 
-    scenario("Reset a password from an invalid email") {
+    Scenario("Reset a password from an invalid email") {
       Given("an invalid email invalidexample.com")
       When("I reset password with invalidexample.com")
       val request =
@@ -918,7 +889,7 @@ class UserApiTest
 
     }
 
-    scenario("Check a reset token from an existing user") {
+    Scenario("Check a reset token from an existing user") {
       Given("a registered user with an uuid not-expired-reset-token-user-id and a reset token valid-reset-token")
       When("I check that reset token is for the right user")
 
@@ -936,7 +907,7 @@ class UserApiTest
       And("an empty result is returned")
     }
 
-    scenario("Check an expired reset token from an existing user") {
+    Scenario("Check an expired reset token from an existing user") {
       Given("a registered user with an uuid foo-bar and a reset token baz-bar")
       When("I check that reset token is for the right user and is not expired")
 
@@ -954,7 +925,7 @@ class UserApiTest
       And("an empty result is returned")
     }
 
-    scenario("Check a bad reset token from an existing user") {
+    Scenario("Check a bad reset token from an existing user") {
       Given("a registered user with an uuid foo-bar and a reset token baz-bar")
       When("I check that reset token is for the right user")
 
@@ -971,7 +942,7 @@ class UserApiTest
       And("a not found result is returned")
     }
 
-    scenario("Check a reset token with a bad user") {
+    Scenario("Check a reset token with a bad user") {
       Given("a registered user with an uuid bad-foo and a reset token baz-bar")
       When("I check that reset token is for the right user")
 
@@ -988,13 +959,11 @@ class UserApiTest
       And("a not found result is returned")
     }
 
-    scenario("reset the password of a valid user with valid token") {
-      Mockito
-        .when(
-          userService
-            .updatePassword(notExpiredResetTokenUserId, Some(validResetToken), "mynewpassword")
-        )
-        .thenReturn(Future.successful(true))
+    Scenario("reset the password of a valid user with valid token") {
+      when(
+        userService
+          .updatePassword(notExpiredResetTokenUserId, Some(validResetToken), "mynewpassword")
+      ).thenReturn(Future.successful(true))
 
       Given("a registered user with an uuid not-expired-reset-token-user-id and a reset token valid-reset-token")
       When("I check that reset token is for the right user")
@@ -1021,15 +990,15 @@ class UserApiTest
     }
   }
 
-  feature("get the connected user") {
-    scenario("no auth token") {
+  Feature("get the connected user") {
+    Scenario("no auth token") {
       Get("/user/me") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("valid token") {
-      Mockito.when(userService.getFollowedUsers(ArgumentMatchers.any[UserId])).thenReturn(Future.successful(Seq.empty))
+    Scenario("valid token") {
+      when(userService.getFollowedUsers(any[UserId])).thenReturn(Future.successful(Seq.empty))
 
       Get("/user/me").withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -1038,13 +1007,13 @@ class UserApiTest
       }
     }
 
-    scenario("no auth token from current user") {
+    Scenario("no auth token from current user") {
       Get("/user/current") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("valid token from current user") {
+    Scenario("valid token from current user") {
 
       Get("/user/current").withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -1054,7 +1023,7 @@ class UserApiTest
     }
   }
 
-  feature("get voted proposals of an user") {
+  Feature("get voted proposals of an user") {
 
     val indexedProposal1 = IndexedProposal(
       id = ProposalId("proposal-1"),
@@ -1127,48 +1096,44 @@ class UserApiTest
         )
       )
 
-    Mockito
-      .when(
-        proposalService
-          .searchProposalsVotedByUser(
-            userId = ArgumentMatchers.eq(sylvain.userId),
-            filterVotes = ArgumentMatchers.eq(None),
-            filterQualifications = ArgumentMatchers.eq(None),
-            sort = ArgumentMatchers.eq(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
-            limit = ArgumentMatchers.eq(None),
-            skip = ArgumentMatchers.eq(None),
-            requestContext = ArgumentMatchers.any[RequestContext]
-          )
-      )
-      .thenReturn(Future.successful(ProposalsResultResponse(total = 3, results = proposalsResult)))
-    Mockito
-      .when(
-        proposalService
-          .searchProposalsVotedByUser(
-            userId = ArgumentMatchers.eq(vincent.userId),
-            filterVotes = ArgumentMatchers.eq(None),
-            filterQualifications = ArgumentMatchers.eq(None),
-            sort = ArgumentMatchers.eq(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
-            limit = ArgumentMatchers.eq(None),
-            skip = ArgumentMatchers.eq(None),
-            requestContext = ArgumentMatchers.any[RequestContext]
-          )
-      )
-      .thenReturn(Future.successful(ProposalsResultResponse(total = 0, results = Seq.empty)))
+    when(
+      proposalService
+        .searchProposalsVotedByUser(
+          userId = eqTo(sylvain.userId),
+          filterVotes = eqTo(None),
+          filterQualifications = eqTo(None),
+          sort = eqTo(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
+          limit = eqTo(None),
+          skip = eqTo(None),
+          requestContext = any[RequestContext]
+        )
+    ).thenReturn(Future.successful(ProposalsResultResponse(total = 3, results = proposalsResult)))
+    when(
+      proposalService
+        .searchProposalsVotedByUser(
+          userId = eqTo(vincent.userId),
+          filterVotes = eqTo(None),
+          filterQualifications = eqTo(None),
+          sort = eqTo(Some(Sort(field = Some("createdAt"), mode = Some(Desc)))),
+          limit = eqTo(None),
+          skip = eqTo(None),
+          requestContext = any[RequestContext]
+        )
+    ).thenReturn(Future.successful(ProposalsResultResponse(total = 0, results = Seq.empty)))
 
-    scenario("not authenticated") {
+    Scenario("not authenticated") {
       Get("/user/sylvain-user-id/votes") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("authenticated but userId parameter is different than connected user id") {
+    Scenario("authenticated but userId parameter is different than connected user id") {
       Get("/user/xxxxxxxxxxxx/votes").withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("authenticated with empty voted proposals") {
+    Scenario("authenticated with empty voted proposals") {
       Get("/user/vincent-user-id/votes").withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         val result = entityAs[ProposalsResultResponse]
@@ -1177,7 +1142,7 @@ class UserApiTest
       }
     }
 
-    scenario("authenticated with some voted proposals") {
+    Scenario("authenticated with some voted proposals") {
       Get("/user/sylvain-user-id/votes")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -1187,7 +1152,7 @@ class UserApiTest
     }
   }
 
-  feature("get user proposals") {
+  Feature("get user proposals") {
 
     val indexedProposal1 = IndexedProposal(
       id = ProposalId("333333-3333-3333-3333-33333333"),
@@ -1258,43 +1223,40 @@ class UserApiTest
         )
       )
 
-    Mockito
-      .when(
-        proposalService
-          .searchForUser(
-            userId = ArgumentMatchers.any[Option[UserId]],
-            query = ArgumentMatchers
-              .eq(
-                SearchQuery(
-                  filters = Some(
-                    SearchFilters(
-                      user = Some(UserSearchFilter(userId = sylvain.userId)),
-                      status = Some(StatusSearchFilter(status = ProposalStatus.statusMap.values.filter { status =>
-                        status != ProposalStatus.Archived
-                      }.toSeq))
-                    )
-                  ),
-                  sort = Some(Sort(field = Some("createdAt"), mode = Some(Desc)))
+    when(
+      proposalService
+        .searchForUser(
+          userId = any[Option[UserId]],
+          query = eqTo(
+            SearchQuery(
+              filters = Some(
+                SearchFilters(
+                  user = Some(UserSearchFilter(userId = sylvain.userId)),
+                  status = Some(StatusSearchFilter(status = ProposalStatus.statusMap.values.filter { status =>
+                    status != ProposalStatus.Archived
+                  }.toSeq))
                 )
               ),
-            requestContext = ArgumentMatchers.any[RequestContext]
-          )
-      )
-      .thenReturn(Future.successful(ProposalsResultSeededResponse(total = 1, results = proposalsResult, seed = None)))
+              sort = Some(Sort(field = Some("createdAt"), mode = Some(Desc)))
+            )
+          ),
+          requestContext = any[RequestContext]
+        )
+    ).thenReturn(Future.successful(ProposalsResultSeededResponse(total = 1, results = proposalsResult, seed = None)))
 
-    scenario("not authenticated") {
+    Scenario("not authenticated") {
       Get("/user/sylvain-user-id/proposals") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("authenticated but userId parameter is different than connected user id") {
+    Scenario("authenticated but userId parameter is different than connected user id") {
       Get("/user/vincent-user-id/proposals").withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("authenticated with some proposals") {
+    Scenario("authenticated with some proposals") {
       Get("/user/sylvain-user-id/proposals?sort=createdAt&order=desc")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -1305,10 +1267,10 @@ class UserApiTest
     }
   }
 
-  feature("update a user") {
-    scenario("authentificated with unauthorized user") {
+  Feature("update a user") {
+    Scenario("authentificated with unauthorized user") {
 
-      when(userService.getUser(ArgumentMatchers.eq(UserId("BAD")))).thenReturn(Future.successful(Some(fakeUser)))
+      when(userService.getUser(eqTo(UserId("BAD")))).thenReturn(Future.successful(Some(fakeUser)))
 
       val request =
         """
@@ -1331,8 +1293,8 @@ class UserApiTest
       }
     }
 
-    scenario("successful update user") {
-      when(userService.getUser(ArgumentMatchers.eq(UserId("ABCD")))).thenReturn(Future.successful(Some(fakeUser)))
+    Scenario("successful update user") {
+      when(userService.getUser(eqTo(UserId("ABCD")))).thenReturn(Future.successful(Some(fakeUser)))
 
       val request =
         """
@@ -1355,7 +1317,7 @@ class UserApiTest
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(userService).update(
-          matches(
+          eqTo(
             sylvain.copy(
               firstName = Some("olive"),
               lastName = Some("tom"),
@@ -1374,7 +1336,7 @@ class UserApiTest
       }
     }
 
-    scenario("user remove age, gender, csp, website from the front") {
+    Scenario("user remove age, gender, csp, website from the front") {
       val request =
         """
           |{
@@ -1396,7 +1358,7 @@ class UserApiTest
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(userService).update(
-          matches(
+          eqTo(
             sylvain.copy(
               firstName = Some("olive"),
               lastName = Some("tom"),
@@ -1417,7 +1379,7 @@ class UserApiTest
     }
   }
 
-  feature("modify user password") {
+  Feature("modify user password") {
 
     val fakeRequest =
       """
@@ -1427,20 +1389,20 @@ class UserApiTest
         |}
       """.stripMargin
 
-    scenario("unauthenticated user") {
+    Scenario("unauthenticated user") {
       Post("/user/sylvain-user-id/change-password", HttpEntity(ContentTypes.`application/json`, fakeRequest)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("authenticated but userId parameter is different than connected user id") {
+    Scenario("authenticated but userId parameter is different than connected user id") {
       Post("/user/vincent-user-id/change-password", HttpEntity(ContentTypes.`application/json`, fakeRequest))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("social login user change password") {
+    Scenario("social login user change password") {
 
       val request =
         """
@@ -1449,19 +1411,15 @@ class UserApiTest
           |}
         """.stripMargin
 
-      Mockito
-        .when(
-          userService
-            .getUserByUserIdAndPassword(ArgumentMatchers.any[UserId], ArgumentMatchers.same(None))
-        )
-        .thenReturn(Future.successful(Some(sylvain)))
+      when(
+        userService
+          .getUserByUserIdAndPassword(any[UserId], same(None))
+      ).thenReturn(Future.successful(Some(sylvain)))
 
-      Mockito
-        .when(
-          userService
-            .updatePassword(ArgumentMatchers.any[UserId], ArgumentMatchers.same(None), ArgumentMatchers.any[String])
-        )
-        .thenReturn(Future.successful(true))
+      when(
+        userService
+          .updatePassword(any[UserId], same(None), any[String])
+      ).thenReturn(Future.successful(true))
 
       Post("/user/sylvain-user-id/change-password", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
@@ -1470,7 +1428,7 @@ class UserApiTest
     }
   }
 
-  feature("delete user") {
+  Feature("delete user") {
 
     val fakeRequest =
       """
@@ -1479,26 +1437,24 @@ class UserApiTest
         | }
       """.stripMargin
 
-    scenario("unauthenticated user") {
+    Scenario("unauthenticated user") {
       Post("/user/sylvain-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("authenticated but userId parameter is different than connected user id") {
+    Scenario("authenticated but userId parameter is different than connected user id") {
       Post("/user/vincent-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("wrong password") {
-      Mockito
-        .when(
-          userService
-            .getUserByUserIdAndPassword(ArgumentMatchers.any[UserId], ArgumentMatchers.any[Option[String]])
-        )
-        .thenReturn(Future.successful(None))
+    Scenario("wrong password") {
+      when(
+        userService
+          .getUserByUserIdAndPassword(any[UserId], any[Option[String]])
+      ).thenReturn(Future.successful(None))
 
       Post("/user/sylvain-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
@@ -1506,23 +1462,18 @@ class UserApiTest
       }
     }
 
-    scenario("user request anonymization") {
-      Mockito
-        .when(
-          userService
-            .getUserByUserIdAndPassword(ArgumentMatchers.any[UserId], ArgumentMatchers.any[Option[String]])
-        )
-        .thenReturn(Future.successful(Some(sylvain)))
+    Scenario("user request anonymization") {
+      when(
+        userService
+          .getUserByUserIdAndPassword(any[UserId], any[Option[String]])
+      ).thenReturn(Future.successful(Some(sylvain)))
 
-      Mockito
-        .when(
-          userService
-            .anonymize(ArgumentMatchers.any[User], ArgumentMatchers.any[UserId], ArgumentMatchers.any[RequestContext])
-        )
-        .thenReturn(Future.successful({}))
+      when(
+        userService
+          .anonymize(any[User], any[UserId], any[RequestContext])
+      ).thenReturn(Future.successful({}))
 
-      Mockito
-        .when(oauth2DataHandler.removeTokenByUserId(ArgumentMatchers.any[UserId]))
+      when(oauth2DataHandler.removeTokenByUserId(any[UserId]))
         .thenReturn(Future.successful(1))
 
       Post("/user/sylvain-user-id/delete", HttpEntity(ContentTypes.`application/json`, fakeRequest))
@@ -1532,14 +1483,14 @@ class UserApiTest
     }
   }
 
-  feature("follow user") {
-    scenario("unconnected user") {
+  Feature("follow user") {
+    Scenario("unconnected user") {
       Post(s"/user/${sylvain.userId.value}/follow") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("try to follow unexistant user") {
+    Scenario("try to follow unexistant user") {
 
       Post("/user/non-existant/follow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
@@ -1547,7 +1498,7 @@ class UserApiTest
       }
     }
 
-    scenario("try to follow a user without public profile") {
+    Scenario("try to follow a user without public profile") {
 
       Post(s"/user/${fakeUser.userId.value}/follow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
@@ -1555,10 +1506,9 @@ class UserApiTest
       }
     }
 
-    scenario("try to follow a user already followed") {
+    Scenario("try to follow a user already followed") {
 
-      Mockito
-        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+      when(userService.getFollowedUsers(any[UserId]))
         .thenReturn(Future.successful(Seq(publicUser.userId)))
 
       Post(s"/user/${publicUser.userId.value}/follow")
@@ -1567,9 +1517,8 @@ class UserApiTest
       }
     }
 
-    scenario("successfully follow a user") {
-      Mockito
-        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+    Scenario("successfully follow a user") {
+      when(userService.getFollowedUsers(any[UserId]))
         .thenReturn(Future.successful(Seq.empty))
 
       Post(s"/user/${publicUser.userId.value}/follow")
@@ -1579,23 +1528,22 @@ class UserApiTest
     }
   }
 
-  feature("unfollow a user") {
-    scenario("unconnected user") {
+  Feature("unfollow a user") {
+    Scenario("unconnected user") {
       Post(s"/user/${sylvain.userId.value}/unfollow") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("try to unfollow unexistant user") {
+    Scenario("try to unfollow unexistant user") {
       Post("/user/non-existant/unfollow")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
-    scenario("try to unfollow a user already unfollowed") {
-      Mockito
-        .when(userService.getFollowedUsers(sylvain.userId))
+    Scenario("try to unfollow a user already unfollowed") {
+      when(userService.getFollowedUsers(sylvain.userId))
         .thenReturn(Future.successful(Seq.empty))
 
       Post(s"/user/${publicUser.userId.value}/unfollow")
@@ -1604,10 +1552,9 @@ class UserApiTest
       }
     }
 
-    scenario("successfully unfollow a user") {
+    Scenario("successfully unfollow a user") {
 
-      Mockito
-        .when(userService.getFollowedUsers(ArgumentMatchers.any[UserId]))
+      when(userService.getFollowedUsers(any[UserId]))
         .thenReturn(Future.successful(Seq(publicUser.userId)))
 
       Post(s"/user/${publicUser.userId.value}/unfollow")
@@ -1617,19 +1564,18 @@ class UserApiTest
     }
   }
 
-  feature("get reconnect info") {
+  Feature("get reconnect info") {
 
-    scenario("userId not found") {
-      Mockito.when(userService.reconnectInfo(any[UserId])).thenReturn(Future.successful(None))
+    Scenario("userId not found") {
+      when(userService.reconnectInfo(any[UserId])).thenReturn(Future.successful(None))
 
       Post("/user/userId/reconnect") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
-    scenario("reconnect info ok") {
-      Mockito
-        .when(userService.reconnectInfo(any[UserId]))
+    Scenario("reconnect info ok") {
+      when(userService.reconnectInfo(any[UserId]))
         .thenReturn(
           Future.successful(
             Some(
@@ -1651,30 +1597,30 @@ class UserApiTest
 
   }
 
-  feature("upload avatar") {
+  Feature("upload avatar") {
     val maxUploadFileSize = 4242L
     when(storageConfiguration.maxFileSize).thenReturn(maxUploadFileSize)
-    scenario("unauthorized not connected") {
+    Scenario("unauthorized not connected") {
       Post("/user/ABCD/upload-avatar") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbidden citizen") {
+    Scenario("forbidden citizen") {
       Post("/user/ABCD/upload-avatar")
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbidden moderator") {
+    Scenario("forbidden moderator") {
       Post("/user/ABCD/upload-avatar")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("incorrect file type") {
+    Scenario("incorrect file type") {
       val request: Multipart = Multipart.FormData(fields = Map(
         "data" -> HttpEntity
           .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
@@ -1687,15 +1633,9 @@ class UserApiTest
       }
     }
 
-    scenario("storage unavailable") {
-      when(
-        storageService.uploadFile(
-          ArgumentMatchers.eq(FileType.Operation),
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[FileContent]
-        )
-      ).thenReturn(Future.failed(new Exception("swift client error")))
+    Scenario("storage unavailable") {
+      when(storageService.uploadFile(eqTo(FileType.Operation), any[String], any[String], any[FileContent]))
+        .thenReturn(Future.failed(new Exception("swift client error")))
       val request: Multipart =
         Multipart.FormData(
           Multipart.FormData.BodyPart
@@ -1712,15 +1652,9 @@ class UserApiTest
       }
     }
 
-    scenario("file too large uploaded by admin") {
-      when(
-        storageService.uploadFile(
-          ArgumentMatchers.eq(FileType.Avatar),
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[FileContent]
-        )
-      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+    Scenario("file too large uploaded by admin") {
+      when(storageService.uploadFile(eqTo(FileType.Avatar), any[String], any[String], any[FileContent]))
+        .thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(
         Multipart.FormData.BodyPart
@@ -1736,15 +1670,9 @@ class UserApiTest
       }
     }
 
-    scenario("file successfully uploaded and returned by admin or related-user") {
-      when(
-        storageService.uploadUserAvatar(
-          ArgumentMatchers.any[UserId],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[FileContent]
-        )
-      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+    Scenario("file successfully uploaded and returned by admin or related-user") {
+      when(storageService.uploadUserAvatar(any[UserId], any[String], any[String], any[FileContent]))
+        .thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(
         Multipart.FormData.BodyPart
@@ -1771,16 +1699,16 @@ class UserApiTest
     }
   }
 
-  feature("read user information") {
+  Feature("read user information") {
 
-    scenario("get user when not connected") {
+    Scenario("get user when not connected") {
       Get(s"/user/${sylvain.userId.value}") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("get user with the correct connected user") {
-      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+    Scenario("get user with the correct connected user") {
+      when(userService.getUser(eqTo(sylvain.userId)))
         .thenReturn(Future.successful(Some(sylvain)))
 
       Get(s"/user/${sylvain.userId.value}")
@@ -1791,7 +1719,7 @@ class UserApiTest
       }
     }
 
-    scenario("get user with an incorrect connected user") {
+    Scenario("get user with an incorrect connected user") {
 
       Get(s"/user/${sylvain.userId.value}")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
@@ -1799,8 +1727,8 @@ class UserApiTest
       }
     }
 
-    scenario("get user with as admin") {
-      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+    Scenario("get user with as admin") {
+      when(userService.getUser(eqTo(sylvain.userId)))
         .thenReturn(Future.successful(Some(sylvain)))
 
       Get(s"/user/${sylvain.userId.value}")
@@ -1811,14 +1739,14 @@ class UserApiTest
       }
     }
 
-    scenario("get user profile when not connected") {
+    Scenario("get user profile when not connected") {
       Get(s"/user/${sylvain.userId.value}/profile") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("get user profile with the correct connected user") {
-      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+    Scenario("get user profile with the correct connected user") {
+      when(userService.getUser(eqTo(sylvain.userId)))
         .thenReturn(Future.successful(Some(sylvain)))
 
       Get(s"/user/${sylvain.userId.value}/profile")
@@ -1829,7 +1757,7 @@ class UserApiTest
       }
     }
 
-    scenario("get user profile with the incorrect connected user") {
+    Scenario("get user profile with the incorrect connected user") {
 
       Get(s"/user/${sylvain.userId.value}/profile")
         .withHeaders(Authorization(OAuth2BearerToken(moderatorToken))) ~> routes ~> check {
@@ -1837,8 +1765,8 @@ class UserApiTest
       }
     }
 
-    scenario("get user profile as admin") {
-      when(userService.getUser(ArgumentMatchers.eq(sylvain.userId)))
+    Scenario("get user profile as admin") {
+      when(userService.getUser(eqTo(sylvain.userId)))
         .thenReturn(Future.successful(Some(sylvain)))
 
       Get(s"/user/${sylvain.userId.value}/profile")
@@ -1849,21 +1777,21 @@ class UserApiTest
 
   }
 
-  feature("update user profile") {
-    scenario("unauthentified profile modification") {
+  Feature("update user profile") {
+    Scenario("unauthentified profile modification") {
       Put(s"/user/${sylvain.userId.value}/profile") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("profile modification with the wrong user") {
+    Scenario("profile modification with the wrong user") {
       Put(s"/user/${sylvain.userId.value}/profile")
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("profile modification with the correct user") {
+    Scenario("profile modification with the correct user") {
 
       val entity = """{
         |  "firstName": "new-firstname",
@@ -1897,7 +1825,7 @@ class UserApiTest
       }
     }
 
-    scenario("bad request") {
+    Scenario("bad request") {
 
       val invalidEntity = """{
                      |  "lastName": "new-lastname"

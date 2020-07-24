@@ -31,16 +31,12 @@ import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage.{FileType, StorageService, StorageServiceComponent, UploadResponse}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.when
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class AdminHomeViewApiTest
     extends MakeApiTestBase
-    with MockitoSugar
     with DefaultAdminViewApiComponent
     with MakeDataHandlerComponent
     with IdGeneratorComponent
@@ -52,31 +48,31 @@ class AdminHomeViewApiTest
 
   val routes: Route = sealRoute(adminViewApi.routes)
 
-  feature("upload image") {
+  Feature("upload image") {
     implicit val timeout: RouteTestTimeout = RouteTestTimeout(300.seconds)
     def uri = "/admin/views/home/images"
 
-    scenario("unauthorized not connected") {
+    Scenario("unauthorized not connected") {
       Post(uri) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbidden citizen") {
+    Scenario("forbidden citizen") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbidden moderator") {
+    Scenario("forbidden moderator") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("incorrect file type") {
+    Scenario("incorrect file type") {
       val request: Multipart = Multipart.FormData(fields = Map(
         "data" -> HttpEntity
           .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
@@ -89,15 +85,9 @@ class AdminHomeViewApiTest
       }
     }
 
-    scenario("storage unavailable") {
-      when(
-        storageService.uploadFile(
-          ArgumentMatchers.eq(FileType.Home),
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[FileContent]
-        )
-      ).thenReturn(Future.failed(new Exception("swift client error")))
+    Scenario("storage unavailable") {
+      when(storageService.uploadFile(eqTo(FileType.Home), any[String], any[String], any[FileContent]))
+        .thenReturn(Future.failed(new Exception("swift client error")))
       val request: Multipart =
         Multipart.FormData(
           Multipart.FormData.BodyPart
@@ -114,15 +104,9 @@ class AdminHomeViewApiTest
       }
     }
 
-    scenario("large file successfully uploaded and returned by admin") {
-      when(
-        storageService.uploadFile(
-          ArgumentMatchers.eq(FileType.Home),
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[FileContent]
-        )
-      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+    Scenario("large file successfully uploaded and returned by admin") {
+      when(storageService.uploadFile(eqTo(FileType.Home), any[String], any[String], any[FileContent]))
+        .thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(
         Multipart.FormData.BodyPart

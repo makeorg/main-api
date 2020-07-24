@@ -33,8 +33,6 @@ import org.make.core.idea.{Idea, IdeaId, IdeaSearchQuery, IdeaStatus}
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -76,7 +74,7 @@ class ModerationIdeaApiTest
       updatedAt = Some(DateHelper.now())
     )
 
-  when(questionService.getQuestion(ArgumentMatchers.any[QuestionId])).thenReturn(
+  when(questionService.getQuestion(any[QuestionId])).thenReturn(
     Future.successful(
       Some(
         Question(
@@ -92,29 +90,27 @@ class ModerationIdeaApiTest
     )
   )
 
-  when(ideaService.fetchAll(ArgumentMatchers.any[IdeaSearchQuery]))
+  when(ideaService.fetchAll(any[IdeaSearchQuery]))
     .thenReturn(Future.successful(IdeaSearchResult.empty))
 
-  when(ideaService.insert(ArgumentMatchers.eq(fooIdeaText), ArgumentMatchers.any[Question]))
+  when(ideaService.insert(eqTo(fooIdeaText), any[Question]))
     .thenReturn(Future.successful(fooIdea))
 
-  when(
-    ideaService.update(ArgumentMatchers.eq(fooIdeaId), ArgumentMatchers.any[String], ArgumentMatchers.any[IdeaStatus])
-  ).thenReturn(Future.successful(1))
+  when(ideaService.update(eqTo(fooIdeaId), any[String], any[IdeaStatus])).thenReturn(Future.successful(1))
 
-  when(ideaService.fetchOneByName(ArgumentMatchers.any[QuestionId], ArgumentMatchers.eq(fooIdeaText)))
+  when(ideaService.fetchOneByName(any[QuestionId], eqTo(fooIdeaText)))
     .thenReturn(Future.successful(None))
-  when(ideaService.fetchOneByName(ArgumentMatchers.any[QuestionId], ArgumentMatchers.eq(barIdeaText)))
+  when(ideaService.fetchOneByName(any[QuestionId], eqTo(barIdeaText)))
     .thenReturn(Future.successful(None))
-  when(ideaService.fetchOneByName(ArgumentMatchers.any[QuestionId], ArgumentMatchers.eq(otherIdeaText)))
+  when(ideaService.fetchOneByName(any[QuestionId], eqTo(otherIdeaText)))
     .thenReturn(Future.successful(Some(otherIdea)))
-  when(ideaService.fetchOne(ArgumentMatchers.eq(fooIdeaId)))
+  when(ideaService.fetchOne(eqTo(fooIdeaId)))
     .thenReturn(Future.successful(Some(fooIdea)))
 
   val routes: Route = sealRoute(moderationIdeaApi.routes)
 
-  feature("create an idea") {
-    scenario("unauthenticated") {
+  Feature("create an idea") {
+    Scenario("unauthenticated") {
       Given("an un authenticated user")
       When("the user wants to create an idea")
       Then("he should get an unauthorized (401) return code")
@@ -125,7 +121,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated citizen") {
+    Scenario("authenticated citizen") {
       Given("an authenticated user with the citizen role")
       When("the user wants to create an idea")
       Then("he should get an forbidden (403) return code")
@@ -137,7 +133,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated moderator") {
+    Scenario("authenticated moderator") {
       Given("an authenticated user with the moderator role")
       When("the user wants to create an idea")
       Then("It should be forbidden")
@@ -149,7 +145,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin without questionId") {
+    Scenario("authenticated admin without questionId") {
       Given("an authenticated user with the admin role")
       When("the user wants to create an idea without an operationId nor a themeId")
       Then("Then he should get a bad request (400) return code")
@@ -161,7 +157,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin with questionId") {
+    Scenario("authenticated admin with questionId") {
       Given("an authenticated user with the admin role")
       When("the user wants to create an idea with an questionId")
       Then("the idea should be saved if valid")
@@ -177,7 +173,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("bad data in body") {
+    Scenario("bad data in body") {
       Given("an authenticated user with the admin role")
       When("the user wants to create an idea")
       Then("Then he should get a bad request (400) return code")
@@ -190,8 +186,8 @@ class ModerationIdeaApiTest
     }
   }
 
-  feature("update an idea") {
-    scenario("unauthenticated") {
+  Feature("update an idea") {
+    Scenario("unauthenticated") {
       Given("an un authenticated user")
       When("the user wants to update an idea")
       Then("he should get an unauthorized (401) return code")
@@ -202,7 +198,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated citizen") {
+    Scenario("authenticated citizen") {
       Given("an authenticated user with the citizen role")
       When("the user wants to update an idea")
       Then("he should get an forbidden (403) return code")
@@ -214,7 +210,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated moderator") {
+    Scenario("authenticated moderator") {
       Given("an authenticated user with the moderator role")
       When("the user wants to update an idea")
       Then("the idea should be saved if valid")
@@ -226,7 +222,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin - update idea with the name already exist") {
+    Scenario("authenticated admin - update idea with the name already exist") {
       Given("an authenticated user with the admin role")
       When("the user wants to update an idea with the name that already exist")
       Then("he should receive a bad request (400)")
@@ -238,7 +234,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin") {
+    Scenario("authenticated admin") {
       Given("an authenticated user with the admin role")
       When("the user wants to update an idea")
       Then("the idea should be saved if valid")
@@ -253,8 +249,8 @@ class ModerationIdeaApiTest
     }
   }
 
-  feature("get an idea") {
-    scenario("unauthenticated") {
+  Feature("get an idea") {
+    Scenario("unauthenticated") {
       Given("an un authenticated user")
       When("the user wants to get an idea")
       Then("he should get an unauthorized (401) return code")
@@ -263,7 +259,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated citizen") {
+    Scenario("authenticated citizen") {
       Given("an authenticated user with the citizen role")
       When("the user wants to create an idea")
       Then("he should get an forbidden (403) return code")
@@ -276,8 +272,8 @@ class ModerationIdeaApiTest
 
   }
 
-  feature("get a list of ideas") {
-    scenario("unauthenticated") {
+  Feature("get a list of ideas") {
+    Scenario("unauthenticated") {
       Given("an unauthenticated user")
       When("the user wants to get a list of ideas")
       Then("he should get an unauthorized (401) return code")
@@ -286,7 +282,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated citizen") {
+    Scenario("authenticated citizen") {
       Given("an authenticated user with the citizen role")
       When("the user wants to create an idea")
       Then("he should get an forbidden (403) return code")
@@ -297,7 +293,7 @@ class ModerationIdeaApiTest
       }
     }
 
-    scenario("authenticated admin") {
+    Scenario("authenticated admin") {
       Given("an authenticated user with the admin role")
       When("the user wants to get list of ideas")
       Then("the result should be a IdeaSearchResult")

@@ -36,9 +36,6 @@ import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, ValidationError}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -191,9 +188,9 @@ class ModerationOperationApiTest
 
   override def customUserByToken: Map[String, User] = Map(johnToken -> john, tyrionToken -> tyrion)
 
-  when(userService.getUser(ArgumentMatchers.eq(john.userId))).thenReturn(Future.successful(Some(john)))
-  when(userService.getUser(ArgumentMatchers.eq(tyrion.userId))).thenReturn(Future.successful(Some(tyrion)))
-  when(userService.getUser(ArgumentMatchers.eq(daenerys.userId))).thenReturn(Future.successful(Some(daenerys)))
+  when(userService.getUser(eqTo(john.userId))).thenReturn(Future.successful(Some(john)))
+  when(userService.getUser(eqTo(tyrion.userId))).thenReturn(Future.successful(Some(tyrion)))
+  when(userService.getUser(eqTo(daenerys.userId))).thenReturn(Future.successful(Some(daenerys)))
 
   when(operationService.findOneSimple(OperationId("firstOperation")))
     .thenReturn(Future.successful(Some(firstOperation)))
@@ -277,9 +274,9 @@ class ModerationOperationApiTest
   when(userService.getUsersByUserIds(Seq(john.userId)))
     .thenReturn(Future.successful(Seq(john)))
 
-  feature("get operations") {
+  Feature("get operations") {
 
-    scenario("get all operations without authentication") {
+    Scenario("get all operations without authentication") {
       Given("2 registered operations")
       When("I get all proposals without authentication")
       Then("I get an unauthorized status response")
@@ -289,7 +286,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("get all operations with bad credentials") {
+    Scenario("get all operations with bad credentials") {
       Given("2 registered operations")
       When("I get all proposals with a citizen role authentication")
       Then("I get a forbidden status response")
@@ -300,7 +297,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("get all operations") {
+    Scenario("get all operations") {
       Given("2 registered operations")
       When("I get all proposals")
       Then("I get a list of 2 operations")
@@ -323,7 +320,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("get an operation by slug") {
+    Scenario("get an operation by slug") {
       Given("2 registered operations")
       When("I get all proposals with a filter by slug")
       Then("I get a list of 1 operation")
@@ -344,9 +341,9 @@ class ModerationOperationApiTest
     }
   }
 
-  feature("get an operation") {
+  Feature("get an operation") {
 
-    scenario("get an operation without authentication") {
+    Scenario("get an operation without authentication") {
       Given("2 registered operations")
       When("I get a proposal without authentication")
       Then("I get an unauthorized status response")
@@ -356,7 +353,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("get an operation with bad credentials") {
+    Scenario("get an operation with bad credentials") {
       Given("2 registered operations")
       When("I get a proposal with a citizen role authentication")
       Then("I get a forbidden status response")
@@ -367,7 +364,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("get an operation with invalid id") {
+    Scenario("get an operation with invalid id") {
       Given("2 registered operations")
       When("I get a proposal with an invalid id")
       Then("I get a not found status response")
@@ -378,7 +375,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("get an operation") {
+    Scenario("get an operation") {
       Given("2 registered operations")
       When("I get a proposal with a moderation authentication")
       Then("the call success")
@@ -395,8 +392,8 @@ class ModerationOperationApiTest
     }
   }
 
-  feature("create an operation") {
-    scenario("create an operation without authentication") {
+  Feature("create an operation") {
+    Scenario("create an operation without authentication") {
       When("I create an operation without authentication")
       Then("I get an unauthorized status response")
       Post("/moderation/operations")
@@ -405,7 +402,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("create an operation with bad credentials") {
+    Scenario("create an operation with bad credentials") {
       When("I create a proposal with a citizen role authentication")
       Then("I get a forbidden status response")
       Post("/moderation/operations")
@@ -415,7 +412,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("create an operation") {
+    Scenario("create an operation") {
       When("I create a proposal with a moderation role authentication")
       Then("I get a success status")
       And("operation is registered")
@@ -426,7 +423,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("create an operation with an existing slug") {
+    Scenario("create an operation with an existing slug") {
       When("I create a proposal with an existing slug")
       Then("I get a bad request status")
       And("a correct error message")
@@ -449,8 +446,8 @@ class ModerationOperationApiTest
 
   }
 
-  feature("update an operation") {
-    scenario("create an operation without authentication") {
+  Feature("update an operation") {
+    Scenario("create an operation without authentication") {
       Given("a registered operation")
       When("I update the operation without authentication")
       Then("I get an unauthorized status response")
@@ -460,7 +457,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("create an operation with bad credentials") {
+    Scenario("create an operation with bad credentials") {
       Given("a registered operation")
       When("I update a proposal with a citizen role authentication")
       Then("I get a forbidden status response")
@@ -471,7 +468,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("update an operation") {
+    Scenario("update an operation") {
       When("I create a proposal with a moderation role authentication")
       Then("I get a success status")
       And("operation is registered")
@@ -482,7 +479,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("update an operation with an existing slug") {
+    Scenario("update an operation with an existing slug") {
       When("I update a proposal with an existing slug")
       Then("I get a bad request status")
       And("a correct error message")
@@ -503,7 +500,7 @@ class ModerationOperationApiTest
       }
     }
 
-    scenario("update an operation with his own slug") {
+    Scenario("update an operation with his own slug") {
       When("I update a proposal with his own slug")
       Then("I get a success status")
       And("any error message")

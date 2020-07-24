@@ -37,9 +37,6 @@ import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.technical.IdGenerator
 import org.make.core.user.Role.{RoleAdmin, RoleCitizen, RoleModerator}
 import org.make.core.user.{User, UserId}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
@@ -144,19 +141,18 @@ trait MakeApiTestBase
 
   private def usersByToken: Map[String, User] = defaultUsersByToken ++ customUserByToken
 
-  when(oauth2DataHandler.findAccessToken(ArgumentMatchers.any[String])).thenAnswer { invocation =>
-    val token = invocation.getArgument[String](0)
+  when(oauth2DataHandler.findAccessToken(any[String])).thenAnswer { token: String =>
     val maybeAccessToken =
       usersByToken.get(token).map(_ => AccessToken(token, None, Some("user"), Some(1234567890L), tokenCreationDate))
     Future.successful(maybeAccessToken)
   }
 
-  when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.any[AccessToken]))
+  when(oauth2DataHandler.findAuthInfoByAccessToken(any[AccessToken]))
     .thenAnswer(
-      invocation =>
+      (accessToken: AccessToken) =>
         Future.successful(
           usersByToken
-            .get(invocation.getArgument[AccessToken](0).token)
+            .get(accessToken.token)
             .map(
               user =>
                 AuthInfo(

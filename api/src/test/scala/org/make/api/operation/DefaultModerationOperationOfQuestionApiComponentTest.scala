@@ -34,8 +34,6 @@ import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
 
 import scala.concurrent.Future
 
@@ -50,50 +48,49 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
   override val questionService: QuestionService = mock[QuestionService]
 
-  when(operationOfQuestionService.create(any[CreateOperationOfQuestion])).thenAnswer { invocation =>
-    val request = invocation.getArgument[CreateOperationOfQuestion](0)
-    Future.successful(
-      OperationOfQuestion(
-        questionId = QuestionId("some-question"),
-        operationId = request.operationId,
-        startDate = request.startDate,
-        endDate = request.endDate,
-        operationTitle = request.operationTitle,
-        landingSequenceId = SequenceId("some-sequence"),
-        canPropose = true,
-        sequenceCardsConfiguration = SequenceCardsConfiguration(
-          introCard = IntroCard(enabled = true, title = None, description = None),
-          pushProposalCard = PushProposalCard(enabled = true),
-          signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-          finalCard = FinalCard(
-            enabled = true,
-            sharingEnabled = false,
-            title = None,
-            shareDescription = None,
-            learnMoreTitle = None,
-            learnMoreTextButton = None,
-            linkUrl = None
-          )
-        ),
-        aboutUrl = None,
-        metas = Metas(title = None, description = None, picture = None),
-        theme = QuestionTheme.default,
-        description = OperationOfQuestion.defaultDescription,
-        consultationImage = None,
-        consultationImageAlt = None,
-        descriptionImage = None,
-        descriptionImageAlt = None,
-        resultsLink = None,
-        proposalsCount = 42,
-        participantsCount = 84,
-        actions = None,
-        featured = true
+  when(operationOfQuestionService.create(any[CreateOperationOfQuestion])).thenAnswer {
+    request: CreateOperationOfQuestion =>
+      Future.successful(
+        OperationOfQuestion(
+          questionId = QuestionId("some-question"),
+          operationId = request.operationId,
+          startDate = request.startDate,
+          endDate = request.endDate,
+          operationTitle = request.operationTitle,
+          landingSequenceId = SequenceId("some-sequence"),
+          canPropose = true,
+          sequenceCardsConfiguration = SequenceCardsConfiguration(
+            introCard = IntroCard(enabled = true, title = None, description = None),
+            pushProposalCard = PushProposalCard(enabled = true),
+            signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+            finalCard = FinalCard(
+              enabled = true,
+              sharingEnabled = false,
+              title = None,
+              shareDescription = None,
+              learnMoreTitle = None,
+              learnMoreTextButton = None,
+              linkUrl = None
+            )
+          ),
+          aboutUrl = None,
+          metas = Metas(title = None, description = None, picture = None),
+          theme = QuestionTheme.default,
+          description = OperationOfQuestion.defaultDescription,
+          consultationImage = None,
+          consultationImageAlt = None,
+          descriptionImage = None,
+          descriptionImageAlt = None,
+          resultsLink = None,
+          proposalsCount = 42,
+          participantsCount = 84,
+          actions = None,
+          featured = true
+        )
       )
-    )
   }
 
-  when(operationOfQuestionService.findByQuestionId(any[QuestionId])).thenAnswer { invocation =>
-    val questionId = invocation.getArgument[QuestionId](0)
+  when(operationOfQuestionService.findByQuestionId(any[QuestionId])).thenAnswer { questionId: QuestionId =>
     Future.successful(
       Some(
         OperationOfQuestion(
@@ -137,12 +134,11 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   }
 
   when(operationOfQuestionService.updateWithQuestion(any[OperationOfQuestion], any[Question])).thenAnswer {
-    invocation =>
-      Future.successful(invocation.getArgument[OperationOfQuestion](0))
+    (ooq: OperationOfQuestion, _: Question) =>
+      Future.successful(ooq)
   }
 
-  when(questionService.getQuestion(any[QuestionId])).thenAnswer { invocation =>
-    val questionId = invocation.getArgument[QuestionId](0)
+  when(questionService.getQuestion(any[QuestionId])).thenAnswer { questionId: QuestionId =>
     Future.successful(
       Some(
         Question(
@@ -160,9 +156,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   when(operationOfQuestionService.delete(any[QuestionId])).thenReturn(Future.successful {})
 
-  when(operationOfQuestionService.findByOperationId(any[OperationId])).thenAnswer { invocation =>
-    val operationId = invocation.getArgument[OperationId](0)
-
+  when(operationOfQuestionService.findByOperationId(any[OperationId])).thenAnswer { operationId: OperationId =>
     Future.successful(
       Seq(
         OperationOfQuestion(
@@ -241,8 +235,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     )
   }
 
-  when(questionService.searchQuestion(any[SearchQuestionRequest])).thenAnswer { invocation =>
-    val request = invocation.getArgument[SearchQuestionRequest](0)
+  when(questionService.searchQuestion(any[SearchQuestionRequest])).thenAnswer { request: SearchQuestionRequest =>
     Future.successful(
       Seq(
         Question(
@@ -267,8 +260,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     )
   }
 
-  when(questionService.getQuestions(any[Seq[QuestionId]])).thenAnswer { invocation =>
-    val ids = invocation.getArgument[Seq[QuestionId]](0)
+  when(questionService.getQuestions(any[Seq[QuestionId]])).thenAnswer { ids: Seq[QuestionId] =>
     Future.successful(ids.map { questionId =>
       Question(
         questionId = questionId,
@@ -368,8 +360,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   val routes: Route = sealRoute(moderationOperationOfQuestionApi.routes)
 
-  feature("access control") {
-    scenario("unauthenticated user") {
+  Feature("access control") {
+    Scenario("unauthenticated user") {
       Get("/moderation/operations-of-questions") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -391,7 +383,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("invalid token") {
+    Scenario("invalid token") {
 
       Get("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken("invalid-token"))) ~> routes ~> check {
@@ -424,7 +416,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("citizen user") {
+    Scenario("citizen user") {
 
       Get("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -457,7 +449,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("admin-only endpoints") {
+    Scenario("admin-only endpoints") {
       Post("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
@@ -479,8 +471,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   }
 
-  feature("create operationOfQuestion") {
-    scenario("create as moderator") {
+  Feature("create operationOfQuestion") {
+    Scenario("create as moderator") {
       Post("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
@@ -509,7 +501,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("create as moderator with bad consultationImage format") {
+    Scenario("create as moderator with bad consultationImage format") {
       Post("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
@@ -528,8 +520,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     }
   }
 
-  feature("update operationOfQuestion") {
-    scenario("update as moderator") {
+  Feature("update operationOfQuestion") {
+    Scenario("update as moderator") {
       Put("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
@@ -575,7 +567,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("update with bad color") {
+    Scenario("update with bad color") {
 
       Put("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
@@ -613,7 +605,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("update with bad shortTitle") {
+    Scenario("update with bad shortTitle") {
 
       Put("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
@@ -655,7 +647,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       }
     }
 
-    scenario("update image as moderator with incorrect URL") {
+    Scenario("update image as moderator with incorrect URL") {
       Put("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
@@ -695,8 +687,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     }
   }
 
-  feature("delete operationOfQuestion") {
-    scenario("delete as admin") {
+  Feature("delete operationOfQuestion") {
+    Scenario("delete as admin") {
       Delete("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
 
@@ -705,8 +697,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     }
   }
 
-  feature("get by operation of question") {
-    scenario("get as moderator") {
+  Feature("get by operation of question") {
+    Scenario("get as moderator") {
       Get("/moderation/operations-of-questions/some-question")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 
@@ -715,8 +707,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
     }
   }
 
-  feature("search operation of question") {
-    scenario("search as moderator") {
+  Feature("search operation of question") {
+    Scenario("search as moderator") {
       Get("/moderation/operations-of-questions?openAt=2018-01-01")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
 

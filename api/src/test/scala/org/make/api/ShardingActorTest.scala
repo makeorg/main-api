@@ -24,15 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest._
 
 class ShardingActorTest(actorSystem: ActorSystem = TestHelper.defaultActorSystem())
     extends TestKit(actorSystem)
-    with FeatureSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
     with ImplicitSender
+    with MakeUnitTest
 
 object TestHelper {
   val halfNumberOfPorts: Int = 32768

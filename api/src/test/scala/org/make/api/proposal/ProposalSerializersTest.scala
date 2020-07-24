@@ -44,11 +44,11 @@ import org.make.core.proposal._
 import org.make.core.reference.{Country, LabelId, Language, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
 import stamina.{Persisters, V3}
 
-class ProposalSerializersTest extends WordSpec with StaminaTestKit {
+class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
 
   val persisters = Persisters(ProposalSerializers.serializers.toList)
   val userId = UserId("my-user-id")

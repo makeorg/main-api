@@ -49,7 +49,6 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper}
-import org.mockito.Mockito
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
@@ -78,9 +77,9 @@ class ProposalSearchEngineIT
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
-  Mockito.when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
-  Mockito.when(elasticsearchConfiguration.proposalAliasName).thenReturn(defaultElasticsearchProposalIndex)
-  Mockito.when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchProposalIndex)
+  when(elasticsearchConfiguration.connectionString).thenReturn(s"localhost:$elasticsearchExposedPort")
+  when(elasticsearchConfiguration.proposalAliasName).thenReturn(defaultElasticsearchProposalIndex)
+  when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchProposalIndex)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -1417,9 +1416,9 @@ class ProposalSearchEngineIT
 
   private def proposals: Seq[IndexedProposal] = acceptedProposals ++ pendingProposals
 
-  feature("get proposal by id") {
+  Feature("get proposal by id") {
     val proposalId = proposals.head.id
-    scenario("should return a proposal") {
+    Scenario("should return a proposal") {
       whenReady(elasticsearchProposalAPI.findProposalById(proposalId), Timeout(3.seconds)) {
         case Some(proposal) =>
           proposal.id should equal(proposalId)
@@ -1428,29 +1427,29 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by content") {
+  Feature("search proposals by content") {
     Given("searching by keywords")
     val query =
       SearchQuery(filters = Some(SearchFilters(content = Some(ContentSearchFilter(text = "Il faut qu'il/elle")))))
 
-    scenario("should return a list of proposals") {
+    Scenario("should return a list of proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be > 0L
       }
     }
   }
 
-  feature("empty query returns accepted proposals only") {
+  Feature("empty query returns accepted proposals only") {
     Given("searching without query")
     val query = SearchQuery()
-    scenario("should return a list of accepted proposals") {
+    Scenario("should return a list of accepted proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.size)
       }
     }
   }
 
-  feature("search proposals by status") {
+  Feature("search proposals by status") {
     Given("searching pending proposals")
     val query = SearchQuery(
       Some(
@@ -1463,7 +1462,7 @@ class ProposalSearchEngineIT
         )
       )
     )
-    scenario("should return a list of pending proposals") {
+    Scenario("should return a list of pending proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
         info(result.results.map(_.status).mkString)
         result.total should be(pendingProposals.size)
@@ -1471,27 +1470,27 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by language and/or country") {
+  Feature("search proposals by language and/or country") {
     Given("searching by language 'fr' or country 'IT'")
     val queryLanguage =
       SearchQuery(filters = Some(SearchFilters(language = Some(LanguageSearchFilter(language = Language("fr"))))))
     val queryCountry =
       SearchQuery(filters = Some(SearchFilters(country = Some(CountrySearchFilter(country = Country("IT"))))))
 
-    scenario("should return a list of french proposals") {
+    Scenario("should return a list of french proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(queryLanguage), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.count(_.language == Language("fr")))
       }
     }
 
-    scenario("should return a list of proposals from Italy") {
+    Scenario("should return a list of proposals from Italy") {
       whenReady(elasticsearchProposalAPI.searchProposals(queryCountry), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.count(_.country == Country("IT")))
       }
     }
   }
 
-  feature("search proposals by top score") {
+  Feature("search proposals by top score") {
     val queryTopScore =
       SearchQuery(
         filters = None,
@@ -1500,7 +1499,7 @@ class ProposalSearchEngineIT
         )
       )
 
-    scenario("should return a list of proposals sorted by top score") {
+    Scenario("should return a list of proposals sorted by top score") {
       whenReady(elasticsearchProposalAPI.searchProposals(queryTopScore), Timeout(3.seconds)) { result =>
         result.total should be(acceptedProposals.size)
         result.results.map(_.scores.topScoreAjustedWithVotes) should be(
@@ -1510,8 +1509,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by slug") {
-    scenario("searching a non-existing slug") {
+  Feature("search proposals by slug") {
+    Scenario("searching a non-existing slug") {
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter("something-I-dreamt")))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(3.seconds)) { result =>
@@ -1519,7 +1518,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("searching an existing slug") {
+    Scenario("searching an existing slug") {
       val slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture"
       val query = SearchQuery(Some(SearchFilters(slug = Some(SlugSearchFilter(slug)))))
 
@@ -1529,7 +1528,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("search proposal by user") {
+    Scenario("search proposal by user") {
       val userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5")
       val query = SearchQuery(
         Some(
@@ -1545,7 +1544,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("search proposals by created date") {
+    Scenario("search proposals by created date") {
 
       val searchDate: ZonedDateTime = ZonedDateTime.from(dateFormatter.parse("2017-06-04T01:01:01.123Z"))
       val queryBefore: SearchQuery = SearchQuery(
@@ -1580,8 +1579,8 @@ class ProposalSearchEngineIT
 
   }
 
-  feature("excludes proposals from search") {
-    scenario("proposals excluded should not be in the result") {
+  Feature("excludes proposals from search") {
+    Scenario("proposals excluded should not be in the result") {
       forAll { count: NonNegInt =>
         val proposalsToExclude: Seq[ProposalId] = acceptedProposals.take(count).map(_.id)
         val query =
@@ -1595,8 +1594,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("saving new proposal") {
-    scenario("should return distinct new") {
+  Feature("saving new proposal") {
+    Scenario("should return distinct new") {
       val proposal1 = newProposal
       val proposal2 = newProposal
       whenReady(
@@ -1610,8 +1609,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by toEnrich") {
-    scenario("should return a list of proposals") {
+  Feature("search proposals by toEnrich") {
+    Scenario("should return a list of proposals") {
       Given("a boolean set to true")
       val query =
         SearchQuery(filters = Some(SearchFilters(toEnrich = Some(ToEnrichSearchFilter(toEnrich = true)))))
@@ -1622,7 +1621,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("should not return proposals with no tags") {
+    Scenario("should not return proposals with no tags") {
       Given("a boolean set to false")
       val query =
         SearchQuery(filters = Some(SearchFilters(toEnrich = Some(ToEnrichSearchFilter(toEnrich = false)))))
@@ -1634,8 +1633,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by minVotes") {
-    scenario("should return a list of proposals") {
+  Feature("search proposals by minVotes") {
+    Scenario("should return a list of proposals") {
       Given("minimum vote number")
       val query =
         SearchQuery(filters = Some(SearchFilters(minVotesCount = Some(MinVotesCountSearchFilter(42)))))
@@ -1646,8 +1645,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by minScore") {
-    scenario("should return a list of proposals") {
+  Feature("search proposals by minScore") {
+    Scenario("should return a list of proposals") {
       Given("minimum vote number")
       val query =
         SearchQuery(filters = Some(SearchFilters(minScore = Some(MinScoreSearchFilter(42)))))
@@ -1658,8 +1657,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by opened question") {
-    scenario("should return one proposals") {
+  Feature("search proposals by opened question") {
+    Scenario("should return one proposals") {
       val queryTrue =
         SearchQuery(filters = Some(SearchFilters(questionIsOpen = Some(QuestionIsOpenSearchFilter(true)))))
       val queryFalse =
@@ -1674,8 +1673,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by segment") {
-    scenario("search for segment ubik") {
+  Feature("search proposals by segment") {
+    Scenario("search for segment ubik") {
       val query = SearchQuery(filters = Some(SearchFilters(segment = Some(SegmentSearchFilter("ubik")))))
 
       whenReady(elasticsearchProposalAPI.searchProposals(query), Timeout(10.seconds)) { results =>
@@ -1685,8 +1684,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by sequence segment pool") {
-    scenario("search for pool new") {
+  Feature("search proposals by sequence segment pool") {
+    Scenario("search for pool new") {
       val query = SearchQuery(filters =
         Some(SearchFilters(sequenceSegmentPool = Some(SequencePoolSearchFilter(SequencePool.New))))
       )
@@ -1699,8 +1698,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by author is organisation") {
-    scenario("search for author organisation") {
+  Feature("search proposals by author is organisation") {
+    Scenario("search for author organisation") {
       val query = SearchQuery(filters = Some(
         SearchFilters(
           userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation))),
@@ -1717,8 +1716,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("get popular tags") {
-    scenario("get tags for base question") {
+  Feature("get popular tags") {
+    Scenario("get tags for base question") {
       whenReady(elasticsearchProposalAPI.getPopularTagsByProposal(baseQuestion.questionId, 10), Timeout(10.seconds)) {
         results =>
           results.size should be(3)
@@ -1729,7 +1728,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("get tags for inexistent question") {
+    Scenario("get tags for inexistent question") {
       whenReady(elasticsearchProposalAPI.getPopularTagsByProposal(QuestionId("fake"), 10), Timeout(10.seconds)) {
         results =>
           results.size should be(0)
@@ -1737,8 +1736,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("get top proposals") {
-    scenario("get top proposals by idea for base question") {
+  Feature("get top proposals") {
+    Scenario("get top proposals by idea for base question") {
       whenReady(
         elasticsearchProposalAPI.getTopProposals(baseQuestion.questionId, 10, ProposalElasticsearchFieldNames.ideaId),
         Timeout(10.seconds)
@@ -1748,7 +1747,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("get top proposals by stake tag") {
+    Scenario("get top proposals by stake tag") {
       whenReady(
         elasticsearchProposalAPI
           .getTopProposals(baseQuestion.questionId, 10, ProposalElasticsearchFieldNames.selectedStakeTagId),
@@ -1760,14 +1759,14 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("count proposals by idea") {
-    scenario("no ideas") {
+  Feature("count proposals by idea") {
+    Scenario("no ideas") {
       whenReady(elasticsearchProposalAPI.countProposalsByIdea(Seq.empty), Timeout(3.seconds)) { results =>
         results.size shouldBe 0
       }
     }
 
-    scenario("some ideas") {
+    Scenario("some ideas") {
       val ideaIdOne = IdeaId("idea-id")
       val ideaIdTwo = IdeaId("idea-id-2")
       whenReady(elasticsearchProposalAPI.countProposalsByIdea(Seq(ideaIdOne, ideaIdTwo)), Timeout(3.seconds)) {
@@ -1780,8 +1779,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("search proposals by userType") {
-    scenario("search for author organisation and personality") {
+  Feature("search proposals by userType") {
+    Scenario("search for author organisation and personality") {
       val query = SearchQuery(filters = Some(
         SearchFilters(
           userTypes = Some(UserTypesSearchFilter(Seq(UserType.UserTypeOrganisation, UserType.UserTypePersonality))),
@@ -1798,8 +1797,8 @@ class ProposalSearchEngineIT
     }
   }
 
-  feature("get random proposals by top idea") {
-    scenario("get random proposals by top idea") {
+  Feature("get random proposals by top idea") {
+    Scenario("get random proposals by top idea") {
       whenReady(
         elasticsearchProposalAPI
           .getRandomProposalsByIdeaWithAvatar(Seq(IdeaId("idea-id"), IdeaId("idea-id-2"), IdeaId("idea-id-3")), 42),
@@ -1812,7 +1811,7 @@ class ProposalSearchEngineIT
       }
     }
 
-    scenario("top ideas are not defined yet") {
+    Scenario("top ideas are not defined yet") {
       whenReady(elasticsearchProposalAPI.getRandomProposalsByIdeaWithAvatar(Seq.empty, 42), Timeout(10.seconds)) {
         result =>
           result should be(Map.empty)

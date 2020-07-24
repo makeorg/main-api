@@ -29,7 +29,6 @@ import org.make.core.proposal.indexed.{IndexedTag, ProposalsSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId, _}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -66,39 +65,37 @@ class TagServiceTest
     questionId = Some(questionId)
   )
 
-  feature("get tag") {
-    scenario("get tag from TagId") {
+  Feature("get tag") {
+    Scenario("get tag from TagId") {
       Given("a TagId")
       When("i get a tag")
       Then("persistent service is called")
       tagService.getTag(TagId("valid-tag"))
 
-      Mockito.verify(persistentTagService).get(TagId("valid-tag"))
+      verify(persistentTagService).get(TagId("valid-tag"))
     }
 
-    scenario("get tag from a slug") {
+    Scenario("get tag from a slug") {
       Given("a tag slug")
       When("i get a tag")
       Then("persistent service is called")
       tagService.getTag(TagId("valid-tag-slug"))
 
-      Mockito.verify(persistentTagService).get(TagId("valid-tag-slug"))
+      verify(persistentTagService).get(TagId("valid-tag-slug"))
     }
   }
 
-  feature("create tag") {
-    scenario("creating a tag success") {
+  Feature("create tag") {
+    Scenario("creating a tag success") {
       When("i create a tag with label 'new tag'")
       Then("my tag is persisted")
 
-      Mockito
-        .when(persistentTagService.get(ArgumentMatchers.any[TagId]))
+      when(persistentTagService.get(any[TagId]))
         .thenReturn(Future.successful(None))
 
       val tag = newTag("new tag", tagId = TagId("new-tag"), questionId = QuestionId("new-tag"))
 
-      Mockito
-        .when(persistentTagService.persist(ArgumentMatchers.any[Tag]))
+      when(persistentTagService.persist(any[Tag]))
         .thenReturn(Future.successful(tag))
 
       val futureNewTag: Future[Tag] = tagService.createTag(
@@ -117,10 +114,9 @@ class TagServiceTest
       )
 
       whenReady(futureNewTag, Timeout(3.seconds)) { _ =>
-        Mockito
-          .verify(persistentTagService)
+        verify(persistentTagService)
           .persist(
-            ArgumentMatchers.refEq[Tag](
+            refEq[Tag](
               Tag(
                 tagId = TagId(""),
                 label = "new tag",
@@ -140,31 +136,29 @@ class TagServiceTest
     }
   }
 
-  feature("find tags") {
+  Feature("find tags") {
 
-    scenario("find all tags") {
+    Scenario("find all tags") {
       Given("a list of registered tags 'find tag1', 'find tag2'")
       When("i find all tags")
       Then("persistent service findAll is called")
-      Mockito
-        .when(persistentTagService.findAll())
+      when(persistentTagService.findAll())
         .thenReturn(Future.successful(Seq.empty))
       val futureFindAll: Future[Seq[Tag]] = tagService.findAll()
 
       whenReady(futureFindAll, Timeout(3.seconds)) { _ =>
-        Mockito.verify(persistentTagService).findAll()
+        verify(persistentTagService).findAll()
       }
     }
 
-    scenario("find tags with ids 'find-tag1' and 'find-tag2'") {
+    Scenario("find tags with ids 'find-tag1' and 'find-tag2'") {
       Given("a list of registered tags 'find tag1', 'find tag2'")
       When("i find tags with ids 'find-tag1' and 'find-tag2'")
       Then("persistent service findByTagIds is called")
       And("i get tags 'find tag1' and 'find tag2'")
 
-      Mockito.reset(persistentTagService)
-      Mockito
-        .when(persistentTagService.findAllFromIds(ArgumentMatchers.any[Seq[TagId]]))
+      reset(persistentTagService)
+      when(persistentTagService.findAllFromIds(any[Seq[TagId]]))
         .thenReturn(
           Future.successful(
             Seq(
@@ -183,16 +177,15 @@ class TagServiceTest
       }
     }
 
-    scenario("find tags by operation") {
+    Scenario("find tags by operation") {
       Given("a list of registered tags 'op tag1', 'op tag2'")
       When("i find tags by operation")
 
       val questionId = QuestionId("question-id")
       val opId = OperationId("operation-id")
 
-      Mockito.reset(persistentTagService)
-      Mockito
-        .when(persistentTagService.findByQuestion(ArgumentMatchers.eq(questionId)))
+      reset(persistentTagService)
+      when(persistentTagService.findByQuestion(eqTo(questionId)))
         .thenReturn(
           Future
             .successful(
@@ -214,7 +207,7 @@ class TagServiceTest
       }
     }
 
-    scenario("find tags by theme") {
+    Scenario("find tags by theme") {
       Given("a list of registered tags 'theme tag1', 'theme tag2'")
       When("i find tags by theme")
 
@@ -223,16 +216,14 @@ class TagServiceTest
       val tag1 = newTag("theme tag1", questionId = questionId)
       val tag2 = newTag("theme tag2", questionId = questionId)
 
-      Mockito.reset(persistentTagService)
+      reset(persistentTagService)
 
-      Mockito
-        .when(persistentTagService.findAllDisplayed())
+      when(persistentTagService.findAllDisplayed())
         .thenReturn(
           Future
             .successful(Seq(tag1, tag2))
         )
-      Mockito
-        .when(persistentTagService.findByQuestion(ArgumentMatchers.eq(questionId)))
+      when(persistentTagService.findByQuestion(eqTo(questionId)))
         .thenReturn(Future.successful(Seq(tag1, tag2)))
 
       val futureTags: Future[Seq[Tag]] = tagService.findByQuestionId(questionId)
@@ -245,13 +236,12 @@ class TagServiceTest
       }
     }
 
-    scenario("find tags by label") {
+    Scenario("find tags by label") {
       Given("a list of registered tags 'label tag1', 'label tag2'")
       When("i find tags by label")
 
-      Mockito.reset(persistentTagService)
-      Mockito
-        .when(persistentTagService.findByLabelLike(ArgumentMatchers.eq("label")))
+      reset(persistentTagService)
+      when(persistentTagService.findByLabelLike(eqTo("label")))
         .thenReturn(
           Future.successful(
             Seq(
@@ -272,13 +262,13 @@ class TagServiceTest
     }
   }
 
-  feature("update a tag") {
-    scenario("update an non existent tag ") {
+  Feature("update a tag") {
+    Scenario("update an non existent tag ") {
       When("i update a tag from an id that not is registered")
       Then("a get a None value")
 
-      Mockito.reset(eventBusService)
-      Mockito.when(persistentTagService.get(TagId("non-existent-tag"))).thenReturn(Future.successful(None))
+      reset(eventBusService)
+      when(persistentTagService.get(TagId("non-existent-tag"))).thenReturn(Future.successful(None))
 
       val futureTag: Future[Option[Tag]] = tagService.updateTag(
         tagId = TagId("non-existent-tag"),
@@ -302,39 +292,34 @@ class TagServiceTest
       }
     }
 
-    scenario("update a tag success") {
+    Scenario("update a tag success") {
       When("i update a tag 'old tag success' to 'new tag success'")
       Then("a get the updated tag")
 
-      Mockito
-        .when(persistentTagService.get(TagId("old-tag-success")))
+      when(persistentTagService.get(TagId("old-tag-success")))
         .thenReturn(
           Future.successful(
             Some(newTag("old tag success", tagId = TagId("old-tag-success"), questionId = QuestionId("old-tag")))
           )
         )
-      Mockito
-        .when(persistentTagService.update(ArgumentMatchers.any[Tag]))
+      when(persistentTagService.update(any[Tag]))
         .thenReturn(
           Future.successful(
             Some(newTag("new tag success", tagId = TagId("old-tag-success"), questionId = QuestionId("new-tag")))
           )
         )
 
-      Mockito
-        .when(tagTypeService.getTagType(ArgumentMatchers.any[TagTypeId]))
+      when(tagTypeService.getTagType(any[TagTypeId]))
         .thenReturn(
           Future.successful(
             Some(TagType(TagTypeId("tagTypeId"), "", TagTypeDisplay.Displayed, requiredForEnrichment = false))
           )
         )
 
-      Mockito
-        .when(
-          elasticsearchProposalAPI
-            .searchProposals(ArgumentMatchers.any[SearchQuery])
-        )
-        .thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
+      when(
+        elasticsearchProposalAPI
+          .searchProposals(any[SearchQuery])
+      ).thenReturn(Future.successful(ProposalsSearchResult(0, Seq.empty)))
 
       val futureTag: Future[Option[Tag]] = tagService.updateTag(
         tagId = TagId("old-tag-success"),
@@ -360,8 +345,8 @@ class TagServiceTest
 
   }
 
-  feature("retrieve indexed tags") {
-    scenario("indexed tags") {
+  Feature("retrieve indexed tags") {
+    Scenario("indexed tags") {
       val tagTypes: Seq[TagType] = Seq(
         TagType(TagTypeId("stake"), label = "stake", display = TagTypeDisplay.Displayed, requiredForEnrichment = true)
       )

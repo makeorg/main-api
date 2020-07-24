@@ -31,7 +31,6 @@ import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor, TestUtilsIT}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
-import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
@@ -77,33 +76,25 @@ class UserEmailConsumerActorIT
   val organisation: User = TestUtilsIT.user(UserId("organisation"), userType = UserType.UserTypeOrganisation)
   val personality1: User = TestUtilsIT.user(UserId("personality1"), userType = UserType.UserTypePersonality)
 
-  Mockito.when(userService.getUser(ArgumentMatchers.eq(UserId("user")))).thenReturn(Future.successful(Some(user)))
-  Mockito
-    .when(userService.getUser(ArgumentMatchers.eq(UserId("organisation"))))
+  when(userService.getUser(eqTo(UserId("user")))).thenReturn(Future.successful(Some(user)))
+  when(userService.getUser(eqTo(UserId("organisation"))))
     .thenReturn(Future.successful(Some(organisation)))
-  Mockito
-    .when(userService.getUser(ArgumentMatchers.eq(UserId("personality1"))))
+  when(userService.getUser(eqTo(UserId("personality1"))))
     .thenReturn(Future.successful(Some(personality1)))
 
   val country: Country = Country("FR")
   val language: Language = Language("fr")
 
-  feature("consume ResetPasswordEvent") {
+  Feature("consume ResetPasswordEvent") {
     val probeReset: TestProbe = TestProbe("reset")
-    scenario("user reset password") {
-      Mockito
-        .when(
-          sendMailPublisherService.publishForgottenPassword(
-            ArgumentMatchers.eq(user),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          probeReset.ref ! "sendMailPublisherService.publishForgottenPassword called"
-          Future.successful({})
-        })
+    Scenario("user reset password") {
+      when(
+        sendMailPublisherService
+          .publishForgottenPassword(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        probeReset.ref ! "sendMailPublisherService.publishForgottenPassword called"
+        Future.successful({})
+      }
 
       val event: ResetPasswordEvent = ResetPasswordEvent(None, user, country, language, RequestContext.empty)
       val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event)
@@ -113,20 +104,18 @@ class UserEmailConsumerActorIT
       probeReset.expectMsg(500.millis, "sendMailPublisherService.publishForgottenPassword called")
     }
 
-    scenario("organisation reset password") {
-      Mockito
-        .when(
-          sendMailPublisherService.publishForgottenPasswordOrganisation(
-            ArgumentMatchers.eq(organisation),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
+    Scenario("organisation reset password") {
+      when(
+        sendMailPublisherService.publishForgottenPasswordOrganisation(
+          eqTo(organisation),
+          eqTo(country),
+          eqTo(language),
+          eqTo(RequestContext.empty)
         )
-        .thenAnswer(_ => {
-          probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation called"
-          Future.successful({})
-        })
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation called"
+        Future.successful({})
+      }
       val event: ResetPasswordEvent =
         ResetPasswordEvent(None, organisation, country, language, RequestContext.empty)
       val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event)
@@ -136,20 +125,18 @@ class UserEmailConsumerActorIT
       probeReset.expectMsg(500.millis, "sendMailPublisherService.publishForgottenPasswordOrganisation called")
     }
 
-    scenario("perso reset password") {
-      Mockito
-        .when(
-          sendMailPublisherService.publishForgottenPasswordOrganisation(
-            ArgumentMatchers.eq(personality1),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
+    Scenario("perso reset password") {
+      when(
+        sendMailPublisherService.publishForgottenPasswordOrganisation(
+          eqTo(personality1),
+          eqTo(country),
+          eqTo(language),
+          eqTo(RequestContext.empty)
         )
-        .thenAnswer(_ => {
-          probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation perso called"
-          Future.successful({})
-        })
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation perso called"
+        Future.successful({})
+      }
 
       val eventPerso: ResetPasswordEvent =
         ResetPasswordEvent(None, personality1, country, language, RequestContext.empty)
@@ -162,23 +149,17 @@ class UserEmailConsumerActorIT
     }
   }
 
-  feature("consume UserRegisteredEvent") {
+  Feature("consume UserRegisteredEvent") {
     val probeRegistered: TestProbe = TestProbe("registered")
 
-    scenario("user register") {
-      Mockito
-        .when(
-          sendMailPublisherService.publishRegistration(
-            ArgumentMatchers.eq(user),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          probeRegistered.ref ! "sendMailPublisherService.publishRegistration called"
-          Future.successful({})
-        })
+    Scenario("user register") {
+      when(
+        sendMailPublisherService
+          .publishRegistration(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        probeRegistered.ref ! "sendMailPublisherService.publishRegistration called"
+        Future.successful({})
+      }
       val eventUser: UserRegisteredEvent = UserRegisteredEvent(
         connectedUserId = None,
         eventDate = dateNow,
@@ -203,22 +184,16 @@ class UserEmailConsumerActorIT
     }
   }
 
-  feature("consume B2BRegistered") {
-    scenario("organisation register") {
+  Feature("consume B2BRegistered") {
+    Scenario("organisation register") {
       val orgaProbe: TestProbe = TestProbe()
-      Mockito
-        .when(
-          sendMailPublisherService.publishRegistrationB2B(
-            ArgumentMatchers.eq(organisation),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
-          Future.successful({})
-        })
+      when(
+        sendMailPublisherService
+          .publishRegistrationB2B(eqTo(organisation), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
+        Future.successful({})
+      }
       val eventOrganisation: OrganisationRegisteredEvent = OrganisationRegisteredEvent(
         connectedUserId = None,
         eventDate = dateNow,
@@ -236,21 +211,15 @@ class UserEmailConsumerActorIT
       orgaProbe.expectMsg(500.millis, "sendMailPublisherService.publishRegistrationB2B called")
     }
 
-    scenario("personality register") {
+    Scenario("personality register") {
       val persoProbe: TestProbe = TestProbe()
-      Mockito
-        .when(
-          sendMailPublisherService.publishRegistrationB2B(
-            ArgumentMatchers.eq(personality1),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          persoProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
-          Future.successful({})
-        })
+      when(
+        sendMailPublisherService
+          .publishRegistrationB2B(eqTo(personality1), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        persoProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
+        Future.successful({})
+      }
       val event: PersonalityRegisteredEvent = PersonalityRegisteredEvent(
         connectedUserId = None,
         eventDate = dateNow,
@@ -269,22 +238,15 @@ class UserEmailConsumerActorIT
     }
   }
 
-  feature("consume UserValidatedAccountEvent") {
-    scenario("user validate") {
+  Feature("consume UserValidatedAccountEvent") {
+    Scenario("user validate") {
       val userProbe: TestProbe = TestProbe("validate")
-      Mockito
-        .when(
-          sendMailPublisherService.publishWelcome(
-            ArgumentMatchers.eq(user),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          userProbe.ref ! "sendMailPublisherService.publishWelcome called"
-          Future.successful({})
-        })
+      when(
+        sendMailPublisherService.publishWelcome(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        userProbe.ref ! "sendMailPublisherService.publishWelcome called"
+        Future.successful({})
+      }
 
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
         connectedUserId = None,
@@ -303,7 +265,7 @@ class UserEmailConsumerActorIT
       userProbe.expectMsg(500.millis, "sendMailPublisherService.publishWelcome called")
     }
 
-    scenario("organisation validate") {
+    Scenario("organisation validate") {
       val orgaProbe: TestProbe = TestProbe()
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
         connectedUserId = None,
@@ -321,7 +283,7 @@ class UserEmailConsumerActorIT
       orgaProbe.expectNoMessage()
     }
 
-    scenario("personality valaidate") {
+    Scenario("personality valaidate") {
       val persoProbe: TestProbe = TestProbe()
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
         connectedUserId = None,
@@ -340,23 +302,17 @@ class UserEmailConsumerActorIT
     }
   }
 
-  feature("consume ResendValidationEmailEvent") {
+  Feature("consume ResendValidationEmailEvent") {
     val probeValidation: TestProbe = TestProbe("resend")
 
-    scenario("user resend") {
-      Mockito
-        .when(
-          sendMailPublisherService.resendRegistration(
-            ArgumentMatchers.eq(user),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
-          Future.successful({})
-        })
+    Scenario("user resend") {
+      when(
+        sendMailPublisherService
+          .resendRegistration(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
+        Future.successful({})
+      }
 
       val event: ResendValidationEmailEvent =
         ResendValidationEmailEvent(None, dateNow, user.userId, country, language, RequestContext.empty)
@@ -368,20 +324,14 @@ class UserEmailConsumerActorIT
       probeValidation.expectMsg(500.millis, "sendMailPublisherService.resendRegistration called")
     }
 
-    scenario("organisation resend") {
-      Mockito
-        .when(
-          sendMailPublisherService.resendRegistration(
-            ArgumentMatchers.eq(organisation),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
-          Future.successful({})
-        })
+    Scenario("organisation resend") {
+      when(
+        sendMailPublisherService
+          .resendRegistration(eqTo(organisation), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
+        Future.successful({})
+      }
 
       val event: ResendValidationEmailEvent =
         ResendValidationEmailEvent(None, dateNow, organisation.userId, country, language, RequestContext.empty)
@@ -393,20 +343,14 @@ class UserEmailConsumerActorIT
       probeValidation.expectMsg(500.millis, "sendMailPublisherService.resendRegistration called")
     }
 
-    scenario("personality resend") {
-      Mockito
-        .when(
-          sendMailPublisherService.resendRegistration(
-            ArgumentMatchers.eq(personality1),
-            ArgumentMatchers.eq(country),
-            ArgumentMatchers.eq(language),
-            ArgumentMatchers.eq(RequestContext.empty)
-          )
-        )
-        .thenAnswer(_ => {
-          probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
-          Future.successful({})
-        })
+    Scenario("personality resend") {
+      when(
+        sendMailPublisherService
+          .resendRegistration(eqTo(personality1), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
+        Future.successful({})
+      }
 
       val event: ResendValidationEmailEvent =
         ResendValidationEmailEvent(None, dateNow, personality1.userId, country, language, RequestContext.empty)

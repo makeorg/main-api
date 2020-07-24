@@ -169,8 +169,8 @@ class ElasticSearchHealthCheckActorIT
   override val elasticsearchExposedPort: Int = ElasticSearchHealthCheckActorIT.elasticsearchExposedPort
 
   implicit val timeout: Timeout = TimeSettings.defaultTimeout
-  feature("Check Elasticsearch status") {
-    scenario("count proposals") {
+  Feature("Check Elasticsearch status") {
+    Scenario("count proposals") {
       Given("an elasticsesarch health check actor")
       val actorSystem = system
       val healthCheckExecutionContext = ExecutionContext.Implicits.global

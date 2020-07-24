@@ -25,7 +25,6 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util
 import com.typesafe.config.{Config, ConfigFactory}
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues, UserVotedProposals}
@@ -35,12 +34,10 @@ import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
 import org.make.core.proposal.{ProposalId, VoteKey}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.Mockito.when
 import org.scalacheck.rng.Seed
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.Future
@@ -49,9 +46,7 @@ import scala.concurrent.duration.DurationInt
 
 class UserHistoryCoordinatorTest
     extends ShardingActorTest(UserHistoryCoordinatorTest.actorSystem)
-    with MockitoSugar
     with ScalaFutures
-    with StrictLogging
     with ScalaCheckDrivenPropertyChecks
     with ImplicitSender
     with DefaultUserHistoryCoordinatorServiceComponent
@@ -86,8 +81,8 @@ class UserHistoryCoordinatorTest
     Gen.resultOf[Unit, UserId](_ => idGenerator.nextUserId())
   )
 
-  feature("get all votes") {
-    scenario("arbitrary votes") {
+  Feature("get all votes") {
+    Scenario("arbitrary votes") {
       forAll { (userVotes: Seq[UserVote], userId: UserId) =>
         val futureHasVoted = Source(userVotes)
           .mapAsync(5) { userVote =>
@@ -121,7 +116,7 @@ class UserHistoryCoordinatorTest
       }
     }
 
-    scenario("too large votes") {
+    Scenario("too large votes") {
       val userVotes: Seq[UserVote] = {
         val userVoteGen =
           Gen.oneOf(VoteKey.voteKeys.values.toSeq).map(UserVote(idGenerator.nextProposalId(), _, Trusted))

@@ -23,32 +23,32 @@ import io.circe.syntax._
 
 class SendMessagesTest extends MakeUnitTest {
 
-  feature("Sandbox Mode") {
-    scenario("send an email to a regular user") {
+  Feature("Sandbox Mode") {
+    Scenario("send an email to a regular user") {
       val messages = SendMessages(SendEmail(recipients = Seq(Recipient(email = "some-user@gmail.com"))))
       messages.sandboxMode should be(None)
     }
-    scenario("send an email to regular users") {
+    Scenario("send an email to regular users") {
       val messages = SendMessages(
         SendEmail(recipients = Seq(Recipient(email = "some-user@gmail.com"), Recipient(email = "some-user@live.com")))
       )
       messages.sandboxMode should be(None)
     }
-    scenario("Send an email to yopmail@make.org") {
+    Scenario("Send an email to yopmail@make.org") {
       val messages = SendMessages(SendEmail(recipients = Seq(Recipient(email = "yopmail@make.org"))))
       messages.sandboxMode should be(None)
     }
-    scenario("Send an email to yopmail+xxx@make.org") {
+    Scenario("Send an email to yopmail+xxx@make.org") {
       val messages = SendMessages(SendEmail(recipients = Seq(Recipient(email = "yopmail+xxx@make.org"))))
       messages.sandboxMode should be(Some(true))
     }
-    scenario("Send an email to yopmail+xxx@make.org and another user") {
+    Scenario("Send an email to yopmail+xxx@make.org and another user") {
       val messages = SendMessages(
         SendEmail(recipients = Seq(Recipient(email = "some-user@gmail.com"), Recipient(email = "yopmail+xxx@make.org")))
       )
       messages.sandboxMode should be(None)
     }
-    scenario("Send an email to yopmail+xxx@make.org and yopmail+yyy@make.org") {
+    Scenario("Send an email to yopmail+xxx@make.org and yopmail+yyy@make.org") {
       val messages = SendMessages(
         SendEmail(recipients = Seq(Recipient(email = "yopmail+xxx@make.org"), Recipient(email = "yopmail+yyy@make.org"))
         )
@@ -58,9 +58,9 @@ class SendMessagesTest extends MakeUnitTest {
 
   }
 
-  feature("SendMessages serialization") {
+  Feature("SendMessages serialization") {
 
-    scenario("sandbox mode is active") {
+    Scenario("sandbox mode is active") {
       val messages = SendMessages(SendEmail(recipients = Seq(Recipient(email = "yopmail+xxx@make.org")))).asJson
       val jsons = messages \\ "SandboxMode"
       jsons.isEmpty should be(false)
@@ -68,7 +68,7 @@ class SendMessagesTest extends MakeUnitTest {
       jsons.head.as[Boolean] should be(Right(true))
 
     }
-    scenario("sandbox mode is inactive") {
+    Scenario("sandbox mode is inactive") {
       val messages = SendMessages(SendEmail(recipients = Seq(Recipient(email = "yopmail+xxx@gmail.com")))).asJson
       val jsons = messages \\ "SandboxMode"
       jsons.isEmpty should be(true)

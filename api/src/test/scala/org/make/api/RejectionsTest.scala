@@ -50,9 +50,9 @@ class RejectionsTest
     }
   })
 
-  feature("bad request rejections") {
+  Feature("bad request rejections") {
 
-    scenario("an invalid json should return validation errors") {
+    Scenario("an invalid json should return validation errors") {
       val invalidJson = "not a json"
       Post("/test", HttpEntity(ContentTypes.`application/json`, invalidJson)) ~> route ~> check {
         status should be(StatusCodes.BadRequest)
@@ -61,7 +61,7 @@ class RejectionsTest
       }
     }
 
-    scenario("a missing field should be returned as a ValidationError") {
+    Scenario("a missing field should be returned as a ValidationError") {
       val missingFields = "{}"
       Post("/test", HttpEntity(ContentTypes.`application/json`, missingFields)) ~> route ~> check {
         status should be(StatusCodes.BadRequest)
@@ -71,7 +71,7 @@ class RejectionsTest
       }
     }
 
-    scenario("a type mismatch should be returned as a ValidationError") {
+    Scenario("a type mismatch should be returned as a ValidationError") {
       val typeMismatch =
         """{
           |  "field1": "test",
@@ -87,7 +87,7 @@ class RejectionsTest
       }
     }
 
-    scenario("a type mismatch with custom converter should be returned as a ValidationError") {
+    Scenario("a type mismatch with custom converter should be returned as a ValidationError") {
       val typeMismatch =
         """{
           |  "field1": "test",

@@ -32,8 +32,6 @@ import org.make.core.auth.{Client, ClientId, Token, UserRights}
 import org.make.core.session.VisitorId
 import org.make.core.technical.IdGenerator
 import org.make.core.user.{CustomRole, Role, User, UserId}
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.{doReturn, spy, verify, when}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider._
 
@@ -161,28 +159,27 @@ class MakeDataHandlerComponentTest
   )
 
   when(request.params).thenReturn(Map[String, Seq[String]]())
-  when(request.requireParam(ArgumentMatchers.eq("username"))).thenReturn(validUsername)
-  when(request.requireParam(ArgumentMatchers.eq("password"))).thenReturn("passpass")
+  when(request.requireParam(eqTo("username"))).thenReturn(validUsername)
+  when(request.requireParam(eqTo("password"))).thenReturn("passpass")
 
   when(requestWithRoles.params).thenReturn(Map[String, Seq[String]]())
-  when(requestWithRoles.requireParam(ArgumentMatchers.eq("username"))).thenReturn(validUsernameWithRoles)
-  when(requestWithRoles.requireParam(ArgumentMatchers.eq("password"))).thenReturn("passpass")
+  when(requestWithRoles.requireParam(eqTo("username"))).thenReturn(validUsernameWithRoles)
+  when(requestWithRoles.requireParam(eqTo("password"))).thenReturn("passpass")
 
   //A valid client
-  when(persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(clientId), ArgumentMatchers.eq(secret)))
+  when(persistentClientService.findByClientIdAndSecret(eqTo(clientId), eqTo(secret)))
     .thenReturn(Future.successful(Some(exampleClient)))
   when(persistentClientService.get(ClientId(clientId))).thenReturn(Future(Some(exampleClient)))
 
   when(persistentClientService.get(exampleClientWithExpiration.clientId))
     .thenReturn(Future(Some(exampleClientWithExpiration)))
 
-  when(
-    persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(clientWithRolesId), ArgumentMatchers.eq(secret))
-  ).thenReturn(Future.successful(Some(exampleClientWithRoles)))
+  when(persistentClientService.findByClientIdAndSecret(eqTo(clientWithRolesId), eqTo(secret)))
+    .thenReturn(Future.successful(Some(exampleClientWithRoles)))
   when(persistentClientService.get(ClientId(clientWithRolesId))).thenReturn(Future(Some(exampleClientWithRoles)))
 
   //A invalid client
-  when(persistentClientService.findByClientIdAndSecret(ArgumentMatchers.eq(invalidClientId), ArgumentMatchers.eq(None)))
+  when(persistentClientService.findByClientIdAndSecret(eqTo(invalidClientId), eqTo(None)))
     .thenReturn(Future.successful(None))
 
   //A valid request
@@ -197,17 +194,18 @@ class MakeDataHandlerComponentTest
   //A valid user impl
   when(persistentUserService.persist(exampleUser))
     .thenReturn(Future.successful(exampleUser))
-  when(persistentUserService.findByEmailAndPassword(ArgumentMatchers.eq(validUsername), ArgumentMatchers.any[String]))
+  when(persistentUserService.findByEmailAndPassword(eqTo(validUsername), any[String]))
     .thenReturn(Future.successful(Some(exampleUser)))
   when(exampleUser.roles).thenReturn(Seq.empty)
 
-  when(persistentUserService.verificationTokenExists(ArgumentMatchers.any[String])).thenReturn(Future(false))
+  when(persistentUserService.verificationTokenExists(any[String])).thenReturn(Future(false))
 
-  when(persistentTokenService.persist(ArgumentMatchers.any[Token]))
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[Token](0)))
+  when(persistentTokenService.persist(any[Token])).thenAnswer { token: Token =>
+    Future.successful(token)
+  }
 
-  feature("find User form client credentials and request") {
-    scenario("best case") {
+  Feature("find User form client credentials and request") {
+    Scenario("best case") {
       Given("a valid client")
       val clientCredential = ClientCredential(clientId = clientId, clientSecret = secret)
       And("a valid user in a valid request")
@@ -222,7 +220,7 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("nonexistent client") {
+    Scenario("nonexistent client") {
       Given("a invalid client")
       val clientCredential = ClientCredential(clientId = invalidClientId, clientSecret = None)
       And("a valid user in a valid request")
@@ -237,11 +235,11 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("nonexistent user") {
+    Scenario("nonexistent user") {
       Given("a valid client")
       val clientCredential = ClientCredential(clientId = clientId, clientSecret = secret)
       And("a nonexistent user in a valid request")
-      when(persistentUserService.findByEmailAndPassword(ArgumentMatchers.any[String], ArgumentMatchers.any[String]))
+      when(persistentUserService.findByEmailAndPassword(any[String], any[String]))
         .thenReturn(Future.successful(None))
 
       When("findUser is called")
@@ -254,7 +252,7 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("user with insufficient roles") {
+    Scenario("user with insufficient roles") {
       Given("a valid client")
       val clientCredential = ClientCredential(clientId = clientWithRolesId, clientSecret = secret)
       And("a valid user in a valid request")
@@ -270,12 +268,12 @@ class MakeDataHandlerComponentTest
 
     }
 
-    scenario("user with one of the client roles") {
+    Scenario("user with one of the client roles") {
       when(persistentUserService.persist(exampleUserWithRoles))
         .thenReturn(Future.successful(exampleUserWithRoles))
       when(
         persistentUserService
-          .findByEmailAndPassword(ArgumentMatchers.eq(validUsernameWithRoles), ArgumentMatchers.any[String])
+          .findByEmailAndPassword(eqTo(validUsernameWithRoles), any[String])
       ).thenReturn(Future.successful(Some(exampleUserWithRoles)))
       when(exampleUserWithRoles.roles).thenReturn(Seq(CustomRole("role-client"), CustomRole("role-admin-client")))
 
@@ -295,12 +293,12 @@ class MakeDataHandlerComponentTest
 
   }
 
-  feature("Create a new AccessToken") {
+  Feature("Create a new AccessToken") {
     info("In order to authenticate a user")
     info("As a developer")
     info("I want to create and persist a new AccessToken from AuthInfo")
 
-    scenario("Create a new AccessToken from valid AuthInfo") {
+    Scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
       val authInfo = AuthInfo(
         UserRights(
@@ -323,7 +321,7 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
 
       When("I create a new AccessToken")
-      when(persistentTokenService.persist(ArgumentMatchers.eq(exampleToken)))
+      when(persistentTokenService.persist(eqTo(exampleToken)))
         .thenReturn(Future.successful(exampleToken))
       val futureAccessToken: Future[AccessToken] = oauth2DataHandler.createAccessToken(authInfo)
 
@@ -344,7 +342,7 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Create a new AccessToken from valid AuthInfo with short validity") {
+    Scenario("Create a new AccessToken from valid AuthInfo with short validity") {
       Given("a valid AuthInfo")
       val authInfo = AuthInfo(
         UserRights(
@@ -367,7 +365,7 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
 
       When("I create a new AccessToken")
-      when(persistentTokenService.persist(ArgumentMatchers.eq(exampleToken)))
+      when(persistentTokenService.persist(eqTo(exampleToken)))
         .thenReturn(Future.successful(exampleToken))
       val futureAccessToken: Future[AccessToken] = oauth2DataHandler.createAccessToken(authInfo)
 
@@ -388,12 +386,12 @@ class MakeDataHandlerComponentTest
     }
   }
 
-  feature("Get a stored AccessToken") {
+  Feature("Get a stored AccessToken") {
     info("In order to authenticate a user")
     info("As a developer")
     info("I want to retrieve a stored access token")
 
-    scenario("Create a new AccessToken from valid AuthInfo") {
+    Scenario("Create a new AccessToken from valid AuthInfo") {
       Given("a valid AuthInfo")
       val authInfo =
         AuthInfo(
@@ -428,7 +426,7 @@ class MakeDataHandlerComponentTest
       )
 
       When("I get a persisted AccessToken")
-      when(persistentTokenService.findByUserId(ArgumentMatchers.eq(authInfo.user.userId)))
+      when(persistentTokenService.findByUserId(eqTo(authInfo.user.userId)))
         .thenReturn(Future.successful(Option(token)))
       val futureAccessToken = oauth2DataHandler.getStoredAccessToken(authInfo)
 
@@ -438,7 +436,7 @@ class MakeDataHandlerComponentTest
     }
   }
 
-  feature("Refresh an AccessToken") {
+  Feature("Refresh an AccessToken") {
     info("In order to authenticate a user")
     info("As a developer")
     info("I want to refresh an access token")
@@ -464,7 +462,7 @@ class MakeDataHandlerComponentTest
       createdAt = createdAt
     )
 
-    scenario("Refresh an AccessToken with success") {
+    Scenario("Refresh an AccessToken with success") {
       Given("a valid AuthInfo")
       And("a refreshToken: \"MYREFRESHTOKEN\"")
       And("""a generated AccessToken with values:
@@ -476,14 +474,14 @@ class MakeDataHandlerComponentTest
         """.stripMargin)
 
       When("I call method refreshAccessToken")
-      when(persistentTokenService.deleteByAccessToken(ArgumentMatchers.same(exampleToken.accessToken)))
+      when(persistentTokenService.deleteByAccessToken(same(exampleToken.accessToken)))
         .thenReturn(Future.successful(1))
 
-      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.same(refreshToken)))
+      when(persistentTokenService.findByRefreshToken(same(refreshToken)))
         .thenReturn(Future.successful(Some(exampleToken)))
 
       val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
-      val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
+      val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods, lenient = true)
       doReturn(Future.successful(accessTokenExample), Future.successful(accessTokenExample))
         .when(spyOndataHandler)
         .createAccessToken(authInfo)
@@ -508,26 +506,23 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Refresh an AccessToken corresponding to nothing") {
+    Scenario("Refresh an AccessToken corresponding to nothing") {
       Given("a valid AuthInfo")
       And("a refreshToken: \"MYREFRESHTOKEN\"")
       And("no token corresponds to the refresh token")
 
-      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.same(refreshToken)))
+      when(persistentTokenService.findByRefreshToken(same(refreshToken)))
         .thenReturn(Future.successful(None))
 
-      when(persistentTokenService.deleteByAccessToken(ArgumentMatchers.same(accessTokenExample.token)))
+      when(persistentTokenService.deleteByAccessToken(same(accessTokenExample.token)))
         .thenReturn(Future.successful(0))
 
-      when(persistentTokenService.persist(ArgumentMatchers.any[Token]))
+      when(persistentTokenService.persist(any[Token]))
         .thenReturn(Future.successful(exampleToken))
 
       When("I call method refreshAccessToken")
       val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
-      val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods)
-      doReturn(Future.successful(accessTokenExample), Future.successful(accessTokenExample))
-        .when(spyOndataHandler)
-        .createAccessToken(authInfo)
+      val spyOndataHandler = spy(oauth2DataHandlerWithMockedMethods, lenient = true)
 
       val futureAccessToken = spyOndataHandler.refreshAccessToken(authInfo, refreshToken)
       Then("a NoSuchElementException should be thrown")
@@ -537,7 +532,7 @@ class MakeDataHandlerComponentTest
     }
   }
 
-  feature("Retrieve AuthInfo") {
+  Feature("Retrieve AuthInfo") {
     info("In order to authenticate a user")
     info("As a developer")
     info("I want to retrieve AuthInfo")
@@ -546,12 +541,12 @@ class MakeDataHandlerComponentTest
     info("As a developer")
     info("I want to retrieve AuthInfo")
 
-    scenario("Get AuthInfo by refreshToken") {
+    Scenario("Get AuthInfo by refreshToken") {
       Given("a refreshToken: \"HJBM\"")
       val refreshToken: String = "HJBM"
 
       When("I call method findAuthInfoByRefreshToken")
-      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(refreshToken)))
+      when(persistentTokenService.findByRefreshToken(eqTo(refreshToken)))
         .thenReturn(Future.successful(Some(exampleToken)))
       Then("I get an AuthInfo Option")
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByRefreshToken(refreshToken)
@@ -560,12 +555,12 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Get AuthInfo with a nonexistent refreshToken") {
+    Scenario("Get AuthInfo with a nonexistent refreshToken") {
       Given("a refreshToken: \"OOOO\"")
       val refreshToken: String = "0000"
 
       When("I call method findAuthInfoByRefreshToken")
-      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(refreshToken)))
+      when(persistentTokenService.findByRefreshToken(eqTo(refreshToken)))
         .thenReturn(Future.successful(None))
       Then("I get an empty result")
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByRefreshToken(refreshToken)
@@ -574,12 +569,12 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Get AuthInfo with an expired refreshToken") {
+    Scenario("Get AuthInfo with an expired refreshToken") {
       Given("a refreshToken: \"EXPIRED\"")
       val refreshToken: String = "EXPIRED"
 
       When("I call method findAuthInfoByRefreshToken")
-      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(refreshToken)))
+      when(persistentTokenService.findByRefreshToken(eqTo(refreshToken)))
         .thenReturn(Future.successful(Some(exampleToken.copy(createdAt = Some(DateHelper.now().minusDays(1))))))
 
       Then("I get an empty result")
@@ -589,14 +584,14 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Get AuthInfo by accessToken") {
+    Scenario("Get AuthInfo by accessToken") {
       Given("an AccessToken")
       val refreshToken: String = "TTGGAA"
       val accessToken: String = "AACCTT"
       val accessTokenObj = accessTokenExample.copy(token = accessToken, refreshToken = Some(refreshToken))
 
       When("I call method findAuthInfoByAccessToken")
-      when(persistentTokenService.get(ArgumentMatchers.eq(accessTokenObj.token)))
+      when(persistentTokenService.get(eqTo(accessTokenObj.token)))
         .thenReturn(Future.successful(Some(exampleToken)))
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(accessTokenObj)
 
@@ -606,12 +601,12 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Get AuthInfo with a nonexistent accessToken") {
+    Scenario("Get AuthInfo with a nonexistent accessToken") {
       Given("an nonexistent AccessToken")
       val unexisting = accessTokenExample.copy(token = "some-inexisting-token")
 
       When("I call method findAuthInfoByAccessToken")
-      when(persistentTokenService.get(ArgumentMatchers.eq(unexisting.token)))
+      when(persistentTokenService.get(eqTo(unexisting.token)))
         .thenReturn(Future.successful(None))
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByAccessToken(unexisting)
 
@@ -622,17 +617,17 @@ class MakeDataHandlerComponentTest
     }
   }
 
-  feature("Retrieve an AccessToken") {
+  Feature("Retrieve an AccessToken") {
     info("In order to authenticate a user")
     info("As a developer")
     info("I want to retrieve an AccessToken")
 
-    scenario("Get an AccessToken from a token") {
+    Scenario("Get an AccessToken from a token") {
       Given("an access token: \"TOKENTOKEN\"")
       val accessToken = "TOKENTOKEN"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(eqTo(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken)))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
@@ -642,12 +637,12 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Get an AccessToken from a nonexistent token") {
+    Scenario("Get an AccessToken from a nonexistent token") {
       Given("an nonexistent AccessToken")
       val accessToken = "NONEXISTENT"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(eqTo(accessToken)))
         .thenReturn(Future.successful(None))
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
 
@@ -657,12 +652,12 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("Get an AccessToken from an expired token") {
+    Scenario("Get an AccessToken from an expired token") {
       Given("an expired access token: \"TOKENEXPIRED\"")
       val accessToken = "TOKENEXPIRED"
 
       When("I call method findAccessToken")
-      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(eqTo(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken.copy(accessToken = accessToken, expiresIn = -1))))
 
       val futureAccessToken = oauth2DataHandler.findAccessToken(accessToken)
@@ -674,13 +669,13 @@ class MakeDataHandlerComponentTest
     }
   }
 
-  feature("Refresh if token is expired") {
+  Feature("Refresh if token is expired") {
     info("In order to keep a user authenticated")
     info("As a developer")
     info("I want to refresh an access token if it's not expired and the refresh token is not expired")
 
-    scenario("access token not found") {
-      when(persistentTokenService.get(ArgumentMatchers.eq("not-found")))
+    Scenario("access token not found") {
+      when(persistentTokenService.get(eqTo("not-found")))
         .thenReturn(Future.successful(None))
       val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired("not-found")
       whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>
@@ -688,9 +683,9 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("access token not expired") {
+    Scenario("access token not expired") {
       val accessToken = "TOKENNOTEXPIRED"
-      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(eqTo(accessToken)))
         .thenReturn(Future.successful(Some(exampleToken.copy(accessToken = accessToken))))
 
       val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)
@@ -699,9 +694,9 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("access token expired and refresh token expired") {
+    Scenario("access token expired and refresh token expired") {
       val accessToken = "TOKENREFRESHNOTEXPIRED"
-      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(eqTo(accessToken)))
         .thenReturn(
           Future.successful(
             Some(exampleToken.copy(accessToken = accessToken, createdAt = Some(DateHelper.now().minusDays(1L))))
@@ -714,26 +709,26 @@ class MakeDataHandlerComponentTest
       }
     }
 
-    scenario("access token expired and valid refresh token") {
+    Scenario("access token expired and valid refresh token") {
       val accessToken = "TOKENREFRESHNOTEXPIRED"
       val newAccessToken = "new-access-token"
 
-      when(persistentTokenService.get(ArgumentMatchers.eq(accessToken)))
+      when(persistentTokenService.get(eqTo(accessToken)))
         .thenReturn(
           Future.successful(
             Some(exampleToken.copy(accessToken = accessToken, createdAt = Some(DateHelper.now().minusHours(1L))))
           )
         )
-      when(persistentTokenService.findByRefreshToken(ArgumentMatchers.eq(exampleToken.refreshToken.get)))
+      when(persistentTokenService.findByRefreshToken(eqTo(exampleToken.refreshToken.get)))
         .thenReturn(Future.successful(Some(exampleToken)))
-      when(persistentTokenService.deleteByAccessToken(ArgumentMatchers.same(exampleToken.accessToken)))
+      when(persistentTokenService.deleteByAccessToken(same(exampleToken.accessToken)))
         .thenReturn(Future.successful(1))
 
       when(oauthTokenGenerator.generateAccessToken())
         .thenReturn(Future.successful((newAccessToken, "new_access_token_hashed")))
       when(oauthTokenGenerator.generateRefreshToken())
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
-      when(persistentTokenService.persist(ArgumentMatchers.any[Token]))
+      when(persistentTokenService.persist(any[Token]))
         .thenReturn(Future.successful(exampleToken))
 
       val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)

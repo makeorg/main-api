@@ -45,17 +45,12 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.Mockito.when
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class ModerationQuestionApiTest
     extends MakeApiTestBase
-    with MockitoSugar
     with DefaultModerationQuestionComponent
     with ProposalServiceComponent
     with QuestionServiceComponent
@@ -84,14 +79,14 @@ class ModerationQuestionApiTest
   val baseOperationOfQuestion: OperationOfQuestion =
     TestUtils.operationOfQuestion(QuestionId("question-id"), OperationId("operation-id"))
 
-  feature("list questions") {
+  Feature("list questions") {
 
     when(questionService.countQuestion(any[SearchQuestionRequest])).thenReturn(Future.successful(42))
     when(questionService.searchQuestion(any[SearchQuestionRequest])).thenReturn(Future.successful(Seq(baseQuestion)))
 
     val uri = "/moderation/questions?start=0&end=1&operationId=foo&country=FR&language=fr"
 
-    scenario("authenticated list questions") {
+    Scenario("authenticated list questions") {
       Get(uri).withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").isDefined shouldBe true
@@ -101,19 +96,19 @@ class ModerationQuestionApiTest
       }
 
     }
-    scenario("unauthorized list questions") {
+    Scenario("unauthorized list questions") {
       Get(uri) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
-    scenario("forbidden list questions") {
+    Scenario("forbidden list questions") {
       Get(uri).withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
   }
 
-  feature("get question") {
+  Feature("get question") {
     def uri(id: String = "question-id"): String = s"/moderation/questions/$id"
 
     when(questionService.getQuestion(any[QuestionId]))
@@ -122,22 +117,22 @@ class ModerationQuestionApiTest
     when(questionService.getQuestion(QuestionId("question-id")))
       .thenReturn(Future.successful(Some(baseQuestion)))
 
-    scenario("authenticated get question") {
+    Scenario("authenticated get question") {
       Get(uri()).withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.OK)
       }
     }
-    scenario("unauthorized get question") {
+    Scenario("unauthorized get question") {
       Get(uri()) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
-    scenario("forbidden get question") {
+    Scenario("forbidden get question") {
       Get(uri()).withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("not found get question") {
+    Scenario("not found get question") {
       Get(uri("not-found"))
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
@@ -145,30 +140,30 @@ class ModerationQuestionApiTest
     }
   }
 
-  feature("refuse initial proposals") {
+  Feature("refuse initial proposals") {
     val uri: String = "/moderation/questions/question-id/initial-proposals/refuse"
 
-    scenario("unauthorized refuse proposals") {
+    Scenario("unauthorized refuse proposals") {
       Post(uri) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbidden refuse proposal (citizen)") {
+    Scenario("forbidden refuse proposal (citizen)") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbidden create question (moderator)") {
+    Scenario("forbidden create question (moderator)") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("authenticated refuse initial proposals") {
+    Scenario("authenticated refuse initial proposals") {
       when(proposalService.search(any[Option[UserId]], any[SearchQuery], any[RequestContext])).thenReturn(
         Future.successful(
           ProposalsSearchResult(
@@ -190,12 +185,7 @@ class ModerationQuestionApiTest
 
       when(
         proposalService
-          .refuseProposal(
-            matches(ProposalId("aaa-bbb-ccc")),
-            any[UserId],
-            any[RequestContext],
-            any[RefuseProposalRequest]
-          )
+          .refuseProposal(eqTo(ProposalId("aaa-bbb-ccc")), any[UserId], any[RequestContext], any[RefuseProposalRequest])
       ).thenReturn(
         Future.successful(
           Some(
@@ -240,7 +230,7 @@ class ModerationQuestionApiTest
     }
   }
 
-  feature("create initial proposals") {
+  Feature("create initial proposals") {
     val uri = "/moderation/questions/question-id/initial-proposals"
     val request =
       """
@@ -296,7 +286,7 @@ class ModerationQuestionApiTest
       )
     ).thenReturn(Future.successful(ProposalId("proposal-id")))
 
-    scenario("authenticated create proposal") {
+    Scenario("authenticated create proposal") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
@@ -305,34 +295,34 @@ class ModerationQuestionApiTest
         proposalIdResponse.proposalId.value should be("proposal-id")
       }
     }
-    scenario("unauthorized create proposal") {
+    Scenario("unauthorized create proposal") {
       Post(uri)
         .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
-    scenario("forbidden create proposal (citizen)") {
+    Scenario("forbidden create proposal (citizen)") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("forbidden create proposal (moderator)") {
+    Scenario("forbidden create proposal (moderator)") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
-    scenario("bad request create proposal: firstName None") {
+    Scenario("bad request create proposal: firstName None") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest1)) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
-    scenario("bad request create proposal: firstName empty string") {
+    Scenario("bad request create proposal: firstName empty string") {
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest2)) ~> routes ~> check {
@@ -341,7 +331,7 @@ class ModerationQuestionApiTest
     }
   }
 
-  feature("upload image") {
+  Feature("upload image") {
     implicit val timeout: RouteTestTimeout = RouteTestTimeout(300.seconds)
     def uri(id: String = "question-id") = s"/moderation/questions/$id/image"
 
@@ -354,34 +344,34 @@ class ModerationQuestionApiTest
     when(operationService.findOneSimple(OperationId("operation-id")))
       .thenReturn(Future.successful(Some(baseSimpleOperation)))
 
-    scenario("unauthorized not connected") {
+    Scenario("unauthorized not connected") {
       Post(uri()) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("forbidden citizen") {
+    Scenario("forbidden citizen") {
       Post(uri())
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("forbidden moderator") {
+    Scenario("forbidden moderator") {
       Post(uri())
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("question not found") {
+    Scenario("question not found") {
       Post(uri("fake-question"))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
-    scenario("incorrect file type") {
+    Scenario("incorrect file type") {
       val request: Multipart = Multipart.FormData(fields = Map(
         "data" -> HttpEntity
           .Strict(ContentTypes.`application/x-www-form-urlencoded`, ByteString("incorrect file type"))
@@ -394,15 +384,9 @@ class ModerationQuestionApiTest
       }
     }
 
-    scenario("storage unavailable") {
-      when(
-        storageService.uploadFile(
-          ArgumentMatchers.eq(FileType.Operation),
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[FileContent]
-        )
-      ).thenReturn(Future.failed(new Exception("swift client error")))
+    Scenario("storage unavailable") {
+      when(storageService.uploadFile(eqTo(FileType.Operation), any[String], any[String], any[FileContent]))
+        .thenReturn(Future.failed(new Exception("swift client error")))
       val request: Multipart =
         Multipart.FormData(
           Multipart.FormData.BodyPart
@@ -419,15 +403,9 @@ class ModerationQuestionApiTest
       }
     }
 
-    scenario("large file successfully uploaded and returned by admin") {
-      when(
-        storageService.uploadFile(
-          ArgumentMatchers.eq(FileType.Operation),
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[String],
-          ArgumentMatchers.any[FileContent]
-        )
-      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+    Scenario("large file successfully uploaded and returned by admin") {
+      when(storageService.uploadFile(eqTo(FileType.Operation), any[String], any[String], any[FileContent]))
+        .thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(
         Multipart.FormData.BodyPart

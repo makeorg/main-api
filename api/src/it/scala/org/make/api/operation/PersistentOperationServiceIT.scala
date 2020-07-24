@@ -218,8 +218,8 @@ class PersistentOperationServiceIT
       .map(_ => ())
   }
 
-  feature("An operation can be persisted") {
-    scenario("Persist an operation and get the persisted operation") {
+  Feature("An operation can be persisted") {
+    Scenario("Persist an operation and get the persisted operation") {
       Given("""
            |an operation with
            |status = Pending
@@ -293,7 +293,7 @@ class PersistentOperationServiceIT
       }
     }
 
-    scenario("get a persisted operation by id") {
+    Scenario("get a persisted operation by id") {
 
       val operationIdForGetById: OperationId = idGenerator.nextOperationId()
 
@@ -323,7 +323,7 @@ class PersistentOperationServiceIT
       }
     }
 
-    scenario("get a persisted operation by slug") {
+    Scenario("get a persisted operation by slug") {
 
       val operationIdForGetBySlug: OperationId = idGenerator.nextOperationId()
       val operationForGetBySlug: SimpleOperation =
@@ -355,8 +355,8 @@ class PersistentOperationServiceIT
     }
   }
 
-  feature("get simple operation") {
-    scenario("simple operation from full operation") {
+  Feature("get simple operation") {
+    Scenario("simple operation from full operation") {
 
       val operationId = OperationId("simple-operation")
       val simpleOperation = SimpleOperation(
@@ -381,7 +381,7 @@ class PersistentOperationServiceIT
       }
     }
 
-    scenario("sorted simple operations") {
+    Scenario("sorted simple operations") {
 
       def simpleOperation(operationId: OperationId) = SimpleOperation(
         operationId = operationId,

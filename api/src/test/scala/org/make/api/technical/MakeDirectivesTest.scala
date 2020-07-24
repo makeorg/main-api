@@ -33,8 +33,6 @@ import org.make.api.technical.auth._
 import org.make.core.auth.UserRights
 import org.make.core.user.{Role, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.{ArgumentMatchers, Mockito}
-import org.mockito.Mockito.when
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.concurrent.Future
@@ -105,11 +103,11 @@ class MakeDirectivesTest
     }
   })
 
-  Mockito.reset(oauth2DataHandler)
+  reset(oauth2DataHandler)
 
-  feature("session id management") {
+  Feature("session id management") {
 
-    scenario("new session id if no cookie is sent") {
+    Scenario("new session id if no cookie is sent") {
       var firstExpiration = DateHelper.now()
 
       Get("/test") ~> route ~> check {
@@ -145,7 +143,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("cookie exists if session id is sent") {
+    Scenario("cookie exists if session id is sent") {
       Get("/test").withHeaders(Cookie("cookie-session" -> "123")) ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
@@ -156,9 +154,9 @@ class MakeDirectivesTest
 
   }
 
-  feature("visitor id management") {
+  Feature("visitor id management") {
 
-    scenario("new visitor id if no cookie is sent") {
+    Scenario("new visitor id if no cookie is sent") {
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
@@ -172,7 +170,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("no cookie if session id is sent") {
+    Scenario("no cookie if session id is sent") {
       Get("/test").withHeaders(Cookie("cookie-session" -> "123")) ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
@@ -183,15 +181,15 @@ class MakeDirectivesTest
 
   }
 
-  feature("external id management") {
-    scenario("return external request id if provided") {
+  Feature("external id management") {
+    Scenario("return external request id if provided") {
       Get("/test").withHeaders(`X-Make-External-Id`("test-id")) ~> route ~> check {
         status should be(StatusCodes.OK)
         header[`X-Make-External-Id`].map(_.value) should be(Some("test-id"))
       }
     }
 
-    scenario("provide a random external id if none is provided") {
+    Scenario("provide a random external id if none is provided") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
         header[`X-Make-External-Id`] shouldBe defined
@@ -199,8 +197,8 @@ class MakeDirectivesTest
     }
   }
 
-  feature("request id management") {
-    scenario("return a request id") {
+  Feature("request id management") {
+    Scenario("return a request id") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
         header[`X-Request-Id`] shouldBe defined
@@ -208,8 +206,8 @@ class MakeDirectivesTest
     }
   }
 
-  feature("request time management") {
-    scenario("return the request time as a long") {
+  Feature("request time management") {
+    Scenario("return the request time as a long") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
         header[`X-Route-Time`] shouldBe defined
@@ -219,8 +217,8 @@ class MakeDirectivesTest
     }
   }
 
-  feature("route name management") {
-    scenario("return the route name header") {
+  Feature("route name management") {
+    Scenario("return the route name header") {
       Get("/test") ~> route ~> check {
         status should be(StatusCodes.OK)
         header[`X-Route-Name`] shouldBe defined
@@ -229,7 +227,7 @@ class MakeDirectivesTest
     }
   }
 
-  feature("value providers") {
+  Feature("value providers") {
     trait StringProvider {
       def provide: Future[String]
     }
@@ -241,7 +239,7 @@ class MakeDirectivesTest
       }
     })
 
-    scenario("normal providing") {
+    Scenario("normal providing") {
       when(provider.provide).thenReturn(Future.successful("oki doki"))
 
       Get("/") ~> route ~> check {
@@ -250,7 +248,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("failed providers") {
+    Scenario("failed providers") {
       when(provider.provide).thenReturn(Future.failed(new IllegalArgumentException("fake")))
 
       Get("/") ~> route ~> check {
@@ -260,7 +258,7 @@ class MakeDirectivesTest
 
   }
 
-  feature("not found value providers") {
+  Feature("not found value providers") {
     trait StringProvider {
       def provide: Future[Option[String]]
     }
@@ -272,7 +270,7 @@ class MakeDirectivesTest
       }
     })
 
-    scenario("some providing") {
+    Scenario("some providing") {
       when(provider.provide).thenReturn(Future.successful(Some("oki doki")))
 
       Get("/") ~> route ~> check {
@@ -281,7 +279,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("none providing") {
+    Scenario("none providing") {
       when(provider.provide).thenReturn(Future.successful(None))
 
       Get("/") ~> route ~> check {
@@ -289,7 +287,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("failed providers") {
+    Scenario("failed providers") {
       when(provider.provide).thenReturn(Future.failed(new IllegalArgumentException("fake")))
 
       Get("/") ~> route ~> check {
@@ -299,8 +297,8 @@ class MakeDirectivesTest
 
   }
 
-  feature("access control header") {
-    scenario("return header allow all origins") {
+  Feature("access control header") {
+    Scenario("return header allow all origins") {
       Get("/test").addHeader(Origin.create(HttpOrigin("http://make.org"))) ~> route ~> check {
         status should be(StatusCodes.OK)
         info(headers.mkString("\n"))
@@ -309,7 +307,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("rejection returns header allow all origins") {
+    Scenario("rejection returns header allow all origins") {
       Get("/test").addHeader(Origin.create(HttpOrigin("http://make.org"))) ~> routeRejection ~> check {
         status should be(StatusCodes.BadRequest)
         header[`Access-Control-Allow-Origin`] shouldBe defined
@@ -317,7 +315,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("exception returns header allow all origins") {
+    Scenario("exception returns header allow all origins") {
       Get("/test").addHeader(Origin.create(HttpOrigin("http://make.org"))) ~> routeException ~> check {
         status should be(StatusCodes.InternalServerError)
         info(headers.mkString("\n"))
@@ -326,8 +324,8 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("exception in oauth returns header allow all origins") {
-      when(oauth2DataHandler.refreshIfTokenIsExpired(ArgumentMatchers.eq("invalid")))
+    Scenario("exception in oauth returns header allow all origins") {
+      when(oauth2DataHandler.refreshIfTokenIsExpired(eqTo("invalid")))
         .thenReturn(Future.successful(None))
       when(oauth2DataHandler.findAccessToken("invalid"))
         .thenReturn(Future.failed(TokenAlreadyRefreshed("invalid")))
@@ -344,15 +342,15 @@ class MakeDirectivesTest
     }
   }
 
-  feature("get parameters management") {
-    scenario("return get parameters if provided") {
+  Feature("get parameters management") {
+    Scenario("return get parameters if provided") {
       Get("/testWithParameter").addHeader(`X-Get-Parameters`("foo=bar&baz=bibi")) ~> routeWithParameters ~> check {
         status should be(StatusCodes.OK)
         responseAs[Map[String, String]] should be(Map("foo" -> "bar", "baz" -> "bibi"))
       }
     }
 
-    scenario("return get parameters when value not provided") {
+    Scenario("return get parameters when value not provided") {
       Get("/testWithParameter").addHeader(`X-Get-Parameters`("foo")) ~> routeWithParameters ~> check {
         status should be(StatusCodes.OK)
         responseAs[Map[String, String]] should be(Map("foo" -> ""))
@@ -360,15 +358,15 @@ class MakeDirectivesTest
     }
   }
 
-  feature("make trace parameter") {
-    scenario("slugify the makeTrace parameter") {
+  Feature("make trace parameter") {
+    Scenario("slugify the makeTrace parameter") {
       Get("/testMakeTrace") ~> routeMakeTrace ~> check {
         status should be(StatusCodes.OK)
         header[`X-Route-Name`].map(_.value) shouldBe Some("test-make-trace")
       }
     }
 
-    scenario("Header parsing") {
+    Scenario("Header parsing") {
       Get("/testMakeTrace").withHeaders(`X-Make-Custom-Data`("first%3DG%C3%A9nial%2Cother%3D%26%26%26")) ~>
         routeMakeTrace ~>
         check {
@@ -379,8 +377,8 @@ class MakeDirectivesTest
     }
   }
 
-  feature("auto refresh token if connected") {
-    scenario("not connected") {
+  Feature("auto refresh token if connected") {
+    Scenario("not connected") {
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
@@ -394,7 +392,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("connected token refreshed") {
+    Scenario("connected token refreshed") {
       val firstExpiration = DateHelper.now()
 
       val newToken = AccessToken(
@@ -416,13 +414,13 @@ class MakeDirectivesTest
         None,
         None
       )
-      when(oauth2DataHandler.refreshIfTokenIsExpired(ArgumentMatchers.eq("valid-token")))
+      when(oauth2DataHandler.refreshIfTokenIsExpired(eqTo("valid-token")))
         .thenReturn(Future.successful(Some(newToken)))
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq("valid-token")))
+      when(oauth2DataHandler.findAccessToken(eqTo("valid-token")))
         .thenReturn(Future.successful(Some(newToken.copy(token = "new-token"))))
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq("new-token")))
+      when(oauth2DataHandler.findAccessToken(eqTo("new-token")))
         .thenReturn(Future.successful(Some(newToken)))
-      when(oauth2DataHandler.findAuthInfoByAccessToken(ArgumentMatchers.eq(newToken)))
+      when(oauth2DataHandler.findAuthInfoByAccessToken(eqTo(newToken)))
         .thenReturn(Future.successful(Some(authInfo)))
 
       Get("/test").withHeaders(Cookie(HttpCookiePair(secureCookieConfiguration.name, "valid-token"))) ~> route ~> check {
@@ -442,10 +440,10 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("connected token not refreshed") {
-      when(oauth2DataHandler.refreshIfTokenIsExpired(ArgumentMatchers.eq("valid-token")))
+    Scenario("connected token not refreshed") {
+      when(oauth2DataHandler.refreshIfTokenIsExpired(eqTo("valid-token")))
         .thenReturn(Future.successful(None))
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq("valid-token")))
+      when(oauth2DataHandler.findAccessToken(eqTo("valid-token")))
         .thenReturn(Future.successful(None))
 
       Get("/test").withHeaders(Cookie(HttpCookiePair(secureCookieConfiguration.name, "valid-token"))) ~> route ~> check {
@@ -461,10 +459,10 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("connected using headers with an expired token") {
+    Scenario("connected using headers with an expired token") {
       val token = "connected using headers with an expired token"
 
-      when(oauth2DataHandler.findAccessToken(ArgumentMatchers.eq(token)))
+      when(oauth2DataHandler.findAccessToken(eqTo(token)))
         .thenReturn(Future.successful(None))
 
       Get("/test").withHeaders(Authorization(OAuth2BearerToken(token))) ~> route ~> check {
@@ -473,8 +471,8 @@ class MakeDirectivesTest
     }
   }
 
-  feature("mandatory connection access") {
-    scenario("core only endpoint") {
+  Feature("mandatory connection access") {
+    Scenario("core only endpoint") {
       val routeUnlogged = sealRoute(checkMandatoryConnectionEndpointAccess(None, EndpointType.CoreOnly) {
         complete(StatusCodes.OK)
       })
@@ -510,7 +508,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("public endpoint") {
+    Scenario("public endpoint") {
       val routeUnlogged = sealRoute(checkMandatoryConnectionEndpointAccess(None, EndpointType.Public) {
         complete(StatusCodes.OK)
       })
@@ -546,7 +544,7 @@ class MakeDirectivesTest
       }
     }
 
-    scenario("regular endpoint") {
+    Scenario("regular endpoint") {
       val routeUnlogged = sealRoute(checkMandatoryConnectionEndpointAccess(None, EndpointType.Regular) {
         complete(StatusCodes.OK)
       })
@@ -583,21 +581,21 @@ class MakeDirectivesTest
     }
   }
 
-  feature("extract token") {
-    scenario("no token") {
+  Feature("extract token") {
+    Scenario("no token") {
       Get("/test") ~> tokenRoute ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("token from cookie") {
+    Scenario("token from cookie") {
       Get("/test").withHeaders(Cookie(makeSettings.SecureCookie.name, "token")) ~> tokenRoute ~> check {
         status should be(StatusCodes.OK)
         responseAs[String] should be("token")
       }
     }
 
-    scenario("Token from headers") {
+    Scenario("Token from headers") {
       Get("/test").withHeaders(Authorization(OAuth2BearerToken("token"))) ~> tokenRoute ~> check {
         status should be(StatusCodes.OK)
         responseAs[String] should be("token")
@@ -605,21 +603,21 @@ class MakeDirectivesTest
     }
   }
 
-  feature("optional token extraction") {
-    scenario("no token") {
+  Feature("optional token extraction") {
+    Scenario("no token") {
       Get("/test") ~> optionalTokenRoute ~> check {
         status should be(StatusCodes.NotFound)
       }
     }
 
-    scenario("token from cookie") {
+    Scenario("token from cookie") {
       Get("/test").withHeaders(Cookie(makeSettings.SecureCookie.name, "token")) ~> optionalTokenRoute ~> check {
         status should be(StatusCodes.OK)
         responseAs[String] should be("token")
       }
     }
 
-    scenario("Token from headers") {
+    Scenario("Token from headers") {
       Get("/test").withHeaders(Authorization(OAuth2BearerToken("token"))) ~> optionalTokenRoute ~> check {
         status should be(StatusCodes.OK)
         responseAs[String] should be("token")

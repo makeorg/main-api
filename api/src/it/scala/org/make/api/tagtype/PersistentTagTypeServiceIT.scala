@@ -51,8 +51,8 @@ class PersistentTagTypeServiceIT
 
   val tully: TagType = newTagType("Tully")
 
-  feature("One tagType can be persisted and retrieved") {
-    scenario("Get tagType by tagTypeId") {
+  Feature("One tagType can be persisted and retrieved") {
+    Scenario("Get tagType by tagTypeId") {
       Given(s"""a persisted tagType "${stark.label}"""")
       When(s"""I search the tagType by tagTypeId "${stark.tagTypeId.value}"""")
       val futureTagType: Future[Option[TagType]] = for {
@@ -66,7 +66,7 @@ class PersistentTagTypeServiceIT
       }
     }
 
-    scenario("Get tagType by tagTypeId that does not exists") {
+    Scenario("Get tagType by tagTypeId that does not exists") {
       Given("""a nonexistent tagType "fake"""")
       When("""I search the tagType from tagTypeId "fake"""")
       val futureTagTypeId: Future[Option[TagType]] = persistentTagTypeService.get(TagTypeId("fake"))
@@ -78,8 +78,8 @@ class PersistentTagTypeServiceIT
     }
   }
 
-  feature("A list of tagTypes can be retrieved") {
-    scenario("Get a list of all enabled tagTypes") {
+  Feature("A list of tagTypes can be retrieved") {
+    Scenario("Get a list of all enabled tagTypes") {
       Given(s"""a list of persisted tagTypes:
                |label = ${targaryen.label}, tagTypeId = ${targaryen.tagTypeId.value}
                |label = ${lannister.label}, tagTypeId = ${lannister.tagTypeId.value}
@@ -114,8 +114,8 @@ class PersistentTagTypeServiceIT
     }
   }
 
-  feature("One tagType can be updated") {
-    scenario("Update tagType") {
+  Feature("One tagType can be updated") {
+    Scenario("Update tagType") {
       Given(s"""a persisted tagType "${tully.label}"""")
       When("I update the tagType label and weight")
       val futureTagType: Future[Option[TagType]] = for {
@@ -131,7 +131,7 @@ class PersistentTagTypeServiceIT
       }
     }
 
-    scenario("Update tagType that does not exists") {
+    Scenario("Update tagType that does not exists") {
       Given("""a nonexistent tagType "fake"""")
       When("I update the fake tagType")
       val futureTagTypeId: Future[Option[TagType]] = persistentTagTypeService.update(newTagType("fake"))

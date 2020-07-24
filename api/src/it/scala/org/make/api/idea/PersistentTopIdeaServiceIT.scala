@@ -61,9 +61,9 @@ class PersistentTopIdeaServiceIT
     operationId = None
   )
 
-  feature("top idea CRUD") {
+  Feature("top idea CRUD") {
 
-    scenario("create top idea") {
+    Scenario("create top idea") {
 
       val questionId = QuestionId("create-top-idea")
 
@@ -90,7 +90,7 @@ class PersistentTopIdeaServiceIT
       waitForCompletion(unknownIdea.failed)
     }
 
-    scenario("update and get") {
+    Scenario("update and get") {
 
       val questionId = QuestionId("update-and-get")
 
@@ -119,7 +119,7 @@ class PersistentTopIdeaServiceIT
 
     }
 
-    scenario("Finding top ideas") {
+    Scenario("Finding top ideas") {
       val questionId1 = QuestionId("finding-top-idea-1")
       val questionId2 = QuestionId("finding-top-idea-2")
       val idea1 = IdeaId("find-1")
@@ -161,7 +161,7 @@ class PersistentTopIdeaServiceIT
       }
     }
 
-    scenario("count top ideas") {
+    Scenario("count top ideas") {
       val questionId = QuestionId("count-top-idea-1")
       val idea = IdeaId("count-1")
 

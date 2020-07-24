@@ -31,9 +31,9 @@ import scala.concurrent.duration.DurationInt
 class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with DefaultPersistentQuestionServiceComponent {
   override protected val cockroachExposedPort: Int = 40010
 
-  feature("inserting a new question") {
+  Feature("inserting a new question") {
 
-    scenario("insert and then retrieve question") {
+    Scenario("insert and then retrieve question") {
       val question = Question(
         questionId = QuestionId("some-question-id"),
         slug = "some-question",
@@ -60,8 +60,8 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
     }
 
   }
-  feature("finding questions") {
-    scenario("finding by country and language") {
+  Feature("finding questions") {
+    Scenario("finding by country and language") {
 
       val question1 = Question(
         questionId = QuestionId("some-question-id-1"),
@@ -169,7 +169,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
     }
 
-    scenario("finding by slug") {
+    Scenario("finding by slug") {
 
       val question1 = Question(
         questionId = QuestionId("some-new-question-id-1"),
@@ -216,7 +216,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
     }
 
-    scenario("finding by slug or id") {
+    Scenario("finding by slug or id") {
       val question1 = Question(
         questionId = QuestionId("question-slugorid-id-1"),
         slug = "question-slugorid-slug-1",
@@ -261,8 +261,8 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
     }
   }
 
-  feature("update question") {
-    scenario("update question") {
+  Feature("update question") {
+    Scenario("update question") {
       val questionToUpdate = Question(
         questionId = QuestionId("some-new-question-to-update"),
         slug = "some-new-question-to-update",

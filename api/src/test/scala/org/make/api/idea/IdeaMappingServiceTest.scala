@@ -32,9 +32,6 @@ import org.make.core.tag._
 import org.make.core.technical.IdGenerator
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
-import org.mockito.Mockito.when
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -75,14 +72,16 @@ class IdeaMappingServiceTest
     language = Language("fr")
   )
 
-  when(persistentIdeaMappingService.updateMapping(any[IdeaMapping]))
-    .thenAnswer(invocation => Future.successful(Some(invocation.getArgument[IdeaMapping](0))))
+  when(persistentIdeaMappingService.updateMapping(any[IdeaMapping])).thenAnswer { mapping: IdeaMapping =>
+    Future.successful(Some(mapping))
+  }
 
-  when(persistentIdeaService.persist(any[Idea]))
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[Idea](0)))
+  when(persistentIdeaService.persist(any[Idea])).thenAnswer { idea: Idea =>
+    Future.successful(idea)
+  }
 
-  feature("changeIdea") {
-    scenario("changing for a non-existent mapping") {
+  Feature("changeIdea") {
+    Scenario("changing for a non-existent mapping") {
       when(persistentIdeaMappingService.get(IdeaMappingId("unknown"))).thenReturn(Future.successful(None))
 
       whenReady(
@@ -97,7 +96,7 @@ class IdeaMappingServiceTest
       )(_ should be(None))
     }
 
-    scenario("normal case") {
+    Scenario("normal case") {
       when(persistentIdeaMappingService.get(IdeaMappingId("changeIdea")))
         .thenReturn(
           Future.successful(
@@ -120,7 +119,7 @@ class IdeaMappingServiceTest
       }
     }
 
-    scenario("migrating proposal") {
+    Scenario("migrating proposal") {
 
       def proposal(proposalId: String, ideaId: String, tags: Seq[String]): IndexedProposal =
         IndexedProposal(
@@ -278,8 +277,7 @@ class IdeaMappingServiceTest
         maybeMapping.map(_.ideaId) should be(Some(IdeaId("new-id")))
       }
 
-      Mockito
-        .verify(proposalService)
+      verify(proposalService)
         .patchProposal(
           ProposalId("proposal1"),
           UserId("admin-id"),
@@ -290,8 +288,8 @@ class IdeaMappingServiceTest
     }
   }
 
-  feature("getOrCreateMapping") {
-    scenario("existing mapping") {
+  Feature("getOrCreateMapping") {
+    Scenario("existing mapping") {
       when(
         persistentIdeaMappingService
           .find(
@@ -326,7 +324,7 @@ class IdeaMappingServiceTest
       }
     }
 
-    scenario("multiple mappings") {
+    Scenario("multiple mappings") {
       when(
         persistentIdeaMappingService
           .find(
@@ -368,7 +366,7 @@ class IdeaMappingServiceTest
       }
     }
 
-    scenario("missing mapping") {
+    Scenario("missing mapping") {
 
       when(
         persistentIdeaMappingService
@@ -424,7 +422,7 @@ class IdeaMappingServiceTest
       }
     }
 
-    scenario("missing mapping on None / None") {
+    Scenario("missing mapping on None / None") {
 
       when(
         persistentIdeaMappingService
@@ -475,8 +473,8 @@ class IdeaMappingServiceTest
     }
   }
 
-  feature("count mappings") {
-    scenario("count mappings") {
+  Feature("count mappings") {
+    Scenario("count mappings") {
       when(
         persistentIdeaMappingService
           .count(Some(QuestionId("my-question")), Some(Right(TagId("tag-1"))), Some(Right(TagId("tag-2"))), None)

@@ -71,9 +71,9 @@ class PersistentIdeaMappingServiceIT
     operationId = None
   )
 
-  feature("idea mapping CRUD") {
+  Feature("idea mapping CRUD") {
 
-    scenario("create idea mappings") {
+    Scenario("create idea mappings") {
 
       val questionId = QuestionId("create-idea-mappings")
 
@@ -127,7 +127,7 @@ class PersistentIdeaMappingServiceIT
       waitForCompletion(unknownIdea.failed)
     }
 
-    scenario("update and get") {
+    Scenario("update and get") {
 
       val questionId = QuestionId("update-and-get")
 
@@ -164,7 +164,7 @@ class PersistentIdeaMappingServiceIT
 
     }
 
-    scenario("Finding mappings") {
+    Scenario("Finding mappings") {
       val questionId1 = QuestionId("finding-mappings-1")
       val questionId2 = QuestionId("finding-mappings-2")
       val idea1 = IdeaId("find-1")
@@ -226,7 +226,7 @@ class PersistentIdeaMappingServiceIT
       }
     }
 
-    scenario("count mappings") {
+    Scenario("count mappings") {
       val questionId = QuestionId("count-mappings-1")
       val idea = IdeaId("count-1")
       val tag1 = TagId("count-1")

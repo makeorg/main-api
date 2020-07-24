@@ -37,22 +37,22 @@ class StreamUtilsTest
 
   val elements: Range.Inclusive = 0.to(10)
 
-  feature("async source") {
+  Feature("async source") {
 
-    scenario("empty source") {
+    Scenario("empty source") {
       val source = StreamUtils.asyncPageToPageSource[Int](_ => Future.successful(Seq.empty))
       val result = source.runFold(0) { case (acc, value) => value.sum + acc }
       whenReady(result, Timeout(2.seconds)) { _ should be(0) }
     }
 
-    scenario("source always returning the same number of elements") {
+    Scenario("source always returning the same number of elements") {
       val source =
         StreamUtils.asyncPageToPageSource[Int](offset => Future.successful(elements.slice(offset, offset + 2)))
       val result = source.runFold(0) { case (acc, value) => value.sum + acc }
       whenReady(result, Timeout(2.seconds)) { _ should be(elements.sum) }
     }
 
-    scenario("source not returning the same number of elements ") {
+    Scenario("source not returning the same number of elements ") {
       val source =
         StreamUtils.asyncPageToPageSource[Int](offset => Future.successful(elements.slice(offset, offset + 3)))
       val result = source.runFold(0) { case (acc, value) => value.sum + acc }

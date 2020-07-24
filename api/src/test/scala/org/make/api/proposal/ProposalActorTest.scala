@@ -23,7 +23,6 @@ import java.time.ZonedDateTime
 
 import akka.actor.{Actor, ActorRef}
 import akka.testkit.TestKit
-import com.typesafe.scalalogging.StrictLogging
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
 import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.core.history.HistoryActions._
@@ -38,14 +37,11 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
-import org.mockito.{ArgumentMatchers, Mockito}
-import org.scalatest.GivenWhenThen
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class ProposalActorTest extends ShardingActorTest with GivenWhenThen with StrictLogging with MockitoSugar {
+class ProposalActorTest extends ShardingActorTest {
 
   class Controller {
     def handle(message: Any, sender: ActorRef): Unit = {
@@ -119,12 +115,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
   val LOCK_DURATION_MILLISECONDS: FiniteDuration = 42.milliseconds
 
   val sessionHistoryCoordinatorService: SessionHistoryCoordinatorService = mock[SessionHistoryCoordinatorService]
-  Mockito
-    .when(
-      sessionHistoryCoordinatorService
-        .logTransactionalHistory(ArgumentMatchers.any[TransactionalSessionHistoryEvent[_]])
-    )
-    .thenReturn(Future.successful({}))
+  when(
+    sessionHistoryCoordinatorService
+      .logTransactionalHistory(any[TransactionalSessionHistoryEvent[_]])
+  ).thenReturn(Future.successful({}))
 
   val coordinator: ActorRef =
     system.actorOf(
@@ -163,10 +157,10 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
   override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-  feature("Propose a proposal") {
+  Feature("Propose a proposal") {
     val proposalId: ProposalId = ProposalId("proposeCommand")
     val proposalItalyId: ProposalId = ProposalId("proposeItalyCommand")
-    scenario("Initialize the state if it was empty") {
+    Scenario("Initialize the state if it was empty") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
       expectMsg(ProposalNotFound)
@@ -209,7 +203,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
     }
 
-    scenario("Initialize the state for a proposal from Italy") {
+    Scenario("Initialize the state for a proposal from Italy") {
       Given("an empty state")
       coordinator ! GetProposal(proposalItalyId, RequestContext.empty)
       expectMsg(ProposalNotFound)
@@ -260,9 +254,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("View a proposal") {
+  Feature("View a proposal") {
     val proposalId: ProposalId = ProposalId("viewCommand")
-    scenario("Fail if ProposalId doesn't exists") {
+    Scenario("Fail if ProposalId doesn't exists") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
       expectMsg(ProposalNotFound)
@@ -274,7 +268,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(ProposalNotFound)
     }
 
-    scenario("Return the state if valid") {
+    Scenario("Return the state if valid") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
       expectMsg(ProposalNotFound)
@@ -302,8 +296,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("accept a proposal") {
-    scenario("accepting a non existing proposal") {
+  Feature("accept a proposal") {
+    Scenario("accepting a non existing proposal") {
       Given("no proposal corresponding to id 'nothing-there'")
       When("I try to accept the proposal")
       coordinator ! AcceptProposalCommand(
@@ -323,7 +317,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
     }
 
-    scenario("accept an existing proposal changing the text") {
+    Scenario("accept an existing proposal changing the text") {
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
@@ -368,7 +362,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
     }
 
-    scenario("accept an existing proposal without changing text") {
+    Scenario("accept an existing proposal without changing text") {
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
@@ -412,7 +406,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.idea should be(Some(IdeaId("some-idea")))
     }
 
-    scenario("accept an existing proposal without a theme") {
+    Scenario("accept an existing proposal without a theme") {
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be validated"
       val proposalId = ProposalId("to-be-moderated-without-a-theme")
@@ -457,7 +451,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.idea should be(Some(IdeaId("some-idea")))
     }
 
-    scenario("validating a validated proposal shouldn't do anything") {
+    Scenario("validating a validated proposal shouldn't do anything") {
       Given("a validated proposal")
       val originalContent = "This is a proposal that will be validated"
       coordinator ! ProposeCommand(
@@ -504,7 +498,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       error.message should be("Proposal to-be-moderated-2 is already validated")
     }
 
-    scenario("validate a proposal and set the idea") {
+    Scenario("validate a proposal and set the idea") {
       Given("a validated proposal")
       val proposalId = ProposalId("to-be-moderated-with-idea-1")
       val idea = IdeaId("idea-1")
@@ -550,8 +544,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("refuse a proposal") {
-    scenario("refusing a non existing proposal") {
+  Feature("refuse a proposal") {
+    Scenario("refusing a non existing proposal") {
       Given("no proposal corresponding to id 'nothing-there'")
       When("I try to refuse the proposal")
       coordinator ! RefuseProposalCommand(
@@ -566,7 +560,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(ProposalNotFound)
     }
 
-    scenario("refuse an existing proposal with a refuse reason") {
+    Scenario("refuse an existing proposal with a refuse reason") {
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be refused with a reason"
       coordinator ! ProposeCommand(
@@ -604,7 +598,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
     }
 
-    scenario("refuse an existing proposal without a refuse reason") {
+    Scenario("refuse an existing proposal without a refuse reason") {
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be refused without reason"
       coordinator ! ProposeCommand(
@@ -642,7 +636,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
     }
 
-    scenario("refusing a refused proposal shouldn't do anything") {
+    Scenario("refusing a refused proposal shouldn't do anything") {
       Given("a refused proposal")
       val originalContent = "This is a new proposal"
       coordinator ! ProposeCommand(
@@ -682,8 +676,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("postpone a proposal") {
-    scenario("postpone a non existing proposal") {
+  Feature("postpone a proposal") {
+    Scenario("postpone a non existing proposal") {
       Given("no proposal corresponding to id 'nothing-there'")
       When("I try to postpone the proposal")
       coordinator ! PostponeProposalCommand(
@@ -696,7 +690,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(ProposalNotFound)
     }
 
-    scenario("postpone a pending proposal") {
+    Scenario("postpone a pending proposal") {
       Given("a freshly created proposal")
       val originalContent = "This is a proposal that will be postponed"
       coordinator ! ProposeCommand(
@@ -731,7 +725,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.updatedAt.isDefined should be(true)
     }
 
-    scenario("postpone a refused proposal shouldn't do nothing") {
+    Scenario("postpone a refused proposal shouldn't do nothing") {
       Given("a refused proposal")
       val originalContent = "This is a new proposal to refuse"
       coordinator ! ProposeCommand(
@@ -768,7 +762,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       error.message should be("Proposal proposal-to-be-refused is already moderated and cannot be postponed")
     }
 
-    scenario("postpone a postponed proposal shouldn't do nothing") {
+    Scenario("postpone a postponed proposal shouldn't do nothing") {
       Given("a postponed proposal")
       val originalContent = "This is a new proposal to postpone"
       coordinator ! ProposeCommand(
@@ -804,9 +798,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("Update a proposal") {
+  Feature("Update a proposal") {
     val proposalId: ProposalId = ProposalId("updateCommand")
-    scenario("Fail if ProposalId doesn't exists") {
+    Scenario("Fail if ProposalId doesn't exists") {
       Given("an empty state")
       coordinator ! GetProposal(proposalId, RequestContext.empty)
       expectMsg(ProposalNotFound)
@@ -828,7 +822,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(ProposalNotFound)
     }
 
-    scenario("Update a validated Proposal") {
+    Scenario("Update a validated Proposal") {
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -885,7 +879,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.idea should be(Some(IdeaId("idea-id")))
     }
 
-    scenario("Update a validated Proposal with no tags") {
+    Scenario("Update a validated Proposal with no tags") {
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -942,7 +936,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.idea should be(Some(IdeaId("idea-id")))
     }
 
-    scenario("Update a validated Proposal with no idea") {
+    Scenario("Update a validated Proposal with no idea") {
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -999,7 +993,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.idea should be(Some(IdeaId("idea-id")))
     }
 
-    scenario("Update a non validated Proposal") {
+    Scenario("Update a non validated Proposal") {
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1032,8 +1026,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("Lock a proposal") {
-    scenario("try to lock a non-existing proposal") {
+  Feature("Lock a proposal") {
+    Scenario("try to lock a non-existing proposal") {
       Given("a fake proposalId")
       val proposalId = ProposalId("this-is-fake-proposal")
       And("moderator")
@@ -1051,7 +1045,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(ProposalNotFound)
     }
 
-    scenario("lock an unlocked proposal") {
+    Scenario("lock an unlocked proposal") {
       Given("an unlocked proposal")
       val proposalId: ProposalId = ProposalId("unlockedProposal")
       coordinator ! ProposeCommand(
@@ -1081,7 +1075,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(Locked(moderatorMod))
     }
 
-    scenario("expand the time a proposal is locked by yourself") {
+    Scenario("expand the time a proposal is locked by yourself") {
       Given("an unlocked proposal")
       val proposalId: ProposalId = ProposalId("lockedProposal")
       coordinator ! ProposeCommand(
@@ -1121,7 +1115,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(Locked(moderatorMod))
     }
 
-    scenario("fail to lock a proposal already locked by someone else") {
+    Scenario("fail to lock a proposal already locked by someone else") {
       Given("two moderators Mod1 & Mod2")
       val moderatorMod1 = UserId("mod1")
       val moderatorMod2 = UserId("mod2")
@@ -1161,7 +1155,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(AlreadyLockedBy("Mod1"))
     }
 
-    scenario("lock a proposal after lock deadline was reached") {
+    Scenario("lock a proposal after lock deadline was reached") {
       Given("two moderators Mod1 & Mod2")
       val moderatorMod1 = UserId("mod1")
       val moderatorMod2 = UserId("mod2")
@@ -1203,7 +1197,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       expectMsg(Locked(moderatorMod2))
     }
 
-    scenario("lock a proposal and try to vote after") {
+    Scenario("lock a proposal and try to vote after") {
       Given("a moderator FooModerator")
       val moderator = UserId("FooModerator")
 
@@ -1287,8 +1281,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("Patch a proposal") {
-    scenario("patch creation context") {
+  Feature("Patch a proposal") {
+    Scenario("patch creation context") {
       val proposalId = ProposalId("patched-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1357,7 +1351,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       )
     }
 
-    scenario("patch some proposal information") {
+    Scenario("patch some proposal information") {
       val proposalId = ProposalId("patched-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1406,7 +1400,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       proposal.language should be(Some(Language("fr")))
     }
 
-    scenario("patch other proposal information") {
+    Scenario("patch other proposal information") {
       val proposalId = ProposalId("patched-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1449,8 +1443,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("anonymize proposals") {
-    scenario("anonymize proposal") {
+  Feature("anonymize proposals") {
+    Scenario("anonymize proposal") {
       val proposalId = ProposalId("anonymized-context")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1485,9 +1479,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("update verified votes") {
+  Feature("update verified votes") {
     val proposalId = ProposalId("updateCommand")
-    scenario("Update the verified votes of validated Proposal") {
+    Scenario("Update the verified votes of validated Proposal") {
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1586,9 +1580,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("update verified votes on refused proposal") {
+  Feature("update verified votes on refused proposal") {
     val proposalId = ProposalId("update-on-refused")
-    scenario("Update the verified votes of refused Proposal") {
+    Scenario("Update the verified votes of refused Proposal") {
       Given("a newly proposed Proposal")
       coordinator ! ProposeCommand(
         proposalId = proposalId,
@@ -1658,9 +1652,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("vote on proposal") {
+  Feature("vote on proposal") {
     val proposalId = ProposalId("proposal-id")
-    scenario("vote on a new proposal with the valid proposalKey") {
+    Scenario("vote on a new proposal with the valid proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1689,7 +1683,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.countVerified should be(1)
     }
 
-    scenario("vote on a new proposal with the wrong proposalKey") {
+    Scenario("vote on a new proposal with the wrong proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1719,9 +1713,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("unvote on proposal") {
+  Feature("unvote on proposal") {
     val proposalId = ProposalId("proposal-id")
-    scenario("unvote on a new proposal with the valid proposalKey") {
+    Scenario("unvote on a new proposal with the valid proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1762,7 +1756,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.countVerified should be(0)
     }
 
-    scenario("vote on a new proposal with the wrong proposalKey") {
+    Scenario("vote on a new proposal with the wrong proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1804,9 +1798,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("qualify on proposal") {
+  Feature("qualify on proposal") {
     val proposalId = ProposalId("proposal-id")
-    scenario("qualify on a new proposal with the valid proposalKey") {
+    Scenario("qualify on a new proposal with the valid proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1847,7 +1841,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.countVerified should be(1)
     }
 
-    scenario("qualify on a new proposal with the wrong proposalKey") {
+    Scenario("qualify on a new proposal with the wrong proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1889,9 +1883,9 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("unqualify on proposal") {
+  Feature("unqualify on proposal") {
     val proposalId = ProposalId("proposal-id")
-    scenario("unqualify on a new proposal with the valid proposalKey") {
+    Scenario("unqualify on a new proposal with the valid proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1944,7 +1938,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       response.countVerified should be(0)
     }
 
-    scenario("unqualify on a new proposal with the wrong proposalKey") {
+    Scenario("unqualify on a new proposal with the wrong proposalKey") {
       coordinator ! ProposeCommand(
         proposalId = proposalId,
         requestContext = RequestContext.empty,
@@ -1998,8 +1992,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("troll detection on votes") {
-    scenario("vote and unvote as a troll") {
+  Feature("troll detection on votes") {
+    Scenario("vote and unvote as a troll") {
       val proposalId = ProposalId("vote_and_unvote_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2051,7 +2045,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
 
     }
 
-    scenario("trusted vote and unvote as a troll") {
+    Scenario("trusted vote and unvote as a troll") {
       val proposalId = ProposalId("trusted_vote_and_unvote_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2102,7 +2096,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unvote.countVerified should be(0)
     }
 
-    scenario("vote as a troll and trusted unvote") {
+    Scenario("vote as a troll and trusted unvote") {
       val proposalId = ProposalId("vote_as_a_troll_and_trusted_unvote")
 
       coordinator ! ProposeCommand(
@@ -2153,7 +2147,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unvote.countVerified should be(0)
     }
 
-    scenario("trusted vote and troll revote") {
+    Scenario("trusted vote and troll revote") {
       val proposalId = ProposalId("trusted_vote_and_troll_revote")
 
       coordinator ! ProposeCommand(
@@ -2219,8 +2213,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("troll detection on qualifications") {
-    scenario("qualify and unqualify as a troll") {
+  Feature("troll detection on qualifications") {
+    Scenario("qualify and unqualify as a troll") {
       val proposalId = ProposalId("qualify_and_unqualify_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2287,7 +2281,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unqualification.countVerified should be(0)
     }
 
-    scenario("trusted qualify and unqualify as a troll") {
+    Scenario("trusted qualify and unqualify as a troll") {
       val proposalId = ProposalId("trusted_qualify_and_unqualify_as_a_troll")
 
       coordinator ! ProposeCommand(
@@ -2354,7 +2348,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unqualification.countVerified should be(0)
     }
 
-    scenario("qualify as a troll and trusted unqualify") {
+    Scenario("qualify as a troll and trusted unqualify") {
       val proposalId = ProposalId("qualify_as_a_troll_and_trusted_unqualify")
 
       coordinator ! ProposeCommand(
@@ -2422,8 +2416,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("votes in sequence") {
-    scenario("vote and devote in sequence") {
+  Feature("votes in sequence") {
+    Scenario("vote and devote in sequence") {
       val proposalId = ProposalId("vote_and_devote_in_sequence")
 
       coordinator ! ProposeCommand(
@@ -2478,7 +2472,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unvote.countSegment should be(0)
     }
 
-    scenario("vote in sequence, devote out of it") {
+    Scenario("vote in sequence, devote out of it") {
       val proposalId = ProposalId("vote_in_sequence_then_devote_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -2533,7 +2527,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unvote.countSegment should be(0)
     }
 
-    scenario("vote out of sequence, devote in it") {
+    Scenario("vote out of sequence, devote in it") {
       val proposalId = ProposalId("vote_out_of_sequence_then_devote_in_it")
 
       coordinator ! ProposeCommand(
@@ -2589,8 +2583,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("votes in segment") {
-    scenario("vote and devote in segment") {
+  Feature("votes in segment") {
+    Scenario("vote and devote in segment") {
       val proposalId = ProposalId("vote_and_devote_in_sequence")
 
       coordinator ! ProposeCommand(
@@ -2645,7 +2639,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unvote.countSegment should be(0)
     }
 
-    scenario("vote in segment, devote out of it") {
+    Scenario("vote in segment, devote out of it") {
       val proposalId = ProposalId("vote_in_segment_then_devote_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -2700,7 +2694,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unvote.countSegment should be(0)
     }
 
-    scenario("vote out of segment, devote in it") {
+    Scenario("vote out of segment, devote in it") {
       val proposalId = ProposalId("vote_out_of_segment_then_devote_in_it")
 
       coordinator ! ProposeCommand(
@@ -2756,8 +2750,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("qualifications in sequence") {
-    scenario("qualify and unqualify in sequence") {
+  Feature("qualifications in sequence") {
+    Scenario("qualify and unqualify in sequence") {
       val proposalId = ProposalId("qualify_and_unqualify_in_sequence")
 
       coordinator ! ProposeCommand(
@@ -2830,7 +2824,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unqualification.countSegment should be(0)
     }
 
-    scenario("qualify in sequence and unqualify out of it") {
+    Scenario("qualify in sequence and unqualify out of it") {
       val proposalId = ProposalId("qualify_in_sequence_and_unqualify_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -2903,7 +2897,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unqualification.countSegment should be(0)
     }
 
-    scenario("qualify in sequence and unvote") {
+    Scenario("qualify in sequence and unvote") {
       val proposalId = ProposalId("qualify_in_sequence_and_unvote")
 
       coordinator ! ProposeCommand(
@@ -2983,7 +2977,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       }
     }
 
-    scenario("qualify out of sequence and unqualify in it") {
+    Scenario("qualify out of sequence and unqualify in it") {
       val proposalId = ProposalId("qualify_out_of_sequence_and_unqualify_in_it")
 
       coordinator ! ProposeCommand(
@@ -3057,8 +3051,8 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
     }
   }
 
-  feature("qualifications in segment") {
-    scenario("qualify and unqualify in segment") {
+  Feature("qualifications in segment") {
+    Scenario("qualify and unqualify in segment") {
       val proposalId = ProposalId("qualify_and_unqualify_in_segment")
 
       coordinator ! ProposeCommand(
@@ -3131,7 +3125,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unqualification.countSegment should be(0)
     }
 
-    scenario("qualify in segment and unqualify out of it") {
+    Scenario("qualify in segment and unqualify out of it") {
       val proposalId = ProposalId("qualify_in_segment_and_unqualify_out_of_it")
 
       coordinator ! ProposeCommand(
@@ -3204,7 +3198,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       unqualification.countSegment should be(0)
     }
 
-    scenario("qualify in segment and unvote") {
+    Scenario("qualify in segment and unvote") {
       val proposalId = ProposalId("qualify_in_segment_and_unvote")
 
       coordinator ! ProposeCommand(
@@ -3284,7 +3278,7 @@ class ProposalActorTest extends ShardingActorTest with GivenWhenThen with Strict
       }
     }
 
-    scenario("qualify out of segment and unqualify in it") {
+    Scenario("qualify out of segment and unqualify in it") {
       val proposalId = ProposalId("qualify_out_of_segment_and_unqualify_in_it")
 
       coordinator ! ProposeCommand(

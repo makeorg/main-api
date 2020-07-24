@@ -21,7 +21,7 @@ package org.make.api.feature
 
 import org.make.api.DatabaseTest
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.core.feature._
+import org.make.core.feature.{Feature => Feat, _}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -34,20 +34,20 @@ class PersistentFeatureServiceIT
 
   override protected val cockroachExposedPort: Int = 40009
 
-  def newFeature(slug: String): Feature =
-    Feature(featureId = idGenerator.nextFeatureId(), slug = slug, name = "feature name")
+  def newFeature(slug: String): Feat =
+    Feat(featureId = idGenerator.nextFeatureId(), slug = slug, name = "feature name")
 
-  val postalCode: Feature = newFeature("postal-code")
-  val noVotes: Feature = newFeature("no-votes")
-  val fieldHelp: Feature = newFeature("field-help")
-  val stream: Feature = newFeature("stream")
-  val rust: Feature = newFeature("rust")
-  val feature: Feature = newFeature("feature")
-  val deleted: Feature = newFeature("deleted")
+  val postalCode: Feat = newFeature("postal-code")
+  val noVotes: Feat = newFeature("no-votes")
+  val fieldHelp: Feat = newFeature("field-help")
+  val stream: Feat = newFeature("stream")
+  val rust: Feat = newFeature("rust")
+  val feature: Feat = newFeature("feature")
+  val deleted: Feat = newFeature("deleted")
 
-  feature("One feature can be persisted and retrieved") {
-    scenario("Get feature by featureId") {
-      val futureFeature: Future[Option[Feature]] = for {
+  Feature("One feature can be persisted and retrieved") {
+    Scenario("Get feature by featureId") {
+      val futureFeature: Future[Option[Feat]] = for {
         _            <- persistentFeatureService.persist(postalCode)
         featureStark <- persistentFeatureService.get(postalCode.featureId)
       } yield featureStark
@@ -57,8 +57,8 @@ class PersistentFeatureServiceIT
       }
     }
 
-    scenario("Get feature by featureId that does not exists") {
-      val futureFeatureId: Future[Option[Feature]] = persistentFeatureService.get(FeatureId("fake"))
+    Scenario("Get feature by featureId that does not exists") {
+      val futureFeatureId: Future[Option[Feat]] = persistentFeatureService.get(FeatureId("fake"))
 
       whenReady(futureFeatureId, Timeout(3.seconds)) { result =>
         result shouldBe None
@@ -66,16 +66,16 @@ class PersistentFeatureServiceIT
     }
   }
 
-  feature("A list of features can be retrieved") {
-    scenario("Get a list of all enabled features") {
-      val futurePersistedFeatureList: Future[Seq[Feature]] = for {
+  Feature("A list of features can be retrieved") {
+    Scenario("Get a list of all enabled features") {
+      val futurePersistedFeatureList: Future[Seq[Feat]] = for {
         _                <- persistentFeatureService.persist(noVotes)
         featureLannister <- persistentFeatureService.persist(fieldHelp)
         featureBolton    <- persistentFeatureService.persist(stream)
         featureGreyjoy   <- persistentFeatureService.persist(rust)
       } yield Seq(featureLannister, featureBolton, featureGreyjoy)
 
-      val futureFeaturesLists: Future[(Seq[Feature], Seq[Feature])] = for {
+      val futureFeaturesLists: Future[(Seq[Feat], Seq[Feat])] = for {
         persistedFeaturesList <- futurePersistedFeatureList
         foundFeatures         <- persistentFeatureService.findAll()
       } yield foundFeatures -> persistedFeaturesList
@@ -86,20 +86,20 @@ class PersistentFeatureServiceIT
       }
     }
 
-    scenario("Get features by featureIds") {
+    Scenario("Get features by featureIds") {
       val futurePersistedFeatureList: Future[Unit] = for {
         _ <- persistentFeatureService.persist(
-          Feature(featureId = FeatureId("feature-1"), slug = "feature-1", name = "feature name")
+          Feat(featureId = FeatureId("feature-1"), slug = "feature-1", name = "feature name")
         )
         _ <- persistentFeatureService.persist(
-          Feature(featureId = FeatureId("feature-2"), slug = "feature-2", name = "feature name")
+          Feat(featureId = FeatureId("feature-2"), slug = "feature-2", name = "feature name")
         )
         _ <- persistentFeatureService.persist(
-          Feature(featureId = FeatureId("feature-3"), slug = "feature-3", name = "feature name")
+          Feat(featureId = FeatureId("feature-3"), slug = "feature-3", name = "feature name")
         )
       } yield {}
 
-      val futureFeaturesLists: Future[Seq[Feature]] = for {
+      val futureFeaturesLists: Future[Seq[Feat]] = for {
         _        <- futurePersistedFeatureList
         features <- persistentFeatureService.findByFeatureIds(Seq(FeatureId("feature-1"), FeatureId("feature-2")))
       } yield features
@@ -112,9 +112,9 @@ class PersistentFeatureServiceIT
     }
   }
 
-  feature("One feature can be updated") {
-    scenario("Update feature") {
-      val futureFeature: Future[Option[Feature]] = for {
+  Feature("One feature can be updated") {
+    Scenario("Update feature") {
+      val futureFeature: Future[Option[Feat]] = for {
         _            <- persistentFeatureService.persist(feature)
         featureStark <- persistentFeatureService.update(feature.copy(slug = "new tully"))
       } yield featureStark
@@ -125,8 +125,8 @@ class PersistentFeatureServiceIT
       }
     }
 
-    scenario("Update feature that does not exists") {
-      val futureFeatureId: Future[Option[Feature]] = persistentFeatureService.update(newFeature("fake"))
+    Scenario("Update feature that does not exists") {
+      val futureFeatureId: Future[Option[Feat]] = persistentFeatureService.update(newFeature("fake"))
 
       whenReady(futureFeatureId, Timeout(3.seconds)) { result =>
         result shouldBe None
@@ -134,9 +134,9 @@ class PersistentFeatureServiceIT
     }
   }
 
-  feature("One feature can be deleted") {
-    scenario("Delete feature") {
-      val futureFeaturePersisted: Future[Option[Feature]] = for {
+  Feature("One feature can be deleted") {
+    Scenario("Delete feature") {
+      val futureFeaturePersisted: Future[Option[Feat]] = for {
         _              <- persistentFeatureService.persist(deleted)
         featureDeleted <- persistentFeatureService.get(deleted.featureId)
       } yield featureDeleted
@@ -145,7 +145,7 @@ class PersistentFeatureServiceIT
         result.map(_.featureId.value) shouldBe Some(deleted.featureId.value)
       }
 
-      val futureFeature: Future[Option[Feature]] = for {
+      val futureFeature: Future[Option[Feat]] = for {
         _              <- persistentFeatureService.remove(deleted.featureId)
         featureDeleted <- persistentFeatureService.get(deleted.featureId)
       } yield featureDeleted

@@ -48,28 +48,28 @@ class SecurityApiTest
 
   val routes: Route = sealRoute(securityApi.routes)
 
-  feature("create secure hash") {
-    scenario("user unauthorized") {
+  Feature("create secure hash") {
+    Scenario("user unauthorized") {
       Post("/admin/security/secure-hash") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("citizen forbidden") {
+    Scenario("citizen forbidden") {
       Post("/admin/security/secure-hash")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("moderator forbidden") {
+    Scenario("moderator forbidden") {
       Post("/admin/security/secure-hash")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
-    scenario("admin with valid value") {
+    Scenario("admin with valid value") {
       Post("/admin/security/secure-hash")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "{\"value\": \"toto\"}"))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -79,7 +79,7 @@ class SecurityApiTest
       }
     }
 
-    scenario("admin but no value given") {
+    Scenario("admin but no value given") {
       Post("/admin/security/secure-hash")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -88,8 +88,8 @@ class SecurityApiTest
     }
   }
 
-  feature("validate secure hash") {
-    scenario("same hash value") {
+  Feature("validate secure hash") {
+    Scenario("same hash value") {
       val hash = SecurityHelper.createSecureHash("toto", securityConfiguration.secureHashSalt)
       Post("/security/secure-hash")
         .withEntity(HttpEntity(ContentTypes.`application/json`, s"""{"value": "toto", "hash": "$hash"}""")) ~> routes ~> check {
@@ -97,7 +97,7 @@ class SecurityApiTest
       }
     }
 
-    scenario("not the same hash value") {
+    Scenario("not the same hash value") {
       Post("/security/secure-hash")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{"value": "toto", "hash": "ABCDE"}""")) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
@@ -105,7 +105,7 @@ class SecurityApiTest
 
     }
 
-    scenario("missing argument") {
+    Scenario("missing argument") {
       Post("/security/secure-hash") ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }

@@ -25,16 +25,15 @@ import com.sksamuel.elastic4s.searches.queries.funcscorer.WeightScore
 import com.sksamuel.elastic4s.searches.queries.matches.MatchQuery
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.common.indexed.{Sort => IndexedSort}
+import org.make.core.MakeUnitTest
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 
-class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar with Matchers with ElasticDsl {
+class SearchQueryTest extends MakeUnitTest with ElasticDsl {
   val initialProposalFilter = InitialProposalFilter(true)
   val tagValue = "Tag1"
   val tagsFilter = TagsSearchFilter(Seq(TagId(tagValue)))
@@ -74,8 +73,8 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
 
   val searchQuery = SearchQuery(Some(filters), None, sort, Some(limit), Some(skip), Some(Language("en")))
 
-  feature("transform searchFilter into Query") {
-    scenario("get Sort from Search filter") {
+  Feature("transform searchFilter into Query") {
+    Scenario("get Sort from Search filter") {
       Given("a searchFilter")
       When("call getSort with SearchQuery")
       val fieldSortDefinition = SearchFilters.getSort(searchQuery)
@@ -83,7 +82,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       fieldSortDefinition shouldBe Some(FieldSort("field", None, None, None, None, None, SortOrder.ASC))
     }
 
-    scenario("get skip from Search filter") {
+    Scenario("get skip from Search filter") {
       Given("a searchFilter")
       When("call getSkipSearch with SearchQuery")
       val skipResult = SearchFilters.getSkipSearch(searchQuery)
@@ -91,7 +90,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       skipResult shouldBe skip
     }
 
-    scenario("get limit from Search filter") {
+    Scenario("get limit from Search filter") {
       Given("a searchFilter")
       When("call getLimitSearch with SearchQuery")
       val limitResult = SearchFilters.getLimitSearch(searchQuery)
@@ -99,7 +98,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       limitResult shouldBe limit
     }
 
-    scenario("build InitialProposalSearchFilter from Search filter") {
+    Scenario("build InitialProposalSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildInitialProposalSearchFilterwith SearchQuery")
       val themeSearchFilterResult = SearchFilters.buildInitialProposalSearchFilter(searchQuery.filters)
@@ -109,7 +108,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       )
     }
 
-    scenario("build TagsSearchFilter from Search filter") {
+    Scenario("build TagsSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildTagsSearchFilter with SearchQuery")
       val tagsSearchFilterResult = SearchFilters.buildTagsSearchFilter(searchQuery.filters)
@@ -117,7 +116,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       tagsSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, tagValue))
     }
 
-    scenario("build LabelsSearchFilter from Search filter") {
+    Scenario("build LabelsSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildLabelsSearchFilter with SearchQuery")
       val labelsSearchFilterResult = SearchFilters.buildLabelsSearchFilter(searchQuery.filters)
@@ -125,7 +124,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       labelsSearchFilterResult shouldBe Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labelValue))
     }
 
-    scenario("build OperationSearchFilter from Search filter") {
+    Scenario("build OperationSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildOperationSearchFilter with SearchQuery")
       val operationSearchFilterResult = SearchFilters.buildOperationSearchFilter(searchQuery.filters)
@@ -135,7 +134,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       )
     }
 
-    scenario("build TrendingSearchFilter from Search filter") {
+    Scenario("build TrendingSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildTrendingSearchFilter with SearchQuery")
       val trendingSearchFilterResult = SearchFilters.buildTrendingSearchFilter(searchQuery.filters)
@@ -145,7 +144,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       )
     }
 
-    scenario("build ContentSearchFilter from Search filter") {
+    Scenario("build ContentSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildContentSearchFilter with SearchQuery")
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery)
@@ -171,7 +170,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       )
     }
 
-    scenario("build ContentSearchFilter from Search filter without any language") {
+    Scenario("build ContentSearchFilter from Search filter without any language") {
       Given("a searchFilter")
       When("call buildContentSearchFilter with SearchQuery")
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery.copy(language = None))
@@ -192,7 +191,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       )
     }
 
-    scenario("build StatusSearchFilter from Search filter") {
+    Scenario("build StatusSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildStatusSearchFilter with SearchQuery")
       val statusSearchFilterResult = SearchFilters.buildStatusSearchFilter(searchQuery.filters)
@@ -202,7 +201,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       )
     }
 
-    scenario("build SlugSearchFilter from Search filter") {
+    Scenario("build SlugSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildSlugSearchFilter with SearchQuery")
       val slugSearchFilterResult = SearchFilters.buildSlugSearchFilter(searchQuery.filters)
@@ -212,7 +211,7 @@ class SearchQueryTest extends FeatureSpec with GivenWhenThen with MockitoSugar w
       )
     }
 
-    scenario("build UserSearchFilter from Search filter") {
+    Scenario("build UserSearchFilter from Search filter") {
       Given("a searchFilter")
       When("call buildUserSearchFilter with SearchQuery")
       val userSearchFilterResult = SearchFilters.buildUserSearchFilter(searchQuery.filters)

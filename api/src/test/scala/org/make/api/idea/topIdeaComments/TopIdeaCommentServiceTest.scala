@@ -27,8 +27,6 @@ import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.core.idea.{TopIdeaComment, TopIdeaCommentId, TopIdeaId}
 import org.make.core.technical.IdGenerator
 import org.make.core.user.{UserId, UserType}
-import org.mockito.Mockito.when
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -49,7 +47,7 @@ class TopIdeaCommentServiceTest
 
   when(idGenerator.nextTopIdeaCommentId()).thenReturn(TopIdeaCommentId("comment-id"))
 
-  feature("create and get") {
+  Feature("create and get") {
     val comment =
       TopIdeaComment(
         TopIdeaCommentId("comment-id"),
@@ -62,7 +60,7 @@ class TopIdeaCommentServiceTest
         None
       )
 
-    scenario("create an idea") {
+    Scenario("create an idea") {
       topIdeaCommentService.create(
         comment.topIdeaId,
         comment.personalityId,
@@ -72,32 +70,30 @@ class TopIdeaCommentServiceTest
         comment.vote,
         comment.qualification
       )
-      Mockito
-        .verify(persistentTopIdeaCommentService)
-        .persist(ArgumentMatchers.eq(comment))
+      verify(persistentTopIdeaCommentService)
+        .persist(eqTo(comment))
     }
 
-    scenario("get an idea") {
+    Scenario("get an idea") {
       topIdeaCommentService.get(comment.topIdeaCommentId)
-      Mockito
-        .verify(persistentTopIdeaCommentService)
-        .getById(ArgumentMatchers.eq(comment.topIdeaCommentId))
+      verify(persistentTopIdeaCommentService)
+        .getById(eqTo(comment.topIdeaCommentId))
     }
   }
 
-  feature("search") {
-    scenario("search all  top idea comment") {
+  Feature("search") {
+    Scenario("search all  top idea comment") {
       val start = 42
       val end = None
       val topIdeaIds = None
       val personalityIds = Some(Seq(UserId("some-user"), UserId("another-user")))
       topIdeaCommentService.search(start, end, topIdeaIds, personalityIds)
-      Mockito.verify(persistentTopIdeaCommentService).search(start, end, topIdeaIds, personalityIds)
+      verify(persistentTopIdeaCommentService).search(start, end, topIdeaIds, personalityIds)
     }
   }
 
-  feature("get comments with personality") {
-    scenario("get comments with personality") {
+  Feature("get comments with personality") {
+    Scenario("get comments with personality") {
       when(
         persistentTopIdeaCommentService
           .search(start = 0, end = None, topIdeaIds = Some(Seq(TopIdeaId("top-idea-id"))), personalityIds = None)
@@ -147,16 +143,15 @@ class TopIdeaCommentServiceTest
     }
   }
 
-  feature("count for all ideas") {
-    scenario("empty list") {
+  Feature("count for all ideas") {
+    Scenario("empty list") {
       topIdeaCommentService.countForAll(Seq.empty)
-      Mockito.verify(persistentTopIdeaCommentService).countForAll(Seq.empty)
+      verify(persistentTopIdeaCommentService).countForAll(Seq.empty)
     }
 
-    scenario("full list") {
+    Scenario("full list") {
       topIdeaCommentService.countForAll(Seq(TopIdeaId("top-idea-id-1"), TopIdeaId("top-idea-id-2")))
-      Mockito
-        .verify(persistentTopIdeaCommentService)
+      verify(persistentTopIdeaCommentService)
         .countForAll(Seq(TopIdeaId("top-idea-id-1"), TopIdeaId("top-idea-id-2")))
     }
   }

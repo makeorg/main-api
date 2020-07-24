@@ -34,8 +34,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.technical.IdGenerator
 import org.make.core.user.UserId
-import org.mockito.Mockito.when
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -68,10 +66,10 @@ class QuestionPersonalityServiceTest
     personalityRoleId = PersonalityRoleId("candidate")
   )
 
-  feature("create personality") {
-    scenario("creation") {
-      Mockito.when(idGenerator.nextPersonalityId()).thenReturn(PersonalityId("personality"))
-      Mockito.when(persistentQuestionPersonalityService.persist(personality)).thenReturn(Future.successful(personality))
+  Feature("create personality") {
+    Scenario("creation") {
+      when(idGenerator.nextPersonalityId()).thenReturn(PersonalityId("personality"))
+      when(persistentQuestionPersonalityService.persist(personality)).thenReturn(Future.successful(personality))
 
       whenReady(
         questionPersonalityService.createPersonality(request = CreateQuestionPersonalityRequest(
@@ -87,10 +85,9 @@ class QuestionPersonalityServiceTest
     }
   }
 
-  feature("update personality") {
-    scenario("update when no personality is found") {
-      Mockito
-        .when(persistentQuestionPersonalityService.getById(PersonalityId("not-found")))
+  Feature("update personality") {
+    Scenario("update when no personality is found") {
+      when(persistentQuestionPersonalityService.getById(PersonalityId("not-found")))
         .thenReturn(Future.successful(None))
 
       whenReady(
@@ -107,14 +104,12 @@ class QuestionPersonalityServiceTest
       }
     }
 
-    scenario("update when personality is found") {
+    Scenario("update when personality is found") {
       val updatedPersonality: Personality = personality.copy(userId = UserId("update-user"))
 
-      Mockito
-        .when(persistentQuestionPersonalityService.getById(PersonalityId("personality")))
+      when(persistentQuestionPersonalityService.getById(PersonalityId("personality")))
         .thenReturn(Future.successful(Some(personality)))
-      Mockito
-        .when(persistentQuestionPersonalityService.modify(updatedPersonality))
+      when(persistentQuestionPersonalityService.modify(updatedPersonality))
         .thenReturn(Future.successful(updatedPersonality))
 
       whenReady(
@@ -132,12 +127,12 @@ class QuestionPersonalityServiceTest
     }
   }
 
-  feature("personalities opinions by questions") {
-    scenario("empty list of top ideas") {
-      when(questionService.getQuestions(ArgumentMatchers.eq(Seq.empty))).thenReturn(Future.successful(Seq.empty))
+  Feature("personalities opinions by questions") {
+    Scenario("empty list of top ideas") {
+      when(questionService.getQuestions(eqTo(Seq.empty))).thenReturn(Future.successful(Seq.empty))
       when(
         operationOfQuestionService.search(
-          ArgumentMatchers.eq(
+          eqTo(
             OperationOfQuestionSearchQuery(filters =
               Some(OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(Seq.empty))))
             )
@@ -145,30 +140,18 @@ class QuestionPersonalityServiceTest
         )
       ).thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 0L, results = Seq.empty)))
       when(
-        topIdeaService.search(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(Seq.empty)),
-          ArgumentMatchers.eq(None)
-        )
+        topIdeaService
+          .search(eqTo(0), eqTo(None), eqTo(None), eqTo(None), eqTo(None), eqTo(Some(Seq.empty)), eqTo(None))
       ).thenReturn(Future.successful(Seq.empty))
       when(
         topIdeaCommentService
-          .search(
-            ArgumentMatchers.eq(0),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(Some(Seq.empty)),
-            ArgumentMatchers.eq(Some(Seq.empty))
-          )
+          .search(eqTo(0), eqTo(None), eqTo(Some(Seq.empty)), eqTo(Some(Seq.empty)))
       ).thenReturn(Future.successful(Seq.empty))
-      when(topIdeaCommentService.countForAll(ArgumentMatchers.eq(Seq.empty)))
+      when(topIdeaCommentService.countForAll(eqTo(Seq.empty)))
         .thenReturn(Future.successful(Map.empty))
       when(
         elasticsearchProposalAPI
-          .getRandomProposalsByIdeaWithAvatar(ArgumentMatchers.eq(Seq.empty), ArgumentMatchers.any[Int])
+          .getRandomProposalsByIdeaWithAvatar(eqTo(Seq.empty), any[Int])
       ).thenReturn(Future.successful(Map.empty))
 
       whenReady(questionPersonalityService.getPersonalitiesOpinionsByQuestions(Seq.empty), Timeout(2.seconds)) {
@@ -177,16 +160,16 @@ class QuestionPersonalityServiceTest
       }
     }
 
-    scenario("all comments") {
+    Scenario("all comments") {
       when(
         questionPersonalityService.find(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(UserId("personality-id"))),
-          ArgumentMatchers.any[Option[QuestionId]],
-          ArgumentMatchers.eq(None)
+          eqTo(0),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(UserId("personality-id"))),
+          any[Option[QuestionId]],
+          eqTo(None)
         )
       ).thenReturn(
         Future.successful(
@@ -208,7 +191,7 @@ class QuestionPersonalityServiceTest
       )
       when(
         questionService
-          .getQuestions(ArgumentMatchers.eq(Seq(QuestionId("question-id-one"), QuestionId("question-id-two"))))
+          .getQuestions(eqTo(Seq(QuestionId("question-id-one"), QuestionId("question-id-two"))))
       ).thenReturn(
         Future.successful(
           Seq(
@@ -219,7 +202,7 @@ class QuestionPersonalityServiceTest
       )
       when(
         operationOfQuestionService.search(
-          ArgumentMatchers.eq(
+          eqTo(
             OperationOfQuestionSearchQuery(filters = Some(
               OperationOfQuestionSearchFilters(questionIds =
                 Some(QuestionIdsSearchFilter(Seq(QuestionId("question-id-one"), QuestionId("question-id-two"))))
@@ -291,13 +274,13 @@ class QuestionPersonalityServiceTest
       )
       when(
         topIdeaService.search(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(Seq(QuestionId("question-id-one"), QuestionId("question-id-two")))),
-          ArgumentMatchers.eq(None)
+          eqTo(0),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(Seq(QuestionId("question-id-one"), QuestionId("question-id-two")))),
+          eqTo(None)
         )
       ).thenReturn(
         Future.successful(
@@ -326,10 +309,10 @@ class QuestionPersonalityServiceTest
       when(
         topIdeaCommentService
           .search(
-            ArgumentMatchers.eq(0),
-            ArgumentMatchers.eq(None),
-            ArgumentMatchers.eq(Some(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2")))),
-            ArgumentMatchers.eq(Some(Seq(UserId("personality-id"))))
+            eqTo(0),
+            eqTo(None),
+            eqTo(Some(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2")))),
+            eqTo(Some(Seq(UserId("personality-id"))))
           )
       ).thenReturn(
         Future.successful(
@@ -349,14 +332,11 @@ class QuestionPersonalityServiceTest
       )
       when(
         topIdeaCommentService
-          .countForAll(ArgumentMatchers.eq(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2"))))
+          .countForAll(eqTo(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2"))))
       ).thenReturn(Future.successful(Map("top-idea-id" -> 2, "top-idea-id-2" -> 0)))
       when(
         elasticsearchProposalAPI
-          .getRandomProposalsByIdeaWithAvatar(
-            ArgumentMatchers.eq(Seq(IdeaId("idea-id"), IdeaId("idea-id-2"))),
-            ArgumentMatchers.any[Int]
-          )
+          .getRandomProposalsByIdeaWithAvatar(eqTo(Seq(IdeaId("idea-id"), IdeaId("idea-id-2"))), any[Int])
       ).thenReturn(
         Future.successful(
           Map(

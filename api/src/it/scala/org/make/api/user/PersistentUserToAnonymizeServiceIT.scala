@@ -34,14 +34,14 @@ class PersistentUserToAnonymizeServiceIT
 
   override protected val cockroachExposedPort: Int = 40015
 
-  feature("create") {
-    scenario("create an entry") {
+  Feature("create") {
+    Scenario("create an entry") {
       whenReady(persistentUserToAnonymizeService.create("toto-mail"), Timeout(3.seconds)) { result =>
         noException shouldBe thrownBy(result)
       }
     }
 
-    scenario("create an already existing entry") {
+    Scenario("create an already existing entry") {
       val futureCreate: Future[String] =
         for {
           _ <- persistentUserToAnonymizeService.create("tata-mail")
@@ -53,8 +53,8 @@ class PersistentUserToAnonymizeServiceIT
     }
   }
 
-  feature("find all") {
-    scenario("get all mailsPSQLException ordered by date") {
+  Feature("find all") {
+    Scenario("get all mailsPSQLException ordered by date") {
       val createAll: Future[Unit] = for {
         _ <- persistentUserToAnonymizeService.create("toto")
         _ <- persistentUserToAnonymizeService.create("tata")
@@ -72,8 +72,8 @@ class PersistentUserToAnonymizeServiceIT
     }
   }
 
-  feature("delete") {
-    scenario("delete by email") {
+  Feature("delete") {
+    Scenario("delete by email") {
       val createAll: Future[Unit] = for {
         _ <- persistentUserToAnonymizeService.create("delete-me")
         _ <- persistentUserToAnonymizeService.create("delete-me-too")
@@ -98,7 +98,7 @@ class PersistentUserToAnonymizeServiceIT
       }
     }
 
-    scenario("delete all") {
+    Scenario("delete all") {
       val createAll: Future[Unit] = for {
         _ <- persistentUserToAnonymizeService.create("delete-me-1")
         _ <- persistentUserToAnonymizeService.create("delete-me-2")

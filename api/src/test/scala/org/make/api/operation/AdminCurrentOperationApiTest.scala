@@ -27,8 +27,6 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.operation.{CurrentOperation, CurrentOperationId}
 import org.make.core.question.QuestionId
-import org.mockito.ArgumentMatchers.{eq => matches, _}
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -55,8 +53,8 @@ class AdminCurrentOperationApiTest
     externalLink = None
   )
 
-  feature("Unauthenticated / unauthorized user") {
-    scenario("post current operation") {
+  Feature("Unauthenticated / unauthorized user") {
+    Scenario("post current operation") {
       Post("/admin/views/home/current-operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
@@ -75,7 +73,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("put current operation") {
+    Scenario("put current operation") {
       Put("/admin/views/home/current-operations/current-operation-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
@@ -94,7 +92,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("get current operation") {
+    Scenario("get current operation") {
       Get("/admin/views/home/current-operations/current-operation-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
@@ -110,7 +108,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("get current operations") {
+    Scenario("get current operations") {
       Get("/admin/views/home/current-operations") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
@@ -126,7 +124,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("delete current operation") {
+    Scenario("delete current operation") {
       Delete("/admin/views/home/current-operations/current-operation-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
@@ -143,8 +141,8 @@ class AdminCurrentOperationApiTest
     }
   }
 
-  feature("admin user") {
-    scenario("post current operation with admin rights") {
+  Feature("admin user") {
+    Scenario("post current operation with admin rights") {
 
       when(currentOperationService.create(any[CreateCurrentOperationRequest]))
         .thenReturn(Future.successful(currentOperation))
@@ -164,7 +162,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("post current operation - bad request: some mandatory field missing") {
+    Scenario("post current operation - bad request: some mandatory field missing") {
       Post("/admin/views/home/current-operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "questionId": "question-id",
@@ -177,7 +175,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("post current operation - bad request: some field with length too long") {
+    Scenario("post current operation - bad request: some field with length too long") {
       Post("/admin/views/home/current-operations")
         .withEntity(
           HttpEntity(
@@ -198,7 +196,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("post current operation - bad request: two link are defined") {
+    Scenario("post current operation - bad request: two link are defined") {
       Post("/admin/views/home/current-operations")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "questionId": "question-id",
@@ -215,11 +213,11 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("put current operation with admin rights") {
+    Scenario("put current operation with admin rights") {
 
       when(
         currentOperationService
-          .update(matches(CurrentOperationId("current-operation-id")), any[UpdateCurrentOperationRequest])
+          .update(eqTo(CurrentOperationId("current-operation-id")), any[UpdateCurrentOperationRequest])
       ).thenReturn(Future.successful(Some(currentOperation)))
 
       Put("/admin/views/home/current-operations/current-operation-id")
@@ -237,10 +235,10 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("put current operation - not found") {
+    Scenario("put current operation - not found") {
       when(
         currentOperationService
-          .update(matches(CurrentOperationId("not-found-id")), any[UpdateCurrentOperationRequest])
+          .update(eqTo(CurrentOperationId("not-found-id")), any[UpdateCurrentOperationRequest])
       ).thenReturn(Future.successful(None))
 
       Put("/admin/views/home/current-operations/not-found-id")
@@ -258,7 +256,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("put current operation - bad request: some mandatory field are missing") {
+    Scenario("put current operation - bad request: some mandatory field are missing") {
       Put("/admin/views/home/current-operations/current-operation-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "questionId": "question-id",
@@ -269,7 +267,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("put current operation - bad request: some field with length too long") {
+    Scenario("put current operation - bad request: some field with length too long") {
       Put("/admin/views/home/current-operations/current-operation-id")
         .withEntity(
           HttpEntity(
@@ -290,7 +288,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("put current operation - bad request: two link are defined") {
+    Scenario("put current operation - bad request: two link are defined") {
       Put("/admin/views/home/current-operations/current-operation-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "questionId": "question-id",
@@ -307,11 +305,11 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("get current operation with admin rights") {
+    Scenario("get current operation with admin rights") {
 
       when(
         currentOperationService
-          .getCurrentOperation(matches(CurrentOperationId("current-operation-id")))
+          .getCurrentOperation(eqTo(CurrentOperationId("current-operation-id")))
       ).thenReturn(Future.successful(Some(currentOperation)))
 
       Get("/admin/views/home/current-operations/current-operation-id")
@@ -320,11 +318,11 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("get current operation - not found") {
+    Scenario("get current operation - not found") {
 
       when(
         currentOperationService
-          .getCurrentOperation(matches(CurrentOperationId("not-found-id")))
+          .getCurrentOperation(eqTo(CurrentOperationId("not-found-id")))
       ).thenReturn(Future.successful(None))
 
       Get("/admin/views/home/current-operations/not-found-id")
@@ -333,7 +331,7 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("get current operations with admin rights") {
+    Scenario("get current operations with admin rights") {
 
       when(currentOperationService.getAll).thenReturn(Future.successful(Seq(currentOperation)))
 
@@ -343,16 +341,16 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("delete current operation with admin rights") {
+    Scenario("delete current operation with admin rights") {
 
       when(
         currentOperationService
-          .getCurrentOperation(matches(CurrentOperationId("current-operation-id")))
+          .getCurrentOperation(eqTo(CurrentOperationId("current-operation-id")))
       ).thenReturn(Future.successful(Some(currentOperation)))
 
       when(
         currentOperationService
-          .delete(matches(CurrentOperationId("current-operation-id")))
+          .delete(eqTo(CurrentOperationId("current-operation-id")))
       ).thenReturn(Future.successful({}))
 
       Delete("/admin/views/home/current-operations/current-operation-id")
@@ -361,11 +359,11 @@ class AdminCurrentOperationApiTest
       }
     }
 
-    scenario("delete current operation - not found") {
+    Scenario("delete current operation - not found") {
 
       when(
         currentOperationService
-          .getCurrentOperation(matches(CurrentOperationId("not-found-id")))
+          .getCurrentOperation(eqTo(CurrentOperationId("not-found-id")))
       ).thenReturn(Future.successful(None))
 
       Delete("/admin/views/home/current-operations/not-found-id")

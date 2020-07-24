@@ -31,8 +31,6 @@ import org.make.core.personality.{
   PersonalityRoleFieldId,
   PersonalityRoleId
 }
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito.when
 
 import scala.concurrent.Future
 
@@ -57,14 +55,14 @@ class AdminPersonalityRoleApiTest
     required = true
   )
 
-  feature("post personality role") {
-    scenario("post personality role unauthenticated") {
+  Feature("post personality role") {
+    Scenario("post personality role unauthenticated") {
       Post("/admin/personality-roles").withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("post personality without admin rights") {
+    Scenario("post personality without admin rights") {
       Post("/admin/personality-roles")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -72,7 +70,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("post personality with admin rights") {
+    Scenario("post personality with admin rights") {
 
       when(
         personalityRoleService
@@ -88,7 +86,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("post scenario with wrong request") {
+    Scenario("post scenario with wrong request") {
       Post("/admin/personality-roles")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "firstName": "false"
@@ -99,15 +97,15 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("put personality role") {
-    scenario("put personality role unauthenticated") {
+  Feature("put personality role") {
+    Scenario("put personality role unauthenticated") {
       Put("/admin/personality-roles/personality-role-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("put personality role without admin rights") {
+    Scenario("put personality role without admin rights") {
       Put("/admin/personality-roles/personality-role-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -115,7 +113,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("put personality role with admin rights") {
+    Scenario("put personality role with admin rights") {
 
       when(personalityRoleService.updatePersonalityRole(any[PersonalityRoleId], any[UpdatePersonalityRoleRequest]))
         .thenReturn(Future.successful(Some(personalityRole)))
@@ -129,7 +127,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("put non existent personality role") {
+    Scenario("put non existent personality role") {
       when(personalityRoleService.updatePersonalityRole(any[PersonalityRoleId], any[UpdatePersonalityRoleRequest]))
         .thenReturn(Future.successful(None))
 
@@ -143,21 +141,21 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("get personality roles") {
-    scenario("get personality roles unauthenticated") {
+  Feature("get personality roles") {
+    Scenario("get personality roles unauthenticated") {
       Get("/admin/personality-roles") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get personality roles without admin rights") {
+    Scenario("get personality roles without admin rights") {
       Get("/admin/personality-roles")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get personality roles with admin rights") {
+    Scenario("get personality roles with admin rights") {
 
       when(personalityRoleService.find(start = 0, end = None, sort = None, order = None, roleIds = None, name = None))
         .thenReturn(Future.successful(Seq(personalityRole)))
@@ -170,21 +168,21 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("get personality role") {
-    scenario("get personality role unauthenticated") {
+  Feature("get personality role") {
+    Scenario("get personality role unauthenticated") {
       Get("/admin/personality-roles/personality-role-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get personality role without admin rights") {
+    Scenario("get personality role without admin rights") {
       Get("/admin/personality-roles/personality-role-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get personality role with admin rights") {
+    Scenario("get personality role with admin rights") {
 
       when(personalityRoleService.getPersonalityRole(any[PersonalityRoleId]))
         .thenReturn(Future.successful(Some(personalityRole)))
@@ -195,7 +193,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("get non existent personality role") {
+    Scenario("get non existent personality role") {
 
       when(personalityRoleService.getPersonalityRole(any[PersonalityRoleId]))
         .thenReturn(Future.successful(None))
@@ -207,21 +205,21 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("delete personality role") {
-    scenario("delete personality role unauthenticated") {
+  Feature("delete personality role") {
+    Scenario("delete personality role unauthenticated") {
       Delete("/admin/personality-roles/personality-role-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("delete personality role without admin rights") {
+    Scenario("delete personality role without admin rights") {
       Delete("/admin/personality-roles/personality-role-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("delete personality role with admin rights") {
+    Scenario("delete personality role with admin rights") {
 
       when(personalityRoleService.deletePersonalityRole(any[PersonalityRoleId]))
         .thenReturn(Future.successful {})
@@ -233,8 +231,8 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("post personality role field") {
-    scenario("post personality role field unauthenticated") {
+  Feature("post personality role field") {
+    Scenario("post personality role field unauthenticated") {
       Post("/admin/personality-roles/personality-role-id/fields").withEntity(
         HttpEntity(ContentTypes.`application/json`, "")
       ) ~> routes ~> check {
@@ -242,7 +240,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("post personality field without admin rights") {
+    Scenario("post personality field without admin rights") {
       Post("/admin/personality-roles/personality-role-id/fields")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -250,7 +248,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("post personality field with admin rights") {
+    Scenario("post personality field with admin rights") {
 
       when(
         personalityRoleFieldService
@@ -268,7 +266,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("post scenario with wrong request") {
+    Scenario("post scenario with wrong request") {
       Post("/admin/personality-roles/personality-role-id/fields")
         .withEntity(HttpEntity(ContentTypes.`application/json`, """{
                                                                   | "name": "false"
@@ -279,15 +277,15 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("put personality role field") {
-    scenario("put personality role field unauthenticated") {
+  Feature("put personality role field") {
+    Scenario("put personality role field unauthenticated") {
       Put("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, "")) ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("put personality role field without admin rights") {
+    Scenario("put personality role field without admin rights") {
       Put("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
         .withEntity(HttpEntity(ContentTypes.`application/json`, ""))
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
@@ -295,7 +293,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("put personality role field with admin rights") {
+    Scenario("put personality role field with admin rights") {
 
       when(
         personalityRoleFieldService
@@ -317,7 +315,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("put non existent personality role field") {
+    Scenario("put non existent personality role field") {
       when(
         personalityRoleFieldService.updatePersonalityRoleField(
           any[PersonalityRoleFieldId],
@@ -338,21 +336,21 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("get personality role fields") {
-    scenario("get personality role fields unauthenticated") {
+  Feature("get personality role fields") {
+    Scenario("get personality role fields unauthenticated") {
       Get("/admin/personality-roles/personality-role-id/fields") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get personality role fields without admin rights") {
+    Scenario("get personality role fields without admin rights") {
       Get("/admin/personality-roles/personality-role-id/fields")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get personality role fields with admin rights") {
+    Scenario("get personality role fields with admin rights") {
 
       when(
         personalityRoleFieldService
@@ -383,21 +381,21 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("get personality role field") {
-    scenario("get personality role field nauthenticated") {
+  Feature("get personality role field") {
+    Scenario("get personality role field nauthenticated") {
       Get("/admin/personality-roles/personality-role-id/fields/personality-role-field-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("get personality role field without admin rights") {
+    Scenario("get personality role field without admin rights") {
       Get("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("get personality role fieldwith admin rights") {
+    Scenario("get personality role fieldwith admin rights") {
 
       when(personalityRoleFieldService.getPersonalityRoleField(any[PersonalityRoleFieldId], any[PersonalityRoleId]))
         .thenReturn(Future.successful(Some(personalityRoleField)))
@@ -408,7 +406,7 @@ class AdminPersonalityRoleApiTest
       }
     }
 
-    scenario("get non existent personality role field") {
+    Scenario("get non existent personality role field") {
 
       when(personalityRoleFieldService.getPersonalityRoleField(any[PersonalityRoleFieldId], any[PersonalityRoleId]))
         .thenReturn(Future.successful(None))
@@ -420,21 +418,21 @@ class AdminPersonalityRoleApiTest
     }
   }
 
-  feature("delete personality role field") {
-    scenario("delete personality role field unauthenticated") {
+  Feature("delete personality role field") {
+    Scenario("delete personality role field unauthenticated") {
       Delete("/admin/personality-roles/personality-role-id/fields/personality-role-field-id") ~> routes ~> check {
         status shouldBe StatusCodes.Unauthorized
       }
     }
 
-    scenario("delete personality role field without admin rights") {
+    Scenario("delete personality role field without admin rights") {
       Delete("/admin/personality-roles/personality-role-id/fields/personality-role-field-id")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
-    scenario("delete personality role field with admin rights") {
+    Scenario("delete personality role field with admin rights") {
 
       when(personalityRoleFieldService.deletePersonalityRoleField(any[PersonalityRoleFieldId]))
         .thenReturn(Future.successful {})

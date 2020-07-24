@@ -25,8 +25,8 @@ import org.make.api.MakeUnitTest
 
 class MailJetEventTest extends MakeUnitTest {
 
-  feature("deserialize MailJet events") {
-    scenario("deserialize a bounce event") {
+  Feature("deserialize MailJet events") {
+    Scenario("deserialize a bounce event") {
       Given("a bounce json event from Mailjet")
       When("I deserialize json")
       Then("I get a MailJetBounceEvent")
@@ -67,7 +67,7 @@ class MailJetEventTest extends MakeUnitTest {
       )
     }
 
-    scenario("deserialize an empty bounce event") {
+    Scenario("deserialize an empty bounce event") {
       Given("an empty bounce json event from Mailjet")
       When("I deserialize json")
       Then("I get a MailJetBounceEvent")
@@ -110,7 +110,7 @@ class MailJetEventTest extends MakeUnitTest {
       )
     }
 
-    scenario("deserialize a blocked event") {
+    Scenario("deserialize a blocked event") {
       Given("a blocked json event from Mailjet")
       When("I deserialize json")
       Then("I get a MailJetBlockedEvent")
@@ -149,7 +149,7 @@ class MailJetEventTest extends MakeUnitTest {
       )
     }
 
-    scenario("deserialize a spam event") {
+    Scenario("deserialize a spam event") {
       Given("a spam json event from Mailjet")
       When("I deserialize json")
       Then("I get a MailJetSpamEvent")
@@ -187,7 +187,7 @@ class MailJetEventTest extends MakeUnitTest {
       )
     }
 
-    scenario("deserialize a unsub event") {
+    Scenario("deserialize a unsub event") {
       Given("a unsub json event from Mailjet")
       When("I deserialize json")
       Then("I get a MailJetUnsubEvent")
@@ -235,7 +235,7 @@ class MailJetEventTest extends MakeUnitTest {
       )
     }
 
-    scenario("deserialize an empty unsub event") {
+    Scenario("deserialize an empty unsub event") {
       Given("an empty unsub json event from Mailjet")
       When("I deserialize json")
       Then("I get a MailJetUnsubEvent")
@@ -279,7 +279,7 @@ class MailJetEventTest extends MakeUnitTest {
       )
     }
 
-    scenario("deserialize an unknown Mailjet event") {
+    Scenario("deserialize an unknown Mailjet event") {
       Given("an unknown json event from Mailjet")
       When("I deserialize json")
       Then("I get a MailJetBaseEvent")

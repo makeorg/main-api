@@ -25,7 +25,7 @@ import org.make.api.MakeUnitTest
 
 class DeserTest extends MakeUnitTest {
 
-  feature("webflow item") {
+  Feature("webflow item") {
     val sampleItem =
       """{
                        |  "_archived": false,
@@ -54,7 +54,7 @@ class DeserTest extends MakeUnitTest {
                        |  "_cid": "580e63fc8c9a982ac9b8b745",
                        |  "_id": "580e64008c9a982ac9b8b754"
                        |}""".stripMargin
-    scenario("simple item") {
+    Scenario("simple item") {
       case class SimpleItem(postBody: String, postSummary: String)
       object SimpleItem {
         implicit val decoder: Decoder[SimpleItem] =
@@ -71,7 +71,7 @@ class DeserTest extends MakeUnitTest {
       )
       decoded.map(_.metas.slug).toOption should contain("5-principles-of-effective-web-design")
     }
-    scenario("item has duplicates with metas") {
+    Scenario("item has duplicates with metas") {
       case class DuplicateItem(name: String, postSummary: String)
       object DuplicateItem {
         implicit val decoder: Decoder[DuplicateItem] =
@@ -88,7 +88,7 @@ class DeserTest extends MakeUnitTest {
       )
       decoded.map(_.metas.slug).toOption should contain("5-principles-of-effective-web-design")
     }
-    scenario("empty item") {
+    Scenario("empty item") {
       case class EmptyItem()
       object EmptyItem {
         implicit val decoder: Decoder[EmptyItem] = deriveDecoder[EmptyItem]
@@ -101,7 +101,7 @@ class DeserTest extends MakeUnitTest {
     }
   }
 
-  feature("webflow items") {
+  Feature("webflow items") {
     val sampleWebflowItems =
       """{
     |  "items": [
@@ -139,7 +139,7 @@ class DeserTest extends MakeUnitTest {
     |  "total": 5
     |}
   """.stripMargin
-    scenario("simple item") {
+    Scenario("simple item") {
       case class SampleItem(postBody: String, postSummary: String)
       object SampleItem {
         implicit val decoder: Decoder[SampleItem] =

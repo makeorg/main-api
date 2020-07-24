@@ -45,8 +45,6 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, UserId, UserType}
 import org.make.core.{operation, DateHelper, RequestContext}
-import org.mockito.ArgumentMatchers.{any, eq => matches}
-import org.mockito.{ArgumentMatchers, Mockito}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -248,8 +246,8 @@ class HomeViewServiceComponentTest
     )
   )
 
-  feature("home view") {
-    scenario("get home view data") {
+  Feature("home view") {
+    Scenario("get home view data") {
 
       val requestContext: RequestContext =
         RequestContext.empty.copy(language = Some(Language("fr")), country = Some(Country("FR")))
@@ -301,63 +299,53 @@ class HomeViewServiceComponentTest
         )
       }
 
-      Mockito.when(sortAlgorithmConfiguration.popularVoteCountThreshold).thenReturn(200)
-      Mockito.when(sortAlgorithmConfiguration.controversyThreshold).thenReturn(0.1d)
-      Mockito.when(sortAlgorithmConfiguration.controversyVoteCountThreshold).thenReturn(100)
+      when(sortAlgorithmConfiguration.popularVoteCountThreshold).thenReturn(200)
+      when(sortAlgorithmConfiguration.controversyThreshold).thenReturn(0.1d)
+      when(sortAlgorithmConfiguration.controversyVoteCountThreshold).thenReturn(100)
 
-      Mockito
-        .when(operationService.findSimple())
+      when(operationService.findSimple())
         .thenReturn(Future.successful(operations))
 
-      Mockito
-        .when(
-          questionService.searchQuestion(
-            ArgumentMatchers.eq(
-              SearchQuestionRequest(
-                maybeQuestionIds = Some(questions.map(_.questionId)),
-                limit = Some(questions.length)
+      when(
+        questionService.searchQuestion(
+          eqTo(
+            SearchQuestionRequest(maybeQuestionIds = Some(questions.map(_.questionId)), limit = Some(questions.length))
+          )
+        )
+      ).thenReturn(Future.successful(questions))
+
+      when(
+        operationOfQuestionService
+          .search(searchQuery = OperationOfQuestionSearchQuery(
+            limit = Some(10000),
+            sort = Some("startDate"),
+            order = Some("desc"),
+            filters = Some(
+              OperationOfQuestionSearchFilters(
+                language = Option(operation.LanguageSearchFilter(Language("fr"))),
+                country = Some(operation.CountrySearchFilter(Country("FR")))
               )
             )
           )
-        )
-        .thenReturn(Future.successful(questions))
+          )
+      ).thenReturn(Future.successful(operationOfQuestions))
 
-      Mockito
-        .when(
-          operationOfQuestionService
-            .search(searchQuery = OperationOfQuestionSearchQuery(
-              limit = Some(10000),
-              sort = Some("startDate"),
-              order = Some("desc"),
-              filters = Some(
-                OperationOfQuestionSearchFilters(
-                  language = Option(operation.LanguageSearchFilter(Language("fr"))),
-                  country = Some(operation.CountrySearchFilter(Country("FR")))
-                )
-              )
-            )
-            )
+      when(
+        elasticsearchProposalAPI.countProposalsByQuestion(
+          eqTo(Some(questions.map(_.questionId))),
+          eqTo(Some(ProposalStatus.statusMap.values.toSeq)),
+          eqTo(None)
         )
-        .thenReturn(Future.successful(operationOfQuestions))
-
-      Mockito
-        .when(
-          elasticsearchProposalAPI.countProposalsByQuestion(
-            ArgumentMatchers.eq(Some(questions.map(_.questionId))),
-            ArgumentMatchers.eq(Some(ProposalStatus.statusMap.values.toSeq)),
-            ArgumentMatchers.eq(None)
+      ).thenReturn(
+        Future.successful(
+          Map(
+            question1.questionId -> 2L,
+            question2.questionId -> 5L,
+            question3.questionId -> 20L,
+            question4.questionId -> 50L
           )
         )
-        .thenReturn(
-          Future.successful(
-            Map(
-              question1.questionId -> 2L,
-              question2.questionId -> 5L,
-              question3.questionId -> 20L,
-              question4.questionId -> 50L
-            )
-          )
-        )
+      )
       val searchQueryPopular = SearchQuery(
         limit = Some(2),
         sortAlgorithm = Some(PopularAlgorithm(200)),
@@ -370,14 +358,7 @@ class HomeViewServiceComponentTest
         )
       )
       val searchQueryControverse = searchQueryPopular.copy(sortAlgorithm = Some(ControversyAlgorithm(0.1d, 100)))
-      Mockito
-        .when(
-          proposalService.searchForUser(
-            ArgumentMatchers.eq(Some(userId)),
-            ArgumentMatchers.eq(searchQueryPopular),
-            ArgumentMatchers.eq(requestContext)
-          )
-        )
+      when(proposalService.searchForUser(eqTo(Some(userId)), eqTo(searchQueryPopular), eqTo(requestContext)))
         .thenReturn(
           Future.successful(
             ProposalsResultSeededResponse(
@@ -394,14 +375,7 @@ class HomeViewServiceComponentTest
             )
           )
         )
-      Mockito
-        .when(
-          proposalService.searchForUser(
-            ArgumentMatchers.eq(Some(userId)),
-            ArgumentMatchers.eq(searchQueryControverse),
-            ArgumentMatchers.eq(requestContext)
-          )
-        )
+      when(proposalService.searchForUser(eqTo(Some(userId)), eqTo(searchQueryControverse), eqTo(requestContext)))
         .thenReturn(
           Future.successful(
             ProposalsResultSeededResponse(
@@ -419,8 +393,7 @@ class HomeViewServiceComponentTest
           )
         )
 
-      Mockito
-        .when(currentOperationService.getAll)
+      when(currentOperationService.getAll)
         .thenReturn(
           Future.successful(
             Seq(
@@ -439,8 +412,7 @@ class HomeViewServiceComponentTest
           )
         )
 
-      Mockito
-        .when(featuredOperationService.getAll)
+      when(featuredOperationService.getAll)
         .thenReturn(
           Future.successful(
             Seq(
@@ -493,102 +465,91 @@ class HomeViewServiceComponentTest
       }
     }
 
-    scenario("home-page view") {
+    Scenario("home-page view") {
 
-      Mockito
-        .when(
-          userService.adminCountUsers(
-            any[Option[String]],
-            any[Option[String]],
-            any[Option[String]],
-            any[Option[Role]],
-            matches(Some(UserType.UserTypeOrganisation))
-          )
+      when(
+        userService.adminCountUsers(
+          any[Option[String]],
+          any[Option[String]],
+          any[Option[String]],
+          any[Option[Role]],
+          eqTo(Some(UserType.UserTypeOrganisation))
         )
-        .thenReturn(Future.successful(9001))
+      ).thenReturn(Future.successful(9001))
 
-      Mockito
-        .when(elasticsearchOperationOfQuestionAPI.highlights())
+      when(elasticsearchOperationOfQuestionAPI.highlights())
         .thenReturn(Future.successful(Highlights(42, 84, 0)))
 
-      Mockito
-        .when(
-          elasticsearchOperationOfQuestionAPI
-            .searchOperationOfQuestions(
-              ArgumentMatchers.argThat(
-                (arg: OperationOfQuestionSearchQuery) =>
-                  arg match {
-                    case OperationOfQuestionSearchQuery(
-                        Some(
-                          OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, Some(FeaturedSearchFilter(true)), _)
-                        ),
-                        _,
-                        _,
-                        _,
-                        _,
-                        _
-                        ) =>
-                      true
-                    case _ => false
-                  }
-              )
+      when(
+        elasticsearchOperationOfQuestionAPI
+          .searchOperationOfQuestions(
+            argThat(
+              (arg: OperationOfQuestionSearchQuery) =>
+                arg match {
+                  case OperationOfQuestionSearchQuery(
+                      Some(
+                        OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, Some(FeaturedSearchFilter(true)), _)
+                      ),
+                      _,
+                      _,
+                      _,
+                      _,
+                      _
+                      ) =>
+                    true
+                  case _ => false
+                }
             )
-        )
-        .thenReturn(Future.successful {
-          val results = operationOfQuestions.results.filter(_.featured).sortBy(_.endDate).reverse
-          OperationOfQuestionSearchResult(results.size, results)
-        })
+          )
+      ).thenReturn(Future.successful {
+        val results = operationOfQuestions.results.filter(_.featured).sortBy(_.endDate).reverse
+        OperationOfQuestionSearchResult(results.size, results)
+      })
 
-      Mockito
-        .when(
-          elasticsearchOperationOfQuestionAPI
-            .searchOperationOfQuestions(
-              ArgumentMatchers.argThat(
-                (arg: OperationOfQuestionSearchQuery) =>
-                  arg match {
-                    case OperationOfQuestionSearchQuery(
-                        Some(
-                          OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(OOQStatusSearchFilter(_)))
-                        ),
-                        _,
-                        _,
-                        _,
-                        _,
-                        _
-                        ) =>
-                      true
-                    case _ => false
-                  }
-              )
+      when(
+        elasticsearchOperationOfQuestionAPI
+          .searchOperationOfQuestions(
+            argThat(
+              (arg: OperationOfQuestionSearchQuery) =>
+                arg match {
+                  case OperationOfQuestionSearchQuery(
+                      Some(OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(OOQStatusSearchFilter(_)))),
+                      _,
+                      _,
+                      _,
+                      _,
+                      _
+                      ) =>
+                    true
+                  case _ => false
+                }
             )
-        )
-        .thenReturn(Future.successful {
-          val results = operationOfQuestions.results
-            .filter(_.status == OperationOfQuestion.Status.Open)
-            .sortBy(e => (e.featured, e.endDate))
-            .reverse
-          OperationOfQuestionSearchResult(results.size, results)
-        })
+          )
+      ).thenReturn(Future.successful {
+        val results = operationOfQuestions.results
+          .filter(_.status == OperationOfQuestion.Status.Open)
+          .sortBy(e => (e.featured, e.endDate))
+          .reverse
+        OperationOfQuestionSearchResult(results.size, results)
+      })
 
       val indexedPosts: Seq[IndexedPost] =
         Seq(indexedPost(PostId("post-id-1")), indexedPost(PostId("post-id-2")))
       val postsResponses: Seq[HomePageViewResponse.PostResponse] =
         indexedPosts.map(HomePageViewResponse.PostResponse.fromIndexedPost)
 
-      Mockito
-        .when(
-          postService.search(
-            ArgumentMatchers.eq(
-              PostSearchQuery(
-                filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
-                sort = Some(PostElasticsearchFieldNames.postDate),
-                order = Some("DESC"),
-                limit = Some(3)
-              )
+      when(
+        postService.search(
+          eqTo(
+            PostSearchQuery(
+              filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
+              sort = Some(PostElasticsearchFieldNames.postDate),
+              order = Some("DESC"),
+              limit = Some(3)
             )
           )
         )
-        .thenReturn(Future.successful(PostSearchResult(2, indexedPosts)))
+      ).thenReturn(Future.successful(PostSearchResult(2, indexedPosts)))
 
       val futureHomePageViewResponse: Future[HomePageViewResponse] =
         homeViewService.getHomePageViewResponse(Country("FR"), Language("fr"))

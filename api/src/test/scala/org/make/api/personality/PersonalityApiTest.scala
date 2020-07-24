@@ -34,8 +34,6 @@ import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId, UserType}
-import org.mockito.Mockito.when
-import org.mockito.{ArgumentMatchers, Mockito}
 
 import scala.concurrent.Future
 
@@ -67,20 +65,18 @@ class PersonalityApiTest
 
   override val customUserByToken = Map(tokenPersonalityCitizen -> returnedPersonality)
 
-  Mockito
-    .when(userService.getPersonality(ArgumentMatchers.eq(returnedPersonality.userId)))
+  when(userService.getPersonality(eqTo(returnedPersonality.userId)))
     .thenReturn(Future.successful(Some(returnedPersonality)))
 
-  Mockito
-    .when(userService.getPersonality(ArgumentMatchers.eq(UserId("non-existant"))))
+  when(userService.getPersonality(eqTo(UserId("non-existant"))))
     .thenReturn(Future.successful(None))
 
-  Mockito
-    .when(userService.update(ArgumentMatchers.any[User], ArgumentMatchers.any[RequestContext]))
-    .thenAnswer(invocation => Future.successful(invocation.getArgument[User](0)))
+  when(userService.update(any[User], any[RequestContext])).thenAnswer { user: User =>
+    Future.successful(user)
+  }
 
-  feature("get personality") {
-    scenario("get existing personality") {
+  Feature("get personality") {
+    Scenario("get existing personality") {
       Get("/personalities/personality-id") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val personality: UserResponse = entityAs[UserResponse]
@@ -88,15 +84,15 @@ class PersonalityApiTest
       }
     }
 
-    scenario("get non existing organisation") {
+    Scenario("get non existing organisation") {
       Get("/personalities/non-existant") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
   }
 
-  feature("get personality profile") {
-    scenario("get existing personality") {
+  Feature("get personality profile") {
+    Scenario("get existing personality") {
       Get("/personalities/personality-id/profile") ~> routes ~> check {
         status should be(StatusCodes.OK)
         val personality = entityAs[PersonalityProfileResponse]
@@ -105,14 +101,14 @@ class PersonalityApiTest
       }
     }
 
-    scenario("get non existing organisation") {
+    Scenario("get non existing organisation") {
       Get("/personalities/non-existant/profile") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
   }
 
-  feature("modify profile") {
+  Feature("modify profile") {
     val entity = """
                 |{
                 |  "firstName": "Morteau",
@@ -125,14 +121,14 @@ class PersonalityApiTest
                 |}
                 """.stripMargin
 
-    scenario("unauthentificated modification") {
+    Scenario("unauthentificated modification") {
       Put(s"/personalities/${returnedPersonality.userId.value}/profile")
         .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
-    scenario("wrong user") {
+    Scenario("wrong user") {
       Put(s"/personalities/${returnedPersonality.userId.value}/profile")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
@@ -140,7 +136,7 @@ class PersonalityApiTest
       }
     }
 
-    scenario("correct user") {
+    Scenario("correct user") {
       Put(s"/personalities/${returnedPersonality.userId.value}/profile")
         .withHeaders(Authorization(OAuth2BearerToken(tokenPersonalityCitizen)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, entity)) ~> routes ~> check {
@@ -156,7 +152,7 @@ class PersonalityApiTest
       }
     }
 
-    scenario("bad request") {
+    Scenario("bad request") {
 
       val invalidEntity = """
                      |{
@@ -172,10 +168,10 @@ class PersonalityApiTest
     }
   }
 
-  feature("create top idea comment for personality") {
+  Feature("create top idea comment for personality") {
     val personalityId: UserId = defaultCitizenUser.userId
 
-    scenario("access refused for other user than self") {
+    Scenario("access refused for other user than self") {
       Post(s"/personalities/some-user-other-than-self/comments") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
@@ -202,8 +198,8 @@ class PersonalityApiTest
         }
     }
 
-    scenario("access granted but not found if not personality") {
-      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+    Scenario("access granted but not found if not personality") {
+      when(userService.getPersonality(eqTo(personalityId)))
         .thenReturn(Future.successful(None))
 
       Post(s"/personalities/${personalityId.value}/comments")
@@ -214,11 +210,11 @@ class PersonalityApiTest
         }
     }
 
-    scenario("authorized and personality but top idea does not exist") {
-      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+    Scenario("authorized and personality but top idea does not exist") {
+      when(userService.getPersonality(eqTo(personalityId)))
         .thenReturn(Future.successful(Some(TestUtils.user(personalityId, userType = UserType.UserTypePersonality))))
 
-      when(topIdeaService.getById(ArgumentMatchers.eq(TopIdeaId("fake-top-idea-id"))))
+      when(topIdeaService.getById(eqTo(TopIdeaId("fake-top-idea-id"))))
         .thenReturn(Future.successful(None))
 
       val entity =
@@ -240,8 +236,8 @@ class PersonalityApiTest
         }
     }
 
-    scenario("validation error") {
-      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+    Scenario("validation error") {
+      when(userService.getPersonality(eqTo(personalityId)))
         .thenReturn(Future.successful(Some(TestUtils.user(personalityId, userType = UserType.UserTypePersonality))))
 
       val entity =
@@ -263,11 +259,11 @@ class PersonalityApiTest
         }
     }
 
-    scenario("successful create") {
-      when(userService.getPersonality(ArgumentMatchers.eq(personalityId)))
+    Scenario("successful create") {
+      when(userService.getPersonality(eqTo(personalityId)))
         .thenReturn(Future.successful(Some(TestUtils.user(personalityId, userType = UserType.UserTypePersonality))))
 
-      when(topIdeaService.getById(ArgumentMatchers.eq(TopIdeaId("top-idea-id"))))
+      when(topIdeaService.getById(eqTo(TopIdeaId("top-idea-id"))))
         .thenReturn(
           Future.successful(
             Some(
@@ -286,13 +282,13 @@ class PersonalityApiTest
 
       when(
         topIdeaCommentService.create(
-          ArgumentMatchers.eq(TopIdeaId("top-idea-id")),
-          ArgumentMatchers.eq(personalityId),
-          ArgumentMatchers.eq(Some("some comment")),
-          ArgumentMatchers.eq(Some("some other comment")),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(CommentVoteKey.Agree),
-          ArgumentMatchers.eq(Some(CommentQualificationKey.Doable))
+          eqTo(TopIdeaId("top-idea-id")),
+          eqTo(personalityId),
+          eqTo(Some("some comment")),
+          eqTo(Some("some other comment")),
+          eqTo(None),
+          eqTo(CommentVoteKey.Agree),
+          eqTo(Some(CommentQualificationKey.Doable))
         )
       ).thenReturn(
         Future.successful(
@@ -329,24 +325,24 @@ class PersonalityApiTest
     }
   }
 
-  feature("get personality opinions") {
+  Feature("get personality opinions") {
 
-    scenario("personality not found") {
+    Scenario("personality not found") {
       Get("/personalities/non-existant/opinions") ~> routes ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
-    scenario("personality not in question") {
+    Scenario("personality not in question") {
       when(
         questionPersonalityService.find(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(UserId("personality-id"))),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None)
+          eqTo(0),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(UserId("personality-id"))),
+          eqTo(None),
+          eqTo(None)
         )
       ).thenReturn(Future.successful(Seq.empty))
 
@@ -357,16 +353,16 @@ class PersonalityApiTest
       }
     }
 
-    scenario("empty list of top ideas") {
+    Scenario("empty list of top ideas") {
       when(
         questionPersonalityService.find(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(UserId("personality-id"))),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None)
+          eqTo(0),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(UserId("personality-id"))),
+          eqTo(None),
+          eqTo(None)
         )
       ).thenReturn(
         Future.successful(
@@ -388,7 +384,7 @@ class PersonalityApiTest
       )
       when(
         questionPersonalityService.getPersonalitiesOpinionsByQuestions(
-          ArgumentMatchers.eq(
+          eqTo(
             Seq(
               Personality(
                 personalityId = PersonalityId("one"),
@@ -414,16 +410,16 @@ class PersonalityApiTest
       }
     }
 
-    scenario("all comments") {
+    Scenario("all comments") {
       when(
         questionPersonalityService.find(
-          ArgumentMatchers.eq(0),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(Some(UserId("personality-id"))),
-          ArgumentMatchers.eq(None),
-          ArgumentMatchers.eq(None)
+          eqTo(0),
+          eqTo(None),
+          eqTo(None),
+          eqTo(None),
+          eqTo(Some(UserId("personality-id"))),
+          eqTo(None),
+          eqTo(None)
         )
       ).thenReturn(
         Future.successful(
@@ -446,7 +442,7 @@ class PersonalityApiTest
       when(
         questionPersonalityService
           .getPersonalitiesOpinionsByQuestions(
-            ArgumentMatchers.eq(
+            eqTo(
               Seq(
                 Personality(
                   PersonalityId("one"),
