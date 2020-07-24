@@ -46,7 +46,9 @@ import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
-import org.make.api.userhistory.{ResetPasswordEvent, UserHistoryCoordinatorServiceComponent}
+import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
+import org.make.api.userhistory.ResetPasswordEvent
+import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort
@@ -57,7 +59,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.make.core.{DateHelper, RequestContext, Requirement, Validation, ValidationError}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
@@ -80,7 +82,8 @@ class UserApiTest
     with MakeSettingsComponent
     with ActorSystemComponent
     with StorageServiceComponent
-    with StorageConfigurationComponent {
+    with StorageConfigurationComponent
+    with UserRegistrationValidatorComponent {
 
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -91,6 +94,7 @@ class UserApiTest
   override val questionService: QuestionService = mock[QuestionService]
   override val storageService: StorageService = mock[StorageService]
   override val storageConfiguration: StorageConfiguration = mock[StorageConfiguration]
+  override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
 
@@ -220,6 +224,7 @@ class UserApiTest
   }
 
   Feature("register user") {
+    when(userRegistrationValidator.requirements(any[RegisterUserRequest])).thenReturn(Seq.empty)
 
     when(questionService.getQuestion(any[QuestionId]))
       .thenReturn(
@@ -351,7 +356,6 @@ class UserApiTest
           | "firstName": "olive",
           | "lastName": "tom",
           | "password": "mypassss",
-          | "dateOfBirth": "1997-12-02",
           | "postalCode": "75011",
           | "profession": "football player",
           | "country": "FR",
@@ -373,7 +377,7 @@ class UserApiTest
               lastName = Some("tom"),
               password = Some("mypassss"),
               lastIp = Some("192.0.0.1"),
-              dateOfBirth = Some(LocalDate.parse("1997-12-02")),
+              dateOfBirth = None,
               postalCode = Some("75011"),
               profession = Some("football player"),
               country = Country("FR"),
@@ -580,6 +584,33 @@ class UserApiTest
       }
     }
 
+    Scenario("validation failed for required dateOfBirth") {
+      when(userRegistrationValidator.requirements(any[RegisterUserRequest]))
+        .thenReturn(Seq(Requirement("dateOfBirth", "mandatory", () => false, () => "dateOfBirth is mandatory")))
+      val request =
+        """
+          |{
+          | "email": "foo@bar.com",
+          | "firstName": "olive",
+          | "lastName": "tom",
+          | "password": "mypassss",
+          | "postalCode": "75011",
+          | "profession": "football player",
+          | "country": "FR",
+          | "language": "fr",
+          | "politicalParty": "PP",
+          | "website":"http://example.com"
+          |}
+        """.stripMargin
+
+      Post("/user", HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val dateOfBirthError = errors.find(_.field == "dateOfBirth")
+        dateOfBirthError should be(Some(ValidationError("dateOfBirth", "mandatory", Some("dateOfBirth is mandatory"))))
+      }
+    }
+
     Scenario("validation failed for invalid date of birth") {
       val underage: LocalDate = LocalDate.now().minusYears(5L)
       val overage: LocalDate = LocalDate.now().minusYears(121L)
@@ -616,6 +647,14 @@ class UserApiTest
 
     Scenario("validation failed for invalid consent from minor child") {
       val nineYearsOld: LocalDate = LocalDate.now().minusYears(9L)
+      when(userRegistrationValidator.requirements(any[RegisterUserRequest]))
+        .thenReturn(
+          Seq(
+            Validation.validateLegalConsent("legalMinorConsent", nineYearsOld, None),
+            Validation.validateLegalConsent("legalAdvisorApproval", nineYearsOld, None)
+          )
+        )
+
       def request(dateOfBirth: LocalDate) =
         s"""
           |{
@@ -1791,6 +1830,7 @@ class UserApiTest
     }
 
     Scenario("profile modification with the correct user") {
+      when(userRegistrationValidator.requirements(any[RegisterUserRequest])).thenReturn(Seq.empty)
 
       val entity = """{
         |  "firstName": "new-firstname",
@@ -1836,6 +1876,83 @@ class UserApiTest
 
         status should be(StatusCodes.BadRequest)
 
+      }
+    }
+
+    Scenario("profile modification with missing configured dateOfBirth") {
+      when(userRegistrationValidator.requirements(any[RegisterUserRequest]))
+        .thenReturn(Seq(Requirement("dateOfBirth", "mandatory", () => false, () => "dateOfBirth is mandatory")))
+
+      val entity = """{
+                     |  "firstName": "new-firstname",
+                     |  "lastName": "new-lastname",
+                     |  "avatarUrl": "https://some-avatar.com",
+                     |  "profession": "new-profession",
+                     |  "description": "new-description",
+                     |  "postalCode": "12345",
+                     |  "optInNewsletter": true,
+                     |  "website": "https://some-website.com"
+      }""".stripMargin
+
+      Put(s"/user/${sylvain.userId.value}/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity))
+        .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+
+        val errors = entityAs[Seq[ValidationError]]
+        val dateOfBirthError = errors.find(_.field == "dateOfBirth")
+        errors.size shouldBe 1
+        dateOfBirthError should be(Some(ValidationError("dateOfBirth", "mandatory", Some("dateOfBirth is mandatory"))))
+      }
+    }
+
+    Scenario("profile modification failed for invalid consent from minor child") {
+      val nineYearsOld: LocalDate = LocalDate.now().minusYears(9L)
+
+      when(userRegistrationValidator.requirements(any[RegisterUserRequest]))
+        .thenReturn(
+          Seq(
+            Validation.mandatoryField("dateOfBirth", Some(nineYearsOld)),
+            Validation.validateLegalConsent("legalMinorConsent", nineYearsOld, None),
+            Validation.validateLegalConsent("legalAdvisorApproval", nineYearsOld, None)
+          )
+        )
+
+      def entity(dateOfBirth: LocalDate) = s"""{
+                     |  "firstName": "new-firstname",
+                     |  "lastName": "new-lastname",
+                     |  "dateOfBirth": "${dateOfBirth.toString}",
+                     |  "avatarUrl": "https://some-avatar.com",
+                     |  "profession": "new-profession",
+                     |  "description": "new-description",
+                     |  "postalCode": "12345",
+                     |  "optInNewsletter": true,
+                     |  "website": "https://some-website.com"
+      }""".stripMargin
+
+      Put(s"/user/${sylvain.userId.value}/profile")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, entity(nineYearsOld)))
+        .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+
+        val errors = entityAs[Seq[ValidationError]]
+        errors.size shouldBe 2
+        val legalMinorConsentError = errors.find(_.field == "legalMinorConsent")
+        legalMinorConsentError should be(
+          Some(ValidationError("legalMinorConsent", "legal_consent", Some("Field legalMinorConsent must be approved.")))
+        )
+        val legalAdvisorApprovalError = errors.find(_.field == "legalAdvisorApproval")
+        legalAdvisorApprovalError should be(
+          Some(
+            ValidationError(
+              "legalAdvisorApproval",
+              "legal_consent",
+              Some("Field legalAdvisorApproval must be approved.")
+            )
+          )
+        )
       }
     }
   }
