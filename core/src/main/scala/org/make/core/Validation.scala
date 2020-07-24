@@ -252,7 +252,7 @@ object Validation extends StrictLogging {
     userLegalConsent: Option[Boolean],
     message: Option[String] = None
   ): Requirement = {
-    val condition: Boolean = userDateInput.isAgeBetween(maxAgeWithLegalConsent, maxAge) ||
+    val condition: Boolean = LocalDate.now().minusYears(maxAgeWithLegalConsent).plusDays(1).isAfter(userDateInput) ||
       userDateInput.isAgeBetween(minAgeWithLegalConsent, maxAgeWithLegalConsent) && userLegalConsent.contains(true)
     validateField(fieldName, "legal_consent", condition, message.getOrElse(s"Field $fieldName must be approved."))
   }

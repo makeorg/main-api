@@ -120,9 +120,14 @@ class ValidationTest extends FeatureSpec {
       def validation15(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged15, None))
       Matchers.noException should be thrownBy validation15()
 
-      val aged119 = LocalDate.now.minusYears(119)
-      def validation119(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged119, None))
-      Matchers.noException should be thrownBy validation119()
+      val aged120 = LocalDate.now.minusYears(120)
+      def validation120(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged120, Some(true)))
+      Matchers.noException should be thrownBy validation120()
+
+      val agedReallyOld = LocalDate.now.minusYears(10000)
+      def validationReallyOld(): Unit =
+        Validation.validate(Validation.validateLegalConsent(fieldName, agedReallyOld, None))
+      Matchers.noException should be thrownBy validationReallyOld()
 
       val aged8 = LocalDate.now.minusYears(8)
       def validation8(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged8, Some(true)))
@@ -151,14 +156,6 @@ class ValidationTest extends FeatureSpec {
       def validation14WithoutConsent(): Unit =
         Validation.validate(Validation.validateLegalConsent(fieldName, aged14, None))
       an[ValidationFailedError] should be thrownBy validation14WithoutConsent()
-
-      val aged120 = LocalDate.now.minusYears(120)
-      def validation120(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged120, Some(true)))
-      an[ValidationFailedError] should be thrownBy validation120()
-
-      val aged121 = LocalDate.now.minusYears(121)
-      def validation121(): Unit = Validation.validate(Validation.validateLegalConsent(fieldName, aged121, None))
-      an[ValidationFailedError] should be thrownBy validation121()
     }
 
   }
