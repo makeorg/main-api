@@ -18,6 +18,7 @@
  */
 
 package org.make.api.technical.monitoring
+import com.typesafe.scalalogging.StrictLogging
 import kamon.Kamon
 import kamon.metric.{DynamicRange, Histogram, MeasurementUnit}
 import kamon.tag.TagSet
@@ -37,13 +38,13 @@ final case class HistogramName(applicationName: String, metricName: String) {
   def fullMetricName: String = s"loadtime.$applicationName.$metricName"
 }
 
-trait DefaultMonitoringService extends MonitoringServiceComponent {
+trait DefaultMonitoringService extends MonitoringServiceComponent with StrictLogging {
   override lazy val monitoringService: MonitoringService = new DefaultMonitoringService
 
   class DefaultMonitoringService extends MonitoringService {
 
-    val maxLoadingTime: Long = 1.minute.toMillis
-    val range = DynamicRange(1L, maxLoadingTime, 2)
+    private val maxLoadingTime: Long = 1.minute.toMillis
+    private val range: DynamicRange = DynamicRange(1L, maxLoadingTime, 2)
 
     private var histograms: Map[HistogramName, Histogram] = Map.empty
 
@@ -66,21 +67,22 @@ trait DefaultMonitoringService extends MonitoringServiceComponent {
       histograms(histogramName)
     }
 
+    private def recordIfPositive(applicationName: String, metric: String, value: Long): Unit = {
+      if (value >= 0) {
+        getHistogram(HistogramName(applicationName, metric)).record(value)
+      } else {
+        logger.warn(s"discarding metric $metric for $applicationName since it results in a negative metric")
+      }
+    }
     override def monitorPerformance(applicationName: String, metrics: FrontPerformanceTimings): Unit = {
-      getHistogram(HistogramName(applicationName, "connect")).record(metrics.connectEnd - metrics.connectStart)
-      getHistogram(HistogramName(applicationName, "domain_lookup"))
-        .record(metrics.domainLookupEnd - metrics.domainLookupStart)
-      if (metrics.domComplete > 0) {
-        getHistogram(HistogramName(applicationName, "dom_complete")).record(metrics.domComplete - metrics.responseEnd)
-      }
-      if (metrics.domInteractive > 0) {
-        getHistogram(HistogramName(applicationName, "dom_interactive"))
-          .record(metrics.domInteractive - metrics.responseEnd)
-      }
-      getHistogram(HistogramName(applicationName, "dom_loading")).record(metrics.domLoading - metrics.responseEnd)
-      getHistogram(HistogramName(applicationName, "request_time")).record(metrics.responseEnd - metrics.requestStart)
-      getHistogram(HistogramName(applicationName, "first_byte")).record(metrics.responseStart - metrics.requestStart)
-      getHistogram(HistogramName(applicationName, "transfer_time")).record(metrics.responseEnd - metrics.responseStart)
+      recordIfPositive(applicationName, "connect", metrics.connectEnd - metrics.connectStart)
+      recordIfPositive(applicationName, "domain_lookup", metrics.domainLookupEnd - metrics.domainLookupStart)
+      recordIfPositive(applicationName, "dom_complete", metrics.domComplete - metrics.responseEnd)
+      recordIfPositive(applicationName, "dom_interactive", metrics.domInteractive - metrics.responseEnd)
+      recordIfPositive(applicationName, "dom_loading", metrics.domLoading - metrics.responseEnd)
+      recordIfPositive(applicationName, "request_time", metrics.responseEnd - metrics.requestStart)
+      recordIfPositive(applicationName, "first_byte", metrics.responseStart - metrics.requestStart)
+      recordIfPositive(applicationName, "transfer_time", metrics.responseEnd - metrics.responseStart)
     }
   }
 }
