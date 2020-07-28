@@ -19,34 +19,19 @@
 
 package org.make.api.views
 import java.net.URL
-import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.organisation.OrganisationsSearchResultResponse
-import org.make.api.proposal.{ProposalResponse, ProposalsResultSeededResponse}
+import org.make.api.proposal.{ProposalsResultSeededResponse}
 import org.make.api.question.QuestionOfOperationResponse
 import org.make.api.views.HomePageViewResponse.{Highlights, PostResponse}
 import org.make.core.CirceFormatters
 import org.make.core.operation.indexed.OperationOfQuestionSearchResult
-import org.make.core.operation.{CurrentOperation, FeaturedOperation}
 import org.make.core.post.indexed.IndexedPost
-import org.make.core.question.QuestionId
 
 import scala.annotation.meta.field
-
-final case class HomeViewResponse(
-  popularProposals: Seq[ProposalResponse],
-  controverseProposals: Seq[ProposalResponse],
-  businessConsultations: Seq[BusinessConsultationResponse],
-  featuredConsultations: Seq[FeaturedConsultationResponse],
-  currentConsultations: Seq[CurrentConsultationResponse]
-)
-
-object HomeViewResponse {
-  implicit val encoder: Encoder[HomeViewResponse] = deriveEncoder[HomeViewResponse]
-}
 
 final case class HomePageViewResponse(
   highlights: Highlights,
@@ -79,112 +64,6 @@ object HomePageViewResponse extends CirceFormatters {
   implicit val postEncoder: Encoder[PostResponse] = deriveEncoder
   implicit val highlightsEncoder: Encoder[Highlights] = deriveEncoder
   implicit val encoder: Encoder[HomePageViewResponse] = deriveEncoder
-}
-
-final case class BusinessConsultationThemeResponse(gradientStart: String, gradientEnd: String)
-
-object BusinessConsultationThemeResponse {
-  implicit val encoder: Encoder[BusinessConsultationThemeResponse] =
-    deriveEncoder[BusinessConsultationThemeResponse]
-  implicit val decoder: Decoder[BusinessConsultationThemeResponse] = deriveDecoder[BusinessConsultationThemeResponse]
-}
-
-final case class BusinessConsultationResponse(
-  theme: BusinessConsultationThemeResponse,
-  @(ApiModelProperty @field)(dataType = "dateTime") startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "dateTime") endDate: Option[ZonedDateTime],
-  slug: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about") aboutUrl: Option[String],
-  question: String
-)
-
-object BusinessConsultationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[BusinessConsultationResponse] = deriveEncoder[BusinessConsultationResponse]
-  implicit val decoder: Decoder[BusinessConsultationResponse] = deriveDecoder[BusinessConsultationResponse]
-}
-
-final case class FeaturedConsultationResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "fd7dedff-79ba-4eef-8c3a-c12002d3453e")
-  questionId: Option[QuestionId],
-  questionSlug: Option[String],
-  title: String,
-  description: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/landscape-picture.png") landscapePicture: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/portrait-picture.png") portraitPicture: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "picture alternative") altPicture: String,
-  label: String,
-  buttonLabel: String,
-  internalLink: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external") externalLink: Option[
-    String
-  ],
-  slot: Int
-)
-
-object FeaturedConsultationResponse {
-  implicit val encoder: Encoder[FeaturedConsultationResponse] = deriveEncoder[FeaturedConsultationResponse]
-  implicit val decoder: Decoder[FeaturedConsultationResponse] = deriveDecoder[FeaturedConsultationResponse]
-
-  def apply(featured: FeaturedOperation, slug: Option[String]): FeaturedConsultationResponse =
-    FeaturedConsultationResponse(
-      questionId = featured.questionId,
-      questionSlug = slug,
-      title = featured.title,
-      description = featured.description,
-      landscapePicture = featured.landscapePicture,
-      portraitPicture = featured.portraitPicture,
-      altPicture = featured.altPicture,
-      label = featured.label,
-      buttonLabel = featured.buttonLabel,
-      internalLink = featured.internalLink,
-      externalLink = featured.externalLink,
-      slot = featured.slot
-    )
-}
-
-final case class CurrentConsultationResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "fd7dedff-79ba-4eef-8c3a-c12002d3453e")
-  questionId: Option[QuestionId],
-  questionSlug: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/picture.png") picture: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "picture alternative") altPicture: String,
-  description: String,
-  label: String,
-  linkLabel: String,
-  internalLink: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/external") externalLink: Option[
-    String
-  ],
-  proposalsNumber: Long,
-  @(ApiModelProperty @field)(dataType = "dateTime") startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "dateTime") endDate: Option[ZonedDateTime]
-)
-
-object CurrentConsultationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[CurrentConsultationResponse] = deriveEncoder[CurrentConsultationResponse]
-  implicit val decoder: Decoder[CurrentConsultationResponse] = deriveDecoder[CurrentConsultationResponse]
-
-  def apply(
-    current: CurrentOperation,
-    slug: Option[String],
-    startDate: Option[ZonedDateTime],
-    endDate: Option[ZonedDateTime],
-    proposalsNumber: Long
-  ): CurrentConsultationResponse =
-    CurrentConsultationResponse(
-      questionId = Some(current.questionId),
-      questionSlug = slug,
-      picture = current.picture,
-      altPicture = current.altPicture,
-      description = current.description,
-      label = current.label,
-      linkLabel = current.linkLabel,
-      internalLink = current.internalLink,
-      externalLink = current.externalLink,
-      proposalsNumber = proposalsNumber,
-      startDate = startDate,
-      endDate = endDate
-    )
 }
 
 final case class SearchViewResponse(

@@ -25,25 +25,9 @@ import akka.http.scaladsl.server.Route
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.operation.{
-  CurrentOperationService,
-  CurrentOperationServiceComponent,
-  FeaturedOperationService,
-  FeaturedOperationServiceComponent,
-  OperationOfQuestionService,
-  OperationOfQuestionServiceComponent,
-  OperationService,
-  OperationServiceComponent
-}
+import org.make.api.operation.{OperationOfQuestionService, OperationOfQuestionServiceComponent}
 import org.make.api.organisation.{OrganisationService, OrganisationServiceComponent, OrganisationsSearchResultResponse}
-import org.make.api.proposal.{
-  ProposalSearchEngine,
-  ProposalSearchEngineComponent,
-  ProposalService,
-  ProposalServiceComponent,
-  ProposalsResultSeededResponse
-}
-import org.make.api.question.{QuestionService, QuestionServiceComponent}
+import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
@@ -69,24 +53,14 @@ class ViewApiTest
     with SessionHistoryCoordinatorServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with QuestionServiceComponent
-    with FeaturedOperationServiceComponent
-    with CurrentOperationServiceComponent
     with ProposalServiceComponent
     with OperationOfQuestionServiceComponent
-    with OperationServiceComponent
-    with ProposalSearchEngineComponent
     with HomeViewServiceComponent
     with OrganisationServiceComponent {
 
   override val homeViewService: HomeViewService = mock[HomeViewService]
   override val proposalService: ProposalService = mock[ProposalService]
-  override val questionService: QuestionService = mock[QuestionService]
-  override val featuredOperationService: FeaturedOperationService = mock[FeaturedOperationService]
-  override val currentOperationService: CurrentOperationService = mock[CurrentOperationService]
   override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
-  override val operationService: OperationService = mock[OperationService]
-  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
   override val organisationService: OrganisationService = mock[OrganisationService]
 
   val routes: Route = sealRoute(viewApi.routes)
