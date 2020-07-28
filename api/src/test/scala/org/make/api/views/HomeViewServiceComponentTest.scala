@@ -333,7 +333,7 @@ class HomeViewServiceComponentTest
       when(
         elasticsearchProposalAPI.countProposalsByQuestion(
           eqTo(Some(questions.map(_.questionId))),
-          eqTo(Some(ProposalStatus.statusMap.values.toSeq)),
+          eqTo(Some(ProposalStatus.values)),
           eqTo(None)
         )
       ).thenReturn(

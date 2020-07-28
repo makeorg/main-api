@@ -143,8 +143,8 @@ trait DefaultTagServiceComponent
             tagId = tag.tagId,
             label = tag.label,
             display = tagType.nonEmpty && tagType.headOption
-              .map(_.display.shortName)
-              .contains(TagDisplay.Displayed.shortName)
+              .map(_.display.value)
+              .contains(TagDisplay.Displayed.value)
           )
         } else {
           IndexedTag(tagId = tag.tagId, label = tag.label, display = tag.display == TagDisplay.Displayed)
@@ -178,7 +178,7 @@ trait DefaultTagServiceComponent
             updateTag <- persistentTagService.update(
               tag.copy(
                 label = label,
-                display = if (tagType.exists(_.display.shortName == TagTypeDisplay.Hidden.shortName)) {
+                display = if (tagType.exists(_.display == TagTypeDisplay.Hidden)) {
                   TagDisplay.Hidden
                 } else {
                   display

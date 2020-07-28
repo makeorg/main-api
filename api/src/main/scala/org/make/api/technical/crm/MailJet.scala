@@ -21,12 +21,12 @@ package org.make.api.technical.crm
 
 import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{DefaultFieldMapper, RecordFormat, SchemaFor}
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import org.make.api.technical.security.SecurityHelper
 import org.make.core.user.UserId
 import org.make.core.{AvroSerializers, Sharded}
-import spray.json.{JsString, JsValue, JsonFormat}
 
 import scala.util.matching.Regex
 
@@ -240,55 +240,17 @@ object ManageContact {
   }
 }
 
-sealed trait ManageContactAction {
-  def shortName: String
-}
+sealed abstract class ManageContactAction(val value: String) extends StringEnumEntry
 
-object ManageContactAction {
-  val actionMap: Map[String, ManageContactAction] =
-    Map(
-      AddForce.shortName -> AddForce,
-      AddNoForce.shortName -> AddNoForce,
-      Remove.shortName -> Remove,
-      Unsubscribe.shortName -> Unsubscribe
-    )
+object ManageContactAction extends StringEnum[ManageContactAction] with StringCirceEnum[ManageContactAction] {
 
-  implicit lazy val manageContactActionEncoder: Encoder[ManageContactAction] =
-    (manageContactAction: ManageContactAction) => Json.fromString(manageContactAction.shortName)
-  implicit lazy val manageContactActionDecoder: Decoder[ManageContactAction] =
-    Decoder.decodeString.emap { value: String =>
-      actionMap.get(value) match {
-        case Some(manageContactAction) => Right(manageContactAction)
-        case None                      => Left(s"$value is not a manage contact action")
-      }
-    }
+  case object AddForce extends ManageContactAction("addForce")
+  case object AddNoForce extends ManageContactAction("addnoforce")
+  case object Remove extends ManageContactAction("remove")
+  case object Unsubscribe extends ManageContactAction("unsub")
 
-  implicit val manageContactActionFormatted: JsonFormat[ManageContactAction] = new JsonFormat[ManageContactAction] {
-    override def read(json: JsValue): ManageContactAction = json match {
-      case JsString(s) => ManageContactAction.actionMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
+  override def values: IndexedSeq[ManageContactAction] = findValues
 
-    override def write(obj: ManageContactAction): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  case object AddForce extends ManageContactAction {
-    override val shortName = "addForce"
-  }
-
-  case object AddNoForce extends ManageContactAction {
-    override val shortName = "addnoforce"
-  }
-
-  case object Remove extends ManageContactAction {
-    override val shortName = "remove"
-  }
-
-  case object Unsubscribe extends ManageContactAction {
-    override val shortName = "unsub"
-  }
 }
 
 case class ImportOptions(dateTimeFormat: String) {

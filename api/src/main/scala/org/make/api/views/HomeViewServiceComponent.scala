@@ -301,7 +301,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
         )
         proposalsCount <- elasticsearchProposalAPI.countProposalsByQuestion(
           Some(questions.map(_.questionId)),
-          Some(ProposalStatus.statusMap.values.toSeq),
+          Some(ProposalStatus.values),
           maybeUserId = None
         )
       } yield {

@@ -22,8 +22,9 @@ package org.make.api.technical.generator.fixtures
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
@@ -105,26 +106,13 @@ object GenerateFixturesRequest {
   implicit val encoder: Encoder[GenerateFixturesRequest] = deriveEncoder[GenerateFixturesRequest]
 }
 
-sealed trait FillMode {
-  def shortName: String
-}
+sealed abstract class FillMode(val value: String) extends StringEnumEntry
 
-object FillMode {
-  implicit lazy val voteKeyEncoder: Encoder[FillMode] =
-    (mode: FillMode) => Json.fromString(mode.shortName)
-  implicit lazy val voteKeyDecoder: Decoder[FillMode] =
-    Decoder.decodeString.emap(
-      mode => FillMode.matchMode(mode).map(Right.apply).getOrElse(Left(s"$mode is not a valid fill mode"))
-    )
+object FillMode extends StringEnum[FillMode] with StringCirceEnum[FillMode] {
 
-  val modes: Map[String, FillMode] =
-    Map(Tiny.shortName -> Tiny, Big.shortName -> Big)
+  case object Tiny extends FillMode("TINY")
+  case object Big extends FillMode("BIG")
 
-  def matchMode(mode: String): Option[FillMode] = {
-    modes.get(mode)
-  }
-
-  case object Tiny extends FillMode { val shortName = "TINY" }
-  case object Big extends FillMode { val shortName = "BIG" }
+  override def values: IndexedSeq[FillMode] = findValues
 
 }

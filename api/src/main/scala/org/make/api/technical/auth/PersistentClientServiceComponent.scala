@@ -68,7 +68,7 @@ object PersistentClientServiceComponent {
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt),
         defaultUserId = defaultUserId.map(UserId(_)),
-        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.matchRole),
+        roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.apply),
         tokenExpirationSeconds = tokenExpirationSeconds
       )
   }
@@ -189,7 +189,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate,
               column.defaultUserId -> client.defaultUserId.map(_.value),
-              column.roles -> client.roles.map(_.shortName).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR),
+              column.roles -> client.roles.map(_.value).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR),
               column.tokenExpirationSeconds -> client.tokenExpirationSeconds
             )
         }.execute().apply()
@@ -214,7 +214,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate,
               column.defaultUserId -> client.defaultUserId.map(_.value),
-              column.roles -> client.roles.map(_.shortName).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR),
+              column.roles -> client.roles.map(_.value).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR),
               column.tokenExpirationSeconds -> client.tokenExpirationSeconds
             )
             .where(sqls.eq(column.uuid, client.clientId.value))

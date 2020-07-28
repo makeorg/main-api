@@ -132,7 +132,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       language = question.language,
       operationId = operationOfQuestion.operationId,
       operationTitle = operationOfQuestion.operationTitle,
-      operationKind = operation.operationKind.shortName,
+      operationKind = operation.operationKind.value,
       aboutUrl = operationOfQuestion.aboutUrl,
       resultsLink = operationOfQuestion.resultsLink.map(Show[ResultsLink].show),
       proposalsCount = operationOfQuestion.proposalsCount,

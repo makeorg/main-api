@@ -39,6 +39,7 @@ import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoord
 import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions._
+import org.make.core.history.HistoryActions.VoteTrust._
 import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
@@ -2620,10 +2621,8 @@ class ProposalServiceTest
       val userId = UserId("user has no proposal")
       val date = DateHelper.now().minusHours(5)
 
-      val filters = SearchFilters(
-        user = Some(UserSearchFilter(userId)),
-        status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-      )
+      val filters =
+        SearchFilters(user = Some(UserSearchFilter(userId)), status = Some(StatusSearchFilter(ProposalStatus.values)))
 
       when(
         elasticsearchProposalAPI
@@ -2644,10 +2643,7 @@ class ProposalServiceTest
       val date = DateHelper.now().minusHours(5)
 
       val query = SearchQuery(filters = Some(
-        SearchFilters(
-          user = Some(UserSearchFilter(userId)),
-          status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.toSeq))
-        )
+        SearchFilters(user = Some(UserSearchFilter(userId)), status = Some(StatusSearchFilter(ProposalStatus.values)))
       )
       )
 

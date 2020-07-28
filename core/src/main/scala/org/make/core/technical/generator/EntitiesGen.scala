@@ -22,6 +22,8 @@ package generator
 
 import java.net.URL
 import java.time.temporal.ChronoUnit
+
+import _root_.enumeratum.values.scalacheck._
 import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.api.RefType
 import eu.timepit.refined.auto._
@@ -62,11 +64,11 @@ trait EntitiesGen {
 
   def genSimpleOperation: Gen[SimpleOperation] =
     for {
-      status               <- Gen.oneOf(OperationStatus.statusMap.values.toSeq)
+      status               <- arbitrary[OperationStatus]
       slug                 <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(20))
       allowedSources       <- CustomGenerators.LoremIpsumGen.words
       (_, defaultLanguage) <- genCountryLanguage
-      operationKind        <- Gen.oneOf(OperationKind.kindMap.values.toSeq)
+      operationKind        <- arbitrary[OperationKind]
       date                 <- Gen.calendar.map(_.toZonedDateTime)
     } yield SimpleOperation(
       operationId = IdGenerator.uuidGenerator.nextOperationId(),
@@ -268,7 +270,7 @@ trait EntitiesGen {
     for {
       content         <- CustomGenerators.LoremIpsumGen.sentence(maxLength).map(sentence => s"Il faut ${sentence.toLowerCase}")
       author          <- Gen.oneOf(users.map(_.userId))
-      status          <- Gen.oneOf(ProposalStatus.statusMap.values.toSeq)
+      status          <- arbitrary[ProposalStatus]
       refusalReason   <- CustomGenerators.LoremIpsumGen.word
       tags            <- Gen.someOf(tagsIds)
       votes           <- genProposalVotes

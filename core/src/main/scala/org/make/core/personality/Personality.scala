@@ -19,7 +19,7 @@
 
 package org.make.core.personality
 
-import com.typesafe.scalalogging.StrictLogging
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
 import org.make.core.question.QuestionId
@@ -104,37 +104,16 @@ object PersonalityRoleId {
   }
 }
 
-sealed trait FieldType {
-  val shortName: String
-}
+sealed abstract class FieldType(val value: String) extends StringEnumEntry
 
-object FieldType extends StrictLogging {
+object FieldType extends StringEnum[FieldType] with StringCirceEnum[FieldType] {
 
   val defaultFieldType: FieldType = StringType
 
-  implicit lazy val fieldTypeEncoder: Encoder[FieldType] = (fieldType: FieldType) =>
-    Json.fromString(fieldType.shortName)
-  implicit lazy val fieldTypeDecoder: Decoder[FieldType] = Decoder.decodeString.emap(
-    fieldType => FieldType.matchFieldType(fieldType).map(Right.apply).getOrElse(Left(s"$fieldType is not a field type"))
-  )
+  case object StringType extends FieldType("STRING")
+  case object IntType extends FieldType("INT")
+  case object BooleanType extends FieldType("BOOLEAN")
 
-  val fieldTypes: Map[String, FieldType] =
-    Map(StringType.shortName -> StringType, IntType.shortName -> IntType, BooleanType.shortName -> BooleanType)
-
-  def matchFieldType(fieldType: String): Option[FieldType] = {
-    fieldTypes.get(fieldType)
-  }
-
-  case object StringType extends FieldType {
-    override val shortName: String = "STRING"
-  }
-
-  case object IntType extends FieldType {
-    override val shortName: String = "INT"
-  }
-
-  case object BooleanType extends FieldType {
-    override val shortName: String = "BOOLEAN"
-  }
+  override def values: IndexedSeq[FieldType] = findValues
 
 }

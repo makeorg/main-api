@@ -19,6 +19,7 @@
 
 package org.make.core.partner
 
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.StringValue
 import org.make.core.question.QuestionId
@@ -56,40 +57,15 @@ object PartnerId {
   }
 }
 
-sealed trait PartnerKind { def shortName: String }
+sealed abstract class PartnerKind(val value: String) extends StringEnumEntry
 
-object PartnerKind {
-  val kindMap: Map[String, PartnerKind] =
-    Map(
-      Media.shortName -> Media,
-      ActionPartner.shortName -> ActionPartner,
-      Founder.shortName -> Founder,
-      Actor.shortName -> Actor
-    )
+object PartnerKind extends StringEnum[PartnerKind] with StringCirceEnum[PartnerKind] {
 
-  implicit lazy val partnerKindEncoder: Encoder[PartnerKind] = (kind: PartnerKind) => Json.fromString(kind.shortName)
+  case object Media extends PartnerKind("MEDIA")
+  case object ActionPartner extends PartnerKind("ACTION_PARTNER")
+  case object Founder extends PartnerKind("FOUNDER")
+  case object Actor extends PartnerKind("ACTOR")
 
-  implicit lazy val partnerKindDecoder: Decoder[PartnerKind] =
-    Decoder.decodeString.emap { value: String =>
-      kindMap.get(value) match {
-        case Some(kind) => Right(kind)
-        case None       => Left(s"$value is not a operation kind")
-      }
-    }
+  override def values: IndexedSeq[PartnerKind] = findValues
 
-  implicit val partnerKindFormatted: JsonFormat[PartnerKind] = new JsonFormat[PartnerKind] {
-    override def read(json: JsValue): PartnerKind = json match {
-      case JsString(s) => PartnerKind.kindMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: PartnerKind): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  case object Media extends PartnerKind { override val shortName: String = "MEDIA" }
-  case object ActionPartner extends PartnerKind { override val shortName: String = "ACTION_PARTNER" }
-  case object Founder extends PartnerKind { override val shortName: String = "FOUNDER" }
-  case object Actor extends PartnerKind { override val shortName: String = "ACTOR" }
 }

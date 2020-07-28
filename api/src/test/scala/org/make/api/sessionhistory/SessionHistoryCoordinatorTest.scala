@@ -25,14 +25,17 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util
 import com.typesafe.config.{Config, ConfigFactory}
+import enumeratum.values.scalacheck._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
 import org.make.api.{ActorSystemComponent, ShardingActorTest, TestHelper}
 import org.make.core.history.HistoryActions
-import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
+import org.make.core.history.HistoryActions.VoteTrust
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.proposal.{ProposalId, VoteKey}
 import org.make.core.session.SessionId
 import org.make.core.{DateHelper, RequestContext}
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.rng.Seed
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -78,8 +81,8 @@ class SessionHistoryCoordinatorTest
   private implicit val arbVotes: Arbitrary[Seq[SessionVote]] = Arbitrary {
     val sessionVoteGen = for {
       proposalId <- Gen.resultOf[Unit, ProposalId](_ => idGenerator.nextProposalId())
-      voteKey    <- Gen.oneOf(VoteKey.voteKeys.values.toSeq)
-      voteTrust  <- Gen.oneOf(VoteTrust.trustValue.values.toSeq)
+      voteKey    <- arbitrary[VoteKey]
+      voteTrust  <- arbitrary[VoteTrust]
     } yield SessionVote(proposalId, voteKey, voteTrust)
     Gen.listOf(sessionVoteGen)
   }
@@ -123,8 +126,7 @@ class SessionHistoryCoordinatorTest
 
     Scenario("too large votes") {
       val sessionVotes: Seq[SessionVote] = {
-        val sessionVoteGen =
-          Gen.oneOf(VoteKey.voteKeys.values.toSeq).map(SessionVote(idGenerator.nextProposalId(), _, Trusted))
+        val sessionVoteGen = arbitrary[VoteKey].map(SessionVote(idGenerator.nextProposalId(), _, Trusted))
         Gen.listOfN(3195, sessionVoteGen).pureApply(Gen.Parameters.default, Seed.random())
       }
       val sessionId: SessionId = SessionId(idGenerator.nextId())

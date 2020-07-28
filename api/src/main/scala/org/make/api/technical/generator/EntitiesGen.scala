@@ -26,8 +26,10 @@ import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Arbitrary.arbitrary
 import org.make.core.DateHelper._
 import org.make.core.technical.generator.{EntitiesGen => CoreEntitiesGen}
+import enumeratum.values.scalacheck._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.{refineV, W}
@@ -66,22 +68,20 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
 
   def genUserRegisterData(questionId: Option[QuestionId]): Gen[UserRegisterData] =
     for {
-      email       <- CustomGenerators.Mail.gen
-      firstName   <- Gen.option(CustomGenerators.LoremIpsumGen.word)
-      lastName    <- Gen.option(CustomGenerators.LoremIpsumGen.word)
-      dateOfBirth <- Gen.option(Gen.calendar.map(_.toZonedDateTime.toLocalDate))
-      profession  <- Gen.option(CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(15)))
-      postalCode  <- Gen.option(CustomGenerators.PostalCode.gen)
-      gender      <- Gen.option(Gen.oneOf(Gender.genders.values.toSeq))
-      socioProfessionalCategory <- Gen.option(
-        Gen.oneOf(SocioProfessionalCategory.socioProfessionalCategories.values.toSeq)
-      )
-      (country, language) <- genCountryLanguage
-      optIn               <- Gen.option(Arbitrary.arbitrary[Boolean])
-      optInPartner        <- Gen.option(Arbitrary.arbitrary[Boolean])
-      roles               <- genRoles
-      politicalParty      <- Gen.option(CustomGenerators.LoremIpsumGen.word)
-      publicProfile       <- Arbitrary.arbitrary[Boolean]
+      email                     <- CustomGenerators.Mail.gen
+      firstName                 <- Gen.option(CustomGenerators.LoremIpsumGen.word)
+      lastName                  <- Gen.option(CustomGenerators.LoremIpsumGen.word)
+      dateOfBirth               <- Gen.option(Gen.calendar.map(_.toZonedDateTime.toLocalDate))
+      profession                <- Gen.option(CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(15)))
+      postalCode                <- Gen.option(CustomGenerators.PostalCode.gen)
+      gender                    <- Gen.option(arbitrary[Gender])
+      socioProfessionalCategory <- Gen.option(arbitrary[SocioProfessionalCategory])
+      (country, language)       <- genCountryLanguage
+      optIn                     <- Gen.option(Arbitrary.arbitrary[Boolean])
+      optInPartner              <- Gen.option(Arbitrary.arbitrary[Boolean])
+      roles                     <- genRoles
+      politicalParty            <- Gen.option(CustomGenerators.LoremIpsumGen.word)
+      publicProfile             <- Arbitrary.arbitrary[Boolean]
     } yield UserRegisterData(
       email = email,
       firstName = firstName,

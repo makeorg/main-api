@@ -25,7 +25,8 @@ import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{AvroDefault, AvroSortPriority, DefaultFieldMapper, RecordFormat, SchemaFor}
 import org.make.api.proposal.ProposalEvent.DeprecatedEvent
 import org.make.core.SprayJsonFormatters._
-import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
+import org.make.core.history.HistoryActions.VoteTrust
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._

@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,24 +17,24 @@
  *
  */
 
-name := "make-core"
+package org.make.core.technical.enumeratum
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistence,
-  Dependencies.akkaClusterSharding,
-  Dependencies.akkaHttpSwagger, // TODO: import only swagger not akka-http
-  Dependencies.elastic4s,
-  Dependencies.elastic4sHttp,
-  Dependencies.enumeratum,
-  Dependencies.enumeratumCirce,
-  Dependencies.enumeratumScalacheck,
-  Dependencies.avro4s,
-  Dependencies.circeGeneric,
-  Dependencies.refinedCirce,
-  Dependencies.refinedScala,
-  Dependencies.stamina,
-  Dependencies.slugify,
-  Dependencies.jsoup,
-  Dependencies.refinedScalaCheck,
-  Dependencies.scalaCheck
-)
+import enumeratum.values.{StringEnumEntry, ValueEnum, ValueEnumEntry}
+import io.circe.{Decoder, Encoder}
+
+trait FallbackingCirceEnum[A, B <: ValueEnumEntry[A]] { self: ValueEnum[A, B] =>
+
+  def default(value: A): B
+
+  def apply(value: A): B = withValueOpt(value).getOrElse(default(value))
+
+  implicit def decoder(implicit d: Decoder[A]): Decoder[B] = Decoder[A].map(apply)
+  implicit def encoder(implicit e: Encoder[A]): Encoder[B] = Encoder[A].contramap(_.value)
+
+}
+
+object FallbackingCirceEnum {
+
+  type FallbackingStringCirceEnum[A <: StringEnumEntry] = FallbackingCirceEnum[String, A]
+
+}

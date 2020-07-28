@@ -458,9 +458,9 @@ trait DefaultQuestionApiComponent
                   order.map { orderValue =>
                     Validation.validChoices(
                       fieldName = "order",
-                      message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                      message = Some(s"Invalid order. Expected one of: ${Order.keys}"),
                       Seq(orderValue),
-                      Order.orders.keys.toSeq
+                      Order.keys
                     )
                   }
                 ).flatten: _*

@@ -222,20 +222,20 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.operationKinds match {
         case Some(OperationKindsSearchFilter(Seq(operationKind))) =>
-          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.operationKind, operationKind.shortName))
+          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.operationKind, operationKind.value))
         case Some(OperationKindsSearchFilter(operationKinds)) =>
           Some(
             ElasticApi
-              .termsQuery(OperationOfQuestionElasticsearchFieldNames.operationKind, operationKinds.map(_.shortName))
+              .termsQuery(OperationOfQuestionElasticsearchFieldNames.operationKind, operationKinds.map(_.value))
           )
         case None =>
           Some(
             ElasticApi.termsQuery(
               OperationOfQuestionElasticsearchFieldNames.operationKind,
               Seq(
-                OperationKind.PublicConsultation.shortName,
-                OperationKind.GreatCause.shortName,
-                OperationKind.BusinessConsultation.shortName
+                OperationKind.PublicConsultation.value,
+                OperationKind.GreatCause.value,
+                OperationKind.BusinessConsultation.value
               )
             )
           )

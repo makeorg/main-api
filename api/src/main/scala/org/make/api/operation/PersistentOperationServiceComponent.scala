@@ -35,6 +35,7 @@ import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
+import org.make.api.technical.ScalikeSupport._
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.reference.{Country, Language}
@@ -103,7 +104,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     ): Option[SQLSyntax] =
       sqls.toAndConditionOpt(
         slug.map(slug              => sqls.eq(operationAlias.slug, slug)),
-        operationKinds.map(opKinds => sqls.in(operationAlias.operationKind, opKinds.map(_.shortName))),
+        operationKinds.map(opKinds => sqls.in(operationAlias.operationKind, opKinds)),
         country.map(country        => sqls.eq(questionAlias.country, country.value)),
         openAt.map(
           openAt =>
@@ -176,12 +177,12 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .into(PersistentOperation)
             .namedValues(
               column.uuid -> operation.operationId.value,
-              column.status -> operation.status.shortName,
+              column.status -> operation.status,
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage.value,
               column.allowedSources -> session.connection
                 .createArrayOf("VARCHAR", operation.allowedSources.toArray),
-              column.operationKind -> operation.operationKind.shortName,
+              column.operationKind -> operation.operationKind,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )
@@ -254,11 +255,11 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
         withSQL {
           update(PersistentOperation)
             .set(
-              column.status -> operation.status.shortName,
+              column.status -> operation.status,
               column.slug -> operation.slug,
               column.defaultLanguage -> operation.defaultLanguage.value,
               column.allowedSources -> session.connection.createArrayOf("VARCHAR", operation.allowedSources.toArray),
-              column.operationKind -> operation.operationKind.shortName,
+              column.operationKind -> operation.operationKind,
               column.updatedAt -> nowDate
             )
             .where(
@@ -328,11 +329,11 @@ object DefaultPersistentOperationServiceComponent {
         operationId = OperationId(uuid),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt),
-        status = OperationStatus.statusMap(status),
+        status = OperationStatus.withValue(status),
         slug = slug,
         defaultLanguage = Language(defaultLanguage),
         allowedSources = allowedSources,
-        operationKind = OperationKind.kindMap(operationKind),
+        operationKind = OperationKind.withValue(operationKind),
         events = operationActions
           .map(
             action =>
@@ -350,13 +351,13 @@ object DefaultPersistentOperationServiceComponent {
     def toSimpleOperation: SimpleOperation =
       SimpleOperation(
         operationId = OperationId(uuid),
-        status = OperationStatus.statusMap(status),
+        status = OperationStatus.withValue(status),
         slug = slug,
         defaultLanguage = Language(defaultLanguage),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt),
         allowedSources = allowedSources,
-        operationKind = OperationKind.kindMap(operationKind)
+        operationKind = OperationKind.withValue(operationKind)
       )
   }
 

@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent.PersistentTagType
 import org.make.api.technical.DatabaseTransactions._
+import org.make.api.technical.ScalikeSupport._
 import org.make.api.technical.ShortenedNames
 import org.make.core.DateHelper
 import org.make.core.tag.{TagType, TagTypeDisplay, TagTypeId}
@@ -111,7 +112,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
             .namedValues(
               column.id -> tagType.tagTypeId.value,
               column.label -> tagType.label,
-              column.display -> tagType.display.shortName,
+              column.display -> tagType.display,
               column.weightType -> tagType.weight,
               column.requiredForEnrichment -> tagType.requiredForEnrichment,
               column.createdAt -> DateHelper.now,
@@ -129,7 +130,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
             .update(PersistentTagType)
             .set(
               column.label -> tagType.label,
-              column.display -> tagType.display.shortName,
+              column.display -> tagType.display,
               column.weightType -> tagType.weight,
               column.requiredForEnrichment -> tagType.requiredForEnrichment,
               column.updatedAt -> DateHelper.now
@@ -210,7 +211,7 @@ object DefaultPersistentTagTypeServiceComponent {
       PersistentTagType.apply(
         id = resultSet.string(tagTypeResultName.id),
         label = resultSet.string(tagTypeResultName.label),
-        display = TagTypeDisplay.matchTagTypeDisplayOrDefault(resultSet.string(tagTypeResultName.display)),
+        display = TagTypeDisplay(resultSet.string(tagTypeResultName.display)),
         weightType = resultSet.int(tagTypeResultName.weightType),
         createdAt = resultSet.zonedDateTime(tagTypeResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(tagTypeResultName.updatedAt),

@@ -44,7 +44,8 @@ import org.make.api.userhistory.{
   UserHistoryCoordinatorServiceComponent
 }
 import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
-import org.make.core.history.HistoryActions.{Trusted, VoteAndQualifications}
+import org.make.core.history.HistoryActions.VoteAndQualifications
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal.indexed.{

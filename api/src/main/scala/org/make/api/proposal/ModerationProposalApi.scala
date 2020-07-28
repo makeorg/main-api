@@ -506,9 +506,9 @@ trait DefaultModerationProposalApiComponent
                     }, order.map { orderValue =>
                       Validation.validChoices(
                         fieldName = "order",
-                        message = Some(s"Invalid order. Expected one of: ${Order.orders.keys}"),
+                        message = Some(s"Invalid order. Expected one of: ${Order.keys}"),
                         Seq(orderValue),
-                        Order.orders.keys.toSeq
+                        Order.keys
                       )
                     }).flatten: _*)
 
@@ -528,7 +528,7 @@ trait DefaultModerationProposalApiComponent
                       }
                     val sortRequest: Option[SortRequest] =
                       sort.orElse(order).map { _ =>
-                        SortRequest(sort, order.flatMap(Order.matchOrder))
+                        SortRequest(sort, order.flatMap(Order.parse))
                       }
                     val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
                       proposalIds = proposalIds,

@@ -99,7 +99,7 @@ class PersistentOperationServiceIT
       OperationAction(
         date = now,
         makeUserId = userId,
-        actionType = OperationCreateAction.name,
+        actionType = OperationActionType.OperationCreateAction.value,
         arguments = Map("arg1" -> "valueArg1")
       )
     ),
@@ -265,13 +265,13 @@ class PersistentOperationServiceIT
         And("operation should be an instance of Operation")
         operation shouldBe a[Operation]
         And("""operation status should be Pending""")
-        operation.status.shortName should be("Pending")
+        operation.status.value should be("Pending")
         And("""operation slug should be "hello-operation" """)
         operation.slug should be("hello-operation")
         And("""operation default translation should be "fr" """)
         operation.defaultLanguage should be(Language("fr"))
         And("""operation kind should be "consultation" """)
-        operation.operationKind.shortName should be(OperationKind.PublicConsultation.shortName)
+        operation.operationKind should be(OperationKind.PublicConsultation)
         And("""operation should have 2 questions""")
         operation.questions.size should be(2)
         And(s"""operation landing sequence id for FR configuration should be "${sequenceIdFR.value}" """)

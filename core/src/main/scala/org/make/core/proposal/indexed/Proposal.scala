@@ -21,8 +21,9 @@ package org.make.core.proposal.indexed
 
 import java.time.ZonedDateTime
 
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
@@ -344,24 +345,14 @@ object IndexedTag {
   implicit val decoder: Decoder[IndexedTag] = deriveDecoder[IndexedTag]
 }
 
-sealed trait SequencePool {
-  val shortName: String
-}
+sealed abstract class SequencePool(val value: String) extends StringEnumEntry
 
-object SequencePool {
-  case object New extends SequencePool { override val shortName: String = "new" }
-  case object Tested extends SequencePool { override val shortName: String = "tested" }
-  case object Excluded extends SequencePool { override val shortName: String = "excluded" }
+object SequencePool extends StringEnum[SequencePool] with StringCirceEnum[SequencePool] {
 
-  val sequencePools: Map[String, SequencePool] =
-    Map(New.shortName -> New, Tested.shortName -> Tested, Excluded.shortName -> Excluded)
+  case object New extends SequencePool("new")
+  case object Tested extends SequencePool("tested")
+  case object Excluded extends SequencePool("excluded")
 
-  implicit lazy val sequencePoolEncoder: Encoder[SequencePool] =
-    (sequencePool: SequencePool) => Json.fromString(sequencePool.shortName)
-  implicit lazy val sequencePoolDecoder: Decoder[SequencePool] =
-    Decoder.decodeString.emap(
-      sequencePool =>
-        sequencePools.get(sequencePool).map(Right.apply).getOrElse(Left(s"$sequencePool is not a SequencePool"))
-    )
+  override def values: IndexedSeq[SequencePool] = findValues
 
 }

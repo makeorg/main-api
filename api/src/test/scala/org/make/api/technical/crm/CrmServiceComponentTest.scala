@@ -46,10 +46,11 @@ import org.make.api.user.{
 }
 import org.make.api.userhistory._
 import org.make.api.{ActorSystemComponent, MakeUnitTest, StaminaTestUtils, TestUtils}
-import org.make.core.history.HistoryActions.Trusted
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
+import org.make.core.proposal.ProposalActionType.ProposalVoteAction
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
 import org.make.core.{DateHelper, RequestContext}
@@ -446,7 +447,7 @@ class CrmServiceComponentTest
         RequestContext.empty.copy(source = Some("vff"), country = Some(Country("GB")), language = Some(Language("uk"))),
       action = UserAction(
         date = zonedDateTimeInThePast,
-        actionType = ProposalVoteAction.name,
+        actionType = ProposalVoteAction.value,
         arguments = UserVote(proposalId = ProposalId("proposalId-gb"), voteKey = VoteKey.Neutral, trust = Trusted)
       )
     ),
@@ -467,7 +468,7 @@ class CrmServiceComponentTest
       ),
       action = UserAction(
         date = zonedDateTimeInThePast,
-        actionType = ProposalVoteAction.name,
+        actionType = ProposalVoteAction.value,
         arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
     ),
@@ -488,7 +489,7 @@ class CrmServiceComponentTest
       ),
       action = UserAction(
         date = zonedDateTimeInThePastAt31daysBefore,
-        actionType = ProposalVoteAction.name,
+        actionType = ProposalVoteAction.value,
         arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
     ),
@@ -509,7 +510,7 @@ class CrmServiceComponentTest
       ),
       action = UserAction(
         date = zonedDateTimeInThePastAt31daysBefore.plusDays(2),
-        actionType = ProposalVoteAction.name,
+        actionType = ProposalVoteAction.value,
         arguments = UserVote(proposalId = ProposalId("proposalId-fr"), voteKey = VoteKey.Agree, trust = Trusted)
       )
     ),
@@ -530,7 +531,7 @@ class CrmServiceComponentTest
       ),
       action = UserAction(
         date = zonedDateTimeInThePastAt31daysBefore.plusDays(2),
-        actionType = ProposalVoteAction.name,
+        actionType = ProposalVoteAction.value,
         arguments = UserVote(proposalId = ProposalId("proposalId"), voteKey = VoteKey.Agree, trust = Trusted)
       )
     ),

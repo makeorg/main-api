@@ -397,7 +397,7 @@ trait DefaultAdminUserApiComponent
 
     val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
     val userId: PathMatcher1[UserId] = Segment.map(UserId.apply)
-    val userType: PathMatcher1[UserType] = Segment.map(UserType.matchUserType)
+    val userType: PathMatcher1[UserType] = Segment.map(UserType.apply)
 
     override def getUsers: Route = get {
       path("admin" / "users") {
@@ -425,7 +425,7 @@ trait DefaultAdminUserApiComponent
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   val role: Role =
-                    maybeRole.map(Role.matchRole).getOrElse(Role.RoleModerator)
+                    maybeRole.map(Role.apply).getOrElse(Role.RoleModerator)
                   provideAsync(
                     userService.adminCountUsers(
                       email = email,
@@ -500,7 +500,7 @@ trait DefaultAdminUserApiComponent
                               language = request.language.getOrElse(user.language),
                               organisationName = request.organisationName,
                               userType = request.userType,
-                              roles = request.roles.map(_.map(Role.matchRole)).getOrElse(user.roles),
+                              roles = request.roles.map(_.map(Role.apply)).getOrElse(user.roles),
                               availableQuestions = request.availableQuestions,
                               profile = profile
                             ),
@@ -625,7 +625,7 @@ trait DefaultAdminUserApiComponent
                           optIn = Some(false),
                           optInPartner = Some(false),
                           roles = request.roles
-                            .map(_.map(Role.matchRole))
+                            .map(_.map(Role.apply))
                             .getOrElse(Seq(Role.RoleModerator, Role.RoleCitizen)),
                           availableQuestions = request.availableQuestions
                         ),
@@ -653,7 +653,7 @@ trait DefaultAdminUserApiComponent
                   entity(as[UpdateModeratorRequest]) { request: UpdateModeratorRequest =>
                     provideAsyncOrNotFound(userService.getUser(moderatorId)) { user =>
                       val roles =
-                        request.roles.map(_.map(Role.matchRole)).getOrElse(user.roles)
+                        request.roles.map(_.map(Role.apply)).getOrElse(user.roles)
                       authorize {
                         roles != user.roles && isAdmin || roles == user.roles
                       } {
@@ -969,7 +969,7 @@ object AdminUserResponse extends CirceFormatters {
     organisationName = user.organisationName,
     userType = user.userType,
     lastName = user.lastName,
-    roles = user.roles.map(role => CustomRole(role.shortName)),
+    roles = user.roles.map(role => CustomRole(role.value)),
     country = user.country,
     language = user.language,
     availableQuestions = user.availableQuestions,

@@ -1000,9 +1000,8 @@ trait DefaultUserApiComponent
                         filters = Some(
                           SearchFilters(
                             user = Some(UserSearchFilter(userId = userId)),
-                            status = Some(StatusSearchFilter(ProposalStatus.statusMap.values.filter { status =>
-                              status != ProposalStatus.Archived
-                            }.toSeq))
+                            status =
+                              Some(StatusSearchFilter(ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
                           )
                         ),
                         sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
@@ -1049,15 +1048,15 @@ trait DefaultUserApiComponent
                       description = RequestHelper.updateValue(user.profile.flatMap(_.description), request.description),
                       optInNewsletter = request.optInNewsletter.getOrElse(user.profile.exists(_.optInNewsletter)),
                       gender = RequestHelper
-                        .updateValue(user.profile.flatMap(_.gender.map(_.shortName)), request.gender)
-                        .flatMap(Gender.matchGender),
+                        .updateValue(user.profile.flatMap(_.gender.map(_.value)), request.gender)
+                        .flatMap(Gender.withValueOpt),
                       genderName = request.genderName.orElse(user.profile.flatMap(_.genderName)),
                       socioProfessionalCategory = RequestHelper
                         .updateValue(
-                          user.profile.flatMap(_.socioProfessionalCategory.map(_.shortName)),
+                          user.profile.flatMap(_.socioProfessionalCategory.map(_.value)),
                           request.socioProfessionalCategory
                         )
-                        .flatMap(SocioProfessionalCategory.matchSocioProfessionalCategory),
+                        .flatMap(SocioProfessionalCategory.withValueOpt),
                       politicalParty = RequestHelper
                         .updateValue(user.profile.flatMap(_.politicalParty), request.politicalParty),
                       website = RequestHelper

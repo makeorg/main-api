@@ -21,6 +21,7 @@ package org.make.core.sequence
 
 import java.time.ZonedDateTime
 
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
@@ -90,40 +91,13 @@ object SequenceId {
   }
 }
 
-sealed trait SequenceStatus {
-  def shortName: String
-}
+sealed abstract class SequenceStatus(val value: String) extends StringEnumEntry
 
-object SequenceStatus {
-  val statusMap: Map[String, SequenceStatus] =
-    Map(Unpublished.shortName -> Unpublished, Published.shortName -> Published)
+object SequenceStatus extends StringEnum[SequenceStatus] with StringCirceEnum[SequenceStatus] {
 
-  implicit lazy val sequenceStatusEncoder: Encoder[SequenceStatus] = (status: SequenceStatus) =>
-    Json.fromString(status.shortName)
+  case object Unpublished extends SequenceStatus("Unpublished")
+  case object Published extends SequenceStatus("Published")
 
-  implicit lazy val sequenceStatusDecoder: Decoder[SequenceStatus] =
-    Decoder.decodeString.emap { value: String =>
-      statusMap.get(value) match {
-        case Some(sequence) => Right(sequence)
-        case None           => Left(s"$value is not a sequence status")
-      }
-    }
+  override def values: IndexedSeq[SequenceStatus] = findValues
 
-  implicit val sequenceStatusFormatted: JsonFormat[SequenceStatus] = new JsonFormat[SequenceStatus] {
-    override def read(json: JsValue): SequenceStatus = json match {
-      case JsString(s) => SequenceStatus.statusMap(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: SequenceStatus): JsValue = {
-      JsString(obj.shortName)
-    }
-  }
-
-  case object Unpublished extends SequenceStatus {
-    override val shortName = "Unpublished"
-  }
-  case object Published extends SequenceStatus {
-    override val shortName = "Published"
-  }
 }

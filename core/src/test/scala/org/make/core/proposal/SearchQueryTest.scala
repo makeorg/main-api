@@ -197,7 +197,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       val statusSearchFilterResult = SearchFilters.buildStatusSearchFilter(searchQuery.filters)
       Then("result is a termQuery")
       statusSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.shortName)
+        ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.value)
       )
     }
 

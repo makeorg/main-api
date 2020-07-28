@@ -30,6 +30,7 @@ import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissi
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import kamon.Kamon
 import kamon.instrumentation.akka.http.TracingDirectives
 import kamon.tag.TagSet
@@ -258,7 +259,7 @@ trait MakeDirectives
             "operation" -> operationName,
             "origin" -> MonitoringMessageHelper.format(origin.getOrElse("unknown")),
             "application" -> MonitoringMessageHelper
-              .format(context.applicationName.map(_.shortName).getOrElse("unknown")),
+              .format(context.applicationName.map(_.value).getOrElse("unknown")),
             "location" -> MonitoringMessageHelper.format(context.location.getOrElse("unknown")),
             "question" -> MonitoringMessageHelper.format(context.questionId.map(_.value).getOrElse("unknown"))
           )
@@ -367,7 +368,7 @@ trait MakeDirectives
         ),
         userAgent = maybeUserAgent,
         questionId = maybeQuestionId.map(QuestionId.apply),
-        applicationName = maybeApplicationName.flatMap(ApplicationName.applicationMap.get),
+        applicationName = maybeApplicationName.flatMap(ApplicationName.withValueOpt),
         referrer = maybeReferrer,
         customData = maybeCustomData
           .map(
@@ -562,6 +563,9 @@ trait MakeDirectives
       }
     }
   }
+
+  implicit def stringEnumPathMatcher[A <: StringEnumEntry](enum: StringEnum[A]): PathMatcher1[A] =
+    Segment.flatMap(enum.withValueOpt)
 }
 
 sealed trait EndpointType

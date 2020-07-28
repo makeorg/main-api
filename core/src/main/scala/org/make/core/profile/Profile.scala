@@ -21,127 +21,54 @@ package org.make.core.profile
 
 import java.time.LocalDate
 
-import com.typesafe.scalalogging.StrictLogging
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder}
 import org.make.core.question.QuestionId
 import org.make.core.CirceFormatters
+import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 
-sealed trait Gender {
-  def shortName: String
+sealed abstract class Gender(val value: String) extends StringEnumEntry
+
+object Gender extends StringEnum[Gender] with StringCirceEnum[Gender] with StringEnumKeys[Gender] {
+
+  case object Male extends Gender("M")
+  case object Female extends Gender("F")
+  case object Other extends Gender("O")
+
+  override def values: IndexedSeq[Gender] = findValues
+
 }
 
-object Gender extends StrictLogging {
-  implicit lazy val genderEncoder: Encoder[Gender] = (gender: Gender) => Json.fromString(gender.shortName)
-  implicit lazy val genderDecoder: Decoder[Gender] =
-    Decoder.decodeString.emap(
-      gender => Gender.matchGender(gender).map(Right.apply).getOrElse(Left(s"$gender is not a Gender"))
-    )
+sealed abstract class SocioProfessionalCategory(val value: String) extends StringEnumEntry
 
-  val genders: Map[String, Gender] = Map(Male.shortName -> Male, Female.shortName -> Female, Other.shortName -> Other)
+object SocioProfessionalCategory
+    extends StringEnum[SocioProfessionalCategory]
+    with StringCirceEnum[SocioProfessionalCategory]
+    with StringEnumKeys[SocioProfessionalCategory] {
 
-  def matchGender(genderOrNull: String): Option[Gender] = {
-    Option(genderOrNull).flatMap { gender =>
-      val maybeGender = genders.get(gender)
-      if (maybeGender.isEmpty) {
-        logger.warn(s"$gender is not a gender")
-      }
-      maybeGender
-    }
-  }
+  case object Farmers extends SocioProfessionalCategory("FARM")
 
-  case object Male extends Gender {
-    override val shortName: String = "M"
-  }
+  case object ArtisansMerchantsCompanyDirector extends SocioProfessionalCategory("AMCD")
 
-  case object Female extends Gender {
-    override val shortName: String = "F"
-  }
+  case object ManagersAndHigherIntellectualOccupations extends SocioProfessionalCategory("MHIO")
 
-  case object Other extends Gender {
-    override val shortName: String = "O"
-  }
-}
+  case object IntermediateProfessions extends SocioProfessionalCategory("INPR")
 
-sealed trait SocioProfessionalCategory {
-  def shortName: String
-}
+  case object Employee extends SocioProfessionalCategory("EMPL")
 
-object SocioProfessionalCategory extends StrictLogging {
-  implicit lazy val genderEncoder: Encoder[SocioProfessionalCategory] =
-    (socioProfessionalCategory: SocioProfessionalCategory) => Json.fromString(socioProfessionalCategory.shortName)
-  implicit lazy val genderDecoder: Decoder[SocioProfessionalCategory] =
-    Decoder.decodeString.emap(
-      socioProfessionalCategory =>
-        SocioProfessionalCategory
-          .matchSocioProfessionalCategory(socioProfessionalCategory)
-          .map(Right.apply)
-          .getOrElse(Left(s"$socioProfessionalCategory is not a socio professional category"))
-    )
+  case object Workers extends SocioProfessionalCategory("WORK")
 
-  val socioProfessionalCategories: Map[String, SocioProfessionalCategory] =
-    Map(
-      Farmers.shortName -> Farmers,
-      ArtisansMerchantsCompanyDirector.shortName -> ArtisansMerchantsCompanyDirector,
-      ManagersAndHigherIntellectualOccupations.shortName -> ManagersAndHigherIntellectualOccupations,
-      IntermediateProfessions.shortName -> IntermediateProfessions,
-      Employee.shortName -> Employee,
-      Workers.shortName -> Workers,
-      HighSchoolStudent.shortName -> HighSchoolStudent,
-      Student.shortName -> Student,
-      Apprentice.shortName -> Apprentice,
-      Other.shortName -> Other
-    )
+  case object HighSchoolStudent extends SocioProfessionalCategory("HSTU")
 
-  def matchSocioProfessionalCategory(socioProfessionalCategoryOrNull: String): Option[SocioProfessionalCategory] = {
-    Option(socioProfessionalCategoryOrNull).flatMap { socioProfessionalCategory =>
-      val maybeSocioProfessionalCategory = socioProfessionalCategories.get(socioProfessionalCategory)
-      if (maybeSocioProfessionalCategory.isEmpty) {
-        logger.warn(s"$socioProfessionalCategory is not a socio professional category")
-      }
-      maybeSocioProfessionalCategory
-    }
-  }
+  case object Student extends SocioProfessionalCategory("STUD")
 
-  case object Farmers extends SocioProfessionalCategory {
-    override val shortName: String = "FARM"
-  }
+  case object Apprentice extends SocioProfessionalCategory("APRE")
 
-  case object ArtisansMerchantsCompanyDirector extends SocioProfessionalCategory {
-    override val shortName: String = "AMCD"
-  }
+  case object Other extends SocioProfessionalCategory("O")
 
-  case object ManagersAndHigherIntellectualOccupations extends SocioProfessionalCategory {
-    override val shortName: String = "MHIO"
-  }
+  override def values: IndexedSeq[SocioProfessionalCategory] = findValues
 
-  case object IntermediateProfessions extends SocioProfessionalCategory {
-    override val shortName: String = "INPR"
-  }
-
-  case object Employee extends SocioProfessionalCategory {
-    override val shortName: String = "EMPL"
-  }
-
-  case object Workers extends SocioProfessionalCategory {
-    override val shortName: String = "WORK"
-  }
-
-  case object HighSchoolStudent extends SocioProfessionalCategory {
-    override val shortName: String = "HSTU"
-  }
-
-  case object Student extends SocioProfessionalCategory {
-    override val shortName: String = "STUD"
-  }
-
-  case object Apprentice extends SocioProfessionalCategory {
-    override val shortName: String = "APRE"
-  }
-
-  case object Other extends SocioProfessionalCategory {
-    override val shortName: String = "O"
-  }
 }
 
 case class Profile(

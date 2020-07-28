@@ -22,12 +22,12 @@ package org.make.core
 import java.time.{LocalDate, ZonedDateTime}
 
 import com.sksamuel.avro4s._
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import org.apache.avro.Schema
-import org.make.core.history.HistoryActions.{Trusted, VoteTrust}
-import org.make.core.profile.{Gender, SocioProfessionalCategory}
-import org.make.core.proposal.{QualificationKey, VoteKey}
+import org.make.core.history.HistoryActions.VoteTrust
+import org.make.core.history.HistoryActions.VoteTrust.Trusted
+import org.make.core.proposal.ProposalStatus
 import org.make.core.reference.{Country, Language}
-import org.make.core.sequence.SequenceStatus
 
 trait AvroSerializers {
 
@@ -82,112 +82,25 @@ trait AvroSerializers {
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Language = Language(value.toString)
   }
 
-  implicit object GenderSchemaFor extends SchemaFor[Gender] {
-    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
-  }
+  // do not use stringEnumSchemaFor, to keep legacy complex schema
+  implicit val proposalStatusSchemaFor: SchemaFor[ProposalStatus] = SchemaFor.gen[ProposalStatus]
 
-  implicit object GenderEncoder extends Encoder[Gender] {
-    override def encode(value: Gender, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
-  }
-
-  implicit object GenderDecoder extends Decoder[Gender] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): Gender =
-      Gender.matchGender(value.toString).getOrElse(throw new IllegalArgumentException(s"$value is not a Gender"))
-  }
-
-  implicit object SocioProfessionalCategorySchemaFor extends SchemaFor[SocioProfessionalCategory] {
-    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
-  }
-
-  implicit object SocioProfessionalCategoryEncoder extends Encoder[SocioProfessionalCategory] {
-    override def encode(value: SocioProfessionalCategory, schema: Schema, fieldMapper: FieldMapper): String =
-      value.shortName
-  }
-
-  implicit object SocioProfessionalCategoryDecoder extends Decoder[SocioProfessionalCategory] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): SocioProfessionalCategory =
-      SocioProfessionalCategory
-        .matchSocioProfessionalCategory(value.toString)
-        .getOrElse(throw new IllegalArgumentException(s"$value is not a SocioProfessionalCategory"))
-  }
-
-  implicit object VoteKeySchemaFor extends SchemaFor[VoteKey] {
-    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
-  }
-
-  implicit object VoteKeyEncoder extends Encoder[VoteKey] {
-    override def encode(value: VoteKey, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
-  }
-
-  implicit object VoteKeyDecoder extends Decoder[VoteKey] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): VoteKey =
-      VoteKey.matchVoteKey(value.toString).getOrElse(throw new IllegalArgumentException(s"$value is not a VoteKey"))
-  }
-
-  implicit object QualificationKeySchemaFor extends SchemaFor[QualificationKey] {
-    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
-  }
-
-  implicit object QualificationKeyEncoder extends Encoder[QualificationKey] {
-    override def encode(value: QualificationKey, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
-  }
-
-  implicit object QualificationKeyDecoder extends Decoder[QualificationKey] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): QualificationKey =
-      QualificationKey
-        .matchQualificationKey(value.toString)
-        .getOrElse(throw new IllegalArgumentException(s"$value is not a QualificationKey"))
-  }
-
-  implicit object SequenceStatusSchemaFor extends SchemaFor[SequenceStatus] {
-    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
-  }
-
-  implicit object SequenceStatusEncoder extends Encoder[SequenceStatus] {
-    override def encode(value: SequenceStatus, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
-  }
-
-  implicit object SequenceStatusDecoder extends Decoder[SequenceStatus] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): SequenceStatus =
-      SequenceStatus.statusMap
-        .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a SequenceStatus"))
-  }
-
-  implicit object ApplicationNameSchemaFor extends SchemaFor[ApplicationName] {
-    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
-  }
-
-  implicit object ApplicationNameEncoder extends Encoder[ApplicationName] {
-    override def encode(value: ApplicationName, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
-  }
-
-  implicit object ApplicationNameDecoder extends Decoder[ApplicationName] {
-    override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): ApplicationName =
-      ApplicationName.applicationMap
-        .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not an application name"))
-  }
-
-  implicit object VoteTrustSchemaFor extends SchemaFor[VoteTrust] {
-    override def schema(fieldMapper: FieldMapper): Schema = Schema.create(Schema.Type.STRING)
-  }
-
-  implicit object VoteTrustEncoder extends Encoder[VoteTrust] {
-    override def encode(value: VoteTrust, schema: Schema, fieldMapper: FieldMapper): String = value.shortName
-  }
-
-  implicit object VoteTrustDecoder extends Decoder[VoteTrust] {
+  implicit val voteTrustDecoder: Decoder[VoteTrust] = new Decoder[VoteTrust] {
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): VoteTrust = {
-      Option(value)
-        .map(
-          v =>
-            VoteTrust.trustValue
-              .getOrElse(v.toString, throw new IllegalArgumentException(s"$value is not a vote trust"))
-        )
-        .getOrElse(Trusted)
       // Add a fallback to trusted since some events in kafka are corrupted
-
+      Option(value).map(stringEnumDecoder[VoteTrust].decode(_, schema, fieldMapper)).getOrElse(Trusted)
     }
   }
+
+  implicit def stringEnumSchemaFor[A <: StringEnumEntry]: SchemaFor[A] = _ => Schema.create(Schema.Type.STRING)
+
+  implicit def stringEnumEncoder[A <: StringEnumEntry]: Encoder[A] = (a, _, _) => a.value
+
+  implicit def stringEnumDecoder[A <: StringEnumEntry](implicit enum: StringEnum[A]): Decoder[A] =
+    (value, _, _) =>
+      enum
+        .withValueOpt(value.toString)
+        .getOrElse(throw new IllegalArgumentException(s"$value is not a ${enum.toString}"))
 
 }
 

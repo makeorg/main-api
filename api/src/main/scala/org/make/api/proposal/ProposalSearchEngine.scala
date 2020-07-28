@@ -395,7 +395,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .subAggregations(
           FilterAggregation(
             name = "filter_global",
-            query = TermQuery(field = ProposalElasticsearchFieldNames.status, value = Accepted.shortName)
+            query = TermQuery(field = ProposalElasticsearchFieldNames.status, value = Accepted.value)
           ).subAggregations(
             TermsAggregation(
               name = "by_idea_global",

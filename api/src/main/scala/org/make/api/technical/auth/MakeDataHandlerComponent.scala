@@ -399,6 +399,6 @@ case class TokenAlreadyRefreshed(refreshToken: String)
 case class ClientAccessUnauthorizedException(user: User, client: Client)
     extends Exception(
       s"User: ${user.userId} tried to connect to client ${client.clientId} with insufficient roles. " +
-        s"Expected one of: ${client.roles.map(_.shortName).mkString(", ")}." +
-        s"Actual: ${user.roles.map(_.shortName).mkString(", ")}"
+        s"Expected one of: ${client.roles.map(_.value).mkString(", ")}." +
+        s"Actual: ${user.roles.map(_.value).mkString(", ")}"
     )
