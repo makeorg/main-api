@@ -125,7 +125,10 @@ class AuthenticationApiTest
       Then("the service must delete at least one row")
       logoutRoute ~> check {
         status should be(StatusCodes.NoContent)
-        response.headers[`Set-Cookie`].map(_.cookie).find(_.name == makeSettings.VisitorCookie.name) should be(None)
+        response
+          .headers[`Set-Cookie`]
+          .map(_.cookie)
+          .find(_.name == makeSettings.VisitorCookie.name) should be(None)
       }
     }
 

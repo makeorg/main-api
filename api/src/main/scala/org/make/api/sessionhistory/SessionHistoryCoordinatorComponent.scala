@@ -25,7 +25,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
 import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.sessionhistory.SessionHistoryActor.SessionHistory
+import org.make.api.sessionhistory.SessionHistoryActor.{CurrentSessionId, SessionHistory}
 import org.make.api.technical.{StreamUtils, TimeSettings}
 import org.make.api.userhistory.{VotedProposals, VotesValues}
 import org.make.core.RequestContext
@@ -43,7 +43,7 @@ trait SessionHistoryCoordinatorComponent {
 
 trait SessionHistoryCoordinatorService {
   def sessionHistory(sessionId: SessionId): Future[SessionHistory]
-  def logHistory(command: SessionHistoryEvent[_]): Unit
+  def getCurrentSessionId(sessionId: SessionId, newSessionId: SessionId): Future[SessionId]
   def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit]
   def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit]
   def retrieveVoteAndQualifications(request: RequestSessionVoteValues): Future[Map[ProposalId, VoteAndQualifications]]
@@ -72,25 +72,38 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
     override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
-      (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).mapTo[SessionHistory]
+      (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).flatMap {
+        case SessionIsExpired(newSessionId) => sessionHistory(newSessionId)
+        case response                       => Future.successful(response).mapTo[SessionHistory]
+      }
+    }
+
+    override def getCurrentSessionId(sessionId: SessionId, newSessionId: SessionId): Future[SessionId] = {
+      (sessionHistoryCoordinator ? GetCurrentSession(sessionId, newSessionId)).mapTo[CurrentSessionId].map(_.sessionId)
     }
 
     override def logTransactionalHistory(command: TransactionalSessionHistoryEvent[_]): Future[Unit] = {
-      (sessionHistoryCoordinator ? SessionHistoryEnvelope(command.sessionId, command)).map(_ => ())
-    }
-
-    override def logHistory(command: SessionHistoryEvent[_]): Unit = {
-      sessionHistoryCoordinator ! SessionHistoryEnvelope(command.sessionId, command)
+      (sessionHistoryCoordinator ? SessionHistoryEnvelope(command.sessionId, command)).flatMap {
+        case SessionIsExpired(newSessionId) =>
+          (sessionHistoryCoordinator ? SessionHistoryEnvelope(newSessionId, command)).map(_ => ())
+        case _ => Future.successful {}
+      }
     }
 
     override def retrieveVoteAndQualifications(
       request: RequestSessionVoteValues
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
-      (sessionHistoryCoordinator ? request).mapTo[VotesValues].map(_.votesValues)
+      (sessionHistoryCoordinator ? request).flatMap {
+        case SessionIsExpired(newSessionId) => retrieveVoteAndQualifications(request.copy(sessionId = newSessionId))
+        case response                       => Future.successful(response).mapTo[VotesValues].map(_.votesValues)
+      }
     }
 
     override def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit] = {
-      (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).map(_ => {})
+      (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).flatMap {
+        case SessionIsExpired(newSessionId) => convertSession(newSessionId, userId, requestContext)
+        case _                              => Future.successful {}
+      }
     }
 
     private def retrieveVotedProposalsPage(
@@ -129,25 +142,31 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
 
     override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
       (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
-        case LockAcquired => Future.successful {}
+        case SessionIsExpired(newSessionId) => lockSessionForVote(newSessionId, proposalId)
+        case LockAcquired                   => Future.successful {}
         case LockAlreadyAcquired =>
           Future.failed(ConcurrentModification("A vote is already pending for this proposal"))
       }
     }
+
     override def lockSessionForQualification(
       sessionId: SessionId,
       proposalId: ProposalId,
       key: QualificationKey
     ): Future[Unit] = {
       (sessionHistoryCoordinator ? LockProposalForQualification(sessionId, proposalId, key)).flatMap {
-        case LockAcquired => Future.successful {}
+        case SessionIsExpired(newSessionId) => lockSessionForQualification(newSessionId, proposalId, key)
+        case LockAcquired                   => Future.successful {}
         case LockAlreadyAcquired =>
           Future.failed(ConcurrentModification("A qualification is already pending for this proposal"))
       }
     }
+
     override def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
-      sessionHistoryCoordinator ! ReleaseProposalForVote(sessionId, proposalId)
-      Future.successful {}
+      (sessionHistoryCoordinator ? ReleaseProposalForVote(sessionId, proposalId)).flatMap {
+        case SessionIsExpired(newSessionId) => unlockSessionForVote(newSessionId, proposalId)
+        case _                              => Future.successful {}
+      }
     }
 
     override def unlockSessionForQualification(
@@ -155,8 +174,10 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       proposalId: ProposalId,
       key: QualificationKey
     ): Future[Unit] = {
-      sessionHistoryCoordinator ! ReleaseProposalForQualification(sessionId, proposalId, key)
-      Future.successful {}
+      (sessionHistoryCoordinator ? ReleaseProposalForQualification(sessionId, proposalId, key)).flatMap {
+        case SessionIsExpired(newSessionId) => unlockSessionForQualification(newSessionId, proposalId, key)
+        case _                              => Future.successful {}
+      }
     }
   }
 

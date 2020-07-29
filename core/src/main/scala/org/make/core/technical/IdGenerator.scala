@@ -33,7 +33,7 @@ import org.make.core.personality.{PersonalityId, PersonalityRoleFieldId, Persona
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
 import org.make.core.sequence.SequenceId
-import org.make.core.session.VisitorId
+import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.UserId
 
@@ -61,6 +61,7 @@ trait IdGenerator {
   def nextTopIdeaCommentId(): TopIdeaCommentId = TopIdeaCommentId(nextId())
   def nextPersonalityRoleId(): PersonalityRoleId = PersonalityRoleId(nextId())
   def nextPersonalityRoleFieldId(): PersonalityRoleFieldId = PersonalityRoleFieldId(nextId())
+  def nextSessionId(): SessionId = SessionId(nextId())
 
   def nextId(): String
 }

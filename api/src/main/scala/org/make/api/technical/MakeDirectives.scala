@@ -88,11 +88,24 @@ trait MakeDirectives
     * sessionId is set in cookie and header
     * for web app and native app respectively
     */
-  def sessionId: Directive1[String] =
-    for {
+  def maybeSessionId: Directive1[Option[SessionId]] =
+    (for {
       maybeCookieSessionId <- optionalCookie(makeSettings.SessionCookie.name)
-      maybeSessionId       <- optionalNonEmptyHeaderValueByName(`X-Session-Id`.name)
-    } yield maybeCookieSessionId.map(_.value).orElse(maybeSessionId).getOrElse(idGenerator.nextId())
+      maybeHeaderSessionId <- optionalNonEmptyHeaderValueByName(`X-Session-Id`.name)
+    } yield maybeCookieSessionId.map(_.value).orElse(maybeHeaderSessionId))
+      .map(_.map(SessionId(_)))
+
+  def getCurrentSessionId: Directive1[SessionId] = {
+    maybeSessionId.flatMap {
+      case None => provide(idGenerator.nextSessionId())
+      case Some(id) =>
+        val newSessionId = idGenerator.nextSessionId()
+        onComplete(sessionHistoryCoordinatorService.getCurrentSessionId(id, newSessionId)).flatMap {
+          case Success(currentSessionId) => provide(currentSessionId)
+          case Failure(e)                => failWith(e)
+        }
+    }
+  }
 
   /**
     * visitorId is set in cookie and header
@@ -296,7 +309,6 @@ trait MakeDirectives
           }
       }
     }
-
   }
 
   def makeOperation(name: String, endpointType: EndpointType = EndpointType.Regular): Directive1[RequestContext] = {
@@ -304,18 +316,25 @@ trait MakeDirectives
     Tracing.entrypoint(slugifiedName)
 
     for {
-
-      requestId            <- requestId
-      _                    <- operationName(slugifiedName)
-      origin               <- optionalNonEmptyHeaderValueByName(Origin.name)
-      _                    <- addCorsHeaders(origin)
-      _                    <- encodeResponse
-      startTime            <- startTime
-      sessionId            <- sessionId
-      visitorId            <- visitorId
-      visitorCreatedAt     <- visitorCreatedAt
-      externalId           <- optionalNonEmptyHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
-      _                    <- addMakeHeaders(requestId, slugifiedName, sessionId, visitorId, visitorCreatedAt, startTime, externalId)
+      requestId        <- requestId
+      _                <- operationName(slugifiedName)
+      origin           <- optionalNonEmptyHeaderValueByName(Origin.name)
+      _                <- addCorsHeaders(origin)
+      _                <- encodeResponse
+      startTime        <- startTime
+      visitorId        <- visitorId
+      visitorCreatedAt <- visitorCreatedAt
+      externalId       <- optionalNonEmptyHeaderValueByName(`X-Make-External-Id`.name).map(_.getOrElse(requestId))
+      currentSessionId <- getCurrentSessionId
+      _ <- addMakeHeaders(
+        requestId,
+        slugifiedName,
+        currentSessionId.value,
+        visitorId,
+        visitorCreatedAt,
+        startTime,
+        externalId
+      )
       _                    <- handleExceptions(MakeApi.exceptionHandler(slugifiedName, requestId))
       _                    <- handleRejections(MakeApi.rejectionHandler)
       maybeTokenRefreshed  <- makeTriggerAuthRefreshFromCookie()
@@ -344,7 +363,7 @@ trait MakeDirectives
         currentTheme = None,
         userId = maybeUser.map(_.user.userId),
         requestId = requestId,
-        sessionId = SessionId(sessionId),
+        sessionId = currentSessionId,
         visitorId = Some(VisitorId(visitorId)),
         visitorCreatedAt = Some(visitorCreatedAt),
         externalId = externalId,
@@ -386,7 +405,7 @@ trait MakeDirectives
           .getOrElse(Map.empty)
       )
       logRequest(name, requestContext, origin)
-      connectIfNecessary(SessionId(sessionId), maybeUser.map(_.user.userId), requestContext)
+      connectIfNecessary(currentSessionId, maybeUser.map(_.user.userId), requestContext)
       requestContext
     }
   }
@@ -479,7 +498,7 @@ trait MakeDirectives
         respondWithDefaultHeaders(defaultCorsHeaders(mayBeOriginHeaderValue)) {
           optionalHeaderValueByType[`Access-Control-Request-Headers`](()) {
             case Some(requestHeader) =>
-              respondWithDefaultHeaders(`Access-Control-Allow-Headers`(requestHeader.value)) {
+              respondWithDefaultHeader(`Access-Control-Allow-Headers`(requestHeader.value)) {
                 route
               }
             case None => route

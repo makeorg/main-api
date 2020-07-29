@@ -23,8 +23,8 @@ import java.net.InetAddress
 import java.time.{Instant, LocalDate}
 import java.util.Date
 
-import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
@@ -46,8 +46,7 @@ import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
-import org.make.api.userhistory.ResetPasswordEvent
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.api.userhistory.{ResetPasswordEvent, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.common.indexed.Sort

@@ -61,7 +61,7 @@ class MakeDirectivesTest
   val routeRejection: Route = sealRoute(get {
     path("test") {
       makeOperation("test") { _ =>
-        reject(MalformedRequestContentRejection("http", new Exception("fake exception")))
+        reject(MalformedRequestContentRejection("http", new Exception("fake rejection")))
       }
     }
   })
@@ -160,13 +160,13 @@ class MakeDirectivesTest
       Get("/test") ~> route ~> check {
         val cookiesHttpHeaders: Seq[HttpHeader] = headers.filter(_.is("set-cookie"))
         val cookiesHeaders: Seq[HttpCookie] = cookiesHttpHeaders.map(_.asInstanceOf[`Set-Cookie`].cookie)
-        val maybeSessionCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-visitor")
+        val maybeVisitorCookie: Option[HttpCookie] = cookiesHeaders.find(_.name == "cookie-visitor")
 
         status should be(StatusCodes.OK)
 
-        maybeSessionCookie.isEmpty shouldBe false
-        maybeSessionCookie.get.secure shouldBe false
-        maybeSessionCookie.get.httpOnly shouldBe true
+        maybeVisitorCookie.isEmpty shouldBe false
+        maybeVisitorCookie.get.secure shouldBe false
+        maybeVisitorCookie.get.httpOnly shouldBe true
       }
     }
 
