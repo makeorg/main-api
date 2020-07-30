@@ -147,8 +147,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           tags = changes.tags.getOrElse(proposal.tags),
           updatedAt = Some(DateHelper.now()),
           operation = changes.operation.orElse(proposal.operation),
-          language = changes.language.orElse(proposal.language),
-          country = changes.country.orElse(proposal.country),
           questionId = changes.questionId.orElse(proposal.questionId)
         )
 
@@ -480,7 +478,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         content = command.content,
         operation = command.question.operationId,
         language = Some(command.question.language),
-        country = Some(command.question.country),
+        country = command.requestContext.country,
         question = Some(command.question.questionId),
         initialProposal = command.initialProposal
       )
@@ -760,8 +758,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               arguments = Map("content" -> e.content)
             )
           ),
-          language = e.language,
-          country = e.country,
           initialProposal = e.initialProposal
         )
       )

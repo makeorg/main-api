@@ -51,7 +51,6 @@ import org.make.core.operation.{OperationOfQuestion, SimpleOperation}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.{
   IndexedAuthor,
-  IndexedGetParameters,
   IndexedOrganisationInfo,
   IndexedProposal,
   IndexedProposalQuestion,
@@ -61,7 +60,6 @@ import org.make.core.proposal.indexed.{
   IndexedContext => ProposalContext
 }
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagType}
 import org.make.core.user.User
 import org.make.core.SlugHelper
@@ -308,22 +306,7 @@ trait ProposalIndexationStream
         scoreUpperBound = ScoreCounts.topScoreUpperBound(sequenceConfiguration, scoreWithEverything, regularScore),
         scoreLowerBound = ScoreCounts.topScoreLowerBound(sequenceConfiguration, scoreWithEverything, regularScore)
       ),
-      context = Some(
-        ProposalContext(
-          operation = proposal.creationContext.operationId,
-          source = proposal.creationContext.source.filter(!_.isEmpty) match {
-            case None if isBeforeContextSourceFeature => Some("core")
-            case other                                => other
-          },
-          location = proposal.creationContext.location,
-          question = proposal.creationContext.question,
-          getParameters = proposal.creationContext.getParameters
-            .map(_.toSeq.map {
-              case (key, value) => IndexedGetParameters(key, value)
-            })
-            .getOrElse(Seq.empty)
-        )
-      ),
+      context = Some(ProposalContext(proposal.creationContext, isBeforeContextSourceFeature)),
       trending = None,
       labels = proposal.labels.map(_.value),
       author = IndexedAuthor(
@@ -348,8 +331,6 @@ trait ProposalIndexationStream
               organisation.organisationName.map(name => SlugHelper(name))
             )
         ),
-      country = proposal.country.getOrElse(Country("FR")),
-      language = proposal.language.getOrElse(Language("fr")),
       tags = tags,
       selectedStakeTag = selectedStakeTag,
       ideaId = proposal.idea,
@@ -361,6 +342,8 @@ trait ProposalIndexationStream
             slug = question.slug,
             title = operationOfQuestion.operationTitle,
             question = question.question,
+            countries = question.countries,
+            language = question.language,
             startDate = operationOfQuestion.startDate,
             endDate = operationOfQuestion.endDate,
             isOpen = operationOfQuestion.status == OperationOfQuestion.Status.Open

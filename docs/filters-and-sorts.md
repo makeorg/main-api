@@ -20,10 +20,10 @@ Implementation is:
 request
     .query(functionScoreQuery().query(request.query.getOrElse(matchAllQuery()))
         .functions(
-            WeightScore(50D, Some(existsQuery(ProposalElasticsearchFieldNames.tagId))),
-            WeightScore(10D, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() > 1"))),
-            WeightScore(5D, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() == 1"))),
-            exponentialScore(field = ProposalElasticsearchFieldNames.createdAt, scale = "7d", origin = "now")
+            WeightScore(50D, Some(existsQuery(ProposalElasticsearchFieldName.tagId))),
+            WeightScore(10D, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldName.organisationId}'].size() > 1"))),
+            WeightScore(5D, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldName.organisationId}'].size() == 1"))),
+            exponentialScore(field = ProposalElasticsearchFieldName.createdAt, scale = "7d", origin = "now")
                 .weight(30D)
                 .decay(0.33D),
             randomScore(seed = seed).fieldName("id").weight(5D)

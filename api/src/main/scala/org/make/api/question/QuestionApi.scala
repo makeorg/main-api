@@ -44,7 +44,7 @@ import org.make.core.Order
 import org.make.core.auth.UserRights
 import org.make.core.idea.TopIdeaId
 import org.make.core.operation._
-import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
+import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldName, OperationOfQuestionSearchResult}
 import org.make.core.partner.PartnerKind
 import org.make.core.personality.PersonalityRoleId
 import org.make.core.proposal.ProposalId
@@ -353,7 +353,7 @@ trait DefaultQuestionApiComponent
               operationTitle = operationOfQuestion.operationTitle,
               consultationImage = operationOfQuestion.consultationImage,
               descriptionImage = operationOfQuestion.descriptionImage,
-              country = question.country,
+              countries = question.countries,
               language = question.language,
               startDate = operationOfQuestion.startDate,
               endDate = operationOfQuestion.endDate,
@@ -415,7 +415,7 @@ trait DefaultQuestionApiComponent
               "country".as[Country].?,
               "limit".as[Int].?,
               "skip".as[Int].?,
-              "sort".?,
+              "sort".as[OperationOfQuestionElasticsearchFieldName].?,
               "order".as[Order].?
             )
           ) {
@@ -430,20 +430,11 @@ trait DefaultQuestionApiComponent
               country: Option[Country],
               limit: Option[Int],
               skip: Option[Int],
-              sort: Option[String],
+              sort: Option[OperationOfQuestionElasticsearchFieldName],
               order: Option[Order]
             ) =>
               Validation.validate(sort.map { sortValue =>
-                val choices =
-                  Seq(
-                    OperationOfQuestionElasticsearchFieldNames.question,
-                    OperationOfQuestionElasticsearchFieldNames.startDate,
-                    OperationOfQuestionElasticsearchFieldNames.endDate,
-                    OperationOfQuestionElasticsearchFieldNames.description,
-                    OperationOfQuestionElasticsearchFieldNames.country,
-                    OperationOfQuestionElasticsearchFieldNames.language,
-                    OperationOfQuestionElasticsearchFieldNames.operationKind
-                  )
+                val choices = OperationOfQuestionElasticsearchFieldName.values.filter(_.sortable)
                 Validation.validChoices(
                   fieldName = "sort",
                   message = Some(

@@ -21,11 +21,12 @@ package org.make.core.proposal.indexed
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
@@ -36,95 +37,123 @@ import org.make.core.user.{UserId, UserType}
 
 import scala.annotation.meta.field
 
-object ProposalElasticsearchFieldNames {
-  val id: String = "id"
+sealed abstract class ProposalElasticsearchFieldName(val value: String, val sortable: Boolean = false)
+    extends StringEnumEntry
+    with Product
+    with Serializable {
+  def field: String
+  def parameter: String
+}
 
-  val authorAge: String = "author.age"
-  val authorFirstName: String = "author.firstName"
-  val authorPostalCode: String = "author.postalCode"
-  val authorUserType: String = "author.userType"
-  val authorAvatarUrl: String = "author.avatarUrl"
-  val content: String = "content"
-  val contentBg: String = "content.bg"
-  val contentBgStemmed: String = "content.stemmed-bg"
-  val contentCs: String = "content.cs"
-  val contentCsStemmed: String = "content.stemmed-cs"
-  val contentDa: String = "content.da"
-  val contentDaStemmed: String = "content.stemmed-da"
-  val contentDe: String = "content.de"
-  val contentDeStemmed: String = "content.stemmed-de"
-  val contentEl: String = "content.el"
-  val contentElStemmed: String = "content.stemmed-el"
-  val contentEn: String = "content.en"
-  val contentEnStemmed: String = "content.stemmed-en"
-  val contentEs: String = "content.es"
-  val contentEsStemmed: String = "content.stemmed-es"
-  val contentEt: String = "content.et"
-  val contentFi: String = "content.fi"
-  val contentFiStemmed: String = "content.stemmed-fi"
-  val contentFr: String = "content.fr"
-  val contentFrStemmed: String = "content.stemmed-fr"
-  val contentHr: String = "content.hr"
-  val contentHu: String = "content.hu"
-  val contentHuStemmed: String = "content.stemmed-hu"
-  val contentIt: String = "content.it"
-  val contentItStemmed: String = "content.stemmed-it"
-  val contentLt: String = "content.lt"
-  val contentLtStemmed: String = "content.stemmed-lt"
-  val contentLv: String = "content.lv"
-  val contentLvStemmed: String = "content.stemmed-lv"
-  val contentMt: String = "content.mt"
-  val contentNl: String = "content.nl"
-  val contentNlStemmed: String = "content.stemmed-nl"
-  val contentPl: String = "content.pl"
-  val contentPlStemmed: String = "content.stemmed-pl"
-  val contentPt: String = "content.pt"
-  val contentPtStemmed: String = "content.stemmed-pt"
-  val contentRo: String = "content.ro"
-  val contentRoStemmed: String = "content.stemmed-ro"
-  val contentSk: String = "content.sk"
-  val contentSl: String = "content.sl"
-  val contentSv: String = "content.sv"
-  val contentSvStemmed: String = "content.stemmed-sv"
-  val contentGeneral: String = "content.general"
-  val contextLocation: String = "context.location"
-  val contextOperation: String = "context.operation"
-  val contextQuestion: String = "context.question"
-  val contextSource: String = "context.source"
-  val controversy: String = "scores.controversy"
-  val country: String = "country"
-  val createdAt: String = "createdAt"
-  val ideaId: String = "ideaId"
-  val initialProposal: String = "initialProposal"
-  val labels: String = "labels"
-  val language: String = "language"
-  val operationId: String = "operationId"
-  val operationKind: String = "operationKind"
-  val organisationId: String = "organisations.organisationId"
-  val organisationName: String = "organisations.organisationName"
-  val organisations: String = "organisations"
-  val questionId: String = "question.questionId"
-  val questionIsOpen: String = "question.isOpen"
-  val refusalReason: String = "refusalReason"
-  val scores: String = "scores"
-  val scoreRealistic: String = "scores.realistic"
-  val scoreUpperBound: String = "scores.scoreUpperBound"
-  val scoreLowerBound: String = "scores.scoreLowerBound"
-  val segment: String = "segment"
-  val sequenceSegmentPool: String = "sequenceSegmentPool"
-  val sequencePool: String = "sequencePool"
-  val slug: String = "slug"
-  val status: String = "status"
-  val tagId: String = "tags.tagId"
-  val tags: String = "tags"
-  val selectedStakeTagId: String = "selectedStakeTag.tagId"
-  val toEnrich: String = "toEnrich"
-  val topScore: String = "scores.topScore"
-  val topScoreAjustedWithVotes: String = "scores.topScoreAjustedWithVotes"
-  val trending: String = "trending"
-  val updatedAt: String = "updatedAt"
-  val userId: String = "userId"
-  val votesCount: String = "votesCount"
+object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFieldName] {
+
+  sealed abstract class Simple(val field: String, override val sortable: Boolean = false)
+      extends ProposalElasticsearchFieldName(field, sortable) {
+    override def parameter: String = field
+  }
+
+  sealed abstract class Alias(
+    val parameter: String,
+    aliased: ProposalElasticsearchFieldName,
+    override val sortable: Boolean = false
+  ) extends ProposalElasticsearchFieldName(parameter, sortable) {
+    override def field: String = aliased.field
+  }
+
+  case object id extends Simple("id")
+
+  case object authorAge extends Simple("author.age")
+  case object authorFirstName extends Simple("author.firstName")
+  case object authorPostalCode extends Simple("author.postalCode")
+  case object authorUserType extends Simple("author.userType")
+  case object authorAvatarUrl extends Simple("author.avatarUrl")
+  case object content extends Simple("content", sortable = true)
+  case object contentBg extends Simple("content.bg")
+  case object contentBgStemmed extends Simple("content.stemmed-bg")
+  case object contentCs extends Simple("content.cs")
+  case object contentCsStemmed extends Simple("content.stemmed-cs")
+  case object contentDa extends Simple("content.da")
+  case object contentDaStemmed extends Simple("content.stemmed-da")
+  case object contentDe extends Simple("content.de")
+  case object contentDeStemmed extends Simple("content.stemmed-de")
+  case object contentEl extends Simple("content.el")
+  case object contentElStemmed extends Simple("content.stemmed-el")
+  case object contentEn extends Simple("content.en")
+  case object contentEnStemmed extends Simple("content.stemmed-en")
+  case object contentEs extends Simple("content.es")
+  case object contentEsStemmed extends Simple("content.stemmed-es")
+  case object contentEt extends Simple("content.et")
+  case object contentFi extends Simple("content.fi")
+  case object contentFiStemmed extends Simple("content.stemmed-fi")
+  case object contentFr extends Simple("content.fr")
+  case object contentFrStemmed extends Simple("content.stemmed-fr")
+  case object contentHr extends Simple("content.hr")
+  case object contentHu extends Simple("content.hu")
+  case object contentHuStemmed extends Simple("content.stemmed-hu")
+  case object contentIt extends Simple("content.it")
+  case object contentItStemmed extends Simple("content.stemmed-it")
+  case object contentLt extends Simple("content.lt")
+  case object contentLtStemmed extends Simple("content.stemmed-lt")
+  case object contentLv extends Simple("content.lv")
+  case object contentLvStemmed extends Simple("content.stemmed-lv")
+  case object contentMt extends Simple("content.mt")
+  case object contentNl extends Simple("content.nl")
+  case object contentNlStemmed extends Simple("content.stemmed-nl")
+  case object contentPl extends Simple("content.pl")
+  case object contentPlStemmed extends Simple("content.stemmed-pl")
+  case object contentPt extends Simple("content.pt")
+  case object contentPtStemmed extends Simple("content.stemmed-pt")
+  case object contentRo extends Simple("content.ro")
+  case object contentRoStemmed extends Simple("content.stemmed-ro")
+  case object contentSk extends Simple("content.sk")
+  case object contentSl extends Simple("content.sl")
+  case object contentSv extends Simple("content.sv")
+  case object contentSvStemmed extends Simple("content.stemmed-sv")
+  case object contentGeneral extends Simple("content.general")
+  case object contextCountry extends Simple("context.country")
+  case object contextLanguage extends Simple("context.language")
+  case object contextLocation extends Simple("context.location")
+  case object contextOperation extends Simple("context.operation")
+  case object contextQuestion extends Simple("context.question")
+  case object contextSource extends Simple("context.source")
+  case object controversy extends Simple("scores.controversy")
+  case object country extends Alias("country", contextCountry, sortable = true)
+  case object createdAt extends Simple("createdAt", sortable = true)
+  case object ideaId extends Simple("ideaId")
+  case object initialProposal extends Simple("initialProposal")
+  case object labels extends Simple("labels", sortable = true)
+  case object language extends Alias("language", contextLanguage, sortable = true)
+  case object operationId extends Simple("operationId")
+  case object operationKind extends Simple("operationKind")
+  case object organisationId extends Simple("organisations.organisationId")
+  case object organisationName extends Simple("organisations.organisationName")
+  case object organisations extends Simple("organisations")
+  case object questionCountries extends Simple("question.countries", sortable = true)
+  case object questionId extends Simple("question.questionId")
+  case object questionIsOpen extends Simple("question.isOpen")
+  case object questionLanguage extends Simple("question.language", sortable = true)
+  case object refusalReason extends Simple("refusalReason")
+  case object scores extends Simple("scores")
+  case object scoreRealistic extends Simple("scores.realistic")
+  case object scoreUpperBound extends Simple("scores.scoreUpperBound")
+  case object scoreLowerBound extends Simple("scores.scoreLowerBound")
+  case object segment extends Simple("segment")
+  case object sequenceSegmentPool extends Simple("sequenceSegmentPool")
+  case object sequencePool extends Simple("sequencePool")
+  case object slug extends Simple("slug", sortable = true)
+  case object status extends Simple("status")
+  case object tagId extends Simple("tags.tagId")
+  case object tags extends Simple("tags")
+  case object selectedStakeTagId extends Simple("selectedStakeTag.tagId")
+  case object toEnrich extends Simple("toEnrich")
+  case object topScore extends Simple("scores.topScore")
+  case object topScoreAjustedWithVotes extends Simple("scores.topScoreAjustedWithVotes", sortable = true)
+  case object trending extends Simple("trending", sortable = true)
+  case object updatedAt extends Simple("updatedAt", sortable = true)
+  case object userId extends Simple("userId")
+  case object votesCount extends Simple("votesCount")
+
+  override def values: IndexedSeq[ProposalElasticsearchFieldName] = findValues
 }
 
 case class IndexedProposal(
@@ -153,10 +182,6 @@ case class IndexedProposal(
   labels: Seq[String],
   author: IndexedAuthor,
   organisations: Seq[IndexedOrganisationInfo],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
   question: Option[IndexedProposalQuestion],
   tags: Seq[IndexedTag],
   selectedStakeTag: Option[IndexedTag],
@@ -186,6 +211,8 @@ final case class IndexedProposalQuestion(
   slug: String,
   title: String,
   question: String,
+  countries: NonEmptyList[Country],
+  language: Language,
   startDate: Option[ZonedDateTime],
   endDate: Option[ZonedDateTime],
   isOpen: Boolean
@@ -203,10 +230,31 @@ final case class IndexedContext(
   source: Option[String],
   location: Option[String],
   question: Option[String],
+  country: Option[Country],
+  language: Option[Language],
   getParameters: Seq[IndexedGetParameters]
 )
 
 object IndexedContext {
+
+  def apply(context: RequestContext, isBeforeContextSourceFeature: Boolean = false): IndexedContext =
+    IndexedContext(
+      operation = context.operationId,
+      source = context.source.filter(!_.isEmpty) match {
+        case None if isBeforeContextSourceFeature => Some("core")
+        case other                                => other
+      },
+      location = context.location,
+      question = context.question,
+      country = context.country,
+      language = context.language,
+      getParameters = context.getParameters
+        .map(_.toSeq.map {
+          case (key, value) => IndexedGetParameters(key, value)
+        })
+        .getOrElse(Seq.empty)
+    )
+
   implicit val encoder: Encoder[IndexedContext] = deriveEncoder[IndexedContext]
   implicit val decoder: Decoder[IndexedContext] = deriveDecoder[IndexedContext]
 }

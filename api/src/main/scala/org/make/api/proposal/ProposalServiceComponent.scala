@@ -47,7 +47,7 @@ import org.make.core.history.HistoryActions.{VoteAndQualifications, VoteTrust}
 import org.make.core.history.HistoryActions.VoteTrust._
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Pending
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldName, ProposalsSearchResult}
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.question.TopProposalsMode.IdeaMode
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
@@ -58,6 +58,7 @@ import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.api.technical.crm.QuestionResolver
+import org.make.core.reference.Country
 import org.make.core.session.SessionId
 
 trait ProposalServiceComponent {
@@ -215,6 +216,7 @@ trait ProposalService {
   def createInitialProposal(
     content: String,
     question: Question,
+    country: Country,
     tags: Seq[TagId],
     author: AuthorRequest,
     moderator: UserId,
@@ -266,6 +268,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def createInitialProposal(
       content: String,
       question: Question,
+      country: Country,
       tags: Seq[TagId],
       author: AuthorRequest,
       moderator: UserId,
@@ -273,7 +276,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[ProposalId] = {
 
       for {
-        user       <- userService.retrieveOrCreateVirtualUser(author, question.country, question.language)
+        user       <- userService.retrieveOrCreateVirtualUser(author, country, question.language)
         proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question, initialProposal = true)
         _ <- validateProposal(
           proposalId = proposalId,
@@ -441,9 +444,9 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[ProposalsResultResponse] = {
       val search = mode match {
         case Some(IdeaMode) =>
-          elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldNames.ideaId)
+          elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldName.ideaId)
         case _ =>
-          elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldNames.selectedStakeTagId)
+          elasticsearchProposalAPI.getTopProposals(questionId, size, ProposalElasticsearchFieldName.selectedStakeTagId)
       }
       search.flatMap { results =>
         val searchResult = ProposalsSearchResult(results.size, results)
@@ -615,8 +618,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 idea = proposal.idea,
                 ideaProposals = Seq.empty,
                 operationId = proposal.operation,
-                language = proposal.language,
-                country = proposal.country,
                 questionId = proposal.questionId
               )
             )
@@ -1088,7 +1089,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
           requestContext = requestContext,
           query = SearchQuery(
             filters = Some(getSearchFilters(questionId, toEnrich, minVotesCount, minScore)),
-            sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC))),
+            sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.ASC))),
             limit = Some(defaultNumberOfProposals),
             language = None,
             sortAlgorithm = Some(B2BFirstAlgorithm)

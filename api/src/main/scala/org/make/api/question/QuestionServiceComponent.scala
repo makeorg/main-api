@@ -20,6 +20,7 @@
 package org.make.api.question
 
 import akka.stream.scaladsl.{Sink, Source}
+import cats.data.NonEmptyList
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.topIdeaComments.PersistentTopIdeaCommentServiceComponent
 import org.make.api.idea.{PersistentTopIdeaServiceComponent, TopIdeaServiceComponent}
@@ -52,7 +53,7 @@ trait QuestionService {
   def searchQuestion(request: SearchQuestionRequest): Future[Seq[Question]]
   def countQuestion(request: SearchQuestionRequest): Future[Int]
   def createQuestion(
-    country: Country,
+    countries: NonEmptyList[Country],
     language: Language,
     question: String,
     shortTitle: Option[String],
@@ -164,7 +165,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     }
 
     override def createQuestion(
-      country: Country,
+      countries: NonEmptyList[Country],
       language: Language,
       question: String,
       shortTitle: Option[String],
@@ -174,7 +175,7 @@ trait DefaultQuestionService extends QuestionServiceComponent {
         Question(
           questionId = idGenerator.nextQuestionId(),
           slug = slug,
-          country = country,
+          countries = countries,
           language = language,
           question = question,
           shortTitle = shortTitle,

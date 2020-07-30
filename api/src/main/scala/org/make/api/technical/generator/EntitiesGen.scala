@@ -19,6 +19,7 @@
 
 package org.make.api.technical.generator
 
+import cats.data.NonEmptyList
 import org.make.api.operation.CreateOperationOfQuestion
 import org.make.api.technical.{DefaultIdGeneratorComponent, IdGeneratorComponent}
 import org.make.api.user.UserRegisterData
@@ -55,7 +56,7 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       endDate = date.map(_.plusMonths(3)),
       operationTitle = operationTitle,
       slug = slug,
-      country = country,
+      countries = NonEmptyList.of(country),
       language = language,
       question = question,
       shortTitle = Some(shortTitle),

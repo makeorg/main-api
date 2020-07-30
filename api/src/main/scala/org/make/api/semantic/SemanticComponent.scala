@@ -29,6 +29,8 @@ import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.stream.{ActorAttributes, OverflowStrategy, QueueOfferResult}
+import cats.data.OptionT
+import cats.instances.future._
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe._
@@ -38,6 +40,7 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api
 import org.make.api.ActorSystemComponent
 import org.make.api.idea.IdeaServiceComponent
+import org.make.api.question.QuestionServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.EventBusServiceComponent
 import org.make.core.idea.{Idea, IdeaId}
@@ -73,6 +76,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
     with SemanticConfigurationComponent
     with IdeaServiceComponent
     with EventBusServiceComponent
+    with QuestionServiceComponent
     with TagServiceComponent =>
 
   override lazy val semanticService: SemanticService = new DefaultSemanticService
@@ -171,21 +175,22 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
     }
 
     override def getPredictedTagsForProposal(proposal: Proposal): Future[GetPredictedTagsResponse] = {
-      (proposal.questionId, proposal.language) match {
-        case (Some(questionId), Some(language)) =>
-          val modelName = "auto"
-          Marshal(
-            GetPredictedTagsRequest(
-              GetPredictedTagsProposalRequest(
-                proposal.proposalId,
-                questionId,
-                language.value,
-                proposal.status,
-                proposal.content
-              ),
-              modelName = modelName
-            )
-          ).to[RequestEntity].flatMap { entity =>
+      val futureRequest = for {
+        questionId <- OptionT(Future.successful(proposal.questionId))
+        question   <- OptionT(questionService.getQuestion(questionId))
+      } yield GetPredictedTagsRequest(
+        GetPredictedTagsProposalRequest(
+          proposal.proposalId,
+          questionId,
+          question.language.value,
+          proposal.status,
+          proposal.content
+        ),
+        modelName = "auto"
+      )
+      futureRequest.value.flatMap {
+        case Some(request) =>
+          Marshal(request).to[RequestEntity].flatMap { entity =>
             val request = HttpRequest(
               method = HttpMethods.POST,
               uri = Uri(s"${semanticConfiguration.url}/tags/predict"),
@@ -199,9 +204,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
             }
           }
         case _ =>
-          logger.warn(
-            s"Cannot get predicted tags for proposal ${proposal.proposalId} because question or language is missing"
-          )
+          logger.warn(s"Cannot get predicted tags for proposal ${proposal.proposalId} because question is missing")
           Future.successful(GetPredictedTagsResponse.none)
       }
     }
@@ -263,7 +266,7 @@ object SemanticProposal {
     new SemanticProposal(
       id = indexedProposal.id,
       questionId = indexedProposal.question.map(_.questionId).getOrElse(QuestionId("None")),
-      language = indexedProposal.language,
+      language = indexedProposal.question.map(_.language).getOrElse(Language("fr")),
       ideaId = indexedProposal.ideaId,
       content = indexedProposal.content,
       status = indexedProposal.status

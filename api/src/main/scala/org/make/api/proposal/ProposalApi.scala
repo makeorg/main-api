@@ -39,7 +39,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, PublicConsultation}
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
@@ -291,7 +291,7 @@ trait DefaultProposalApiComponent
                   "question".?,
                   "language".as[Language].?,
                   "country".as[Country].?,
-                  "sort".?,
+                  "sort".as[ProposalElasticsearchFieldName].?,
                   "order".as[Order].?,
                   "limit".as[Int].?,
                   "skip".as[Int].?,
@@ -315,7 +315,7 @@ trait DefaultProposalApiComponent
                   question: Option[String],
                   language: Option[Language],
                   country: Option[Country],
-                  sort: Option[String],
+                  sort: Option[ProposalElasticsearchFieldName],
                   order: Option[Order],
                   limit: Option[Int],
                   skip: Option[Int],
@@ -335,22 +335,11 @@ trait DefaultProposalApiComponent
                       BusinessConfig.supportedCountries.map(_.countryCode)
                     )
                   }, sort.map { sortValue =>
-                    val choices =
-                      Seq(
-                        ProposalElasticsearchFieldNames.content,
-                        ProposalElasticsearchFieldNames.slug,
-                        ProposalElasticsearchFieldNames.createdAt,
-                        ProposalElasticsearchFieldNames.updatedAt,
-                        ProposalElasticsearchFieldNames.trending,
-                        ProposalElasticsearchFieldNames.labels,
-                        ProposalElasticsearchFieldNames.country,
-                        ProposalElasticsearchFieldNames.language,
-                        ProposalElasticsearchFieldNames.topScoreAjustedWithVotes
-                      )
+                    val choices = ProposalElasticsearchFieldName.values.filter(_.sortable)
                     Validation.validChoices(
                       fieldName = "sort",
                       message = Some(
-                        s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                        s"Invalid sort. Got $sortValue but expected one of: ${choices.map(_.parameter).mkString("\"", "\", \"", "\"")}"
                       ),
                       Seq(sortValue),
                       choices
@@ -379,7 +368,7 @@ trait DefaultProposalApiComponent
                     context = contextFilterRequest,
                     language = language,
                     country = country,
-                    sort = sort,
+                    sort = sort.map(_.field),
                     order = order,
                     limit = limit,
                     skip = skip,

@@ -26,9 +26,8 @@ import com.sksamuel.elastic4s.searches.queries.matches.MatchQuery
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.common.indexed.{Sort => IndexedSort}
 import org.make.core.MakeUnitTest
-import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.OperationId
-import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
 import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -101,7 +100,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       val themeSearchFilterResult = SearchFilters.buildInitialProposalSearchFilter(searchQuery.filters)
       Then("result is a termQuery")
       themeSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(field = ProposalElasticsearchFieldNames.initialProposal, value = true)
+        ElasticApi.termQuery(field = ProposalElasticsearchFieldName.initialProposal.field, value = true)
       )
     }
 
@@ -110,7 +109,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       When("call buildTagsSearchFilter with SearchQuery")
       val tagsSearchFilterResult = SearchFilters.buildTagsSearchFilter(searchQuery.filters)
       Then("result is a termQuery")
-      tagsSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, tagValue))
+      tagsSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.tagId.field, tagValue))
     }
 
     Scenario("build LabelsSearchFilter from Search filter") {
@@ -118,7 +117,9 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       When("call buildLabelsSearchFilter with SearchQuery")
       val labelsSearchFilterResult = SearchFilters.buildLabelsSearchFilter(searchQuery.filters)
       Then("result is a termsQuery")
-      labelsSearchFilterResult shouldBe Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labelValue))
+      labelsSearchFilterResult shouldBe Some(
+        ElasticApi.termsQuery(ProposalElasticsearchFieldName.labels.field, labelValue)
+      )
     }
 
     Scenario("build OperationSearchFilter from Search filter") {
@@ -127,7 +128,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       val operationSearchFilterResult = SearchFilters.buildOperationSearchFilter(searchQuery.filters)
       Then("result is a matchQuery")
       operationSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operationValue)
+        ElasticApi.termQuery(ProposalElasticsearchFieldName.operationId.field, operationValue)
       )
     }
 
@@ -138,10 +139,10 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       Then("result is a multiMatchQuery")
       val fieldsBoosts =
         Map(
-          ProposalElasticsearchFieldNames.contentGeneral -> 1d,
-          ProposalElasticsearchFieldNames.contentEn -> 2d,
-          ProposalElasticsearchFieldNames.content -> 3d,
-          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5d
+          ProposalElasticsearchFieldName.contentGeneral.field -> 1d,
+          ProposalElasticsearchFieldName.contentEn.field -> 2d,
+          ProposalElasticsearchFieldName.content.field -> 3d,
+          ProposalElasticsearchFieldName.contentEnStemmed.field -> 1.5d
         )
       contentSearchFilterResult shouldBe Some(
         ElasticApi
@@ -151,7 +152,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
           .functions(
             WeightScore(
               weight = 2d,
-              filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
+              filter = Some(MatchQuery(field = ProposalElasticsearchFieldName.questionIsOpen.field, value = true))
             )
           )
       )
@@ -163,7 +164,10 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       val contentSearchFilterResult = SearchFilters.buildContentSearchFilter(searchQuery.copy(language = None))
       Then("result is a functionScore with a multimatch query")
       val fieldsBoosts =
-        Map(ProposalElasticsearchFieldNames.contentGeneral -> 1d, ProposalElasticsearchFieldNames.content -> 3d)
+        Map(
+          ProposalElasticsearchFieldName.contentGeneral.field -> 1d,
+          ProposalElasticsearchFieldName.content.field -> 3d
+        )
       contentSearchFilterResult shouldBe Some(
         ElasticApi
           .functionScoreQuery(
@@ -172,7 +176,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
           .functions(
             WeightScore(
               weight = 2d,
-              filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
+              filter = Some(MatchQuery(field = ProposalElasticsearchFieldName.questionIsOpen.field, value = true))
             )
           )
       )
@@ -184,7 +188,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       val statusSearchFilterResult = SearchFilters.buildStatusSearchFilter(searchQuery.filters)
       Then("result is a termQuery")
       statusSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Pending.value)
+        ElasticApi.termQuery(ProposalElasticsearchFieldName.status.field, ProposalStatus.Pending.value)
       )
     }
 
@@ -194,7 +198,7 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       val slugSearchFilterResult = SearchFilters.buildSlugSearchFilter(searchQuery.filters)
       Then("result is a termQuery")
       slugSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(ProposalElasticsearchFieldNames.slug, "my-awesome-slug")
+        ElasticApi.termQuery(ProposalElasticsearchFieldName.slug.field, "my-awesome-slug")
       )
     }
 
@@ -203,7 +207,9 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       When("call buildUserSearchFilter with SearchQuery")
       val userSearchFilterResult = SearchFilters.buildUserSearchFilter(searchQuery.filters)
       Then("result is a termQuery")
-      userSearchFilterResult shouldBe Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.userId, "A34343-ERER"))
+      userSearchFilterResult shouldBe Some(
+        ElasticApi.termQuery(ProposalElasticsearchFieldName.userId.field, "A34343-ERER")
+      )
     }
   }
 }

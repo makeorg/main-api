@@ -30,11 +30,11 @@ import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
-import org.make.core.proposal.indexed.{ProposalElasticsearchFieldNames, SequencePool}
+import org.make.core.proposal.indexed.{ProposalElasticsearchFieldName, SequencePool}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{LabelId, Language}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 
@@ -240,9 +240,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.proposal match {
         case Some(ProposalSearchFilter(Seq(proposalId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.id, proposalId.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.id.field, proposalId.value))
         case Some(ProposalSearchFilter(proposalIds)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.id, proposalIds.map(_.value)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.id.field, proposalIds.map(_.value)))
         case _ => None
       }
     }
@@ -252,9 +252,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.question match {
         case Some(QuestionSearchFilter(Seq(questionId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionId, questionId.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.questionId.field, questionId.value))
         case Some(QuestionSearchFilter(questionIds)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.questionId, questionIds.map(_.value)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.questionId.field, questionIds.map(_.value)))
         case _ => None
       }
     }
@@ -264,7 +264,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.user match {
         case Some(UserSearchFilter(userId)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.userId, userId.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.userId.field, userId.value))
         case _ => None
       }
     }
@@ -274,7 +274,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.initialProposal.map { initialProposal =>
         ElasticApi.termQuery(
-          field = ProposalElasticsearchFieldNames.initialProposal,
+          field = ProposalElasticsearchFieldName.initialProposal.field,
           value = initialProposal.isInitialProposal
         )
       }
@@ -285,9 +285,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.tags match {
         case Some(TagsSearchFilter(Seq(tagId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.tagId, tagId.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.tagId.field, tagId.value))
         case Some(TagsSearchFilter(tags)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.tagId, tags.map(_.value)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.tagId.field, tags.map(_.value)))
         case _ => None
       }
     }
@@ -297,7 +297,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.labels match {
         case Some(LabelsSearchFilter(labels)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.labels, labels.map(_.value)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.labels.field, labels.map(_.value)))
         case _ => None
       }
     }
@@ -307,11 +307,11 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.operation match {
         case Some(OperationSearchFilter(Seq(operationId))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operationId.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.operationId.field, operationId.value))
         case Some(OperationSearchFilter(operationIds)) =>
           Some(
             ElasticApi
-              .termsQuery(ProposalElasticsearchFieldNames.operationId, operationIds.map(_.value))
+              .termsQuery(ProposalElasticsearchFieldName.operationId.field, operationIds.map(_.value))
           )
         case _ => None
       }
@@ -323,7 +323,7 @@ object SearchFilters extends ElasticDsl {
       filters   <- filters
       context   <- filters.context
       operation <- context.operation
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextOperation, operation.value)
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldName.contextOperation.field, operation.value)
 
     operationFilter
   }
@@ -333,7 +333,7 @@ object SearchFilters extends ElasticDsl {
       filters <- filters
       context <- filters.context
       source  <- context.source
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextSource, source)
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldName.contextSource.field, source)
 
     sourceFilter
   }
@@ -343,7 +343,7 @@ object SearchFilters extends ElasticDsl {
       filters  <- filters
       context  <- filters.context
       location <- context.location
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextLocation, location)
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldName.contextLocation.field, location)
 
     locationFilter
   }
@@ -353,7 +353,7 @@ object SearchFilters extends ElasticDsl {
       filters  <- filters
       context  <- filters.context
       question <- context.question
-    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldNames.contextQuestion, question)
+    } yield ElasticApi.matchQuery(ProposalElasticsearchFieldName.contextQuestion.field, question)
 
     questionFilter
   }
@@ -362,7 +362,7 @@ object SearchFilters extends ElasticDsl {
     val slugFilter: Option[Query] = for {
       filters    <- filters
       slugFilter <- filters.slug
-    } yield ElasticApi.termQuery(ProposalElasticsearchFieldNames.slug, slugFilter.slug)
+    } yield ElasticApi.termQuery(ProposalElasticsearchFieldName.slug.field, slugFilter.slug)
 
     slugFilter
   }
@@ -377,55 +377,55 @@ object SearchFilters extends ElasticDsl {
     } yield {
       val fieldsBoosts =
         Map(
-          ProposalElasticsearchFieldNames.content -> 3d,
-          ProposalElasticsearchFieldNames.contentFr -> 2d * languageOmission("fr"),
-          ProposalElasticsearchFieldNames.contentFrStemmed -> 1.5d * languageOmission("fr"),
-          ProposalElasticsearchFieldNames.contentEn -> 2d * languageOmission("en"),
-          ProposalElasticsearchFieldNames.contentEnStemmed -> 1.5d * languageOmission("en"),
-          ProposalElasticsearchFieldNames.contentIt -> 2d * languageOmission("it"),
-          ProposalElasticsearchFieldNames.contentItStemmed -> 1.5d * languageOmission("it"),
-          ProposalElasticsearchFieldNames.contentDe -> 2d * languageOmission("de"),
-          ProposalElasticsearchFieldNames.contentDeStemmed -> 1.5d * languageOmission("de"),
-          ProposalElasticsearchFieldNames.contentBg -> 2d * languageOmission("bg"),
-          ProposalElasticsearchFieldNames.contentBgStemmed -> 1.5d * languageOmission("bg"),
-          ProposalElasticsearchFieldNames.contentCs -> 2d * languageOmission("cs"),
-          ProposalElasticsearchFieldNames.contentCsStemmed -> 1.5d * languageOmission("cs"),
-          ProposalElasticsearchFieldNames.contentDa -> 2d * languageOmission("da"),
-          ProposalElasticsearchFieldNames.contentDaStemmed -> 1.5d * languageOmission("da"),
-          ProposalElasticsearchFieldNames.contentNl -> 2d * languageOmission("nl"),
-          ProposalElasticsearchFieldNames.contentNlStemmed -> 1.5d * languageOmission("nl"),
-          ProposalElasticsearchFieldNames.contentFi -> 2d * languageOmission("fi"),
-          ProposalElasticsearchFieldNames.contentFiStemmed -> 1.5d * languageOmission("fi"),
-          ProposalElasticsearchFieldNames.contentEl -> 2d * languageOmission("el"),
-          ProposalElasticsearchFieldNames.contentElStemmed -> 1.5d * languageOmission("el"),
-          ProposalElasticsearchFieldNames.contentHu -> 2d * languageOmission("hu"),
-          ProposalElasticsearchFieldNames.contentHuStemmed -> 1.5d * languageOmission("hu"),
-          ProposalElasticsearchFieldNames.contentLv -> 2d * languageOmission("lv"),
-          ProposalElasticsearchFieldNames.contentLvStemmed -> 1.5d * languageOmission("lv"),
-          ProposalElasticsearchFieldNames.contentLt -> 2d * languageOmission("lt"),
-          ProposalElasticsearchFieldNames.contentLtStemmed -> 1.5d * languageOmission("lt"),
-          ProposalElasticsearchFieldNames.contentPt -> 2d * languageOmission("pt"),
-          ProposalElasticsearchFieldNames.contentPtStemmed -> 1.5d * languageOmission("pt"),
-          ProposalElasticsearchFieldNames.contentRo -> 2d * languageOmission("ro"),
-          ProposalElasticsearchFieldNames.contentRoStemmed -> 1.5d * languageOmission("ro"),
-          ProposalElasticsearchFieldNames.contentEs -> 2d * languageOmission("es"),
-          ProposalElasticsearchFieldNames.contentEsStemmed -> 1.5d * languageOmission("es"),
-          ProposalElasticsearchFieldNames.contentSv -> 2d * languageOmission("sv"),
-          ProposalElasticsearchFieldNames.contentSvStemmed -> 1.5d * languageOmission("sv"),
-          ProposalElasticsearchFieldNames.contentPl -> 2d * languageOmission("pl"),
-          ProposalElasticsearchFieldNames.contentPlStemmed -> 1.5d * languageOmission("pl"),
-          ProposalElasticsearchFieldNames.contentHr -> 2d * languageOmission("hr"),
-          ProposalElasticsearchFieldNames.contentEt -> 2d * languageOmission("et"),
-          ProposalElasticsearchFieldNames.contentMt -> 2d * languageOmission("mt"),
-          ProposalElasticsearchFieldNames.contentSk -> 2d * languageOmission("sk"),
-          ProposalElasticsearchFieldNames.contentSl -> 2d * languageOmission("sl"),
-          ProposalElasticsearchFieldNames.contentGeneral -> 1d
-        ).filter { case (_, boost) => boost != 0 }
+          ProposalElasticsearchFieldName.content -> 3d,
+          ProposalElasticsearchFieldName.contentFr -> 2d * languageOmission("fr"),
+          ProposalElasticsearchFieldName.contentFrStemmed -> 1.5d * languageOmission("fr"),
+          ProposalElasticsearchFieldName.contentEn -> 2d * languageOmission("en"),
+          ProposalElasticsearchFieldName.contentEnStemmed -> 1.5d * languageOmission("en"),
+          ProposalElasticsearchFieldName.contentIt -> 2d * languageOmission("it"),
+          ProposalElasticsearchFieldName.contentItStemmed -> 1.5d * languageOmission("it"),
+          ProposalElasticsearchFieldName.contentDe -> 2d * languageOmission("de"),
+          ProposalElasticsearchFieldName.contentDeStemmed -> 1.5d * languageOmission("de"),
+          ProposalElasticsearchFieldName.contentBg -> 2d * languageOmission("bg"),
+          ProposalElasticsearchFieldName.contentBgStemmed -> 1.5d * languageOmission("bg"),
+          ProposalElasticsearchFieldName.contentCs -> 2d * languageOmission("cs"),
+          ProposalElasticsearchFieldName.contentCsStemmed -> 1.5d * languageOmission("cs"),
+          ProposalElasticsearchFieldName.contentDa -> 2d * languageOmission("da"),
+          ProposalElasticsearchFieldName.contentDaStemmed -> 1.5d * languageOmission("da"),
+          ProposalElasticsearchFieldName.contentNl -> 2d * languageOmission("nl"),
+          ProposalElasticsearchFieldName.contentNlStemmed -> 1.5d * languageOmission("nl"),
+          ProposalElasticsearchFieldName.contentFi -> 2d * languageOmission("fi"),
+          ProposalElasticsearchFieldName.contentFiStemmed -> 1.5d * languageOmission("fi"),
+          ProposalElasticsearchFieldName.contentEl -> 2d * languageOmission("el"),
+          ProposalElasticsearchFieldName.contentElStemmed -> 1.5d * languageOmission("el"),
+          ProposalElasticsearchFieldName.contentHu -> 2d * languageOmission("hu"),
+          ProposalElasticsearchFieldName.contentHuStemmed -> 1.5d * languageOmission("hu"),
+          ProposalElasticsearchFieldName.contentLv -> 2d * languageOmission("lv"),
+          ProposalElasticsearchFieldName.contentLvStemmed -> 1.5d * languageOmission("lv"),
+          ProposalElasticsearchFieldName.contentLt -> 2d * languageOmission("lt"),
+          ProposalElasticsearchFieldName.contentLtStemmed -> 1.5d * languageOmission("lt"),
+          ProposalElasticsearchFieldName.contentPt -> 2d * languageOmission("pt"),
+          ProposalElasticsearchFieldName.contentPtStemmed -> 1.5d * languageOmission("pt"),
+          ProposalElasticsearchFieldName.contentRo -> 2d * languageOmission("ro"),
+          ProposalElasticsearchFieldName.contentRoStemmed -> 1.5d * languageOmission("ro"),
+          ProposalElasticsearchFieldName.contentEs -> 2d * languageOmission("es"),
+          ProposalElasticsearchFieldName.contentEsStemmed -> 1.5d * languageOmission("es"),
+          ProposalElasticsearchFieldName.contentSv -> 2d * languageOmission("sv"),
+          ProposalElasticsearchFieldName.contentSvStemmed -> 1.5d * languageOmission("sv"),
+          ProposalElasticsearchFieldName.contentPl -> 2d * languageOmission("pl"),
+          ProposalElasticsearchFieldName.contentPlStemmed -> 1.5d * languageOmission("pl"),
+          ProposalElasticsearchFieldName.contentHr -> 2d * languageOmission("hr"),
+          ProposalElasticsearchFieldName.contentEt -> 2d * languageOmission("et"),
+          ProposalElasticsearchFieldName.contentMt -> 2d * languageOmission("mt"),
+          ProposalElasticsearchFieldName.contentSk -> 2d * languageOmission("sk"),
+          ProposalElasticsearchFieldName.contentSl -> 2d * languageOmission("sl"),
+          ProposalElasticsearchFieldName.contentGeneral -> 1d
+        ).filter { case (_, boost) => boost != 0 }.map { case (field, boost) => (field.field, boost) }
       functionScoreQuery(multiMatchQuery(text).fields(fieldsBoosts).fuzziness("Auto:4,7").operator(Operator.AND))
         .functions(
           WeightScore(
             weight = 2d,
-            filter = Some(MatchQuery(field = ProposalElasticsearchFieldNames.questionIsOpen, value = true))
+            filter = Some(MatchQuery(field = ProposalElasticsearchFieldName.questionIsOpen.field, value = true))
           )
         )
 
@@ -436,15 +436,15 @@ object SearchFilters extends ElasticDsl {
     val query: Option[Query] = filters.flatMap {
       _.status.map {
         case StatusSearchFilter(Seq(proposalStatus)) =>
-          ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, proposalStatus.value)
+          ElasticApi.termQuery(ProposalElasticsearchFieldName.status.field, proposalStatus.value)
         case StatusSearchFilter(proposalStatuses) =>
-          ElasticApi.termsQuery(ProposalElasticsearchFieldNames.status, proposalStatuses.map(_.value))
+          ElasticApi.termsQuery(ProposalElasticsearchFieldName.status.field, proposalStatuses.map(_.value))
       }
     }
 
     query match {
       case None =>
-        Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.status, ProposalStatus.Accepted.value))
+        Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.status.field, ProposalStatus.Accepted.value))
       case _ => query
     }
   }
@@ -453,9 +453,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.idea match {
         case Some(IdeaSearchFilter(Seq(idea))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.ideaId, idea.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.ideaId.field, idea.value))
         case Some(IdeaSearchFilter(ideas)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.ideaId, ideas.map(_.value)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.ideaId.field, ideas.map(_.value)))
         case _ => None
       }
     }
@@ -465,7 +465,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.language, language.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.questionLanguage.field, language.value))
         case _ => None
       }
     }
@@ -475,7 +475,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.country, country.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.questionCountries.field, country.value))
         case _ => None
       }
     }
@@ -485,7 +485,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.minVotesCount match {
         case Some(MinVotesCountSearchFilter(minVotesCount)) =>
-          Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(minVotesCount))
+          Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldName.votesCount.field).gte(minVotesCount))
         case _ => None
       }
     }
@@ -495,7 +495,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.toEnrich match {
         case Some(ToEnrichSearchFilter(toEnrich)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.toEnrich, toEnrich))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.toEnrich.field, toEnrich))
         case _ => None
       }
     }
@@ -505,7 +505,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.minScore match {
         case Some(MinScoreSearchFilter(minScore)) =>
-          Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.scoreUpperBound).gte(minScore))
+          Some(ElasticApi.rangeQuery(ProposalElasticsearchFieldName.scoreUpperBound.field).gte(minScore))
         case _ => None
       }
     }
@@ -515,7 +515,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.createdAt match {
         case Some(CreatedAtSearchFilter(maybeBefore, maybeAfter)) =>
-          val createdAtRangeQuery: RangeQuery = ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.createdAt)
+          val createdAtRangeQuery: RangeQuery = ElasticApi.rangeQuery(ProposalElasticsearchFieldName.createdAt.field)
           val dateFormatter: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
           (
@@ -536,7 +536,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.sequencePool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequencePool, sequencePool.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.sequencePool.field, sequencePool.value))
         case _ => None
       }
     }
@@ -546,7 +546,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.sequenceSegmentPool match {
         case Some(SequencePoolSearchFilter(sequencePool)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.sequenceSegmentPool, sequencePool.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.sequenceSegmentPool.field, sequencePool.value))
         case _ => None
       }
     }
@@ -557,9 +557,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.operationKinds match {
         case Some(OperationKindsSearchFilter(Seq(operationKind))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationKind, operationKind.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.operationKind.field, operationKind.value))
         case Some(OperationKindsSearchFilter(operationKinds)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.operationKind, operationKinds.map(_.value)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.operationKind.field, operationKinds.map(_.value)))
         case _ => None
       }
     }
@@ -569,7 +569,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.questionIsOpen match {
         case Some(QuestionIsOpenSearchFilter(isOpen)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionIsOpen, isOpen))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.questionIsOpen.field, isOpen))
         case _ => None
       }
     }
@@ -579,7 +579,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.segment match {
         case Some(SegmentSearchFilter(segment)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.segment, segment))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.segment.field, segment))
         case _ => None
       }
     }
@@ -589,9 +589,9 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.userTypes match {
         case Some(UserTypesSearchFilter(Seq(userType))) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.authorUserType, userType.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldName.authorUserType.field, userType.value))
         case Some(UserTypesSearchFilter(userTypes)) =>
-          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldNames.authorUserType, userTypes.map(_.value)))
+          Some(ElasticApi.termsQuery(ProposalElasticsearchFieldName.authorUserType.field, userTypes.map(_.value)))
         case _ => None
       }
     }
@@ -637,6 +637,8 @@ final case class Limit(value: Int)
 
 final case class Skip(value: Int)
 
+final case class CountrySearchFilter(country: Country)
+final case class LanguageSearchFilter(language: Language)
 final case class MinVotesCountSearchFilter(minVotesCount: Int)
 final case class ToEnrichSearchFilter(toEnrich: Boolean)
 final case class MinScoreSearchFilter(minScore: Float)

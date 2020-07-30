@@ -19,6 +19,7 @@
 
 package org.make.core.question
 
+import cats.data.NonEmptyList
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json, KeyDecoder, KeyEncoder}
 import org.make.core.StringValue
@@ -29,14 +30,12 @@ import spray.json.{JsString, JsValue, JsonFormat}
 case class Question(
   questionId: QuestionId,
   slug: String,
-  country: Country,
+  countries: NonEmptyList[Country],
   language: Language,
   question: String,
   shortTitle: Option[String],
   operationId: Option[OperationId]
-) {
-  def getLocale: String = s"${language.value.toLowerCase}_${country.value.toUpperCase}"
-}
+)
 
 case class QuestionId(value: String) extends StringValue
 

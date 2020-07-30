@@ -19,6 +19,7 @@
 
 package org.make.api.feature
 
+import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
@@ -46,7 +47,7 @@ class PersistentActiveFeatureServiceIT
         Question(
           questionId = QuestionId("question-1"),
           slug = "question-1",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "question ?",
           shortTitle = None,

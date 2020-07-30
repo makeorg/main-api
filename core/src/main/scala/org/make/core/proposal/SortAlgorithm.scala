@@ -27,12 +27,13 @@ import com.sksamuel.elastic4s.searches.SearchRequest
 import com.sksamuel.elastic4s.searches.queries.funcscorer.{CombineFunction, WeightScore}
 import com.sksamuel.elastic4s.searches.sort.{ScoreSort, SortOrder}
 import enumeratum.values.{StringEnum, StringEnumEntry}
-import org.make.core.proposal.indexed.ProposalElasticsearchFieldNames
+import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
 import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import org.make.core.user.UserType
 
 sealed trait SortAlgorithm {
   def sortDefinition(request: SearchRequest): SearchRequest
+  protected def docField(value: ProposalElasticsearchFieldName): String = s"doc['${value.field}']"
 }
 
 trait RandomBaseAlgorithm {
@@ -64,10 +65,16 @@ final case class TaggedFirstAlgorithm(override val seed: Int) extends SortAlgori
         functionScoreQuery()
           .query(request.query.getOrElse(matchAllQuery()))
           .functions(
-            WeightScore(50d, Some(existsQuery(ProposalElasticsearchFieldNames.tagId))),
-            WeightScore(10d, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() > 1"))),
-            WeightScore(5d, Some(scriptQuery(s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size() == 1"))),
-            exponentialScore(field = ProposalElasticsearchFieldNames.createdAt, scale = "7d", origin = "now")
+            WeightScore(50d, Some(existsQuery(ProposalElasticsearchFieldName.tagId.field))),
+            WeightScore(
+              10d,
+              Some(scriptQuery(s"${docField(ProposalElasticsearchFieldName.organisationId)}.size() > 1"))
+            ),
+            WeightScore(
+              5d,
+              Some(scriptQuery(s"${docField(ProposalElasticsearchFieldName.organisationId)}.size() == 1"))
+            ),
+            exponentialScore(field = ProposalElasticsearchFieldName.createdAt.field, scale = "7d", origin = "now")
               .weight(30d)
               .decay(0.33d),
             randomScore(seed = seed).fieldName("id").weight(5d)
@@ -91,8 +98,8 @@ final case class TaggedFirstAlgorithm(override val seed: Int) extends SortAlgori
  */
 final case class TaggedFirstLegacyAlgorithm(override val seed: Int) extends SortAlgorithm with RandomBaseAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    val scriptTagsCount = s"doc['${ProposalElasticsearchFieldNames.tagId}'].size()"
-    val scriptActorVoteCount = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size()"
+    val scriptTagsCount = s"${docField(ProposalElasticsearchFieldName.tagId)}.size()"
+    val scriptActorVoteCount = s"${docField(ProposalElasticsearchFieldName.organisationId)}.size()"
     val orderingByActorVoteAndTagsCountScript =
       s"($scriptActorVoteCount > 0 && $scriptTagsCount > 0) ? ($scriptActorVoteCount * 50 + $scriptTagsCount) * 100 :" +
         s"$scriptActorVoteCount > 0 ? $scriptActorVoteCount * 100 :" +
@@ -116,7 +123,7 @@ final case class TaggedFirstLegacyAlgorithm(override val seed: Int) extends Sort
 // Sorts the proposals by most actor votes and then randomly from the given seed
 final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorithm with RandomBaseAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
-    val scriptActorVoteNumber = s"doc['${ProposalElasticsearchFieldNames.organisationId}'].size()"
+    val scriptActorVoteNumber = s"${docField(ProposalElasticsearchFieldName.organisationId)}.size()"
     val actorVoteScript = s"$scriptActorVoteNumber > 0 ? ($scriptActorVoteNumber + 1) * 10 : 1"
     request.query.map { query =>
       request
@@ -135,13 +142,13 @@ final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorith
 case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
-      .sortByFieldDesc(ProposalElasticsearchFieldNames.controversy)
+      .sortByFieldDesc(ProposalElasticsearchFieldName.controversy.field)
       .postFilter(
         ElasticApi
           .boolQuery()
           .must(
-            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.controversy).gte(threshold),
-            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountThreshold)
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldName.controversy.field).gte(threshold),
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldName.votesCount.field).gte(votesCountThreshold)
           )
       )
   }
@@ -151,8 +158,8 @@ case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) ext
 case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
-      .sortByFieldDesc(ProposalElasticsearchFieldNames.scoreLowerBound)
-      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountThreshold))
+      .sortByFieldDesc(ProposalElasticsearchFieldName.scoreLowerBound.field)
+      .postFilter(ElasticApi.rangeQuery(ProposalElasticsearchFieldName.votesCount.field).gte(votesCountThreshold))
   }
 }
 
@@ -160,13 +167,13 @@ case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
 case class RealisticAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
-      .sortByFieldDesc(ProposalElasticsearchFieldNames.scoreRealistic)
+      .sortByFieldDesc(ProposalElasticsearchFieldName.scoreRealistic.field)
       .postFilter(
         ElasticApi
           .boolQuery()
           .must(
-            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.scoreRealistic).gte(threshold),
-            ElasticApi.rangeQuery(ProposalElasticsearchFieldNames.votesCount).gte(votesCountThreshold)
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldName.scoreRealistic.field).gte(threshold),
+            ElasticApi.rangeQuery(ProposalElasticsearchFieldName.votesCount.field).gte(votesCountThreshold)
           )
       )
   }
@@ -175,7 +182,7 @@ case class RealisticAlgorithm(threshold: Double, votesCountThreshold: Int) exten
 case object B2BFirstAlgorithm extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     val userTypeScript =
-      s"""doc['${ProposalElasticsearchFieldNames.authorUserType}'].value == \"${UserType.UserTypeUser.value}\" ? 1 : 100"""
+      s"""${docField(ProposalElasticsearchFieldName.authorUserType)}.value == \"${UserType.UserTypeUser.value}\" ? 1 : 100"""
     request.query.map { query =>
       request
         .query(

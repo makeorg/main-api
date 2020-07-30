@@ -22,6 +22,7 @@ package org.make.api.tag
 import akka.http.scaladsl.model.headers.{Accept, Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.{Order, RequestContext}
@@ -48,7 +49,7 @@ class ModerationTagApiTest
         Question(
           questionId = QuestionId("1234-1234-1234-1234"),
           slug = "my-question",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "?",
           shortTitle = None,
@@ -70,8 +71,6 @@ class ModerationTagApiTest
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = Some(OperationId("operation-id")),
-    country = Country("FR"),
-    language = Language("fr"),
     questionId = Some(QuestionId("1234-1234-1234-1234"))
   )
 

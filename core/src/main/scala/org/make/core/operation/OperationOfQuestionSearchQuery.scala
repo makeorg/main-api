@@ -28,7 +28,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
-import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldNames
+import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 
@@ -36,7 +36,7 @@ case class OperationOfQuestionSearchQuery(
   filters: Option[OperationOfQuestionSearchFilters] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
-  sort: Option[String] = None,
+  sort: Option[OperationOfQuestionElasticsearchFieldName] = None,
   order: Option[Order] = None,
   sortAlgorithm: Option[SortAlgorithm] = None
 )
@@ -117,12 +117,12 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     val order = operationOfQuestionSearchQuery.order.map(_.sortOrder)
 
     operationOfQuestionSearchQuery.sort.map { sort =>
-      val sortFieldName: String = if (sort == OperationOfQuestionElasticsearchFieldNames.question) {
-        OperationOfQuestionElasticsearchFieldNames.questionKeyword
+      val sortFieldName = if (sort == OperationOfQuestionElasticsearchFieldName.question) {
+        OperationOfQuestionElasticsearchFieldName.questionKeyword
       } else {
         sort
       }
-      FieldSort(field = sortFieldName, order = order.getOrElse(SortOrder.ASC))
+      FieldSort(field = sortFieldName.field, order = order.getOrElse(SortOrder.ASC))
     }
   }
 
@@ -130,9 +130,11 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.questionIds match {
         case Some(QuestionIdsSearchFilter(Seq(questionId))) =>
-          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.questionId, questionId.value))
+          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.questionId.field, questionId.value))
         case Some(QuestionIdsSearchFilter(questionIds)) =>
-          Some(ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldNames.questionId, questionIds.map(_.value)))
+          Some(
+            ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldName.questionId.field, questionIds.map(_.value))
+          )
         case _ => None
       }
     }
@@ -148,9 +150,9 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
       val language = filters.language.map(_.language).getOrElse(Language("fr"))
       val fieldsBoosts: Map[String, Double] =
         Map(
-          Some(OperationOfQuestionElasticsearchFieldNames.question) -> 3d,
-          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language) -> 2d,
-          OperationOfQuestionElasticsearchFieldNames.questionLanguageSubfield(language, stemmed = true) -> 1.5d
+          Some(OperationOfQuestionElasticsearchFieldName.question.field) -> 3d,
+          OperationOfQuestionElasticsearchFieldName.questionLanguageSubfield(language) -> 2d,
+          OperationOfQuestionElasticsearchFieldName.questionLanguageSubfield(language, stemmed = true) -> 1.5d
         ).collect {
           case (Some(key), value) => key -> value
         }
@@ -164,7 +166,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.description match {
         case Some(DescriptionSearchFilter(description)) =>
-          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.description, description))
+          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.description.field, description))
         case None => None
       }
     }
@@ -174,7 +176,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldNames.country, country.value))
+          Some(ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldName.country.field, country.value))
         case _ => None
       }
     }
@@ -184,7 +186,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>
-          Some(ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldNames.language, language.value))
+          Some(ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldName.language.field, language.value))
         case _ => None
       }
     }
@@ -197,7 +199,8 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
           val dateFormatter: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
           Some(
-            ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.startDate, startDate.format(dateFormatter))
+            ElasticApi
+              .termQuery(OperationOfQuestionElasticsearchFieldName.startDate.field, startDate.format(dateFormatter))
           )
         case None => None
       }
@@ -210,7 +213,9 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
         case Some(EndDateSearchFilter(endDate)) =>
           val dateFormatter: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
-          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.endDate, endDate.format(dateFormatter)))
+          Some(
+            ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.endDate.field, endDate.format(dateFormatter))
+          )
         case None => None
       }
     }
@@ -220,16 +225,16 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.operationKinds match {
         case Some(OperationKindsSearchFilter(Seq(operationKind))) =>
-          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.operationKind, operationKind.value))
+          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.operationKind.field, operationKind.value))
         case Some(OperationKindsSearchFilter(operationKinds)) =>
           Some(
             ElasticApi
-              .termsQuery(OperationOfQuestionElasticsearchFieldNames.operationKind, operationKinds.map(_.value))
+              .termsQuery(OperationOfQuestionElasticsearchFieldName.operationKind.field, operationKinds.map(_.value))
           )
         case None =>
           Some(
             ElasticApi.termsQuery(
-              OperationOfQuestionElasticsearchFieldNames.operationKind,
+              OperationOfQuestionElasticsearchFieldName.operationKind.field,
               Seq(
                 OperationKind.PublicConsultation.value,
                 OperationKind.GreatCause.value,
@@ -245,7 +250,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.featured match {
         case Some(FeaturedSearchFilter(featured)) =>
-          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.featured, featured))
+          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.featured.field, featured))
         case _ => None
       }
     }
@@ -255,7 +260,9 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.status match {
         case Some(StatusSearchFilter(status)) =>
-          Some(ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldNames.status, status.entryName.toLowerCase))
+          Some(
+            ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.status.field, status.entryName.toLowerCase)
+          )
         case _ => None
       }
     }

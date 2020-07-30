@@ -22,6 +22,7 @@ package org.make.api.operation
 import java.time.ZonedDateTime
 
 import akka.actor.ActorSystem
+import cats.data.NonEmptyList
 import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
@@ -94,7 +95,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -127,7 +128,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -160,7 +161,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("ES")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -193,7 +194,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR"), Country("ES")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -226,7 +227,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -259,7 +260,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -280,6 +281,17 @@ class OperationOfQuestionSearchEngineIT
       whenReady(elasticsearchOperationOfQuestionAPI.findOperationOfQuestionById(questionId), Timeout(3.seconds)) {
         case Some(operationOfQuestion) => operationOfQuestion.questionId should equal(questionId)
         case None                      => fail("operation of question not found by id")
+      }
+    }
+  }
+
+  Feature("search by country") {
+    Scenario("should return a list of operation of question") {
+      val query = OperationOfQuestionSearchQuery(filters =
+        Some(OperationOfQuestionSearchFilters(country = Some(CountrySearchFilter(country = Country("ES")))))
+      )
+      whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
+        result.total should be(2)
       }
     }
   }

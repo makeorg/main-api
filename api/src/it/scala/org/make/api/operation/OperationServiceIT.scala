@@ -30,7 +30,7 @@ import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.operation.OperationActionType._
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Language
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.make.core.user.{Role, User, UserId}
@@ -76,8 +76,6 @@ class OperationServiceIT
     weight = 0f,
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = None,
-    country = Country("FR"),
-    language = languageFr,
     questionId = None
   )
 

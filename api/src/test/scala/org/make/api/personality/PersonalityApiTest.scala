@@ -22,6 +22,7 @@ package org.make.api.personality
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
 import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
 import org.make.api.question.{QuestionTopIdeaWithAvatarResponse, SimpleQuestionResponse, SimpleQuestionWordingResponse}
@@ -467,7 +468,7 @@ class PersonalityApiTest
                 questionId = QuestionId("question-id"),
                 slug = "slug",
                 wording = SimpleQuestionWordingResponse("title", "question"),
-                country = Country("FR"),
+                countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
                 startDate = None,
                 endDate = None
@@ -491,7 +492,7 @@ class PersonalityApiTest
                 questionId = QuestionId("question-id-two"),
                 slug = "slug",
                 wording = SimpleQuestionWordingResponse("title", "question"),
-                country = Country("FR"),
+                countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
                 startDate = None,
                 endDate = None

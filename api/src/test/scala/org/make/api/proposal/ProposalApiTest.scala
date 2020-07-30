@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import io.circe.syntax._
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
@@ -40,6 +41,7 @@ import org.make.core.reference._
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext, ValidationError}
+import org.make.core.proposal.indexed.IndexedContext
 
 import scala.concurrent.Future
 
@@ -71,7 +73,7 @@ class ProposalApiTest
           Question(
             QuestionId("my-question"),
             slug = "my-question",
-            country = country,
+            countries = NonEmptyList.of(country),
             language = language,
             question = "my question",
             shortTitle = None,
@@ -87,7 +89,7 @@ class ProposalApiTest
         Question(
           QuestionId("my-question"),
           slug = "my-question",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "my question",
           shortTitle = None,
@@ -146,7 +148,11 @@ class ProposalApiTest
     createdAt = DateHelper.now(),
     updatedAt = None,
     votes = Seq.empty,
-    context = None,
+    context = Some(
+      ProposalContextResponse.fromIndexedContext(
+        IndexedContext(RequestContext.empty.copy(country = Some(Country("TN")), language = Some(Language("ar"))))
+      )
+    ),
     trending = None,
     labels = Seq.empty,
     author = AuthorResponse(
@@ -160,8 +166,6 @@ class ProposalApiTest
       userType = None
     ),
     organisations = Seq.empty,
-    country = Country("TN"),
-    language = Language("ar"),
     tags = Seq.empty,
     selectedStakeTag = None,
     myProposal = false,

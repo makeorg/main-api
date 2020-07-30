@@ -677,7 +677,7 @@
           "type": "text",
           "index": false
         },
-        "country": {
+        "countries": {
           "type": "keyword",
           "index": true
         },

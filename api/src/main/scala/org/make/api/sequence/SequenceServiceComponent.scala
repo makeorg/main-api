@@ -32,7 +32,7 @@ import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, Req
 import org.make.api.userhistory._
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions.VoteAndQualifications
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, SequencePool}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldName, SequencePool}
 import org.make.core.proposal.{
   ProposalId,
   ProposalSearchFilter,
@@ -142,7 +142,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               ),
               excludes = Some(proposal.SearchFilters(proposal = Some(ProposalSearchFilter(proposalsToExclude)))),
               limit = Some(sequenceConfiguration.sequenceSize - initialSequenceProposals.size),
-              sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.DESC)))
+              sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.DESC)))
             )
           )
         sequenceVotes <- futureVotedProposalsAndVotes(maybeUserId, requestContext, selectedProposals.results.map(_.id))
@@ -211,7 +211,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
               ),
               excludes = Some(proposal.SearchFilters(proposal = Some(ProposalSearchFilter(proposalsToExclude)))),
               limit = Some(sequenceConfiguration.sequenceSize * 3),
-              sort = Some(Sort(Some(ProposalElasticsearchFieldNames.createdAt), Some(SortOrder.ASC)))
+              sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.ASC)))
             )
           )
           .map(_.results)

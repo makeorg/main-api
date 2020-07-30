@@ -216,14 +216,6 @@
           "type": "keyword",
           "index": true
         },
-        "language": {
-          "type": "keyword",
-          "index": true
-        },
-        "country": {
-          "type": "keyword",
-          "index": true
-        },
         "status": {
           "type": "keyword",
           "index": true

@@ -21,6 +21,7 @@ package org.make.api.operation
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
@@ -72,8 +73,6 @@ class PersistentOperationServiceIT
     weight = 0f,
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = None,
-    country = Country("FR"),
-    language = Language("fr"),
     questionId = None
   )
 
@@ -107,7 +106,7 @@ class PersistentOperationServiceIT
       QuestionWithDetails(
         question = Question(
           questionId = QuestionId("some-question"),
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           slug = "hello-fr",
           question = "ça va ?",
@@ -154,7 +153,7 @@ class PersistentOperationServiceIT
       QuestionWithDetails(
         question = Question(
           questionId = QuestionId("some-question-gb"),
-          country = Country("GB"),
+          countries = NonEmptyList.of(Country("GB")),
           language = Language("en"),
           slug = "hello-gb",
           question = "how are you ?",
@@ -276,12 +275,12 @@ class PersistentOperationServiceIT
         operation.questions.size should be(2)
         And(s"""operation landing sequence id for FR configuration should be "${sequenceIdFR.value}" """)
         operation.questions
-          .find(_.question.country == Country("FR"))
+          .find(_.question.countries.toList.contains(Country("FR")))
           .map(_.details.landingSequenceId) should be(Some(sequenceIdFR))
         And(s"""operation landing sequence id for GB configuration should be "${sequenceIdGB.value}" """)
-        operation.questions.find(_.question.country == Country("GB")).map(_.details.landingSequenceId) should be(
-          Some(sequenceIdGB)
-        )
+        operation.questions
+          .find(_.question.countries.toList.contains(Country("GB")))
+          .map(_.details.landingSequenceId) should be(Some(sequenceIdGB))
         And("operation events should contain a create event")
         val createEvent: OperationAction = operation.events.filter(_.actionType == "create").head
         createEvent.date.toEpochSecond should be(now.toEpochSecond)

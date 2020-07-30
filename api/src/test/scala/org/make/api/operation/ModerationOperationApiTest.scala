@@ -25,6 +25,7 @@ import java.util.UUID
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.sequence.{SequenceService, SequenceServiceComponent}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.user.{UserService, UserServiceComponent}
@@ -51,9 +52,6 @@ class ModerationOperationApiTest
   override val tagService: TagService = mock[TagService]
   override val sequenceService: SequenceService = mock[SequenceService]
   override val userService: UserService = mock[UserService]
-
-  when(tagService.findByQuestionIds(any[Seq[QuestionId]]))
-    .thenReturn(Future.successful(Map.empty[QuestionId, Seq[TagId]]))
 
   val operationRoutes: Route = sealRoute(moderationOperationApi.routes)
   val userId: UserId = UserId(UUID.randomUUID().toString)
@@ -111,7 +109,7 @@ class ModerationOperationApiTest
     questions = Seq(
       QuestionWithDetails(
         question = Question(
-          country = Country("BR"),
+          countries = NonEmptyList.of(Country("BR")),
           language = Language("fr"),
           questionId = QuestionId("first-question-id"),
           slug = "first-operation-BR",
@@ -221,8 +219,6 @@ class ModerationOperationApiTest
           weight = 0f,
           tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
           operationId = None,
-          country = Country("FR"),
-          language = Language("fr"),
           questionId = None
         )
       )

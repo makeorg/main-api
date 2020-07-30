@@ -21,6 +21,7 @@ package org.make.api.question
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.core.CirceFormatters
@@ -41,7 +42,7 @@ final case class SimpleQuestionResponse(
   @(ApiModelProperty @field)(dataType = "org.make.api.question.SimpleQuestionWordingResponse")
   wording: SimpleQuestionWordingResponse,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "dateTime") startDate: Option[ZonedDateTime],

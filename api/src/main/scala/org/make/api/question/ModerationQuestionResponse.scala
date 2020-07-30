@@ -20,6 +20,7 @@
 package org.make.api.question
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
@@ -46,7 +47,7 @@ case class ModerationQuestionResponse(
   question: String,
   shortTitle: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language
 )
@@ -57,7 +58,7 @@ object ModerationQuestionResponse {
     slug = question.slug,
     question = question.question,
     shortTitle = question.shortTitle,
-    country = question.country,
+    countries = question.countries,
     language = question.language
   )
 
@@ -199,7 +200,7 @@ case class QuestionDetailsResponse(
   shortTitle: Option[String],
   slug: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   allowedSources: Seq[String],
@@ -250,7 +251,7 @@ object QuestionDetailsResponse extends CirceFormatters {
     question = question.question,
     shortTitle = question.shortTitle,
     slug = question.slug,
-    country = question.country,
+    countries = question.countries,
     language = question.language,
     allowedSources = operation.allowedSources,
     startDate = operationOfQuestion.startDate,
@@ -287,7 +288,7 @@ final case class QuestionOfOperationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description.png")
   descriptionImage: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "dateTime")
@@ -315,7 +316,7 @@ object QuestionOfOperationResponse {
       operationTitle = indexedOperationOfQuestion.operationTitle,
       consultationImage = indexedOperationOfQuestion.consultationImage,
       descriptionImage = indexedOperationOfQuestion.descriptionImage,
-      country = indexedOperationOfQuestion.country,
+      countries = indexedOperationOfQuestion.countries,
       language = indexedOperationOfQuestion.language,
       startDate = indexedOperationOfQuestion.startDate,
       endDate = indexedOperationOfQuestion.endDate,

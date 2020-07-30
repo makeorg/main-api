@@ -32,7 +32,7 @@ import org.make.core.CirceFormatters
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation.indexed.{
   IndexedOperationOfQuestion,
-  OperationOfQuestionElasticsearchFieldNames,
+  OperationOfQuestionElasticsearchFieldName,
   OperationOfQuestionSearchResult
 }
 import org.make.core.operation.{OperationOfQuestionSearchFilters, OperationOfQuestionSearchQuery}
@@ -96,14 +96,14 @@ trait DefaultOperationOfQuestionSearchEngineComponent
             OperationOfQuestionSearchFilters.getSort(query),
             Some(
               FieldSort(
-                field = OperationOfQuestionElasticsearchFieldNames.endDate,
+                field = OperationOfQuestionElasticsearchFieldName.endDate.field,
                 order = SortOrder.DESC,
                 missing = Some("_first")
               )
             ),
             Some(
               FieldSort(
-                field = OperationOfQuestionElasticsearchFieldNames.startDate,
+                field = OperationOfQuestionElasticsearchFieldName.startDate.field,
                 order = SortOrder.DESC,
                 missing = Some("_first")
               )
@@ -165,23 +165,23 @@ trait DefaultOperationOfQuestionSearchEngineComponent
           searchWithType(operationOfQuestionAlias)
             .aggregations(
               sumAgg(
-                OperationOfQuestionElasticsearchFieldNames.participantsCount,
-                OperationOfQuestionElasticsearchFieldNames.participantsCount
+                OperationOfQuestionElasticsearchFieldName.participantsCount.field,
+                OperationOfQuestionElasticsearchFieldName.participantsCount.field
               ),
               sumAgg(
-                OperationOfQuestionElasticsearchFieldNames.proposalsCount,
-                OperationOfQuestionElasticsearchFieldNames.proposalsCount
+                OperationOfQuestionElasticsearchFieldName.proposalsCount.field,
+                OperationOfQuestionElasticsearchFieldName.proposalsCount.field
               )
             )
         )
         .map { response =>
           Highlights(
             participantsCount = response.aggregations
-              .sum(OperationOfQuestionElasticsearchFieldNames.participantsCount)
+              .sum(OperationOfQuestionElasticsearchFieldName.participantsCount.field)
               .valueOpt
               .fold(0)(_.toInt),
             proposalsCount = response.aggregations
-              .sum(OperationOfQuestionElasticsearchFieldNames.proposalsCount)
+              .sum(OperationOfQuestionElasticsearchFieldName.proposalsCount.field)
               .valueOpt
               .fold(0)(_.toInt),
             partnersCount = 0

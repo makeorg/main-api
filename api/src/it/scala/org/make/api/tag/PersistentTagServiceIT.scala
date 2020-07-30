@@ -19,6 +19,7 @@
 
 package org.make.api.tag
 
+import cats.data.NonEmptyList
 import org.make.api.operation.DefaultPersistentOperationServiceComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tagtype.DefaultPersistentTagTypeServiceComponent
@@ -48,14 +49,14 @@ class PersistentTagServiceIT
 
   def questionForOperation(
     operationId: OperationId,
-    country: Country = Country("FR"),
+    countries: NonEmptyList[Country] = NonEmptyList.of(Country("FR")),
     language: Language = Language("fr")
   ): Question = {
     question(
       id = QuestionId(operationId.value),
       slug = s"some-question-on-operation-${operationId.value}",
       operationId = Some(operationId),
-      country = country,
+      countries = countries,
       language = language,
       question = operationId.value
     )
@@ -63,14 +64,14 @@ class PersistentTagServiceIT
 
   def questionForTheme(
     themeId: ThemeId,
-    country: Country = Country("FR"),
+    countries: NonEmptyList[Country] = NonEmptyList.of(Country("FR")),
     language: Language = Language("fr")
   ): Question = {
     question(
       id = QuestionId(themeId.value),
       slug = s"some-question-on-theme-${themeId.value}",
       operationId = None,
-      country = country,
+      countries = countries,
       language = language,
       question = themeId.value
     )
@@ -85,8 +86,6 @@ class PersistentTagServiceIT
     weight = 0f,
     tagTypeId = TagType.LEGACY.tagTypeId,
     operationId = operationId,
-    country = Country("FR"),
-    language = Language("fr"),
     questionId = Some(questionId)
   )
 
@@ -329,9 +328,7 @@ class PersistentTagServiceIT
         tagTypeId = tagTypeFirst.tagTypeId,
         label = "hestialabel",
         operationId = Some(operationIdFirst),
-        questionId = Some(questionFirst.questionId),
-        country = Country("FR"),
-        language = Language("fr")
+        questionId = Some(questionFirst.questionId)
       )
     val athena: Tag =
       targaryen.copy(
@@ -339,9 +336,7 @@ class PersistentTagServiceIT
         tagTypeId = tagTypeFirst.tagTypeId,
         label = "athenalabel",
         operationId = Some(operationIdFirst),
-        questionId = Some(questionFirst.questionId),
-        country = Country("FR"),
-        language = Language("br")
+        questionId = Some(questionFirst.questionId)
       )
     val ariane: Tag =
       targaryen.copy(
@@ -349,34 +344,22 @@ class PersistentTagServiceIT
         tagTypeId = tagTypeFirst.tagTypeId,
         label = "arianelabel",
         operationId = Some(operationIdSecond),
-        questionId = Some(questionSecond.questionId),
-        country = Country("FR"),
-        language = Language("fr")
+        questionId = Some(questionSecond.questionId)
       )
     val hera: Tag = targaryen.copy(
       tagId = TagId("hera"),
       tagTypeId = tagTypeSeventh.tagTypeId,
       label = "heralabel",
       operationId = Some(operationIdThird),
-      questionId = Some(questionThird.questionId),
-      country = Country("BR"),
-      language = Language("br")
+      questionId = Some(questionThird.questionId)
     )
-    val clio: Tag = targaryen.copy(
-      tagId = TagId("clio"),
-      tagTypeId = tagTypeThird.tagTypeId,
-      label = "cliolabel",
-      country = Country("BR"),
-      language = Language("fr")
-    )
+    val clio: Tag = targaryen.copy(tagId = TagId("clio"), tagTypeId = tagTypeThird.tagTypeId, label = "cliolabel")
     val thalia: Tag =
       targaryen.copy(
         tagId = TagId("thalia"),
         tagTypeId = tagTypeFourth.tagTypeId,
         label = "thalialabel",
-        questionId = Some(questionThemeFirst.questionId),
-        country = Country("BR"),
-        language = Language("br")
+        questionId = Some(questionThemeFirst.questionId)
       )
     val calliope: Tag =
       targaryen.copy(tagId = TagId("calliope"), tagTypeId = tagTypeEighth.tagTypeId, label = "calliopelabel")
@@ -578,9 +561,7 @@ class PersistentTagServiceIT
         tagTypeId = fooTagType.tagTypeId,
         label = "foolabel",
         operationId = Some(fooOperationId),
-        questionId = Some(operationQuestion.questionId),
-        country = Country("FR"),
-        language = Language("fr")
+        questionId = Some(operationQuestion.questionId)
       )
     val bar: Tag =
       targaryen.copy(
@@ -588,18 +569,14 @@ class PersistentTagServiceIT
         tagTypeId = fooTagType.tagTypeId,
         label = "barlabel",
         operationId = Some(fooOperationId),
-        questionId = Some(operationQuestion.questionId),
-        country = Country("FR"),
-        language = Language("br")
+        questionId = Some(operationQuestion.questionId)
       )
     val baz: Tag =
       targaryen.copy(
         tagId = TagId("baz"),
         tagTypeId = fooTagType.tagTypeId,
         label = "bazlabel",
-        questionId = Some(themeQuestion.questionId),
-        country = Country("FR"),
-        language = Language("fr")
+        questionId = Some(themeQuestion.questionId)
       )
 
     Scenario("Search tags by label") {

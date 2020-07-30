@@ -46,7 +46,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
-import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldNames, ProposalsSearchResult}
+import org.make.core.proposal.indexed.{IndexedProposal, ProposalElasticsearchFieldName, ProposalsSearchResult}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -90,7 +90,11 @@ trait ProposalSearchEngine {
 
   def getPopularTagsByProposal(questionId: QuestionId, size: Int): Future[Seq[PopularTagResponse]]
 
-  def getTopProposals(questionId: QuestionId, size: Int, aggregationField: String): Future[Seq[IndexedProposal]]
+  def getTopProposals(
+    questionId: QuestionId,
+    size: Int,
+    aggregationField: ProposalElasticsearchFieldName
+  ): Future[Seq[IndexedProposal]]
 
   def countProposalsByIdea(ideaIds: Seq[IdeaId]): Future[Map[IdeaId, Long]]
 
@@ -192,7 +196,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val finalRequest: ElasticSearchRequest = request
         .aggregations(
-          termsAgg(name = "questions", field = ProposalElasticsearchFieldNames.questionId)
+          termsAgg(name = "questions", field = ProposalElasticsearchFieldName.questionId.field)
             .size(size = questionAggrSize)
             .minDocCount(min = 1)
         )
@@ -315,7 +319,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
     override def getTopProposals(
       questionId: QuestionId,
       size: Int,
-      aggregationField: String
+      aggregationField: ProposalElasticsearchFieldName
     ): Future[Seq[IndexedProposal]] = {
       val topHitsAggregationName = "topHits"
       val termsAggregationName = "termsAgg"
@@ -330,7 +334,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val maxAggregation =
         MaxAggregation(
           name = maxAggregationName,
-          field = Some(ProposalElasticsearchFieldNames.topScoreAjustedWithVotes)
+          field = Some(ProposalElasticsearchFieldName.topScoreAjustedWithVotes.field)
         )
 
       // This aggregation sort each bucket from the field "maxTopScore"
@@ -343,14 +347,15 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val topHitsAggregation =
         TopHitsAggregation(
           name = topHitsAggregationName,
-          sorts =
-            Seq(FieldSort(field = ProposalElasticsearchFieldNames.topScoreAjustedWithVotes, order = SortOrder.DESC)),
+          sorts = Seq(
+            FieldSort(field = ProposalElasticsearchFieldName.topScoreAjustedWithVotes.field, order = SortOrder.DESC)
+          ),
           size = Some(1)
         )
 
       val finalRequest: ElasticSearchRequest = request
         .aggregations(
-          TermsAggregation(name = termsAggregationName, field = Some(aggregationField), size = Some(size))
+          TermsAggregation(name = termsAggregationName, field = Some(aggregationField.field), size = Some(size))
             .subAggregations(Seq(maxAggregation, bucketSortAggregation, topHitsAggregation)) // Those 3 subAggregation are execute on each bucket created by the parent aggregation
             .minDocCount(min = 1)
         )
@@ -371,7 +376,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
 
       val request = searchWithType(proposalAlias)
         .bool(BoolQuery(must = searchFilters))
-        .aggregations(termsAgg("by_idea", ProposalElasticsearchFieldNames.ideaId))
+        .aggregations(termsAgg("by_idea", ProposalElasticsearchFieldName.ideaId.field))
         .size(0)
 
       client.executeAsFuture(request).map { response =>
@@ -395,11 +400,11 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         .subAggregations(
           FilterAggregation(
             name = "filter_global",
-            query = TermQuery(field = ProposalElasticsearchFieldNames.status, value = Accepted.value)
+            query = TermQuery(field = ProposalElasticsearchFieldName.status.field, value = Accepted.value)
           ).subAggregations(
             TermsAggregation(
               name = "by_idea_global",
-              field = Some(ProposalElasticsearchFieldNames.ideaId),
+              field = Some(ProposalElasticsearchFieldName.ideaId.field),
               includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty)),
               size = Some(ideaIds.size)
             )
@@ -414,11 +419,11 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
         )
 
       var request = searchWithType(proposalAlias)
-        .bool(BoolQuery(must = Seq(ExistsQuery(field = ProposalElasticsearchFieldNames.authorAvatarUrl))))
+        .bool(BoolQuery(must = Seq(ExistsQuery(field = ProposalElasticsearchFieldName.authorAvatarUrl.field))))
         .aggregations(
           TermsAggregation(
             name = "by_idea",
-            field = Some(ProposalElasticsearchFieldNames.ideaId),
+            field = Some(ProposalElasticsearchFieldName.ideaId.field),
             includeExclude = Some(IncludeExclude(include = ideaIds.map(_.value), exclude = Seq.empty)),
             size = Some(ideaIds.size)
           ).subAggregations(topHitsAggregation),

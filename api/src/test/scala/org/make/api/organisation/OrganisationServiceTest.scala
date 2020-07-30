@@ -423,8 +423,6 @@ class OrganisationServiceTest
             userType = UserType.UserTypeUser
           ),
           organisations = Seq.empty,
-          country = Country("FR"),
-          language = Language("fr"),
           tags = Seq.empty,
           selectedStakeTag = None,
           ideaId = None,

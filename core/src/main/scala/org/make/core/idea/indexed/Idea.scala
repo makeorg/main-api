@@ -27,7 +27,6 @@ import org.make.core.CirceFormatters
 import org.make.core.idea.{Idea, IdeaId, IdeaStatus}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
 
 object IdeaElasticsearchFieldNames {
   val ideaId: String = "ideaId"
@@ -59,8 +58,6 @@ object IdeaElasticsearchFieldNames {
   val questionId: String = "questionId"
   val operationId: String = "operationId"
   val question: String = "question"
-  val country: String = "country"
-  val language: String = "language"
   val status: String = "status"
   val createdAt: String = "createdAt"
   val updatedAt: String = "updatedAt"
@@ -73,8 +70,6 @@ case class IndexedIdea(
   questionId: Option[QuestionId],
   operationId: Option[OperationId],
   question: Option[String],
-  country: Option[Country],
-  language: Option[Language],
   status: IdeaStatus,
   createdAt: ZonedDateTime,
   updatedAt: Option[ZonedDateTime],
@@ -92,8 +87,6 @@ object IndexedIdea extends CirceFormatters {
       questionId = idea.questionId,
       operationId = idea.operationId,
       question = idea.question,
-      country = idea.country,
-      language = idea.language,
       status = idea.status,
       createdAt = idea.createdAt match {
         case Some(date) => date
