@@ -22,6 +22,7 @@ package org.make.api.operation
 import java.time.{LocalDate, ZonedDateTime}
 import java.util.UUID
 
+import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.question.{PersistentQuestionService, PersistentQuestionServiceComponent}
@@ -80,7 +81,7 @@ class OperationServiceTest
       QuestionWithDetails(
         question = Question(
           questionId = QuestionId("foo1"),
-          country = Country("BR"),
+          countries = NonEmptyList.of(Country("BR")),
           language = Language("fr"),
           slug = "foo-BR",
           question = "foo BR?",
@@ -97,7 +98,7 @@ class OperationServiceTest
       QuestionWithDetails(
         question = Question(
           questionId = QuestionId("foo2"),
-          country = Country("GB"),
+          countries = NonEmptyList.of(Country("GB")),
           language = Language("en"),
           slug = "foo-GB",
           question = "foo GB?",

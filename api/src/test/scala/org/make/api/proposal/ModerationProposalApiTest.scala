@@ -24,6 +24,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import io.circe.syntax._
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
@@ -34,7 +35,7 @@ import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.indexed.{IndexedProposal, IndexedProposalQuestion, ProposalsSearchResult}
+import org.make.core.proposal.indexed.{IndexedContext, IndexedProposal, IndexedProposalQuestion, ProposalsSearchResult}
 import org.make.core.proposal.{ProposalId, ProposalStatus, SearchQuery, _}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference._
@@ -250,12 +251,11 @@ class ModerationProposalApiTest
         countSegment = 0
       )
     ),
-    creationContext = RequestContext.empty,
+    creationContext =
+      RequestContext.empty.copy(country = Some(Country("FR")), locale = Some(Locale(Language("fr"), Country("FR")))),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
     events = Nil,
-    language = Some(Language("fr")),
-    country = Some(Country("FR")),
     questionId = Some(QuestionId("question-fire-and-ice"))
   )
 
@@ -291,12 +291,11 @@ class ModerationProposalApiTest
         countSegment = 0
       )
     ),
-    creationContext = RequestContext.empty,
+    creationContext =
+      RequestContext.empty.copy(country = Some(Country("FR")), locale = Some(Locale(Language("fr"), Country("FR")))),
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now()),
-    events = Nil,
-    language = Some(Language("fr")),
-    country = Some(Country("FR"))
+    events = Nil
   )
 
   when(
@@ -331,8 +330,6 @@ class ModerationProposalApiTest
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
-          language = Some(Language("fr")),
-          country = Some(Country("FR")),
           questionId = Some(QuestionId("question-fire-and-ice"))
         )
       )
@@ -371,8 +368,6 @@ class ModerationProposalApiTest
           idea = None,
           ideaProposals = Seq.empty,
           operationId = None,
-          language = Some(Language("fr")),
-          country = Some(Country("FR")),
           questionId = None
         )
       )
@@ -397,7 +392,13 @@ class ModerationProposalApiTest
     createdAt = DateHelper.now(),
     updatedAt = None,
     votes = Seq.empty,
-    context = None,
+    context = Some(
+      ProposalContextResponse.fromIndexedContext(
+        IndexedContext(
+          RequestContext.empty.copy(country = Some(Country("TN")), locale = Some(Locale(Language("ar"), Country("TN"))))
+        )
+      )
+    ),
     trending = None,
     labels = Seq.empty,
     author = AuthorResponse(
@@ -411,8 +412,6 @@ class ModerationProposalApiTest
       userType = None
     ),
     organisations = Seq.empty,
-    country = Country("TN"),
-    language = Language("ar"),
     tags = Seq.empty,
     selectedStakeTag = None,
     myProposal = false,
@@ -472,15 +471,14 @@ class ModerationProposalApiTest
           countSegment = 0
         )
       ),
-      context = RequestContext.empty,
+      context =
+        RequestContext.empty.copy(country = Some(Country("FR")), locale = Some(Locale(Language("fr"), Country("FR")))),
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil,
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
-      language = Some(Language("fr")),
-      country = Some(Country("FR")),
       questionId = Some(QuestionId("question"))
     )
   }
@@ -535,6 +533,8 @@ class ModerationProposalApiTest
         slug = "question-fire-and-ice",
         title = "title",
         question = "question ?",
+        countries = NonEmptyList.of(Country("FR")),
+        language = Language("fr"),
         startDate = None,
         endDate = None,
         isOpen = true
@@ -588,7 +588,7 @@ class ModerationProposalApiTest
             Question(
               questionId = QuestionId("question-fire-and-ice"),
               slug = "question-fire-and-ice",
-              country = Country("FR"),
+              countries = NonEmptyList.of(Country("FR")),
               language = Language("fr"),
               question = "",
               shortTitle = None,
@@ -851,7 +851,7 @@ class ModerationProposalApiTest
           Question(
             questionId = QuestionId("question-vff"),
             slug = "question-vff",
-            country = Country("FR"),
+            countries = NonEmptyList.of(Country("FR")),
             language = Language("fr"),
             question = "",
             shortTitle = None,
@@ -868,7 +868,7 @@ class ModerationProposalApiTest
             Question(
               questionId = QuestionId("question-mieux-vivre-ensemble"),
               slug = "question-mieux-vivre-ensemble",
-              country = Country("FR"),
+              countries = NonEmptyList.of(Country("FR")),
               language = Language("fr"),
               question = "",
               shortTitle = None,

@@ -25,6 +25,7 @@ import akka.Done
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
@@ -46,7 +47,7 @@ import org.make.core.proposal.QualificationKey.{
 import org.make.core.proposal.VoteKey.{Agree, Disagree}
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.{Country, Language, Locale}
 import org.make.core.user.UserId
 import org.make.core.{DateHelper, RequestContext}
 
@@ -150,17 +151,16 @@ class DefaultAdminProposalApiComponentTest
           )
         ),
         questionId = Some(QuestionId("to-be-or-not-to-be")),
-        creationContext = RequestContext.empty,
+        creationContext = RequestContext.empty
+          .copy(country = Some(Country("FR")), locale = Some(Locale(Language("fr"), Country("FR")))),
         createdAt = Some(DateHelper.now()),
         updatedAt = Some(DateHelper.now()),
-        events = Nil,
-        language = Some(Language("fr")),
-        country = Some(Country("FR"))
+        events = Nil
       )
       val hamlet = Question(
         QuestionId("to-be-or-not-to-be"),
         "hamlet",
-        Country("GB"),
+        NonEmptyList.of(Country("GB")),
         Language("en"),
         "To be or not to be ?",
         None,
@@ -366,15 +366,14 @@ class DefaultAdminProposalApiComponentTest
           countSegment = 0
         )
       ),
-      context = RequestContext.empty,
+      context =
+        RequestContext.empty.copy(country = Some(Country("FR")), locale = Some(Locale(Language("fr"), Country("FR")))),
       createdAt = Some(DateHelper.now()),
       updatedAt = Some(DateHelper.now()),
       events = Nil,
       idea = None,
       ideaProposals = Seq.empty,
       operationId = None,
-      language = Some(Language("fr")),
-      country = Some(Country("FR")),
       questionId = Some(QuestionId("my-question"))
     )
   }

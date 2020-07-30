@@ -21,16 +21,17 @@ package org.make.core.proposal.indexed
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.{Country, Language, Locale}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 
@@ -87,24 +88,26 @@ object ProposalElasticsearchFieldNames {
   val contentSv: String = "content.sv"
   val contentSvStemmed: String = "content.stemmed-sv"
   val contentGeneral: String = "content.general"
+  val contextCountry: String = "context.country"
+  val contextLocale: String = "context.locale"
   val contextLocation: String = "context.location"
   val contextOperation: String = "context.operation"
   val contextQuestion: String = "context.question"
   val contextSource: String = "context.source"
   val controversy: String = "scores.controversy"
-  val country: String = "country"
   val createdAt: String = "createdAt"
   val ideaId: String = "ideaId"
   val initialProposal: String = "initialProposal"
   val labels: String = "labels"
-  val language: String = "language"
   val operationId: String = "operationId"
   val operationKind: String = "operationKind"
   val organisationId: String = "organisations.organisationId"
   val organisationName: String = "organisations.organisationName"
   val organisations: String = "organisations"
+  val questionCountries: String = "question.countries"
   val questionId: String = "question.questionId"
   val questionIsOpen: String = "question.isOpen"
+  val questionLanguage: String = "question.language"
   val refusalReason: String = "refusalReason"
   val scores: String = "scores"
   val scoreRealistic: String = "scores.realistic"
@@ -153,10 +156,6 @@ case class IndexedProposal(
   labels: Seq[String],
   author: IndexedAuthor,
   organisations: Seq[IndexedOrganisationInfo],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
   question: Option[IndexedProposalQuestion],
   tags: Seq[IndexedTag],
   selectedStakeTag: Option[IndexedTag],
@@ -186,6 +185,8 @@ final case class IndexedProposalQuestion(
   slug: String,
   title: String,
   question: String,
+  countries: NonEmptyList[Country],
+  language: Language,
   startDate: Option[ZonedDateTime],
   endDate: Option[ZonedDateTime],
   isOpen: Boolean
@@ -203,10 +204,31 @@ final case class IndexedContext(
   source: Option[String],
   location: Option[String],
   question: Option[String],
+  country: Option[Country],
+  locale: Option[Locale],
   getParameters: Seq[IndexedGetParameters]
 )
 
 object IndexedContext {
+
+  def apply(context: RequestContext, isBeforeContextSourceFeature: Boolean = false): IndexedContext =
+    IndexedContext(
+      operation = context.operationId,
+      source = context.source.filter(!_.isEmpty) match {
+        case None if isBeforeContextSourceFeature => Some("core")
+        case other                                => other
+      },
+      location = context.location,
+      question = context.question,
+      country = context.country,
+      locale = context.locale,
+      getParameters = context.getParameters
+        .map(_.toSeq.map {
+          case (key, value) => IndexedGetParameters(key, value)
+        })
+        .getOrElse(Seq.empty)
+    )
+
   implicit val encoder: Encoder[IndexedContext] = deriveEncoder[IndexedContext]
   implicit val decoder: Decoder[IndexedContext] = deriveDecoder[IndexedContext]
 }

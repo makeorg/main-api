@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import akka.actor.{Actor, ActorRef}
 import akka.testkit.TestKit
+import cats.data.NonEmptyList
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, TransactionalSessionHistoryEvent}
 import org.make.api.{ShardingActorTest, TestUtils}
 import org.make.core.history.HistoryActions._
@@ -34,7 +35,7 @@ import org.make.core.proposal.ProposalStatus.{Accepted, Pending, Postponed, Refu
 import org.make.core.proposal.QualificationKey.LikeIt
 import org.make.core.proposal._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, LabelId, Language}
+import org.make.core.reference.{Country, LabelId, Language, Locale}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{User, UserId}
@@ -60,7 +61,7 @@ class ProposalActorTest extends ShardingActorTest {
   val questionOnNothingFr = Question(
     questionId = QuestionId("my-question"),
     slug = "my-question",
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = "some unsolved question",
     shortTitle = None,
@@ -70,7 +71,7 @@ class ProposalActorTest extends ShardingActorTest {
   val questionOnTheme = Question(
     questionId = QuestionId("my-question"),
     slug = "my-question",
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = "some unsolved question",
     shortTitle = None,
@@ -80,7 +81,7 @@ class ProposalActorTest extends ShardingActorTest {
   val questionOnNothingIT = Question(
     questionId = QuestionId("my-italian-question"),
     slug = "my-question",
-    country = Country("IT"),
+    countries = NonEmptyList.of(Country("IT")),
     language = Language("it"),
     question = "some unsolved question",
     shortTitle = None,
@@ -143,8 +144,6 @@ class ProposalActorTest extends ShardingActorTest {
       updatedAt = None,
       status = Pending,
       content = content,
-      country = question.country,
-      language = question.language,
       questionId = question.questionId,
       operationId = question.operationId,
       events = List(
@@ -1312,7 +1311,7 @@ class ProposalActorTest extends ShardingActorTest {
             visitorId = Some(VisitorId("visitor-id")),
             externalId = Some("external-id"),
             country = Some(Country("BE")),
-            language = Some(Language("nl")),
+            locale = Some(Locale(Language("nl"), Country("BE"))),
             operation = None /*Some("my-operation")*/, // TODO: use Operation
             source = Some("my-source"),
             location = Some("my-location"),
@@ -1338,7 +1337,7 @@ class ProposalActorTest extends ShardingActorTest {
           externalId = "external-id",
           country = Some(Country("BE")),
           detectedCountry = None,
-          language = Some(Language("nl")),
+          locale = Some(Locale(Language("nl"), Country("BE"))),
           operationId = None,
           source = Some("my-source"),
           location = Some("my-location"),
@@ -1398,8 +1397,6 @@ class ProposalActorTest extends ShardingActorTest {
       proposal.refusalReason should be(Some("I don't want"))
       proposal.idea should be(Some(IdeaId("my-idea")))
       proposal.tags should be(Seq(TagId("my-tag")))
-      proposal.country should be(Some(Country("FR")))
-      proposal.language should be(Some(Language("fr")))
     }
 
     Scenario("patch other proposal information") {
@@ -1427,9 +1424,7 @@ class ProposalActorTest extends ShardingActorTest {
           creationContext = None,
           slug = Some("some-custom-slug"),
           author = Some(UserId("the user id")),
-          status = Some(Postponed),
-          country = Some(Country("GB")),
-          language = Some(Language("en"))
+          status = Some(Postponed)
         ),
         RequestContext.empty
       )
@@ -1440,8 +1435,6 @@ class ProposalActorTest extends ShardingActorTest {
       proposal.content should be("This is a proposal")
       proposal.author should be(UserId("the user id"))
       proposal.status should be(Postponed)
-      proposal.country should be(Some(Country("GB")))
-      proposal.language should be(Some(Language("en")))
     }
   }
 
@@ -1457,7 +1450,7 @@ class ProposalActorTest extends ShardingActorTest {
         question = Question(
           questionId = QuestionId("some-question"),
           slug = "some-question",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "my question",
           shortTitle = None,

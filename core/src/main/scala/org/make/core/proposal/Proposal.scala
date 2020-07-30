@@ -30,7 +30,7 @@ import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
@@ -56,8 +56,6 @@ final case class Proposal(
   // @deprecated "Use the organisationIds field instead"
   organisations: Seq[OrganisationInfo] = Seq.empty,
   organisationIds: Seq[UserId] = Seq.empty,
-  language: Option[Language] = None,
-  country: Option[Country] = None,
   questionId: Option[QuestionId] = None,
   creationContext: RequestContext,
   idea: Option[IdeaId] = None,
@@ -71,7 +69,7 @@ final case class Proposal(
 
 object Proposal {
   implicit val proposalFormatter: RootJsonFormat[Proposal] =
-    DefaultJsonProtocol.jsonFormat22(Proposal.apply)
+    DefaultJsonProtocol.jsonFormat20(Proposal.apply)
 
   def needsEnrichment(status: ProposalStatus, tagTypes: Seq[TagType], proposalTagTypes: Seq[TagTypeId]): Boolean = {
     val proposalTypesSet = proposalTagTypes.toSet

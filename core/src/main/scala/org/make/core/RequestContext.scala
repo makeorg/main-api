@@ -29,7 +29,7 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, Locale, ThemeId}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
@@ -75,7 +75,7 @@ final case class RequestContext(
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   detectedCountry: Option[Country] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Option[Language],
+  locale: Option[Locale] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operationId: Option[OperationId] = None,
   source: Option[String],
@@ -119,7 +119,7 @@ object RequestContext extends CirceFormatters with SprayJsonFormatters with Avro
       externalId = "",
       country = None,
       detectedCountry = None,
-      language = None,
+      locale = None,
       operationId = None,
       source = None,
       location = None,

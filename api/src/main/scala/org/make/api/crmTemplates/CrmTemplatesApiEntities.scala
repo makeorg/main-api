@@ -21,7 +21,6 @@ package org.make.api.crmTemplates
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
-import org.make.core.Validation
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
@@ -45,8 +44,8 @@ trait CrmTemplatesRequest {
 final case class CreateTemplatesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "d1397b66-1f3d-4350-bfd9-d57775b83355")
   questionId: Option[QuestionId],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "123456") registration: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") welcome: Option[TemplateId],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") proposalAccepted: Option[TemplateId],
@@ -61,19 +60,7 @@ final case class CreateTemplatesRequest(
   ],
   @(ApiModelProperty @field)(dataType = "string", example = "123456") registrationB2B: Option[TemplateId]
 ) extends CrmTemplatesRequest {
-  def getLocale: Option[String] =
-    for {
-      c <- country
-      l <- language
-    } yield s"${l.value.toLowerCase}_${c.value.toUpperCase}"
-
-  Validation.validate(
-    Validation.requirePresent(
-      fieldName = "questionId",
-      fieldValue = questionId.orElse(getLocale),
-      message = Some("At least one of questionId or country+language must exist.")
-    )
-  )
+  def getLocale: String = s"${language.value.toLowerCase}_${country.value.toUpperCase}"
 }
 
 object CreateTemplatesRequest {

@@ -345,8 +345,8 @@ trait DefaultProposalApiComponent
                         ProposalElasticsearchFieldNames.updatedAt,
                         ProposalElasticsearchFieldNames.trending,
                         ProposalElasticsearchFieldNames.labels,
-                        ProposalElasticsearchFieldNames.country,
-                        ProposalElasticsearchFieldNames.language,
+                        ProposalElasticsearchFieldNames.questionCountries,
+                        ProposalElasticsearchFieldNames.questionLanguage,
                         ProposalElasticsearchFieldNames.topScoreAjustedWithVotes
                       )
                     Validation.validChoices(

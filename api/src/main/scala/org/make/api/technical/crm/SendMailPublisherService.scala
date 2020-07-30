@@ -96,8 +96,8 @@ trait DefaultSendMailPublisherServiceComponent
   private def getProposalUrl(proposal: Proposal, questionSlug: String): String = {
     val utmParams =
       s"utm_source=crm&utm_medium=email&utm_campaign=$questionSlug&utm_term=publication&utm_content=cta_share"
-    val country: String = proposal.country.map(_.value).getOrElse("FR")
-    val language: String = proposal.language.map(_.value).getOrElse("fr")
+    val country: String = proposal.creationContext.country.map(_.value).getOrElse("FR")
+    val language: String = proposal.creationContext.locale.map(_.language.value).getOrElse("fr")
 
     val appPath =
       s"$country-$language/consultation/$questionSlug/proposal/${proposal.proposalId.value}/${proposal.slug}"
@@ -111,7 +111,7 @@ trait DefaultSendMailPublisherServiceComponent
     utmCampaign: String
   ): String = {
     val operationIdValue: String = requestContext.operationId.map(_.value).getOrElse("core")
-    val language: String = requestContext.language.map(_.value).getOrElse("fr")
+    val language: String = requestContext.locale.map(_.language.value).getOrElse("fr")
     val country: String = requestContext.country.map(_.value).getOrElse("FR")
     val questionIdValue: String = requestContext.questionId.map(_.value).getOrElse("")
 
@@ -124,7 +124,7 @@ trait DefaultSendMailPublisherServiceComponent
   }
 
   private def getForgottenPasswordUrl(user: User, resetToken: String, requestContext: RequestContext): String = {
-    val language: String = requestContext.language.map(_.value).getOrElse("fr")
+    val language: String = requestContext.locale.map(_.language.value).getOrElse("fr")
     val country: String = requestContext.country.map(_.value).getOrElse("FR")
     val operationIdValue: String = requestContext.operationId.map(_.value).getOrElse("core")
     val questionIdValue: String = requestContext.questionId.map(_.value).getOrElse("")
@@ -140,8 +140,8 @@ trait DefaultSendMailPublisherServiceComponent
     questionSlug: String,
     proposal: Proposal
   ): String = {
-    val country: String = proposal.country.map(_.value).getOrElse("FR")
-    val language: String = proposal.language.map(_.value).getOrElse("fr")
+    val country: String = proposal.creationContext.country.map(_.value).getOrElse("FR")
+    val language: String = proposal.creationContext.locale.map(_.language.value).getOrElse("fr")
     val term: String = if (isAccepted) "publication" else "refus"
     val utmTerm: String = if (userType != UserType.UserTypeUser) s"${term}acteur" else term
     val utmParams = s"utm_source=crm&utm_medium=email&utm_content=cta&utm_campaign=$questionSlug&utm_term=$utmTerm"

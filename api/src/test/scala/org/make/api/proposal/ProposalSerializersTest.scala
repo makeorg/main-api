@@ -41,18 +41,20 @@ import org.make.core.proposal.QualificationKey.{
 }
 import org.make.core.proposal.VoteKey.{Agree, Disagree, Neutral}
 import org.make.core.proposal._
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, Locale, ThemeId}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
 import org.scalatest.wordspec.AnyWordSpec
 import stamina.testkit.StaminaTestKit
-import stamina.{Persisters, V3}
+import stamina.{Persisters, V3, V8}
 
 class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
 
   val persisters = Persisters(ProposalSerializers.serializers.toList)
   val userId = UserId("my-user-id")
   val requestContext: RequestContext = RequestContext.empty
+  val requestContextFromGermany: RequestContext =
+    requestContext.copy(country = Some(Country("DE")), locale = Some(Locale(Language("de"), Country("DE"))))
   val eventDate: ZonedDateTime = ZonedDateTime.parse("2018-03-01T16:09:30.441Z")
   val proposalId = ProposalId("proposal-id")
 
@@ -284,8 +286,6 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       status = ProposalStatus.Accepted,
       refusalReason = Some("because"),
       tags = Seq(TagId("tag-1"), TagId("tag-2")),
-      language = Some(Language("fr")),
-      country = Some(Country("FR")),
       creationContext = requestContext,
       idea = Some(IdeaId("idea-id")),
       operation = Some(OperationId("operation-id")),
@@ -318,9 +318,12 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
         )
       )
     )
+    val proposalFromGermany = proposal.copy(creationContext = requestContextFromGermany)
 
     val proposalPatched =
       ProposalPatched(id = proposalId, eventDate = eventDate, requestContext = requestContext, proposal = proposal)
+    val proposalPatchedFromGermany =
+      proposalPatched.copy(requestContext = requestContextFromGermany, proposal = proposalFromGermany)
 
     val proposalState = ProposalState(
       proposal = proposal,
@@ -347,6 +350,7 @@ class ProposalSerializersTest extends AnyWordSpec with StaminaTestKit {
       sample(proposalAddedToOperation),
       sample(proposalRemovedFromOperation),
       sample(proposalPatched),
+      PersistableSample[V8]("with-locale", proposalPatchedFromGermany, Some("with locale")),
       sample(proposalVotesUpdated),
       sample(proposalState)
     )

@@ -353,7 +353,7 @@ trait DefaultQuestionApiComponent
               operationTitle = operationOfQuestion.operationTitle,
               consultationImage = operationOfQuestion.consultationImage,
               descriptionImage = operationOfQuestion.descriptionImage,
-              country = question.country,
+              countries = question.countries,
               language = question.language,
               startDate = operationOfQuestion.startDate,
               endDate = operationOfQuestion.endDate,
@@ -442,7 +442,7 @@ trait DefaultQuestionApiComponent
                         OperationOfQuestionElasticsearchFieldNames.startDate,
                         OperationOfQuestionElasticsearchFieldNames.endDate,
                         OperationOfQuestionElasticsearchFieldNames.description,
-                        OperationOfQuestionElasticsearchFieldNames.country,
+                        OperationOfQuestionElasticsearchFieldNames.countries,
                         OperationOfQuestionElasticsearchFieldNames.language,
                         OperationOfQuestionElasticsearchFieldNames.operationKind
                       )

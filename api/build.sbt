@@ -72,7 +72,6 @@ libraryDependencies ++= Seq(
   Dependencies.jerseyServer,
   Dependencies.jerseyHk2,
   Dependencies.jaxRsApi,
-  Dependencies.jsonLenses,
   Dependencies.apacheMath,
   Dependencies.staminaTestKit,
   Dependencies.alpakka

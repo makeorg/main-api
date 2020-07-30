@@ -36,7 +36,7 @@ import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.ProposalActionType._
-import org.make.core.reference.{Country, LabelId, Language, ThemeId}
+import org.make.core.reference.{Country, LabelId, Language, Locale, ThemeId}
 import org.make.core.sequence.{SearchQuery, SequenceId, SequenceStatus}
 import org.make.core.tag.TagId
 import org.make.core.user.UserId
@@ -258,8 +258,11 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
     val registerCitizenEvent = LogRegisterCitizenEvent(
       userId = userId,
-      requestContext =
-        requestContext.copy(source = Some("core"), language = Some(Language("fr")), country = Some(Country("FR"))),
+      requestContext = requestContext.copy(
+        source = Some("core"),
+        locale = Some(Locale(Language("fr"), Country("FR"))),
+        country = Some(Country("FR"))
+      ),
       action = UserAction(
         date = eventDate,
         actionType = LogRegisterCitizenEvent.action,
@@ -276,8 +279,11 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
     val registerCitizenEventIt = LogRegisterCitizenEvent(
       userId = userId,
-      requestContext =
-        requestContext.copy(source = Some("core"), language = Some(Language("it")), country = Some(Country("IT"))),
+      requestContext = requestContext.copy(
+        source = Some("core"),
+        locale = Some(Locale(Language("it"), Country("IT"))),
+        country = Some(Country("IT"))
+      ),
       action = UserAction(
         date = eventDate,
         actionType = LogRegisterCitizenEvent.action,
@@ -425,6 +431,13 @@ class UserHistorySerializersTest extends AnyWordSpec with StaminaTestKit {
 
     persisters.generateTestsFor(
       sample(userAddProposalsSequenceEvent),
+      PersistableSample[V1](
+        "toto",
+        userAddProposalsSequenceEvent.copy(requestContext = userAddProposalsSequenceEvent.requestContext
+          .copy(country = Some(Country("DE")), locale = Some(Locale(Language("de"), Country("DE"))))
+        ),
+        Some("check context deser")
+      ),
       sample(userUnvoteEvent),
       sample(userStartSequenceEvent),
       sample(searchProposalsEvent),

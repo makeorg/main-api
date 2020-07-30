@@ -122,7 +122,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
             visitorId = contextChanges.visitorId.orElse(proposal.creationContext.visitorId),
             externalId = contextChanges.externalId.getOrElse(proposal.creationContext.externalId),
             country = contextChanges.country.map(Some(_)).getOrElse(proposal.creationContext.country),
-            language = contextChanges.language.map(Some(_)).getOrElse(proposal.creationContext.language),
+            locale = contextChanges.locale.map(Some(_)).getOrElse(proposal.creationContext.locale),
             operationId = contextChanges.operation.map(Some(_)).getOrElse(proposal.creationContext.operationId),
             source = contextChanges.source.map(Some(_)).getOrElse(proposal.creationContext.source),
             location = contextChanges.location.map(Some(_)).getOrElse(proposal.creationContext.location),
@@ -147,8 +147,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
           tags = changes.tags.getOrElse(proposal.tags),
           updatedAt = Some(DateHelper.now()),
           operation = changes.operation.orElse(proposal.operation),
-          language = changes.language.orElse(proposal.language),
-          country = changes.country.orElse(proposal.country),
           questionId = changes.questionId.orElse(proposal.questionId)
         )
 
@@ -480,7 +478,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
         content = command.content,
         operation = command.question.operationId,
         language = Some(command.question.language),
-        country = Some(command.question.country),
+        country = command.requestContext.country,
         question = Some(command.question.questionId),
         initialProposal = command.initialProposal
       )
@@ -760,8 +758,6 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
               arguments = Map("content" -> e.content)
             )
           ),
-          language = e.language,
-          country = e.country,
           initialProposal = e.initialProposal
         )
       )

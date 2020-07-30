@@ -19,6 +19,7 @@
 
 package org.make.api.idea
 
+import cats.data.NonEmptyList
 import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceComponent
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
@@ -45,7 +46,7 @@ class PersistentTopIdeaCommentServiceIT
   private val question: Question = Question(
     questionId = QuestionId("question"),
     slug = "question-slug",
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = "question ?",
     shortTitle = None,

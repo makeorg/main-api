@@ -31,7 +31,7 @@ import org.make.core.DateHelper
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.{Country, Language, Locale}
 import org.make.core.user.{UserId, UserType}
 
 import scala.collection.immutable.Seq
@@ -51,8 +51,6 @@ class ProposalSearchEngineTest
 
   def proposal(nbAgree: Int, nbDisagree: Int, nbNeutral: Int): IndexedProposal = IndexedProposal(
     id = ProposalId("99999999-9999-9999-9999-999999999999"),
-    country = Country("FR"),
-    language = Language("fr"),
     userId = UserId("99999999-9999-9999-9999-999999999999"),
     content = "Il faut faire une proposition",
     slug = "il-faut-faire-une-proposition",
@@ -98,7 +96,15 @@ class ProposalSearchEngineTest
     scores = IndexedScores.empty,
     segmentScores = IndexedScores.empty,
     context = Some(
-      IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+      IndexedContext(
+        source = None,
+        operation = None,
+        location = None,
+        question = None,
+        country = Some(Country("FR")),
+        locale = Some(Locale(Language("fr"), Country("FR"))),
+        getParameters = Seq.empty
+      )
     ),
     trending = None,
     labels = Seq.empty,

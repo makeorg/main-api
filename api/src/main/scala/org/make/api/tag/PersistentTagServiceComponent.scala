@@ -33,7 +33,6 @@ import org.make.api.technical.ScalikeSupport._
 import org.make.core.DateHelper
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import scalikejdbc._
 
@@ -52,7 +51,6 @@ trait PersistentTagService {
   def findByLabel(label: String): Future[Seq[Tag]]
   def findByLabelLike(partialLabel: String): Future[Seq[Tag]]
   def findByQuestion(questionId: QuestionId): Future[Seq[Tag]]
-  def findByQuestions(questionIds: Seq[QuestionId]): Future[Seq[Tag]]
   def persist(tag: Tag): Future[Tag]
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
@@ -91,19 +89,6 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.questionId, questionId.value))
-        }.map(PersistentTag.apply()).list().apply
-      })
-
-      futurePersistentTag.map(_.map(_.toTag))
-    }
-
-    override def findByQuestions(questionIds: Seq[QuestionId]): Future[Seq[Tag]] = {
-      implicit val context: EC = readExecutionContext
-      val futurePersistentTag = Future(NamedDB("READ").retryableTx { implicit session =>
-        withSQL {
-          select
-            .from(PersistentTag.as(tagAlias))
-            .where(sqls.in(tagAlias.questionId, questionIds.map(_.value)))
         }.map(PersistentTag.apply()).list().apply
       })
 
@@ -217,8 +202,6 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.operationId -> tag.operationId.map(_.value),
               column.questionId -> tag.questionId.map(_.value),
               column.weight -> tag.weight,
-              column.country -> tag.country.value,
-              column.language -> tag.language.value,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
             )
@@ -240,8 +223,6 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               column.operationId -> tag.operationId.map(_.value),
               column.questionId -> tag.questionId.map(_.value),
               column.weight -> tag.weight,
-              column.country -> tag.country.value,
-              column.language -> tag.language.value,
               column.updatedAt -> nowDate
             )
             .where(sqls.eq(column.id, tag.tagId.value))
@@ -361,8 +342,6 @@ object DefaultPersistentTagServiceComponent {
     operationId: Option[String],
     questionId: Option[String],
     weight: Float,
-    country: String,
-    language: String,
     createdAt: ZonedDateTime,
     updatedAt: ZonedDateTime
   ) {
@@ -374,27 +353,14 @@ object DefaultPersistentTagServiceComponent {
         tagTypeId = TagTypeId(tagTypeId),
         operationId = operationId.map(OperationId(_)),
         questionId = questionId.map(QuestionId(_)),
-        weight = weight,
-        country = Country(country),
-        language = Language(language)
+        weight = weight
       )
   }
 
   implicit object PersistentTag extends PersistentCompanion[PersistentTag, Tag] with ShortenedNames with StrictLogging {
 
-    override val columnNames: Seq[String] = Seq(
-      "id",
-      "label",
-      "display",
-      "tag_type_id",
-      "operation_id",
-      "weight",
-      "country",
-      "language",
-      "created_at",
-      "updated_at",
-      "question_id"
-    )
+    override val columnNames: Seq[String] =
+      Seq("id", "label", "display", "tag_type_id", "operation_id", "weight", "created_at", "updated_at", "question_id")
 
     override val tableName: String = "tag"
 
@@ -413,8 +379,6 @@ object DefaultPersistentTagServiceComponent {
         operationId = resultSet.stringOpt(tagResultName.operationId),
         questionId = resultSet.stringOpt(tagResultName.questionId),
         weight = resultSet.float(tagResultName.weight),
-        country = resultSet.string(tagResultName.country),
-        language = resultSet.string(tagResultName.language),
         createdAt = resultSet.zonedDateTime(tagResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(tagResultName.updatedAt)
       )

@@ -169,7 +169,10 @@ trait DefaultAdminCrmTemplatesApiComponent
             requireAdminRole(userAuth.user) {
               decodeRequest {
                 entity(as[CreateTemplatesRequest]) { request: CreateTemplatesRequest =>
-                  provideAsync(crmTemplatesService.count(request.questionId, request.getLocale)) { count =>
+                  val locale = Option(request.getLocale)
+                  provideAsync(
+                    crmTemplatesService.count(request.questionId, request.questionId.fold(locale)(_ => None))
+                  ) { count =>
                     provideAsync(request.questionId.map(questionService.getQuestion).getOrElse(Future.successful(None))) {
                       question =>
                         val validateOptionalQuestion: Boolean = request.questionId.isEmpty || question.isDefined
@@ -188,7 +191,6 @@ trait DefaultAdminCrmTemplatesApiComponent
                               "Question is invalid"
                             )
                         )
-                        val locale = request.getLocale.orElse(question.map(_.getLocale))
                         provideAsync(crmTemplatesService.getDefaultTemplate(locale = locale)) { defaultTemplate =>
                           val crmTemplates = for {
                             registration <- request.registration.orElse(defaultTemplate.map(_.registration))
@@ -212,7 +214,7 @@ trait DefaultAdminCrmTemplatesApiComponent
                           } yield {
                             CreateCrmTemplates(
                               questionId = question.map(_.questionId),
-                              locale = request.getLocale,
+                              locale = locale,
                               registration,
                               welcome,
                               proposalAccepted,
@@ -254,11 +256,8 @@ trait DefaultAdminCrmTemplatesApiComponent
               decodeRequest {
                 entity(as[UpdateTemplatesRequest]) { request: UpdateTemplatesRequest =>
                   provideAsyncOrNotFound(crmTemplatesService.getCrmTemplates(crmTemplatesId)) { crmTemplate =>
-                    provideAsync(
-                      crmTemplate.questionId.map(questionService.getQuestion).getOrElse(Future.successful(None))
-                    ) { question =>
-                      val locale = crmTemplate.locale.orElse(question.map(_.getLocale))
-                      provideAsync(crmTemplatesService.getDefaultTemplate(locale = locale)) { defaultTemplate =>
+                    provideAsync(crmTemplatesService.getDefaultTemplate(locale = crmTemplate.locale)) {
+                      defaultTemplate =>
                         val crmTemplates = for {
                           registration <- request.registration.orElse(defaultTemplate.map(_.registration))
                           welcome      <- request.welcome.orElse(defaultTemplate.map(_.welcome))
@@ -304,7 +303,6 @@ trait DefaultAdminCrmTemplatesApiComponent
                                 complete(CrmTemplatesResponse(crmTemplates))
                             }
                         }
-                      }
                     }
                   }
                 }

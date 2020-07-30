@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, PathMatcher1, Route}
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
@@ -433,7 +434,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         endDate = body.endDate,
                         operationTitle = body.operationTitle,
                         slug = body.questionSlug,
-                        country = body.country,
+                        countries = body.countries,
                         language = body.language,
                         question = body.question,
                         shortTitle = body.shortTitle.map(_.value),
@@ -535,7 +536,7 @@ final case class CreateOperationOfQuestionRequest(
   endDate: Option[ZonedDateTime],
   operationTitle: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   question: String,
@@ -594,7 +595,7 @@ final case class OperationOfQuestionResponse(
   question: String,
   shortTitle: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   canPropose: Boolean,
@@ -633,7 +634,7 @@ object OperationOfQuestionResponse extends CirceFormatters {
       slug = question.slug,
       question = question.question,
       shortTitle = question.shortTitle,
-      country = question.country,
+      countries = question.countries,
       language = question.language,
       canPropose = operationOfQuestion.canPropose,
       sequenceCardsConfiguration = operationOfQuestion.sequenceCardsConfiguration,

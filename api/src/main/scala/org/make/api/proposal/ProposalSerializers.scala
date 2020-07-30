@@ -22,10 +22,10 @@ package org.make.api.proposal
 import org.make.api.proposal.ProposalActor.ProposalState
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
-import org.make.core.SprayJsonFormatters
+import org.make.core.{RequestContext, SprayJsonFormatters}
 import org.make.core.proposal._
 import org.make.core.user.UserId
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsObject, RootJsonFormat}
 import spray.json.DefaultJsonProtocol._
 import spray.json.lenses.JsonLenses._
 import stamina._
@@ -252,7 +252,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update("requestContext" / "customData" ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V7] = {
+  private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V8] = {
 
     case class QualificationV4(key: QualificationKey, count: Int)
     implicit val qualificationV4Formatter: RootJsonFormat[QualificationV4] =
@@ -292,7 +292,7 @@ object ProposalSerializers extends SprayJsonFormatters {
     implicit val voteV7formatter: RootJsonFormat[VoteV7] =
       DefaultJsonProtocol.jsonFormat6(VoteV7.apply)
 
-    persister[ProposalPatched, V7](
+    persister[ProposalPatched, V8](
       "proposal-tags-updated",
       from[V1]
         .to[V2](_.update("proposal" / "organisations" ! set[Seq[OrganisationInfo]](Seq.empty)))
@@ -342,6 +342,13 @@ object ProposalSerializers extends SprayJsonFormatters {
               )
             })
           json.update("proposal" / "votes", votes)
+        }
+        .to[V8] { json =>
+          val requestContextLocale = buildLocale(json.extract[JsObject]("requestContext".?))
+          val creationContextLocale = buildLocale(json.extract[JsObject]("proposal" / "creationContext".?))
+          json
+            .update("requestContext" ! modify[RequestContext](_.copy(locale = requestContextLocale)))
+            .update("proposal" / "creationContext" ! modify[RequestContext](_.copy(locale = creationContextLocale)))
         }
     )
   }

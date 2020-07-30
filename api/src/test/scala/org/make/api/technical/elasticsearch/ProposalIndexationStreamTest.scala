@@ -22,6 +22,7 @@ package org.make.api.technical.elasticsearch
 import java.time.ZonedDateTime
 
 import akka.actor.ActorSystem
+import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.operation.{OperationOfQuestionService, OperationService}
 import org.make.api.organisation.OrganisationService
@@ -75,7 +76,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
             slug = "question",
             question = "question",
             shortTitle = None,
-            country = Country("FR"),
+            countries = NonEmptyList.of(Country("FR")),
             language = Language("fr"),
             operationId = Some(OperationId("operation"))
           )
@@ -128,9 +129,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
       tagTypeId = TagTypeId("stake"),
       weight = 0,
       operationId = None,
-      questionId = None,
-      country = Country("FR"),
-      language = Language("fr")
+      questionId = None
     )
     val tagTarget = Tag(
       tagId = TagId("target-1"),
@@ -139,9 +138,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
       tagTypeId = TagTypeId("target"),
       weight = 0,
       operationId = None,
-      questionId = None,
-      country = Country("FR"),
-      language = Language("fr")
+      questionId = None
     )
     val tagActor = Tag(
       tagId = TagId("actor-1"),
@@ -150,9 +147,7 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
       tagTypeId = TagTypeId("actor"),
       weight = 0,
       operationId = None,
-      questionId = None,
-      country = Country("FR"),
-      language = Language("fr")
+      questionId = None
     )
 
     Scenario("proposal without votes and multiple stake tag") {

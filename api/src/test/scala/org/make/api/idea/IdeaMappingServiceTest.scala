@@ -17,6 +17,7 @@
  *
  */
 package org.make.api.idea
+import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.proposal._
 import org.make.api.question.{PersistentQuestionService, PersistentQuestionServiceComponent}
@@ -67,9 +68,7 @@ class IdeaMappingServiceTest
     tagTypeId = TagTypeId("some-id"),
     weight = 0.0f,
     operationId = None,
-    questionId = Some(QuestionId("my-question")),
-    country = Country("FR"),
-    language = Language("fr")
+    questionId = Some(QuestionId("my-question"))
   )
 
   when(persistentIdeaMappingService.updateMapping(any[IdeaMapping])).thenAnswer { mapping: IdeaMapping =>
@@ -153,8 +152,6 @@ class IdeaMappingServiceTest
             userType = UserType.UserTypeUser
           ),
           organisations = Seq.empty,
-          country = Country("FR"),
-          language = Language("fr"),
           question = None,
           tags = tags.map(tagId => IndexedTag(TagId(tagId), tagId, display = true)),
           selectedStakeTag = None,
@@ -176,9 +173,7 @@ class IdeaMappingServiceTest
           tagTypeId = TagTypeId(tagTypeId),
           weight = weight,
           operationId = None,
-          questionId = None,
-          country = Country("Fr"),
-          language = Language("fr")
+          questionId = None
         )
 
       when(persistentIdeaMappingService.get(IdeaMappingId("changeIdea")))
@@ -388,7 +383,7 @@ class IdeaMappingServiceTest
             Question(
               questionId = QuestionId("my-question"),
               slug = "my-question",
-              country = Country("FR"),
+              countries = NonEmptyList.of(Country("FR")),
               language = Language("fr"),
               question = "my question ?",
               shortTitle = None,
@@ -444,7 +439,7 @@ class IdeaMappingServiceTest
             Question(
               questionId = QuestionId("my-question"),
               slug = "my-question",
-              country = Country("FR"),
+              countries = NonEmptyList.of(Country("FR")),
               language = Language("fr"),
               question = "my question ?",
               shortTitle = None,

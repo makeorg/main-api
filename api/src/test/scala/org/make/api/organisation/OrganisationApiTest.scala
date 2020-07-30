@@ -34,7 +34,7 @@ import org.make.core.operation.OperationId
 import org.make.core.profile.Profile
 import org.make.core.proposal.VoteKey.Agree
 import org.make.core.proposal._
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.{Country, Language, Locale}
 import org.make.core.user.Role.{RoleActor, RoleCitizen}
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.user.{User, UserId, UserType}
@@ -101,8 +101,6 @@ class OrganisationApiTest
     results = Seq(
       ProposalResponse(
         id = ProposalId("proposal-1"),
-        country = Country("FR"),
-        language = Language("fr"),
         userId = UserId("make-org"),
         content = "blabla",
         slug = "blabla",
@@ -115,6 +113,8 @@ class OrganisationApiTest
             operation = None,
             location = None,
             question = None,
+            country = Some(Country("FR")),
+            locale = Some(Locale(Language("fr"), Country("FR"))),
             getParameters = Seq.empty
           )
         ),
@@ -142,8 +142,6 @@ class OrganisationApiTest
       ),
       ProposalResponse(
         id = ProposalId("proposal-2"),
-        country = Country("FR"),
-        language = Language("fr"),
         userId = UserId("make-org"),
         content = "blablabla",
         slug = "blablabla",
@@ -156,6 +154,8 @@ class OrganisationApiTest
             operation = None,
             location = None,
             question = None,
+            country = Some(Country("FR")),
+            locale = Some(Locale(Language("fr"), Country("FR"))),
             getParameters = Seq.empty
           )
         ),
@@ -183,8 +183,6 @@ class OrganisationApiTest
       ),
       ProposalResponse(
         id = ProposalId("proposal-3"),
-        country = Country("FR"),
-        language = Language("fr"),
         userId = UserId("make-org"),
         content = "blablabla",
         slug = "blablabla",
@@ -197,6 +195,8 @@ class OrganisationApiTest
             operation = None,
             location = None,
             question = None,
+            country = Some(Country("FR")),
+            locale = Some(Locale(Language("fr"), Country("FR"))),
             getParameters = Seq.empty
           )
         ),
@@ -224,8 +224,6 @@ class OrganisationApiTest
       ),
       ProposalResponse(
         id = ProposalId("proposal-4"),
-        country = Country("FR"),
-        language = Language("fr"),
         userId = UserId("make-org"),
         content = "blablabla",
         slug = "blablabla",
@@ -238,6 +236,8 @@ class OrganisationApiTest
             operation = None,
             location = None,
             question = None,
+            country = Some(Country("FR")),
+            locale = Some(Locale(Language("fr"), Country("FR"))),
             getParameters = Seq.empty
           )
         ),

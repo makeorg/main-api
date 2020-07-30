@@ -22,6 +22,7 @@ package org.make.api.crmTemplates
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
@@ -125,7 +126,15 @@ class AdminCrmTemplatesApiTest
     .thenReturn(Future.successful(2))
 
   val question =
-    Question(QuestionId("question-id"), "question", Country("FR"), Language("fr"), "question ?", None, None)
+    Question(
+      QuestionId("question-id"),
+      "question",
+      NonEmptyList.of(Country("FR")),
+      Language("fr"),
+      "question ?",
+      None,
+      None
+    )
 
   when(questionService.getQuestion(QuestionId("question-id")))
     .thenReturn(Future.successful(Some(question)))
@@ -145,6 +154,8 @@ class AdminCrmTemplatesApiTest
     val crmTemplateData =
       """{
          |  "questionId": "question-id",
+         |  "country": "FR",
+         |  "language": "fr",
          |  "registration": "12340",
          |  "welcome": "12341",
          |  "proposalAccepted": "12342",

@@ -154,7 +154,8 @@ trait DefaultModerationOrganisationApiComponent
                             avatar = request.avatarUrl.map(_.value),
                             description = request.description.map(_.value),
                             country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
-                            language = request.language.orElse(requestContext.language).getOrElse(Language("fr")),
+                            language =
+                              request.language.orElse(requestContext.locale.map(_.language)).getOrElse(Language("fr")),
                             website = request.website.map(_.value)
                           ),
                           requestContext

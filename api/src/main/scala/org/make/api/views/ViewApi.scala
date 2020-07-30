@@ -31,9 +31,13 @@ import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
-import org.make.core.operation._
-import org.make.core.proposal.SearchQuery
+import org.make.core.operation.{
+  OperationKind,
+  OperationOfQuestionSearchFilters,
+  OperationOfQuestionSearchQuery,
+  QuestionContentSearchFilter
+}
+import org.make.core.proposal.{CountrySearchFilter, LanguageSearchFilter, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery}
 import org.make.core.{operation, proposal, user, BusinessConfig, HttpCodes, ParameterExtractors}
@@ -150,7 +154,7 @@ trait DefaultViewApiComponent
                     )
                   ),
                   limit = proposalLimit,
-                  language = requestContext.language
+                  language = requestContext.locale.map(_.language)
                 )
                 val questionQuery = OperationOfQuestionSearchQuery(
                   filters = Some(

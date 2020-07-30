@@ -19,6 +19,8 @@
 
 package org.make.api.avro
 
+import java.nio.file.Files
+
 import com.sksamuel.avro4s.DefaultFieldMapper
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.avro.Schema
@@ -83,6 +85,10 @@ class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with Stric
         AvroCompatibilityChecker.isCompatible(newerSchema, oldSchema) should be(true)
     }
 
+    val tmp = Files.createTempFile(name, ".avro")
+    val w = Files.newBufferedWriter(tmp.toAbsolutePath)
+    w.write(currentSchema.toString(false))
+    w.flush()
     // check that the current schema is in the list of schemas
     schemas.last.toString(true) should be(currentSchema.toString(true))
   }

@@ -22,6 +22,7 @@ package org.make.api
 import java.net.URL
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
@@ -104,8 +105,6 @@ trait TestUtilsIT {
     operationId: Option[OperationId] = Some(OperationId("operation")),
     requestContext: RequestContext = RequestContext.empty,
     content: String = "Il faut tester l'indexation des propositions",
-    country: Country = Country("FR"),
-    language: Language = Language("fr"),
     status: ProposalStatus = Accepted,
     idea: Option[IdeaId] = None,
     events: List[ProposalAction] = Nil,
@@ -126,8 +125,6 @@ trait TestUtilsIT {
       tags = tags,
       organisations = organisations,
       organisationIds = organisations.map(_.organisationId),
-      language = Some(language),
-      country = Some(country),
       questionId = Some(questionId),
       creationContext = requestContext,
       idea = idea,
@@ -195,7 +192,7 @@ trait TestUtilsIT {
   def question(
     id: QuestionId,
     slug: String = "question-slug",
-    country: Country = Country("FR"),
+    countries: NonEmptyList[Country] = NonEmptyList.of(Country("FR")),
     language: Language = Language("fr"),
     question: String = "How to ask a question ?",
     shortTitle: Option[String] = None,
@@ -204,7 +201,7 @@ trait TestUtilsIT {
     Question(
       questionId = id,
       slug = slug,
-      country = country,
+      countries = countries,
       language = language,
       question = question,
       shortTitle = shortTitle,

@@ -19,6 +19,7 @@
 
 package org.make.api.tag
 
+import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalSearchEngine
 import org.make.api.tagtype.{PersistentTagTypeService, PersistentTagTypeServiceComponent, TagTypeService}
@@ -60,8 +61,6 @@ class TagServiceTest
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = operationId,
-    country = Country("FR"),
-    language = Language("fr"),
     questionId = Some(questionId)
   )
 
@@ -105,7 +104,7 @@ class TagServiceTest
           questionId = QuestionId("new-question"),
           slug = "new-question",
           operationId = None,
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "new question",
           shortTitle = None
@@ -124,8 +123,6 @@ class TagServiceTest
                 weight = 0f,
                 tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
                 operationId = None,
-                country = Country("FR"),
-                language = Language("fr"),
                 questionId = Some(QuestionId("new-question"))
               ),
               "tagId"
@@ -280,7 +277,7 @@ class TagServiceTest
           questionId = QuestionId("fake-question"),
           slug = "fake-question",
           operationId = None,
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "Fake Question",
           shortTitle = None
@@ -331,7 +328,7 @@ class TagServiceTest
           questionId = QuestionId("fake-question"),
           slug = "fake-question",
           operationId = None,
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "Fake Question",
           shortTitle = None
@@ -358,9 +355,7 @@ class TagServiceTest
           tagTypeId = TagTypeId("stake"),
           weight = 0,
           operationId = None,
-          questionId = None,
-          country = Country("FR"),
-          language = Language("fr")
+          questionId = None
         ),
         Tag(
           tagId = TagId("tag-no-stake"),
@@ -369,9 +364,7 @@ class TagServiceTest
           tagTypeId = TagTypeId("other"),
           weight = 0,
           operationId = None,
-          questionId = None,
-          country = Country("FR"),
-          language = Language("fr")
+          questionId = None
         ),
         Tag(
           tagId = TagId("tag-display-not-inherited"),
@@ -380,9 +373,7 @@ class TagServiceTest
           tagTypeId = TagTypeId("other"),
           weight = 0,
           operationId = None,
-          questionId = None,
-          country = Country("FR"),
-          language = Language("fr")
+          questionId = None
         )
       )
 

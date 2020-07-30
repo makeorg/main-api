@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.feature.{
@@ -41,7 +42,7 @@ import org.make.api.sequence.{SequenceResult, SequenceService}
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
-import org.make.core.feature.{ActiveFeature, ActiveFeatureId, Feature => Feat, FeatureId}
+import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId, Feature => Feat}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.operation.{OperationId, _}
@@ -96,7 +97,7 @@ class QuestionApiTest
   val baseQuestion = Question(
     questionId = QuestionId("questionid"),
     slug = "question-slug",
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = "the question",
     shortTitle = None,
@@ -252,7 +253,7 @@ class QuestionApiTest
         questionDetailsResponse.operationId should be(baseOperation.operationId)
         questionDetailsResponse.slug should be(baseQuestion.slug)
         questionDetailsResponse.allowedSources should be(baseOperation.allowedSources)
-        questionDetailsResponse.country should be(baseQuestion.country)
+        questionDetailsResponse.countries should be(baseQuestion.countries)
         questionDetailsResponse.language should be(baseQuestion.language)
         questionDetailsResponse.wording.title should be(baseOperationOfQuestion.operationTitle)
         questionDetailsResponse.startDate should be(baseOperationOfQuestion.startDate)
@@ -321,7 +322,7 @@ class QuestionApiTest
     }
 
     def newTag(s: String): Tag =
-      Tag(TagId(s), s, TagDisplay.Displayed, TagTypeId("type"), 42f, None, None, Country("FR"), Language("fr"))
+      Tag(TagId(s), s, TagDisplay.Displayed, TagTypeId("type"), 42f, None, None)
 
     val tag1 = newTag("tag1")
     val tag2 = newTag("tag2")

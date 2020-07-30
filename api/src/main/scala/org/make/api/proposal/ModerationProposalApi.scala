@@ -48,7 +48,15 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user.UserType
-import org.make.core.{BusinessConfig, DateHelper, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{
+  BusinessConfig,
+  DateHelper,
+  HttpCodes,
+  ParameterExtractors,
+  Validation,
+  ValidationError,
+  ValidationFailedError
+}
 import scalaoauth2.provider.AuthInfo
 import org.make.core.ApiParamMagnetHelper._
 
@@ -573,7 +581,7 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(userAuth.user) {
               decodeRequest {
                 entity(as[UpdateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None)) { question =>
+                  provideAsync(retrieveQuestion(request.questionId, proposalId)) { question =>
                     requireRightsOnQuestion(userAuth.user, Some(question.questionId)) {
                       provideAsyncOrNotFound(
                         proposalService.update(
@@ -601,29 +609,33 @@ trait DefaultModerationProposalApiComponent
       }
     }
 
-    private def retrieveQuestion(
-      maybeQuestionId: Option[QuestionId],
-      proposalId: ProposalId,
-      maybeOperationId: Option[OperationId]
-    ): Future[Option[Question]] = {
-
-      maybeQuestionId.map { questionId =>
-        questionService.getQuestion(questionId)
-      }.getOrElse {
-        proposalCoordinatorService.getProposal(proposalId).flatMap {
-          case Some(proposal) =>
-            val maybeFuture = for {
-              country  <- proposal.country
-              language <- proposal.language
-            } yield {
-              questionService.findQuestion(maybeOperationId, country, language)
-            }
-            maybeFuture.getOrElse {
-              Future.successful(None)
-            }
-          case None =>
-            Future.successful(None)
-        }
+    private def retrieveQuestion(maybeQuestionId: Option[QuestionId], proposalId: ProposalId): Future[Question] = {
+      maybeQuestionId match {
+        case Some(questionId) =>
+          questionService.getQuestion(questionId).map {
+            case Some(question) => question
+            case _ =>
+              throw ValidationFailedError(
+                Seq(ValidationError("questionId", "not_found", Some(s"question '$questionId' not found")))
+              )
+          }
+        case _ =>
+          proposalCoordinatorService.getProposal(proposalId).flatMap {
+            case Some(proposal) =>
+              proposal.questionId match {
+                case Some(questionId) =>
+                  questionService.getQuestion(questionId).map {
+                    case Some(question) => question
+                    case _ =>
+                      throw new IllegalStateException(s"question '$questionId' not found for proposal '$proposalId'")
+                  }
+                case _ => throw new IllegalStateException(s"proposal '$proposalId' has no questionId")
+              }
+            case _ =>
+              throw ValidationFailedError(
+                Seq(ValidationError("questionId", "not_found", Some(s"proposal '$proposalId' not found")))
+              )
+          }
       }
     }
 
@@ -634,7 +646,7 @@ trait DefaultModerationProposalApiComponent
             requireModerationRole(auth.user) {
               decodeRequest {
                 entity(as[ValidateProposalRequest]) { request =>
-                  provideAsyncOrNotFound(retrieveQuestion(request.questionId, proposalId, None)) { question =>
+                  provideAsync(retrieveQuestion(request.questionId, proposalId)) { question =>
                     requireRightsOnQuestion(auth.user, Some(question.questionId)) {
                       provideAsyncOrNotFound(
                         proposalService.validateProposal(

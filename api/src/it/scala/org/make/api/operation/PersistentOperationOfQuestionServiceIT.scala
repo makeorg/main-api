@@ -21,6 +21,7 @@ package org.make.api.operation
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
@@ -93,7 +94,7 @@ class PersistentOperationOfQuestionServiceIT
     val question = Question(
       questionId = operationOfQuestion.questionId,
       slug = s"slug-question-${operationOfQuestion.questionId.value}",
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       question = "Question ?",
       shortTitle = None,
@@ -242,7 +243,7 @@ class PersistentOperationOfQuestionServiceIT
       val future =
         (for {
           _ <- persistentQuestionService.persist(
-            Question(questionId, "existing-sequence-id", Country("FR"), Language("fr"), "", None, None)
+            Question(questionId, "existing-sequence-id", NonEmptyList.of(Country("FR")), Language("fr"), "", None, None)
           )
           _ <- persistentOperationService.persist(
             SimpleOperation(

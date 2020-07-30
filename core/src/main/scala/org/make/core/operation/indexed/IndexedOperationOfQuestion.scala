@@ -22,6 +22,7 @@ package org.make.core.operation.indexed
 import java.time.ZonedDateTime
 
 import cats.Show
+import cats.data.NonEmptyList
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
@@ -45,7 +46,7 @@ object OperationOfQuestionElasticsearchFieldNames {
   val startDate = "startDate"
   val endDate = "endDate"
   val description = " description"
-  val country = "country"
+  val countries = "countries"
   val language = "language"
   val operationId = "operationId"
   val operationTitle = "operationTitle"
@@ -88,7 +89,7 @@ case class IndexedOperationOfQuestion(
   @(ApiModelProperty @field)(dataType = "string", example = "description image alternative")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "57c4a8d0-f3c1-4391-b75b-03082ac94d19")
@@ -128,7 +129,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       consultationImageAlt = operationOfQuestion.consultationImageAlt,
       descriptionImage = operationOfQuestion.descriptionImage,
       descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
-      country = question.country,
+      countries = question.countries,
       language = question.language,
       operationId = operationOfQuestion.operationId,
       operationTitle = operationOfQuestion.operationTitle,

@@ -22,7 +22,8 @@ package org.make.api.userhistory
 import java.time.ZonedDateTime
 
 import org.make.api.userhistory.UserHistoryActor.{UserHistory, UserVotesAndQualifications}
-import org.make.core.SprayJsonFormatters
+import org.make.core.{RequestContext, SprayJsonFormatters}
+import org.make.core.reference.{Country, Language, Locale}
 import spray.json.DefaultJsonProtocol._
 import spray.json.lenses.JsonLenses._
 import spray.json.{JsArray, JsObject, JsString, JsValue}
@@ -32,8 +33,8 @@ import stamina.json._
 object UserHistorySerializers extends SprayJsonFormatters {
 
   val countryFixDate: ZonedDateTime = ZonedDateTime.parse("2018-09-01T00:00:00Z")
-  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V5] =
-    json.persister[LogRegisterCitizenEvent, V5](
+  private val logRegisterCitizenEventSerializer: JsonPersister[LogRegisterCitizenEvent, V6] =
+    json.persister[LogRegisterCitizenEvent, V6](
       "user-history-registered",
       from[V1]
         .to[V2](
@@ -72,6 +73,14 @@ object UserHistorySerializers extends SprayJsonFormatters {
         }
         .to[V5] {
           _.update("context" / "customData" ! set[Map[String, String]](Map.empty))
+        }
+        .to[V6] { json =>
+          json.extract[JsObject]("context").getFields("country", "language") match {
+            case Seq(JsString(country), JsString(language)) =>
+              println(s"HEY I HAZ NEW LOCALE ${Locale(Language(language), Country(country))}")
+              json.update("context" / "locale" ! set(Locale(Language(language), Country(country))))
+            case _ => json
+          }
         }
     )
 
@@ -155,8 +164,8 @@ object UserHistorySerializers extends SprayJsonFormatters {
         .to[V3](_.update("context" / "customData" ! set[Map[String, String]](Map.empty)))
     )
 
-  private val userHistorySerializer: JsonPersister[UserHistory, V6] =
-    json.persister[UserHistory, V6](
+  private val userHistorySerializer: JsonPersister[UserHistory, V7] =
+    json.persister[UserHistory, V7](
       "user-history",
       from[V1]
         .to[V2](
@@ -232,6 +241,42 @@ object UserHistorySerializers extends SprayJsonFormatters {
             ) / "action" / "arguments" / "requestContext" / "customData" ! set[Map[String, String]](Map.empty)
           )
         )
+        .to[V7] { json =>
+          synchronized {
+            println("==========================================================")
+            //println(s"migrating ${json.prettyPrint}")
+            //println("----------------------------------------------------------")
+            json.update("events" ! modify[JsArray] {
+              events =>
+                events.copy(elements = events.elements.map {
+                  json =>
+                    println(s"event = ${json.prettyPrint}")
+                    println("----------------------------------------------------------")
+                    val context = json.extract[JsObject]("context")
+                    val updated =
+                      json.update("context" ! modify[RequestContext](_.copy(locale = buildLocale(Some(context)))))
+                    val arguments = updated.extract[JsValue]("action" / "arguments")
+                    arguments match {
+                      case JsObject(_) =>
+                        val requestContext = arguments.extract[JsObject]("requestContext".?)
+                        println(s"requestContext = $requestContext")
+                        println("----------------------------------------------------------")
+                        val locale = buildLocale(requestContext)
+                        println(s"locale = $locale")
+                        println("----------------------------------------------------------")
+
+                        updated
+                          .update(
+                            "action" / "arguments" / "requestContext".? ! modify[RequestContext](
+                              _.copy(locale = locale)
+                            )
+                          )
+                      case _ => updated
+                    }
+                })
+            })
+          }
+        }
     )
 
   private val logUserCreateSequenceEventSerializer: JsonPersister[LogUserCreateSequenceEvent, V2] =
@@ -243,13 +288,23 @@ object UserHistorySerializers extends SprayJsonFormatters {
       )
     )
 
-  private val logUserAddProposalsSequenceEventSerializer: JsonPersister[LogUserAddProposalsSequenceEvent, V2] =
-    json.persister[LogUserAddProposalsSequenceEvent, V2](
+  private val logUserAddProposalsSequenceEventSerializer: JsonPersister[LogUserAddProposalsSequenceEvent, V3] =
+    json.persister[LogUserAddProposalsSequenceEvent, V3](
       "user-history-add-proposals-sequence",
-      from[V1].to[V2](
-        _.update("context" / "customData" ! set[Map[String, String]](Map.empty))
-          .update("action" / "arguments" / "requestContext" / "customData" ! set[Map[String, String]](Map.empty))
-      )
+      from[V1]
+        .to[V2](
+          _.update("context" / "customData" ! set[Map[String, String]](Map.empty))
+            .update("action" / "arguments" / "requestContext" / "customData" ! set[Map[String, String]](Map.empty))
+        )
+        .to[V3](
+          json =>
+            json.extract[JsObject]("context").getFields("country", "language") match {
+              case Seq(JsString(country), JsString(language)) =>
+                println(s"HEY I HAZ NEW LOCALE ${Locale(Language(language), Country(country))}")
+                json.update("context" / "locale" ! set(Locale(Language(language), Country(country))))
+              case _ => json
+            }
+        )
     )
 
   private val logUserRemoveSequenceEventSerializer: JsonPersister[LogUserRemoveProposalsSequenceEvent, V2] =

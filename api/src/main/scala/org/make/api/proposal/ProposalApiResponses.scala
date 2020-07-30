@@ -119,11 +119,7 @@ final case class ModerationProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
-  operationId: Option[OperationId],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Option[Country]
+  operationId: Option[OperationId]
 )
 
 object ModerationProposalResponse extends CirceFormatters {
@@ -207,6 +203,8 @@ final case class ProposalContextResponse(
   source: Option[String],
   location: Option[String],
   question: Option[String],
+  country: Option[Country],
+  locale: Option[Locale],
   getParameters: Seq[GetParameterResponse]
 )
 
@@ -220,6 +218,8 @@ object ProposalContextResponse {
       context.source,
       context.location,
       context.question,
+      context.country,
+      context.locale,
       context.getParameters.map(GetParameterResponse.fromIndexedGetParameters)
     )
   }
@@ -276,10 +276,6 @@ final case class ProposalResponse(
   labels: Seq[String],
   author: AuthorResponse,
   organisations: Seq[OrganisationInfoResponse],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
   tags: Seq[IndexedTag],
   selectedStakeTag: Option[IndexedTag],
   myProposal: Boolean,
@@ -321,8 +317,6 @@ object ProposalResponse extends CirceFormatters {
       labels = indexedProposal.labels,
       author = AuthorResponse.fromIndexedAuthor(indexedProposal.author),
       organisations = indexedProposal.organisations.map(OrganisationInfoResponse.fromIndexedOrganisationInfo),
-      country = indexedProposal.country,
-      language = indexedProposal.language,
       tags = indexedProposal.tags,
       selectedStakeTag = indexedProposal.selectedStakeTag,
       myProposal = myProposal,
@@ -332,8 +326,8 @@ object ProposalResponse extends CirceFormatters {
           questionId = proposalQuestion.questionId,
           slug = proposalQuestion.slug,
           wording = SimpleQuestionWordingResponse(title = proposalQuestion.title, question = proposalQuestion.question),
-          country = indexedProposal.country,
-          language = indexedProposal.language,
+          countries = proposalQuestion.countries,
+          language = proposalQuestion.language,
           startDate = proposalQuestion.startDate,
           endDate = proposalQuestion.endDate
         )

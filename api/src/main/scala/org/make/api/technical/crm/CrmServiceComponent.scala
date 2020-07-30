@@ -597,7 +597,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           lastContributionDate = Some(event.action.date),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
+          lastLanguageActivity =
+            event.requestContext.locale.map(_.language.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -628,7 +629,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           lastContributionDate = Some(event.action.date),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
+          lastLanguageActivity =
+            event.requestContext.locale.map(_.language.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -658,7 +660,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           totalNumbervotes = accumulator.totalNumbervotes.map(_ - 1).orElse(Some(-1)),
           lastContributionDate = Some(event.action.date),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
+          lastLanguageActivity =
+            event.requestContext.locale.map(_.language.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -687,7 +690,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           totalNumbervotes = accumulator.totalNumbervotes.map(_ + 1).orElse(Some(1)),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
+          lastLanguageActivity =
+            event.requestContext.locale.map(_.language.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -720,7 +724,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
+          lastLanguageActivity =
+            event.requestContext.locale.map(_.language.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value).toSeq,
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toSeq,

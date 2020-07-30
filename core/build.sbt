@@ -28,6 +28,7 @@ libraryDependencies ++= Seq(
   Dependencies.enumeratum,
   Dependencies.enumeratumCirce,
   Dependencies.enumeratumScalacheck,
+  Dependencies.jsonLenses,
   Dependencies.avro4s,
   Dependencies.circeGeneric,
   Dependencies.refinedCirce,

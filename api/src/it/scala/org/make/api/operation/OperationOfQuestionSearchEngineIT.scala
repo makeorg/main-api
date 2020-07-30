@@ -26,6 +26,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
+import cats.data.NonEmptyList
 import io.circe.syntax._
 import org.make.api.docker.DockerElasticsearchService
 import org.make.api.technical.elasticsearch.{
@@ -101,7 +102,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -134,7 +135,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -167,7 +168,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -200,7 +201,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -233,7 +234,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",
@@ -266,7 +267,7 @@ class OperationOfQuestionSearchEngineIT
       consultationImageAlt = None,
       descriptionImage = None,
       descriptionImageAlt = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = OperationId("operation-id"),
       operationTitle = "operationTitle",

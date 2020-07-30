@@ -24,6 +24,7 @@ import java.net.URL
 import java.time.temporal.ChronoUnit
 
 import _root_.enumeratum.values.scalacheck._
+import cats.data.NonEmptyList
 import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.api.RefType
 import eu.timepit.refined.auto._
@@ -90,7 +91,7 @@ trait EntitiesGen {
     } yield Question(
       questionId = IdGenerator.uuidGenerator.nextQuestionId(),
       slug = slug,
-      country = country,
+      countries = NonEmptyList.of(country),
       language = language,
       question = question,
       shortTitle = Some(shortTitle),
@@ -288,8 +289,6 @@ trait EntitiesGen {
       tags = tags.toSeq,
       votes = votes,
       organisationIds = organisationIds.toSeq,
-      language = Some(question.language),
-      country = Some(question.country),
       questionId = Some(question.questionId),
       creationContext = RequestContext.empty,
       idea = None,

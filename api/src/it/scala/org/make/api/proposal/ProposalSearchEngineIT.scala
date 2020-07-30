@@ -28,6 +28,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.scaladsl.{Flow, Source => AkkaSource}
+import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
@@ -41,11 +42,11 @@ import org.make.api.technical.elasticsearch.{
 }
 import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.common.indexed.Sort
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
+import org.make.core.idea.IdeaId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.{Country, Language, Locale}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper}
@@ -145,6 +146,8 @@ class ProposalSearchEngineIT
     "slug",
     "title",
     "question",
+    NonEmptyList.of(Country("FR")),
+    Language("fr"),
     None,
     None,
     isOpen = false
@@ -192,7 +195,15 @@ class ProposalSearchEngineIT
     scores = IndexedScores.empty,
     segmentScores = IndexedScores.empty,
     context = Some(
-      IndexedContext(operation = None, location = None, question = None, source = None, getParameters = Seq.empty)
+      IndexedContext(
+        operation = None,
+        location = None,
+        question = None,
+        source = None,
+        country = None,
+        locale = None,
+        getParameters = Seq.empty
+      )
     ),
     author = IndexedAuthor(
       firstName = None,
@@ -210,8 +221,6 @@ class ProposalSearchEngineIT
     selectedStakeTag = None,
     trending = None,
     labels = Seq(),
-    country = Country("FR"),
-    language = Language("fr"),
     status = ProposalStatus.Refused,
     ideaId = None,
     operationId = None,
@@ -234,8 +243,6 @@ class ProposalSearchEngineIT
   private val acceptedProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut que mon/ma député(e) fasse la promotion de la permaculture",
       slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture",
@@ -281,7 +288,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 42, 42, 0, 0, 84, 0),
       segmentScores = IndexedScores(1, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 0),
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -312,8 +327,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("9c468c22-1d1a-474b-9081-d79f1079f5e5"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content = "Il faut qu'il/elle interdise les élevages et cultures intensives",
       slug = "il-faut-qu-il-elle-interdise-les-elevages-et-cultures-intensives",
@@ -359,7 +372,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 54, 21, 0, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -390,8 +411,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("ed8d8b66-579a-48bd-9f61-b7f6cf679e95"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle privilégie les petites exploitations agricoles aux fermes usines",
       slug = "il-faut-qu-il-elle-privilegie-les-petites-exploitations-agricoles-aux-fermes-usines",
@@ -439,7 +458,15 @@ class ProposalSearchEngineIT
       status = ProposalStatus.Accepted,
       ideaId = Some(IdeaId("idea-id-2")),
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -468,8 +495,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("c700b4c0-1b49-4373-a993-23c2437e857a"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("463e2937-42f4-4a18-9555-0a962531a55f"),
       content =
         "Il faut qu'il/elle protège notre agriculture locale et donne les moyens aux agriculteurs de vivre de leur métier de production",
@@ -517,7 +542,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores(0, 0, 0, 0, 0, 0, 16, 16, 0, 0, 0, 0),
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -548,8 +581,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("eac55aab-021e-495e-9664-bea941b8c51c"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "Il faut qu'il/elle favorise l'accès à l'alimentation issue de l'agriculture biologique",
       slug = "il-faut-qu-il-elle-favorise-l-acces-a-l-alimentation-issue-de-l-agriculture-biologique",
@@ -595,7 +626,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -626,8 +665,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("5725e8fc-54a1-4b77-9246-d1de60a245c5"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content =
         "Il faut qu'il/elle dissolve la SAFER et ainsi laisser les petits paysans s'installer, avec des petites exploitations",
@@ -704,8 +741,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("d38244bc-3d39-44a2-bfa9-a30158a297a3"),
-      country = Country("IT"),
-      language = Language("it"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve sostenere e difendere l'agricoltura nel mio dipartimento",
       slug = "c-e-bisogno-lui-lei-deve-sostenere-e-difendere-l-agricoltura-nel-mio-dipartimento",
@@ -780,8 +815,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("ddba011d-5950-4237-bdf1-8bf25473f366"),
-      country = Country("IT"),
-      language = Language("it"),
       userId = UserId("c0cbad58-b143-492d-8895-1b9c5dbe48bb"),
       content = "C'è bisogno lui / lei deve favorire i produttori locali per le mense e i pasti a casa.",
       slug = "c-e-bisogno-lui-lei-deve-favorire-i-produttori-locali-per-le-mense-e-i-pasti-a-casa",
@@ -826,7 +859,17 @@ class ProposalSearchEngineIT
       toEnrich = false,
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
-      context = None,
+      context = Some(
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("IT")),
+          locale = Some(Locale(Language("it"), Country("IT"))),
+          getParameters = Seq.empty
+        )
+      ),
       trending = None,
       labels = Seq(),
       author = IndexedAuthor(
@@ -859,8 +902,6 @@ class ProposalSearchEngineIT
   private val pendingProposals: Seq[IndexedProposal] = Seq(
     IndexedProposal(
       id = ProposalId("7413c8dd-9b17-44be-afc8-fb2898b12773"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content =
         "Il faut qu'il/elle favorise l'agriculture qualitative plut\\u00f4t que l'agriculture intensive (plus de pesticides pour plus de rendements)",
@@ -908,7 +949,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -939,8 +988,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("3bd7ae66-d2b4-42c2-96dd-46dbdb477797"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content =
         "Il faut qu'il/elle vote une loi pour obliger l'industrie pharmaceutique d'investir dans la recherche sur les maladies rares",
@@ -988,7 +1035,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -1019,8 +1074,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("bd44db77-3096-4e3b-b539-a4038307d85e"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("463e2937-42f4-4a18-9555-0a962531a55f"),
       content =
         "Il faut qu'il/elle propose d'interdire aux politiques l'utilisation du big data menant à faire des projets démagogiques",
@@ -1068,7 +1121,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -1099,8 +1160,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("f2153c81-c031-41f0-8b02-c6ed556d62aa"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("ef418fad-2d2c-4f49-9b36-bf9d6f282aa2"),
       content =
         "Il faut qu'il/elle mette en avant la création de lieux de culture et d'échange, avec quelques petites subventions",
@@ -1148,7 +1207,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -1179,8 +1246,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("13b16b9c-9293-4d33-9b82-415264820639"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("463e2937-42f4-4a18-9555-0a962531a55f"),
       content = "Il faut qu'il/elle défende un meilleur accès à la culture et à l'éducation pour tous.",
       slug = "il-faut-qu-il-elle-defende-un-meilleur-acces-a-la-culture-et-a-l-education-pour-tous",
@@ -1226,7 +1291,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -1257,8 +1330,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("b3198ad3-ff48-49f2-842c-2aefc3d0df5d"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut qu'il/elle pratique le mécennat et crée des aides pour les artistes, surtout les jeunes.",
       slug = "il-faut-qu-il-elle-pratique-le-mecennat-et-cree-des-aides-pour-les-artistes-surtout-les-jeunes",
@@ -1304,7 +1375,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -1335,8 +1414,6 @@ class ProposalSearchEngineIT
     ),
     IndexedProposal(
       id = ProposalId("cf940085-010d-46de-8bfd-dee7e8adc8b6"),
-      country = Country("IT"),
-      language = Language("it"),
       userId = UserId("fb600b89-0e04-419a-9f16-4c3311d2c53a"),
       content =
         "C'è bisogno lui / lei deve difendere la Francofonia nel mondo combattendo contro l'egemonia dell'inglese",
@@ -1383,7 +1460,15 @@ class ProposalSearchEngineIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("IT")),
+          locale = Some(Locale(Language("it"), Country("IT"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),
@@ -1479,13 +1564,15 @@ class ProposalSearchEngineIT
 
     Scenario("should return a list of french proposals") {
       whenReady(elasticsearchProposalAPI.searchProposals(queryLanguage), Timeout(3.seconds)) { result =>
-        result.total should be(acceptedProposals.count(_.language == Language("fr")))
+        result.total should be(acceptedProposals.count(_.question.map(_.language).contains(Language("fr"))))
       }
     }
 
     Scenario("should return a list of proposals from Italy") {
       whenReady(elasticsearchProposalAPI.searchProposals(queryCountry), Timeout(3.seconds)) { result =>
-        result.total should be(acceptedProposals.count(_.country == Country("IT")))
+        result.total should be(
+          acceptedProposals.count(_.question.toList.flatMap(_.countries.toList).contains(Country("IT")))
+        )
       }
     }
   }

@@ -176,7 +176,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldNames.country, country.value))
+          Some(ElasticApi.termsQuery(OperationOfQuestionElasticsearchFieldNames.countries, country.value))
         case _ => None
       }
     }

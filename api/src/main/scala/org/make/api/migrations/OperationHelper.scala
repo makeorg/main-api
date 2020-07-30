@@ -19,6 +19,7 @@
 
 package org.make.api.migrations
 
+import cats.data.NonEmptyList
 import org.make.api.MakeApi
 import org.make.api.migrations.CreateOperation.QuestionConfiguration
 import org.make.core.RequestContext
@@ -61,7 +62,7 @@ trait OperationHelper {
       .persist(
         Question(
           questionId = questionId,
-          country = configuration.country,
+          countries = NonEmptyList.of(configuration.country),
           slug = configuration.slug,
           language = configuration.language,
           question = configuration.question,

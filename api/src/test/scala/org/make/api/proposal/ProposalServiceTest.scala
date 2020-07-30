@@ -22,6 +22,7 @@ package org.make.api.proposal
 import java.time.{LocalDate, ZonedDateTime}
 
 import akka.actor.ActorSystem
+import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
 import org.make.api.question.{AuthorRequest, QuestionService, QuestionServiceComponent}
@@ -686,21 +687,7 @@ class ProposalServiceTest
 
       when(tagService.findByTagIds(Seq(tagId)))
         .thenReturn(
-          Future.successful(
-            Seq(
-              Tag(
-                tagId,
-                tagId.value,
-                TagDisplay.Displayed,
-                stake.tagTypeId,
-                0f,
-                None,
-                None,
-                Country("FR"),
-                Language("fr")
-              )
-            )
-          )
+          Future.successful(Seq(Tag(tagId, tagId.value, TagDisplay.Displayed, stake.tagTypeId, 0f, None, None)))
         )
 
       when(elasticsearchProposalAPI.searchProposals(searchQuery(question)))
@@ -917,7 +904,7 @@ class ProposalServiceTest
         Question(
           QuestionId("createInitialProposal"),
           slug = "create-initial-proposal",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "how to create initial proposals?",
           shortTitle = None,
@@ -968,6 +955,7 @@ class ProposalServiceTest
       val result = proposalService.createInitialProposal(
         "my content",
         question,
+        Country("FR"),
         Seq(TagId("my-tag")),
         moderator = moderatorId,
         moderatorRequestContext = RequestContext.empty,
@@ -988,9 +976,7 @@ class ProposalServiceTest
       tagTypeId = TagTypeId("tag-type-id"),
       weight = 1.0f,
       operationId = None,
-      questionId = Some(QuestionId("question-id")),
-      country = Country("FR"),
-      language = Language("fr")
+      questionId = Some(QuestionId("question-id"))
     )
     def proposal(questionId: Option[QuestionId], tags: Seq[TagId]): Proposal = Proposal(
       proposalId = ProposalId("proposal-id"),
@@ -1127,7 +1113,7 @@ class ProposalServiceTest
     val question = Question(
       questionId = QuestionId("question-id"),
       slug = "question",
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       question = "question",
       shortTitle = None,
@@ -1222,39 +1208,9 @@ class ProposalServiceTest
         .thenReturn(
           Future.successful(
             Seq(
-              Tag(
-                TagId("stake-1"),
-                "stake 1",
-                TagDisplay.Inherit,
-                TagTypeId("stake"),
-                50.0f,
-                None,
-                None,
-                Country("FR"),
-                Language("fr")
-              ),
-              Tag(
-                TagId("stake-2"),
-                "stake 2",
-                TagDisplay.Inherit,
-                TagTypeId("stake"),
-                80.0f,
-                None,
-                None,
-                Country("FR"),
-                Language("fr")
-              ),
-              Tag(
-                TagId("solution-1"),
-                "solution 1",
-                TagDisplay.Inherit,
-                TagTypeId("solution-type"),
-                50.0f,
-                None,
-                None,
-                Country("FR"),
-                Language("fr")
-              ),
+              Tag(TagId("stake-1"), "stake 1", TagDisplay.Inherit, TagTypeId("stake"), 50.0f, None, None),
+              Tag(TagId("stake-2"), "stake 2", TagDisplay.Inherit, TagTypeId("stake"), 80.0f, None, None),
+              Tag(TagId("solution-1"), "solution 1", TagDisplay.Inherit, TagTypeId("solution-type"), 50.0f, None, None),
               Tag(
                 TagId("solution-2"),
                 "solution type 2",
@@ -1262,21 +1218,9 @@ class ProposalServiceTest
                 TagTypeId("solution-type"),
                 20.0f,
                 None,
-                None,
-                Country("FR"),
-                Language("fr")
+                None
               ),
-              Tag(
-                TagId("other"),
-                "other",
-                TagDisplay.Inherit,
-                TagTypeId("other"),
-                50.0f,
-                None,
-                None,
-                Country("FR"),
-                Language("fr")
-              )
+              Tag(TagId("other"), "other", TagDisplay.Inherit, TagTypeId("other"), 50.0f, None, None)
             )
           )
         )
@@ -1299,7 +1243,7 @@ class ProposalServiceTest
       val question = Question(
         QuestionId("update-proposal"),
         "update-proposal",
-        Country("FR"),
+        NonEmptyList.of(Country("FR")),
         Language("fr"),
         "how to update a proposal?",
         shortTitle = None,
@@ -1358,7 +1302,7 @@ class ProposalServiceTest
       val question = Question(
         QuestionId("update-proposal"),
         "update-proposal",
-        Country("FR"),
+        NonEmptyList.of(Country("FR")),
         Language("fr"),
         "how to update a proposal?",
         shortTitle = None,
@@ -1420,17 +1364,7 @@ class ProposalServiceTest
         .thenReturn(
           Future.successful(
             Seq(
-              Tag(
-                TagId("solution-1"),
-                "solution 1",
-                TagDisplay.Inherit,
-                TagTypeId("solution-type"),
-                50.0f,
-                None,
-                None,
-                Country("FR"),
-                Language("fr")
-              ),
+              Tag(TagId("solution-1"), "solution 1", TagDisplay.Inherit, TagTypeId("solution-type"), 50.0f, None, None),
               Tag(
                 TagId("solution-2"),
                 "solution type 2",
@@ -1438,21 +1372,9 @@ class ProposalServiceTest
                 TagTypeId("solution-type"),
                 20.0f,
                 None,
-                None,
-                Country("FR"),
-                Language("fr")
+                None
               ),
-              Tag(
-                TagId("other"),
-                "other",
-                TagDisplay.Inherit,
-                TagTypeId("other"),
-                50.0f,
-                None,
-                None,
-                Country("FR"),
-                Language("fr")
-              )
+              Tag(TagId("other"), "other", TagDisplay.Inherit, TagTypeId("other"), 50.0f, None, None)
             )
           )
         )
@@ -1475,7 +1397,7 @@ class ProposalServiceTest
       val question = Question(
         QuestionId("update-proposal"),
         "update-proposal",
-        Country("FR"),
+        NonEmptyList.of(Country("FR")),
         Language("fr"),
         "how to update a proposal?",
         shortTitle = None,
@@ -1526,7 +1448,7 @@ class ProposalServiceTest
     val question = Question(
       questionId = QuestionId("question-id"),
       slug = "question",
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       question = "question",
       shortTitle = None,
@@ -2550,7 +2472,7 @@ class ProposalServiceTest
       slug = "some-question",
       question = "?",
       shortTitle = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = Some(OperationId("who cares?"))
     )
@@ -2597,7 +2519,7 @@ class ProposalServiceTest
       slug = "some-question",
       question = "?",
       shortTitle = None,
-      country = Country("FR"),
+      countries = NonEmptyList.of(Country("FR")),
       language = Language("fr"),
       operationId = Some(OperationId("who cares?"))
     )

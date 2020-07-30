@@ -699,6 +699,14 @@
               "type": "text",
               "index": false
             },
+            "countries": {
+              "type": "keyword",
+              "index": true
+            },
+            "language": {
+              "type": "keyword",
+              "index": true
+            },
             "startDate": {
               "type": "date",
               "format": "date_time",
@@ -1106,6 +1114,14 @@
               "type": "keyword",
               "index": true
             },
+            "country": {
+              "type": "keyword",
+              "index": true
+            },
+            "locale": {
+              "type": "keyword",
+              "index": true
+            },
             "getParameters": {
               "type": "object",
               "properties": {
@@ -1220,14 +1236,6 @@
               "index": false
             }
           }
-        },
-        "country": {
-          "type": "keyword",
-          "index": true
-        },
-        "language": {
-          "type": "keyword",
-          "index": true
         },
         "ideaId": {
           "type": "keyword",

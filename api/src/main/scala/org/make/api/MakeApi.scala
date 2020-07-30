@@ -180,7 +180,6 @@ trait MakeApi
     with DefaultModerationTagTypeApiComponent
     with DefaultMonitoringService
     with DefaultOauthTokenGeneratorComponent
-    with DefaultOperationApiComponent
     with DefaultOperationOfQuestionSearchEngineComponent
     with DefaultOperationOfQuestionServiceComponent
     with DefaultOperationServiceComponent
@@ -377,7 +376,6 @@ trait MakeApi
       classOf[ModerationSequenceApi],
       classOf[ModerationTagApi],
       classOf[ModerationTagTypeApi],
-      classOf[OperationApi],
       classOf[OrganisationApi],
       classOf[PersonalityApi],
       classOf[ProposalApi],
@@ -446,7 +444,6 @@ trait MakeApi
       moderationSequenceApi.routes ~
       moderationTagApi.routes ~
       moderationTagTypeApi.routes ~
-      operationApi.routes ~
       organisationApi.routes ~
       personalityApi.routes ~
       proposalApi.routes ~

@@ -42,7 +42,7 @@ import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
 import org.make.core.proposal.{ProposalId, ProposalStatus, QualificationKey, VoteKey}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.{Country, Language, Locale}
 import org.make.core.user.{UserId, UserType}
 
 import scala.collection.immutable.Seq
@@ -70,8 +70,6 @@ class ElasticSearchHealthCheckActorIT
   val proposal =
     IndexedProposal(
       id = ProposalId("f4b02e75-8670-4bd0-a1aa-6d91c4de968a"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = UserId("1036d603-8f1a-40b7-8a43-82bdcda3caf5"),
       content = "Il faut que mon/ma député(e) fasse la promotion de la permaculture",
       slug = "il-faut-que-mon-ma-depute-fasse-la-promotion-de-la-permaculture",
@@ -117,7 +115,15 @@ class ElasticSearchHealthCheckActorIT
       scores = IndexedScores.empty,
       segmentScores = IndexedScores.empty,
       context = Some(
-        IndexedContext(source = None, operation = None, location = None, question = None, getParameters = Seq.empty)
+        IndexedContext(
+          source = None,
+          operation = None,
+          location = None,
+          question = None,
+          country = Some(Country("FR")),
+          locale = Some(Locale(Language("fr"), Country("FR"))),
+          getParameters = Seq.empty
+        )
       ),
       trending = None,
       labels = Seq(),

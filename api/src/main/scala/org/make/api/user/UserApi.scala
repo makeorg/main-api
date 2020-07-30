@@ -705,7 +705,7 @@ trait DefaultUserApiComponent
                   provideAsync(findClient(maybeAuthorization)) { client =>
                     val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
                     val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
-                    val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+                    val language: Language = request.language.orElse(requestContext.locale.map(_.language)).getOrElse(Language("fr"))
 
                     val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
                       case Some(questionId) => questionService.getQuestion(questionId)
@@ -804,7 +804,8 @@ trait DefaultUserApiComponent
             entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
               Validation.validate(userRegistrationValidator.requirements(request): _*)
               val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
-              val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+              val language: Language =
+                request.language.orElse(requestContext.locale.map(_.language)).getOrElse(Language("fr"))
 
               val futureMaybeQuestion: Future[Option[Question]] = request.questionId match {
                 case Some(questionId) => questionService.getQuestion(questionId)

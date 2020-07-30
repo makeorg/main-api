@@ -105,7 +105,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       sqls.toAndConditionOpt(
         slug.map(slug              => sqls.eq(operationAlias.slug, slug)),
         operationKinds.map(opKinds => sqls.in(operationAlias.operationKind, opKinds)),
-        country.map(country        => sqls.eq(questionAlias.country, country.value)),
+        country.map(country        => sqls.like(questionAlias.countries, s"%${country.value}%")),
         openAt.map(
           openAt =>
             sqls

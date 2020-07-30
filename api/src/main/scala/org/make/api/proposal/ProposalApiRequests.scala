@@ -27,11 +27,11 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.MakeRandom
 import org.make.core.Validation._
 import org.make.core.common.indexed.SortRequest
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, LabelId, Language}
+import org.make.core.reference.{Country, LabelId, Language, Locale}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
@@ -256,7 +256,7 @@ final case class SearchRequest(
       sort = sort.map(_.toSort),
       limit = limit,
       skip = skip,
-      language = requestContext.language,
+      language = requestContext.locale.map(_.language),
       sortAlgorithm = searchSortAlgorithm
     )
   }
@@ -315,7 +315,7 @@ final case class ExhaustiveSearchRequest(
       sort = sort.map(_.toSort),
       limit = limit,
       skip = skip,
-      language = requestContext.language
+      language = requestContext.locale.map(_.language)
     )
   }
 }
@@ -370,10 +370,6 @@ final case class PatchProposalRequest(
   creationContext: Option[PatchRequestContext] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operation: Option[OperationId] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Option[Country] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Option[Language] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId] = None
 )
@@ -394,7 +390,7 @@ final case class PatchRequestContext(
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Option[Language] = None,
+  locale: Option[Locale] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   operation: Option[OperationId] = None,
   source: Option[String] = None,

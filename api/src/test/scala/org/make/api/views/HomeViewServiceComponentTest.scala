@@ -22,6 +22,7 @@ package org.make.api.views
 import java.time.ZonedDateTime
 import java.util.UUID
 
+import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.operation._
 import org.make.api.post.{PostService, PostServiceComponent}
@@ -69,7 +70,7 @@ class HomeViewServiceComponentTest
     questionId = QuestionId("default"),
     slug = "question1",
     language = Language("fr"),
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     question = "question default ?",
     shortTitle = None,
     operationId = Some(defaultOperation.operationId)
@@ -89,7 +90,7 @@ class HomeViewServiceComponentTest
     consultationImageAlt = None,
     descriptionImage = None,
     descriptionImageAlt = None,
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     operationKind = "",
     aboutUrl = Some("http://about"),

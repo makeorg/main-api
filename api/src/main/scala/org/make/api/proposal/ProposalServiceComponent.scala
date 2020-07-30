@@ -58,6 +58,7 @@ import org.make.core.{CirceFormatters, DateHelper, RequestContext}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.api.technical.crm.QuestionResolver
+import org.make.core.reference.Country
 import org.make.core.session.SessionId
 
 trait ProposalServiceComponent {
@@ -215,6 +216,7 @@ trait ProposalService {
   def createInitialProposal(
     content: String,
     question: Question,
+    country: Country,
     tags: Seq[TagId],
     author: AuthorRequest,
     moderator: UserId,
@@ -266,6 +268,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     override def createInitialProposal(
       content: String,
       question: Question,
+      country: Country,
       tags: Seq[TagId],
       author: AuthorRequest,
       moderator: UserId,
@@ -273,7 +276,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[ProposalId] = {
 
       for {
-        user       <- userService.retrieveOrCreateVirtualUser(author, question.country, question.language)
+        user       <- userService.retrieveOrCreateVirtualUser(author, country, question.language)
         proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question, initialProposal = true)
         _ <- validateProposal(
           proposalId = proposalId,
@@ -615,8 +618,6 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                 idea = proposal.idea,
                 ideaProposals = Seq.empty,
                 operationId = proposal.operation,
-                language = proposal.language,
-                country = proposal.country,
                 questionId = proposal.questionId
               )
             )

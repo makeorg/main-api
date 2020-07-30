@@ -47,7 +47,7 @@ import org.make.core.Validation.validateField
 import org.make.core.auth.UserRights
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.reference.Country
+import org.make.core.reference.{Country, Locale}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
@@ -351,7 +351,7 @@ trait MakeDirectives
       maybeQuestion        <- optionalNonEmptyHeaderValueByName(`X-Make-Question`.name)
       maybeCountry         <- optionalNonEmptyHeaderValueByName(`X-Make-Country`.name)
       maybeDetectedCountry <- optionalNonEmptyHeaderValueByName(`X-Detected-Country`.name)
-      maybeLanguage        <- optionalNonEmptyHeaderValueByName(`X-Make-Language`.name)
+      maybeLocale          <- optionalNonEmptyHeaderValueByName(`X-Make-Locale`.name)
       maybeHostName        <- optionalNonEmptyHeaderValueByName(`X-Hostname`.name)
       maybeGetParameters   <- optionalNonEmptyHeaderValueByName(`X-Get-Parameters`.name)
       maybeQuestionId      <- optionalNonEmptyHeaderValueByName(`X-Make-Question-Id`.name)
@@ -371,7 +371,7 @@ trait MakeDirectives
         source = maybeSource,
         location = maybeLocation,
         question = maybeQuestion,
-        language = maybeLanguage.map(reference.Language(_)),
+        locale = maybeLocale.flatMap(value => Locale.parse(value).toOption),
         country = maybeCountry.map(Country(_)),
         detectedCountry = maybeDetectedCountry.map(Country(_)),
         hostname = maybeHostName,
@@ -714,15 +714,15 @@ object `X-Make-Question` extends ModeledCustomHeaderCompanion[`X-Make-Question`]
   override def parse(value: String): Try[`X-Make-Question`] = Success(new `X-Make-Question`(value))
 }
 
-final case class `X-Make-Language`(override val value: String) extends ModeledCustomHeader[`X-Make-Language`] {
-  override def companion: ModeledCustomHeaderCompanion[`X-Make-Language`] = `X-Make-Language`
+final case class `X-Make-Locale`(override val value: String) extends ModeledCustomHeader[`X-Make-Locale`] {
+  override def companion: ModeledCustomHeaderCompanion[`X-Make-Locale`] = `X-Make-Locale`
   override def renderInRequests: Boolean = true
   override def renderInResponses: Boolean = false
 }
 
-object `X-Make-Language` extends ModeledCustomHeaderCompanion[`X-Make-Language`] {
-  override val name: String = "x-make-language"
-  override def parse(value: String): Try[`X-Make-Language`] = Success(new `X-Make-Language`(value))
+object `X-Make-Locale` extends ModeledCustomHeaderCompanion[`X-Make-Locale`] {
+  override val name: String = "x-make-locale"
+  override def parse(value: String): Try[`X-Make-Locale`] = Success(new `X-Make-Locale`(value))
 }
 
 final case class `X-Make-Country`(override val value: String) extends ModeledCustomHeader[`X-Make-Country`] {

@@ -19,6 +19,7 @@
 
 package org.make.api.question
 
+import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
@@ -37,7 +38,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question = Question(
         questionId = QuestionId("some-question-id"),
         slug = "some-question",
-        country = Country("FR"),
+        countries = NonEmptyList.of(Country("FR")),
         language = Language("fr"),
         question = "some question",
         shortTitle = None,
@@ -66,7 +67,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question1 = Question(
         questionId = QuestionId("some-question-id-1"),
         slug = "some-aa-question",
-        country = Country("AA"),
+        countries = NonEmptyList.of(Country("AA")),
         language = Language("aa"),
         question = "some question1",
         shortTitle = None,
@@ -76,7 +77,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question2 = Question(
         questionId = QuestionId("some-question-id-2"),
         slug = "some-aa-question-2",
-        country = Country("AA"),
+        countries = NonEmptyList.of(Country("AA")),
         language = Language("bb"),
         question = "some question2",
         shortTitle = None,
@@ -86,7 +87,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question3 = Question(
         questionId = QuestionId("some-question-id-3"),
         slug = "some-bb-question",
-        country = Country("BB"),
+        countries = NonEmptyList.of(Country("BB")),
         language = Language("aa"),
         question = "some question3",
         shortTitle = None,
@@ -96,7 +97,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question4 = Question(
         questionId = QuestionId("some-question-id-4"),
         slug = "some-bb-question-2",
-        country = Country("BB"),
+        countries = NonEmptyList.of(Country("BB")),
         language = Language("bb"),
         question = "some question4",
         shortTitle = None,
@@ -174,7 +175,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question1 = Question(
         questionId = QuestionId("some-new-question-id-1"),
         slug = "some-new-aa-question",
-        country = Country("AA"),
+        countries = NonEmptyList.of(Country("AA")),
         language = Language("aa"),
         question = "some question",
         shortTitle = None,
@@ -184,7 +185,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question2 = Question(
         questionId = QuestionId("some-new-question-id-2"),
         slug = "some-new-aa-question",
-        country = Country("AA"),
+        countries = NonEmptyList.of(Country("AA")),
         language = Language("bb"),
         question = "some question",
         shortTitle = None,
@@ -220,7 +221,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question1 = Question(
         questionId = QuestionId("question-slugorid-id-1"),
         slug = "question-slugorid-slug-1",
-        country = Country("AA"),
+        countries = NonEmptyList.of(Country("AA")),
         language = Language("aa"),
         question = "some question 1",
         shortTitle = None,
@@ -229,7 +230,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val question2 = Question(
         questionId = QuestionId("question-slugorid-id-2"),
         slug = "question-slugorid-slug-2",
-        country = Country("AA"),
+        countries = NonEmptyList.of(Country("AA")),
         language = Language("bb"),
         question = "some question 2",
         shortTitle = None,
@@ -266,7 +267,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       val questionToUpdate = Question(
         questionId = QuestionId("some-new-question-to-update"),
         slug = "some-new-question-to-update",
-        country = Country("FR"),
+        countries = NonEmptyList.of(Country("FR")),
         language = Language("fr"),
         question = "some question ?",
         shortTitle = None,
@@ -288,7 +289,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         persistentQuestionService.modify(
           questionToUpdate.copy(
             slug = "question-updated",
-            country = Country("GB"),
+            countries = NonEmptyList.of(Country("GB")),
             language = Language("en"),
             question = "new question ?",
             shortTitle = Some("new short title")
@@ -298,7 +299,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
       ) { question =>
         question.questionId should be(QuestionId("some-new-question-to-update"))
         question.slug should be("question-updated")
-        question.country should be(Country("GB"))
+        question.countries should be(NonEmptyList.of(Country("GB")))
         question.language should be(Language("en"))
         question.question should be("new question ?")
         question.shortTitle should be(Some("new short title"))

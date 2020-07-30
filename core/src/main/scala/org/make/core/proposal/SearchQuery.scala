@@ -30,11 +30,11 @@ import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 import org.make.core.Validation.{validate, validateField}
 import org.make.core.common.indexed.{Sort => IndexedSort}
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal.indexed.{ProposalElasticsearchFieldNames, SequencePool}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{LabelId, Language}
+import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 
@@ -481,7 +481,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.language match {
         case Some(LanguageSearchFilter(language)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.language, language.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionLanguage, language.value))
         case _ => None
       }
     }
@@ -491,7 +491,7 @@ object SearchFilters extends ElasticDsl {
     filters.flatMap {
       _.country match {
         case Some(CountrySearchFilter(country)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.country, country.value))
+          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.questionCountries, country.value))
         case _ => None
       }
     }
@@ -657,6 +657,8 @@ final case class Limit(value: Int)
 
 final case class Skip(value: Int)
 
+final case class CountrySearchFilter(country: Country)
+final case class LanguageSearchFilter(language: Language)
 final case class MinVotesCountSearchFilter(minVotesCount: Int)
 final case class ToEnrichSearchFilter(toEnrich: Boolean)
 final case class MinScoreSearchFilter(minScore: Float)

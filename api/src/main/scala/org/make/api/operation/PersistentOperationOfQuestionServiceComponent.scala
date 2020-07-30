@@ -32,7 +32,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion
 import org.make.api.operation.DefaultPersistentOperationOfQuestionServiceComponent.PersistentOperationOfQuestion.resultsLinkBinders
 import org.make.api.operation.DefaultPersistentOperationServiceComponent.PersistentOperation
-import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
+import org.make.api.question.DefaultPersistentQuestionServiceComponent.{COUNTRY_SEPARATOR, PersistentQuestion}
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
@@ -438,7 +438,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
 
     final case class FlatQuestionWithDetails(
       questionId: String,
-      country: String,
+      countries: String,
       language: String,
       question: String,
       shortTitle: Option[String],
@@ -488,7 +488,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         QuestionWithDetails(
           question = Question(
             questionId = QuestionId(questionId),
-            country = Country(country),
+            countries = NonEmptyList.fromListUnsafe(countries.split(COUNTRY_SEPARATOR).map(Country.apply).toList),
             language = Language(language),
             slug = slug,
             question = question,
@@ -551,7 +551,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
     )(resultSet: WrappedResultSet): Option[FlatQuestionWithDetails] = {
 
       for {
-        country           <- resultSet.stringOpt(questionAlias.country)
+        countries         <- resultSet.stringOpt(questionAlias.countries)
         language          <- resultSet.stringOpt(questionAlias.language)
         questionId        <- resultSet.stringOpt(operationOfQuestionAlias.questionId)
         questionSlug      <- resultSet.stringOpt(questionAlias.slug)
@@ -561,7 +561,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
         operationTitle    <- resultSet.stringOpt(operationOfQuestionAlias.operationTitle)
       } yield FlatQuestionWithDetails(
         questionId = questionId,
-        country = country,
+        countries = countries,
         language = language,
         question = question,
         shortTitle = resultSet.stringOpt(questionAlias.shortTitle),

@@ -24,7 +24,9 @@ import java.util.UUID
 
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import enumeratum.values.{StringEnum, StringEnumEntry}
+import org.make.core.reference.{Country, Language, Locale}
 import spray.json._
+import spray.json.lenses.JsonLenses._
 
 trait SprayJsonFormatters {
 
@@ -85,6 +87,9 @@ trait SprayJsonFormatters {
 
       override def write(a: A): JsValue = JsString(a.value)
     }
+
+  def buildLocale(context: Option[JsObject]): Option[Locale] =
+    context.flatMap(rq => rq.extract[Language]("language".?).map(Locale(_, rq.extract[Country]("country"))))
 
 }
 

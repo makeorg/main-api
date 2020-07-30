@@ -20,7 +20,7 @@
 package org.make.api.operation
 import java.time.ZonedDateTime
 
-import cats.data.OptionT
+import cats.data.{NonEmptyList, OptionT}
 import cats.implicits._
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
@@ -83,7 +83,7 @@ final case class CreateOperationOfQuestion(
   endDate: Option[ZonedDateTime],
   operationTitle: String,
   slug: String,
-  country: Country,
+  countries: NonEmptyList[Country],
   language: Language,
   question: String,
   shortTitle: Option[String],
@@ -209,7 +209,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       val question = Question(
         questionId = questionId,
         slug = parameters.slug,
-        country = parameters.country,
+        countries = parameters.countries,
         language = parameters.language,
         question = parameters.question,
         shortTitle = parameters.shortTitle,
