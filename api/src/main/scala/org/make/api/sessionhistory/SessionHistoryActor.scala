@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
+import akka.remote.Ack
 import akka.util.Timeout
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.sessionhistory.SessionHistoryActor._
@@ -239,6 +240,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
         log.warning("Session {} has moved from user {} to user {}", persistenceId, userId.value, newUserId.value)
         context.become(closed(newUserId))
       }
+      sender() ! Ack
     case SessionHistoryEnvelope(_, command: TransferableToUser[_]) =>
       userHistoryCoordinator.forward(UserHistoryEnvelope(userId, command.toUserHistoryEvent(userId)))
     case RequestSessionVotedProposals(_, proposalsIds) =>
@@ -256,7 +258,9 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case LockProposalForVote(_, proposalId) => acquireLockForVotesIfPossible(proposalId)
     case LockProposalForQualification(_, proposalId, qualification) =>
       acquireLockForQualificationIfPossible(proposalId, qualification)
-    case ReleaseProposalForVote(_, proposalId) => locks -= proposalId
+    case ReleaseProposalForVote(_, proposalId) =>
+      locks -= proposalId
+      sender() ! LockReleased
     case ReleaseProposalForQualification(_, proposalId, qualification) =>
       releaseLockForQualification(proposalId, qualification)
   }
@@ -299,6 +303,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
   def expired(newSessionId: SessionId): Receive = {
     case GetCurrentSession(_, _) => sender() ! CurrentSessionId(newSessionId)
     case _: SessionRelatedEvent  => sender() ! SessionIsExpired(newSessionId)
+    case Snapshot                => saveSnapshot()
   }
 
   private def retrieveVotedProposals(proposalsIds: Option[Seq[ProposalId]], limit: Int, skip: Int): Unit = {
