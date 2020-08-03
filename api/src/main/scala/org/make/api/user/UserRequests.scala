@@ -41,7 +41,6 @@ import org.make.core.Validation.{
   validateAge,
   validateEmail,
   validateField,
-  validateLegalConsent,
   validateOptional,
   validateOptionalUserInput,
   validatePostalCode,
@@ -173,12 +172,18 @@ object ProfileRequest extends CirceFormatters {
   }
 }
 
+trait UserProfileRequestValidation {
+  val dateOfBirth: Option[LocalDate]
+  val legalMinorConsent: Option[Boolean]
+  val legalAdvisorApproval: Option[Boolean]
+}
+
 case class RegisterUserRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,
   @(ApiModelProperty @field)(dataType = "string", example = "p4ssw0rd")
   password: String,
-  @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: LocalDate,
+  @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: Option[LocalDate],
   firstName: Option[String],
   lastName: Option[String],
   profession: Option[String],
@@ -201,7 +206,7 @@ case class RegisterUserRequest(
   ],
   @(ApiModelProperty @field)(dataType = "boolean") legalMinorConsent: Option[Boolean],
   @(ApiModelProperty @field)(dataType = "boolean") legalAdvisorApproval: Option[Boolean]
-) {
+) extends UserProfileRequestValidation {
 
   validate(
     mandatoryField("firstName", firstName),
@@ -221,15 +226,48 @@ case class RegisterUserRequest(
     validateOptionalUserInput("postalCode", postalCode, None),
     mandatoryField("language", language),
     mandatoryField("country", country),
-    validateAge("dateOfBirth", Some(dateOfBirth)),
-    validateLegalConsent("legalMinorConsent", dateOfBirth, legalMinorConsent),
-    validateLegalConsent("legalAdvisorApproval", dateOfBirth, legalAdvisorApproval)
+    validateAge("dateOfBirth", dateOfBirth)
   )
   validateOptional(postalCode.map(value => validatePostalCode("postalCode", value, None)))
 }
 
 object RegisterUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
+}
+
+case class UserProfileRequest(
+  firstName: String,
+  lastName: Option[String],
+  dateOfBirth: Option[LocalDate],
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/logo.jpg")
+  avatarUrl: Option[String Refined Url],
+  profession: Option[String],
+  description: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "12345") postalCode: Option[String],
+  optInNewsletter: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
+  website: Option[String Refined Url],
+  @(ApiModelProperty @field)(dataType = "boolean") legalMinorConsent: Option[Boolean],
+  @(ApiModelProperty @field)(dataType = "boolean") legalAdvisorApproval: Option[Boolean]
+) extends UserProfileRequestValidation {
+  private val maxDescriptionLength = 450
+
+  validateOptional(
+    Some(requireNonEmpty("firstName", firstName, Some("firstName should not be an empty string"))),
+    Some(validateUserInput("firstName", firstName, None)),
+    lastName.map(value => requireNonEmpty("lastName", value, Some("lastName should not be an empty string"))),
+    Some(validateOptionalUserInput("lastName", lastName, None)),
+    Some(validateOptionalUserInput("profession", profession, None)),
+    description.map(value => maxLength("description", maxDescriptionLength, value)),
+    Some(validateOptionalUserInput("description", description, None)),
+    postalCode.map(value => validatePostalCode("postalCode", value, None)),
+    Some(validateAge("dateOfBirth", dateOfBirth))
+  )
+}
+
+object UserProfileRequest {
+  implicit val encoder: Encoder[UserProfileRequest] = deriveEncoder[UserProfileRequest]
+  implicit val decoder: Decoder[UserProfileRequest] = deriveDecoder[UserProfileRequest]
 }
 
 case class UpdateUserRequest(

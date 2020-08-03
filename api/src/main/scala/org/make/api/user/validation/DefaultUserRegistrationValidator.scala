@@ -21,13 +21,15 @@ package org.make.api.user.validation
 
 import com.typesafe.config.{Config, ConfigObject}
 import org.make.api.ActorSystemComponent
-import org.make.api.user.UserRegisterData
+import org.make.api.user.{UserProfileRequestValidation, UserRegisterData}
+import org.make.core.Requirement
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait UserRegistrationValidator {
   def canRegister(userData: UserRegisterData): Future[Boolean]
+  def requirements(request: UserProfileRequestValidation): Seq[Requirement]
 }
 
 trait UserRegistrationValidatorComponent {
@@ -38,14 +40,14 @@ trait DefaultUserRegistrationValidatorComponent extends UserRegistrationValidato
   self: ActorSystemComponent =>
 
   override lazy val userRegistrationValidator: UserRegistrationValidator = new DefaultUserRegistrationValidator(
-    actorSystem.settings.config
+    actorSystem.settings.config.getConfig("make-api.user-validation")
   )
 }
 
 class DefaultUserRegistrationValidator(configuration: Config) extends UserRegistrationValidator {
 
   private val validatorsConfiguration: ConfigObject =
-    configuration.getConfig("make-api.email-validation").getObject("validators")
+    configuration.getObject("email.validators")
 
   private var validators: Seq[EmailValidation] = Seq.empty
 
@@ -72,4 +74,15 @@ class DefaultUserRegistrationValidator(configuration: Config) extends UserRegist
       .traverse(validators) { _.canRegister(userData) }
       .map(_.exists(identity))
   }
+
+  lazy val requirementsConfiguration: Seq[UserRequirement] =
+    configuration.getString("requirements").split(",").toSeq.flatMap {
+      case AgeIsRequired.value => Some(AgeIsRequired)
+      case LegalConsent.value  => Some(LegalConsent)
+      case ""                  => None
+    }
+
+  override def requirements(request: UserProfileRequestValidation): Seq[Requirement] =
+    requirementsConfiguration.flatMap(_.requirement(request))
+
 }

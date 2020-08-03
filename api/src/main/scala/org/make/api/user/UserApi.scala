@@ -37,6 +37,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.storage._
 import org.make.api.user.social.SocialServiceComponent
+import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
 import org.make.core._
 import org.make.core.auth.{ClientId, UserRights}
@@ -586,7 +587,8 @@ trait DefaultUserApiComponent
     with ReadJournalComponent
     with ActorSystemComponent
     with StorageServiceComponent
-    with StorageConfigurationComponent =>
+    with StorageConfigurationComponent
+    with UserRegistrationValidatorComponent =>
 
   override lazy val userApi: UserApi = new DefaultUserApi
 
@@ -784,6 +786,7 @@ trait DefaultUserApiComponent
         makeOperation("RegisterUser", EndpointType.Public) { requestContext =>
           decodeRequest {
             entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
+              Validation.validate(userRegistrationValidator.requirements(request): _*)
               val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
               val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
 
@@ -802,7 +805,7 @@ trait DefaultUserApiComponent
                         lastName = request.lastName,
                         password = Some(request.password),
                         lastIp = requestContext.ipAddress,
-                        dateOfBirth = Some(request.dateOfBirth),
+                        dateOfBirth = request.dateOfBirth,
                         profession = request.profession,
                         postalCode = request.postalCode,
                         country = country,
@@ -1301,6 +1304,7 @@ trait DefaultUserApiComponent
               authorize(user.user.userId == userId) {
                 decodeRequest {
                   entity(as[UserProfileRequest]) { entity =>
+                    Validation.validate(userRegistrationValidator.requirements(entity): _*)
                     provideAsyncOrNotFound(userService.getUser(userId)) { user =>
                       val modifiedProfile = user.profile
                         .orElse(Profile.parseProfile())
