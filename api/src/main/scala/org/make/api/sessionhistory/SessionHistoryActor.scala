@@ -23,7 +23,6 @@ import java.time.ZonedDateTime
 
 import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
-import akka.remote.Ack
 import akka.util.Timeout
 import org.make.api.extensions.MakeSettingsExtension
 import org.make.api.sessionhistory.SessionHistoryActor._
@@ -459,4 +458,6 @@ object SessionHistoryActor {
       with VotesValues
 
   final case class CurrentSessionId(sessionId: SessionId) extends SessionHistoryActorProtocol
+
+  case object Ack extends SessionHistoryActorProtocol
 }
