@@ -107,7 +107,7 @@ trait CrmApi extends Directives {
   @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(
-        name = "list",
+        name = "crmList",
         paramType = "path",
         dataType = "string",
         example = "optIn",
