@@ -397,7 +397,6 @@ trait DefaultAdminUserApiComponent
 
     val moderatorId: PathMatcher1[UserId] = Segment.map(UserId.apply)
     val userId: PathMatcher1[UserId] = Segment.map(UserId.apply)
-    val userType: PathMatcher1[UserType] = Segment.map(UserType.apply)
 
     override def getUsers: Route = get {
       path("admin" / "users") {
@@ -740,7 +739,7 @@ trait DefaultAdminUserApiComponent
 
     override def adminUploadAvatar: Route = {
       post {
-        path("admin" / "users" / "upload-avatar" / userType) { userType =>
+        path("admin" / "users" / "upload-avatar" / UserType) { userType =>
           makeOperation("AdminUserUploadAvatar") { _ =>
             makeOAuth2 { userAuth =>
               requireAdminRole(userAuth.user) {
