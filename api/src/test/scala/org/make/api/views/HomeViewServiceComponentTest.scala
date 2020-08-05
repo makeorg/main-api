@@ -25,26 +25,17 @@ import java.util.UUID
 import org.make.api.MakeUnitTest
 import org.make.api.operation._
 import org.make.api.post.{PostService, PostServiceComponent}
-import org.make.api.proposal._
-import org.make.api.question.{
-  QuestionOfOperationResponse,
-  QuestionService,
-  QuestionServiceComponent,
-  SearchQuestionRequest
-}
+import org.make.api.question.QuestionOfOperationResponse
 import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.views.HomePageViewResponse.Highlights
-import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
-import org.make.core.operation.{StatusSearchFilter => OOQStatusSearchFilter, _}
+import org.make.core.operation._
 import org.make.core.post.PostId
 import org.make.core.post.indexed._
-import org.make.core.proposal._
-import org.make.core.proposal.indexed.{IndexedAuthor, IndexedProposal, IndexedScores, SequencePool}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, UserId, UserType}
-import org.make.core.{operation, DateHelper, RequestContext}
+import org.make.core.DateHelper
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -53,26 +44,10 @@ import scala.concurrent.duration.DurationInt
 class HomeViewServiceComponentTest
     extends MakeUnitTest
     with DefaultHomeViewServiceComponent
-    with QuestionServiceComponent
     with OperationOfQuestionSearchEngineComponent
-    with OperationOfQuestionServiceComponent
-    with OperationServiceComponent
-    with ProposalServiceComponent
-    with ProposalSearchEngineComponent
-    with CurrentOperationServiceComponent
-    with FeaturedOperationServiceComponent
-    with SortAlgorithmConfigurationComponent
     with UserServiceComponent
     with PostServiceComponent {
 
-  override val questionService: QuestionService = mock[QuestionService]
-  override val operationOfQuestionService: OperationOfQuestionService = mock[OperationOfQuestionService]
-  override val operationService: OperationService = mock[OperationService]
-  override val proposalService: ProposalService = mock[ProposalService]
-  override val elasticsearchProposalAPI: ProposalSearchEngine = mock[ProposalSearchEngine]
-  override val currentOperationService: CurrentOperationService = mock[CurrentOperationService]
-  override val featuredOperationService: FeaturedOperationService = mock[FeaturedOperationService]
-  override val sortAlgorithmConfiguration: SortAlgorithmConfiguration = mock[SortAlgorithmConfiguration]
   override val elasticsearchOperationOfQuestionAPI: OperationOfQuestionSearchEngine =
     mock[OperationOfQuestionSearchEngine]
   override val userService: UserService = mock[UserService]
@@ -247,224 +222,6 @@ class HomeViewServiceComponentTest
   )
 
   Feature("home view") {
-    Scenario("get home view data") {
-
-      val requestContext: RequestContext =
-        RequestContext.empty.copy(language = Some(Language("fr")), country = Some(Country("FR")))
-      def indexedProposal(id: ProposalId): IndexedProposal = {
-        IndexedProposal(
-          id = id,
-          userId = UserId(s"user-${id.value}"),
-          content = s"proposal with id ${id.value}",
-          slug = s"proposal-with-id-${id.value}",
-          status = ProposalStatus.Pending,
-          createdAt = DateHelper.now(),
-          updatedAt = None,
-          votes = Seq.empty,
-          votesCount = 0,
-          votesVerifiedCount = 0,
-          votesSequenceCount = 0,
-          votesSegmentCount = 0,
-          toEnrich = false,
-          scores = IndexedScores.empty,
-          segmentScores = IndexedScores.empty,
-          context = None,
-          trending = None,
-          labels = Seq.empty,
-          author = IndexedAuthor(
-            firstName = Some(id.value),
-            displayName = Some(id.value),
-            organisationName = None,
-            organisationSlug = None,
-            postalCode = None,
-            age = None,
-            avatarUrl = None,
-            anonymousParticipation = false,
-            userType = UserType.UserTypeUser
-          ),
-          organisations = Seq.empty,
-          country = Country("FR"),
-          language = Language("fr"),
-          tags = Seq.empty,
-          selectedStakeTag = None,
-          ideaId = None,
-          operationId = None,
-          question = None,
-          sequencePool = SequencePool.New,
-          sequenceSegmentPool = SequencePool.New,
-          initialProposal = false,
-          refusalReason = None,
-          operationKind = None,
-          segment = None
-        )
-      }
-
-      when(sortAlgorithmConfiguration.popularVoteCountThreshold).thenReturn(200)
-      when(sortAlgorithmConfiguration.controversyThreshold).thenReturn(0.1d)
-      when(sortAlgorithmConfiguration.controversyVoteCountThreshold).thenReturn(100)
-
-      when(operationService.findSimple())
-        .thenReturn(Future.successful(operations))
-
-      when(
-        questionService.searchQuestion(
-          eqTo(
-            SearchQuestionRequest(maybeQuestionIds = Some(questions.map(_.questionId)), limit = Some(questions.length))
-          )
-        )
-      ).thenReturn(Future.successful(questions))
-
-      when(
-        operationOfQuestionService
-          .search(searchQuery = OperationOfQuestionSearchQuery(
-            limit = Some(10000),
-            sort = Some("startDate"),
-            order = Some("desc"),
-            filters = Some(
-              OperationOfQuestionSearchFilters(
-                language = Option(operation.LanguageSearchFilter(Language("fr"))),
-                country = Some(operation.CountrySearchFilter(Country("FR")))
-              )
-            )
-          )
-          )
-      ).thenReturn(Future.successful(operationOfQuestions))
-
-      when(
-        elasticsearchProposalAPI.countProposalsByQuestion(
-          eqTo(Some(questions.map(_.questionId))),
-          eqTo(Some(ProposalStatus.values)),
-          eqTo(None)
-        )
-      ).thenReturn(
-        Future.successful(
-          Map(
-            question1.questionId -> 2L,
-            question2.questionId -> 5L,
-            question3.questionId -> 20L,
-            question4.questionId -> 50L
-          )
-        )
-      )
-      val searchQueryPopular = SearchQuery(
-        limit = Some(2),
-        sortAlgorithm = Some(PopularAlgorithm(200)),
-        filters = Some(
-          SearchFilters(
-            language = Some(LanguageSearchFilter(Language("fr"))),
-            country = Some(CountrySearchFilter(Country("FR"))),
-            question = Some(QuestionSearchFilter(Seq(QuestionId("question2"), QuestionId("question3"))))
-          )
-        )
-      )
-      val searchQueryControverse = searchQueryPopular.copy(sortAlgorithm = Some(ControversyAlgorithm(0.1d, 100)))
-      when(proposalService.searchForUser(eqTo(Some(userId)), eqTo(searchQueryPopular), eqTo(requestContext)))
-        .thenReturn(
-          Future.successful(
-            ProposalsResultSeededResponse(
-              0,
-              Seq(
-                ProposalResponse(
-                  indexedProposal = indexedProposal(ProposalId("proposal1")),
-                  myProposal = false,
-                  voteAndQualifications = None,
-                  proposalKey = "pr0p0541k3y"
-                )
-              ),
-              None
-            )
-          )
-        )
-      when(proposalService.searchForUser(eqTo(Some(userId)), eqTo(searchQueryControverse), eqTo(requestContext)))
-        .thenReturn(
-          Future.successful(
-            ProposalsResultSeededResponse(
-              0,
-              Seq(
-                ProposalResponse(
-                  indexedProposal = indexedProposal(ProposalId("proposal2")),
-                  myProposal = false,
-                  voteAndQualifications = None,
-                  proposalKey = "pr0p0541k3y"
-                )
-              ),
-              None
-            )
-          )
-        )
-
-      when(currentOperationService.getAll)
-        .thenReturn(
-          Future.successful(
-            Seq(
-              CurrentOperation(
-                currentOperationId = CurrentOperationId("current1"),
-                questionId = question5.questionId,
-                label = "current 1 label",
-                description = "description current 1",
-                picture = "http://picture-current-1",
-                altPicture = "alt picture current 1",
-                linkLabel = "link label current 1",
-                internalLink = None,
-                externalLink = None
-              )
-            )
-          )
-        )
-
-      when(featuredOperationService.getAll)
-        .thenReturn(
-          Future.successful(
-            Seq(
-              FeaturedOperation(
-                featuredOperationId = FeaturedOperationId("featured1"),
-                questionId = Some(question4.questionId),
-                title = "featured 1 title",
-                description = Some("featured 1 description"),
-                landscapePicture = "http://featured1-landscape-picture",
-                portraitPicture = "http://featured1-portrait-picture",
-                altPicture = "featured1 alt picture",
-                label = "featured 1 label",
-                buttonLabel = "featured 1 button label",
-                internalLink = None,
-                externalLink = None,
-                slot = 1
-              )
-            )
-          )
-        )
-
-      val futureHomeViewResponse: Future[HomeViewResponse] =
-        homeViewService.getHomeViewResponse(Language("fr"), Country("FR"), Some(userId), requestContext)
-      whenReady(futureHomeViewResponse, Timeout(3.seconds)) { homeViewResponse =>
-        homeViewResponse.businessConsultations.length shouldBe 1
-        homeViewResponse.businessConsultations.head.aboutUrl shouldBe Some("http://about")
-        homeViewResponse.businessConsultations.head.endDate shouldBe Some(now.plusDays(10))
-        homeViewResponse.businessConsultations.head.startDate shouldBe Some(now.minusDays(20))
-        homeViewResponse.businessConsultations.head.endDate shouldBe Some(now.plusDays(10))
-        homeViewResponse.businessConsultations.head.question shouldBe "question 1 ?"
-        homeViewResponse.businessConsultations.head.slug shouldBe Some("question1")
-        homeViewResponse.businessConsultations.head.theme shouldBe BusinessConsultationThemeResponse(
-          "#000000",
-          "#000000"
-        )
-        homeViewResponse.currentConsultations.length shouldBe 1
-        homeViewResponse.currentConsultations.head.description shouldBe "description current 1"
-        homeViewResponse.currentConsultations.head.questionId.get shouldBe question5.questionId
-        homeViewResponse.currentConsultations.head.startDate shouldBe Some(now.plusDays(5))
-        homeViewResponse.currentConsultations.head.questionSlug.get shouldBe "question5"
-        homeViewResponse.featuredConsultations.length shouldBe 1
-        homeViewResponse.featuredConsultations.head.label shouldBe "featured 1 label"
-        homeViewResponse.featuredConsultations.head.questionSlug shouldBe Some("question4")
-        homeViewResponse.featuredConsultations.head.slot shouldBe 1
-
-        homeViewResponse.popularProposals.length shouldBe 1
-        homeViewResponse.popularProposals.head.id shouldBe ProposalId("proposal1")
-        homeViewResponse.controverseProposals.length shouldBe 1
-        homeViewResponse.controverseProposals.head.id shouldBe ProposalId("proposal2")
-      }
-    }
-
     Scenario("home-page view") {
 
       when(
@@ -513,7 +270,7 @@ class HomeViewServiceComponentTest
               (arg: OperationOfQuestionSearchQuery) =>
                 arg match {
                   case OperationOfQuestionSearchQuery(
-                      Some(OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(OOQStatusSearchFilter(_)))),
+                      Some(OperationOfQuestionSearchFilters(_, _, _, _, _, _, _, _, _, Some(StatusSearchFilter(_)))),
                       _,
                       _,
                       _,

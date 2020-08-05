@@ -119,9 +119,7 @@ trait MakeApi
     with DefaultAdminActiveFeatureApiComponent
     with DefaultAdminClientApiComponent
     with DefaultAdminCrmTemplatesApiComponent
-    with DefaultAdminCurrentOperationApiComponent
     with DefaultAdminFeatureApiComponent
-    with DefaultAdminFeaturedOperationApiComponent
     with DefaultAdminIdeaMappingApiComponent
     with DefaultAdminOperationOfQuestionApiComponent
     with DefaultAdminPartnerApiComponent
@@ -131,7 +129,6 @@ trait MakeApi
     with DefaultAdminQuestionPersonalityApiComponent
     with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
-    with DefaultAdminViewApiComponent
     with DefaultPostSearchEngineComponent
     with DefaultPostServiceComponent
     with DefaultAuthenticationApiComponent
@@ -141,14 +138,12 @@ trait MakeApi
     with DefaultCrmClientComponent
     with DefaultCrmServiceComponent
     with DefaultCrmTemplatesServiceComponent
-    with DefaultCurrentOperationServiceComponent
     with DefaultDownloadServiceComponent
     with DefaultElasticSearchApiComponent
     with DefaultElasticsearchClientComponent
     with DefaultElasticsearchConfigurationComponent
     with DefaultEventBusServiceComponent
     with DefaultFacebookApiComponent
-    with DefaultFeaturedOperationServiceComponent
     with DefaultFeatureServiceComponent
     with DefaultFixturesApiComponent
     with DefaultFixturesServiceComponent
@@ -193,8 +188,6 @@ trait MakeApi
     with DefaultPersistentClientServiceComponent
     with DefaultPersistentCrmTemplatesServiceComponent
     with DefaultPersistentCrmUserServiceComponent
-    with DefaultPersistentCurrentOperationServiceComponent
-    with DefaultPersistentFeaturedOperationServiceComponent
     with DefaultPersistentFeatureServiceComponent
     with DefaultPersistentIdeaMappingServiceComponent
     with DefaultPersistentIdeaServiceComponent
@@ -350,9 +343,7 @@ trait MakeApi
       classOf[AdminActiveFeatureApi],
       classOf[AdminClientApi],
       classOf[AdminCrmTemplateApi],
-      classOf[AdminCurrentOperationApi],
       classOf[AdminFeatureApi],
-      classOf[AdminFeaturedOperationApi],
       classOf[AdminIdeaMappingApi],
       classOf[AdminOperationOfQuestionApi],
       classOf[AdminPartnerApi],
@@ -362,7 +353,6 @@ trait MakeApi
       classOf[AdminProposalApi],
       classOf[AdminTopIdeaApi],
       classOf[AdminUserApi],
-      classOf[AdminViewApi],
       classOf[AuthenticationApi],
       classOf[ConfigurationsApi],
       classOf[CrmApi],
@@ -422,9 +412,7 @@ trait MakeApi
       adminActiveFeatureApi.routes ~
       adminClientApi.routes ~
       adminCrmTemplateApi.routes ~
-      adminCurrentOperationApi.routes ~
       adminFeatureApi.routes ~
-      adminFeaturedOperationApi.routes ~
       adminIdeaMappingApi.routes ~
       adminOperationOfQuestionApi.routes ~
       adminPartnerApi.routes ~
@@ -434,7 +422,6 @@ trait MakeApi
       adminQuestionPersonalityApi.routes ~
       adminTopIdeaApi.routes ~
       adminUserApi.routes ~
-      adminViewApi.routes ~
       authenticationApi.routes ~
       configurationsApi.routes ~
       crmApi.routes ~

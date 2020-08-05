@@ -27,10 +27,8 @@ import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.operation._
 import org.make.api.organisation.{OrganisationServiceComponent, OrganisationsSearchResultResponse}
-import org.make.api.proposal.{ProposalSearchEngineComponent, ProposalServiceComponent}
-import org.make.api.question.QuestionServiceComponent
+import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.idea.{CountrySearchFilter, LanguageSearchFilter}
@@ -46,13 +44,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @Api(value = "Home view")
 @Path(value = "/views")
 trait ViewApi extends Directives {
-
-  @ApiOperation(value = "get-home-view", httpMethod = "GET", code = HttpCodes.OK)
-  @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[HomeViewResponse]))
-  )
-  @Path(value = "/home")
-  def homeView: Route
 
   @ApiOperation(value = "get-home-page-view", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -84,7 +75,7 @@ trait ViewApi extends Directives {
   @Path(value = "/search")
   def searchView: Route
 
-  def routes: Route = homeView ~ homePageView ~ searchView
+  def routes: Route = homePageView ~ searchView
 }
 
 trait ViewApiComponent {
@@ -96,17 +87,11 @@ trait DefaultViewApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors
     with StrictLogging {
-  this: MakeDataHandlerComponent
-    with SessionHistoryCoordinatorServiceComponent
+  this: SessionHistoryCoordinatorServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with QuestionServiceComponent
-    with FeaturedOperationServiceComponent
-    with CurrentOperationServiceComponent
     with ProposalServiceComponent
     with OperationOfQuestionServiceComponent
-    with OperationServiceComponent
-    with ProposalSearchEngineComponent
     with HomeViewServiceComponent
     with OrganisationServiceComponent =>
 
@@ -114,44 +99,8 @@ trait DefaultViewApiComponent
 
   class DefaultViewApi extends ViewApi {
 
-    private val defaultCountry = Country("FR")
-    private val defaultLanguage = Language("fr")
-
     private val country: PathMatcher1[Country] = Segment.map(Country.apply)
     private val language: PathMatcher1[Language] = Segment.map(Language.apply)
-
-    override def homeView: Route = {
-      get {
-        path("views" / "home") {
-          makeOperation("GetHomeView") { requestContext =>
-            optionalMakeOAuth2 { auth: Option[AuthInfo[UserRights]] =>
-              val country: Country = requestContext.country match {
-                case Some(requestCountry) => requestCountry
-                case _ =>
-                  logger.warn("No country present in request context: render home view with default country")
-                  defaultCountry
-              }
-              val language: Language = requestContext.language match {
-                case Some(requestLanguage) => requestLanguage
-                case _ =>
-                  logger.warn("No language found in request context: render home view with default language")
-                  defaultLanguage
-              }
-              provideAsync(
-                homeViewService.getHomeViewResponse(
-                  language = language,
-                  country = country,
-                  userId = auth.map(_.user.userId),
-                  requestContext = requestContext
-                )
-              ) { homeResponse =>
-                complete(homeResponse)
-              }
-            }
-          }
-        }
-      }
-    }
 
     override def homePageView: Route = {
       get {

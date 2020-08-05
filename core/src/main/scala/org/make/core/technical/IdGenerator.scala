@@ -27,7 +27,7 @@ import org.make.core.crmTemplate.CrmTemplatesId
 import org.make.core.feature.{ActiveFeatureId, FeatureId}
 import org.make.core.idea.{IdeaId, TopIdeaCommentId, TopIdeaId}
 import org.make.core.job.Job.JobId
-import org.make.core.operation.{CurrentOperationId, FeaturedOperationId, OperationId}
+import org.make.core.operation.OperationId
 import org.make.core.partner.PartnerId
 import org.make.core.personality.{PersonalityId, PersonalityRoleFieldId, PersonalityRoleId}
 import org.make.core.proposal.ProposalId
@@ -40,8 +40,6 @@ import org.make.core.user.UserId
 trait IdGenerator {
   def nextClientId(): ClientId = ClientId(nextId())
   def nextCrmTemplatesId(): CrmTemplatesId = CrmTemplatesId(nextId())
-  def nextCurrentOperationId(): CurrentOperationId = CurrentOperationId(nextId())
-  def nextFeaturedOperationId(): FeaturedOperationId = FeaturedOperationId(nextId())
   def nextFeatureId(): FeatureId = FeatureId(nextId())
   def nextActiveFeatureId(): ActiveFeatureId = ActiveFeatureId(nextId())
   def nextIdeaId(): IdeaId = IdeaId(nextId())
