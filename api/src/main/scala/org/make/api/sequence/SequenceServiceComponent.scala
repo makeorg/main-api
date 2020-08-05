@@ -315,16 +315,14 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
 
       (maybeUserId, requestContext.sessionId) match {
         case (Some(userId), _) =>
-          Future.successful(
-            userHistoryCoordinatorService.logHistory(
-              LogUserStartSequenceEvent(
-                userId,
-                requestContext,
-                UserAction(
-                  date = DateHelper.now(),
-                  actionType = LogUserStartSequenceEvent.action,
-                  arguments = StartSequenceParameters(None, questionId, None, includedProposals)
-                )
+          userHistoryCoordinatorService.logTransactionalHistory(
+            LogUserStartSequenceEvent(
+              userId,
+              requestContext,
+              UserAction(
+                date = DateHelper.now(),
+                actionType = LogUserStartSequenceEvent.action,
+                arguments = StartSequenceParameters(None, questionId, None, includedProposals)
               )
             )
           )

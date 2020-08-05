@@ -214,7 +214,7 @@ final case class LogUserSearchProposalsEvent(
   userId: UserId,
   requestContext: RequestContext,
   action: UserAction[UserSearchParameters]
-) extends UserHistoryEvent[UserSearchParameters] {
+) extends TransactionalUserHistoryEvent[UserSearchParameters] {
   override val protagonist: Protagonist = Citizen
 }
 
@@ -469,7 +469,7 @@ final case class LogUserStartSequenceEvent(
   userId: UserId,
   requestContext: RequestContext,
   action: UserAction[StartSequenceParameters]
-) extends UserHistoryEvent[StartSequenceParameters] {
+) extends TransactionalUserHistoryEvent[StartSequenceParameters] {
   override val protagonist: Protagonist = Citizen
 }
 
