@@ -588,12 +588,13 @@ class AdminUserApiTest
     }
 
     Scenario("admin user") {
+      when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
+      when(userService.anonymize(eqTo(newModerator), eqTo(adminId), any[RequestContext]))
+        .thenReturn(Future.successful({}))
+      when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
       Delete(s"/admin/users/${moderatorId.value}")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
-        when(userService.getUser(moderatorId)).thenReturn(Future.successful(Some(newModerator)))
-        when(userService.anonymize(newModerator, adminId, RequestContext.empty))
-          .thenReturn(Future.successful({}))
-        when(oauth2DataHandler.removeTokenByUserId(moderatorId)).thenReturn(Future.successful(1))
+        status should be(StatusCodes.OK)
       }
     }
   }
@@ -907,20 +908,20 @@ class AdminUserApiTest
     val maxUploadFileSize = 4242L
     when(storageConfiguration.maxFileSize).thenReturn(maxUploadFileSize)
     Scenario("unauthorized not connected") {
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}") ~> routes ~> check {
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
 
     Scenario("forbidden citizen") {
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}")
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}")
         .withHeaders(Authorization(OAuth2BearerToken(tokenCitizen))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
     }
 
     Scenario("forbidden moderator") {
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}")
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
         status should be(StatusCodes.Forbidden)
       }
@@ -933,15 +934,17 @@ class AdminUserApiTest
       )
       )
 
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", request)
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}", request)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
 
     Scenario("storage unavailable") {
-      when(storageService.uploadFile(eqTo(FileType.Operation), any[String], any[String], any[FileContent]))
-        .thenReturn(Future.failed(new Exception("swift client error")))
+      when(
+        storageService
+          .uploadAdminUserAvatar(any[String], any[String], any[FileContent], eqTo(UserType.UserTypePersonality))
+      ).thenReturn(Future.failed(new Exception("swift client error")))
       val request: Multipart =
         Multipart.FormData(
           Multipart.FormData.BodyPart
@@ -952,7 +955,7 @@ class AdminUserApiTest
             )
         )
 
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", request)
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypePersonality.value}", request)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.InternalServerError)
       }
@@ -971,15 +974,19 @@ class AdminUserApiTest
           )
       )
 
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(maxUploadFileSize.toInt + 1))
-        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
+      Post(
+        s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}",
+        entityOfSize(maxUploadFileSize.toInt + 1)
+      ).withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.PayloadTooLarge)
       }
     }
 
     Scenario("file successfully uploaded") {
-      when(storageService.uploadAdminUserAvatar(any[String], any[String], any[FileContent], any[UserType]))
-        .thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
+      when(
+        storageService
+          .uploadAdminUserAvatar(any[String], any[String], any[FileContent], eqTo(UserType.UserTypeOrganisation))
+      ).thenReturn(Future.successful("path/to/uploaded/image.jpeg"))
 
       def entityOfSize(size: Int): Multipart = Multipart.FormData(
         Multipart.FormData.BodyPart
@@ -990,7 +997,7 @@ class AdminUserApiTest
           )
       )
 
-      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation}", entityOfSize(10))
+      Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}", entityOfSize(10))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.OK)
 
