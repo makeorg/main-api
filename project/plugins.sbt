@@ -17,14 +17,14 @@
  *
  */
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager"    % "1.3.22")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager"    % "1.7.4")
 addSbtPlugin("com.eed3si9n"     % "sbt-buildinfo"          % "0.9.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git"                % "1.0.0")
-addSbtPlugin("io.kamon"         % "sbt-kanela-runner"      % "2.0.3")
+addSbtPlugin("io.kamon"         % "sbt-kanela-runner"      % "2.0.6")
 addSbtPlugin("org.scalastyle"   %% "scalastyle-sbt-plugin" % "1.0.0")
-addSbtPlugin("org.scalameta"    % "sbt-scalafmt"           % "2.3.4")
+addSbtPlugin("org.scalameta"    % "sbt-scalafmt"           % "2.4.2")
 addSbtPlugin("org.scoverage"    % "sbt-scoverage"          % "1.6.1")
-addSbtPlugin("com.codacy"       % "sbt-codacy-coverage"    % "2.3")
+addSbtPlugin("com.codacy"       % "sbt-codacy-coverage"    % "3.0.3")
 addSbtPlugin("org.make"         % "git-hooks-plugin"       % "1.0.5")
 addSbtPlugin("org.make"         % "sbt-swift-plugin"       % "1.0.4")
 
