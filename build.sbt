@@ -44,6 +44,7 @@ lazy val commonSettings = Seq(
       Nil
     }
   },
+  kanelaVersion := Dependencies.kanelaVersion,
   libraryDependencies ++= Seq(
     Dependencies.logger,
     Dependencies.loggerBridge,
@@ -146,5 +147,3 @@ swiftContainerDirectory := {
 swiftReportsToSendPath := {
   (Compile / crossTarget).value / "scoverage-report"
 }
-
-ThisBuild / kanelaVersion := Dependencies.kanelaVersion
