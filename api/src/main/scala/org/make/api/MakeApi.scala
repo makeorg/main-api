@@ -24,6 +24,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.util.Timeout
 import buildinfo.BuildInfo
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.DecodingFailures
@@ -96,7 +97,12 @@ import org.make.api.technical.tracking.{DefaultTrackingApiComponent, TrackingApi
 import org.make.api.technical.webflow.{DefaultWebflowClientComponent, DefaultWebflowConfigurationComponent}
 import org.make.api.user.UserExceptions.{EmailAlreadyRegisteredException, EmailNotAllowed}
 import org.make.api.user._
-import org.make.api.user.social.{DefaultFacebookApiComponent, DefaultGoogleApiComponent, DefaultSocialServiceComponent}
+import org.make.api.user.social.{
+  DefaultFacebookApiComponent,
+  DefaultGoogleApiComponent,
+  DefaultSocialProvidersConfigurationComponent,
+  DefaultSocialServiceComponent
+}
 import org.make.api.user.validation.DefaultUserRegistrationValidatorComponent
 import org.make.api.userhistory.{
   DefaultUserHistoryCoordinatorServiceComponent,
@@ -129,10 +135,9 @@ trait MakeApi
     with DefaultAdminQuestionPersonalityApiComponent
     with DefaultAdminTopIdeaApiComponent
     with DefaultAdminUserApiComponent
-    with DefaultPostSearchEngineComponent
-    with DefaultPostServiceComponent
     with DefaultAuthenticationApiComponent
     with DefaultClientServiceComponent
+    with DefaultConfigComponent
     with DefaultConfigurationsApiComponent
     with DefaultCrmApiComponent
     with DefaultCrmClientComponent
@@ -206,6 +211,8 @@ trait MakeApi
     with DefaultPersistentTopIdeaCommentServiceComponent
     with DefaultPersistentUserServiceComponent
     with DefaultPersistentUserToAnonymizeServiceComponent
+    with DefaultPostSearchEngineComponent
+    with DefaultPostServiceComponent
     with DefaultQuestionPersonalityServiceComponent
     with DefaultPersonalityApiComponent
     with DefaultPersonalityRoleServiceComponent
@@ -228,6 +235,7 @@ trait MakeApi
     with DefaultSequenceConfigurationComponent
     with DefaultSequenceServiceComponent
     with DefaultSessionHistoryCoordinatorServiceComponent
+    with DefaultSocialProvidersConfigurationComponent
     with DefaultSocialServiceComponent
     with DefaultSortAlgorithmConfigurationComponent
     with DefaultStorageConfigurationComponent
@@ -524,4 +532,14 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
 
 trait ActorSystemComponent {
   implicit def actorSystem: ActorSystem
+}
+
+trait ConfigComponent {
+  def config: Config
+}
+
+trait DefaultConfigComponent extends ConfigComponent {
+  self: ActorSystemComponent =>
+
+  override def config: Config = actorSystem.settings.config
 }

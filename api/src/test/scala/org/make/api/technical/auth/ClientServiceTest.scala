@@ -20,6 +20,7 @@
 package org.make.api.technical.auth
 
 import org.make.api.MakeUnitTest
+import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.auth.{Client, ClientId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -31,9 +32,11 @@ class ClientServiceTest
     extends MakeUnitTest
     with DefaultClientServiceComponent
     with PersistentClientServiceComponent
-    with DefaultIdGeneratorComponent {
+    with DefaultIdGeneratorComponent
+    with MakeSettingsComponent {
 
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
+  override val makeSettings: MakeSettings = mock[MakeSettings]
 
   Feature("get client") {
     Scenario("get client from ClientId") {

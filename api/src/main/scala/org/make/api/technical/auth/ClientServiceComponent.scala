@@ -19,7 +19,10 @@
 
 package org.make.api.technical.auth
 
+import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.IdGeneratorComponent
+import org.make.api.technical.auth.ClientService.ClientInformation
+import org.make.core.{ValidationError, ValidationFailedError}
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.user.{CustomRole, UserId}
 
@@ -55,10 +58,15 @@ trait ClientService {
     tokenExpirationSeconds: Int
   ): Future[Option[Client]]
   def count(name: Option[String]): Future[Int]
+  def getClientOrDefault(clientInformation: Option[ClientInformation]): Future[Client]
+}
+
+object ClientService {
+  final case class ClientInformation(clientId: ClientId, clientSecret: String)
 }
 
 trait DefaultClientServiceComponent extends ClientServiceComponent {
-  this: PersistentClientServiceComponent with IdGeneratorComponent =>
+  this: PersistentClientServiceComponent with IdGeneratorComponent with MakeSettingsComponent =>
 
   override lazy val clientService: ClientService = new DefaultClientService
 
@@ -129,6 +137,45 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
 
     override def count(name: Option[String]): Future[Int] = {
       persistentClientService.count(name = name)
+    }
+
+    override def getClientOrDefault(clientInformation: Option[ClientInformation]): Future[Client] = {
+      clientInformation match {
+        case Some(ClientInformation(clientId, clientSecret)) =>
+          def failure[T]: Future[T] = {
+            Future.failed(
+              ValidationFailedError(
+                Seq(
+                  ValidationError(
+                    "client",
+                    "not_found",
+                    Some(s"Client $clientId doesn't exist or provided secret doesn't match")
+                  )
+                )
+              )
+            )
+          }
+          getClient(clientId).flatMap {
+            case Some(client) if client.secret.contains(clientSecret) => Future.successful(client)
+            case _                                                    => failure
+          }
+        case _ =>
+          getClient(ClientId(makeSettings.Authentication.defaultClientId)).flatMap {
+            case Some(client) => Future.successful(client)
+            case None =>
+              Future.failed(
+                ValidationFailedError(
+                  Seq(
+                    ValidationError(
+                      "client",
+                      "not_found",
+                      Some(s"Default Client doesn't exist, check your data integrity")
+                    )
+                  )
+                )
+              )
+          }
+      }
     }
   }
 }

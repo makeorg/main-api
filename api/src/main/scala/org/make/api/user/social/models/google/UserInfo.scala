@@ -19,7 +19,14 @@
 
 package org.make.api.user.social.models.google
 
+import java.net.URL
+import java.time.LocalDate
+
 import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
+import org.make.api.user.social.models
+import org.make.core.CirceFormatters
+import org.make.core.reference.{Country, Language}
 
 final case class UserInfo(
   azp: Option[String],
@@ -47,6 +54,19 @@ final case class UserInfo(
       case pic                      => s"$pic-s512"
     }
   }
+
+  def toUserInfo(country: Country, language: Language): models.UserInfo = {
+    models.UserInfo(
+      email = email,
+      firstName = givenName,
+      country = country,
+      language = language,
+      googleId = iat,
+      picture = pictureUrl,
+      domain = hd,
+      dateOfBirth = None
+    )
+  }
 }
 
 object UserInfo {
@@ -73,4 +93,88 @@ object UserInfo {
       "alg",
       "kid"
     )(UserInfo.apply)
+}
+
+final case class MetadataSource(`type`: String, id: String)
+
+object MetadataSource {
+  implicit val decoder: Decoder[MetadataSource] = deriveDecoder
+}
+
+final case class ItemMetadata(primary: Option[Boolean], verified: Option[Boolean], source: MetadataSource) {
+  def isPrimary: Boolean = primary.exists(identity)
+}
+
+object ItemMetadata {
+  implicit val decoder: Decoder[ItemMetadata] = deriveDecoder
+}
+
+final case class PeopleName(
+  metadata: ItemMetadata,
+  displayName: String,
+  familyName: String,
+  givenName: String,
+  displayNameLastFirst: String,
+  unstructuredName: String
+)
+
+object PeopleName {
+  implicit val decoder: Decoder[PeopleName] = deriveDecoder
+}
+
+final case class PeoplePhoto(metadata: ItemMetadata, url: URL)
+
+object PeoplePhoto extends CirceFormatters {
+  implicit val decoder: Decoder[PeoplePhoto] = deriveDecoder
+}
+
+final case class PeopleEmailAddress(metadata: ItemMetadata, value: String)
+
+object PeopleEmailAddress {
+  implicit val decoder: Decoder[PeopleEmailAddress] = deriveDecoder
+}
+
+final case class GoogleDate(year: Int, month: Int, day: Int) {
+  def toLocalDate: LocalDate = {
+    LocalDate.of(year, month, day)
+  }
+}
+
+object GoogleDate {
+  implicit val decoder: Decoder[GoogleDate] = deriveDecoder
+}
+
+final case class Birthday(metadata: ItemMetadata, text: Option[String], date: GoogleDate)
+
+object Birthday {
+  implicit val decoder: Decoder[Birthday] = deriveDecoder
+}
+
+final case class PeopleInfo(
+  resourceName: String,
+  etag: String,
+  names: Seq[PeopleName],
+  photos: Seq[PeoplePhoto],
+  emailAddresses: Seq[PeopleEmailAddress],
+  birthdays: Option[Seq[Birthday]] // make it optional until all the fronts use the right scopes
+) {
+  def toUserInfo(country: Country, language: Language): models.UserInfo = {
+    val maybeEmail = emailAddresses.find(_.metadata.isPrimary).map(_.value)
+    models.UserInfo(
+      email = maybeEmail,
+      firstName = names.find(_.metadata.isPrimary).map(_.givenName),
+      country = country,
+      language = language,
+      gender = None,
+      googleId = Some(resourceName.split("/").last),
+      facebookId = None,
+      picture = photos.find(_.metadata.isPrimary).map(_.url.toString),
+      domain = maybeEmail.map(_.split("@").last),
+      dateOfBirth = birthdays.flatMap(_.find(_.metadata.isPrimary).map(_.date.toLocalDate))
+    )
+  }
+}
+
+object PeopleInfo {
+  implicit val decoder: Decoder[PeopleInfo] = deriveDecoder
 }

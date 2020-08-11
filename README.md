@@ -118,7 +118,7 @@ _Use with care, it will not be on the CI server, so everything must work even wi
 Some parts of the configuration contain sensitive pieces of information and are defined
 in the secrets of the API. The following explains how to define these informations locally.  
 
-In order to send mails via Mailjet or pull data from Webflow, create
+In order to send mails via Mailjet, pull data from Webflow or use the google social connect, create
 the file `/etc/make/make-api.conf` with the following content:
 
 ```hocon
@@ -141,6 +141,13 @@ make-api {
   webflow {
     token = "webflow-token"
     token = ${?WEBFLOW_TOKEN}
+  }
+
+  social-providers {
+    google {
+      api-key = "put here your google api key with access to the people API"
+      client-id = "put here your google client id to use the api connect form"
+    }
   }
 }
 ```

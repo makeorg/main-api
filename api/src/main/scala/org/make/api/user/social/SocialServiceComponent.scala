@@ -21,9 +21,10 @@ package org.make.api.user.social
 
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.technical.auth.{ClientServiceComponent, MakeDataHandlerComponent}
-import org.make.api.user.{SocialLoginResponse, UserServiceComponent}
+import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.user.SocialProvider.{Facebook, Google, GooglePeople}
 import org.make.api.user.social.models.UserInfo
+import org.make.api.user.{SocialLoginResponse, SocialProvider, UserServiceComponent}
 import org.make.core.RequestContext
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.question.QuestionId
@@ -41,72 +42,39 @@ trait SocialServiceComponent extends GoogleApiComponent with FacebookApiComponen
 trait SocialService {
 
   def login(
-    provider: String,
+    provider: SocialProvider,
     token: String,
     country: Country,
     language: Language,
     clientIp: Option[String],
     questionId: Option[QuestionId],
     requestContext: RequestContext,
-    clientId: ClientId
+    validatedClientId: ClientId
   ): Future[(UserId, SocialLoginResponse)]
 }
 
 trait DefaultSocialServiceComponent extends SocialServiceComponent {
-  self: UserServiceComponent with MakeDataHandlerComponent with ClientServiceComponent with StrictLogging =>
+  self: UserServiceComponent with MakeDataHandlerComponent with StrictLogging =>
 
   override lazy val socialService: SocialService = new DefaultSocialService
 
   class DefaultSocialService extends SocialService {
 
-    private val GOOGLE_PROVIDER = "google"
-    private val FACEBOOK_PROVIDER = "facebook"
-
     def login(
-      provider: String,
+      provider: SocialProvider,
       token: String,
       country: Country,
       language: Language,
       clientIp: Option[String],
       questionId: Option[QuestionId],
       requestContext: RequestContext,
-      clientId: ClientId
+      validatedClientId: ClientId
     ): Future[(UserId, SocialLoginResponse)] = {
 
       val futureUserInfo: Future[UserInfo] = provider match {
-        case GOOGLE_PROVIDER =>
-          for {
-            googleUserInfo <- googleApi.getUserInfo(token)
-          } yield UserInfo(
-            email = googleUserInfo.email,
-            firstName = googleUserInfo.givenName,
-            country = country.value,
-            language = language.value,
-            googleId = googleUserInfo.iat,
-            picture = googleUserInfo.pictureUrl,
-            domain = googleUserInfo.hd
-          )
-        case FACEBOOK_PROVIDER =>
-          for {
-            facebookUserInfo <- facebookApi.getUserInfo(token)
-          } yield UserInfo(
-            email = facebookUserInfo.email,
-            firstName = facebookUserInfo.firstName,
-            country = country.value,
-            language = language.value,
-            facebookId = Some(facebookUserInfo.id),
-            picture = Option(facebookUserInfo.pictureUrl)
-          )
-        case _ => Future.failed(new Exception(s"Social login failed: undefined provider $provider"))
-      }
-
-      def futureClient(userId: UserId): Future[Option[ClientId]] = {
-        clientService.getClient(clientId).map {
-          case Some(foundClient) => Some(foundClient.clientId)
-          case None =>
-            logger.warn(s"Social login with an invalid client: $clientId. No client is defined for user $userId.")
-            None
-        }
+        case Google       => googleApi.getUserInfo(token).map(_.toUserInfo(country, language))
+        case GooglePeople => googleApi.peopleInfo(token).map(_.toUserInfo(country, language))
+        case Facebook     => facebookApi.getUserInfo(token).map(_.toUserInfo(country, language))
       }
 
       for {
@@ -117,10 +85,9 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
           questionId,
           requestContext
         )
-        client <- futureClient(user.userId)
         accessToken <- oauth2DataHandler.createAccessToken(authInfo = AuthInfo(
           user = UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified),
-          clientId = client.map(_.value),
+          clientId = Some(validatedClientId.value),
           scope = None,
           redirectUri = None
         )
