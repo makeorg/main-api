@@ -44,7 +44,7 @@ object Dependencies {
 
   val nettyEpoll: ModuleID = ("io.netty" % "netty-transport-native-epoll" % nettyVersion).classifier("linux-x86_64")
   val nettyEpollMac: ModuleID =
-    ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("macos-x86_64")
+    ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("osx-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
   val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"         % circeVersion
