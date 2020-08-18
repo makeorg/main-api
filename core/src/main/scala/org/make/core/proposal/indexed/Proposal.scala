@@ -26,7 +26,6 @@ import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
-import org.make.core.{CirceFormatters, RequestContext}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
@@ -34,6 +33,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
+import org.make.core.{CirceFormatters, RequestContext}
 
 import scala.annotation.meta.field
 

@@ -23,24 +23,22 @@ import java.time.ZonedDateTime
 
 import com.sksamuel.avro4s.AvroSortPriority
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.generic.semiauto._
+import io.circe.{Decoder, Encoder, Json}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
+import org.make.core.proposal.ProposalStatus.Accepted
 import org.make.core.question.QuestionId
 import org.make.core.reference.{LabelId, ThemeId}
-import org.make.core.tag.TagId
+import org.make.core.tag.{TagId, TagType, TagTypeId}
 import org.make.core.user.UserId
 import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
 
 import scala.annotation.meta.field
-import org.make.core.tag.TagType
-import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.tag.TagTypeId
 
 final case class Proposal(
   proposalId: ProposalId,
@@ -96,7 +94,6 @@ object ProposalId {
       JsString(obj.value)
     }
   }
-
 }
 
 final case class OrganisationInfo(organisationId: UserId, organisationName: Option[String])

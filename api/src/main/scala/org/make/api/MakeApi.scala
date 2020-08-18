@@ -88,6 +88,15 @@ import org.make.api.technical.generator.fixtures.{
   DefaultFixturesServiceComponent,
   FixturesApi
 }
+import org.make.api.technical.graphql.{
+  DefaultGraphQLApiComponent,
+  DefaultGraphQLAuthorServiceComponent,
+  DefaultGraphQLIdeaServiceComponent,
+  DefaultGraphQLOrganisationServiceComponent,
+  DefaultGraphQLQuestionServiceComponent,
+  DefaultGraphQLRuntimeComponent,
+  DefaultGraphQLTagServiceComponent
+}
 import org.make.api.technical.healthcheck._
 import org.make.api.technical.job._
 import org.make.api.technical.monitoring.DefaultMonitoringService
@@ -153,8 +162,14 @@ trait MakeApi
     with DefaultFixturesApiComponent
     with DefaultFixturesServiceComponent
     with DefaultGoogleApiComponent
+    with DefaultGraphQLApiComponent
+    with DefaultGraphQLRuntimeComponent
+    with DefaultGraphQLAuthorServiceComponent
+    with DefaultGraphQLIdeaServiceComponent
+    with DefaultGraphQLOrganisationServiceComponent
+    with DefaultGraphQLQuestionServiceComponent
+    with DefaultGraphQLTagServiceComponent
     with DefaultHomeViewServiceComponent
-    with DefaultViewApiComponent
     with DefaultHealthCheckApiComponent
     with DefaultHealthCheckServiceComponent
     with DefaultIdGeneratorComponent
@@ -252,6 +267,7 @@ trait MakeApi
     with DefaultUserRegistrationValidatorComponent
     with DefaultUserServiceComponent
     with DefaultUserTokenGeneratorComponent
+    with DefaultViewApiComponent
     with DefaultWidgetApiComponent
     with DefaultWebflowClientComponent
     with DefaultWebflowConfigurationComponent
@@ -414,7 +430,6 @@ trait MakeApi
       optionsAuthorized ~
       buildRoutes ~
       envDependantRoutes ~
-
       adminActiveFeatureApi.routes ~
       adminClientApi.routes ~
       adminCrmTemplateApi.routes ~
@@ -432,6 +447,7 @@ trait MakeApi
       configurationsApi.routes ~
       crmApi.routes ~
       elasticSearchApi.routes ~
+      graphQLApi.routes ~
       healthCheckApi.routes ~
       jobApi.routes ~
       migrationApi.routes ~
