@@ -21,6 +21,7 @@ package org.make.api.personality
 
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
+import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -35,7 +36,7 @@ trait PersonalityRoleService extends ShortenedNames {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     roleIds: Option[Seq[PersonalityRoleId]],
     name: Option[String]
   ): Future[Seq[PersonalityRole]]
@@ -83,7 +84,7 @@ trait DefaultPersonalityRoleServiceComponent extends PersonalityRoleServiceCompo
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       roleIds: Option[Seq[PersonalityRoleId]],
       name: Option[String]
     ): Future[Seq[PersonalityRole]] = {

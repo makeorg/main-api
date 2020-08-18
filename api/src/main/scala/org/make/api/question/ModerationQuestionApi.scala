@@ -319,7 +319,7 @@ trait DefaultModerationQuestionComponent
               "_start".as[Int].?,
               "_end".as[Int].?,
               "_sort".?,
-              "_order".?
+              "_order".as[Order].?
             )
           ) { (maybeSlug, operationId, country, language, start, end, sort, order) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>

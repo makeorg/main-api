@@ -28,6 +28,7 @@ import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.question.QuestionId
+import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -43,7 +44,7 @@ trait PersistentTopIdeaService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     ideaId: Option[IdeaId],
     questionIds: Option[Seq[QuestionId]],
     name: Option[String]
@@ -94,7 +95,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       ideaId: Option[IdeaId],
       questionIds: Option[Seq[QuestionId]],
       name: Option[String]

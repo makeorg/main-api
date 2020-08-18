@@ -46,7 +46,7 @@ import org.make.core.proposal._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{user, BusinessConfig, DateHelper, RequestContext}
+import org.make.core.{user, BusinessConfig, DateHelper, Order, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -62,7 +62,7 @@ trait OrganisationService extends ShortenedNames {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     organisationName: Option[String]
   ): Future[Seq[User]]
   def count(organisationName: Option[String]): Future[Int]
@@ -148,7 +148,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       organisationName: Option[String]
     ): Future[Seq[User]] = {
       persistentUserService.findOrganisations(start, end, sort, order, organisationName)

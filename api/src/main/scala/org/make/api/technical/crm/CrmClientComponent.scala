@@ -38,6 +38,7 @@ import org.make.api.ActorSystemComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.technical.crm.BasicCrmResponse._
 import org.make.api.technical.security.SecurityHelper
+import org.make.core.Order
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -62,7 +63,7 @@ trait CrmClient {
   def getUsersInformationMailFromList(
     listId: Option[String] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     countOnly: Option[Boolean] = None,
     limit: Int,
     offset: Int = 0
@@ -250,7 +251,7 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
     override def getUsersInformationMailFromList(
       listId: Option[String] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       countOnly: Option[Boolean] = None,
       limit: Int,
       offset: Int = 0

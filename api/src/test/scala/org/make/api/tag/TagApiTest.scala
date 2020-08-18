@@ -27,6 +27,7 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
+import org.make.core.Order
 
 import scala.concurrent.Future
 
@@ -100,7 +101,7 @@ class TagApiTest
           eqTo(0),
           eqTo(Some(2)),
           any[Option[String]],
-          any[Option[String]],
+          any[Option[Order]],
           eqTo(true),
           eqTo(TagFilter(questionId = Some(QuestionId("foo"))))
         )

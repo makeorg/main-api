@@ -26,7 +26,7 @@ import org.make.api.tag.DefaultPersistentTagServiceComponent
 import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.api.user.DefaultPersistentUserServiceComponent
 import org.make.api.{DatabaseTest, TestUtilsIT}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -403,7 +403,7 @@ class PersistentOperationServiceIT
           start = 1,
           end = Some(2),
           sort = Some("uuid"),
-          order = Some("DESC"),
+          order = Some(Order.desc),
           operationKinds = Some(Seq(OperationKind.PublicConsultation))
         )
       } yield results

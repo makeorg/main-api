@@ -23,6 +23,7 @@ import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
+import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -37,7 +38,7 @@ trait PartnerService extends ShortenedNames {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     questionId: Option[QuestionId],
     organisationId: Option[UserId],
     partnerKind: Option[PartnerKind]
@@ -100,7 +101,7 @@ trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       questionId: Option[QuestionId],
       organisationId: Option[UserId],
       partnerKind: Option[PartnerKind]

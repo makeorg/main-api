@@ -21,6 +21,7 @@ package org.make.api.feature
 
 import org.make.api.technical._
 import org.make.core.feature._
+import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -40,7 +41,7 @@ trait FeatureService extends ShortenedNames {
     start: Int = 0,
     end: Option[Int] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     slug: Option[String]
   ): Future[Seq[Feature]]
   def count(slug: Option[String]): Future[Int]
@@ -89,7 +90,7 @@ trait DefaultFeatureServiceComponent extends FeatureServiceComponent with Shorte
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       slug: Option[String]
     ): Future[Seq[Feature]] = {
 

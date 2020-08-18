@@ -26,7 +26,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.{MakeApiTestBase, TestUtils}
-import org.make.core.RequestContext
+import org.make.core.{Order, RequestContext}
 import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId, UserType}
 
@@ -273,7 +273,7 @@ class ModerationOrganisationApiTest
       Then("I should get a forbidden status")
       when(
         organisationService
-          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[Option[String]])
+          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[Order]], any[Option[String]])
       ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
@@ -290,7 +290,7 @@ class ModerationOrganisationApiTest
       Then("I should get an OK status")
       when(
         organisationService
-          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[Option[String]])
+          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[Order]], any[Option[String]])
       ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {

@@ -21,8 +21,6 @@ package org.make.api.organisation
 
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import com.sksamuel.elastic4s.searches.sort.SortOrder
-import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
@@ -43,7 +41,7 @@ import org.make.core.profile.Profile
 import org.make.core.proposal.{SearchQuery, _}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.{HttpCodes, Order, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 import org.make.core.ApiParamMagnetHelper._
 
@@ -257,11 +255,11 @@ trait DefaultOrganisationApiComponent
         path("organisations" / organisationId / "proposals") { organisationId =>
           makeOperation("GetOrganisationProposals") { requestContext =>
             optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
-              parameters(("sort".?, "order".as[SortOrder].?, "limit".as[Int].?, "skip".as[Int].?)) {
-                (sort: Option[String], order: Option[SortOrder], limit: Option[Int], skip: Option[Int]) =>
+              parameters(("sort".?, "order".as[Order].?, "limit".as[Int].?, "skip".as[Int].?)) {
+                (sort: Option[String], order: Option[Order], limit: Option[Int], skip: Option[Int]) =>
                   provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
                     val defaultSort = Some("createdAt")
-                    val defaultOrder = Some(Desc)
+                    val defaultOrder = Some(Order.desc)
                     provideAsync(
                       proposalService.searchForUser(
                         optionalUserAuth.map(_.user.userId),
@@ -280,7 +278,9 @@ trait DefaultOrganisationApiComponent
                               )
                             )
                           ),
-                          sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                          sort = Some(
+                            Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder).map(_.sortOrder))
+                          ),
                           limit = limit,
                           skip = skip
                         ),
@@ -307,7 +307,7 @@ trait DefaultOrganisationApiComponent
                     "votes".as[Seq[VoteKey]].*,
                     "qualifications".as[Seq[QualificationKey]].*,
                     "sort".?,
-                    "order".as[SortOrder].?,
+                    "order".as[Order].?,
                     "limit".as[Int].?,
                     "skip".as[Int].?
                   )
@@ -316,19 +316,21 @@ trait DefaultOrganisationApiComponent
                     votes: Option[Seq[VoteKey]],
                     qualifications: Option[Seq[QualificationKey]],
                     sort: Option[String],
-                    order: Option[SortOrder],
+                    order: Option[Order],
                     limit: Option[Int],
                     skip: Option[Int]
                   ) =>
                     val defaultSort = Some("createdAt")
-                    val defaultOrder = Some(Desc)
+                    val defaultOrder = Some(Order.desc)
                     onSuccess(
                       organisationService.getVotedProposals(
                         organisationId = organisationId,
                         maybeUserId = userAuth.map(_.user.userId),
                         filterVotes = votes,
                         filterQualifications = qualifications,
-                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                        sort = Some(
+                          Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder).map(_.sortOrder))
+                        ),
                         limit = limit,
                         skip = skip,
                         requestContext = requestContext

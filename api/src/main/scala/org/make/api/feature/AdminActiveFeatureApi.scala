@@ -32,7 +32,7 @@ import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthen
 import org.make.core.auth.UserRights
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
-import org.make.core.{HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, Order, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -197,27 +197,18 @@ trait DefaultAdminActiveFeatureApiComponent
       get {
         path("admin" / "active-features") {
           makeOperation("AdminSearchActiveFeature") { _ =>
-            parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "questionId".as[QuestionId].?)) {
+            parameters(
+              ("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "questionId".as[QuestionId].?)
+            ) {
               (
                 start: Option[Int],
                 end: Option[Int],
                 sort: Option[String],
-                order: Option[String],
+                order: Option[Order],
                 maybeQuestionId: Option[QuestionId]
               ) =>
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireAdminRole(userAuth.user) {
-                    order.foreach { orderValue =>
-                      Validation.validate(
-                        Validation
-                          .validChoices(
-                            "_order",
-                            Some("Invalid order"),
-                            Seq(orderValue.toLowerCase),
-                            Seq("desc", "asc")
-                          )
-                      )
-                    }
                     provideAsync(activeFeatureService.count(maybeQuestionId = maybeQuestionId)) { count =>
                       onSuccess(
                         activeFeatureService

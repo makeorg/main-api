@@ -28,6 +28,7 @@ import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
+import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -44,7 +45,7 @@ trait PersistentActiveFeatureService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     maybeQuestionId: Option[QuestionId]
   ): Future[Seq[ActiveFeature]]
   def count(maybeQuestionId: Option[QuestionId]): Future[Int]
@@ -108,7 +109,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       maybeQuestionId: Option[QuestionId]
     ): Future[Seq[ActiveFeature]] = {
       implicit val context: EC = readExecutionContext

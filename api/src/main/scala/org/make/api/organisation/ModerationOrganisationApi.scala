@@ -41,7 +41,7 @@ import org.make.core.Validation.{validateOptional, _}
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{CirceFormatters, HttpCodes, Validation}
+import org.make.core.{CirceFormatters, HttpCodes, Order}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -224,27 +224,16 @@ trait DefaultModerationOrganisationApiComponent
       get {
         path("moderation" / "organisations") {
           makeOperation("ModerationGetOrganisations") { _ =>
-            parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "organisationName".?)) {
+            parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "organisationName".?)) {
               (
                 start: Option[Int],
                 end: Option[Int],
                 sort: Option[String],
-                order: Option[String],
+                order: Option[Order],
                 organisationName: Option[String]
               ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
-                    order.foreach { orderValue =>
-                      Validation.validate(
-                        Validation
-                          .validChoices(
-                            "_order",
-                            Some("Invalid order"),
-                            Seq(orderValue.toLowerCase),
-                            Seq("desc", "asc")
-                          )
-                      )
-                    }
                     provideAsync(organisationService.count(organisationName)) { count =>
                       provideAsync(organisationService.find(start.getOrElse(0), end, sort, order, organisationName)) {
                         result =>

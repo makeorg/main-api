@@ -17,7 +17,8 @@
  *
  */
 
-package org.make.core.user
+package org.make.core
+package user
 
 import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
@@ -39,7 +40,7 @@ case class OrganisationSearchQuery(
   limit: Option[Int] = None,
   skip: Option[Int] = None,
   sort: Option[String] = None,
-  order: Option[String] = None,
+  order: Option[Order] = None,
   sortAlgorithm: Option[OrganisationSortAlgorithm] = None
 )
 
@@ -106,10 +107,7 @@ object OrganisationSearchFilters extends ElasticDsl {
       .getOrElse(-1) // TODO get default value from configurations
 
   def getSort(organisationSearchQuery: OrganisationSearchQuery): Option[FieldSort] = {
-    val order = organisationSearchQuery.order.map {
-      case asc if asc.toLowerCase == "asc"    => SortOrder.ASC
-      case desc if desc.toLowerCase == "desc" => SortOrder.DESC
-    }
+    val order = organisationSearchQuery.order.map(_.sortOrder)
 
     organisationSearchQuery.sort.map { sort =>
       val sortFieldName: String = if (sort == OrganisationElasticsearchFieldNames.organisationName) {

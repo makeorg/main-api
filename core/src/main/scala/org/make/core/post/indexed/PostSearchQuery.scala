@@ -17,20 +17,21 @@
  *
  */
 
-package org.make.core.post.indexed
+package org.make.core
+package post
+package indexed
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
-import org.make.core.post.PostId
 
 case class PostSearchQuery(
   filters: Option[PostSearchFilters] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
   sort: Option[String] = None,
-  order: Option[String] = None
+  order: Option[Order] = None
 )
 
 case class PostSearchFilters(
@@ -61,11 +62,7 @@ object PostSearchFilters extends ElasticDsl {
     postSearchQuery.limit.getOrElse(10)
 
   def getSort(postSearchQuery: PostSearchQuery): Option[FieldSort] = {
-    val order: SortOrder = postSearchQuery.order match {
-      case Some(asc) if asc.toLowerCase == "asc"    => SortOrder.ASC
-      case Some(desc) if desc.toLowerCase == "desc" => SortOrder.DESC
-      case _                                        => SortOrder.ASC
-    }
+    val order: SortOrder = postSearchQuery.order.map(_.sortOrder).getOrElse(SortOrder.Asc)
 
     postSearchQuery.sort.map { sort =>
       FieldSort(field = sort, order = order)

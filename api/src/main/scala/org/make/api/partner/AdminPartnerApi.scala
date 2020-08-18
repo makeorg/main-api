@@ -30,7 +30,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.Validation._
-import org.make.core.{HttpCodes, ParameterExtractors, Requirement}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, Requirement}
 import org.make.core.auth.UserRights
 import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
@@ -186,7 +186,7 @@ trait DefaultAdminPartnerApiComponent
                 "_start".as[Int].?,
                 "_end".as[Int].?,
                 "_sort".?,
-                "_order".?,
+                "_order".as[Order].?,
                 "questionId".as[QuestionId].?,
                 "organisationId".as[UserId].?,
                 "partnerKind".as[PartnerKind].?
@@ -196,7 +196,7 @@ trait DefaultAdminPartnerApiComponent
                 start: Option[Int],
                 end: Option[Int],
                 sort: Option[String],
-                order: Option[String],
+                order: Option[Order],
                 questionId: Option[QuestionId],
                 organisationId: Option[UserId],
                 partnerKind: Option[PartnerKind]

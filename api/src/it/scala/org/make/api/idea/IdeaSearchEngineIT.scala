@@ -37,7 +37,7 @@ import org.make.core.idea.indexed._
 import org.make.core.idea.{IdeaId, IdeaSearchQuery, IdeaStatus}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
-import org.make.core.{CirceFormatters, DateHelper}
+import org.make.core.{CirceFormatters, DateHelper, Order}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
@@ -177,7 +177,7 @@ class IdeaSearchEngineIT
       When("I get idea list ordered by name with an order desc")
       Then("""The result should be "a_idea02", "b_idea03" and "c_idea01" """)
       val ideaSearchQuery: IdeaSearchQuery = IdeaFiltersRequest.empty
-        .copy(limit = Some(3), skip = Some(0), order = Some("asc"), sort = Some("name"))
+        .copy(limit = Some(3), skip = Some(0), order = Some(Order.asc), sort = Some("name"))
         .toSearchQuery(core.RequestContext.empty)
       whenReady(elasticsearchIdeaAPI.searchIdeas(ideaSearchQuery), Timeout(5.seconds)) { result =>
         result.total should be(3)

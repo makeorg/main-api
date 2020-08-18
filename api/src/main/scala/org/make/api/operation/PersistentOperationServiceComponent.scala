@@ -36,7 +36,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
@@ -60,7 +60,7 @@ trait PersistentOperationService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     slug: Option[String] = None,
     operationKinds: Option[Seq[OperationKind]]
   ): Future[Seq[SimpleOperation]]
@@ -149,7 +149,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       slug: Option[String] = None,
       operationKinds: Option[Seq[OperationKind]]
     ): Future[Seq[SimpleOperation]] = {

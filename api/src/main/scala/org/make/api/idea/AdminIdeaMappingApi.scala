@@ -37,7 +37,7 @@ import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthen
 import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
-import org.make.core.{HttpCodes, ParameterExtractors}
+import org.make.core.{HttpCodes, Order, ParameterExtractors}
 
 import scala.annotation.meta.field
 
@@ -243,7 +243,7 @@ trait DefaultAdminIdeaMappingApiComponent
             "_start".as[Int].?,
             "_end".as[Int].?,
             "_sort".?,
-            "_order".?,
+            "_order".as[Order].?,
             "questionId".as[QuestionId].?,
             "stakeTagId".as[TagIdOrNone].?,
             "solutionTypeTagId".as[TagIdOrNone].?,
@@ -254,7 +254,7 @@ trait DefaultAdminIdeaMappingApiComponent
             start: Option[Int],
             end: Option[Int],
             sort: Option[String],
-            order: Option[String],
+            order: Option[Order],
             questionId: Option[QuestionId],
             stakeTagId: Option[TagIdOrNone],
             solutionTypeTagId: Option[TagIdOrNone],

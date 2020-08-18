@@ -31,7 +31,7 @@ import org.make.api.sequence.{
 }
 import org.make.api.technical.IdGeneratorComponent
 import org.make.api.{MakeUnitTest, TestUtils}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.elasticsearch.IndexationStatus
 import org.make.core.operation._
 import org.make.core.operation.indexed.IndexedOperationOfQuestion
@@ -83,14 +83,14 @@ class OperationOfQuestionServiceTest
         operationKind = None,
         openAt = None
       )
-      operationOfQuestionService.find(42, Some(84), None, Some("ASC"), req)
+      operationOfQuestionService.find(42, Some(84), None, Some(Order.asc), req)
 
       verify(persistentOperationOfQuestionService)
         .search(
           42,
           Some(84),
           None,
-          Some("ASC"),
+          Some(Order.asc),
           Some(Seq(QuestionId("q-id"))),
           Some(Seq(OperationId("o-id"))),
           None,

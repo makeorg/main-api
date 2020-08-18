@@ -40,8 +40,8 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.core.Order
 import org.make.core.auth.UserRights
-import org.make.core.common.indexed.Order
 import org.make.core.idea.TopIdeaId
 import org.make.core.operation._
 import org.make.core.operation.indexed.{OperationOfQuestionElasticsearchFieldNames, OperationOfQuestionSearchResult}
@@ -311,7 +311,7 @@ trait DefaultQuestionApiComponent
                       start = 0,
                       end = None,
                       sort = Some("weight"),
-                      order = Some("DESC"),
+                      order = Some(Order.desc),
                       partnerKind = None
                     )
                   ) { partners =>
@@ -416,7 +416,7 @@ trait DefaultQuestionApiComponent
               "limit".as[Int].?,
               "skip".as[Int].?,
               "sort".?,
-              "order".?
+              "order".as[Order].?
             )
           ) {
             (
@@ -431,40 +431,28 @@ trait DefaultQuestionApiComponent
               limit: Option[Int],
               skip: Option[Int],
               sort: Option[String],
-              order: Option[String]
+              order: Option[Order]
             ) =>
-              Validation.validate(
-                Seq(
-                  sort.map { sortValue =>
-                    val choices =
-                      Seq(
-                        OperationOfQuestionElasticsearchFieldNames.question,
-                        OperationOfQuestionElasticsearchFieldNames.startDate,
-                        OperationOfQuestionElasticsearchFieldNames.endDate,
-                        OperationOfQuestionElasticsearchFieldNames.description,
-                        OperationOfQuestionElasticsearchFieldNames.country,
-                        OperationOfQuestionElasticsearchFieldNames.language,
-                        OperationOfQuestionElasticsearchFieldNames.operationKind
-                      )
-                    Validation.validChoices(
-                      fieldName = "sort",
-                      message = Some(
-                        s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                      ),
-                      Seq(sortValue),
-                      choices
-                    )
-                  },
-                  order.map { orderValue =>
-                    Validation.validChoices(
-                      fieldName = "order",
-                      message = Some(s"Invalid order. Expected one of: ${Order.keys}"),
-                      Seq(orderValue),
-                      Order.keys
-                    )
-                  }
-                ).flatten: _*
-              )
+              Validation.validate(sort.map { sortValue =>
+                val choices =
+                  Seq(
+                    OperationOfQuestionElasticsearchFieldNames.question,
+                    OperationOfQuestionElasticsearchFieldNames.startDate,
+                    OperationOfQuestionElasticsearchFieldNames.endDate,
+                    OperationOfQuestionElasticsearchFieldNames.description,
+                    OperationOfQuestionElasticsearchFieldNames.country,
+                    OperationOfQuestionElasticsearchFieldNames.language,
+                    OperationOfQuestionElasticsearchFieldNames.operationKind
+                  )
+                Validation.validChoices(
+                  fieldName = "sort",
+                  message = Some(
+                    s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                  ),
+                  Seq(sortValue),
+                  choices
+                )
+              }.toSeq: _*)
               val filters: Option[OperationOfQuestionSearchFilters] = Some(
                 OperationOfQuestionSearchFilters(
                   questionIds = questionIds.map(QuestionIdsSearchFilter.apply),

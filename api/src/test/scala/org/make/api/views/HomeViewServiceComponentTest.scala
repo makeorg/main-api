@@ -35,7 +35,7 @@ import org.make.core.post.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{Role, UserId, UserType}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -301,7 +301,7 @@ class HomeViewServiceComponentTest
             PostSearchQuery(
               filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
               sort = Some(PostElasticsearchFieldNames.postDate),
-              order = Some("DESC"),
+              order = Some(Order.desc),
               limit = Some(3)
             )
           )

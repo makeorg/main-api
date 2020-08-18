@@ -29,7 +29,7 @@ import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.ValidationError
+import org.make.core.{Order, ValidationError}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -276,7 +276,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   when(
     operationOfQuestionService
-      .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[String]], any[SearchOperationsOfQuestions])
+      .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[Order]], any[SearchOperationsOfQuestions])
   ).thenReturn(
     Future.successful(
       Seq(

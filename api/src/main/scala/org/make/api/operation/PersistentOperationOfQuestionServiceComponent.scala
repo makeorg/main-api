@@ -36,7 +36,7 @@ import org.make.api.question.DefaultPersistentQuestionServiceComponent.Persisten
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -50,7 +50,7 @@ trait PersistentOperationOfQuestionService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     questionIds: Option[Seq[QuestionId]],
     operationIds: Option[Seq[OperationId]],
     operationKind: Option[Seq[OperationKind]],
@@ -92,7 +92,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       questionIds: Option[Seq[QuestionId]],
       operationIds: Option[Seq[OperationId]],
       operationKind: Option[Seq[OperationKind]],

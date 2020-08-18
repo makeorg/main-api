@@ -30,7 +30,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
@@ -60,7 +60,7 @@ trait PersistentTagService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     onlyDisplayed: Boolean,
     persistentTagFilter: PersistentTagFilter
   ): Future[Seq[Tag]]
@@ -282,7 +282,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       onlyDisplayed: Boolean,
       persistentTagFilter: PersistentTagFilter
     ): Future[Seq[Tag]] = {

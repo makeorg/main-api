@@ -33,7 +33,7 @@ import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthen
 import org.make.core.auth.UserRights
 import org.make.core.question.QuestionId
 import org.make.core.tag.{TagDisplay, TagId, TagTypeId}
-import org.make.core.{tag, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{tag, HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -233,7 +233,7 @@ trait DefaultModerationTagApiComponent
                 "_start".as[Int].?,
                 "_end".as[Int].?,
                 "_sort".?,
-                "_order".?,
+                "_order".as[Order].?,
                 "label".?,
                 "tagTypeId".as[TagTypeId].?,
                 "questionId".as[QuestionId].?
@@ -243,7 +243,7 @@ trait DefaultModerationTagApiComponent
                 start: Option[Int],
                 end: Option[Int],
                 sort: Option[String],
-                order: Option[String],
+                order: Option[Order],
                 maybeLabel: Option[String],
                 maybeTagTypeId: Option[TagTypeId],
                 maybeQuestionId: Option[QuestionId]
@@ -251,17 +251,6 @@ trait DefaultModerationTagApiComponent
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireModerationRole(userAuth.user) {
 
-                    order.foreach { orderValue =>
-                      Validation.validate(
-                        Validation
-                          .validChoices(
-                            "_order",
-                            Some("Invalid order"),
-                            Seq(orderValue.toLowerCase),
-                            Seq("desc", "asc")
-                          )
-                      )
-                    }
                     provideAsync(
                       tagService
                         .count(TagFilter(label = maybeLabel, tagTypeId = maybeTagTypeId, questionId = maybeQuestionId))

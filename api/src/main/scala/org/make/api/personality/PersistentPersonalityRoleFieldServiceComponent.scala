@@ -27,6 +27,7 @@ import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
 import org.make.core.personality.{FieldType, PersonalityRoleField, PersonalityRoleFieldId, PersonalityRoleId}
+import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -46,7 +47,7 @@ trait PersistentPersonalityRoleFieldService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     personalityRoleId: Option[PersonalityRoleId],
     name: Option[String],
     fieldType: Option[FieldType],
@@ -127,7 +128,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       maybePersonalityRoleId: Option[PersonalityRoleId],
       maybeName: Option[String],
       maybeFieldType: Option[FieldType],

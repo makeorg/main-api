@@ -33,7 +33,7 @@ import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthen
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
-import org.make.core.{HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 import org.make.core.ApiParamMagnetHelper._
 
@@ -252,7 +252,7 @@ trait DefaultModerationOperationApiComponent
                 "_start".as[Int].?,
                 "_end".as[Int].?,
                 "_sort".?,
-                "_order".?,
+                "_order".as[Order].?,
                 "slug".?,
                 "operationKind".as[Seq[OperationKind]].*
               )
@@ -261,23 +261,12 @@ trait DefaultModerationOperationApiComponent
                 start: Option[Int],
                 end: Option[Int],
                 sort: Option[String],
-                order: Option[String],
+                order: Option[Order],
                 slug: Option[String],
                 operationKinds: Option[Seq[OperationKind]]
               ) =>
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireModerationRole(auth.user) {
-                    order.foreach { orderValue =>
-                      Validation.validate(
-                        Validation
-                          .validChoices(
-                            "_order",
-                            Some("Invalid order"),
-                            Seq(orderValue.toLowerCase),
-                            Seq("desc", "asc")
-                          )
-                      )
-                    }
                     provideAsync(operationService.count(slug = slug, operationKinds = operationKinds)) { count =>
                       provideAsync(
                         operationService

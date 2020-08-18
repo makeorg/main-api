@@ -17,7 +17,8 @@
  *
  */
 
-package org.make.core.operation
+package org.make.core
+package operation
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -36,7 +37,7 @@ case class OperationOfQuestionSearchQuery(
   limit: Option[Int] = None,
   skip: Option[Int] = None,
   sort: Option[String] = None,
-  order: Option[String] = None,
+  order: Option[Order] = None,
   sortAlgorithm: Option[SortAlgorithm] = None
 )
 
@@ -113,10 +114,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
       .getOrElse(10)
 
   def getSort(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[FieldSort] = {
-    val order = operationOfQuestionSearchQuery.order.map {
-      case asc if asc.toLowerCase == "asc"    => SortOrder.ASC
-      case desc if desc.toLowerCase == "desc" => SortOrder.DESC
-    }
+    val order = operationOfQuestionSearchQuery.order.map(_.sortOrder)
 
     operationOfQuestionSearchQuery.sort.map { sort =>
       val sortFieldName: String = if (sort == OperationOfQuestionElasticsearchFieldNames.question) {

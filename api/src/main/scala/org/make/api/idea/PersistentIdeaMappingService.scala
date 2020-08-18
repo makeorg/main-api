@@ -28,6 +28,7 @@ import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.idea.{IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
+import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -39,7 +40,7 @@ trait PersistentIdeaMappingService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     questionId: Option[QuestionId],
     stakeTagId: Option[TagIdOrNone],
     solutionTypeTagId: Option[TagIdOrNone],
@@ -86,7 +87,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       questionId: Option[QuestionId],
       stakeTagId: Option[TagIdOrNone],
       solutionTypeTagId: Option[TagIdOrNone],

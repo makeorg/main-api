@@ -33,7 +33,7 @@ import org.make.core.auth.UserRights
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
-import org.make.core.{HttpCodes, ParameterExtractors, ValidationError}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, ValidationError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -228,7 +228,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                 "_start".as[Int].?,
                 "_end".as[Int].?,
                 "_sort".?,
-                "_order".?,
+                "_order".as[Order].?,
                 "userId".as[UserId].?,
                 "questionId".as[QuestionId].?,
                 "personalityRoleId".as[PersonalityRoleId].?
@@ -238,7 +238,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                 start: Option[Int],
                 end: Option[Int],
                 sort: Option[String],
-                order: Option[String],
+                order: Option[Order],
                 userId: Option[UserId],
                 questionId: Option[QuestionId],
                 personalityRoleId: Option[PersonalityRoleId]

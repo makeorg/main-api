@@ -54,7 +54,7 @@ import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{DateHelper, Order, RequestContext}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -228,7 +228,7 @@ class QuestionApiTest
         start = 0,
         end = None,
         sort = Some("weight"),
-        order = Some("DESC"),
+        order = Some(Order.desc),
         partnerKind = None
       )
     ).thenReturn(Future.successful(Seq(partner, partner2)))

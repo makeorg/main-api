@@ -31,7 +31,7 @@ import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.user.PersistentUserServiceComponent.{FollowedUsers, PersistentUser}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
@@ -340,7 +340,7 @@ trait PersistentUserService {
     start: Int,
     limit: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     email: Option[String],
     firstName: Option[String],
     lastName: Option[String],
@@ -352,7 +352,7 @@ trait PersistentUserService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     organisationName: Option[String]
   ): Future[Seq[User]]
   def findUserIdByEmail(email: String): Future[Option[UserId]]
@@ -548,7 +548,7 @@ trait DefaultPersistentUserServiceComponent
       start: Int,
       limit: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       email: Option[String],
       firstName: Option[String],
       lastName: Option[String],
@@ -601,7 +601,7 @@ trait DefaultPersistentUserServiceComponent
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       organisationName: Option[String]
     ): Future[Seq[User]] = {
       implicit val cxt: EC = readExecutionContext

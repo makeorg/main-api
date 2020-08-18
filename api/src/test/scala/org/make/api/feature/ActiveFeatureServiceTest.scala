@@ -24,6 +24,7 @@ import org.make.api.technical.DefaultIdGeneratorComponent
 import org.make.core.feature._
 import org.make.core.question.QuestionId
 import org.make.core.technical.IdGenerator
+import org.make.core.Order
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -101,7 +102,7 @@ class ActiveFeatureServiceTest
           any[Int],
           any[Option[Int]],
           any[Option[String]],
-          any[Option[String]],
+          any[Option[Order]],
           eqTo(Some(QuestionId("find-activeFeature-1")))
         )
       ).thenReturn(Future.successful(Seq(activeFeature1)))

@@ -244,7 +244,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   "_start".as[Int].?,
                   "_end".as[Int].?,
                   "_sort".?,
-                  "_order".?,
+                  "_order".as[Order].?,
                   "questionId".as[Seq[QuestionId]].?,
                   "operationId".as[OperationId].?,
                   "operationKind".as[Seq[OperationKind]].*,
@@ -255,18 +255,12 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   start: Option[Int],
                   end: Option[Int],
                   sort: Option[String],
-                  order: Option[String],
+                  order: Option[Order],
                   questionIds,
                   operationId,
                   operationKinds,
                   openAt
                 ) =>
-                  order.foreach { orderValue =>
-                    Validation.validate(
-                      Validation
-                        .validChoices("_order", Some("Invalid order"), Seq(orderValue.toLowerCase), Seq("desc", "asc"))
-                    )
-                  }
                   val resolvedQuestions: Option[Seq[QuestionId]] = {
                     if (auth.user.roles.contains(RoleAdmin)) {
                       questionIds

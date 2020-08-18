@@ -20,6 +20,7 @@
 package org.make.api.question
 
 import org.make.api.DatabaseTest
+import org.make.core.Order
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -145,7 +146,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
       whenReady(
         persistentQuestionService.find(
-          SearchQuestionRequest(limit = Some(3), order = Some("DESC"), sort = Some("slug"), skip = Some(1))
+          SearchQuestionRequest(limit = Some(3), order = Some(Order.desc), sort = Some("slug"), skip = Some(1))
         ),
         Timeout(2.seconds)
       ) { results =>
@@ -157,7 +158,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
       whenReady(
         persistentQuestionService.find(
-          SearchQuestionRequest(limit = Some(3), order = Some("ASC"), sort = Some("slug"), skip = Some(2))
+          SearchQuestionRequest(limit = Some(3), order = Some(Order.asc), sort = Some("slug"), skip = Some(2))
         ),
         Timeout(2.seconds)
       ) { results =>

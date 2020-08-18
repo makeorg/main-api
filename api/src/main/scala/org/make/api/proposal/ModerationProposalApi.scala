@@ -37,8 +37,8 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
 import org.make.api.user.UserServiceComponent
+import org.make.core.Order
 import org.make.core.auth.UserRights
-import org.make.core.common.indexed.{Order, SortRequest}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationId
 import org.make.core.proposal.indexed.ProposalsSearchResult
@@ -445,7 +445,7 @@ trait DefaultModerationProposalApiComponent
                     "limit".as[Int].?,
                     "skip".as[Int].?,
                     "sort".?,
-                    "order".?,
+                    "order".as[Order].?,
                     "userType".as[Seq[UserType]].*
                   )
                 ) {
@@ -470,7 +470,7 @@ trait DefaultModerationProposalApiComponent
                     limit: Option[Int],
                     skip: Option[Int],
                     sort: Option[String],
-                    order: Option[String],
+                    order: Option[Order],
                     userTypes: Option[Seq[UserType]]
                   ) =>
                     Validation.validate(Seq(country.map { countryValue =>
@@ -503,13 +503,6 @@ trait DefaultModerationProposalApiComponent
                         Seq(sortValue),
                         choices
                       )
-                    }, order.map { orderValue =>
-                      Validation.validChoices(
-                        fieldName = "order",
-                        message = Some(s"Invalid order. Expected one of: ${Order.keys}"),
-                        Seq(orderValue),
-                        Order.keys
-                      )
                     }).flatten: _*)
 
                     val resolvedQuestions: Option[Seq[QuestionId]] = {
@@ -526,10 +519,6 @@ trait DefaultModerationProposalApiComponent
                       operationId.orElse(source).orElse(location).orElse(question).map { _ =>
                         ContextFilterRequest(operationId, source, location, question)
                       }
-                    val sortRequest: Option[SortRequest] =
-                      sort.orElse(order).map { _ =>
-                        SortRequest(sort, order.flatMap(Order.parse))
-                      }
                     val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
                       proposalIds = proposalIds,
                       initialProposal = initialProposal,
@@ -545,7 +534,8 @@ trait DefaultModerationProposalApiComponent
                       minScore = minScore,
                       language = language,
                       country = country,
-                      sort = sortRequest,
+                      sort = sort,
+                      order = order,
                       limit = limit,
                       skip = skip,
                       createdBefore = createdBefore,

@@ -25,7 +25,7 @@ import io.circe.syntax._
 import org.make.api.question.PersistentQuestionServiceComponent
 import org.make.api.tag.PersistentTagServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.operation.OperationActionType._
 import org.make.core.reference.{Country, Language}
@@ -49,7 +49,7 @@ trait OperationService extends ShortenedNames {
     start: Int = 0,
     end: Option[Int] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     slug: Option[String] = None,
     operationKinds: Option[Seq[OperationKind]] = None
   ): Future[Seq[SimpleOperation]]
@@ -99,7 +99,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       slug: Option[String] = None,
       operationKinds: Option[Seq[OperationKind]]
     ): Future[Seq[SimpleOperation]] = {

@@ -29,6 +29,7 @@ import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
+import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -45,7 +46,7 @@ trait PersistentQuestionPersonalityService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     userId: Option[UserId],
     questionId: Option[QuestionId],
     personalityRoleId: Option[PersonalityRoleId]
@@ -116,7 +117,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       userId: Option[UserId],
       questionId: Option[QuestionId],
       personalityRoleId: Option[PersonalityRoleId]

@@ -61,7 +61,7 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.api.proposal.ProposalServiceComponent
 
 trait CrmService {
@@ -73,7 +73,7 @@ trait CrmService {
   def getUsersMailFromList(
     listId: Option[String] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     countOnly: Option[Boolean] = None,
     limit: Int,
     offset: Int = 0
@@ -150,7 +150,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     override def getUsersMailFromList(
       listId: Option[String] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       countOnly: Option[Boolean] = None,
       limit: Int,
       offset: Int = 0
