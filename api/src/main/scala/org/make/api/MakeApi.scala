@@ -291,12 +291,8 @@ trait MakeApi
     with Logging
     with UserHistoryCoordinatorComponent {
 
-  override lazy val proposalCoordinator: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / ProposalSupervisor.name / ProposalCoordinator.name)
-      .resolveOne()(Timeout(10.seconds)),
-    atMost = 10.seconds
-  )
+  override lazy val proposalCoordinator: TypedActorRef[ProposalCommand] =
+    Await.result(actorSystemTyped.findRefByKey(ProposalCoordinator.Key), atMost = 10.seconds)
 
   override lazy val userHistoryCoordinator: ActorRef = Await.result(
     actorSystem

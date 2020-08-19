@@ -22,11 +22,10 @@ package org.make.api.sequence
 import akka.actor.{typed, ActorRef, ActorSystem, ExtendedActorSystem}
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.adapter._
-import akka.persistence.inmemory.query.scaladsl.InMemoryReadJournal
 import akka.testkit.TestKit
 import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.{ActorSystemComponent, ActorSystemTypedComponent, DatabaseTest, DefaultConfigComponent}
-import org.make.api.docker.DockerElasticsearchService
+import org.make.api.docker.{DockerCassandraService, DockerElasticsearchService}
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.feature.{
   DefaultActiveFeatureServiceComponent,
@@ -75,10 +74,10 @@ import org.make.api.tagtype.{DefaultPersistentTagTypeServiceComponent, DefaultTa
 import org.make.api.technical.{
   DefaultEventBusServiceComponent,
   DefaultIdGeneratorComponent,
+  DefaultReadJournalComponent,
   DefaultSpawnActorServiceComponent,
   DownloadService,
   DownloadServiceComponent,
-  ReadJournalComponent,
   SpawnActorRefComponent
 }
 import org.make.api.technical.auth.{
@@ -128,6 +127,7 @@ import scala.concurrent.{Await, Future}
 class SequenceServiceIT
     extends TestKit(SequenceServiceIT.actorSystem)
     with DatabaseTest
+    with DockerCassandraService
     with DockerElasticsearchService
     with ActorSystemComponent
     with ActorSystemTypedComponent
@@ -168,6 +168,7 @@ class SequenceServiceIT
     with DefaultProposalServiceComponent
     with DefaultQuestionPersonalityServiceComponent
     with DefaultQuestionServiceComponent
+    with DefaultReadJournalComponent
     with DefaultSecurityConfigurationComponent
     with DefaultSegmentServiceComponent
     with DefaultSelectionAlgorithmComponent
@@ -190,7 +191,6 @@ class SequenceServiceIT
     with PersistentTopIdeaServiceComponent
     with PostServiceComponent
     with ProposalCoordinatorComponent
-    with ReadJournalComponent
     with SemanticComponent
     with SequenceConfigurationComponent
     with SessionHistoryCoordinatorComponent
@@ -201,9 +201,8 @@ class SequenceServiceIT
     with UserHistoryCoordinatorComponent
     with UserRegistrationValidatorComponent {
 
-  override type MakeReadJournal = InMemoryReadJournal
-
   override val adminEmail = "admin@make.org"
+  override val cassandraExposedPort: Int = SequenceServiceIT.cassandraExposedPort
   override val cockroachExposedPort: Int = 40024
   override val elasticsearchExposedPort: Int = 30007
 
@@ -211,8 +210,8 @@ class SequenceServiceIT
   override val actorSystemTyped: typed.ActorSystem[Nothing] = actorSystem.toTyped
 
   override val jobCoordinator: typed.ActorRef[JobActor.Protocol.Command] = JobCoordinator(actorSystemTyped, 1.second)
-  override lazy val proposalCoordinator: ActorRef =
-    actorSystem.actorOf(ProposalCoordinator.props(sessionHistoryCoordinatorService, 1.second, idGenerator))
+  override lazy val proposalCoordinator: typed.ActorRef[ProposalCommand] =
+    ProposalCoordinator(actorSystemTyped, sessionHistoryCoordinatorService, 1.second, idGenerator)
   override lazy val sessionHistoryCoordinator: ActorRef =
     actorSystem.actorOf(SessionHistoryCoordinator.props(userHistoryCoordinator, idGenerator))
   override val spawnActorRef: typed.ActorRef[SpawnProtocol.Command] =
@@ -236,10 +235,6 @@ class SequenceServiceIT
     Future.successful(sequenceConfiguration)
   }
 
-  override val proposalJournal: MakeReadJournal = new InMemoryReadJournal(
-    SequenceServiceIT.fullConfiguration.getConfig("journal")
-  )
-
   override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
   when(userRegistrationValidator.canRegister(any)).thenReturn(Future.successful(true))
 
@@ -255,8 +250,6 @@ class SequenceServiceIT
   override def postService: PostService = ???
   override def elasticsearchPostAPI: PostSearchEngine = ???
   override def elasticsearchIdeaAPI: IdeaSearchEngine = ???
-  override def sessionJournal: MakeReadJournal = ???
-  override def userJournal: MakeReadJournal = ???
 
   private var questionId: QuestionId = null
   private val requestContext = RequestContext.empty.copy(sessionId = idGenerator.nextSessionId())
@@ -387,19 +380,20 @@ class SequenceServiceIT
     }
   }
 
+  override def afterAll(): Unit = {
+    system.terminate()
+    super.afterAll()
+  }
+
 }
 
 object SequenceServiceIT {
+  val cassandraExposedPort: Int = 15001
   val configuration: String =
     s"""
        |akka {
        |  cluster.seed-nodes = ["akka://SequenceServiceIT@localhost:25520"]
        |  cluster.jmx.multi-mbeans-in-same-jvm = on
-       |
-       |  persistence {
-       |    journal.plugin = "inmemory-journal"
-       |    snapshot-store.plugin = "inmemory-snapshot-store"
-       |  }
        |
        |  remote.artery.canonical {
        |    port = 25520
@@ -420,26 +414,31 @@ object SequenceServiceIT {
        |    operation-of-question-alias-name = "operation-of-question"
        |    post-alias-name = "post"
        |  }
+       |
        |  event-sourcing {
        |    jobs {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      read-journal.port = $cassandraExposedPort
+       |      snapshot-store.port = $cassandraExposedPort
        |    }
        |    proposals {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      read-journal.port = $cassandraExposedPort
+       |      snapshot-store.port = $cassandraExposedPort
        |    }
        |    sequences {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      read-journal.port = $cassandraExposedPort
+       |      snapshot-store.port = $cassandraExposedPort
        |    }
        |    sessions {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      read-journal.port = $cassandraExposedPort
+       |      snapshot-store.port = $cassandraExposedPort
+       |    }
+       |    technical {
+       |      read-journal.port = $cassandraExposedPort
+       |      snapshot-store.port = $cassandraExposedPort
        |    }
        |    users {
-       |      read-journal = $${inmemory-journal}
-       |      snapshot-store = $${inmemory-snapshot-store}
+       |      read-journal.port = $cassandraExposedPort
+       |      snapshot-store.port = $cassandraExposedPort
        |    }
        |  }
        |
@@ -449,13 +448,6 @@ object SequenceServiceIT {
        |  }
        |
        |  cookie-session.lifetime = "600 milliseconds"
-       |}
-       |journal {
-       |  ask-timeout = "5 seconds"
-       |  max-buffer-size = "1000"
-       |  offset-mode = "sequence"
-       |  refresh-interval = "5 seconds"
-       |  write-plugin = "make-api.event-sourcing.proposals.read-journal"
        |}
     """.stripMargin
 

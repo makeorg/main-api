@@ -24,7 +24,7 @@ import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
 import org.make.api.ActorSystemComponent
-import org.make.api.proposal.ShardedProposal
+import org.make.api.proposal.ProposalActor
 import org.make.api.sessionhistory.ShardedSessionHistory
 import org.make.api.technical.ReadJournalComponent.DefaultReadJournal
 import org.make.api.userhistory.ShardedUserHistory
@@ -48,7 +48,7 @@ trait DefaultReadJournalComponent extends ReadJournalComponent {
 
   override def proposalJournal: MakeReadJournal =
     PersistenceQuery(system = actorSystem)
-      .readJournalFor[MakeReadJournal](ShardedProposal.queryJournal)
+      .readJournalFor[MakeReadJournal](ProposalActor.QueryJournalPluginId)
   override def userJournal: MakeReadJournal =
     PersistenceQuery(system = actorSystem)
       .readJournalFor[MakeReadJournal](ShardedUserHistory.queryJournal)
@@ -64,7 +64,7 @@ trait ActorReadJournalComponent extends ReadJournalComponent {
 
   override def proposalJournal: MakeReadJournal =
     PersistenceQuery(system = context.system)
-      .readJournalFor[MakeReadJournal](ShardedProposal.queryJournal)
+      .readJournalFor[MakeReadJournal](ProposalActor.QueryJournalPluginId)
   override def userJournal: MakeReadJournal =
     PersistenceQuery(system = context.system)
       .readJournalFor[MakeReadJournal](ShardedUserHistory.queryJournal)

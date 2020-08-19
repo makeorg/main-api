@@ -19,7 +19,7 @@
 
 package org.make.api.proposal
 
-import org.make.api.proposal.ProposalActor.ProposalState
+import org.make.api.proposal.ProposalActor.State
 import org.make.api.proposal.ProposalEvent._
 import org.make.api.proposal.PublishedProposalEvent._
 import org.make.core.SprayJsonFormatters
@@ -146,7 +146,7 @@ object ProposalSerializers extends SprayJsonFormatters {
       from[V1].to[V2](_.update("requestContext" / "customData" ! set[Map[String, String]](Map.empty)))
     )
 
-  private val proposalStateSerializer: JsonPersister[ProposalState, V9] = {
+  private val proposalStateSerializer: JsonPersister[State, V9] = {
     final case class QualificationV5(key: QualificationKey, count: Int)
     implicit val qualificationV5Formatter: RootJsonFormat[QualificationV5] =
       DefaultJsonProtocol.jsonFormat2(QualificationV5.apply)
@@ -185,7 +185,7 @@ object ProposalSerializers extends SprayJsonFormatters {
     implicit val voteV8formatter: RootJsonFormat[VoteV8] =
       DefaultJsonProtocol.jsonFormat6(VoteV8.apply)
 
-    persister[ProposalState, V9](
+    persister[State, V9](
       "proposalState",
       from[V1]
         .to[V2](

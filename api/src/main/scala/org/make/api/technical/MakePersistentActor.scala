@@ -24,7 +24,6 @@ import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import akka.util.Timeout
 import org.make.api.technical.MakePersistentActor.Snapshot
 
-import scala.collection.immutable
 import scala.util.{Failure, Success, Try}
 
 abstract class MakePersistentActor[State, Event <: AnyRef](
@@ -79,22 +78,6 @@ abstract class MakePersistentActor[State, Event <: AnyRef](
     eventsCount += 1
     if (autoSnapshot && eventsCount >= snapshotThreshold) {
       self ! Snapshot
-    }
-  }
-
-  protected def persistAndPublishEvent[T <: Event](event: T)(andThen: T => Unit): Unit = {
-    persist(event) { event: T =>
-      newEventAdded(event)
-      context.system.eventStream.publish(event)
-      andThen(event)
-    }
-  }
-
-  protected def persistAndPublishEvents(events: immutable.Seq[Event])(andThen: Event => Unit): Unit = {
-    persistAll(events) { event: Event =>
-      newEventAdded(event)
-      context.system.eventStream.publish(event)
-      andThen(event)
     }
   }
 
