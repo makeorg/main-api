@@ -21,17 +21,17 @@ package org.make.api.user
 
 import java.time.LocalDate
 
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.boolean.{And, Or}
 import eu.timepit.refined.collection.{Empty, MaxSize}
 import eu.timepit.refined.string.Url
-import io.circe.refined._
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
+import io.circe.refined._
 import io.swagger.annotations.ApiModelProperty
 import org.make.api.technical.RequestHelper
-import org.make.core.{CirceFormatters, Validation}
 import org.make.core.Validation.{
   mandatoryField,
   maxLength,
@@ -46,10 +46,10 @@ import org.make.core.Validation.{
   validatePostalCode,
   validateUserInput
 }
-import org.make.core.auth.ClientId
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
+import org.make.core.{CirceFormatters, Validation}
 
 import scala.annotation.meta.field
 import scala.util.{Success, Try}
@@ -342,13 +342,22 @@ object UpdateUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[UpdateUserRequest] = deriveDecoder[UpdateUserRequest]
 }
 
+sealed abstract class SocialProvider(val value: String) extends StringEnumEntry
+
+object SocialProvider extends StringEnum[SocialProvider] with StringCirceEnum[SocialProvider] {
+  case object Google extends SocialProvider("google")
+  case object GooglePeople extends SocialProvider("google_people")
+  case object Facebook extends SocialProvider("facebook")
+
+  override def values: IndexedSeq[SocialProvider] = findValues
+}
+
 case class SocialLoginRequest(
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "facebook,google") provider: String,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "facebook,google,google_people")
+  provider: SocialProvider,
   token: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
-  @(ApiModelProperty @field)(dataType = "string", example = "888f7b51-469c-49b6-8bc2-4dafe1df6922")
-  clientId: Option[ClientId]
+  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language]
 ) {
   validate(mandatoryField("language", language), mandatoryField("country", country))
 }

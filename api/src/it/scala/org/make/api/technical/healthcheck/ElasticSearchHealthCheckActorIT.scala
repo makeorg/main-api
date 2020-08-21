@@ -37,7 +37,7 @@ import org.make.api.technical.elasticsearch.{
   RichHttpClient
 }
 import org.make.api.technical.healthcheck.HealthCheckCommands.CheckStatus
-import org.make.api.{ActorSystemComponent, ItMakeTest}
+import org.make.api.{ActorSystemComponent, DefaultConfigComponent, ItMakeTest}
 import org.make.core.CirceFormatters
 import org.make.core.idea.IdeaId
 import org.make.core.proposal.indexed._
@@ -56,6 +56,7 @@ class ElasticSearchHealthCheckActorIT
     with CirceFormatters
     with DefaultElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
+    with DefaultConfigComponent
     with ActorSystemComponent
     with DockerElasticsearchService {
 

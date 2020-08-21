@@ -242,12 +242,13 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("facebook.com/picture"),
+        dateOfBirth = None
       )
 
       val returnedProfile = Profile
@@ -311,8 +312,9 @@ class UserServiceTest
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("facebook.com/picture"),
-        country = "FR",
-        language = "fr"
+        country = Country("FR"),
+        language = Language("fr"),
+        dateOfBirth = None
       )
 
       val returnedProfileWithGender = Profile
@@ -367,12 +369,13 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("facebook.com/picture"),
+        dateOfBirth = None
       )
 
       val returnedProfile = Profile
@@ -419,12 +422,13 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("facebook.com/picture"),
+        dateOfBirth = None
       )
 
       val returnedProfile = Profile
@@ -497,12 +501,13 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("facebook.com/picture"),
+        dateOfBirth = None
       )
 
       whenReady(userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty), Timeout(3.seconds)) {
@@ -536,12 +541,13 @@ class UserServiceTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("facebook.com/picture")
+        picture = Some("facebook.com/picture"),
+        dateOfBirth = None
       )
 
       whenReady(userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty), Timeout(3.seconds)) {

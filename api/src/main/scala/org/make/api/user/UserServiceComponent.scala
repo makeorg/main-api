@@ -50,7 +50,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
-import org.make.core.{BusinessConfig, DateHelper, RequestContext}
+import org.make.core.{BusinessConfig, DateHelper, RequestContext, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -439,24 +439,37 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       requestContext: RequestContext
     ): Future[(User, Boolean)] = {
 
-      val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
-
-      persistentUserService.findByEmail(lowerCasedEmail).flatMap {
-        case Some(user) => updateUserFromSocial(user, userInfo, clientIp).map((_, false))
-        case None       => createUserFromSocial(requestContext, userInfo, questionId, clientIp).map((_, true))
-      }
+      userInfo.email
+        .filter(_ != "")
+        .map(_.toLowerCase())
+        .map { lowerCasedEmail =>
+          persistentUserService.findByEmail(lowerCasedEmail).flatMap {
+            case Some(user) => updateUserFromSocial(user, userInfo, clientIp).map((_, false))
+            case None =>
+              createUserFromSocial(lowerCasedEmail, requestContext, userInfo, questionId, clientIp).map((_, true))
+          }
+        }
+        .getOrElse {
+          logger.error(
+            "We couldn't find any email on social login. UserInfo: {}, requestContext: {}",
+            userInfo,
+            requestContext
+          )
+          Future
+            .failed(ValidationFailedError(Seq(ValidationError("email", "missing", Some("No email found for user")))))
+        }
     }
 
     private def createUserFromSocial(
+      lowerCasedEmail: String,
       requestContext: RequestContext,
       userInfo: UserInfo,
       questionId: Option[QuestionId],
       clientIp: Option[String]
     ): Future[User] = {
 
-      val country = BusinessConfig.validateCountry(Country(userInfo.country))
-      val language = BusinessConfig.validateLanguage(Country(userInfo.country), Language(userInfo.language))
-      val lowerCasedEmail: String = userInfo.email.map(_.toLowerCase()).getOrElse("")
+      val country = BusinessConfig.validateCountry(userInfo.country)
+      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
       val profile: Option[Profile] =
         Profile.parseProfile(
           facebookId = userInfo.facebookId,
@@ -468,7 +481,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             case _        => Other
           },
           genderName = userInfo.gender,
-          registerQuestionId = questionId
+          registerQuestionId = questionId,
+          dateOfBirth = userInfo.dateOfBirth
         )
 
       val user = User(
@@ -501,8 +515,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     private def updateUserFromSocial(user: User, userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
-      val country = BusinessConfig.validateCountry(Country(userInfo.country))
-      val language = BusinessConfig.validateLanguage(Country(userInfo.country), Language(userInfo.language))
+      val country = BusinessConfig.validateCountry(userInfo.country)
+      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
       val hashedPassword = if (!user.emailVerified) None else user.hashedPassword
 
       val updatedProfile: Option[Profile] = user.profile.map {

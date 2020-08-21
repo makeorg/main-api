@@ -24,7 +24,7 @@ import java.time.{Instant, LocalDate}
 import java.util.Date
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
@@ -41,16 +41,18 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
+import org.make.api.technical.auth.ClientService.ClientInformation
 import org.make.api.technical.auth._
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
+import org.make.api.user.SocialProvider.Google
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
 import org.make.api.userhistory.ResetPasswordEvent
 import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
-import org.make.core.auth.{ClientId, UserRights}
+import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.common.indexed.Sort
 import org.make.core.operation.OperationId
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
@@ -59,7 +61,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext, Requirement, Validation, ValidationError}
+import org.make.core.{DateHelper, RequestContext, Requirement, Validation, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
@@ -83,7 +85,8 @@ class UserApiTest
     with ActorSystemComponent
     with StorageServiceComponent
     with StorageConfigurationComponent
-    with UserRegistrationValidatorComponent {
+    with UserRegistrationValidatorComponent
+    with ClientServiceComponent {
 
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -95,11 +98,13 @@ class UserApiTest
   override val storageService: StorageService = mock[StorageService]
   override val storageConfiguration: StorageConfiguration = mock[StorageConfiguration]
   override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
+  override val clientService: ClientService = mock[ClientService]
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
 
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
-  when(authenticationConfiguration.defaultClientId).thenReturn("default-client")
+  private val defaultClientId = "default-client"
+  when(authenticationConfiguration.defaultClientId).thenReturn(defaultClientId)
   when(idGenerator.nextId()).thenReturn("some-id")
 
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
@@ -111,6 +116,44 @@ class UserApiTest
   })
 
   val expiresInSecond = 1000
+
+  when(clientService.getClient(ClientId(authenticationConfiguration.defaultClientId))).thenReturn(
+    Future.successful(
+      Some(
+        Client(
+          clientId = ClientId(defaultClientId),
+          name = defaultClientId,
+          allowedGrantTypes = Seq.empty,
+          secret = None,
+          scope = None,
+          redirectUri = None,
+          createdAt = None,
+          updatedAt = None,
+          defaultUserId = None,
+          roles = Seq.empty,
+          tokenExpirationSeconds = 200
+        )
+      )
+    )
+  )
+
+  when(clientService.getClientOrDefault(None)).thenReturn(
+    Future.successful(
+      Client(
+        clientId = ClientId(defaultClientId),
+        name = defaultClientId,
+        allowedGrantTypes = Seq.empty,
+        secret = None,
+        scope = None,
+        redirectUri = None,
+        createdAt = None,
+        updatedAt = None,
+        defaultUserId = None,
+        roles = Seq.empty,
+        tokenExpirationSeconds = 200
+      )
+    )
+  )
 
   val fakeUser: User = TestUtils.user(
     id = UserId("ABCD"),
@@ -193,7 +236,7 @@ class UserApiTest
   when(oauth2DataHandler.findAuthInfoByAccessToken(same(adminAccessToken)))
     .thenReturn(Future.successful(Some(adminFakeAuthInfo)))
 
-  val publicUser = fakeUser.copy(userId = UserId("EFGH"), publicProfile = true)
+  val publicUser: User = fakeUser.copy(userId = UserId("EFGH"), publicProfile = true)
 
   val users = Map(
     sylvain.userId -> sylvain,
@@ -694,8 +737,8 @@ class UserApiTest
       when(
         socialService
           .login(
-            any[String],
-            any[String],
+            any[SocialProvider],
+            eqTo("ABCDEFGHIJK"),
             any[Country],
             any[Language],
             any[Option[String]],
@@ -708,13 +751,13 @@ class UserApiTest
           (
             UserId("12347"),
             SocialLoginResponse(
-              TokenResponse(
+              token = TokenResponse(
                 token_type = "Bearer",
                 access_token = "access_token",
                 expires_in = expiresInSecond,
                 refresh_token = "refresh_token"
               ),
-              false
+              accountCreation = false
             )
           )
         )
@@ -735,7 +778,7 @@ class UserApiTest
         status should be(StatusCodes.Created)
         header("Set-Cookie").get.value should include("cookie-secure")
         verify(socialService).login(
-          eqTo("google"),
+          eqTo(Google),
           eqTo("ABCDEFGHIJK"),
           eqTo(Country("FR")),
           eqTo(Language("fr")),
@@ -748,34 +791,6 @@ class UserApiTest
     }
 
     Scenario("bad request when login social user") {
-      when(
-        socialService
-          .login(
-            any[String],
-            any[String],
-            any[Country],
-            any[Language],
-            any[Option[String]],
-            any[Option[QuestionId]],
-            any[RequestContext],
-            any[ClientId]
-          )
-      ).thenReturn(
-        Future.successful(
-          (
-            UserId("12347"),
-            SocialLoginResponse(
-              TokenResponse(
-                token_type = "Bearer",
-                access_token = "access_token",
-                expires_in = expiresInSecond,
-                refresh_token = "refresh_token"
-              ),
-              false
-            )
-          )
-        )
-      )
       val request =
         """
           |{
@@ -787,6 +802,130 @@ class UserApiTest
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
       Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+
+    Scenario("login with a specific client") {
+      val token = "login with a specific client"
+      val request =
+        s""" {
+          | "provider": "google",
+          | "token": "$token",
+          | "country": "FR",
+          | "language": "fr"
+          | }
+          |""".stripMargin
+
+      val clientId = ClientId(s"CLIENT - $token")
+      val clientSecret = s"CLIENT SECRET - $token"
+
+      val client =
+        Client(clientId, clientId.value, Seq.empty, Some(clientSecret), None, None, None, None, None, Seq.empty, 200)
+
+      when(clientService.getClientOrDefault(Some(ClientInformation(clientId, clientSecret))))
+        .thenReturn(Future.successful(client))
+
+      when(
+        socialService.login(
+          eqTo(Google),
+          eqTo(token),
+          eqTo(Country("FR")),
+          eqTo(Language("fr")),
+          any[Option[String]],
+          any[Option[QuestionId]],
+          any[RequestContext],
+          eqTo(client.clientId)
+        )
+      ).thenReturn(
+        Future.successful(
+          (
+            UserId(""),
+            SocialLoginResponse(
+              token_type = "",
+              access_token = "",
+              expires_in = 200L,
+              refresh_token = "",
+              account_creation = false
+            )
+          )
+        )
+      )
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.2")
+      Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(
+          `Remote-Address`(RemoteAddress(addr)),
+          Authorization(BasicHttpCredentials(clientId.value, clientSecret))
+        ) ~> routes ~> check {
+
+        status should be(StatusCodes.Created)
+        verify(socialService).login(
+          eqTo(Google),
+          eqTo(token),
+          eqTo(Country("FR")),
+          eqTo(Language("fr")),
+          eqTo(Some("192.0.0.2")),
+          eqTo(None),
+          any[RequestContext],
+          eqTo(client.clientId)
+        )
+      }
+    }
+
+    Scenario("login with a bad client") {
+      val token = "login with a bad client"
+      val request =
+        s""" {
+           | "provider": "google",
+           | "token": "$token",
+           | "country": "FR",
+           | "language": "fr"
+           | }
+           |""".stripMargin
+
+      val clientId = ClientId(s"CLIENT - $token")
+      val clientSecret = s"CLIENT SECRET - $token"
+
+      val client =
+        Client(clientId, clientId.value, Seq.empty, Some(clientSecret), None, None, None, None, None, Seq.empty, 200)
+
+      when(clientService.getClientOrDefault(Some(ClientInformation(clientId, "wrong secret"))))
+        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+
+      when(
+        socialService.login(
+          eqTo(Google),
+          eqTo(token),
+          eqTo(Country("FR")),
+          eqTo(Language("fr")),
+          any[Option[String]],
+          any[Option[QuestionId]],
+          any[RequestContext],
+          eqTo(client.clientId)
+        )
+      ).thenReturn(
+        Future.successful(
+          (
+            UserId(""),
+            SocialLoginResponse(
+              token_type = "",
+              access_token = "",
+              expires_in = 200L,
+              refresh_token = "",
+              account_creation = false
+            )
+          )
+        )
+      )
+
+      val addr: InetAddress = InetAddress.getByName("192.0.0.2")
+      Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
+        .withHeaders(
+          `Remote-Address`(RemoteAddress(addr)),
+          Authorization(BasicHttpCredentials(clientId.value, "wrong secret"))
+        ) ~> routes ~> check {
+
         status should be(StatusCodes.BadRequest)
       }
     }

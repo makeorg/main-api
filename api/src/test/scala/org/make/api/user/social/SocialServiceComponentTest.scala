@@ -19,16 +19,30 @@
 
 package org.make.api.user.social
 
+import java.net.URL
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.util.Date
 
 import org.make.api.technical.auth._
+import org.make.api.user.SocialProvider.{Facebook, Google, GooglePeople}
 import org.make.api.user.social.models.UserInfo
 import org.make.api.user.social.models.facebook.{UserInfo => FacebookUserInfos}
-import org.make.api.user.social.models.google.{UserInfo   => GoogleUserInfos}
+import org.make.api.user.social.models.google.{
+  Birthday,
+  GoogleDate,
+  ItemMetadata,
+  MetadataSource,
+  PeopleEmailAddress,
+  PeopleInfo,
+  PeopleName,
+  PeoplePhoto,
+  UserInfo => GoogleUserInfos
+}
 import org.make.api.user.{SocialLoginResponse, UserService, UserServiceComponent}
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.RequestContext
-import org.make.core.auth.{Client, ClientId, UserRights}
+import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
@@ -42,14 +56,12 @@ class SocialServiceComponentTest
     extends MakeUnitTest
     with DefaultSocialServiceComponent
     with UserServiceComponent
-    with MakeDataHandlerComponent
-    with ClientServiceComponent {
+    with MakeDataHandlerComponent {
 
   override val userService: UserService = mock[UserService]
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val googleApi: GoogleApi = mock[GoogleApi]
   override val facebookApi: FacebookApi = mock[FacebookApi]
-  override val clientService: ClientService = mock[ClientService]
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -62,13 +74,6 @@ class SocialServiceComponentTest
   val expireInSeconds = 123000
   var refreshTokenValue = "my_refresh_token"
   var accessTokenValue = "my_access_token"
-
-  val defaultClient: Client =
-    Client(ClientId("default-client-id"), "default", Seq.empty, None, None, None, None, None, None, Seq.empty, 300)
-  when(clientService.getClient(eqTo(ClientId("client"))))
-    .thenReturn(Future.successful(Some(defaultClient)))
-  when(clientService.getClient(eqTo(ClientId("fake-client"))))
-    .thenReturn(Future.successful(None))
 
   Feature("login user from google provider") {
     Scenario("successful create UserInfo Object") {
@@ -123,7 +128,7 @@ class SocialServiceComponentTest
       When("login google user")
       val tokenResposnse =
         socialService.login(
-          "google",
+          Google,
           "googleToken-a user logged via google",
           Country("FR"),
           Language("fr"),
@@ -139,12 +144,13 @@ class SocialServiceComponentTest
           UserInfo(
             email = googleData.email,
             firstName = googleData.givenName,
-            country = "FR",
-            language = "fr",
+            country = Country("FR"),
+            language = Language("fr"),
             googleId = googleData.iat,
             domain = googleData.hd,
             facebookId = None,
-            picture = Some("picture_url-s512/photo.jpg")
+            picture = Some("picture_url-s512/photo.jpg"),
+            dateOfBirth = None
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -208,7 +214,7 @@ class SocialServiceComponentTest
       When("login google user")
       val tokenResposnse =
         socialService.login(
-          "google",
+          Google,
           "googleToken-a user logged via google",
           Country("FR"),
           Language("fr"),
@@ -224,12 +230,13 @@ class SocialServiceComponentTest
           UserInfo(
             email = googleData.email,
             firstName = googleData.givenName,
-            country = "FR",
-            language = "fr",
+            country = Country("FR"),
+            language = Language("fr"),
             googleId = googleData.iat,
             domain = googleData.hd,
             facebookId = None,
-            picture = Some("picture_url-s512")
+            picture = Some("picture_url-s512"),
+            dateOfBirth = None
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -294,7 +301,7 @@ class SocialServiceComponentTest
       When("login user from google")
       val futureTokenResposnse =
         socialService.login(
-          "google",
+          Google,
           "token",
           Country("FR"),
           Language("fr"),
@@ -325,7 +332,7 @@ class SocialServiceComponentTest
       When("login user from google")
       val futureTokenResposnse =
         socialService.login(
-          "google",
+          Google,
           "token",
           Country("FR"),
           Language("fr"),
@@ -339,6 +346,89 @@ class SocialServiceComponentTest
         exception shouldBe a[Exception]
         exception.asInstanceOf[Exception].getMessage should be("invalid token from google")
       }
+    }
+  }
+
+  Feature("login user from google_people provider") {
+    Scenario("user with a birth date") {
+      val token = "user with a birth date"
+      val googleId = "123456789"
+      val email = "user-with-a-birth-date@example.com"
+      val userId1 = UserId("user-with-a-birth-date")
+
+      when(googleApi.peopleInfo(token)).thenReturn(
+        Future.successful(
+          PeopleInfo(
+            resourceName = s"people/$googleId",
+            etag = "",
+            names = Seq(
+              PeopleName(
+                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                displayName = "user",
+                familyName = "with",
+                givenName = "birth",
+                displayNameLastFirst = "date",
+                unstructuredName = "user with a birth date"
+              )
+            ),
+            photos = Seq(
+              PeoplePhoto(
+                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                url = new URL("https://example.com/avatar")
+              )
+            ),
+            emailAddresses =
+              Seq(PeopleEmailAddress(metadata = ItemMetadata(Some(true), None, MetadataSource("", "")), value = email)),
+            birthdays = Some(
+              Seq(
+                Birthday(
+                  metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                  None,
+                  GoogleDate(1970, 1, 1)
+                )
+              )
+            )
+          )
+        )
+      )
+
+      when(
+        userService.createOrUpdateUserFromSocial(
+          argThat[UserInfo](_.email.contains(email)),
+          eqTo(None),
+          eqTo(None),
+          eqTo(RequestContext.empty)
+        )
+      ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
+
+      when(oauth2DataHandler.createAccessToken(argThat[AuthInfo[UserRights]](_.user.userId == userId1)))
+        .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
+
+      whenReady(
+        socialService.login(
+          GooglePeople,
+          token,
+          Country("FR"),
+          Language("fr"),
+          None,
+          None,
+          RequestContext.empty,
+          ClientId("default")
+        ),
+        Timeout(3.seconds)
+      ) {
+        case (userId, response) =>
+          userId should be(userId1)
+          response.access_token should be("token")
+          verify(userService).createOrUpdateUserFromSocial(argThat[UserInfo] { userInfo =>
+            userInfo.dateOfBirth.contains(LocalDate.parse("1970-01-01")) &&
+            userInfo.email.contains(email) &&
+            userInfo.domain.contains("example.com") &&
+            userInfo.googleId.contains(googleId) &&
+            userInfo.picture.contains("https://example.com/avatar")
+          }, eqTo(None), eqTo(None), eqTo(RequestContext.empty))
+      }
+
     }
   }
 
@@ -367,11 +457,12 @@ class SocialServiceComponentTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512")
+        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
+        dateOfBirth = None
       )
 
       when(facebookApi.getUserInfo(eqTo("facebookToken-444444")))
@@ -386,7 +477,7 @@ class SocialServiceComponentTest
       When("login facebook user")
       val tokenResponse =
         socialService.login(
-          "facebook",
+          Facebook,
           "facebookToken-444444",
           Country("FR"),
           Language("fr"),
@@ -403,11 +494,12 @@ class SocialServiceComponentTest
           UserInfo(
             email = facebookData.email,
             firstName = facebookData.firstName,
-            country = "FR",
-            language = "fr",
+            country = Country("FR"),
+            language = Language("fr"),
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512")
+            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
+            dateOfBirth = None
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -440,11 +532,12 @@ class SocialServiceComponentTest
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = None,
-        country = "FR",
-        language = "fr",
+        country = Country("FR"),
+        language = Language("fr"),
         googleId = None,
         facebookId = Some("444444"),
-        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512")
+        picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
+        dateOfBirth = None
       )
 
       when(facebookApi.getUserInfo(eqTo("facebookToken-444444")))
@@ -461,7 +554,7 @@ class SocialServiceComponentTest
       When("login facebook user")
       val tokenResponse =
         socialService.login(
-          "facebook",
+          Facebook,
           "facebookToken-444444",
           Country("FR"),
           Language("fr"),
@@ -478,11 +571,12 @@ class SocialServiceComponentTest
           UserInfo(
             email = facebookData.email,
             firstName = facebookData.firstName,
-            country = "FR",
-            language = "fr",
+            country = Country("FR"),
+            language = Language("fr"),
             googleId = None,
             facebookId = Some(facebookData.id),
-            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512")
+            picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
+            dateOfBirth = None
           )
 
         verify(userService).createOrUpdateUserFromSocial(
@@ -535,7 +629,7 @@ class SocialServiceComponentTest
       When("login user from facebook")
       val futureTokenResposnse =
         socialService.login(
-          "facebook",
+          Facebook,
           "facebookToken2",
           Country("FR"),
           Language("fr"),
@@ -566,7 +660,7 @@ class SocialServiceComponentTest
       When("login user from google")
       val futureTokenResposnse =
         socialService.login(
-          "facebook",
+          Facebook,
           "facebookToken3",
           Country("FR"),
           Language("fr"),
@@ -582,29 +676,4 @@ class SocialServiceComponentTest
       }
     }
   }
-
-  Feature("login user from unknown provider") {
-    Scenario("failed login from unkown provider") {
-      Given("a user logged via instagram")
-
-      When("login user from instagram")
-      val futureTokenResposnse =
-        socialService.login(
-          "instagram",
-          "token",
-          Country("FR"),
-          Language("fr"),
-          None,
-          None,
-          RequestContext.empty,
-          ClientId("client")
-        )
-
-      whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
-        exception shouldBe a[Exception]
-        exception.asInstanceOf[Exception].getMessage should be("Social login failed: undefined provider instagram")
-      }
-    }
-  }
-
 }

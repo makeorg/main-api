@@ -19,18 +19,18 @@
 
 package org.make.api.user.social
 
-import java.nio.charset.Charset
-
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
+import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.http.scaladsl.{Http, HttpExt}
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.parser._
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.make.api.ActorSystemComponent
-import org.make.api.user.social.models.google.{UserInfo => GoogleUserInfo}
+import org.make.api.user.social.models.google.{PeopleInfo, UserInfo => GoogleUserInfo}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 trait GoogleApiComponent {
   def googleApi: GoogleApi
@@ -38,10 +38,11 @@ trait GoogleApiComponent {
 
 trait GoogleApi {
   def getUserInfo(idToken: String): Future[GoogleUserInfo]
+  def peopleInfo(userToken: String): Future[PeopleInfo]
 }
 
-trait DefaultGoogleApiComponent extends GoogleApiComponent {
-  self: ActorSystemComponent =>
+trait DefaultGoogleApiComponent extends GoogleApiComponent with ErrorAccumulatingCirceSupport {
+  self: ActorSystemComponent with SocialProvidersConfigurationComponent =>
 
   override lazy val googleApi: GoogleApi = new DefaultGoogleApi
 
@@ -54,30 +55,33 @@ trait DefaultGoogleApiComponent extends GoogleApiComponent {
 
       http
         .singleRequest(HttpRequest(method = HttpMethods.GET, uri = url))
-        .flatMap(strictToString(_))
-        .flatMap { entity =>
-          parse(entity).flatMap(_.as[GoogleUserInfo]) match {
-            case Right(userInfo) => Future.successful(userInfo)
-            case Left(e)         => Future.failed(e)
-          }
-        }
+        .flatMap(unmarshal[GoogleUserInfo](_))
     }
 
-    private def strictToString(response: HttpResponse, expectedCode: StatusCode = StatusCodes.OK): Future[String] = {
+    override def peopleInfo(userToken: String): Future[PeopleInfo] = {
+      val apiKey = socialProvidersConfiguration.google.apiKey
+      val url =
+        s"https://people.googleapis.com/v1/people/me?key=$apiKey&personFields=metadata,names,birthdays,photos,emailAddresses"
+
+      http
+        .singleRequest(
+          HttpRequest(method = HttpMethods.GET, uri = url, headers = Seq(Authorization(OAuth2BearerToken(userToken))))
+        )
+        .flatMap(unmarshal[PeopleInfo](_))
+    }
+
+    private def unmarshal[Entity](response: HttpResponse, expectedCode: StatusCode = StatusCodes.OK)(
+      implicit unmarshaller: Unmarshaller[ResponseEntity, Entity]
+    ): Future[Entity] = {
       logger.debug(s"Server answered $response")
       response match {
         case HttpResponse(`expectedCode`, _, entity, _) =>
-          val result = entity
-            .toStrict(2.second)
-            .map(_.data.decodeString(Charset.forName("UTF-8")))
-          result
+          Unmarshal(entity).to[Entity]
         case HttpResponse(code, _, entity, _) =>
-          entity.toStrict(2.second).flatMap { entity =>
-            val response = entity.data.decodeString(Charset.forName("UTF-8"))
-            Future.failed(new IllegalStateException(s"Got unexpected response code: $code, with body: $response"))
+          Unmarshal(entity).to[String].flatMap { error =>
+            Future.failed(new IllegalStateException(s"Got unexpected response code: $code, with body: $error"))
           }
       }
     }
-
   }
 }

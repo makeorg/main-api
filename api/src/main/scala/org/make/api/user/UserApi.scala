@@ -22,6 +22,7 @@ package org.make.api.user
 import java.time.LocalDate
 
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{BasicHttpCredentials, Authorization => AuthorizationHeader}
 import akka.http.scaladsl.server._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
@@ -34,13 +35,15 @@ import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse,
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
-import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.auth.ClientService.ClientInformation
+import org.make.api.technical.auth.{ClientServiceComponent, MakeDataHandlerComponent}
 import org.make.api.technical.storage._
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
+import org.make.core.ApiParamMagnetHelper._
 import org.make.core._
-import org.make.core.auth.{ClientId, UserRights}
+import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.common.indexed.Sort
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -52,7 +55,6 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import org.make.core.ApiParamMagnetHelper._
 
 @Api(value = "User")
 @Path(value = "/user")
@@ -588,7 +590,8 @@ trait DefaultUserApiComponent
     with ActorSystemComponent
     with StorageServiceComponent
     with StorageConfigurationComponent
-    with UserRegistrationValidatorComponent =>
+    with UserRegistrationValidatorComponent
+    with ClientServiceComponent =>
 
   override lazy val userApi: UserApi = new DefaultUserApi
 
@@ -628,7 +631,7 @@ trait DefaultUserApiComponent
                       profession = user.profile.flatMap(_.profession),
                       description = user.profile.flatMap(_.description),
                       postalCode = user.profile.flatMap(_.postalCode),
-                      optInNewsletter = user.profile.map(_.optInNewsletter).getOrElse(true),
+                      optInNewsletter = user.profile.forall(_.optInNewsletter),
                       website = user.profile.flatMap(_.website)
                     )
                   )
@@ -683,44 +686,57 @@ trait DefaultUserApiComponent
       }
     }
 
+    private def findClient(header: Option[AuthorizationHeader]): Future[Client] = {
+      val maybeClientInformation: Option[ClientInformation] = header match {
+        case Some(AuthorizationHeader(BasicHttpCredentials(clientId, clientSecret))) =>
+          Some(ClientInformation(ClientId(clientId), clientSecret))
+        case _ => None
+      }
+      clientService.getClientOrDefault(maybeClientInformation)
+    }
+
     override def socialLogin: Route = post {
       path("user" / "login" / "social") {
         makeOperation("SocialLogin", EndpointType.CoreOnly) { requestContext =>
           decodeRequest {
             entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
               extractClientIP { clientIp =>
-                val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
-                val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
-                val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+                optionalHeaderValueByType[AuthorizationHeader](()) { maybeAuthorization =>
+                  provideAsync(findClient(maybeAuthorization)) { client =>
+                    val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
+                    val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
+                    val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
 
-                val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
-                  case Some(questionId) => questionService.getQuestion(questionId)
-                  case _                => Future.successful(None)
-                }
-                provideAsync(futureMaybeQuestion) { maybeQuestion =>
-                  onSuccess(
-                    socialService
-                      .login(
-                        request.provider,
-                        request.token,
-                        country,
-                        language,
-                        Some(ip),
-                        maybeQuestion.map(_.questionId),
-                        requestContext,
-                        request.clientId.getOrElse(ClientId(makeSettings.Authentication.defaultClientId))
-                      )
-                      .flatMap {
+                    val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
+                      case Some(questionId) => questionService.getQuestion(questionId)
+                      case _                => Future.successful(None)
+                    }
+                    provideAsync(futureMaybeQuestion) { maybeQuestion =>
+                      onSuccess(
+                        socialService
+                          .login(
+                            request.provider,
+                            request.token,
+                            country,
+                            language,
+                            Some(ip),
+                            maybeQuestion.map(_.questionId),
+                            requestContext,
+                            client.clientId
+                          )
+                          .flatMap {
+                            case (userId, social) =>
+                              sessionHistoryCoordinatorService
+                                .convertSession(requestContext.sessionId, userId, requestContext)
+                                .map(_ => (userId, social))
+                          }
+                      ) {
                         case (userId, social) =>
-                          sessionHistoryCoordinatorService
-                            .convertSession(requestContext.sessionId, userId, requestContext)
-                            .map(_ => (userId, social))
+                          setMakeSecure(social.access_token, userId) {
+                            complete(StatusCodes.Created -> social)
+                          }
                       }
-                  ) {
-                    case (userId, social) =>
-                      setMakeSecure(social.access_token, userId) {
-                        complete(StatusCodes.Created -> social)
-                      }
+                    }
                   }
                 }
               }
