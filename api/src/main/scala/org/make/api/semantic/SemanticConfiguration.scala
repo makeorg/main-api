@@ -20,7 +20,7 @@
 package org.make.api.semantic
 
 import com.typesafe.config.Config
-import org.make.api.ActorSystemComponent
+import org.make.api.ConfigComponent
 
 class SemanticConfiguration(config: Config) {
   val url: String = config.getString("url")
@@ -32,8 +32,8 @@ trait SemanticConfigurationComponent {
 }
 
 trait DefaultSemanticConfigurationComponent extends SemanticConfigurationComponent {
-  this: ActorSystemComponent =>
+  this: ConfigComponent =>
   override lazy val semanticConfiguration: SemanticConfiguration = new SemanticConfiguration(
-    actorSystem.settings.config.getConfig("make-api.semantic")
+    config.getConfig("make-api.semantic")
   )
 }

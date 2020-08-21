@@ -22,7 +22,7 @@ package org.make.api.technical.webflow
 import java.net.URL
 
 import com.typesafe.config.Config
-import org.make.api.ActorSystemComponent
+import org.make.api.ConfigComponent
 
 class WebflowConfiguration(config: Config) {
   val apiUrl: URL = new URL(config.getString("api-url"))
@@ -37,7 +37,7 @@ trait WebflowConfigurationComponent {
   def webflowConfiguration: WebflowConfiguration
 }
 
-trait DefaultWebflowConfigurationComponent extends WebflowConfigurationComponent { this: ActorSystemComponent =>
+trait DefaultWebflowConfigurationComponent extends WebflowConfigurationComponent { this: ConfigComponent =>
   override lazy val webflowConfiguration: WebflowConfiguration =
-    new WebflowConfiguration(actorSystem.settings.config.getConfig("make-api.webflow"))
+    new WebflowConfiguration(config.getConfig("make-api.webflow"))
 }

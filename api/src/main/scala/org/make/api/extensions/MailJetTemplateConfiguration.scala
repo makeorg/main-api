@@ -21,7 +21,7 @@ package org.make.api.extensions
 
 import akka.actor.Extension
 import com.typesafe.config.Config
-import org.make.api.ActorSystemComponent
+import org.make.api.ConfigComponent
 
 class MailJetTemplateConfiguration(config: Config) extends Extension with ConfigurationSupport {
   val from: String = config.getString("from")
@@ -40,8 +40,8 @@ trait MailJetTemplateConfigurationComponent {
 }
 
 trait DefaultMailJetTemplateConfigurationComponent extends MailJetTemplateConfigurationComponent {
-  this: ActorSystemComponent =>
+  this: ConfigComponent =>
   override lazy val mailJetTemplateConfiguration: MailJetTemplateConfiguration =
-    new MailJetTemplateConfiguration(actorSystem.settings.config.getConfig("make-api.mail-jet.templates"))
+    new MailJetTemplateConfiguration(config.getConfig("make-api.mail-jet.templates"))
 
 }

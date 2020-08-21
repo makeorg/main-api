@@ -20,7 +20,7 @@
 package org.make.api.proposal
 
 import com.typesafe.config.Config
-import org.make.api.ActorSystemComponent
+import org.make.api.ConfigComponent
 import org.make.core.proposal.SortAlgorithmConfiguration
 
 trait SortAlgorithmConfigurationComponent {
@@ -28,10 +28,10 @@ trait SortAlgorithmConfigurationComponent {
 }
 
 trait DefaultSortAlgorithmConfigurationComponent extends SortAlgorithmConfigurationComponent {
-  this: ActorSystemComponent =>
+  this: ConfigComponent =>
 
   override def sortAlgorithmConfiguration: SortAlgorithmConfiguration =
-    new DefaultSortAlgorithmConfiguration(actorSystem.settings.config)
+    new DefaultSortAlgorithmConfiguration(config)
 
   class DefaultSortAlgorithmConfiguration(config: Config) extends SortAlgorithmConfiguration {
     override val controversyThreshold: Double = config.getDouble("make-api.proposal-algorithm.controversy-threshold")

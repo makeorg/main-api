@@ -25,7 +25,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.ApiModelProperty
 import kamon.annotation.api.Trace
-import org.make.api.ActorSystemComponent
+import org.make.api.ConfigComponent
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.DateHelper
 import org.make.core.user.{UserId, UserType}
@@ -179,10 +179,10 @@ trait StorageConfigurationComponent {
 }
 
 trait DefaultStorageConfigurationComponent extends StorageConfigurationComponent {
-  self: ActorSystemComponent =>
+  self: ConfigComponent =>
 
   override lazy val storageConfiguration: StorageConfiguration = {
-    val configuration = actorSystem.settings.config.getConfig("make-api.storage")
+    val configuration = config.getConfig("make-api.storage")
     StorageConfiguration(
       bucketName = configuration.getString("bucket-name"),
       baseUrl = configuration.getString("base-url"),

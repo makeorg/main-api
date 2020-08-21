@@ -22,7 +22,7 @@ package org.make.api.technical.elasticsearch
 import akka.actor.Extension
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.ActorSystemComponent
+import org.make.api.ConfigComponent
 import org.make.api.extensions.ConfigurationSupport
 
 class ElasticsearchConfiguration(override protected val configuration: Config)
@@ -47,8 +47,8 @@ trait ElasticsearchConfigurationComponent {
 }
 
 trait DefaultElasticsearchConfigurationComponent extends ElasticsearchConfigurationComponent {
-  this: ActorSystemComponent =>
+  this: ConfigComponent =>
 
   override lazy val elasticsearchConfiguration: ElasticsearchConfiguration =
-    new ElasticsearchConfiguration(actorSystem.settings.config.getConfig("make-api.elasticSearch"))
+    new ElasticsearchConfiguration(config.getConfig("make-api.elasticSearch"))
 }

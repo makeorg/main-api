@@ -20,7 +20,7 @@
 package org.make.api.user.validation
 
 import com.typesafe.config.{Config, ConfigObject}
-import org.make.api.ActorSystemComponent
+import org.make.api.ConfigComponent
 import org.make.api.user.{UserProfileRequestValidation, UserRegisterData}
 import org.make.core.Requirement
 
@@ -37,10 +37,10 @@ trait UserRegistrationValidatorComponent {
 }
 
 trait DefaultUserRegistrationValidatorComponent extends UserRegistrationValidatorComponent {
-  self: ActorSystemComponent =>
+  self: ConfigComponent =>
 
   override lazy val userRegistrationValidator: UserRegistrationValidator = new DefaultUserRegistrationValidator(
-    actorSystem.settings.config.getConfig("make-api.user-validation")
+    config.getConfig("make-api.user-validation")
   )
 }
 
