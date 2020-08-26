@@ -1117,6 +1117,7 @@ trait DefaultPersistentUserServiceComponent
               followedUsersColumn.date -> DateHelper.now()
             )
         }.execute().apply()
+        () // TODO check success
       })
     }
 
@@ -1132,6 +1133,7 @@ trait DefaultPersistentUserServiceComponent
                 .and(sqls.eq(followedUsersAlias.followedUserId, followedUserId.value))
             )
         }.executeUpdate().apply()
+        () // TODO check success
       })
     }
 

@@ -63,9 +63,11 @@ class JobReportingActor(
     case Report(progress) =>
       val originalSender = sender()
       jobCoordinatorService.report(id, progress).map(_ => originalSender ! Ack)
+      ()
     case Finish(outcome) =>
       val originalSender = sender()
       jobCoordinatorService.finish(id, outcome).map(_ => originalSender ! Ack)
+      ()
   }
 
 }

@@ -54,6 +54,7 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
 
   override def preStart(): Unit = {
     context.system.scheduler.scheduleWithFixedDelay(0.seconds, 5.minutes, self, ReloadSequenceConfiguration)
+    ()
   }
 
   override def receive: Receive = {
@@ -67,12 +68,15 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
       )
     case SetSequenceConfiguration(configuration) =>
       pipe(persistentSequenceConfigurationService.persist(configuration)).to(sender())
+      ()
     case GetPersistentSequenceConfiguration(sequenceId) =>
       pipe(persistentSequenceConfigurationService.findOne(sequenceId).map(StoredSequenceConfiguration.apply))
         .to(sender())
+      ()
     case GetPersistentSequenceConfigurationByQuestionId(questionId) =>
       pipe(persistentSequenceConfigurationService.findOne(questionId).map(StoredSequenceConfiguration.apply))
         .to(sender())
+      ()
   }
 
 }

@@ -70,7 +70,7 @@ trait DefaultElasticsearchClientComponent extends ElasticsearchClientComponent w
     lazy val elasticsearchOrganisationMapping: String =
       Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
     lazy val elasticsearchOperationOfQuestionMapping: String =
-      Source.fromResource("elasticsearch-mappings/operationOfQuestion.json")(Codec.UTF8).getLines().mkString("")
+      Source.fromResource("elasticsearch-mappings/operation-of-question.json")(Codec.UTF8).getLines().mkString("")
     lazy val elasticsearchPostMapping: String =
       Source.fromResource("elasticsearch-mappings/post.json")(Codec.UTF8).getLines().mkString("")
 

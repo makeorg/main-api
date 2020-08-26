@@ -173,6 +173,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
             .from(PersistentTopIdea.as(topIdeaAlias))
             .where(sqls.eq(topIdeaAlias.id, topIdeaId.value))
         }.update.apply()
+        () // TODO check success
       })
     }
 

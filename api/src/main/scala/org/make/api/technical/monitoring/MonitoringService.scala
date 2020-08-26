@@ -70,6 +70,7 @@ trait DefaultMonitoringService extends MonitoringServiceComponent with StrictLog
     private def recordIfPositive(applicationName: String, metric: String, value: Long): Unit = {
       if (value >= 0) {
         getHistogram(HistogramName(applicationName, metric)).record(value)
+        ()
       } else {
         logger.warn(s"discarding metric $metric for $applicationName since it results in a negative metric")
       }

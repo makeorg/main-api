@@ -125,6 +125,7 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
       implicit val cxt: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         SQL(s"truncate table ${PersistentCrmUser.tableName}").execute.apply()
+        ()
       })
     }
   }

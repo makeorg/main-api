@@ -110,6 +110,8 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
         MakeBackoffSupervisor.propsAndName(JobCoordinator.props(Job.defaultHeartRate), JobCoordinator.name)
       context.actorOf(props, name)
     }
+
+    ()
   }
 
   override def receive: Receive = {

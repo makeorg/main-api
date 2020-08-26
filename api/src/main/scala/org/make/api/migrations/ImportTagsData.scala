@@ -52,7 +52,7 @@ trait ImportTagsData extends Migration with StrictLogging with TagHelper {
           throw new IllegalStateException(s"Unable to find the question for the operation with slug $operationSlug")
         case Some(q) =>
           this.question = q
-          Future.successful {}
+          ()
       }
   }
 

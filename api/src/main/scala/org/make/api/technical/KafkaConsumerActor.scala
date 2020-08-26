@@ -67,7 +67,10 @@ abstract class KafkaConsumerActor[T]
   }
 
   override def postStop(): Unit = {
-    Try(consumer.close())
+    Try(consumer.close()) match {
+      case Success(_) => ()
+      case Failure(e) => log.error(e, s"Kafka consumer actor $groupId failed to stop consumer: ")
+    }
   }
 
   private def createConsumer(): KafkaConsumer[String, T] = {

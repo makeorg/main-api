@@ -212,10 +212,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
     private def resetDirectory(directory: Path): Unit = {
       if (Files.exists(directory)) {
-        Files.list(directory).forEach(file => Files.deleteIfExists(file))
+        Files.list(directory).forEach { file =>
+          Files.deleteIfExists(file)
+          ()
+        }
       } else {
         Files.createDirectories(directory)
       }
+      ()
     }
 
     def initializeDirectories(): Future[Unit] = {

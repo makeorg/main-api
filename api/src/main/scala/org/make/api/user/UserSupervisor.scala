@@ -95,6 +95,7 @@ class UserSupervisor(dependencies: UserSupervisorDependencies)
       context.actorOf(props, name)
     }
 
+    ()
   }
 
   override def receive: Receive = {

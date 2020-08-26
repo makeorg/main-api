@@ -30,6 +30,7 @@ import org.make.api.technical.crm.{MailJetEventWrapper, SendEmail}
 import org.make.api.technical.tracking.TrackingEventWrapper
 import org.make.api.userhistory.UserEventWrapper
 import org.make.core.AvroSerializers
+import org.scalatest.Assertion
 
 class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with StrictLogging {
 
@@ -69,7 +70,7 @@ class AvroCompatibilityTest extends MakeUnitTest with AvroSerializers with Stric
     }
   }
 
-  private def checkEntityType(currentSchema: Schema, name: String): Unit = {
+  private def checkEntityType(currentSchema: Schema, name: String): Assertion = {
     val schemas = AvroCompatibilityChecker.loadSchemas(name)
 
     if (schemas.isEmpty) {

@@ -28,7 +28,7 @@ import org.apache.kafka.common.serialization.{Serializer, StringSerializer}
 import org.make.api.extensions.{KafkaConfiguration, KafkaConfigurationExtension}
 import org.make.core.AvroSerializers
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 abstract class ProducerActor[Wrapper, Event]
     extends Actor
@@ -49,6 +49,7 @@ abstract class ProducerActor[Wrapper, Event]
 
   override def preStart(): Unit = {
     context.system.eventStream.subscribe(self, eventClass)
+    ()
   }
 
   protected def createProducer(): KafkaProducer[String, Wrapper] = {
@@ -70,10 +71,14 @@ abstract class ProducerActor[Wrapper, Event]
       new ProducerRecord[String, Wrapper](kafkaTopic, None.orNull, System.currentTimeMillis(), None.orNull, record),
       sendCallBack
     )
+    ()
   }
 
   override def postStop(): Unit = {
-    Try(producer.close())
+    Try(producer.close()) match {
+      case Success(_) => ()
+      case Failure(e) => log.error(e, s"Kafka producer actor ${this.getClass} failed to stop producer: ")
+    }
   }
 }
 

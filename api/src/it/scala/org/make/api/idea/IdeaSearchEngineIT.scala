@@ -20,13 +20,8 @@
 package org.make.api.idea
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import io.circe.syntax._
 import org.make.api.{ActorSystemComponent, ItMakeTest}
-import org.make.api.docker.DockerElasticsearchService
+import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   ElasticsearchConfiguration,
@@ -42,14 +37,11 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, Future}
-import scala.io.{Codec, Source}
-import scala.util.{Failure, Success, Try}
 
 class IdeaSearchEngineIT
     extends ItMakeTest
     with CirceFormatters
-    with DockerElasticsearchService
+    with SearchEngineIT[IdeaId, IndexedIdea]
     with DefaultIdeaSearchEngineComponent
     with DefaultElasticsearchClientComponent
     with ElasticsearchConfigurationComponent
@@ -59,8 +51,9 @@ class IdeaSearchEngineIT
 
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
-  private val eSIndexName: String = "ideaittest"
-  private val eSDocType: String = "idea"
+  override val eSIndexName: String = "ideaittest"
+  override val eSDocType: String = "idea"
+  override def docs: Seq[IndexedIdea] = ideas
 
   override val elasticsearchExposedPort: Int = 30001
 
@@ -72,7 +65,7 @@ class IdeaSearchEngineIT
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    initializeElasticsearch()
+    initializeElasticsearch(_.ideaId)
   }
 
   val ideasActivated: Seq[IndexedIdea] = Seq(
@@ -118,58 +111,6 @@ class IdeaSearchEngineIT
   )
 
   private def ideas: Seq[IndexedIdea] = ideasActivated
-
-  private def initializeElasticsearch(): Unit = {
-    implicit val actorSystem: ActorSystem = ActorSystem()
-    val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val ideaMapping =
-      Source.fromResource("elasticsearch-mappings/idea.json")(Codec.UTF8).getLines().mkString("")
-    val responseFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(
-        uri = s"$elasticsearchEndpoint/$eSIndexName",
-        method = HttpMethods.PUT,
-        entity = HttpEntity(ContentTypes.`application/json`, ideaMapping)
-      )
-    )
-
-    Await.result(responseFuture, 5.seconds)
-    responseFuture.onComplete {
-      case Failure(e) =>
-        logger.error(s"Cannot create elasticsearch schema: ${e.getStackTrace.mkString("\n")}")
-        fail(e)
-      case Success(_) => logger.debug(s"""Elasticsearch mapped successfully on index "$eSIndexName" """)
-    }
-
-    val pool: Flow[(HttpRequest, IdeaId), (Try[HttpResponse], IdeaId), Http.HostConnectionPool] =
-      Http().cachedHostConnectionPool[IdeaId](
-        "localhost",
-        elasticsearchExposedPort,
-        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
-      )
-
-    val insertFutures = AkkaSource[IndexedIdea](ideas).map { idea =>
-      val indexAndDocTypeEndpoint = s"$eSIndexName/$eSDocType"
-      (
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${idea.ideaId.value}",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, idea.asJson.toString)
-        ),
-        idea.ideaId
-      )
-    }.via(pool).runForeach {
-      case (Failure(e), id) => logger.error(s"Error when indexing idea ${id.value}:", e)
-      case _                =>
-    }
-
-    Await.result(insertFutures, 150.seconds)
-    logger.debug("Ideas indexed successfully.")
-
-    val responseRefreshIdeaFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(uri = s"$elasticsearchEndpoint/$eSIndexName/_refresh", method = HttpMethods.POST)
-    )
-    Await.result(responseRefreshIdeaFuture, 5.seconds)
-  }
 
   Feature("get idea list") {
     Scenario("get idea list ordered by name") {

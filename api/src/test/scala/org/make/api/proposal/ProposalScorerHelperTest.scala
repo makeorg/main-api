@@ -246,44 +246,46 @@ class ProposalScorerHelperTest extends MakeUnitTest {
   }
 
   Feature("score confidence interval") {
-    val rgen = Random
-    rgen.setSeed(0)
-    val nTrials = 1000
-    val success = (1 to nTrials)
-      .map(_ => {
-        val nbVoteAgree = rgen.nextInt(100)
-        val nbVoteDisagree = rgen.nextInt(100 - nbVoteAgree)
-        val nbVoteNeutral = 100 - nbVoteAgree - nbVoteDisagree
+    Scenario("success") {
+      val rgen = Random
+      rgen.setSeed(0)
+      val nTrials = 1000
+      val success = (1 to nTrials)
+        .map(_ => {
+          val nbVoteAgree = rgen.nextInt(100)
+          val nbVoteDisagree = rgen.nextInt(100 - nbVoteAgree)
+          val nbVoteNeutral = 100 - nbVoteAgree - nbVoteDisagree
 
-        val votes = createVotes(
-          nbVoteAgree,
-          nbVoteDisagree,
-          nbVoteNeutral,
-          nbQualificationLikeIt = rgen.nextInt(1 + nbVoteAgree / 2),
-          nbQualificationDoable = rgen.nextInt(1 + nbVoteAgree / 2),
-          nbQualificationPlatitudeAgree = rgen.nextInt(1 + nbVoteAgree / 3),
-          nbQualificationNoWay = rgen.nextInt(1 + nbVoteDisagree / 2),
-          nbQualificationImpossible = rgen.nextInt(1 + nbVoteDisagree / 2),
-          nbQualificationPlatitudeDisagree = rgen.nextInt(1 + nbVoteDisagree / 3)
-        )
+          val votes = createVotes(
+            nbVoteAgree,
+            nbVoteDisagree,
+            nbVoteNeutral,
+            nbQualificationLikeIt = rgen.nextInt(1 + nbVoteAgree / 2),
+            nbQualificationDoable = rgen.nextInt(1 + nbVoteAgree / 2),
+            nbQualificationPlatitudeAgree = rgen.nextInt(1 + nbVoteAgree / 3),
+            nbQualificationNoWay = rgen.nextInt(1 + nbVoteDisagree / 2),
+            nbQualificationImpossible = rgen.nextInt(1 + nbVoteDisagree / 2),
+            nbQualificationPlatitudeDisagree = rgen.nextInt(1 + nbVoteDisagree / 3)
+          )
 
-        val counts = ScoreCounts.fromSequenceVotes(votes)
-        val score = counts.topScore()
-        val confidence_interval = counts.topScoreConfidenceInterval()
-        val sampleScore = counts.sampleTopScore()
+          val counts = ScoreCounts.fromSequenceVotes(votes)
+          val score = counts.topScore()
+          val confidence_interval = counts.topScoreConfidenceInterval()
+          val sampleScore = counts.sampleTopScore()
 
-        if (sampleScore > score - confidence_interval && sampleScore < score + confidence_interval) {
-          1
-        } else {
-          0
-        }
-      })
-      .sum
-      .toDouble / nTrials.toDouble
+          if (sampleScore > score - confidence_interval && sampleScore < score + confidence_interval) {
+            1
+          } else {
+            0
+          }
+        })
+        .sum
+        .toDouble / nTrials.toDouble
 
-    logger.debug(success.toString)
+      logger.debug(success.toString)
 
-    success should be(0.95 +- 0.05)
+      success should be(0.95 +- 0.05)
+    }
   }
 
   Feature("proposal pool") {

@@ -20,13 +20,8 @@
 package org.make.api.organisation
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import io.circe.syntax._
 import org.make.api.{ActorSystemComponent, ItMakeTest}
-import org.make.api.docker.DockerElasticsearchService
+import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   ElasticsearchConfiguration,
@@ -41,14 +36,11 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, Future}
-import scala.io.{Codec, Source}
-import scala.util.{Failure, Success, Try}
 
 class OrganisationSearchEngineIT
     extends ItMakeTest
     with CirceFormatters
-    with DockerElasticsearchService
+    with SearchEngineIT[UserId, IndexedOrganisation]
     with DefaultOrganisationSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
@@ -57,8 +49,9 @@ class OrganisationSearchEngineIT
   override val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   override val StartContainersTimeout: FiniteDuration = 5.minutes
 
-  private val eSIndexName: String = "organisation-it-test"
-  private val eSDocType: String = "organisation"
+  override val eSIndexName: String = "organisation-it-test"
+  override val eSDocType: String = "organisation"
+  override def docs: Seq[IndexedOrganisation] = organisations
 
   override val elasticsearchExposedPort: Int = 30003
 
@@ -70,7 +63,7 @@ class OrganisationSearchEngineIT
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    initializeElasticsearch()
+    initializeElasticsearch(_.organisationId)
   }
 
   val organisations: immutable.Seq[IndexedOrganisation] = immutable.Seq(
@@ -138,59 +131,6 @@ class OrganisationSearchEngineIT
       )
     )
   )
-
-  private def initializeElasticsearch(): Unit = {
-    implicit val actorSystem: ActorSystem = ActorSystem()
-
-    val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val organisationMapping =
-      Source.fromResource("elasticsearch-mappings/organisation.json")(Codec.UTF8).getLines().mkString("")
-    val responseFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(
-        uri = s"$elasticsearchEndpoint/$eSIndexName",
-        method = HttpMethods.PUT,
-        entity = HttpEntity(ContentTypes.`application/json`, organisationMapping)
-      )
-    )
-
-    Await.result(responseFuture, 5.seconds)
-    responseFuture.onComplete {
-      case Failure(e) =>
-        logger.error(s"Cannot create elasticsearch schema: ${e.getStackTrace.mkString("\n")}")
-        fail(e)
-      case Success(_) => logger.debug(s"""Elasticsearch mapped successfully on index "$eSIndexName" """)
-    }
-
-    val pool: Flow[(HttpRequest, UserId), (Try[HttpResponse], UserId), Http.HostConnectionPool] =
-      Http().cachedHostConnectionPool[UserId](
-        "localhost",
-        elasticsearchExposedPort,
-        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
-      )
-
-    val insertFutures = AkkaSource[IndexedOrganisation](organisations).map { organisation =>
-      val indexAndDocTypeEndpoint = s"$eSIndexName/$eSDocType"
-      (
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${organisation.organisationId.value}",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, organisation.asJson.toString)
-        ),
-        organisation.organisationId
-      )
-    }.via(pool).runForeach {
-      case (Failure(e), id) => logger.error(s"Error when indexing organisation ${id.value}:", e)
-      case _                =>
-    }
-
-    Await.result(insertFutures, 150.seconds)
-    logger.debug("Organisations indexed successfully.")
-
-    val responseRefreshOrganisationFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(uri = s"$elasticsearchEndpoint/$eSIndexName/_refresh", method = HttpMethods.POST)
-    )
-    Await.result(responseRefreshOrganisationFuture, 5.seconds)
-  }
 
   Feature("get organisation list") {
     Scenario("get organisation list ordered by name") {
