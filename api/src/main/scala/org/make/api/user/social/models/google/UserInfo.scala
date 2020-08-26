@@ -112,7 +112,7 @@ object ItemMetadata {
 final case class PeopleName(
   metadata: ItemMetadata,
   displayName: String,
-  familyName: String,
+  familyName: Option[String],
   givenName: String,
   displayNameLastFirst: String,
   unstructuredName: String
@@ -134,9 +134,9 @@ object PeopleEmailAddress {
   implicit val decoder: Decoder[PeopleEmailAddress] = deriveDecoder
 }
 
-final case class GoogleDate(year: Int, month: Int, day: Int) {
-  def toLocalDate: LocalDate = {
-    LocalDate.of(year, month, day)
+final case class GoogleDate(year: Option[Int], month: Int, day: Int) {
+  def toLocalDate: Option[LocalDate] = {
+    year.map(LocalDate.of(_, month, day))
   }
 }
 
@@ -170,7 +170,7 @@ final case class PeopleInfo(
       facebookId = None,
       picture = photos.find(_.metadata.isPrimary).map(_.url.toString),
       domain = maybeEmail.map(_.split("@").last),
-      dateOfBirth = birthdays.flatMap(_.find(_.metadata.isPrimary).map(_.date.toLocalDate))
+      dateOfBirth = birthdays.flatMap(_.sortBy(!_.metadata.isPrimary).flatMap(_.date.toLocalDate.toSeq).headOption)
     )
   }
 }
