@@ -132,6 +132,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
             .from(PersistentTopIdeaComment.as(topIdeaCommentAlias))
             .where(sqls.eq(topIdeaCommentAlias.id, topIdeaCommentId.value))
         }.update.apply()
+        () // TODO check success
       })
     }
 

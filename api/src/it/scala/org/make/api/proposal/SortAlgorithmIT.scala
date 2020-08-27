@@ -20,12 +20,7 @@
 package org.make.api.proposal
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import io.circe.syntax._
-import org.make.api.docker.DockerElasticsearchService
+import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   ElasticsearchConfiguration,
@@ -43,14 +38,11 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, Future}
-import scala.io.{Codec, Source}
-import scala.util.{Failure, Success, Try}
 
 class SortAlgorithmIT
     extends ItMakeTest
     with CirceFormatters
-    with DockerElasticsearchService
+    with SearchEngineIT[ProposalId, IndexedProposal]
     with DefaultProposalSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
@@ -67,64 +59,13 @@ class SortAlgorithmIT
   when(elasticsearchConfiguration.proposalAliasName).thenReturn(defaultElasticsearchProposalIndex)
   when(elasticsearchConfiguration.indexName).thenReturn(defaultElasticsearchProposalIndex)
 
+  override val eSIndexName: String = defaultElasticsearchProposalIndex
+  override val eSDocType: String = defaultElasticsearchProposalDocType
+  override def docs: Seq[IndexedProposal] = proposals
+
   override def beforeAll(): Unit = {
     super.beforeAll()
-    initializeElasticsearch()
-  }
-
-  private def initializeElasticsearch(): Unit = {
-    implicit val system: ActorSystem = actorSystem
-
-    val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val proposalMapping =
-      Source.fromResource("elasticsearch-mappings/proposal.json")(Codec.UTF8).getLines().mkString("")
-    val responseFuture: Future[HttpResponse] =
-      Http().singleRequest(
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
-        )
-      )
-    Await.result(responseFuture, 5.seconds)
-    responseFuture.onComplete {
-      case Failure(e) =>
-        logger.error(s"Cannot create elasticsearch schema: ${e.getStackTrace.mkString("\n")}")
-        fail(e)
-      case Success(_) => logger.debug("Elasticsearch mapped successfully.")
-    }
-
-    val pool: Flow[(HttpRequest, ProposalId), (Try[HttpResponse], ProposalId), Http.HostConnectionPool] =
-      Http().cachedHostConnectionPool[ProposalId](
-        "localhost",
-        elasticsearchExposedPort,
-        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
-      )
-
-    val insertFutures = AkkaSource[IndexedProposal](proposals).map { proposal =>
-      val indexAndDocTypeEndpoint = s"$defaultElasticsearchProposalIndex/$defaultElasticsearchProposalDocType"
-      (
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${proposal.id.value}",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, proposal.asJson.toString)
-        ),
-        proposal.id
-      )
-    }.via(pool).runForeach {
-      case (Failure(e), id) => logger.error(s"Error when indexing proposal ${id.value}:", e)
-      case _                =>
-    }
-    Await.result(insertFutures, 150.seconds)
-    logger.debug("Proposals indexed successfully.")
-
-    val responseRefreshIdeaFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(
-        uri = s"$elasticsearchEndpoint/$defaultElasticsearchProposalIndex/_refresh",
-        method = HttpMethods.POST
-      )
-    )
-    Await.result(responseRefreshIdeaFuture, 5.seconds)
+    initializeElasticsearch(_.id)
   }
 
   private val now = DateHelper.now()

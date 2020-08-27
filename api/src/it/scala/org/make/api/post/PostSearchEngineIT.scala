@@ -22,12 +22,7 @@ package org.make.api.post
 import java.time.ZonedDateTime
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import io.circe.syntax._
-import org.make.api.docker.DockerElasticsearchService
+import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   ElasticsearchConfiguration,
@@ -40,15 +35,12 @@ import org.make.core.post.indexed._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, Future}
-import scala.io.{Codec, Source}
-import scala.util.{Failure, Success, Try}
 
 class PostSearchEngineIT
     extends ItMakeTest
     with DefaultPostSearchEngineComponent
     with CirceFormatters
-    with DockerElasticsearchService
+    with SearchEngineIT[PostId, IndexedPost]
     with ElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
     with ActorSystemComponent {
@@ -59,8 +51,9 @@ class PostSearchEngineIT
 
   override val elasticsearchExposedPort: Int = 30006
 
-  private val eSIndexName: String = "post-it-test"
-  private val eSDocType: String = "post"
+  override val eSIndexName: String = "post-it-test"
+  override val eSDocType: String = "post"
+  override def docs: Seq[IndexedPost] = indexedPostsToIndex
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
@@ -70,7 +63,7 @@ class PostSearchEngineIT
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    initializeElasticsearch()
+    initializeElasticsearch(_.postId)
   }
 
   val indexedPostsToIndex: Seq[IndexedPost] = Seq(
@@ -84,57 +77,6 @@ class PostSearchEngineIT
     indexedPost(PostId("post-4"), postDate = ZonedDateTime.parse("2020-12-31T00:00:00.000Z")),
     indexedPost(PostId("post-5"), postDate = ZonedDateTime.parse("2020-01-01T00:00:00.000Z"))
   )
-
-  private def initializeElasticsearch(): Unit = {
-    implicit val actorSystem: ActorSystem = ActorSystem()
-    val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val postMapping =
-      Source.fromResource("elasticsearch-mappings/post.json")(Codec.UTF8).getLines().mkString("")
-    val responseFuture: Future[HttpResponse] =
-      Http().singleRequest(
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$eSIndexName",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, postMapping)
-        )
-      )
-    Await.result(responseFuture, 20.seconds)
-    responseFuture.onComplete {
-      case Failure(e) =>
-        logger.error(s"Cannot create elasticsearch schema: ${e.getStackTrace.mkString("\n")}")
-        fail(e)
-      case Success(_) => logger.debug("Elasticsearch mapped successfully.")
-    }
-
-    val pool: Flow[(HttpRequest, PostId), (Try[HttpResponse], PostId), Http.HostConnectionPool] =
-      Http().cachedHostConnectionPool[PostId](
-        "localhost",
-        elasticsearchExposedPort,
-        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
-      )
-
-    val insertFutures = AkkaSource[IndexedPost](indexedPostsToIndex).map { postToIndex =>
-      val indexAndDocTypeEndpoint = s"$eSIndexName/$eSDocType"
-      (
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${postToIndex.postId.value}",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, postToIndex.asJson.toString)
-        ),
-        postToIndex.postId
-      )
-    }.via(pool).runForeach {
-      case (Failure(e), id) => logger.error(s"Error when indexing post ${id.value}:", e)
-      case _                =>
-    }
-    Await.result(insertFutures, 150.seconds)
-    logger.debug("posts indexed successfully.")
-
-    val responseRefreshIdeaFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(uri = s"$elasticsearchEndpoint/$eSIndexName/_refresh", method = HttpMethods.POST)
-    )
-    Await.result(responseRefreshIdeaFuture, 5.seconds)
-  }
 
   Feature("get post by id") {
     Scenario("find by postId") {

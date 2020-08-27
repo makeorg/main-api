@@ -34,6 +34,7 @@ class ThreadPoolMonitoringActor extends Actor {
 
   override def preStart(): Unit = {
     context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, Monitor)
+    ()
   }
 
   override def receive: Receive = {

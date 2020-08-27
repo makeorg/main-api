@@ -59,6 +59,7 @@ class HealthCheckSupervisor extends Actor with ActorLogging {
           (healthCheck ? CheckStatus).mapTo[HealthCheckResponse]
         }
         .pipeTo(caller)
+      ()
     case other => log.info(s"received $other")
   }
 }

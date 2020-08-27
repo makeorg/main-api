@@ -1010,7 +1010,7 @@ class AdminUserApiTest
   Feature("update user email") {
 
     val request = AdminUpdateUserEmail(newCitizen.email, "kane@example.com")
-    when(userService.adminUpdateUserEmail(any[User], any[String])).thenReturn(Future.successful(None))
+    when(userService.adminUpdateUserEmail(any[User], any[String])).thenReturn(Future.successful(()))
 
     Scenario("anonymously") {
       Post("/admin/users/update-user-email", request) ~> routes ~> check {

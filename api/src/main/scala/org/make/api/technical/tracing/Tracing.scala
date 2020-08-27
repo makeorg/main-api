@@ -28,8 +28,14 @@ object Tracing {
 
   def entrypoint: Option[String] = Kamon.currentContext.get(EntrypointKey)
 
-  def entrypoint(name: String): Unit = Kamon.storeContext(Kamon.currentContext.withEntry(EntrypointKey, Some(name)))
+  def entrypoint(name: String): Unit = {
+    Kamon.storeContext(Kamon.currentContext.withEntry(EntrypointKey, Some(name)))
+    ()
+  }
 
-  def clearEntrypoint(): Unit = Kamon.storeContext(Kamon.currentContext().withoutEntry(EntrypointKey))
+  def clearEntrypoint(): Unit = {
+    Kamon.storeContext(Kamon.currentContext().withoutEntry(EntrypointKey))
+    ()
+  }
 
 }

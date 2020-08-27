@@ -35,6 +35,7 @@ class MemoryMonitoringActor extends Actor {
 
   override def preStart(): Unit = {
     context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, Monitor)
+    ()
   }
 
   override def receive: Receive = {
@@ -42,6 +43,7 @@ class MemoryMonitoringActor extends Actor {
       memoryFree.update(Runtime.getRuntime.freeMemory().toDouble)
       memoryMax.update(Runtime.getRuntime.maxMemory().toDouble)
       memoryTotal.update(Runtime.getRuntime.totalMemory().toDouble)
+      ()
     case _ =>
   }
 }

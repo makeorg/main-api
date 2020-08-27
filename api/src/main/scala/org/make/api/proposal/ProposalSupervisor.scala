@@ -82,6 +82,8 @@ class ProposalSupervisor(dependencies: ProposalSupervisorDependencies, lockDurat
       )
       context.actorOf(props, name)
     }
+
+    ()
   }
 
   override def receive: Receive = {

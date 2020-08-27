@@ -65,16 +65,10 @@ lazy val commonSettings = Seq(
   scalastyleFailOnError := true,
   scalacOptions ++= Seq(
     "-Yrangepos",
-    "-Xlint",
-    "-deprecation",
-    "-Xfatal-warnings",
-    "-feature",
+    "-Xlint:_",
+    "-Wconf:any:e",
     "-encoding",
     "UTF-8",
-    "-unchecked",
-    "-Ywarn-dead-code",
-    "-Wunused:imports",
-    "-Ywarn-unused",
     "-language:_",
     "-Ycache-plugin-class-loader:last-modified",
     "-Ycache-macro-class-loader:last-modified",
@@ -86,7 +80,9 @@ lazy val commonSettings = Seq(
   IntegrationTest / scalastyleFailOnError   := (scalastyle / scalastyleFailOnError).value,
   IntegrationTest / scalastyleFailOnWarning := (scalastyle / scalastyleFailOnWarning).value,
   IntegrationTest / scalastyleSources       := Seq((IntegrationTest / scalaSource).value)
-) ++ inConfig(IntegrationTest)(scalafmtConfigSettings) ++ inConfig(IntegrationTest)(rawScalastyleSettings())
+) ++ Seq(Compile, Test).map { configuration =>
+  scalacOptions.in(configuration, console) += "-Wconf:cat=other-pure-statement:s,cat=unused-imports:s,any:e"
+} ++ inConfig(IntegrationTest)(scalafmtConfigSettings) ++ inConfig(IntegrationTest)(rawScalastyleSettings())
 
 addCommandAlias("checkStyle", ";scalastyle;test:scalastyle;it:scalastyle;scalafmtCheckAll;scalafmtSbtCheck")
 addCommandAlias("fixStyle", ";scalafmtAll;scalafmtSbt")

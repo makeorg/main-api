@@ -26,6 +26,7 @@ class DeadLettersListenerActor extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     context.system.eventStream.subscribe(self, classOf[DeadLetter])
+    ()
   }
 
   override def receive: Receive = {

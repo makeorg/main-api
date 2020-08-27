@@ -279,6 +279,7 @@ trait MakeDirectives
         )
       )
       .increment()
+    ()
   }
 
   private def connectIfNecessary(

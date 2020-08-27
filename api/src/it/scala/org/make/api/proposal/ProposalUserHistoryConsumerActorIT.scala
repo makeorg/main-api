@@ -33,7 +33,7 @@ import org.make.core.user.UserId
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 
 class ProposalUserHistoryConsumerActorIT
     extends TestKit(ProposalUserHistoryConsumerActorIT.actorSystem)
@@ -92,7 +92,6 @@ class ProposalUserHistoryConsumerActorIT
         )
       ).thenAnswer { _: LogUserProposalEvent =>
         probe.ref ! "LogUserProposalProposedEvent called"
-        Future.successful(true)
       }
 
       val eventProposed: ProposalProposed = ProposalProposed(
@@ -162,7 +161,6 @@ class ProposalUserHistoryConsumerActorIT
         )
       ).thenAnswer { _: LogAcceptProposalEvent =>
         probe.ref ! "LogUserProposalAcceptedEvent called"
-        Future.successful(true)
       }
 
       send(wrappedProposalAccepted)
@@ -204,7 +202,6 @@ class ProposalUserHistoryConsumerActorIT
         )
       ).thenAnswer { _: LogRefuseProposalEvent =>
         probe.ref ! "LogUserProposalRefusedEvent called"
-        Future.successful(true)
       }
 
       send(wrappedProposalRefused)
@@ -243,7 +240,6 @@ class ProposalUserHistoryConsumerActorIT
         )
       ).thenAnswer { _: LogPostponeProposalEvent =>
         probe.ref ! "LogUserProposalPostponedEvent called"
-        Future.successful(true)
       }
 
       send(wrappedProposalPostponed)
@@ -284,7 +280,6 @@ class ProposalUserHistoryConsumerActorIT
         )
       ).thenAnswer { _: LogLockProposalEvent =>
         probe.ref ! "LogUserProposalLockedEvent called"
-        Future.successful(true)
       }
 
       send(wrappedProposalLocked)

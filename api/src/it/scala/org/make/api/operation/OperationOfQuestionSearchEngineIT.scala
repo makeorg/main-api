@@ -22,12 +22,7 @@ package org.make.api.operation
 import java.time.ZonedDateTime
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.scaladsl.{Flow, Source => AkkaSource}
-import io.circe.syntax._
-import org.make.api.docker.DockerElasticsearchService
+import org.make.api.docker.SearchEngineIT
 import org.make.api.technical.elasticsearch.{
   DefaultElasticsearchClientComponent,
   ElasticsearchConfiguration,
@@ -47,14 +42,11 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, Future}
-import scala.io.{Codec, Source}
-import scala.util.{Failure, Success, Try}
 
 class OperationOfQuestionSearchEngineIT
     extends ItMakeTest
     with CirceFormatters
-    with DockerElasticsearchService
+    with SearchEngineIT[QuestionId, IndexedOperationOfQuestion]
     with DefaultOperationOfQuestionSearchEngineComponent
     with ElasticsearchConfigurationComponent
     with DefaultElasticsearchClientComponent
@@ -66,8 +58,9 @@ class OperationOfQuestionSearchEngineIT
 
   override val elasticsearchExposedPort: Int = 30005
 
-  private val eSIndexName: String = "operation-of-question-it-test"
-  private val eSDocType: String = "operation-of-question"
+  override val eSIndexName: String = "operation-of-question-it-test"
+  override val eSDocType: String = "operation-of-question"
+  override def docs: Seq[IndexedOperationOfQuestion] = indexedOperationOfQuestions
 
   override val elasticsearchConfiguration: ElasticsearchConfiguration =
     mock[ElasticsearchConfiguration]
@@ -77,7 +70,7 @@ class OperationOfQuestionSearchEngineIT
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    initializeElasticsearch()
+    initializeElasticsearch(_.questionId)
   }
 
   val indexedOperationOfQuestions: immutable.Seq[IndexedOperationOfQuestion] = immutable.Seq(
@@ -280,57 +273,6 @@ class OperationOfQuestionSearchEngineIT
       status = Finished
     )
   )
-
-  private def initializeElasticsearch(): Unit = {
-    implicit val actorSystem: ActorSystem = ActorSystem()
-    val elasticsearchEndpoint = s"http://localhost:$elasticsearchExposedPort"
-    val proposalMapping =
-      Source.fromResource("elasticsearch-mappings/operationOfQuestion.json")(Codec.UTF8).getLines().mkString("")
-    val responseFuture: Future[HttpResponse] =
-      Http().singleRequest(
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$eSIndexName",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, proposalMapping)
-        )
-      )
-    Await.result(responseFuture, 20.seconds)
-    responseFuture.onComplete {
-      case Failure(e) =>
-        logger.error(s"Cannot create elasticsearch schema: ${e.getStackTrace.mkString("\n")}")
-        fail(e)
-      case Success(_) => logger.debug("Elasticsearch mapped successfully.")
-    }
-
-    val pool: Flow[(HttpRequest, QuestionId), (Try[HttpResponse], QuestionId), Http.HostConnectionPool] =
-      Http().cachedHostConnectionPool[QuestionId](
-        "localhost",
-        elasticsearchExposedPort,
-        ConnectionPoolSettings(actorSystem).withMaxConnections(3)
-      )
-
-    val insertFutures = AkkaSource[IndexedOperationOfQuestion](indexedOperationOfQuestions).map { operationOfQuestion =>
-      val indexAndDocTypeEndpoint = s"$eSIndexName/$eSDocType"
-      (
-        HttpRequest(
-          uri = s"$elasticsearchEndpoint/$indexAndDocTypeEndpoint/${operationOfQuestion.questionId.value}",
-          method = HttpMethods.PUT,
-          entity = HttpEntity(ContentTypes.`application/json`, operationOfQuestion.asJson.toString)
-        ),
-        operationOfQuestion.questionId
-      )
-    }.via(pool).runForeach {
-      case (Failure(e), id) => logger.error(s"Error when indexing operation of question ${id.value}:", e)
-      case _                =>
-    }
-    Await.result(insertFutures, 150.seconds)
-    logger.debug("Operation of questions indexed successfully.")
-
-    val responseRefreshIdeaFuture: Future[HttpResponse] = Http().singleRequest(
-      HttpRequest(uri = s"$elasticsearchEndpoint/$eSIndexName/_refresh", method = HttpMethods.POST)
-    )
-    Await.result(responseRefreshIdeaFuture, 5.seconds)
-  }
 
   Feature("get operation of question by id") {
     val questionId = indexedOperationOfQuestions.head.questionId

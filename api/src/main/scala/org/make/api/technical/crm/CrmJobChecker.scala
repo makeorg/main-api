@@ -40,6 +40,7 @@ class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Un
   override def preStart(): Unit = {
     jobs.foreach(queue.enqueue)
     context.system.scheduler.scheduleWithFixedDelay(1.second, 1.second, self, Tick)
+    ()
   }
 
   override def receive: Receive = {
@@ -76,6 +77,7 @@ class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Un
           case e => Future.successful(CrmCallFailed(current, e))
         }
         .pipeTo(self)
+      ()
     }
   }
 

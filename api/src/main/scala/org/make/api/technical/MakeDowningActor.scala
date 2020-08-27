@@ -34,6 +34,7 @@ class MakeDowningActor extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     context.system.scheduler.scheduleWithFixedDelay(10.seconds, 10.seconds, self, AutoDown)
+    ()
   }
 
   override def receive: Receive = {

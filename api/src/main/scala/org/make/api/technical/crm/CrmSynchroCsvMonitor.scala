@@ -44,6 +44,7 @@ class CrmSynchroCsvMonitor(
   override def preStart(): Unit = {
     jobIds.foreach(queue.enqueue)
     context.system.scheduler.scheduleWithFixedDelay(0.seconds, tickInterval, self, Tick)
+    ()
   }
 
   override def receive: Receive = {
@@ -81,6 +82,7 @@ class CrmSynchroCsvMonitor(
           case e => Future.successful(CrmCallFailed(current, e))
         }
         .pipeTo(self)
+      ()
     }
   }
 

@@ -78,7 +78,7 @@ class UserEmailConsumerActor(userService: UserService, sendMailPublisherService:
   }
 
   def handleUserB2BRegisteredEvent(event: B2BRegisteredEvent): Future[Unit] = {
-    getUserWithValidEmail(event.userId).map {
+    getUserWithValidEmail(event.userId).flatMap {
       case Some(user) if user.isB2B =>
         sendMailPublisherService.publishRegistrationB2B(user, event.country, event.language, event.requestContext)
       case _ => Future.successful {}
