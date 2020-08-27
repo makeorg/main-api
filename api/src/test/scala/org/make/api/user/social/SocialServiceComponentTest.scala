@@ -365,7 +365,7 @@ class SocialServiceComponentTest
               PeopleName(
                 metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
                 displayName = "user",
-                familyName = "with",
+                familyName = Some("with"),
                 givenName = "birth",
                 displayNameLastFirst = "date",
                 unstructuredName = "user with a birth date"
@@ -384,7 +384,7 @@ class SocialServiceComponentTest
                 Birthday(
                   metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
                   None,
-                  GoogleDate(1970, 1, 1)
+                  GoogleDate(Some(1970), 1, 1)
                 )
               )
             )
@@ -430,6 +430,179 @@ class SocialServiceComponentTest
       }
 
     }
+
+    Scenario("user without a birth date year") {
+      val token = "user without a birth date year"
+      val googleId = "123456789"
+      val email = "user-without-a-birth-date-year@example.com"
+      val userId1 = UserId("user-without-a-birth-date-year")
+
+      when(googleApi.peopleInfo(token)).thenReturn(
+        Future.successful(
+          PeopleInfo(
+            resourceName = s"people/$googleId",
+            etag = "",
+            names = Seq(
+              PeopleName(
+                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                displayName = "user",
+                familyName = Some("without"),
+                givenName = "birth",
+                displayNameLastFirst = "date year",
+                unstructuredName = "user without a birth date year"
+              )
+            ),
+            photos = Seq(
+              PeoplePhoto(
+                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                url = new URL("https://example.com/avatar")
+              )
+            ),
+            emailAddresses =
+              Seq(PeopleEmailAddress(metadata = ItemMetadata(Some(true), None, MetadataSource("", "")), value = email)),
+            birthdays = Some(
+              Seq(
+                Birthday(
+                  metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                  None,
+                  GoogleDate(None, 1, 1)
+                )
+              )
+            )
+          )
+        )
+      )
+
+      when(
+        userService.createOrUpdateUserFromSocial(
+          argThat[UserInfo](_.email.contains(email)),
+          eqTo(None),
+          eqTo(None),
+          eqTo(RequestContext.empty)
+        )
+      ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
+
+      when(oauth2DataHandler.createAccessToken(argThat[AuthInfo[UserRights]](_.user.userId == userId1)))
+        .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
+
+      whenReady(
+        socialService.login(
+          GooglePeople,
+          token,
+          Country("FR"),
+          Language("fr"),
+          None,
+          None,
+          RequestContext.empty,
+          ClientId("default")
+        ),
+        Timeout(3.seconds)
+      ) {
+        case (userId, response) =>
+          userId should be(userId1)
+          response.access_token should be("token")
+          verify(userService).createOrUpdateUserFromSocial(argThat[UserInfo] { userInfo =>
+            userInfo.dateOfBirth.isEmpty &&
+            userInfo.email.contains(email) &&
+            userInfo.domain.contains("example.com") &&
+            userInfo.googleId.contains(googleId) &&
+            userInfo.picture.contains("https://example.com/avatar")
+          }, eqTo(None), eqTo(None), eqTo(RequestContext.empty))
+      }
+
+    }
+
+    Scenario("user with multiple birth dates") {
+      val token = "user with multiple birth dates"
+      val googleId = "123456789"
+      val email = "user-with-multiple-birth-dates@example.com"
+      val userId1 = UserId("user-with-multiple-birth-dates")
+
+      when(googleApi.peopleInfo(token)).thenReturn(
+        Future.successful(
+          PeopleInfo(
+            resourceName = s"people/$googleId",
+            etag = "",
+            names = Seq(
+              PeopleName(
+                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                displayName = "user",
+                familyName = Some("with multiple"),
+                givenName = "birth",
+                displayNameLastFirst = "dates",
+                unstructuredName = "user with a birth date"
+              )
+            ),
+            photos = Seq(
+              PeoplePhoto(
+                metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                url = new URL("https://example.com/avatar")
+              )
+            ),
+            emailAddresses =
+              Seq(PeopleEmailAddress(metadata = ItemMetadata(Some(true), None, MetadataSource("", "")), value = email)),
+            birthdays = Some(
+              Seq(
+                Birthday(
+                  metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                  None,
+                  GoogleDate(None, 1, 1)
+                ),
+                Birthday(
+                  metadata = ItemMetadata(None, None, MetadataSource("", "")),
+                  None,
+                  GoogleDate(Some(1970), 1, 2)
+                ),
+                Birthday(
+                  metadata = ItemMetadata(Some(true), None, MetadataSource("", "")),
+                  None,
+                  GoogleDate(Some(1970), 1, 3)
+                )
+              )
+            )
+          )
+        )
+      )
+
+      when(
+        userService.createOrUpdateUserFromSocial(
+          argThat[UserInfo](_.email.contains(email)),
+          eqTo(None),
+          eqTo(None),
+          eqTo(RequestContext.empty)
+        )
+      ).thenReturn(Future.successful((user(id = userId1, email = email), false)))
+
+      when(oauth2DataHandler.createAccessToken(argThat[AuthInfo[UserRights]](_.user.userId == userId1)))
+        .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
+
+      whenReady(
+        socialService.login(
+          GooglePeople,
+          token,
+          Country("FR"),
+          Language("fr"),
+          None,
+          None,
+          RequestContext.empty,
+          ClientId("default")
+        ),
+        Timeout(3.seconds)
+      ) {
+        case (userId, response) =>
+          userId should be(userId1)
+          response.access_token should be("token")
+          verify(userService).createOrUpdateUserFromSocial(argThat[UserInfo] { userInfo =>
+            userInfo.dateOfBirth.contains(LocalDate.parse("1970-01-03")) &&
+            userInfo.email.contains(email) &&
+            userInfo.domain.contains("example.com") &&
+            userInfo.googleId.contains(googleId) &&
+            userInfo.picture.contains("https://example.com/avatar")
+          }, eqTo(None), eqTo(None), eqTo(RequestContext.empty))
+      }
+
+    }
+
   }
 
   Feature("login user from facebook provider") {
