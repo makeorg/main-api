@@ -37,6 +37,6 @@ class DeadLettersListenerActor extends Actor with ActorLogging {
 }
 
 object DeadLettersListenerActor {
-  val props = Props(new DeadLettersListenerActor)
-  val name = "dead-letters-log"
+  val props: Props = Props(new DeadLettersListenerActor)
+  val name: String = "dead-letters-log"
 }

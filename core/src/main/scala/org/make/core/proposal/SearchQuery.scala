@@ -48,7 +48,7 @@ import org.make.core.user.{UserId, UserType}
   * @param language       language to boost the query for. NOT A FILTER.
   * @param sortAlgorithm algorithm used for sorting
   */
-case class SearchQuery(
+final case class SearchQuery(
   filters: Option[SearchFilters] = None,
   excludes: Option[SearchFilters] = None,
   sort: Option[IndexedSort] = None,
@@ -64,7 +64,7 @@ case class SearchQuery(
     }
 }
 
-case class SearchFilters(
+final case class SearchFilters(
   proposal: Option[ProposalSearchFilter] = None,
   initialProposal: Option[InitialProposalFilter] = None,
   tags: Option[TagsSearchFilter] = None,
@@ -121,7 +121,7 @@ object SearchFilters extends ElasticDsl {
     userTypes: Option[UserTypesSearchFilter] = None
   ): Option[SearchFilters] = {
 
-    Seq(
+    Seq[Option[Any]](
       proposals,
       initialProposal,
       tags,

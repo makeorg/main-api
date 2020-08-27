@@ -29,7 +29,7 @@ import io.circe.{Decoder, DecodingFailure, HCursor}
 import org.apache.avro.Schema
 import org.make.core.{AvroSerializers, CirceFormatters, Sharded}
 
-sealed trait MailJetEvent {
+sealed trait MailJetEvent extends Product with Serializable {
   def email: String
   def time: Option[Long]
   def messageId: Option[Long]
@@ -44,7 +44,7 @@ sealed trait MailJetEvent {
   * see Mailjet documentation: https://dev.mailjet.com/guides/
   */
 object MailJetEvent {
-  val eventDecoderMap = Map(
+  private val eventDecoderMap = Map(
     "simple" -> MailJetBaseEvent.decoder,
     "bounce" -> MailJetBounceEvent.decoder,
     "blocked" -> MailJetBlockedEvent.decoder,
@@ -99,7 +99,7 @@ object MailJetErrorRelatedTo {
   }
 }
 
-sealed trait MailJetError {
+sealed trait MailJetError extends Product with Serializable {
   def relatedTo: MailJetErrorRelatedTo
   def name: String
 }
@@ -110,6 +110,7 @@ object MailJetError extends StrictLogging {
   }
 
   implicit object MailJetErrorFromValue extends avro4s.Decoder[MailJetError] {
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     override def decode(value: Any, schema: Schema, fieldMapper: FieldMapper): MailJetError =
       MailJetError.errorMap
         .getOrElse(value.toString, throw new IllegalArgumentException(s"$value is not a MailJetError"))
@@ -239,7 +240,7 @@ object MailJetError extends StrictLogging {
 }
 
 @AvroSortPriority(5)
-case class MailJetBaseEvent(
+final case class MailJetBaseEvent(
   event: String,
   override val email: String,
   override val time: Option[Long],
@@ -294,7 +295,7 @@ object MailJetBaseEvent extends CirceFormatters {
 }
 
 @AvroSortPriority(2)
-case class MailJetBounceEvent(
+final case class MailJetBounceEvent(
   override val email: String,
   override val time: Option[Long] = None,
   override val messageId: Option[Long] = None,
@@ -367,7 +368,7 @@ object MailJetBounceEvent extends CirceFormatters {
 }
 
 @AvroSortPriority(1)
-case class MailJetBlockedEvent(
+final case class MailJetBlockedEvent(
   override val email: String,
   override val time: Option[Long] = None,
   override val messageId: Option[Long] = None,
@@ -424,7 +425,7 @@ object MailJetBlockedEvent extends CirceFormatters {
 }
 
 @AvroSortPriority(3)
-case class MailJetSpamEvent(
+final case class MailJetSpamEvent(
   override val email: String,
   override val time: Option[Long] = None,
   override val messageId: Option[Long] = None,
@@ -469,7 +470,7 @@ object MailJetSpamEvent extends CirceFormatters {
 }
 
 @AvroSortPriority(4)
-case class MailJetUnsubscribeEvent(
+final case class MailJetUnsubscribeEvent(
   email: String,
   time: Option[Long] = None,
   messageId: Option[Long] = None,

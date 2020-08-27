@@ -55,7 +55,7 @@ class DeserTest extends MakeUnitTest {
                        |  "_id": "580e64008c9a982ac9b8b754"
                        |}""".stripMargin
     Scenario("simple item") {
-      case class SimpleItem(postBody: String, postSummary: String)
+      final case class SimpleItem(postBody: String, postSummary: String)
       object SimpleItem {
         implicit val decoder: Decoder[SimpleItem] =
           Decoder.forProduct2("post-body", "post-summary")(SimpleItem.apply)
@@ -72,7 +72,7 @@ class DeserTest extends MakeUnitTest {
       decoded.map(_.metas.slug).toOption should contain("5-principles-of-effective-web-design")
     }
     Scenario("item has duplicates with metas") {
-      case class DuplicateItem(name: String, postSummary: String)
+      final case class DuplicateItem(name: String, postSummary: String)
       object DuplicateItem {
         implicit val decoder: Decoder[DuplicateItem] =
           Decoder.forProduct2("name", "post-summary")(DuplicateItem.apply)
@@ -89,7 +89,7 @@ class DeserTest extends MakeUnitTest {
       decoded.map(_.metas.slug).toOption should contain("5-principles-of-effective-web-design")
     }
     Scenario("empty item") {
-      case class EmptyItem()
+      final case class EmptyItem()
       object EmptyItem {
         implicit val decoder: Decoder[EmptyItem] = deriveDecoder[EmptyItem]
       }
@@ -140,7 +140,7 @@ class DeserTest extends MakeUnitTest {
     |}
   """.stripMargin
     Scenario("simple item") {
-      case class SampleItem(postBody: String, postSummary: String)
+      final case class SampleItem(postBody: String, postSummary: String)
       object SampleItem {
         implicit val decoder: Decoder[SampleItem] =
           Decoder.forProduct2("post-body", "post-summary")(SampleItem.apply)

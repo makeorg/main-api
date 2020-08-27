@@ -26,6 +26,7 @@ import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.proposal._
+import org.make.api.proposal.DefaultSelectionAlgorithmComponent.Scored
 import org.make.api.technical.MakeRandom
 import org.make.core.idea.IdeaId
 import org.make.core.proposal._
@@ -847,13 +848,9 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
       }
 
       val sortedProposals: Seq[ProposalId] = testedProposals
-        .map(
-          p =>
-            banditSelectionAlgorithm
-              .ScoredProposal(p, ScoreCounts.fromSequenceVotes(p.votes).sampleTopScore())
-        )
+        .map(p => Scored(p, ScoreCounts.fromSequenceVotes(p.votes).sampleTopScore()))
         .sortWith(_.score > _.score)
-        .map(sp => sp.proposal.id)
+        .map(sp => sp.item.id)
 
       val chosenCounts: Seq[ProposalId] =
         (1 to 10000)

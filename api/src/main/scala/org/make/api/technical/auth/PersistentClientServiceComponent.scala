@@ -44,7 +44,7 @@ object PersistentClientServiceComponent {
   val GRANT_TYPE_SEPARATOR = ","
   val ROLE_SEPARATOR = ","
 
-  case class PersistentClient(
+  final case class PersistentClient(
     uuid: String,
     name: String,
     allowedGrantTypes: String,

@@ -1055,6 +1055,7 @@ trait DefaultUserApiComponent
                       case _                                 => false
                     }
 
+                    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
                     val profile: Profile = user.profile.getOrElse(Profile.parseProfile().get)
 
                     val updatedProfile: Profile = profile.copy(

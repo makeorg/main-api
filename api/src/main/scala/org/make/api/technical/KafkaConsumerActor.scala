@@ -58,6 +58,7 @@ abstract class KafkaConsumerActor[T]
   def handleMessagesParalellism: Int = 4
   def handleMessagesTimeout: FiniteDuration = 1.minute
 
+  @SuppressWarnings(Array("org.wartremover.warts.Null"))
   private var consumer: KafkaConsumer[String, T] = _
   private implicit val actorSystem: ActorSystem = context.system
 
@@ -125,7 +126,7 @@ abstract class KafkaConsumerActor[T]
 object KafkaConsumerActor {
   case object Consume
   case object CheckState
-  case class Reset(offset: Long)
+  final case class Reset(offset: Long)
 
   case object Ready
   case object Waiting

@@ -48,16 +48,16 @@ object SequenceElasticsearchFieldNames {
   val searchable: String = "searchable"
 }
 
-case class SequencesResult(total: Future[Int], results: Future[Seq[IndexedSequence]])
+final case class SequencesResult(total: Future[Int], results: Future[Seq[IndexedSequence]])
 
-case class IndexedSequenceProposalId(proposalId: ProposalId)
+final case class IndexedSequenceProposalId(proposalId: ProposalId)
 
 object IndexedSequenceProposalId {
   implicit val encoder: Encoder[IndexedSequenceProposalId] = deriveEncoder[IndexedSequenceProposalId]
   implicit val decoder: Decoder[IndexedSequenceProposalId] = deriveDecoder[IndexedSequenceProposalId]
 }
 
-case class IndexedSequence(
+final case class IndexedSequence(
   id: SequenceId,
   title: String,
   slug: String,

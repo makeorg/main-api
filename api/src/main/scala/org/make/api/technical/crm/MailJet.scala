@@ -138,7 +138,7 @@ object SendEmail extends AvroSerializers {
       Json.obj(fields: _*)
     }
 }
-case class SendMessages(messages: Seq[SendEmail], sandboxMode: Option[Boolean])
+final case class SendMessages(messages: Seq[SendEmail], sandboxMode: Option[Boolean])
 
 object SendMessages {
 
@@ -169,7 +169,7 @@ object SendMessages {
   }
 }
 
-case class TransactionDetail(
+final case class TransactionDetail(
   status: String,
   customId: String,
   to: Seq[EmailDetail],
@@ -182,21 +182,21 @@ object TransactionDetail {
     Decoder.forProduct5("Status", "CustomID", "To", "Cc", "Bcc")(TransactionDetail.apply)
 }
 
-case class SendResult(sent: Seq[TransactionDetail])
+final case class SendResult(sent: Seq[TransactionDetail])
 
 object SendResult {
   implicit val decoder: Decoder[SendResult] = Decoder.forProduct1("Messages")(SendResult.apply)
 }
 
-case class EmailDetail(email: String, messageUUID: String, messageId: Long, messageHref: String)
+final case class EmailDetail(email: String, messageUUID: String, messageId: Long, messageHref: String)
 
 object EmailDetail {
   implicit val decoder: Decoder[EmailDetail] =
     Decoder.forProduct4("Email", "MessageUUID", "MessageID", "MessageHref")(EmailDetail.apply)
 }
 
-case class Recipient(email: String, name: Option[String] = None, variables: Option[Map[String, String]] = None) {
-  def toAnonymizedString =
+final case class Recipient(email: String, name: Option[String] = None, variables: Option[Map[String, String]] = None) {
+  def toAnonymizedString: String =
     s"Recipient: (email = ${SecurityHelper.anonymizeEmail(email)}, name = ${name.flatMap(_.headOption)}, variables = $variables)"
 
   override def toString =
@@ -226,7 +226,7 @@ object Recipient {
     }
 }
 
-case class ManageContact(
+final case class ManageContact(
   email: String,
   name: String,
   action: ManageContactAction,
@@ -253,13 +253,13 @@ object ManageContactAction extends StringEnum[ManageContactAction] with StringCi
 
 }
 
-case class ImportOptions(dateTimeFormat: String) {
+final case class ImportOptions(dateTimeFormat: String) {
   override def toString: String = {
     s"""{"DateTimeFormat": "$dateTimeFormat","TimezoneOffset": 0,"FieldNames": ${ContactProperties.getCsvHeader}}"""
   }
 }
 
-case class CsvImport(listId: String, csvId: String, method: ManageContactAction, importOptions: String)
+final case class CsvImport(listId: String, csvId: String, method: ManageContactAction, importOptions: String)
 
 object CsvImport {
   implicit val encoder: Encoder[CsvImport] =
@@ -268,7 +268,7 @@ object CsvImport {
     }
 }
 
-case class Contact(email: String, name: Option[String] = None, properties: Option[ContactProperties] = None) {
+final case class Contact(email: String, name: Option[String] = None, properties: Option[ContactProperties] = None) {
   def toStringCsv: String = {
     properties match {
       case None       => ""
@@ -282,14 +282,14 @@ object Contact {
   }
 }
 
-case class ContactList(listId: String, action: ManageContactAction)
+final case class ContactList(listId: String, action: ManageContactAction)
 object ContactList {
   implicit val encoder: Encoder[ContactList] = Encoder.forProduct2("ListID", "Action") { contactList: ContactList =>
     (contactList.listId, contactList.action)
   }
 }
 
-case class ManageManyContacts(contacts: Seq[Contact], contactList: Seq[ContactList])
+final case class ManageManyContacts(contacts: Seq[Contact], contactList: Seq[ContactList])
 object ManageManyContacts {
   implicit val encoder: Encoder[ManageManyContacts] = Encoder.forProduct2("Contacts", "ContactsLists") {
     manageManyContacts: ManageManyContacts =>
@@ -297,7 +297,7 @@ object ManageManyContacts {
   }
 }
 
-case class ContactProperty[T](name: String, value: Option[T])
+final case class ContactProperty[T](name: String, value: Option[T])
 
 object ContactProperty {
   trait ToJson[T] {
@@ -319,8 +319,9 @@ object ContactProperty {
     }
 }
 
-case class ContactData(data: Seq[ContactProperty[_]])
+final case class ContactData(data: Seq[ContactProperty[_]])
 object ContactData {
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
   implicit val encoder: Encoder[ContactData] = Encoder.forProduct1("Data") { contactData: ContactData =>
     contactData.data.map {
       case a @ ContactProperty(_, None)             => a.asInstanceOf[ContactProperty[String]].asJson
@@ -333,7 +334,7 @@ object ContactData {
   }
 }
 
-case class ContactProperties(
+final case class ContactProperties(
   userId: Option[UserId],
   firstName: Option[String],
   postalCode: Option[String],

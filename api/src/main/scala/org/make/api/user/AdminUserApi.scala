@@ -903,7 +903,7 @@ object AnonymizeUserRequest {
   implicit val decoder: Decoder[AnonymizeUserRequest] = deriveDecoder[AnonymizeUserRequest]
 }
 
-case class ModeratorResponse(
+final case class ModeratorResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],
@@ -937,7 +937,7 @@ object ModeratorResponse extends CirceFormatters {
   )
 }
 
-case class AdminUserResponse(
+final case class AdminUserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,

@@ -29,7 +29,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 object HistoryActions {
 
-  sealed abstract class VoteTrust(val value: String) extends StringEnumEntry {
+  sealed abstract class VoteTrust(val value: String) extends StringEnumEntry with Product with Serializable {
     def isTrusted: Boolean
     def isInSequence: Boolean
     def isInSegment: Boolean

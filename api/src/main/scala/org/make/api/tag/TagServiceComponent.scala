@@ -36,7 +36,7 @@ trait TagServiceComponent {
   def tagService: TagService
 }
 
-case class TagFilter(
+final case class TagFilter(
   label: Option[String] = None,
   tagTypeId: Option[TagTypeId] = None,
   questionId: Option[QuestionId] = None

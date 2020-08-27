@@ -41,7 +41,7 @@ trait VotesValues {
   val votesValues: Map[ProposalId, VoteAndQualifications]
 }
 
-case class UserHistoryEnvelope[T <: UserPersistentEvent](userId: UserId, command: T) extends UserRelatedEvent
+final case class UserHistoryEnvelope[T <: UserPersistentEvent](userId: UserId, command: T) extends UserRelatedEvent
 
 trait UserRelatedEvent extends UserHistoryActorProtocol {
   def userId: UserId
@@ -95,7 +95,7 @@ final case class PersonalityRegisteredEvent(
 }
 
 @AvroSortPriority(16)
-case class PersonalityEmailChangedEvent(
+final case class PersonalityEmailChangedEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -171,7 +171,7 @@ object ResendValidationEmailEvent {
 }
 
 @AvroSortPriority(13)
-case class UserRegisteredEvent(
+final case class UserRegisteredEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -234,7 +234,7 @@ final case class UserUpdatedTagEvent(
 }
 
 @AvroSortPriority(9)
-case class OrganisationRegisteredEvent(
+final case class OrganisationRegisteredEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -247,7 +247,7 @@ case class OrganisationRegisteredEvent(
 }
 
 @AvroSortPriority(8)
-case class OrganisationUpdatedEvent(
+final case class OrganisationUpdatedEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -259,7 +259,7 @@ case class OrganisationUpdatedEvent(
 }
 
 @AvroSortPriority(7)
-case class OrganisationInitializationEvent(
+final case class OrganisationInitializationEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -270,10 +270,10 @@ case class OrganisationInitializationEvent(
   override def version(): Int = MakeSerializable.V1
 }
 
-case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
+final case class SnapshotUser(override val userId: UserId) extends UserRelatedEvent
 
 @AvroSortPriority(6)
-case class UserUpdatedOptInNewsletterEvent(
+final case class UserUpdatedOptInNewsletterEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -286,7 +286,7 @@ case class UserUpdatedOptInNewsletterEvent(
 }
 
 @AvroSortPriority(5)
-case class UserAnonymizedEvent(
+final case class UserAnonymizedEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -299,7 +299,7 @@ case class UserAnonymizedEvent(
 }
 
 @AvroSortPriority(4)
-case class UserFollowEvent(
+final case class UserFollowEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -312,7 +312,7 @@ case class UserFollowEvent(
 }
 
 @AvroSortPriority(3)
-case class UserUnfollowEvent(
+final case class UserUnfollowEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -325,7 +325,7 @@ case class UserUnfollowEvent(
 }
 
 @AvroSortPriority(2)
-case class UserUploadAvatarEvent(
+final case class UserUploadAvatarEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
@@ -338,7 +338,7 @@ case class UserUploadAvatarEvent(
 }
 
 @AvroSortPriority(1)
-case class OrganisationEmailChangedEvent(
+final case class OrganisationEmailChangedEvent(
   override val connectedUserId: Option[UserId] = None,
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,

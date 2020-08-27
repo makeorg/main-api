@@ -22,6 +22,7 @@ package org.make.api.proposal
 import com.typesafe.scalalogging.StrictLogging
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
+import org.make.api.proposal.DefaultSelectionAlgorithmComponent.Scored
 import org.make.api.sequence.SequenceConfiguration
 import org.make.api.technical.MakeRandom
 import org.make.core.DateHelper._
@@ -37,12 +38,14 @@ trait ProposalChooser {
 }
 
 object OldestProposalChooser extends ProposalChooser {
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   override def choose(proposals: Seq[IndexedProposal]): IndexedProposal = {
     proposals.minBy(_.createdAt)
   }
 }
 
 object RoundRobin extends ProposalChooser {
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   override def choose(proposals: Seq[IndexedProposal]): IndexedProposal = {
     proposals.minBy(_.votesSequenceCount)
   }
@@ -51,6 +54,7 @@ object RoundRobin extends ProposalChooser {
 trait RandomProposalChooser extends ProposalChooser {
   protected def proposalWeight(proposal: IndexedProposal): Double
 
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   @tailrec
   private final def search(
     proposals: Seq[IndexedProposal],
@@ -125,6 +129,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   class BanditSelectionAlgorithm extends SelectionAlgorithm {
 
     override val name: SelectionAlgorithmName = SelectionAlgorithmName.Bandit
@@ -270,8 +275,6 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }
     }
 
-    case class ScoredProposal(proposal: IndexedProposal, score: Double)
-
     /*
      * Chooses the top proposals of each cluster according to the bandit algorithm
      * Keep at least 3 proposals per ideas
@@ -283,10 +286,10 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       maybeUserSegment: Option[String]
     ): IndexedProposal = {
 
-      val proposalsScored: Seq[ScoredProposal] =
+      val proposalsScored: Seq[Scored[IndexedProposal]] =
         proposals.map { proposal =>
           val scores = computeProposalScores(maybeUserSegment, proposal)
-          ScoredProposal(proposal, scores.sampleTopScore())
+          Scored(proposal, scores.sampleTopScore())
         }
 
       val shortList = if (proposals.length < sequenceConfiguration.intraIdeaMinCount) {
@@ -296,7 +299,7 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
           sequenceConfiguration.intraIdeaMinCount,
           ceil(proposals.length * sequenceConfiguration.intraIdeaProposalsRatio).toInt
         )
-        proposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.proposal)
+        proposalsScored.sortWith(_.score > _.score).take(count).map(sp => sp.item)
       }
 
       UniformRandom.choose(shortList)
@@ -328,8 +331,6 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
           scorer(sequenceConfiguration, allScores, scores)
         }
     }
-
-    case class ScoredIdeaId(ideaId: IdeaId, score: Double)
 
     def selectIdeasWithChampions(
       sequenceConfiguration: SequenceConfiguration,
@@ -368,8 +369,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
           val scores: ScoreCounts = computeProposalScores(maybeUserSegment, proposal)
           val scoresAll = ScoreCounts.fromVerifiedVotes(proposal.votes)
           val score = scorer(sequenceConfiguration, scoresAll, scores)
-          ScoredIdeaId(idea, score)
-      }.sortBy(-1 * _.score).take(ideaCount).map(_.ideaId)
+          Scored(idea, score)
+      }.sortBy(-1 * _.score).take(ideaCount).map(_.item)
     }
 
     def chooseTestedProposals(
@@ -495,4 +496,8 @@ trait DefaultSelectionAlgorithmComponent extends SelectionAlgorithmComponent wit
       }
     }
   }
+}
+
+object DefaultSelectionAlgorithmComponent {
+  final case class Scored[T](item: T, score: Double)
 }

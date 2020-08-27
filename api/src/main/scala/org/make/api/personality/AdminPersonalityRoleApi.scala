@@ -606,7 +606,7 @@ object UpdatePersonalityRoleFieldRequest {
   implicit val decoder: Decoder[UpdatePersonalityRoleFieldRequest] = deriveDecoder[UpdatePersonalityRoleFieldRequest]
 }
 
-case class PersonalityRoleResponse(
+final case class PersonalityRoleResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: PersonalityRoleId,
   name: String
 )
@@ -619,7 +619,7 @@ object PersonalityRoleResponse {
     PersonalityRoleResponse(id = personalityRole.personalityRoleId, name = personalityRole.name)
 }
 
-case class PersonalityRoleIdResponse(
+final case class PersonalityRoleIdResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
   id: PersonalityRoleId
 )
@@ -629,7 +629,7 @@ object PersonalityRoleIdResponse {
   implicit val decoder: Decoder[PersonalityRoleIdResponse] = deriveDecoder[PersonalityRoleIdResponse]
 }
 
-case class PersonalityRoleFieldResponse(
+final case class PersonalityRoleFieldResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: PersonalityRoleFieldId,
   @(ApiModelProperty @field)(dataType = "string", example = "0226897d-c137-4e20-ade0-af40426764a4") personalityRoleId: PersonalityRoleId,
   name: String,
@@ -651,7 +651,7 @@ object PersonalityRoleFieldResponse {
     )
 }
 
-case class PersonalityRoleFieldIdResponse(
+final case class PersonalityRoleFieldIdResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
   id: PersonalityRoleFieldId
 )

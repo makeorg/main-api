@@ -59,6 +59,7 @@ trait ProposalHelper {
     20 + Math.abs(email.hashCode) % 60
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def getUser(api: MakeApi, email: String): Future[User] = {
     val search: Future[Option[User]] = if (email.matches("yopmail\\+an[n]?onymous@make\\.org")) {
       Future.successful(None)
@@ -120,8 +121,8 @@ trait ProposalHelper {
     api.elasticsearchProposalAPI
       .searchProposals(SearchQuery(filters = Some(SearchFilters(slug = Some(SlugSearchFilter(SlugHelper(content)))))))
       .flatMap {
-        case ProposalsSearchResult(total, results) if total > 0 => Future.successful(results.head.id)
-        case _                                                  => insertProposal(api, content, email, question)
+        case ProposalsSearchResult(_, head +: _) => Future.successful(head.id)
+        case _                                   => insertProposal(api, content, email, question)
       }
   }
 
@@ -169,7 +170,7 @@ trait ProposalHelper {
 }
 
 object ProposalHelper {
-  case class FixtureDataLine(
+  final case class FixtureDataLine(
     email: String,
     content: String,
     operation: Option[OperationId],
@@ -180,5 +181,5 @@ object ProposalHelper {
     acceptProposal: Boolean
   )
 
-  case class UserInfo(email: String, firstName: String, age: Int, country: Country, language: Language)
+  final case class UserInfo(email: String, firstName: String, age: Int, country: Country, language: Language)
 }

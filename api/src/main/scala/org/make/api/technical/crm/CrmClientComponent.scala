@@ -378,9 +378,9 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
 
     override def deleteContactByEmail(email: String)(implicit executionContext: ExecutionContext): Future[Boolean] = {
       getContactByMailOrContactId(email).flatMap {
-        case contacts if contacts.data.nonEmpty =>
-          val id = contacts.data.head.id.toString
-          val foundEmail = contacts.data.head.email
+        case BasicCrmResponse(_, _, head +: _) =>
+          val id = head.id.toString
+          val foundEmail = head.email
           deleteContactById(id).flatMap { _ =>
             getContactByMailOrContactId(id).map(anon => anon.data.headOption.forall(_.email != foundEmail))
           }
@@ -405,23 +405,23 @@ trait DefaultCrmClientComponent extends CrmClientComponent with ErrorAccumulatin
   }
 }
 
-case class QuotaExceeded(method: String, message: String) extends Exception(message)
+final case class QuotaExceeded(method: String, message: String) extends Exception(message)
 
-case class SendEmailResponse(messages: Seq[SentEmail])
+final case class SendEmailResponse(messages: Seq[SentEmail])
 
 object SendEmailResponse {
   implicit val decoder: Decoder[SendEmailResponse] =
     Decoder.forProduct1("Messages")(SendEmailResponse.apply)
 }
 
-case class SendCsvResponse(csvId: Long)
+final case class SendCsvResponse(csvId: Long)
 
 object SendCsvResponse {
   implicit val decoder: Decoder[SendCsvResponse] =
     Decoder.forProduct1("ID")(SendCsvResponse.apply)
 }
 
-case class SentEmail(
+final case class SentEmail(
   status: String,
   errors: Option[Seq[SendMessageError]],
   customId: String,
@@ -439,7 +439,7 @@ object SentEmail {
     Decoder.forProduct6("Status", "Errors", "CustomID", "To", "Cc", "Bcc")(SentEmail.apply)
 }
 
-case class SendMessageError(
+final case class SendMessageError(
   errorIdentifier: String,
   errorCode: String,
   statusCode: Int,
@@ -457,7 +457,7 @@ object SendMessageError {
     )
 }
 
-case class MessageDetails(email: String, messageUuid: String, messageId: Long, messageHref: String) {
+final case class MessageDetails(email: String, messageUuid: String, messageId: Long, messageHref: String) {
   override def toString =
     s"MessageDetails: (email = ${SecurityHelper.anonymizeEmail(email)}, messageUuid = $messageUuid, messageId = $messageId, messageHref = $messageHref)"
 }
@@ -467,7 +467,7 @@ object MessageDetails {
     Decoder.forProduct4("Email", "MessageUUID", "MessageID", "MessageHref")(MessageDetails.apply)
 }
 
-case class BasicCrmResponse[T](count: Int, total: Int, data: Seq[T])
+final case class BasicCrmResponse[T](count: Int, total: Int, data: Seq[T])
 
 object BasicCrmResponse {
   def createDecoder[T](implicit tDecoder: Decoder[T]): Decoder[BasicCrmResponse[T]] =
@@ -490,14 +490,14 @@ object BasicCrmResponse {
 
 }
 
-case class CsvImportResponse(jobId: Long, dataId: Long, errorCount: Int, status: String)
+final case class CsvImportResponse(jobId: Long, dataId: Long, errorCount: Int, status: String)
 
 object CsvImportResponse {
   implicit val decoder: Decoder[CsvImportResponse] =
     Decoder.forProduct4("ID", "DataID", "Errcount", "Status")(CsvImportResponse.apply)
 }
 
-case class ContactDataResponse(
+final case class ContactDataResponse(
   isExcludedFromCampaigns: Boolean,
   name: String,
   createdAt: String,
@@ -528,14 +528,14 @@ object ContactDataResponse {
     )(ContactDataResponse.apply)
 }
 
-case class JobId(jobId: Long)
+final case class JobId(jobId: Long)
 
 object JobId {
   implicit val decoder: Decoder[JobId] =
     Decoder.forProduct1("JobID")(JobId.apply)
 }
 
-case class JobDetailsResponse(
+final case class JobDetailsResponse(
   contactsLists: Seq[ContactListAndAction],
   count: Int,
   error: String,
@@ -552,7 +552,7 @@ object JobDetailsResponse {
     )
 }
 
-case class ContactListAndAction(listId: Long, action: String)
+final case class ContactListAndAction(listId: Long, action: String)
 
 object ContactListAndAction {
   implicit val decoder: Decoder[ContactListAndAction] =
@@ -590,33 +590,34 @@ object CrmClientException {
 
   object RequestException {
 
-    case class ManageContactListException(code: StatusCode, response: String)
+    final case class ManageContactListException(code: StatusCode, response: String)
         extends RequestException("manageContactList", code, response)
 
-    case class SendCsvException(code: StatusCode, response: String) extends RequestException("send csv", code, response)
+    final case class SendCsvException(code: StatusCode, response: String)
+        extends RequestException("send csv", code, response)
 
-    case class CsvImportException(code: StatusCode, response: String)
+    final case class CsvImportException(code: StatusCode, response: String)
         extends RequestException("csv import", code, response)
 
-    case class MonitorCsvImportException(code: StatusCode, response: String)
+    final case class MonitorCsvImportException(code: StatusCode, response: String)
         extends RequestException("monitor csv import", code, response)
 
-    case class SendEmailException(code: StatusCode, response: String)
+    final case class SendEmailException(code: StatusCode, response: String)
         extends RequestException("send email", code, response)
 
-    case class GetUsersInformationMailFromListException(code: StatusCode, response: String)
+    final case class GetUsersInformationMailFromListException(code: StatusCode, response: String)
         extends RequestException("getUsersInformationMailFromList", code, response)
 
-    case class GetContactsPropertiesException(code: StatusCode, response: String)
+    final case class GetContactsPropertiesException(code: StatusCode, response: String)
         extends RequestException("getContactsProperties", code, response)
 
-    case class ManageContactListJobDetailsException(code: StatusCode, response: String)
+    final case class ManageContactListJobDetailsException(code: StatusCode, response: String)
         extends RequestException("manageContactListJobDetails", code, response)
 
-    case class GetUsersMailFromListException(code: StatusCode, response: String)
+    final case class GetUsersMailFromListException(code: StatusCode, response: String)
         extends RequestException("getUsersMailFromList", code, response)
 
-    case class DeleteUserException(code: StatusCode, response: String)
+    final case class DeleteUserException(code: StatusCode, response: String)
         extends RequestException("manageContactList", code, response)
 
   }

@@ -65,7 +65,7 @@ trait SemanticService {
   def getPredictedTagsForProposal(proposal: Proposal): Future[GetPredictedTagsResponse]
 }
 
-case class IndexProposalsWrapper(proposals: Seq[SemanticProposal])
+final case class IndexProposalsWrapper(proposals: Seq[SemanticProposal])
 object IndexProposalsWrapper {
   implicit val encoder: Encoder[IndexProposalsWrapper] = deriveEncoder[IndexProposalsWrapper]
   implicit val decoder: Decoder[IndexProposalsWrapper] = deriveDecoder[IndexProposalsWrapper]
@@ -224,6 +224,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
       )
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     def buildSimilarIdeas(similarIdeas: Seq[ScoredProposal]): Future[Seq[SimilarIdea]] = {
       val similarIdeaIds: Seq[IdeaId] = similarIdeas.flatMap(p => p.proposal.ideaId)
 
@@ -274,13 +275,13 @@ object SemanticProposal {
   }
 }
 
-case class SimilarIdeasRequest(proposal: SemanticProposal, nSimilar: Int)
+final case class SimilarIdeasRequest(proposal: SemanticProposal, nSimilar: Int)
 
 object SimilarIdeasRequest {
   implicit val encoder: Encoder[SimilarIdeasRequest] = deriveEncoder[SimilarIdeasRequest]
 }
 
-case class SimilarityScore(score: Double)
+final case class SimilarityScore(score: Double)
 
 object SimilarityScore {
   implicit val encoder: Encoder[SimilarityScore] = _.score.asJson
@@ -292,13 +293,16 @@ object SimilarityScore {
 }
 
 @ApiModel
-case class ScoredProposal(proposal: SemanticProposal, @ApiModelProperty(dataType = "string") score: SimilarityScore)
+final case class ScoredProposal(
+  proposal: SemanticProposal,
+  @ApiModelProperty(dataType = "string") score: SimilarityScore
+)
 
 object ScoredProposal {
   implicit val decoder: Decoder[ScoredProposal] = deriveDecoder[ScoredProposal]
 }
 
-case class SimilarIdeasResponse(similar: Seq[ScoredProposal], algoLabel: Option[String])
+final case class SimilarIdeasResponse(similar: Seq[ScoredProposal], algoLabel: Option[String])
 
 object SimilarIdeasResponse {
   implicit val decoder: Decoder[SimilarIdeasResponse] = deriveDecoder[SimilarIdeasResponse]
@@ -319,7 +323,7 @@ object SimilarIdea {
   implicit val decoder: Decoder[SimilarIdea] = deriveDecoder[SimilarIdea]
 }
 
-case class GetPredictedTagsProposalRequest(
+final case class GetPredictedTagsProposalRequest(
   id: ProposalId,
   questionId: QuestionId,
   language: String,
@@ -331,22 +335,22 @@ object GetPredictedTagsProposalRequest {
   implicit val encoder: Encoder[GetPredictedTagsProposalRequest] = deriveEncoder[GetPredictedTagsProposalRequest]
 }
 
-case class GetPredictedTagsRequest(proposal: GetPredictedTagsProposalRequest, modelName: String)
+final case class GetPredictedTagsRequest(proposal: GetPredictedTagsProposalRequest, modelName: String)
 
 object GetPredictedTagsRequest {
   implicit val encoder: Encoder[GetPredictedTagsRequest] = deriveEncoder[GetPredictedTagsRequest]
 }
 
-case class PredictedTag(tagId: TagId, tagTypeId: TagTypeId, tagLabel: String, tagTypeLabel: String, score: Double)
+final case class PredictedTag(tagId: TagId, tagTypeId: TagTypeId, tagLabel: String, tagTypeLabel: String, score: Double)
 
 object PredictedTag {
   implicit val decoder: Decoder[PredictedTag] = deriveDecoder[PredictedTag]
 }
 
-case class GetPredictedTagsResponse(tags: Seq[PredictedTag], modelName: String)
+final case class GetPredictedTagsResponse(tags: Seq[PredictedTag], modelName: String)
 
 object GetPredictedTagsResponse {
   implicit val decoder: Decoder[GetPredictedTagsResponse] = deriveDecoder[GetPredictedTagsResponse]
 
-  val none = GetPredictedTagsResponse(Seq.empty, "none")
+  val none: GetPredictedTagsResponse = GetPredictedTagsResponse(Seq.empty, "none")
 }

@@ -19,7 +19,6 @@
 
 package org.make.api.technical.healthcheck
 import akka.actor.Props
-import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import com.datastax.driver.core.querybuilder.QueryBuilder.select
 import org.make.api.technical.{ActorReadJournalComponent, ShortenedNames}
 
@@ -38,8 +37,7 @@ class CassandraHealthCheckActor(healthCheckExecutionContext: ExecutionContext)
     context.system.settings.config.getString("make-api.event-sourcing.proposals.read-journal.table")
 
   override def healthCheck(): Future[String] = {
-    val readJournal: CassandraReadJournal = proposalJournal.asInstanceOf[CassandraReadJournal]
-    readJournal.session
+    proposalJournal.session
       .selectOne(select("persistence_id").from(keyspace, table).limit(1))
       .map { row =>
         if (row.isDefined) {

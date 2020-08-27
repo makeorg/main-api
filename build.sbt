@@ -25,6 +25,7 @@ import sbt.Keys.scalacOptions
 import kamon.instrumentation.sbt.SbtKanelaRunner.Keys.kanelaVersion
 import ScalafmtPlugin.scalafmtConfigSettings
 import ScalastylePlugin.rawScalastyleSettings
+import wartremover.{Wart, Warts}
 
 lazy val commonSettings = Seq(
   organization := "org.make",
@@ -66,7 +67,7 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-Yrangepos",
     "-Xlint:_",
-    "-Wconf:any:e",
+    "-Wconf:cat=w-flag-numeric-widen:s,any:e",
     "-encoding",
     "UTF-8",
     "-language:_",
@@ -79,9 +80,22 @@ lazy val commonSettings = Seq(
   IntegrationTest / scalastyleTarget        := target.value / "scalastyle-it-results.xml",
   IntegrationTest / scalastyleFailOnError   := (scalastyle / scalastyleFailOnError).value,
   IntegrationTest / scalastyleFailOnWarning := (scalastyle / scalastyleFailOnWarning).value,
-  IntegrationTest / scalastyleSources       := Seq((IntegrationTest / scalaSource).value)
+  IntegrationTest / scalastyleSources       := Seq((IntegrationTest / scalaSource).value),
+  wartremoverErrors in (Compile, compile) ++= Warts.allBut(
+    Wart.Any,
+    Wart.DefaultArguments,
+    Wart.Equals,
+    Wart.ImplicitConversion,
+    Wart.ImplicitParameter,
+    Wart.NonUnitStatements,
+    Wart.Nothing,
+    Wart.Overloading,
+    Wart.StringPlusAny,
+    Wart.ToString,
+    Wart.Var
+  )
 ) ++ Seq(Compile, Test).map { configuration =>
-  scalacOptions.in(configuration, console) += "-Wconf:cat=other-pure-statement:s,cat=unused-imports:s,any:e"
+  scalacOptions.in(configuration, console) += "-Wconf:cat=other-pure-statement:s,cat=unused-imports:s,cat=w-flag-numeric-widen:s,any:e"
 } ++ inConfig(IntegrationTest)(scalafmtConfigSettings) ++ inConfig(IntegrationTest)(rawScalastyleSettings())
 
 addCommandAlias("checkStyle", ";scalastyle;test:scalastyle;it:scalastyle;scalafmtCheckAll;scalafmtSbtCheck")

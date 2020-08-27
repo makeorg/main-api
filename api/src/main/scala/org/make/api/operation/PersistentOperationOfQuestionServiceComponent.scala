@@ -433,6 +433,7 @@ object DefaultPersistentOperationOfQuestionServiceComponent {
       with ShortenedNames
       with StrictLogging {
 
+    @SuppressWarnings(Array("org.wartremover.warts.Null"))
     implicit val resultsLinkBinders: Binders[Option[ResultsLink]] =
       Binders.string.xmap(s => Option(s).flatMap(ResultsLink.parse), _.map(Show[ResultsLink].show).orNull)
 

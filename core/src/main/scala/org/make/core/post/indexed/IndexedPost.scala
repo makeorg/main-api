@@ -41,7 +41,7 @@ object PostElasticsearchFieldNames {
   val summary = "summary"
 }
 
-case class IndexedPost(
+final case class IndexedPost(
   @(ApiModelProperty @field)(dataType = "string", example = "6e02345a-8eff-4f2a-a732-83ff831ef10e") postId: PostId,
   name: String,
   slug: String,

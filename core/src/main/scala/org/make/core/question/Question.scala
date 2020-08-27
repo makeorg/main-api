@@ -22,12 +22,12 @@ package org.make.core.question
 import cats.data.NonEmptyList
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json, KeyDecoder, KeyEncoder}
-import org.make.core.StringValue
+import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.operation.OperationId
 import org.make.core.reference.{Country, Language}
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.JsonFormat
 
-case class Question(
+final case class Question(
   questionId: QuestionId,
   slug: String,
   countries: NonEmptyList[Country],
@@ -37,7 +37,7 @@ case class Question(
   operationId: Option[OperationId]
 )
 
-case class QuestionId(value: String) extends StringValue
+final case class QuestionId(value: String) extends StringValue
 
 object QuestionId {
   implicit lazy val QuestionIdEncoder: Encoder[QuestionId] =
@@ -45,16 +45,7 @@ object QuestionId {
   implicit lazy val QuestionIdDecoder: Decoder[QuestionId] =
     Decoder.decodeString.map(QuestionId(_))
 
-  implicit val QuestionIdFormatter: JsonFormat[QuestionId] = new JsonFormat[QuestionId] {
-    override def read(json: JsValue): QuestionId = json match {
-      case JsString(s) => QuestionId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: QuestionId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val QuestionIdFormatter: JsonFormat[QuestionId] = SprayJsonFormatters.forStringValue(QuestionId.apply)
 
   implicit val questionIdKeyEncoder: KeyEncoder[QuestionId] = new KeyEncoder[QuestionId] {
     override def apply(questionId: QuestionId): String = questionId.value

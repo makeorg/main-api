@@ -20,8 +20,8 @@
 package org.make.core.reference
 
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
-import spray.json.{JsString, JsValue, JsonFormat}
+import org.make.core.{SprayJsonFormatters, StringValue}
+import spray.json.JsonFormat
 
 final case class ThemeId(value: String) extends StringValue
 
@@ -31,15 +31,6 @@ object ThemeId {
   implicit lazy val themeIdDecoder: Decoder[ThemeId] =
     Decoder.decodeString.map(ThemeId(_))
 
-  implicit val themeIdFormatter: JsonFormat[ThemeId] = new JsonFormat[ThemeId] {
-    override def read(json: JsValue): ThemeId = json match {
-      case JsString(s) => ThemeId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: ThemeId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val themeIdFormatter: JsonFormat[ThemeId] = SprayJsonFormatters.forStringValue(ThemeId.apply)
 
 }

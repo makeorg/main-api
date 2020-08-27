@@ -120,6 +120,7 @@ trait OperationHelper {
       }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def createOperation(
     api: MakeApi,
     operationSlug: String,

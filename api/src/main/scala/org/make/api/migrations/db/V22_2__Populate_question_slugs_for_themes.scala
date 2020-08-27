@@ -23,6 +23,7 @@ import org.flywaydb.core.api.migration._
 
 class V22_2__Populate_question_slugs_for_themes extends BaseJavaMigration {
 
+  @SuppressWarnings(Array("org.wartremover.warts.While"))
   override def migrate(context: Context): Unit = {
     val connection = context.getConnection
     val resultSet = connection

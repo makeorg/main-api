@@ -134,7 +134,7 @@ trait UserService extends ShortenedNames {
   def adminUpdateUserEmail(user: User, email: String): Future[Unit]
 }
 
-case class UserRegisterData(
+final case class UserRegisterData(
   email: String,
   firstName: Option[String],
   lastName: Option[String] = None,
@@ -159,7 +159,7 @@ case class UserRegisterData(
   legalAdvisorApproval: Option[Boolean] = None
 )
 
-case class PersonalityRegisterData(
+final case class PersonalityRegisterData(
   email: String,
   firstName: Option[String],
   lastName: Option[String],
@@ -452,8 +452,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         .getOrElse {
           logger.error(
             "We couldn't find any email on social login. UserInfo: {}, requestContext: {}",
-            userInfo,
-            requestContext
+            userInfo.toString,
+            requestContext.toString
           )
           Future
             .failed(ValidationFailedError(Seq(ValidationError("email", "missing", Some("No email found for user")))))
@@ -670,17 +670,19 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     override def updateOptInNewsletter(email: String, optInNewsletter: Boolean): Future[Boolean] = {
       getUserByEmail(email).flatMap { maybeUser =>
         persistentUserService.updateOptInNewsletter(email, optInNewsletter).map { result =>
-          if (maybeUser.isDefined && result) {
-            val userId = maybeUser.get.userId
-            eventBusService.publish(
-              UserUpdatedOptInNewsletterEvent(
-                connectedUserId = Some(userId),
-                userId = userId,
-                eventDate = DateHelper.now(),
-                requestContext = RequestContext.empty,
-                optInNewsletter = optInNewsletter
+          if (result) {
+            maybeUser.foreach { user =>
+              val userId = user.userId
+              eventBusService.publish(
+                UserUpdatedOptInNewsletterEvent(
+                  connectedUserId = Some(userId),
+                  userId = userId,
+                  eventDate = DateHelper.now(),
+                  requestContext = RequestContext.empty,
+                  optInNewsletter = optInNewsletter
+                )
               )
-            )
+            }
           }
           result
         }

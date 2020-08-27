@@ -23,7 +23,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern.pipe
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsJobDetailsResponse
-import org.make.api.technical.crm.CrmJobChecker.{CrmCallFailed, CrmCallSucceeded, QuotaAvailable, Tick}
+import org.make.api.technical.crm.CrmJobChecker.Protocol.{CrmCallFailed, CrmCallSucceeded, QuotaAvailable, Tick}
 
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
@@ -34,7 +34,9 @@ class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Un
 ) extends Actor
     with StrictLogging {
 
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
   private val queue: mutable.Queue[String] = mutable.Queue[String]()
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
   private val pendingCalls: mutable.Set[String] = mutable.Set[String]()
 
   override def preStart(): Unit = {
@@ -97,7 +99,7 @@ class CrmJobChecker(crmClient: CrmClient, jobs: Seq[String], promise: Promise[Un
   private def handleSuccessfulResponse(jobId: String, response: ManageManyContactsJobDetailsResponse): Unit = {
     pendingCalls -= jobId
     if (response.data.forall(response => response.status == "Completed")) {
-      logger.debug(s"Job $jobId completed successfully: $response")
+      logger.debug(s"Job $jobId completed successfully: ${response.toString}")
     } else if (response.data.forall(response => response.status == "Error")) {
       logger.error(
         s"Job $jobId has errors: $response, " +
@@ -115,8 +117,13 @@ object CrmJobChecker {
   ): Props =
     Props(new CrmJobChecker(crmClient, jobs, promise))
 
-  case object Tick
-  case object QuotaAvailable
-  case class CrmCallSucceeded(jobId: String, response: ManageManyContactsJobDetailsResponse)
-  case class CrmCallFailed(jobId: String, error: Throwable)
+  sealed abstract class Protocol extends Product with Serializable
+
+  object Protocol {
+    final case object Tick extends Protocol
+    final case object QuotaAvailable extends Protocol
+    final case class CrmCallSucceeded(jobId: String, response: ManageManyContactsJobDetailsResponse) extends Protocol
+    final case class CrmCallFailed(jobId: String, error: Throwable) extends Protocol
+  }
+
 }

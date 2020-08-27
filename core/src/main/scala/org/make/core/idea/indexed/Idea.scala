@@ -64,7 +64,7 @@ object IdeaElasticsearchFieldNames {
   val proposalsCount: String = "proposalsCount"
 }
 
-case class IndexedIdea(
+final case class IndexedIdea(
   ideaId: IdeaId,
   name: String,
   questionId: Option[QuestionId],
@@ -80,6 +80,7 @@ object IndexedIdea extends CirceFormatters {
   implicit val encoder: Encoder[IndexedIdea] = deriveEncoder[IndexedIdea]
   implicit val decoder: Decoder[IndexedIdea] = deriveDecoder[IndexedIdea]
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def createFromIdea(idea: Idea, proposalsCount: Int): IndexedIdea = {
     IndexedIdea(
       ideaId = idea.ideaId,

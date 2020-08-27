@@ -71,7 +71,7 @@ object SocioProfessionalCategory
 
 }
 
-case class Profile(
+final case class Profile(
   dateOfBirth: Option[LocalDate],
   avatarUrl: Option[String],
   profession: Option[String],

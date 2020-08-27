@@ -177,7 +177,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
 
 object DefaultPersistentTagTypeServiceComponent {
 
-  case class PersistentTagType(
+  final case class PersistentTagType(
     id: String,
     label: String,
     display: TagTypeDisplay,

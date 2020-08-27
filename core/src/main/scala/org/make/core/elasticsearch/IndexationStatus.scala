@@ -25,6 +25,6 @@ object IndexationStatus {
 
   case object Completed extends IndexationStatus
 
-  case class Failed(reason: Exception) extends IndexationStatus
+  final case class Failed(reason: Exception) extends IndexationStatus
 
 }

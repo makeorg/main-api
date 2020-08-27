@@ -25,7 +25,7 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.deriveDecoder
 import org.make.core.{CirceFormatters, StringValue}
 
-case class Post(
+final case class Post(
   postId: PostId,
   name: String,
   slug: String,
@@ -41,7 +41,7 @@ object Post extends CirceFormatters {
   implicit val decoder: Decoder[Post] = deriveDecoder[Post]
 }
 
-case class PostId(value: String) extends StringValue
+final case class PostId(value: String) extends StringValue
 
 object PostId {
   implicit val PostIdEncoder: Encoder[PostId] = Encoder.encodeString.contramap(_.value)

@@ -205,7 +205,7 @@ trait MakeDirectives
     respondWithDefaultHeaders {
       val sessionExpirationDate =
         DateHelper.format(DateHelper.now().plusSeconds(makeSettings.SessionCookie.lifetime.toSeconds))
-      Seq(
+      Seq[HttpHeader](
         `X-Route-Time`(startTime),
         `X-Request-Id`(requestId),
         `X-Route-Name`(routeName),
@@ -443,7 +443,7 @@ trait MakeDirectives
 
     val mayBeOriginValue: Option[HttpOrigin] = getMakeHttpOrigin(originValue)
 
-    immutable.Seq(
+    immutable.Seq[ModeledHeader](
       `Access-Control-Allow-Methods`(
         HttpMethods.POST,
         HttpMethods.GET,

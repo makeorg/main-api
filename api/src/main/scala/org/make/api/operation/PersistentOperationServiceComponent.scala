@@ -303,7 +303,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
 
 object DefaultPersistentOperationServiceComponent {
 
-  case class PersistentOperationAction(
+  final case class PersistentOperationAction(
     operationUuid: String,
     makeUserUuid: String,
     actionDate: ZonedDateTime,
@@ -311,7 +311,7 @@ object DefaultPersistentOperationServiceComponent {
     arguments: Option[String]
   )
 
-  case class PersistentOperation(
+  final case class PersistentOperation(
     uuid: String,
     questions: Seq[FlatQuestionWithDetails],
     operationActions: Seq[PersistentOperationAction],
@@ -407,6 +407,7 @@ object DefaultPersistentOperationServiceComponent {
 
     override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.slug)
 
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
     def apply(
       operationResultName: ResultName[PersistentOperation] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentOperation = {

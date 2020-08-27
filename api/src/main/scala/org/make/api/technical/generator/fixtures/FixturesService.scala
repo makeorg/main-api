@@ -114,6 +114,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         .runWith(Sink.seq)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     def generateProposals(
       question: Question,
       mode: Option[FillMode],
@@ -215,6 +216,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         .runWith(Sink.seq)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     override def generate(
       maybeOperationId: Option[OperationId],
       maybeQuestionId: Option[QuestionId],

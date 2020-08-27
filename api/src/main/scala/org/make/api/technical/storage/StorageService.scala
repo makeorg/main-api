@@ -47,7 +47,7 @@ trait StorageService {
   ): Future[String]
 }
 
-case class UploadResponse(
+final case class UploadResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/path/to/image.png")
   path: String
 )
@@ -87,12 +87,14 @@ trait Content {
 }
 
 object Content {
-  case class ByteArrayContent(content: Array[Byte]) extends Content {
+  @SuppressWarnings(Array("org.wartremover.warts.ArrayEquals"))
+  final case class ByteArrayContent(content: Array[Byte]) extends Content {
     override def toByteArray(): Array[Byte] = content
   }
 
   // *Blocking* implementation of reading files
-  case class InputStreamContent(content: InputStream) extends Content {
+  final case class InputStreamContent(content: InputStream) extends Content {
+    @SuppressWarnings(Array("org.wartremover.warts.While"))
     override def toByteArray(): Array[Byte] = {
       val bufferSize = 2048
       val buffer = Array.ofDim[Byte](bufferSize)
@@ -109,12 +111,12 @@ object Content {
     }
   }
 
-  case class FileContent(content: File) extends Content {
+  final case class FileContent(content: File) extends Content {
     override def toByteArray(): Array[Byte] = InputStreamContent(new FileInputStream(content)).toByteArray()
   }
 
   // *Blocking* implementation of retrieving files from URL
-  case class UrlContent(content: URL) extends Content {
+  final case class UrlContent(content: URL) extends Content {
     override def toByteArray(): Array[Byte] = {
       InputStreamContent(content.openStream()).toByteArray()
     }
@@ -172,7 +174,7 @@ trait DefaultStorageServiceComponent extends StorageServiceComponent {
   }
 }
 
-case class StorageConfiguration(bucketName: String, baseUrl: String, maxFileSize: Long)
+final case class StorageConfiguration(bucketName: String, baseUrl: String, maxFileSize: Long)
 
 trait StorageConfigurationComponent {
   def storageConfiguration: StorageConfiguration

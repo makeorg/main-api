@@ -184,7 +184,7 @@ object AuthenticationApi {
       grantResult.refreshToken.getOrElse("")
     )
 
-  case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
+  final case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
 
   object TokenResponse {
     implicit val encoder: Encoder[TokenResponse] = deriveEncoder[TokenResponse]
@@ -493,7 +493,7 @@ trait DefaultAuthenticationApiComponent
   }
 }
 
-case class CreateAuthorizationCodeRequest(
+final case class CreateAuthorizationCodeRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "7951a086-fa88-4cd0-815a-d76f514b2f1d")
   clientId: ClientId,
   scope: Option[String],

@@ -23,6 +23,7 @@ import org.flywaydb.core.api.migration._
 
 class V39_1__Migrate_start_end_date extends BaseJavaMigration {
 
+  @SuppressWarnings(Array("org.wartremover.warts.While"))
   override def migrate(context: Context): Unit = {
     val connection = context.getConnection
     val resultSet = connection

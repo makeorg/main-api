@@ -36,7 +36,7 @@ sealed trait OrganisationSortAlgorithm {
  * - +1 point per proposal
  * - +1 point per vote
  */
-case class ParticipationAlgorithm(questionId: QuestionId) extends OrganisationSortAlgorithm {
+final case class ParticipationAlgorithm(questionId: QuestionId) extends OrganisationSortAlgorithm {
 
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     val query: Query = request.query.getOrElse(ElasticApi.boolQuery())
@@ -87,9 +87,9 @@ case object OrganisationAlgorithmSelector {
   val sortAlgorithmsName: Seq[String] = Seq(ParticipationAlgorithm.shortName)
 
   def select(sortAlgorithm: Option[String], questionId: Option[QuestionId]): Option[OrganisationSortAlgorithm] =
-    sortAlgorithm match {
-      case Some(ParticipationAlgorithm.shortName) if questionId.isDefined =>
-        Some(ParticipationAlgorithm(questionId.get))
+    (sortAlgorithm, questionId) match {
+      case (Some(ParticipationAlgorithm.shortName), Some(id)) =>
+        Some(ParticipationAlgorithm(id))
       case _ => None
     }
 

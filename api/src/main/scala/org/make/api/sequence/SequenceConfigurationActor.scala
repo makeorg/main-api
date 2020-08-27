@@ -84,18 +84,19 @@ class SequenceConfigurationActor(persistentSequenceConfigurationService: Persist
 object SequenceConfigurationActor {
   sealed trait SequenceConfigurationActorProtocol
   case object ReloadSequenceConfiguration extends SequenceConfigurationActorProtocol
-  case class UpdateSequenceConfiguration(configurations: Seq[SequenceConfiguration])
+  final case class UpdateSequenceConfiguration(configurations: Seq[SequenceConfiguration])
       extends SequenceConfigurationActorProtocol
-  case class GetSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
-  case class GetSequenceConfigurationByQuestionId(questionId: QuestionId) extends SequenceConfigurationActorProtocol
-  case class SetSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
+  final case class GetSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
+  final case class GetSequenceConfigurationByQuestionId(questionId: QuestionId)
       extends SequenceConfigurationActorProtocol
-  case class GetPersistentSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
-  case class GetPersistentSequenceConfigurationByQuestionId(questionId: QuestionId)
+  final case class SetSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
+      extends SequenceConfigurationActorProtocol
+  final case class GetPersistentSequenceConfiguration(sequenceId: SequenceId) extends SequenceConfigurationActorProtocol
+  final case class GetPersistentSequenceConfigurationByQuestionId(questionId: QuestionId)
       extends SequenceConfigurationActorProtocol
 
-  case class CachedSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
-  case class StoredSequenceConfiguration(sequenceConfiguration: Option[SequenceConfiguration])
+  final case class CachedSequenceConfiguration(sequenceConfiguration: SequenceConfiguration)
+  final case class StoredSequenceConfiguration(sequenceConfiguration: Option[SequenceConfiguration])
 
   val name = "sequence-configuration-backoff"
   val internalName = "sequence-configuration-backoff"

@@ -27,5 +27,6 @@ addSbtPlugin("org.scoverage"    % "sbt-scoverage"          % "1.6.1")
 addSbtPlugin("com.codacy"       % "sbt-codacy-coverage"    % "3.0.3")
 addSbtPlugin("org.make"         % "git-hooks-plugin"       % "1.0.5")
 addSbtPlugin("org.make"         % "sbt-swift-plugin"       % "1.0.4")
+addSbtPlugin("org.wartremover"  %% "sbt-wartremover"       % "2.4.10")
 
 classpathTypes += "maven-plugin"

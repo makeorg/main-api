@@ -56,6 +56,7 @@ class DefaultUserRegistrationValidator(configuration: Config) extends UserRegist
     val extraParameters = validatorConfig.getConfig("parameters")
     val className = validatorConfig.getString("validator-class")
 
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
     val validator = Thread
       .currentThread()
       .getContextClassLoader

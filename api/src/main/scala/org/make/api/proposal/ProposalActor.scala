@@ -785,7 +785,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
 
 object ProposalActor {
 
-  case class ProposalState(proposal: Proposal, lock: Option[Lock] = None) extends MakeSerializable
+  final case class ProposalState(proposal: Proposal, lock: Option[Lock] = None) extends MakeSerializable
 
   object ProposalState {
     implicit val proposalStateFormatter: RootJsonFormat[ProposalState] =
@@ -793,14 +793,14 @@ object ProposalActor {
   }
 
   @Deprecated
-  case class Lock(moderatorId: UserId, moderatorName: String, expirationDate: ZonedDateTime)
+  final case class Lock(moderatorId: UserId, moderatorName: String, expirationDate: ZonedDateTime)
 
   object Lock {
     implicit val lockFormatter: RootJsonFormat[Lock] =
       DefaultJsonProtocol.jsonFormat3(Lock.apply)
   }
 
-  case class ProposalLock(moderatorId: UserId, moderatorName: String, deadline: Deadline)
+  final case class ProposalLock(moderatorId: UserId, moderatorName: String, deadline: Deadline)
 
   def applyProposalUpdated(state: Proposal, event: ProposalUpdated): Proposal = {
 
@@ -813,6 +813,7 @@ object ProposalActor {
     ).filter {
       case (_, value) => !value.isEmpty
     }
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     val moderator: UserId = event.moderator match {
       case Some(userId) => userId
       case _            => throw new IllegalStateException("moderator required")

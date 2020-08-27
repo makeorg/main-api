@@ -25,7 +25,7 @@ import org.make.core.SprayJsonFormatters._
 import spray.json.DefaultJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
-case class Sort(field: Option[String], mode: Option[SortOrder])
+final case class Sort(field: Option[String], mode: Option[SortOrder])
 
 object Sort {
 

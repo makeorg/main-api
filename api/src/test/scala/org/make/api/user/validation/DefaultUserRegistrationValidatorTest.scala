@@ -231,13 +231,13 @@ class ValidatorUsingParameters extends EmailValidation {
   }
 }
 
-case class UserRequest(
+final case class UserRequest(
   dateOfBirth: Option[LocalDate],
   legalMinorConsent: Option[Boolean],
   legalAdvisorApproval: Option[Boolean]
 ) extends UserProfileRequestValidation
 
-case class ConfigurableRequirement(param: Int) extends UserRequirement {
+final case class ConfigurableRequirement(param: Int) extends UserRequirement {
   override def requirement(request: UserProfileRequestValidation): Seq[Requirement] =
     Seq(
       Validation.validateField(

@@ -326,7 +326,7 @@ trait DefaultModerationTagApiComponent
   }
 }
 
-case class CreateTagRequest(
+final case class CreateTagRequest(
   label: String,
   @(ApiModelProperty @field)(dataType = "string", example = "fba4d844-af12-454f-b39b-f360561a46fa")
   tagTypeId: TagTypeId,
@@ -347,7 +347,7 @@ object CreateTagRequest {
   implicit val decoder: Decoder[CreateTagRequest] = deriveDecoder[CreateTagRequest]
 }
 
-case class UpdateTagRequest(
+final case class UpdateTagRequest(
   label: String,
   @(ApiModelProperty @field)(dataType = "string", example = "fba4d844-af12-454f-b39b-f360561a46fa")
   tagTypeId: TagTypeId,

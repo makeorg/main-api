@@ -37,6 +37,8 @@ import org.make.core.{HttpCodes, Order, ParameterExtractors, ValidationError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Api(
   value = "Admin Question Personalities",
@@ -260,6 +262,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                             name = None
                           )
                         ) { personalityRoles =>
+                          @SuppressWarnings(Array("org.wartremover.warts.Throw"))
                           val result = personalities.map { personality =>
                             personalityRoles
                               .find(role => role.personalityRoleId == personality.personalityRoleId) match {
@@ -290,11 +293,18 @@ trait DefaultAdminQuestionPersonalityApiComponent
             makeOAuth2 { auth: AuthInfo[UserRights] =>
               requireAdminRole(auth.user) {
                 provideAsyncOrNotFound(questionPersonalityService.getPersonality(personalityId)) { personality =>
-                  provideAsync(personalityRoleService.getPersonalityRole(personality.personalityRoleId)) {
-                    case None =>
-                      throw new IllegalStateException(s"Personality with the id $personalityId does not exist")
-                    case Some(personalityRole) =>
-                      complete(AdminQuestionPersonalityResponse(personality, personalityRole))
+                  provideAsync(
+                    personalityRoleService
+                      .getPersonalityRole(personality.personalityRoleId)
+                      .flatMap(
+                        _.fold(
+                          Future.failed[PersonalityRole](
+                            new IllegalStateException(s"Personality with the id $personalityId does not exist")
+                          )
+                        )(Future.successful)
+                      )
+                  ) { personalityRole =>
+                    complete(AdminQuestionPersonalityResponse(personality, personalityRole))
                   }
                 }
               }

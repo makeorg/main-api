@@ -29,7 +29,7 @@ import org.make.core.user.UserId
 
 import scala.annotation.meta.field
 
-case class AuthCode(
+final case class AuthCode(
   authorizationCode: String,
   scope: Option[String],
   redirectUri: Option[String],

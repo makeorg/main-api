@@ -23,6 +23,7 @@ import org.flywaydb.core.api.migration._
 
 class V24_1__Populate_question_id_for_sequence_configuration extends BaseJavaMigration {
 
+  @SuppressWarnings(Array("org.wartremover.warts.While"))
   override def migrate(context: Context): Unit = {
     val connection = context.getConnection
     val resultSet = connection

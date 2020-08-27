@@ -198,7 +198,7 @@ object DefaultPersistentQuestionServiceComponent {
 
   val COUNTRY_SEPARATOR = ","
 
-  case class PersistentQuestion(
+  final case class PersistentQuestion(
     questionId: String,
     countries: String,
     language: String,

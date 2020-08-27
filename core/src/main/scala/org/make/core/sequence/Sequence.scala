@@ -29,9 +29,9 @@ import org.make.core.operation.OperationId
 import org.make.core.proposal.ProposalId
 import org.make.core.reference.Language
 import org.make.core.user.UserId
-import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
+import org.make.core.{MakeSerializable, RequestContext, SprayJsonFormatters, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 final case class SequenceTranslation(slug: String, title: String, language: Language) extends MakeSerializable
 
@@ -50,7 +50,7 @@ object SequenceAction {
     DefaultJsonProtocol.jsonFormat4(SequenceAction.apply)
 }
 
-case class Sequence(
+final case class Sequence(
   sequenceId: SequenceId,
   title: String,
   slug: String,
@@ -79,16 +79,7 @@ object SequenceId {
   implicit lazy val sequenceIdDecoder: Decoder[SequenceId] =
     Decoder.decodeString.map(SequenceId(_))
 
-  implicit val sequenceIdFormatter: JsonFormat[SequenceId] = new JsonFormat[SequenceId] {
-    override def read(json: JsValue): SequenceId = json match {
-      case JsString(s) => SequenceId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: SequenceId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val sequenceIdFormatter: JsonFormat[SequenceId] = SprayJsonFormatters.forStringValue(SequenceId.apply)
 }
 
 sealed abstract class SequenceStatus(val value: String) extends StringEnumEntry

@@ -40,7 +40,7 @@ import org.make.core.{CirceFormatters, SlugHelper}
 
 import scala.annotation.meta.field
 
-case class ModerationQuestionResponse(
+final case class ModerationQuestionResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   id: QuestionId,
   slug: String,
@@ -190,7 +190,7 @@ object QuestionPartnerResponse extends CirceFormatters {
   implicit val decoder: Decoder[QuestionPartnerResponse] = deriveDecoder[QuestionPartnerResponse]
 }
 
-case class QuestionDetailsResponse(
+final case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
   questionId: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")

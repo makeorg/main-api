@@ -96,6 +96,7 @@ trait AvroSerializers {
 
   implicit def stringEnumEncoder[A <: StringEnumEntry]: Encoder[A] = (a, _, _) => a.value
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit def stringEnumDecoder[A <: StringEnumEntry](implicit enum: StringEnum[A]): Decoder[A] =
     (value, _, _) =>
       enum

@@ -32,7 +32,7 @@ import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 
-case class OperationOfQuestionSearchQuery(
+final case class OperationOfQuestionSearchQuery(
   filters: Option[OperationOfQuestionSearchFilters] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
@@ -41,7 +41,7 @@ case class OperationOfQuestionSearchQuery(
   sortAlgorithm: Option[SortAlgorithm] = None
 )
 
-case class OperationOfQuestionSearchFilters(
+final case class OperationOfQuestionSearchFilters(
   questionIds: Option[QuestionIdsSearchFilter] = None,
   question: Option[QuestionContentSearchFilter] = None,
   description: Option[DescriptionSearchFilter] = None,
@@ -122,7 +122,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
       } else {
         sort
       }
-      FieldSort(field = sortFieldName.field, order = order.getOrElse(SortOrder.ASC))
+      FieldSort(field = sortFieldName.field, order = order.getOrElse(SortOrder.Asc))
     }
   }
 
@@ -270,13 +270,13 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
 
 }
 
-case class QuestionIdsSearchFilter(questionIds: Seq[QuestionId])
-case class QuestionContentSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
-case class DescriptionSearchFilter(description: String)
-case class CountrySearchFilter(country: Country)
-case class LanguageSearchFilter(language: Language)
-case class StartDateSearchFilter(startDate: ZonedDateTime)
-case class EndDateSearchFilter(endDate: ZonedDateTime)
-case class OperationKindsSearchFilter(operationKinds: Seq[OperationKind])
-case class FeaturedSearchFilter(featured: Boolean)
-case class StatusSearchFilter(status: OperationOfQuestion.Status)
+final case class QuestionIdsSearchFilter(questionIds: Seq[QuestionId])
+final case class QuestionContentSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
+final case class DescriptionSearchFilter(description: String)
+final case class CountrySearchFilter(country: Country)
+final case class LanguageSearchFilter(language: Language)
+final case class StartDateSearchFilter(startDate: ZonedDateTime)
+final case class EndDateSearchFilter(endDate: ZonedDateTime)
+final case class OperationKindsSearchFilter(operationKinds: Seq[OperationKind])
+final case class FeaturedSearchFilter(featured: Boolean)
+final case class StatusSearchFilter(status: OperationOfQuestion.Status)

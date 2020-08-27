@@ -58,7 +58,7 @@ trait SessionHistoryCoordinatorServiceComponent {
   def sessionHistoryCoordinatorService: SessionHistoryCoordinatorService
 }
 
-case class ConcurrentModification(message: String) extends Exception(message)
+final case class ConcurrentModification(message: String) extends Exception(message)
 
 trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoordinatorServiceComponent {
   self: SessionHistoryCoordinatorComponent with ActorSystemComponent with MakeSettingsComponent =>
@@ -71,6 +71,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
     private val proposalsPerPage: Int = makeSettings.maxHistoryProposalsPerPage
     implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def sessionHistory(sessionId: SessionId): Future[SessionHistory] = {
       (sessionHistoryCoordinator ? GetSessionHistory(sessionId)).flatMap {
         case SessionIsExpired(newSessionId) => sessionHistory(newSessionId)
@@ -90,6 +91,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def retrieveVoteAndQualifications(
       request: RequestSessionVoteValues
     ): Future[Map[ProposalId, VoteAndQualifications]] = {
@@ -99,6 +101,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def convertSession(sessionId: SessionId, userId: UserId, requestContext: RequestContext): Future[Unit] = {
       (sessionHistoryCoordinator ? UserConnected(sessionId, userId, requestContext)).flatMap {
         case SessionIsExpired(newSessionId) => convertSession(newSessionId, userId, requestContext)
@@ -140,6 +143,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
         .runWith(Sink.seq)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def lockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
       (sessionHistoryCoordinator ? LockProposalForVote(sessionId, proposalId)).flatMap {
         case SessionIsExpired(newSessionId) => lockSessionForVote(newSessionId, proposalId)
@@ -149,6 +153,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def lockSessionForQualification(
       sessionId: SessionId,
       proposalId: ProposalId,
@@ -162,6 +167,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def unlockSessionForVote(sessionId: SessionId, proposalId: ProposalId): Future[Unit] = {
       (sessionHistoryCoordinator ? ReleaseProposalForVote(sessionId, proposalId)).flatMap {
         case SessionIsExpired(newSessionId) => unlockSessionForVote(newSessionId, proposalId)
@@ -169,6 +175,7 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def unlockSessionForQualification(
       sessionId: SessionId,
       proposalId: ProposalId,

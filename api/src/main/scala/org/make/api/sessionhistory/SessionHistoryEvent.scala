@@ -49,7 +49,7 @@ trait SessionRelatedEvent extends SessionHistoryActorProtocol {
   def sessionId: SessionId
 }
 
-case class SessionHistoryEnvelope[T <: TransactionalSessionHistoryEvent[_]](sessionId: SessionId, command: T)
+final case class SessionHistoryEnvelope[T <: TransactionalSessionHistoryEvent[_]](sessionId: SessionId, command: T)
     extends SessionRelatedEvent
 
 sealed trait SessionHistoryEvent[T] extends MakeSerializable {
@@ -281,7 +281,7 @@ object LogSessionSearchProposalsEvent {
 
 }
 
-case class SessionExpired(sessionId: SessionId, requestContext: RequestContext, action: SessionAction[SessionId])
+final case class SessionExpired(sessionId: SessionId, requestContext: RequestContext, action: SessionAction[SessionId])
     extends SessionHistoryEvent[SessionId]
 
 object SessionExpired {
@@ -289,7 +289,7 @@ object SessionExpired {
     DefaultJsonProtocol.jsonFormat(SessionExpired.apply, "sessionId", "context", "action")
 }
 
-case class SessionTransformed(sessionId: SessionId, requestContext: RequestContext, action: SessionAction[UserId])
+final case class SessionTransformed(sessionId: SessionId, requestContext: RequestContext, action: SessionAction[UserId])
     extends SessionHistoryEvent[UserId]
 
 object SessionTransformed {
@@ -311,13 +311,13 @@ object SaveLastEventDate {
 sealed trait LockVoteAction extends SessionHistoryActorProtocol
 
 case object Vote extends LockVoteAction
-case class ChangeQualifications(key: Seq[QualificationKey]) extends LockVoteAction
+final case class ChangeQualifications(key: Seq[QualificationKey]) extends LockVoteAction
 
-case class LockProposalForVote(sessionId: SessionId, proposalId: ProposalId) extends SessionRelatedEvent
-case class LockProposalForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey)
+final case class LockProposalForVote(sessionId: SessionId, proposalId: ProposalId) extends SessionRelatedEvent
+final case class LockProposalForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey)
     extends SessionRelatedEvent
-case class ReleaseProposalForVote(sessionId: SessionId, proposalId: ProposalId) extends SessionRelatedEvent
-case class ReleaseProposalForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey)
+final case class ReleaseProposalForVote(sessionId: SessionId, proposalId: ProposalId) extends SessionRelatedEvent
+final case class ReleaseProposalForQualification(sessionId: SessionId, proposalId: ProposalId, key: QualificationKey)
     extends SessionRelatedEvent
 
 case object LockAcquired extends SessionHistoryActorProtocol

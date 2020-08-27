@@ -203,8 +203,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         (accessToken, _)  <- futureAccessTokens
         (refreshToken, _) <- futureRefreshTokens
         maybeClient       <- futureClient
+        client <- maybeClient.fold(
+          Future.failed[Client](new IllegalArgumentException(s"Client with id $clientId not found"))
+        )(Future.successful)
       } yield {
-        val client = maybeClient.getOrElse(throw new IllegalArgumentException(s"Client with id $clientId not found"))
         (
           Token(
             accessToken = accessToken,
@@ -393,10 +395,10 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
   }
 }
 
-case class TokenAlreadyRefreshed(refreshToken: String)
+final case class TokenAlreadyRefreshed(refreshToken: String)
     extends Exception(s"Refresh token $refreshToken has already been refreshed")
 
-case class ClientAccessUnauthorizedException(user: User, client: Client)
+final case class ClientAccessUnauthorizedException(user: User, client: Client)
     extends Exception(
       s"User: ${user.userId} tried to connect to client ${client.clientId} with insufficient roles. " +
         s"Expected one of: ${client.roles.map(_.value).mkString(", ")}." +

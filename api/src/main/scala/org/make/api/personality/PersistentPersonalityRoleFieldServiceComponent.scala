@@ -194,7 +194,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
 
 object DefaultPersistentPersonalityRoleFieldServiceComponent {
 
-  case class PersistentPersonalityRoleField(
+  final case class PersistentPersonalityRoleField(
     id: String,
     personalityRoleId: String,
     name: String,

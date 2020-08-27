@@ -94,10 +94,10 @@ object JobReportingActor {
   sealed abstract class Protocol extends ActorProtocol
 
   object Protocol {
-    case class Report(progress: Progress) extends Protocol
-    case class Finish(outcome: Option[Throwable]) extends Protocol
-    case object Tick extends Protocol
-    case object Ack extends Protocol
+    final case class Report(progress: Progress) extends Protocol
+    final case class Finish(outcome: Option[Throwable]) extends Protocol
+    final case object Tick extends Protocol
+    final case object Ack extends Protocol
   }
 
 }

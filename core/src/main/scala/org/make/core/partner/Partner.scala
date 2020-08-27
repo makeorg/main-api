@@ -21,12 +21,12 @@ package org.make.core.partner
 
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
+import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.JsonFormat
 
-case class Partner(
+final case class Partner(
   partnerId: PartnerId,
   name: String,
   logo: Option[String],
@@ -37,7 +37,7 @@ case class Partner(
   weight: Float
 )
 
-case class PartnerId(value: String) extends StringValue
+final case class PartnerId(value: String) extends StringValue
 
 object PartnerId {
   implicit lazy val partnerIdEncoder: Encoder[PartnerId] =
@@ -45,16 +45,7 @@ object PartnerId {
   implicit lazy val partnerIdDecoder: Decoder[PartnerId] =
     Decoder.decodeString.map(PartnerId(_))
 
-  implicit val partnerIdFormatter: JsonFormat[PartnerId] = new JsonFormat[PartnerId] {
-    override def read(json: JsValue): PartnerId = json match {
-      case JsString(s) => PartnerId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: PartnerId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val partnerIdFormatter: JsonFormat[PartnerId] = SprayJsonFormatters.forStringValue(PartnerId.apply)
 }
 
 sealed abstract class PartnerKind(val value: String) extends StringEnumEntry

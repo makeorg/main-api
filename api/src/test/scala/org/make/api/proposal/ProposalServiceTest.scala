@@ -22,6 +22,7 @@ package org.make.api.proposal
 import java.time.{LocalDate, ZonedDateTime}
 
 import akka.actor.ActorSystem
+import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import org.make.api.idea._
@@ -31,7 +32,6 @@ import org.make.api.semantic._
 import org.make.api.sessionhistory._
 import org.make.api.tag.{TagService, TagServiceComponent}
 import org.make.api.tagtype.{TagTypeService, TagTypeServiceComponent}
-import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.technical.security.{SecurityConfiguration, SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.user.{UserService, UserServiceComponent}
@@ -94,6 +94,8 @@ class ProposalServiceTest
     with TagTypeServiceComponent
     with SecurityConfigurationComponent
     with SegmentServiceComponent {
+
+  type MakeReadJournal = CassandraReadJournal
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val proposalCoordinatorService: ProposalCoordinatorService = mock[ProposalCoordinatorService]

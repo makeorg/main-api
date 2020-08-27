@@ -26,7 +26,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
 
-case class PostSearchQuery(
+final case class PostSearchQuery(
   filters: Option[PostSearchFilters] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
@@ -34,7 +34,7 @@ case class PostSearchQuery(
   order: Option[Order] = None
 )
 
-case class PostSearchFilters(
+final case class PostSearchFilters(
   postIds: Option[PostIdsSearchFilter] = None,
   displayHome: Option[DisplayHomeSearchFilter] = None
 )

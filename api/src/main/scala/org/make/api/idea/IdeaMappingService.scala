@@ -249,8 +249,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
         )
         .flatMap {
           case Seq()        => createMapping(questionId, stakeTagId, solutionTypeTagId)
-          case Seq(mapping) => Future.successful(mapping)
-          case other        => Future.successful(other.head)
+          case mapping +: _ => Future.successful(mapping)
         }
     }
 

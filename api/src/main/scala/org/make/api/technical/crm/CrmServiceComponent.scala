@@ -132,7 +132,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
 
       result.onComplete {
         case Success(response) =>
-          logger.info(s"Sent email $messages with reponse $response")
+          logger.info(s"Sent email ${messages.toString} with reponse ${response.toString}")
         case Failure(e) =>
           logger.error(s"Sent email $messages failed", e)
           e match {
@@ -304,6 +304,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .map(_ => Files.list(csvDirectory).collect(Collectors.toList[Path]).asScala.toSeq)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     private def sendCsvToHardBounceList(csv: Path, list: CrmList): Future[Long] = {
       for {
         csvId <- crmClient.sendCsv(mailJetConfiguration.hardBounceListId, csv)
@@ -320,6 +321,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     private def sendCsvToOptInList(csv: Path, list: CrmList): Future[Long] = {
       for {
         csvId <- crmClient.sendCsv(mailJetConfiguration.optInListId, csv)
@@ -336,6 +338,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     private def sendCsvToUnsubscribeList(csv: Path, list: CrmList): Future[Long] = {
       for {
         csvId <- crmClient.sendCsv(mailJetConfiguration.unsubscribeListId, csv)
@@ -603,7 +606,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
@@ -634,7 +637,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
@@ -664,7 +667,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
           daysOfActivity30d = if (isLast30daysDate(event.action.date)) {
@@ -693,7 +696,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
           firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
           lastContributionDate = Some(event.action.date),
@@ -725,9 +728,9 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
           lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
-          countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value).toSeq,
-          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
-          sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toSeq,
+          countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value).toList,
+          questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
+          sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toList,
           firstContributionDate = accumulator.firstContributionDate.orElse(Option(event.action.date)),
           lastContributionDate = Some(event.action.date),
           daysOfActivity = accumulator.daysOfActivity ++ Some(event.action.date.format(dayDateFormatter)),
@@ -758,14 +761,14 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationCountry = event.requestContext.country.map(_.value).orElse(accumulator.accountCreationCountry),
         accountCreationLocation = event.requestContext.location,
         countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
-        questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toSeq,
+        questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
         sourceActivity = accumulator.sourceActivity ++ event.requestContext.source
       )
     }
 
     private def logMailjetResponse(result: Either[Throwable, ManageManyContactsResponse], listName: String): Unit = {
       result match {
-        case Right(ok) => logger.debug(s"Synchronizing list $listName answered $ok")
+        case Right(ok) => logger.debug(s"Synchronizing list $listName answered ${ok.toString}")
         case Left(e)   => logger.error(s"Error when synchronizing list $listName", e)
       }
     }

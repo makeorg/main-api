@@ -147,19 +147,19 @@ object ProposalSerializers extends SprayJsonFormatters {
     )
 
   private val proposalStateSerializer: JsonPersister[ProposalState, V8] = {
-    case class QualificationV5(key: QualificationKey, count: Int)
+    final case class QualificationV5(key: QualificationKey, count: Int)
     implicit val qualificationV5Formatter: RootJsonFormat[QualificationV5] =
       DefaultJsonProtocol.jsonFormat2(QualificationV5.apply)
 
-    case class VoteV5(key: VoteKey, count: Int, qualifications: Seq[QualificationV5])
+    final case class VoteV5(key: VoteKey, count: Int, qualifications: Seq[QualificationV5])
     implicit val voteV5Formatter: RootJsonFormat[VoteV5] =
       DefaultJsonProtocol.jsonFormat3(VoteV5.apply)
 
-    case class QualificationV6(key: QualificationKey, count: Int, countVerified: Int)
+    final case class QualificationV6(key: QualificationKey, count: Int, countVerified: Int)
     implicit val qualificationV6formatter: RootJsonFormat[QualificationV6] =
       DefaultJsonProtocol.jsonFormat3(QualificationV6.apply)
 
-    case class VoteV6(key: VoteKey, count: Int, countVerified: Int, qualifications: Seq[QualificationV6])
+    final case class VoteV6(key: VoteKey, count: Int, countVerified: Int, qualifications: Seq[QualificationV6])
     implicit val voteV6formatter: RootJsonFormat[VoteV6] =
       DefaultJsonProtocol.jsonFormat4(VoteV6.apply)
 
@@ -254,19 +254,19 @@ object ProposalSerializers extends SprayJsonFormatters {
 
   private val proposalPatchedSerializer: JsonPersister[ProposalPatched, V7] = {
 
-    case class QualificationV4(key: QualificationKey, count: Int)
+    final case class QualificationV4(key: QualificationKey, count: Int)
     implicit val qualificationV4Formatter: RootJsonFormat[QualificationV4] =
       DefaultJsonProtocol.jsonFormat2(QualificationV4.apply)
 
-    case class VoteV4(key: VoteKey, count: Int, qualifications: Seq[QualificationV4])
+    final case class VoteV4(key: VoteKey, count: Int, qualifications: Seq[QualificationV4])
     implicit val voteV4Formatter: RootJsonFormat[VoteV4] =
       DefaultJsonProtocol.jsonFormat3(VoteV4.apply)
 
-    case class QualificationV5(key: QualificationKey, count: Int, countVerified: Int)
+    final case class QualificationV5(key: QualificationKey, count: Int, countVerified: Int)
     implicit val qualificationV5Formatter: RootJsonFormat[QualificationV5] =
       DefaultJsonProtocol.jsonFormat3(QualificationV5.apply)
 
-    case class VoteV5(key: VoteKey, count: Int, countVerified: Int, qualifications: Seq[QualificationV5])
+    final case class VoteV5(key: VoteKey, count: Int, countVerified: Int, qualifications: Seq[QualificationV5])
     implicit val voteV5Formatter: RootJsonFormat[VoteV5] =
       DefaultJsonProtocol.jsonFormat4(VoteV5.apply)
 

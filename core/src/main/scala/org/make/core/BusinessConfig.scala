@@ -31,7 +31,7 @@ sealed trait BusinessConfig {
   val supportedCountries: Seq[CountryConfiguration]
 }
 
-case class CountryConfiguration(
+final case class CountryConfiguration(
   @(ApiModelProperty @field)(dataType = "string", example = "BE") countryCode: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") defaultLanguage: Language,
   @(ApiModelProperty @field)(dataType = "list[string]") supportedLanguages: Seq[Language],
@@ -42,7 +42,7 @@ object CountryConfiguration {
   implicit val decoder: Decoder[CountryConfiguration] = deriveDecoder[CountryConfiguration]
 }
 
-case class FrontConfiguration(
+final case class FrontConfiguration(
   proposalMinLength: Int,
   override val proposalMaxLength: Int,
   override val supportedCountries: Seq[CountryConfiguration]

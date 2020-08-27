@@ -210,7 +210,7 @@ trait DefaultModerationIdeaApiComponent
                       Seq(sortValue),
                       choices
                     )
-                  }.toSeq: _*)
+                  }.toList: _*)
                   val filters: IdeaFiltersRequest =
                     IdeaFiltersRequest(
                       name = name,

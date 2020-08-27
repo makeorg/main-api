@@ -170,7 +170,7 @@ final case class PeopleInfo(
       facebookId = None,
       picture = photos.find(_.metadata.isPrimary).map(_.url.toString),
       domain = maybeEmail.map(_.split("@").last),
-      dateOfBirth = birthdays.flatMap(_.sortBy(!_.metadata.isPrimary).flatMap(_.date.toLocalDate.toSeq).headOption)
+      dateOfBirth = birthdays.flatMap(_.sortBy(!_.metadata.isPrimary).flatMap(_.date.toLocalDate.toList).headOption)
     )
   }
 }

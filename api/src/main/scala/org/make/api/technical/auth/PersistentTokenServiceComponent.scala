@@ -26,6 +26,7 @@ import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.api.technical.auth.PersistentClientServiceComponent.PersistentClient
+import org.make.api.technical.auth.PersistentTokenServiceComponent.PersistentToken
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.api.user.PersistentUserServiceComponent.PersistentUser
 import org.make.core.DateHelper
@@ -39,21 +40,9 @@ trait PersistentTokenServiceComponent {
   def persistentTokenService: PersistentTokenService
 }
 
-trait PersistentTokenService {
-  def accessTokenExists(token: String): Future[Boolean]
-  def refreshTokenExists(token: String): Future[Boolean]
-  def findByRefreshToken(token: String): Future[Option[Token]]
-  def get(accessToken: String): Future[Option[Token]]
-  def findByUserId(userId: UserId): Future[Option[Token]]
-  def persist(token: Token): Future[Token]
-  def deleteByAccessToken(accessToken: String): Future[Int]
-  def deleteByUserId(userId: UserId): Future[Int]
-}
+object PersistentTokenServiceComponent {
 
-trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceComponent {
-  self: MakeDBExecutionContextComponent with PersistentUserServiceComponent with PersistentClientServiceComponent =>
-
-  case class PersistentToken(
+  final case class PersistentToken(
     accessToken: String,
     refreshToken: Option[String],
     scope: Option[String],
@@ -62,7 +51,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
     expiresIn: Int,
     makeUserUuid: PersistentUser,
     clientUuid: PersistentClient
-  ) extends StrictLogging {
+  ) {
     def toToken: Token = {
       Token(
         accessToken = accessToken,
@@ -114,6 +103,22 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
       )
     }
   }
+
+}
+
+trait PersistentTokenService {
+  def accessTokenExists(token: String): Future[Boolean]
+  def refreshTokenExists(token: String): Future[Boolean]
+  def findByRefreshToken(token: String): Future[Option[Token]]
+  def get(accessToken: String): Future[Option[Token]]
+  def findByUserId(userId: UserId): Future[Option[Token]]
+  def persist(token: Token): Future[Token]
+  def deleteByAccessToken(accessToken: String): Future[Int]
+  def deleteByUserId(userId: UserId): Future[Int]
+}
+
+trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceComponent {
+  self: MakeDBExecutionContextComponent with PersistentUserServiceComponent with PersistentClientServiceComponent =>
 
   override lazy val persistentTokenService: PersistentTokenService = new DefaultPersistentTokenService
 

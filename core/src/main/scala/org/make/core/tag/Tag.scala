@@ -26,8 +26,8 @@ import io.swagger.annotations.ApiModelProperty
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
-import org.make.core.{MakeSerializable, StringValue}
-import spray.json.{JsString, JsValue, JsonFormat}
+import org.make.core.{MakeSerializable, SprayJsonFormatters, StringValue}
+import spray.json.JsonFormat
 
 import scala.annotation.meta.field
 
@@ -39,16 +39,7 @@ object TagId {
   implicit lazy val tagIdDecoder: Decoder[TagId] =
     Decoder.decodeString.map(TagId(_))
 
-  implicit val tagIdFormatter: JsonFormat[TagId] = new JsonFormat[TagId] {
-    override def read(json: JsValue): TagId = json match {
-      case JsString(s) => TagId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: TagId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val tagIdFormatter: JsonFormat[TagId] = SprayJsonFormatters.forStringValue(TagId.apply)
 
 }
 

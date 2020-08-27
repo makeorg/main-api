@@ -152,7 +152,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
 
 object DefaultPersistentActiveFeatureServiceComponent {
 
-  case class PersistentActiveFeature(id: String, featureId: String, questionId: Option[String]) {
+  final case class PersistentActiveFeature(id: String, featureId: String, questionId: Option[String]) {
     def toActiveFeature: ActiveFeature =
       ActiveFeature(
         activeFeatureId = ActiveFeatureId(id),

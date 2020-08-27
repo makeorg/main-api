@@ -26,6 +26,7 @@ import com.sksamuel.elastic4s.searches.sort.SortOrder
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import spray.json._
 
+@SuppressWarnings(Array("org.wartremover.warts.Throw"))
 trait SprayJsonFormatters {
 
   implicit val localDateFormatter: JsonFormat[LocalDate] = new JsonFormat[LocalDate] {
@@ -89,6 +90,18 @@ trait SprayJsonFormatters {
 }
 
 object SprayJsonFormatters extends SprayJsonFormatters {
+
+  def forStringValue[T <: StringValue](f: String => T): JsonFormat[T] = new JsonFormat[T] {
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+    override def read(json: JsValue): T = json match {
+      case JsString(s) => f(s)
+      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
+    }
+
+    override def write(obj: T): JsValue = {
+      JsString(obj.value)
+    }
+  }
 
   object syntax {
 

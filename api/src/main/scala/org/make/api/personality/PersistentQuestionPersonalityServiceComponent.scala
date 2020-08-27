@@ -176,7 +176,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
 
 object DefaultPersistentQuestionPersonalityServiceComponent {
 
-  case class PersistentPersonality(id: String, userId: String, questionId: String, personalityRoleId: String) {
+  final case class PersistentPersonality(id: String, userId: String, questionId: String, personalityRoleId: String) {
     def toPersonality: Personality = {
       Personality(
         personalityId = PersonalityId(id),

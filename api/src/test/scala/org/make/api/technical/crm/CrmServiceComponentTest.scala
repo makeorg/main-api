@@ -27,7 +27,7 @@ import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
+import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.{EventEnvelope, Offset}
 import akka.stream.scaladsl
 import akka.stream.scaladsl.Source
@@ -37,7 +37,6 @@ import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationCompon
 import org.make.api.operation.{OperationService, OperationServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
 import org.make.api.technical.{EventBusService, EventBusServiceComponent, ReadJournalComponent}
-import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.user.{
   PersistentUserToAnonymizeService,
@@ -98,16 +97,13 @@ class CrmServiceComponentTest
     with ScalaCheckDrivenPropertyChecks
     with PrivateMethodTester {
 
-  trait MakeReadJournalForMocks
-      extends ReadJournal
-      with CurrentPersistenceIdsQuery
-      with CurrentEventsByPersistenceIdQuery
+  type MakeReadJournal = CassandraReadJournal
 
   override lazy val actorSystem: ActorSystem = CrmServiceComponentTest.actorSystem
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
-  override val proposalJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
-  override val userJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
-  override val sessionJournal: MakeReadJournal = mock[MakeReadJournalForMocks]
+  override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val userJournal: MakeReadJournal = mock[MakeReadJournal]
+  override val sessionJournal: MakeReadJournal = mock[MakeReadJournal]
   override val mailJetConfiguration: MailJetConfiguration = mock[MailJetConfiguration]
   override val operationService: OperationService = mock[OperationService]
   override val questionService: QuestionService = mock[QuestionService]

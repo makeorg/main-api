@@ -45,12 +45,13 @@ object Validation extends StrictLogging {
 
   val postalCodeRegex: Regex = "^\\d{5}$".r
 
-  val minAgeWithLegalConsent = 8
-  val maxAgeWithLegalConsent = 15
-  val maxAge = 120
+  val minAgeWithLegalConsent: Int = 8
+  val maxAgeWithLegalConsent: Int = 15
+  val maxAge: Int = 120
 
   def validateOptional(maybeRequire: Option[Requirement]*): Unit = validate(maybeRequire.flatten: _*)
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def validate(require: Requirement*): Unit = {
     val messages: Seq[ValidationError] = require.flatMap { requirement =>
       Try(requirement.condition()) match {
@@ -279,13 +280,13 @@ object Validation extends StrictLogging {
   }
 }
 
-case class Requirement(field: String, key: String, condition: () => Boolean, message: () => String)
+final case class Requirement(field: String, key: String, condition: () => Boolean, message: () => String)
 
-case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception {
+final case class ValidationFailedError(errors: Seq[ValidationError]) extends Exception {
   override def getMessage: String = { errors.asJson.toString }
 }
 
-case class ValidationError(field: String, key: String, message: Option[String])
+final case class ValidationError(field: String, key: String, message: Option[String])
 
 object ValidationError {
   implicit val encoder: Encoder[ValidationError] = deriveEncoder[ValidationError]

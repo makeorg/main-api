@@ -237,7 +237,7 @@ object PersistentCrmUser extends SQLSyntaxSupport[PersistentCrmUser] with Shorte
   }
 }
 
-case class PersistentCrmUser(
+final case class PersistentCrmUser(
   userId: String,
   email: String,
   fullName: String,

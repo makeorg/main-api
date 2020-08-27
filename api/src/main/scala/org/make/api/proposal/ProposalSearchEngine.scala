@@ -25,6 +25,7 @@ import com.sksamuel.elastic4s.http.search.{SearchResponse, TermBucket}
 import com.sksamuel.elastic4s.script.Script
 import com.sksamuel.elastic4s.searches.aggs.pipeline.BucketSortPipelineAgg
 import com.sksamuel.elastic4s.searches.aggs.{
+  AbstractAggregation,
   FilterAggregation,
   GlobalAggregation,
   MaxAggregation,
@@ -148,7 +149,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val excludesFilters = SearchFilters.getExcludeFilters(searchQuery)
       var request: ElasticSearchRequest = searchWithType(proposalAlias)
         .bool(BoolQuery(must = searchFilters, not = excludesFilters))
-        .sortBy(SearchFilters.getSort(searchQuery))
+        .sortBy(SearchFilters.getSort(searchQuery).toList)
         .from(SearchFilters.getSkipSearch(searchQuery))
 
       request = request.size(SearchFilters.getLimitSearch(searchQuery))
@@ -248,6 +249,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       proposals: Seq[IndexedProposal],
       mayBeIndex: Option[IndexAndType] = None
     ): Future[Seq[IndexedProposal]] = {
+      @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
       val records = proposals
         .groupBy(_.id)
         .map {
@@ -267,6 +269,7 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       proposals: Seq[IndexedProposal],
       mayBeIndex: Option[IndexAndType] = None
     ): Future[Seq[IndexedProposal]] = {
+      @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
       val records = proposals
         .groupBy(_.id)
         .map {
@@ -331,20 +334,20 @@ trait DefaultProposalSearchEngineComponent extends ProposalSearchEngineComponent
       val request: ElasticSearchRequest = searchWithType(proposalAlias).bool(BoolQuery(must = searchFilters))
 
       // This aggregation create a field "maxTopScore" with the max value of indexedProposal.scores.topScore
-      val maxAggregation =
+      val maxAggregation: AbstractAggregation =
         MaxAggregation(
           name = maxAggregationName,
           field = Some(ProposalElasticsearchFieldName.topScoreAjustedWithVotes.field)
         )
 
       // This aggregation sort each bucket from the field "maxTopScore"
-      val bucketSortAggregation = BucketSortPipelineAgg(
+      val bucketSortAggregation: AbstractAggregation = BucketSortPipelineAgg(
         name = "topScoreBucketSort",
         sort = Seq(FieldSort(field = maxAggregationName, order = SortOrder.DESC))
       )
 
       // This aggregation take the proposal with the highest indexedProposal.scores.topScore on each bucket
-      val topHitsAggregation =
+      val topHitsAggregation: AbstractAggregation =
         TopHitsAggregation(
           name = topHitsAggregationName,
           sorts = Seq(

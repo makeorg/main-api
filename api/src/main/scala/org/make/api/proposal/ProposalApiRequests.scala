@@ -190,6 +190,17 @@ final case class ContextFilterRequest(
 }
 
 object ContextFilterRequest {
+  def parse(
+    operationId: Option[OperationId],
+    source: Option[String],
+    location: Option[String],
+    question: Option[String]
+  ): Option[ContextFilterRequest] = {
+    (operationId, source, location, question) match {
+      case (None, None, None, None) => None
+      case _                        => Some(ContextFilterRequest(operationId, source, location, question))
+    }
+  }
   implicit val decoder: Decoder[ContextFilterRequest] = deriveDecoder[ContextFilterRequest]
 }
 

@@ -23,7 +23,7 @@ import akka.actor.{Actor, Props}
 import akka.pattern.pipe
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical.crm.BasicCrmResponse.ManageContactsWithCsvResponse
-import org.make.api.technical.crm.CrmSynchroCsvMonitor._
+import org.make.api.technical.crm.CrmSynchroCsvMonitor.Protocol._
 
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -38,7 +38,9 @@ class CrmSynchroCsvMonitor(
     extends Actor
     with StrictLogging {
 
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
   private val queue: mutable.Queue[Long] = mutable.Queue[Long]()
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
   private val pendingCalls: mutable.Set[Long] = mutable.Set[Long]()
 
   override def preStart(): Unit = {
@@ -121,8 +123,12 @@ object CrmSynchroCsvMonitor {
   ): Props =
     Props(new CrmSynchroCsvMonitor(crmClient, jobIds, promise, tickInterval))
 
-  case object Tick
-  case object QuotaAvailable
-  case class CrmCallSucceeded(jobId: Long, response: ManageContactsWithCsvResponse)
-  case class CrmCallFailed(jobId: Long, error: Throwable)
+  sealed abstract class Protocol extends Product with Serializable
+
+  object Protocol {
+    final case object Tick extends Protocol
+    final case object QuotaAvailable extends Protocol
+    final case class CrmCallSucceeded(jobId: Long, response: ManageContactsWithCsvResponse) extends Protocol
+    final case class CrmCallFailed(jobId: Long, error: Throwable) extends Protocol
+  }
 }

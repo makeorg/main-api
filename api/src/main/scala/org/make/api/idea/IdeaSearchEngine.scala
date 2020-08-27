@@ -72,7 +72,7 @@ trait DefaultIdeaSearchEngineComponent extends IdeaSearchEngineComponent with Ci
       val searchFilters = IdeaSearchFilters.getIdeaSearchFilters(ideaSearchQuery)
       val request: SearchRequest = searchWithType(ideaAlias)
         .bool(BoolQuery(must = searchFilters))
-        .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery))
+        .sortBy(IdeaSearchFilters.getSort(ideaSearchQuery).toList)
         .size(IdeaSearchFilters.getLimitSearch(ideaSearchQuery))
         .from(IdeaSearchFilters.getSkipSearch(ideaSearchQuery))
 
