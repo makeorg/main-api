@@ -21,6 +21,7 @@ package org.make.api.idea
 import org.make.api.technical.IdGeneratorComponent
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.question.QuestionId
+import org.make.core.Order
 
 import scala.concurrent.Future
 
@@ -38,7 +39,7 @@ trait TopIdeaService {
     start: Int = 0,
     end: Option[Int] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     ideaId: Option[IdeaId],
     questionIds: Option[Seq[QuestionId]],
     name: Option[String]
@@ -84,7 +85,7 @@ trait DefaultTopIdeaServiceComponent extends TopIdeaServiceComponent {
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       ideaId: Option[IdeaId],
       questionIds: Option[Seq[QuestionId]],
       name: Option[String]

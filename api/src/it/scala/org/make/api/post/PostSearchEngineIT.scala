@@ -34,7 +34,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfigurationComponent
 }
 import org.make.api.{ActorSystemComponent, ItMakeTest}
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, Order}
 import org.make.core.post.PostId
 import org.make.core.post.indexed._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -161,7 +161,7 @@ class PostSearchEngineIT
       val query = PostSearchQuery(
         filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
         sort = Some(PostElasticsearchFieldNames.postDate),
-        order = Some("DESC")
+        order = Some(Order.desc)
       )
       whenReady(elasticsearchPostAPI.searchPosts(query), Timeout(3.seconds)) { result =>
         result.total should be(3L)

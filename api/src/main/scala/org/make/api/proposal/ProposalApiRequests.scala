@@ -26,7 +26,7 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.MakeRandom
 import org.make.core.Validation._
-import org.make.core.common.indexed.SortRequest
+import org.make.core.common.indexed.Sort
 import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
@@ -35,7 +35,7 @@ import org.make.core.reference.{Country, LabelId, Language}
 import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
-import org.make.core.{BusinessConfig, CirceFormatters, FrontConfiguration, RequestContext, Validation}
+import org.make.core.{BusinessConfig, CirceFormatters, FrontConfiguration, Order, RequestContext, Validation}
 
 import scala.annotation.meta.field
 
@@ -200,17 +200,16 @@ final case class SearchRequest(
   labelsIds: Option[Seq[LabelId]] = None,
   operationId: Option[OperationId] = None,
   questionIds: Option[Seq[QuestionId]] = None,
-  @Deprecated trending: Option[String] = None,
   content: Option[String] = None,
   slug: Option[String] = None,
   seed: Option[Int] = None,
   context: Option[ContextFilterRequest] = None,
   language: Option[Language] = None,
   country: Option[Country] = None,
-  @Deprecated sort: Option[SortRequest] = None,
+  sort: Option[String] = None,
+  order: Option[Order] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
-  @Deprecated isRandom: Option[Boolean] = Some(false),
   sortAlgorithm: Option[String] = None,
   operationKinds: Option[Seq[OperationKind]] = None,
   userTypes: Option[Seq[UserType]] = None,
@@ -229,7 +228,6 @@ final case class SearchRequest(
         labels = labelsIds.map(LabelsSearchFilter.apply),
         operation = operationId.map(opId => OperationSearchFilter(Seq(opId))),
         question = questionIds.map(QuestionSearchFilter.apply),
-        trending = trending.map(TrendingSearchFilter.apply),
         content = content.map(ContentSearchFilter.apply),
         slug = slug.map(value => SlugSearchFilter(value)),
         context = context.map(_.toContext),
@@ -243,17 +241,9 @@ final case class SearchRequest(
     val randomSeed: Int = seed.getOrElse(MakeRandom.nextInt())
     val searchSortAlgorithm: Option[SortAlgorithm] = AlgorithmSelector
       .select(sortAlgorithm, randomSeed, sortAlgorithmConfiguration)
-      // Once the Deprecated field `isRandom` is deleted, replace following code by `None`
-      .orElse(isRandom.flatMap { randomise =>
-        if (randomise) {
-          Some(RandomAlgorithm(randomSeed))
-        } else {
-          None
-        }
-      })
     SearchQuery(
       filters = filters,
-      sort = sort.map(_.toSort),
+      sort = Sort.parse(sort, order),
       limit = limit,
       skip = skip,
       language = requestContext.language,
@@ -282,7 +272,8 @@ final case class ExhaustiveSearchRequest(
   minScore: Option[Float] = None,
   language: Option[Language] = None,
   country: Option[Country] = None,
-  sort: Option[SortRequest] = None,
+  sort: Option[String] = None,
+  order: Option[Order] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
   createdBefore: Option[ZonedDateTime] = None,
@@ -312,7 +303,7 @@ final case class ExhaustiveSearchRequest(
 
     SearchQuery(
       filters = filters,
-      sort = sort.map(_.toSort),
+      sort = Sort.parse(sort, order),
       limit = limit,
       skip = skip,
       language = requestContext.language

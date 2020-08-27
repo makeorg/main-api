@@ -32,7 +32,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.question.QuestionId
-import org.make.core.{HttpCodes, ParameterExtractors, ValidationError}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, ValidationError}
 
 import scala.annotation.meta.field
 
@@ -182,7 +182,7 @@ trait DefaultAdminTopIdeaApiComponent
             "_start".as[Int].?,
             "_end".as[Int].?,
             "_sort".?,
-            "_order".?,
+            "_order".as[Order].?,
             "ideaId".as[IdeaId].?,
             "questionId".as[QuestionId].?,
             "name".?
@@ -192,7 +192,7 @@ trait DefaultAdminTopIdeaApiComponent
             start: Option[Int],
             end: Option[Int],
             sort: Option[String],
-            order: Option[String],
+            order: Option[Order],
             ideaId: Option[IdeaId],
             questionId: Option[QuestionId],
             name: Option[String]

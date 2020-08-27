@@ -23,6 +23,7 @@ import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.core.idea.{Idea, IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.Order
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -40,7 +41,7 @@ class PersistentTopIdeaServiceIT
     Int,
     Option[Int],
     Option[String],
-    Option[String],
+    Option[Order],
     Option[IdeaId],
     Option[Seq[QuestionId]],
     Option[String]

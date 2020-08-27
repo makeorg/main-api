@@ -31,7 +31,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.tag.{TagTypeDisplay, TagTypeId}
-import org.make.core.{HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -232,7 +232,7 @@ trait DefaultModerationTagTypeApiComponent
     override def moderationListTagTypes: Route = get {
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
-          parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "label".?)) {
+          parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "label".?)) {
             (start, end, _, _, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {

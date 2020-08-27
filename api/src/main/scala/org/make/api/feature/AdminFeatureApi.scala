@@ -31,7 +31,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
 import org.make.core.feature.{Feature, FeatureId}
-import org.make.core.{HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -216,27 +216,16 @@ trait DefaultAdminFeatureApiComponent
       get {
         path("admin" / "features") {
           makeOperation("AdminSearchFeature") { _ =>
-            parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "slug".?)) {
+            parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "slug".?)) {
               (
                 start: Option[Int],
                 end: Option[Int],
                 sort: Option[String],
-                order: Option[String],
+                order: Option[Order],
                 maybeSlug: Option[String]
               ) =>
                 makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                   requireAdminRole(userAuth.user) {
-                    order.foreach { orderValue =>
-                      Validation.validate(
-                        Validation
-                          .validChoices(
-                            "_order",
-                            Some("Invalid order"),
-                            Seq(orderValue.toLowerCase),
-                            Seq("desc", "asc")
-                          )
-                      )
-                    }
                     provideAsync(featureService.count(slug = maybeSlug)) { count =>
                       onSuccess(
                         featureService

@@ -24,7 +24,7 @@ import java.time.{LocalDate, ZoneId, ZonedDateTime}
 import com.github.t3hnar.bcrypt._
 import org.make.api.user.DefaultPersistentUserServiceComponent.UpdateFailed
 import org.make.api.{DatabaseTest, TestUtilsIT}
-import org.make.core.DateHelper
+import org.make.core.{DateHelper, Order}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
@@ -535,7 +535,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     Scenario("find organisations with params") {
       whenReady(
         persistentUserService
-          .findOrganisations(start = 0, end = Some(2), sort = Some("organisation_name"), order = Some("ASC"), None)
+          .findOrganisations(start = 0, end = Some(2), sort = Some("organisation_name"), order = Some(Order.asc), None)
       ) { organisations =>
         organisations.size should be(2)
         organisations.head.userId shouldBe UserId("CIA")

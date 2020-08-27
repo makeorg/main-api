@@ -35,6 +35,7 @@ import org.make.core.operation.{
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.user.UserId
+import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -49,7 +50,7 @@ trait QuestionPersonalityService extends ShortenedNames {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     userId: Option[UserId],
     questionId: Option[QuestionId],
     personalityRoleId: Option[PersonalityRoleId]
@@ -113,7 +114,7 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       userId: Option[UserId],
       questionId: Option[QuestionId],
       personalityRoleId: Option[PersonalityRoleId]

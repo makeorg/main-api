@@ -34,6 +34,7 @@ import org.make.core.operation._
 import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
+import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -47,7 +48,7 @@ trait OperationOfQuestionService {
     start: Int = 0,
     end: Option[Int] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()
   ): Future[Seq[OperationOfQuestion]]
   def search(searchQuery: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
@@ -122,7 +123,7 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()
     ): Future[scala.Seq[OperationOfQuestion]] = {
       persistentOperationOfQuestionService.search(

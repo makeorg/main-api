@@ -24,7 +24,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCod
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
-import org.make.core.RequestContext
+import org.make.core.{Order, RequestContext}
 import org.make.core.operation.OperationId
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -104,7 +104,8 @@ class ModerationTagApiTest
   when(tagService.findAll())
     .thenReturn(Future.successful(Seq(tag1, tag2)))
   when(
-    tagService.find(any[Int], any[Option[Int]], eqTo(Some("label")), eqTo(Some("ASC")), any[Boolean], any[TagFilter])
+    tagService
+      .find(any[Int], any[Option[Int]], eqTo(Some("label")), eqTo(Some(Order.asc)), any[Boolean], any[TagFilter])
   ).thenReturn(Future.successful(Seq(tag1, tag2)))
 
   when(

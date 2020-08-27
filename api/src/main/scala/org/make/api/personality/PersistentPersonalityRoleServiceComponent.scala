@@ -26,6 +26,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
+import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -42,7 +43,7 @@ trait PersistentPersonalityRoleService {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     maybeRoleIds: Option[Seq[PersonalityRoleId]],
     maybeName: Option[String]
   ): Future[Seq[PersonalityRole]]
@@ -99,7 +100,7 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
       start: Int,
       end: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       maybeRoleIds: Option[Seq[PersonalityRoleId]],
       maybeName: Option[String]
     ): Future[Seq[PersonalityRole]] = {

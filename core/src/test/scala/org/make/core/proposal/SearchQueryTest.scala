@@ -41,8 +41,6 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
   val labelsFilter = LabelsSearchFilter(Seq(LabelId(labelValue)))
   val operationValue = "Operation"
   val operationFilter = OperationSearchFilter(Seq(OperationId(operationValue)))
-  val trendingValue = "Trending"
-  val trendingFilter = TrendingSearchFilter(trendingValue)
   val textValue = "text to search"
   val contentFilter = ContentSearchFilter(text = textValue)
   val statusFilter = StatusSearchFilter(status = Seq(ProposalStatus.Pending))
@@ -57,7 +55,6 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       tags = Some(tagsFilter),
       labels = Some(labelsFilter),
       operation = Some(operationFilter),
-      trending = Some(trendingFilter),
       content = Some(contentFilter),
       status = Some(statusFilter),
       context = None,
@@ -131,16 +128,6 @@ class SearchQueryTest extends MakeUnitTest with ElasticDsl {
       Then("result is a matchQuery")
       operationSearchFilterResult shouldBe Some(
         ElasticApi.termQuery(ProposalElasticsearchFieldNames.operationId, operationValue)
-      )
-    }
-
-    Scenario("build TrendingSearchFilter from Search filter") {
-      Given("a searchFilter")
-      When("call buildTrendingSearchFilter with SearchQuery")
-      val trendingSearchFilterResult = SearchFilters.buildTrendingSearchFilter(searchQuery.filters)
-      Then("result is a termQuery")
-      trendingSearchFilterResult shouldBe Some(
-        ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, trendingValue)
       )
     }
 

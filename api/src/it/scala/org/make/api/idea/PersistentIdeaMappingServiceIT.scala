@@ -25,6 +25,7 @@ import org.make.core.idea.{Idea, IdeaId, IdeaMapping, IdeaMappingId}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
+import org.make.core.Order
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -45,7 +46,7 @@ class PersistentIdeaMappingServiceIT
     Int,
     Option[Int],
     Option[String],
-    Option[String],
+    Option[Order],
     Option[QuestionId],
     Option[TagIdOrNone],
     Option[TagIdOrNone],

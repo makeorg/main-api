@@ -33,8 +33,8 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.user.UserServiceComponent
+import org.make.core.Order
 import org.make.core.auth.UserRights
-import org.make.core.common.indexed.{Order, SortRequest}
 import org.make.core.idea.IdeaId
 import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, PublicConsultation}
 import org.make.core.operation.{OperationId, OperationKind}
@@ -292,10 +292,9 @@ trait DefaultProposalApiComponent
                   "language".as[Language].?,
                   "country".as[Country].?,
                   "sort".?,
-                  "order".?,
+                  "order".as[Order].?,
                   "limit".as[Int].?,
                   "skip".as[Int].?,
-                  "isRandom".as[Boolean].?,
                   "sortAlgorithm".?,
                   "operationKinds".as[Seq[OperationKind]].*,
                   "isOrganisation".as[Boolean].?,
@@ -317,10 +316,9 @@ trait DefaultProposalApiComponent
                   language: Option[Language],
                   country: Option[Country],
                   sort: Option[String],
-                  order: Option[String],
+                  order: Option[Order],
                   limit: Option[Int],
                   skip: Option[Int],
-                  isRandom: Option[Boolean],
                   sortAlgorithm: Option[String],
                   operationKinds: Option[Seq[OperationKind]],
                   isOrganisation: Option[Boolean],
@@ -357,13 +355,6 @@ trait DefaultProposalApiComponent
                       Seq(sortValue),
                       choices
                     )
-                  }, order.map { orderValue =>
-                    Validation.validChoices(
-                      fieldName = "order",
-                      message = Some(s"Invalid order. Expected one of: ${Order.keys}"),
-                      Seq(orderValue),
-                      Order.keys
-                    )
                   }, sortAlgorithm.map { sortAlgo =>
                     Validation.validChoices(
                       fieldName = "sortAlgorithm",
@@ -384,10 +375,6 @@ trait DefaultProposalApiComponent
                     operationId.orElse(source).orElse(location).orElse(question).map { _ =>
                       ContextFilterRequest(operationId, source, location, question)
                     }
-                  val sortRequest: Option[SortRequest] =
-                    sort.orElse(order).map { _ =>
-                      SortRequest(sort, order.flatMap(Order.parse))
-                    }
                   val searchRequest: SearchRequest = SearchRequest(
                     proposalIds = proposalIds,
                     questionIds = questionIds,
@@ -399,10 +386,10 @@ trait DefaultProposalApiComponent
                     context = contextFilterRequest,
                     language = language,
                     country = country,
-                    sort = sortRequest,
+                    sort = sort,
+                    order = order,
                     limit = limit,
                     skip = skip,
-                    isRandom = isRandom,
                     sortAlgorithm = sortAlgorithm,
                     operationKinds = operationKinds.orElse {
                       if (questionIds.exists(_.nonEmpty)) {

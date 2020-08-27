@@ -32,7 +32,7 @@ import org.make.api.technical.elasticsearch.{
   ElasticsearchConfiguration,
   ElasticsearchConfigurationComponent
 }
-import org.make.core.CirceFormatters
+import org.make.core.{CirceFormatters, Order}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.indexed.{IndexedOrganisation, ProposalsAndVotesCountsByQuestion}
@@ -198,7 +198,12 @@ class OrganisationSearchEngineIT
       When("I get organisation list ordered by name with an order desc")
       Then("""The result should be "corp A", "corp B" and "corp C" """)
       val organisationSearchQuery: OrganisationSearchQuery =
-        OrganisationSearchQuery(limit = Some(3), skip = Some(0), order = Some("asc"), sort = Some("organisationName"))
+        OrganisationSearchQuery(
+          limit = Some(3),
+          skip = Some(0),
+          order = Some(Order.asc),
+          sort = Some("organisationName")
+        )
       whenReady(elasticsearchOrganisationAPI.searchOrganisations(organisationSearchQuery), Timeout(5.seconds)) {
         result =>
           result.total shouldBe 4

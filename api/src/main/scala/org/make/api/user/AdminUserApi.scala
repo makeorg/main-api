@@ -406,7 +406,7 @@ trait DefaultAdminUserApiComponent
               "_start".as[Int].?,
               "_end".as[Int].?,
               "_sort".?,
-              "_order".?,
+              "_order".as[Order].?,
               "email".?,
               "role".as[String].?,
               "userType".as[UserType].?
@@ -416,7 +416,7 @@ trait DefaultAdminUserApiComponent
               start: Option[Int],
               end: Option[Int],
               sort: Option[String],
-              order: Option[String],
+              order: Option[Order],
               email: Option[String],
               maybeRole: Option[String],
               userType: Option[UserType]
@@ -558,12 +558,12 @@ trait DefaultAdminUserApiComponent
     override def getModerators: Route = get {
       path("admin" / "moderators") {
         makeOperation("GetModerators") { _ =>
-          parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "email".?, "firstName".?)) {
+          parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "email".?, "firstName".?)) {
             (
               start: Option[Int],
               end: Option[Int],
               sort: Option[String],
-              order: Option[String],
+              order: Option[Order],
               email: Option[String],
               firstName: Option[String]
             ) =>

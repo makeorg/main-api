@@ -36,7 +36,7 @@ import org.make.core.proposal.{IdeaSearchFilter, SearchFilters, SearchQuery, Tag
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag.{Tag, TagId, TagTypeId}
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.{DateHelper, Order, RequestContext, ValidationError, ValidationFailedError}
 
 import Ordering.Float.TotalOrdering
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -60,7 +60,7 @@ trait IdeaMappingService {
     start: Int = 0,
     end: Option[Int] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     questionId: Option[QuestionId],
     stakeTagId: Option[TagIdOrNone],
     solutionTypeTagId: Option[TagIdOrNone],
@@ -221,7 +221,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       questionId: Option[QuestionId],
       stakeTagId: Option[TagIdOrNone],
       solutionTypeTagId: Option[TagIdOrNone],

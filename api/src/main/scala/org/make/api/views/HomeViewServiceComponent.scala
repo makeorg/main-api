@@ -24,6 +24,7 @@ import org.make.api.post.PostServiceComponent
 import org.make.api.question.QuestionOfOperationResponse
 import org.make.api.user.UserServiceComponent
 import org.make.api.views.HomePageViewResponse.PostResponse
+import org.make.core.Order
 import org.make.core.operation._
 import org.make.core.post.indexed.{
   DisplayHomeSearchFilter,
@@ -95,7 +96,7 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
           PostSearchQuery(
             filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
             sort = Some(PostElasticsearchFieldNames.postDate),
-            order = Some("DESC"),
+            order = Some(Order.desc),
             limit = Some(3)
           )
         )

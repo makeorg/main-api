@@ -22,6 +22,7 @@ package org.make.api.feature
 import org.make.api.technical._
 import org.make.core.feature._
 import org.make.core.question.QuestionId
+import org.make.core.Order
 
 import scala.concurrent.Future
 
@@ -37,7 +38,7 @@ trait ActiveFeatureService extends ShortenedNames {
     start: Int = 0,
     end: Option[Int] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     maybeQuestionId: Option[QuestionId]
   ): Future[Seq[ActiveFeature]]
   def count(maybeQuestionId: Option[QuestionId]): Future[Int]
@@ -75,7 +76,7 @@ trait DefaultActiveFeatureServiceComponent extends ActiveFeatureServiceComponent
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       maybeQuestionId: Option[QuestionId]
     ): Future[Seq[ActiveFeature]] = {
 

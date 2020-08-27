@@ -19,6 +19,7 @@
 
 package org.make.api.technical
 
+import org.make.core.Order
 import scalikejdbc.PagingSQLBuilder
 
 object PersistentServiceUtils {
@@ -27,11 +28,11 @@ object PersistentServiceUtils {
     start: Int,
     end: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     query: PagingSQLBuilder[Persistent]
   )(implicit companion: PersistentCompanion[Persistent, Model]): PagingSQLBuilder[Persistent] = {
     val queryOrdered = (sort, order) match {
-      case (Some(field), Some("DESC")) if companion.columnNames.contains(field) =>
+      case (Some(field), Some(Order.desc)) if companion.columnNames.contains(field) =>
         query.orderBy(companion.alias.field(field)).desc.offset(start)
       case (Some(field), _) if companion.columnNames.contains(field) =>
         query.orderBy(companion.alias.field(field)).asc.offset(start)

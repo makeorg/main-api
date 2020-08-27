@@ -17,7 +17,8 @@
  *
  */
 
-package org.make.core.idea
+package org.make.core
+package idea
 
 import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
@@ -41,7 +42,7 @@ case class IdeaSearchQuery(
   limit: Option[Int] = None,
   skip: Option[Int] = None,
   sort: Option[String] = None,
-  order: Option[String] = None,
+  order: Option[Order] = None,
   language: Option[Language] = None
 )
 
@@ -94,10 +95,7 @@ object IdeaSearchFilters extends ElasticDsl {
       .getOrElse(-1) // TODO get default value from configurations
 
   def getSort(ideaSearchQuery: IdeaSearchQuery): Option[FieldSort] = {
-    val order = ideaSearchQuery.order.map {
-      case asc if asc.toLowerCase == "asc"    => SortOrder.ASC
-      case desc if desc.toLowerCase == "desc" => SortOrder.DESC
-    }
+    val order = ideaSearchQuery.order.map(_.sortOrder)
 
     ideaSearchQuery.sort.map { sort =>
       val sortFieldName: String = if (sort == "name") {

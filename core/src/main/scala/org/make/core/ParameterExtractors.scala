@@ -23,8 +23,6 @@ import java.time.{LocalDate, ZoneId, ZonedDateTime}
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
-import com.sksamuel.elastic4s.searches.sort.SortOrder
-import com.sksamuel.elastic4s.searches.sort.SortOrder.{Asc, Desc}
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import enumeratum.{Enum, EnumEntry}
 import org.make.core.idea.IdeaId
@@ -112,16 +110,6 @@ trait ParameterExtractors {
   implicit val ideaIdFromStringUnmarshaller: Unmarshaller[String, IdeaId] =
     Unmarshaller.strict[String, IdeaId] { string =>
       IdeaId(string)
-    }
-
-  implicit val sortOrderFromStringUnmarshaller: Unmarshaller[String, SortOrder] =
-    Unmarshaller.strict[String, SortOrder] {
-      case value if value.toLowerCase == "asc"  => Asc
-      case value if value.toLowerCase == "desc" => Desc
-      case string =>
-        throw ValidationFailedError(
-          Seq(ValidationError("order", "invalid_value", Some(s"$string is not a valid sort order")))
-        )
     }
 
   implicit val personalityRoleIdFromStringUnmarshaller: Unmarshaller[String, PersonalityRoleId] =

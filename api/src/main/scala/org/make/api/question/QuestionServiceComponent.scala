@@ -35,7 +35,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{ValidationError, ValidationFailedError}
+import org.make.core.{Order, ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -93,7 +93,7 @@ case class SearchQuestionRequest(
   skip: Option[Int] = None,
   limit: Option[Int] = None,
   sort: Option[String] = None,
-  order: Option[String] = None
+  order: Option[Order] = None
 )
 
 trait QuestionServiceComponent {

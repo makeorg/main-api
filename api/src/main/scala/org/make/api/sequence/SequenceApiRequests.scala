@@ -21,45 +21,13 @@ package org.make.api.sequence
 
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import io.swagger.annotations.ApiModelProperty
 import org.make.api.proposal.SelectionAlgorithmName
-import org.make.core.common.indexed.SortRequest
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.sequence._
 
 import scala.annotation.meta.field
-
-@ApiModel
-final case class ExhaustiveSearchRequest(
-  title: Option[String] = None,
-  slug: Option[String] = None,
-  context: Option[ContextFilterRequest] = None,
-  operationId: Option[OperationId] = None,
-  status: Option[SequenceStatus] = None,
-  searchable: Option[Boolean] = None,
-  sorts: Seq[SortRequest] = Seq.empty,
-  limit: Option[Int] = None,
-  skip: Option[Int] = None
-) {
-  def toSearchQuery: SearchQuery = {
-    val filters: Option[SearchFilters] = {
-      SearchFilters.parse(
-        slug = slug.map(text   => SlugSearchFilter(text)),
-        title = title.map(text => TitleSearchFilter(text)),
-        context = context.map(_.toContext),
-        operationId = operationId.map(OperationSearchFilter.apply),
-        status = status.map(StatusSearchFilter.apply),
-        searchable = searchable
-      )
-    }
-    SearchQuery(filters = filters, sorts = sorts.map(_.toSort), limit = limit, skip = skip)
-  }
-}
-
-object ExhaustiveSearchRequest {
-  implicit val decoder: Decoder[ExhaustiveSearchRequest] = deriveDecoder[ExhaustiveSearchRequest]
-}
 
 final case class ContextFilterRequest(
   operation: Option[OperationId] = None,

@@ -50,7 +50,7 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
-import org.make.core.{BusinessConfig, DateHelper, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.{BusinessConfig, DateHelper, Order, RequestContext, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -70,7 +70,7 @@ trait UserService extends ShortenedNames {
     start: Int,
     limit: Option[Int],
     sort: Option[String],
-    order: Option[String],
+    order: Option[Order],
     email: Option[String],
     firstName: Option[String],
     lastName: Option[String],
@@ -221,7 +221,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       start: Int,
       limit: Option[Int],
       sort: Option[String],
-      order: Option[String],
+      order: Option[Order],
       email: Option[String],
       firstName: Option[String],
       lastName: Option[String],

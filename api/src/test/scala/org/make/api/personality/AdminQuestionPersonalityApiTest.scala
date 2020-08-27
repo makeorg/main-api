@@ -27,6 +27,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRole, PersonalityRoleId}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
+import org.make.core.Order
 
 import scala.concurrent.Future
 
@@ -57,7 +58,7 @@ class AdminQuestionPersonalityApiTest
           start = any[Int],
           end = any[Option[Int]],
           sort = any[Option[String]],
-          order = any[Option[String]],
+          order = any[Option[Order]],
           userId = any[Option[UserId]],
           questionId = any[Option[QuestionId]],
           personalityRoleId = any[Option[PersonalityRoleId]]
@@ -112,7 +113,7 @@ class AdminQuestionPersonalityApiTest
             start = any[Int],
             end = any[Option[Int]],
             sort = any[Option[String]],
-            order = any[Option[String]],
+            order = any[Option[Order]],
             userId = eqTo(Some(UserId("user-id"))),
             questionId = eqTo(Some(QuestionId("question-id"))),
             personalityRoleId = any[Option[PersonalityRoleId]]

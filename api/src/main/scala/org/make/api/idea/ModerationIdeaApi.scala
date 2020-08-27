@@ -31,9 +31,9 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.core.Order
 import org.make.core.Validation._
 import org.make.core.auth.UserRights
-import org.make.core.common.indexed.Order
 import org.make.core.idea._
 import org.make.core.idea.indexed.IndexedIdea
 import org.make.core.operation.OperationId
@@ -176,47 +176,42 @@ trait DefaultModerationIdeaApiComponent
       get {
         path("moderation" / "ideas") {
           parameters(
-            ("name".?, "questionId".as[QuestionId].?, "_end".as[Int].?, "_start".as[Int].?, "_sort".?, "_order".?)
+            (
+              "name".?,
+              "questionId".as[QuestionId].?,
+              "_end".as[Int].?,
+              "_start".as[Int].?,
+              "_sort".?,
+              "_order".as[Order].?
+            )
           ) { (name, questionId, limit, skip, sort, order) =>
             makeOperation("GetAllIdeas") { requestContext =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
-                  Validation.validate(
-                    Seq(
-                      sort.map { sortValue =>
-                        val choices =
-                          Seq(
-                            "ideaId",
-                            "name",
-                            "status",
-                            "createdAt",
-                            "updatedAt",
-                            "operationId",
-                            "questionId",
-                            "themeId",
-                            "question",
-                            "language",
-                            "country"
-                          )
-                        Validation.validChoices(
-                          fieldName = "_sort",
-                          message = Some(
-                            s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
-                          ),
-                          Seq(sortValue),
-                          choices
-                        )
-                      },
-                      order.map { orderValue =>
-                        Validation.validChoices(
-                          fieldName = "order",
-                          message = Some(s"Invalid order. Expected one of: ${Order.keys}"),
-                          Seq(orderValue),
-                          Order.keys
-                        )
-                      }
-                    ).flatten: _*
-                  )
+                  Validation.validate(sort.map { sortValue =>
+                    val choices =
+                      Seq(
+                        "ideaId",
+                        "name",
+                        "status",
+                        "createdAt",
+                        "updatedAt",
+                        "operationId",
+                        "questionId",
+                        "themeId",
+                        "question",
+                        "language",
+                        "country"
+                      )
+                    Validation.validChoices(
+                      fieldName = "_sort",
+                      message = Some(
+                        s"Invalid sort. Got $sortValue but expected one of: ${choices.mkString("\"", "\", \"", "\"")}"
+                      ),
+                      Seq(sortValue),
+                      choices
+                    )
+                  }.toSeq: _*)
                   val filters: IdeaFiltersRequest =
                     IdeaFiltersRequest(
                       name = name,
@@ -371,7 +366,7 @@ final case class IdeaFiltersRequest(
   limit: Option[Int],
   skip: Option[Int],
   sort: Option[String],
-  order: Option[String]
+  order: Option[Order]
 ) {
   def toSearchQuery(requestContext: RequestContext): IdeaSearchQuery = {
     val fuzziness = Fuzziness.Auto

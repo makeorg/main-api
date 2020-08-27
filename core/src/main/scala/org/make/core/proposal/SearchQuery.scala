@@ -71,7 +71,6 @@ case class SearchFilters(
   labels: Option[LabelsSearchFilter] = None,
   operation: Option[OperationSearchFilter] = None,
   question: Option[QuestionSearchFilter] = None,
-  trending: Option[TrendingSearchFilter] = None,
   content: Option[ContentSearchFilter] = None,
   status: Option[StatusSearchFilter] = None,
   context: Option[ContextSearchFilter] = None,
@@ -102,7 +101,6 @@ object SearchFilters extends ElasticDsl {
     labels: Option[LabelsSearchFilter] = None,
     operation: Option[OperationSearchFilter] = None,
     question: Option[QuestionSearchFilter] = None,
-    trending: Option[TrendingSearchFilter] = None,
     content: Option[ContentSearchFilter] = None,
     status: Option[StatusSearchFilter] = None,
     slug: Option[SlugSearchFilter] = None,
@@ -130,7 +128,6 @@ object SearchFilters extends ElasticDsl {
       labels,
       operation,
       question,
-      trending,
       content,
       status,
       slug,
@@ -160,7 +157,6 @@ object SearchFilters extends ElasticDsl {
             labels,
             operation,
             question,
-            trending,
             content,
             status,
             context,
@@ -197,7 +193,6 @@ object SearchFilters extends ElasticDsl {
       buildTagsSearchFilter(searchQuery.filters),
       buildLabelsSearchFilter(searchQuery.filters),
       buildOperationSearchFilter(searchQuery.filters),
-      buildTrendingSearchFilter(searchQuery.filters),
       buildContentSearchFilter(searchQuery),
       buildStatusSearchFilter(searchQuery.filters),
       buildContextOperationSearchFilter(searchQuery.filters),
@@ -318,17 +313,6 @@ object SearchFilters extends ElasticDsl {
             ElasticApi
               .termsQuery(ProposalElasticsearchFieldNames.operationId, operationIds.map(_.value))
           )
-        case _ => None
-      }
-    }
-  }
-
-  @Deprecated
-  def buildTrendingSearchFilter(filters: Option[SearchFilters]): Option[Query] = {
-    filters.flatMap {
-      _.trending match {
-        case Some(TrendingSearchFilter(trending)) =>
-          Some(ElasticApi.termQuery(ProposalElasticsearchFieldNames.trending, trending))
         case _ => None
       }
     }
@@ -631,10 +615,6 @@ final case class LabelsSearchFilter(labelIds: Seq[LabelId]) {
 }
 
 final case class OperationSearchFilter(operationIds: Seq[OperationId])
-
-final case class TrendingSearchFilter(trending: String) {
-  validate(validateField("trending", "mandatory", trending.nonEmpty, "trending cannot be empty in search filters"))
-}
 
 final case class CreatedAtSearchFilter(before: Option[ZonedDateTime], after: Option[ZonedDateTime])
 

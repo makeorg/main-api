@@ -24,8 +24,6 @@ import java.time.LocalDate
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, Authorization => AuthorizationHeader}
 import akka.http.scaladsl.server._
-import com.sksamuel.elastic4s.searches.sort.SortOrder
-import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
 import javax.ws.rs.Path
@@ -759,7 +757,7 @@ trait DefaultUserApiComponent
                 "votes".as[Seq[VoteKey]].*,
                 "qualifications".as[Seq[QualificationKey]].*,
                 "sort".?,
-                "order".as[SortOrder].?,
+                "order".as[Order].?,
                 "limit".as[Int].?,
                 "skip".as[Int].?
               )
@@ -768,7 +766,7 @@ trait DefaultUserApiComponent
                 votes: Option[Seq[VoteKey]],
                 qualifications: Option[Seq[QualificationKey]],
                 sort: Option[String],
-                order: Option[SortOrder],
+                order: Option[Order],
                 limit: Option[Int],
                 skip: Option[Int]
               ) =>
@@ -776,13 +774,15 @@ trait DefaultUserApiComponent
                   complete(StatusCodes.Forbidden)
                 } else {
                   val defaultSort = Some("createdAt")
-                  val defaultOrder = Some(Desc)
+                  val defaultOrder = Some(Order.desc)
                   provideAsync(
                     proposalService.searchProposalsVotedByUser(
                       userId = userId,
                       filterVotes = votes,
                       filterQualifications = qualifications,
-                      sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                      sort = Some(
+                        Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder).map(_.sortOrder))
+                      ),
                       limit = limit,
                       skip = skip,
                       requestContext = requestContext
@@ -1004,14 +1004,14 @@ trait DefaultUserApiComponent
       path("user" / userId / "proposals") { userId: UserId =>
         makeOperation("UserProposals") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            parameters(("sort".?, "order".as[SortOrder].?, "limit".as[Int].?, "skip".as[Int].?)) {
-              (sort: Option[String], order: Option[SortOrder], limit: Option[Int], skip: Option[Int]) =>
+            parameters(("sort".?, "order".as[Order].?, "limit".as[Int].?, "skip".as[Int].?)) {
+              (sort: Option[String], order: Option[Order], limit: Option[Int], skip: Option[Int]) =>
                 val connectedUserId: UserId = userAuth.user.userId
                 if (connectedUserId != userId) {
                   complete(StatusCodes.Forbidden)
                 } else {
                   val defaultSort = Some("createdAt")
-                  val defaultOrder = Some(Desc)
+                  val defaultOrder = Some(Order.desc)
                   provideAsync(
                     proposalService.searchForUser(
                       userId = Some(userId),
@@ -1023,7 +1023,9 @@ trait DefaultUserApiComponent
                               Some(StatusSearchFilter(ProposalStatus.values.filter(_ != ProposalStatus.Archived)))
                           )
                         ),
-                        sort = Some(Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder))),
+                        sort = Some(
+                          Sort(field = sort.orElse(defaultSort), mode = order.orElse(defaultOrder).map(_.sortOrder))
+                        ),
                         limit = limit,
                         skip = skip
                       ),

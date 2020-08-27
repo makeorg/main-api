@@ -27,7 +27,7 @@ import org.make.core.proposal._
 import org.make.core.proposal.indexed.IndexedTag
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag._
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{DateHelper, Order, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -75,7 +75,7 @@ trait TagService extends ShortenedNames {
     start: Int = 0,
     end: Option[Int] = None,
     sort: Option[String] = None,
-    order: Option[String] = None,
+    order: Option[Order] = None,
     onlyDisplayed: Boolean = false,
     tagFilter: TagFilter = TagFilter.empty
   ): Future[Seq[Tag]]
@@ -205,7 +205,7 @@ trait DefaultTagServiceComponent
       start: Int = 0,
       end: Option[Int] = None,
       sort: Option[String] = None,
-      order: Option[String] = None,
+      order: Option[Order] = None,
       onlyDisplayed: Boolean = false,
       tagFilter: TagFilter
     ): Future[Seq[Tag]] = {

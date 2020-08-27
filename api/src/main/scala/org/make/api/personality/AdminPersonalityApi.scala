@@ -171,13 +171,21 @@ trait DefaultAdminPersonalityApiComponent
       path("admin" / "personalities") {
         makeOperation("GetPersonalities") { _ =>
           parameters(
-            ("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".?, "email".?, "firstName".?, "lastName".?)
+            (
+              "_start".as[Int].?,
+              "_end".as[Int].?,
+              "_sort".?,
+              "_order".as[Order].?,
+              "email".?,
+              "firstName".?,
+              "lastName".?
+            )
           ) {
             (
               start: Option[Int],
               end: Option[Int],
               sort: Option[String],
-              order: Option[String],
+              order: Option[Order],
               email: Option[String],
               firstName: Option[String],
               lastName: Option[String]
