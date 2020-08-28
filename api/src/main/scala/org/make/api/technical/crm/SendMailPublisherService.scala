@@ -29,7 +29,7 @@ import org.make.api.proposal.ProposalCoordinatorServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.technical.EventBusServiceComponent
 import org.make.api.user.UserServiceComponent
-import org.make.core.RequestContext
+import org.make.core.{ApplicationName, RequestContext}
 import org.make.core.crmTemplate.{CrmTemplates, TemplateId}
 import org.make.core.proposal.{Proposal, ProposalId}
 import org.make.core.question.{Question, QuestionId}
@@ -101,7 +101,7 @@ trait DefaultSendMailPublisherServiceComponent
 
     val appPath =
       s"$country-$language/consultation/$questionSlug/proposal/${proposal.proposalId.value}/${proposal.slug}"
-    s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$utmParams"
+    s"${mailJetTemplateConfiguration.mainFrontendUrl}/$appPath?$utmParams"
   }
 
   private def getAccountValidationUrl(
@@ -117,10 +117,10 @@ trait DefaultSendMailPublisherServiceComponent
 
     val utmParams = s"utm_source=crm&utm_medium=email&utm_campaign=$utmCampaign&utm_term=validation&utm_content=cta"
     val appParams = s"operation=$operationIdValue&language=$language&country=$country&question=$questionIdValue"
-
     val appPath =
       s"${user.country.value}-${user.language.value}/account-activation/${user.userId.value}/$verificationToken"
-    s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$appParams&$utmParams"
+
+    s"${mailJetTemplateConfiguration.mainFrontendUrl}/$appPath?$appParams&$utmParams"
   }
 
   private def getForgottenPasswordUrl(user: User, resetToken: String, requestContext: RequestContext): String = {
@@ -128,10 +128,17 @@ trait DefaultSendMailPublisherServiceComponent
     val country: String = requestContext.country.map(_.value).getOrElse("FR")
     val operationIdValue: String = requestContext.operationId.map(_.value).getOrElse("core")
     val questionIdValue: String = requestContext.questionId.map(_.value).getOrElse("")
-    val appParams = s"operation=$operationIdValue&language=$language&country=$country&question=$questionIdValue"
-    val appPath = s"$country-$language/password-recovery/${user.userId.value}/$resetToken"
 
-    s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$appPath?$appParams"
+    val appParams = s"operation=$operationIdValue&language=$language&country=$country&question=$questionIdValue"
+    val appPath = s"password-recovery/${user.userId.value}/$resetToken"
+
+    requestContext.applicationName match {
+      case Some(ApplicationName.Backoffice) =>
+        s"${mailJetTemplateConfiguration.backofficeUrl}/#/$appPath"
+      case _ =>
+        s"${mailJetTemplateConfiguration.mainFrontendUrl}/$country-$language/$appPath?$appParams"
+    }
+
   }
 
   private def sequenceUrlForProposal(
@@ -145,7 +152,7 @@ trait DefaultSendMailPublisherServiceComponent
     val term: String = if (isAccepted) "publication" else "refus"
     val utmTerm: String = if (userType != UserType.UserTypeUser) s"${term}acteur" else term
     val utmParams = s"utm_source=crm&utm_medium=email&utm_content=cta&utm_campaign=$questionSlug&utm_term=$utmTerm"
-    s"${mailJetTemplateConfiguration.getMainFrontendUrl()}/$country-$language/consultation/$questionSlug/selection?$utmParams&introCard=false"
+    s"${mailJetTemplateConfiguration.mainFrontendUrl}/$country-$language/consultation/$questionSlug/selection?$utmParams&introCard=false"
   }
 
   private def getLocale(country: Country, language: Language): String = {
