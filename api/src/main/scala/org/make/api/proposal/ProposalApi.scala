@@ -362,13 +362,6 @@ trait DefaultProposalApiComponent
                       Seq(sortAlgo),
                       AlgorithmSelector.keys
                     )
-                  }, operationKinds.map { opKinds =>
-                    Validation.validChoices(
-                      fieldName = "operationKinds",
-                      message = Some(s"Invalid operation kind. Expected one of: ${OperationKind.keys.mkString(", ")}"),
-                      opKinds,
-                      OperationKind.keys
-                    )
                   }).flatten: _*)
 
                   val contextFilterRequest: Option[ContextFilterRequest] =
