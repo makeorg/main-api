@@ -25,6 +25,7 @@ import kamon.tag.TagSet
 import org.make.api.technical.tracking.FrontPerformanceTimings
 
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 trait MonitoringService {
   def monitorPerformance(applicationName: String, metrics: FrontPerformanceTimings): Unit
@@ -69,12 +70,14 @@ trait DefaultMonitoringService extends MonitoringServiceComponent with StrictLog
 
     private def recordIfPositive(applicationName: String, metric: String, value: Long): Unit = {
       if (value >= 0) {
-        getHistogram(HistogramName(applicationName, metric)).record(value)
-        ()
-      } else {
-        logger.warn(s"discarding metric $metric for $applicationName since it results in a negative metric")
+        Try(getHistogram(HistogramName(applicationName, metric)).record(value)) match {
+          case Success(_) =>
+          case Failure(e) =>
+            logger.error(s"Error when logging value $value for metric $metric on application $applicationName", e)
+        }
       }
     }
+
     override def monitorPerformance(applicationName: String, metrics: FrontPerformanceTimings): Unit = {
       recordIfPositive(applicationName, "connect", metrics.connectEnd - metrics.connectStart)
       recordIfPositive(applicationName, "domain_lookup", metrics.domainLookupEnd - metrics.domainLookupStart)
