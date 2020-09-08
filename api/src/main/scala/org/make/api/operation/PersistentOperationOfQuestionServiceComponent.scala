@@ -117,14 +117,14 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                   .map(operationKind => sqls.in(operationAlias.operationKind, operationKind)),
                 openAt.map(
                   openAt =>
-                    sqls
-                      .isNull(PersistentOperationOfQuestion.column.startDate)
-                      .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt))
-                      .and(
-                        sqls
-                          .isNull(PersistentOperationOfQuestion.column.endDate)
-                          .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
-                      )
+                    sqls.joinWithAnd(
+                      sqls
+                        .isNull(PersistentOperationOfQuestion.column.startDate)
+                        .or(sqls.le(PersistentOperationOfQuestion.column.startDate, openAt)),
+                      sqls
+                        .isNull(PersistentOperationOfQuestion.column.endDate)
+                        .or(sqls.ge(PersistentOperationOfQuestion.column.endDate, openAt))
+                    )
                 )
               )
             )
