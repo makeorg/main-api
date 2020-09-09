@@ -103,7 +103,7 @@ trait ProposalHelper {
           proposalId = api.idGenerator.nextProposalId(),
           requestContext = emptyContext.copy(
             operationId = question.operationId,
-            country = Some(question.country),
+            country = Some(question.countries.head),
             language = Some(question.language)
           ),
           user = user,

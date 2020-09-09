@@ -22,6 +22,8 @@ package org.make.core.operation.indexed
 import java.time.ZonedDateTime
 
 import cats.Show
+import cats.data.NonEmptyList
+import enumeratum.values.{StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import io.circe.refined._
@@ -36,24 +38,47 @@ import org.make.core.reference.{Country, Language}
 
 import scala.annotation.meta.field
 
-object OperationOfQuestionElasticsearchFieldNames {
-  val questionId = "questionId"
-  val question = "question"
-  val questionKeyword = "question.keyword"
-  val questionGeneral = "question.general"
-  val slug = "slug"
-  val startDate = "startDate"
-  val endDate = "endDate"
-  val description = " description"
-  val country = "country"
-  val language = "language"
-  val operationId = "operationId"
-  val operationTitle = "operationTitle"
-  val operationKind = "operationKind"
-  val featured = "featured"
-  val status = "status"
-  val participantsCount = "participantsCount"
-  val proposalsCount = "proposalsCount"
+sealed abstract class OperationOfQuestionElasticsearchFieldName(val value: String, val sortable: Boolean = false)
+    extends StringEnumEntry
+    with Product
+    with Serializable {
+  def field: String
+  def parameter: String
+}
+
+object OperationOfQuestionElasticsearchFieldName extends StringEnum[OperationOfQuestionElasticsearchFieldName] {
+
+  sealed abstract class Simple(val field: String, override val sortable: Boolean = false)
+      extends OperationOfQuestionElasticsearchFieldName(field, sortable) {
+    override def parameter: String = field
+  }
+
+  sealed abstract class Alias(
+    val parameter: String,
+    aliased: OperationOfQuestionElasticsearchFieldName,
+    override val sortable: Boolean = false
+  ) extends OperationOfQuestionElasticsearchFieldName(parameter, sortable) {
+    override def field: String = aliased.field
+  }
+
+  case object questionId extends Simple("questionId")
+  case object question extends Simple("question", sortable = true)
+  case object questionKeyword extends Simple("question.keyword")
+  case object questionGeneral extends Simple("question.general")
+  case object slug extends Simple("slug")
+  case object startDate extends Simple("startDate", sortable = true)
+  case object endDate extends Simple("endDate", sortable = true)
+  case object description extends Simple(" description", sortable = true)
+  case object countries extends Simple("countries", sortable = true)
+  case object country extends Alias("country", countries, sortable = true)
+  case object language extends Simple("language", sortable = true)
+  case object operationId extends Simple("operationId")
+  case object operationTitle extends Simple("operationTitle")
+  case object operationKind extends Simple("operationKind", sortable = true)
+  case object featured extends Simple("featured")
+  case object status extends Simple("status")
+  case object participantsCount extends Simple("participantsCount")
+  case object proposalsCount extends Simple("proposalsCount")
 
   def questionLanguageSubfield(language: Language, stemmed: Boolean = false): Option[String] = {
     BusinessConfig.supportedCountries
@@ -65,6 +90,8 @@ object OperationOfQuestionElasticsearchFieldNames {
           s"question.$language"
       }
   }
+
+  override def values: IndexedSeq[OperationOfQuestionElasticsearchFieldName] = findValues
 }
 
 case class IndexedOperationOfQuestion(
@@ -88,7 +115,7 @@ case class IndexedOperationOfQuestion(
   @(ApiModelProperty @field)(dataType = "string", example = "description image alternative")
   descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
+  countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "57c4a8d0-f3c1-4391-b75b-03082ac94d19")
@@ -128,7 +155,7 @@ object IndexedOperationOfQuestion extends CirceFormatters {
       consultationImageAlt = operationOfQuestion.consultationImageAlt,
       descriptionImage = operationOfQuestion.descriptionImage,
       descriptionImageAlt = operationOfQuestion.descriptionImageAlt,
-      country = question.country,
+      countries = question.countries,
       language = question.language,
       operationId = operationOfQuestion.operationId,
       operationTitle = operationOfQuestion.operationTitle,

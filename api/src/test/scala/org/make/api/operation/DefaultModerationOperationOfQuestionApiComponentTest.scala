@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import eu.timepit.refined.auto._
 import io.circe.syntax._
 import org.make.api.MakeApiTestBase
@@ -144,7 +145,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         Question(
           questionId = questionId,
           slug = "some-question",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "what's that?",
           shortTitle = None,
@@ -240,7 +241,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       Seq(
         Question(
           questionId = QuestionId("question-1"),
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           slug = "question-1",
           question = "Est-ce que ?",
@@ -249,7 +250,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         ),
         Question(
           questionId = QuestionId("question-2"),
-          country = Country("IE"),
+          countries = NonEmptyList.of(Country("IE")),
           language = Language("en"),
           slug = "question-2",
           question = "Is it?",
@@ -265,7 +266,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       Question(
         questionId = questionId,
         slug = questionId.value,
-        country = Country("FR"),
+        countries = NonEmptyList.of(Country("FR")),
         language = Language("fr"),
         question = questionId.value,
         shortTitle = None,
@@ -482,7 +483,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             startDate = Some(ZonedDateTime.parse("2018-12-01T10:15:30+00:00")),
             endDate = None,
             operationTitle = "my-operation",
-            country = Country("FR"),
+            countries = NonEmptyList.of(Country("FR")),
             language = Language("fr"),
             question = "how to save the world?",
             shortTitle = None,

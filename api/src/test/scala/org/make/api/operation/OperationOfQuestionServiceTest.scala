@@ -301,7 +301,7 @@ class OperationOfQuestionServiceTest
         endDate = operationOfQuestionCreate.endDate,
         operationTitle = operationOfQuestionCreate.operationTitle,
         slug = questionCreate.slug,
-        country = questionCreate.country,
+        countries = questionCreate.countries,
         language = questionCreate.language,
         question = questionCreate.question,
         shortTitle = questionCreate.shortTitle,

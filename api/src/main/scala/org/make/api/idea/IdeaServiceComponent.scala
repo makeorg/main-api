@@ -73,8 +73,6 @@ trait DefaultIdeaServiceComponent extends IdeaServiceComponent {
         Idea(
           ideaId = idGenerator.nextIdeaId(),
           name = name,
-          language = Some(question.language),
-          country = Some(question.country),
           question = Some(question.question),
           questionId = Some(question.questionId),
           operationId = question.operationId,

@@ -21,6 +21,7 @@ package org.make.api.widget
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.idea.{IdeaService, IdeaServiceComponent}
 import org.make.api.proposal._
@@ -73,7 +74,7 @@ class WidgetApiTest
       Question(
         questionId = QuestionId("question-id"),
         slug = "slug",
-        country = Country("FR"),
+        countries = NonEmptyList.of(Country("FR")),
         language = Language("fr"),
         question = "Slug ?",
         shortTitle = None,

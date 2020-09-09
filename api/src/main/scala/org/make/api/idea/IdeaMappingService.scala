@@ -307,8 +307,6 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
         Idea(
           idGenerator.nextIdeaId(),
           label,
-          Some(question.language),
-          Some(question.country),
           Some(question.question),
           None,
           Some(questionId),

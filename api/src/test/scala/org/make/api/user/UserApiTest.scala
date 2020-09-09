@@ -27,6 +27,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
+import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.sort.SortOrder.Desc
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.proposal.{
@@ -277,7 +278,7 @@ class UserApiTest
               operationId = Some(OperationId("operation1")),
               questionId = QuestionId("thequestionid"),
               slug = "the-question",
-              country = Country("FR"),
+              countries = NonEmptyList.of(Country("FR")),
               language = Language("fr"),
               question = "question ?",
               shortTitle = None
@@ -1206,8 +1207,6 @@ class UserApiTest
 
     val indexedProposal1 = IndexedProposal(
       id = ProposalId("proposal-1"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = sylvain.userId,
       content = "Il faut que ma proposition d'opération soit en CSV.",
       slug = "il-faut-que-ma-proposition-d-operation-soit-en-csv",
@@ -1335,8 +1334,6 @@ class UserApiTest
 
     val indexedProposal1 = IndexedProposal(
       id = ProposalId("333333-3333-3333-3333-33333333"),
-      country = Country("FR"),
-      language = Language("fr"),
       userId = sylvain.userId,
       content = "Il faut une proposition de Sylvain",
       slug = "il-faut-une-proposition-de-sylvain",

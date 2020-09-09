@@ -30,7 +30,6 @@ import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.operation.OperationId
 import org.make.core.proposal._
 import org.make.core.proposal.indexed._
-import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.{UserId, UserType}
 import org.make.core.{CirceFormatters, DateHelper}
@@ -102,8 +101,6 @@ class SortAlgorithmIT
     selectedStakeTag = None,
     trending = None,
     labels = Seq.empty,
-    country = Country("FR"),
-    language = Language("fr"),
     status = ProposalStatus.Accepted,
     ideaId = None,
     operationId = None,

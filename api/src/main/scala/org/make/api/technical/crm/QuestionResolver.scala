@@ -43,8 +43,8 @@ class QuestionResolver(questions: Seq[Question], operations: Map[String, Operati
               // also the old operations didn't all have a country or language
               (question.operationId.contains(operationId) ||
                 question.operationId == operations.get(operationId.value)) &&
-                requestContext.country.orElse(Some(Country("FR"))).contains(question.country) &&
-                requestContext.language.orElse(Some(Language("fr"))).contains(question.language)
+                question.countries.toList.contains(requestContext.country.getOrElse(Country("FR"))) &&
+                requestContext.language.getOrElse(Language("fr")) == question.language
           )
         }
       }

@@ -19,6 +19,7 @@
 
 package org.make.api.personality
 
+import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
 import org.make.api.TestUtilsIT
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
@@ -50,7 +51,7 @@ class PersistentQuestionPersonalityServiceIT
   val question = Question(
     questionId = QuestionId("question"),
     slug = "question",
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = "question ?",
     shortTitle = None,

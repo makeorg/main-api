@@ -22,6 +22,7 @@ package org.make.api.technical.healthcheck
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
+import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
 import org.make.api.docker.DockerCassandraService
 import org.make.api.proposal.{CreatedProposalId, ProposalCoordinator, ProposeCommand}
@@ -83,7 +84,7 @@ class CassandraHealthCheckActorIT
         question = Question(
           questionId = QuestionId("fake-question"),
           slug = "fake-question",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "fake question",
           shortTitle = None,

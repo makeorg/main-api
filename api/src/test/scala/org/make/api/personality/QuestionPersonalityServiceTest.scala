@@ -19,6 +19,7 @@
 
 package org.make.api.personality
 
+import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
 import org.make.api.idea.{TopIdeaService, TopIdeaServiceComponent}
@@ -195,8 +196,24 @@ class QuestionPersonalityServiceTest
       ).thenReturn(
         Future.successful(
           Seq(
-            Question(QuestionId("question-id-one"), "slug", Country("FR"), Language("fr"), "question", None, None),
-            Question(QuestionId("question-id-two"), "slug", Country("FR"), Language("fr"), "question", None, None)
+            Question(
+              QuestionId("question-id-one"),
+              "slug",
+              NonEmptyList.of(Country("FR")),
+              Language("fr"),
+              "question",
+              None,
+              None
+            ),
+            Question(
+              QuestionId("question-id-two"),
+              "slug",
+              NonEmptyList.of(Country("FR")),
+              Language("fr"),
+              "question",
+              None,
+              None
+            )
           )
         )
       )
@@ -231,7 +248,7 @@ class QuestionPersonalityServiceTest
                 consultationImageAlt = None,
                 descriptionImage = None,
                 descriptionImageAlt = None,
-                country = Country("FR"),
+                countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
                 operationKind = "",
                 aboutUrl = Some("http://about"),
@@ -257,7 +274,7 @@ class QuestionPersonalityServiceTest
                 consultationImageAlt = None,
                 descriptionImage = None,
                 descriptionImageAlt = None,
-                country = Country("FR"),
+                countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
                 operationKind = "",
                 aboutUrl = Some("http://about"),

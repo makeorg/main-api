@@ -31,7 +31,6 @@ import org.make.core
 import org.make.core.idea.indexed._
 import org.make.core.idea.{IdeaId, IdeaSearchQuery, IdeaStatus}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
 import org.make.core.{CirceFormatters, DateHelper, Order}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -75,8 +74,6 @@ class IdeaSearchEngineIT
       operationId = None,
       questionId = Some(QuestionId("question01")),
       question = Some("question01"),
-      country = Some(Country("FR")),
-      language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
       updatedAt = Some(DateHelper.now()),
@@ -88,8 +85,6 @@ class IdeaSearchEngineIT
       operationId = None,
       questionId = Some(QuestionId("question02")),
       question = Some("question02"),
-      country = Some(Country("FR")),
-      language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
       updatedAt = Some(DateHelper.now()),
@@ -101,8 +96,6 @@ class IdeaSearchEngineIT
       operationId = None,
       questionId = Some(QuestionId("question03")),
       question = Some("question03"),
-      country = Some(Country("FR")),
-      language = Some(Language("fr")),
       status = IdeaStatus.Activated,
       createdAt = DateHelper.now(),
       updatedAt = Some(DateHelper.now()),

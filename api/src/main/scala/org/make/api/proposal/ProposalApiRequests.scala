@@ -27,7 +27,7 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.technical.MakeRandom
 import org.make.core.Validation._
 import org.make.core.common.indexed.Sort
-import org.make.core.idea.{CountrySearchFilter, IdeaId, LanguageSearchFilter}
+import org.make.core.idea.IdeaId
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
@@ -361,10 +361,6 @@ final case class PatchProposalRequest(
   creationContext: Option[PatchRequestContext] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "3a9cd696-7e0b-4758-952c-04ae6798039a")
   operation: Option[OperationId] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Option[Country] = None,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Option[Language] = None,
   @(ApiModelProperty @field)(dataType = "string", example = "2d791a66-3cd5-4a2e-a117-9daa68bd3a33")
   questionId: Option[QuestionId] = None
 )

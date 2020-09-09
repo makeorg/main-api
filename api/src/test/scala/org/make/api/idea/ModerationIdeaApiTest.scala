@@ -22,6 +22,7 @@ package org.make.api.idea
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
@@ -80,7 +81,7 @@ class ModerationIdeaApiTest
         Question(
           questionId = QuestionId("vff-fr-question"),
           slug = "vff-fr-question",
-          country = Country("FR"),
+          countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
           question = "??",
           shortTitle = None,

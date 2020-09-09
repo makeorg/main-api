@@ -25,7 +25,6 @@ import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.Order
 
@@ -51,8 +50,6 @@ class TagApiTest
     weight = 0f,
     tagTypeId = TagTypeId("11111111-1111-1111-1111-11111111111"),
     operationId = None,
-    country = Country("FR"),
-    language = Language("fr"),
     questionId = None
   )
 

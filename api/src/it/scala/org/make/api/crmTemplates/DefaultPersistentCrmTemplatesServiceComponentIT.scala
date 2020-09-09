@@ -19,6 +19,7 @@
 
 package org.make.api.crmTemplates
 
+import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
@@ -40,7 +41,7 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
   def createQuestion(id: QuestionId): Question = Question(
     questionId = id,
     slug = id.value,
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = id.value,
     shortTitle = None,

@@ -208,15 +208,13 @@ class ModerationQuestionApiTest
               status = Accepted,
               tags = Seq(),
               votes = Seq(Vote.empty(VoteKey.Agree), Vote.empty(VoteKey.Disagree), Vote.empty(VoteKey.Neutral)),
-              context = RequestContext.empty,
+              context = RequestContext.empty.copy(country = Some(Country("FR")), language = Some(Language("fr"))),
               createdAt = Some(DateHelper.now()),
               updatedAt = Some(DateHelper.now()),
               events = Nil,
               idea = None,
               ideaProposals = Seq.empty,
               operationId = None,
-              language = Some(Language("fr")),
-              country = Some(Country("FR")),
               questionId = Some(QuestionId("my-question"))
             )
           )
@@ -236,6 +234,34 @@ class ModerationQuestionApiTest
       """
       |{
       | "content": "Il faut test",
+      | "country": "FR",
+      | "author":
+      | {
+      |  "age": "42",
+      |  "firstName": "name"
+      | },
+      | "tags": []
+      |}
+    """.stripMargin
+
+    val requestWithoutCountry =
+      """
+      |{
+      | "content": "Il faut test",
+      | "author":
+      | {
+      |  "age": "42",
+      |  "firstName": "name"
+      | },
+      | "tags": []
+      |}
+    """.stripMargin
+
+    val requestWithBadCountry =
+      """
+      |{
+      | "content": "Il faut test",
+      | "country": "ES",
       | "author":
       | {
       |  "age": "42",
@@ -279,6 +305,7 @@ class ModerationQuestionApiTest
       proposalService.createInitialProposal(
         any[String],
         any[Question],
+        any[Country],
         any[Seq[TagId]],
         any[AuthorRequest],
         any[UserId],
@@ -326,6 +353,20 @@ class ModerationQuestionApiTest
       Post(uri)
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(HttpEntity(ContentTypes.`application/json`, badRequest2)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+    Scenario("bad request create proposal: no country") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, requestWithoutCountry)) ~> routes ~> check {
+        status should be(StatusCodes.BadRequest)
+      }
+    }
+    Scenario("bad request create proposal: country not in question") {
+      Post(uri)
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(HttpEntity(ContentTypes.`application/json`, requestWithBadCountry)) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }

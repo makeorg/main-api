@@ -18,6 +18,7 @@
  */
 
 package org.make.api.idea
+import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.api.tag.DefaultPersistentTagServiceComponent
@@ -59,13 +60,13 @@ class PersistentIdeaMappingServiceIT
   val stake: TagTypeId = TagTypeId("c0d8d858-8b04-4dd9-add6-fa65443b622b")
 
   def createTag(id: TagId, questionId: QuestionId): Tag = {
-    Tag(id, id.value, TagDisplay.Displayed, stake, 0.0f, None, Some(questionId), Country("FR"), Language("fr"))
+    Tag(id, id.value, TagDisplay.Displayed, stake, 0.0f, None, Some(questionId))
   }
 
   def createQuestion(id: QuestionId): Question = Question(
     questionId = id,
     slug = id.value,
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = id.value,
     shortTitle = None,

@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
-import org.make.api.question.DefaultPersistentQuestionServiceComponent.PersistentQuestion
+import org.make.api.question.DefaultPersistentQuestionServiceComponent.{COUNTRY_SEPARATOR, PersistentQuestion}
 import org.make.api.technical.DatabaseTransactions.RichDatabase
 import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 import org.make.api.technical.{PersistentCompanion, ShortenedNames}
@@ -70,7 +70,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
             .from(PersistentQuestion.as(questionAlias))
             .where(
               sqls.toAndConditionOpt(
-                request.country.map(country   => sqls.eq(questionAlias.country, country.value)),
+                request.country.map(country   => sqls.like(questionAlias.countries, s"%${country.value}%")),
                 request.language.map(language => sqls.eq(questionAlias.language, language.value)),
                 request.maybeOperationIds
                   .map(operationIds                      => sqls.in(questionAlias.operationId, operationIds.map(_.value))),
@@ -92,7 +92,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
             .from(PersistentQuestion.as(questionAlias))
             .where(
               sqls.toAndConditionOpt(
-                request.country.map(country   => sqls.eq(questionAlias.country, country.value)),
+                request.country.map(country   => sqls.like(questionAlias.countries, s"%${country.value}%")),
                 request.language.map(language => sqls.eq(questionAlias.language, language.value)),
                 request.maybeOperationIds
                   .map(operationIds                      => sqls.in(questionAlias.operationId, operationIds.map(_.value))),
@@ -154,7 +154,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
               column.updatedAt -> now,
               column.question -> question.question,
               column.shortTitle -> question.shortTitle,
-              column.country -> question.country.value,
+              column.countries -> question.countries.toList.mkString(COUNTRY_SEPARATOR),
               column.language -> question.language.value,
               column.operationId -> question.operationId.map(_.value)
             )
@@ -169,7 +169,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
           val now = DateHelper.now()
           update(PersistentQuestion)
             .set(
-              PersistentQuestion.column.country -> question.country.value,
+              PersistentQuestion.column.countries -> question.countries.toList.mkString(COUNTRY_SEPARATOR),
               PersistentQuestion.column.language -> question.language.value,
               PersistentQuestion.column.question -> question.question,
               PersistentQuestion.column.slug -> question.slug,
@@ -196,9 +196,11 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
 
 object DefaultPersistentQuestionServiceComponent {
 
+  val COUNTRY_SEPARATOR = ","
+
   case class PersistentQuestion(
     questionId: String,
-    country: String,
+    countries: String,
     language: String,
     question: String,
     shortTitle: Option[String],
@@ -212,7 +214,7 @@ object DefaultPersistentQuestionServiceComponent {
       Question(
         questionId = QuestionId(this.questionId),
         slug = this.slug,
-        country = Country(this.country),
+        countries = NonEmptyList.fromListUnsafe(countries.split(COUNTRY_SEPARATOR).map(Country.apply).toList),
         language = Language(this.language),
         question = this.question,
         shortTitle = this.shortTitle,
@@ -229,7 +231,7 @@ object DefaultPersistentQuestionServiceComponent {
     override val columnNames: Seq[String] =
       Seq(
         "question_id",
-        "country",
+        "countries",
         "language",
         "question",
         "created_at",
@@ -254,7 +256,7 @@ object DefaultPersistentQuestionServiceComponent {
       PersistentQuestion(
         questionId = resultSet.string(questionResultName.questionId),
         slug = resultSet.string(questionResultName.slug),
-        country = resultSet.string(questionResultName.country),
+        countries = resultSet.string(questionResultName.countries),
         language = resultSet.string(questionResultName.language),
         question = resultSet.string(questionResultName.question),
         shortTitle = resultSet.stringOpt(questionResultName.shortTitle),

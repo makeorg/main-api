@@ -22,6 +22,7 @@ package org.make.api.sequence
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
+import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
 import org.make.api.proposal._
@@ -126,14 +127,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      country = Country("FR"),
-      language = Language("fr"),
       question = Some(
         IndexedProposalQuestion(
           questionId = QuestionId("test-question"),
           slug = "test-question",
           title = "test question",
           question = "test question ?",
+          countries = NonEmptyList.of(Country("FR")),
+          language = Language("fr"),
           startDate = None,
           endDate = None,
           isOpen = true
@@ -211,14 +212,14 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
         userType = UserType.UserTypeUser
       ),
       organisations = Seq.empty,
-      country = Country("FR"),
-      language = Language("fr"),
       question = Some(
         IndexedProposalQuestion(
           questionId = QuestionId("test-question"),
           slug = "test-question",
           title = "test question",
           question = "test question ?",
+          countries = NonEmptyList.of(Country("FR")),
+          language = Language("fr"),
           startDate = None,
           endDate = None,
           isOpen = true

@@ -42,7 +42,18 @@ import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions
 import org.make.core.operation.OperationKind
 import org.make.core.profile.Profile
-import org.make.core.proposal._
+import org.make.core.proposal.{
+  OperationKindsSearchFilter,
+  ProposalId,
+  ProposalSearchFilter,
+  ProposalStatus,
+  QualificationKey,
+  SearchFilters,
+  SearchQuery,
+  StatusSearchFilter,
+  UserSearchFilter,
+  VoteKey
+}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult

@@ -21,6 +21,7 @@ package org.make.api.idea
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
@@ -106,7 +107,7 @@ class AdminTopIdeaApiTest
               Question(
                 questionId = QuestionId("question-id"),
                 slug = "question",
-                country = Country("FR"),
+                countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
                 question = "question ?",
                 shortTitle = None,
@@ -150,7 +151,7 @@ class AdminTopIdeaApiTest
               Question(
                 questionId = QuestionId("question-id"),
                 slug = "question",
-                country = Country("FR"),
+                countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
                 question = "question ?",
                 shortTitle = None,
@@ -304,7 +305,7 @@ class AdminTopIdeaApiTest
               Question(
                 questionId = QuestionId("question-id"),
                 slug = "question",
-                country = Country("FR"),
+                countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
                 question = "question ?",
                 shortTitle = None,

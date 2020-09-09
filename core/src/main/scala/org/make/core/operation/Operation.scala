@@ -29,13 +29,12 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.MaxSize
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder, Json}
-import io.swagger.annotations.{ApiModel, ApiModelProperty}
+import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Language
 import org.make.core.sequence.SequenceId
-import org.make.core.tag.TagId
 import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
@@ -239,39 +238,6 @@ object OperationOfQuestion {
     implicit val decoder: Decoder[Status] = Circe.decodeCaseInsensitive(this)
     implicit val encoder: Encoder[Status] = Circe.encoderLowercase(this)
   }
-}
-
-@ApiModel
-final case class OperationCountryConfiguration(
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  countryCode: Country,
-  @(ApiModelProperty @field)(dataType = "list[string]") tagIds: Seq[TagId],
-  @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
-  landingSequenceId: SequenceId,
-  startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")
-  questionId: Option[QuestionId],
-  endDate: Option[ZonedDateTime]
-)
-
-object OperationCountryConfiguration extends CirceFormatters {
-  implicit val encoder: Encoder[OperationCountryConfiguration] = deriveEncoder[OperationCountryConfiguration]
-  implicit val decoder: Decoder[OperationCountryConfiguration] = deriveDecoder[OperationCountryConfiguration]
-}
-
-@ApiModel
-final case class OperationTranslation(
-  title: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language
-) extends MakeSerializable
-
-object OperationTranslation {
-  implicit val operationTranslationFormatter: RootJsonFormat[OperationTranslation] =
-    DefaultJsonProtocol.jsonFormat2(OperationTranslation.apply)
-
-  implicit val encoder: Encoder[OperationTranslation] = deriveEncoder[OperationTranslation]
-  implicit val decoder: Decoder[OperationTranslation] = deriveDecoder[OperationTranslation]
 }
 
 final case class OperationAction(

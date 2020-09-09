@@ -27,9 +27,7 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.operation.ResultsLinkRequest.ResultsLinkKind
 import org.make.core.CirceFormatters
 import org.make.core.operation._
-import org.make.core.question.QuestionId
 import org.make.core.reference.Language
-import org.make.core.tag.TagId
 
 import scala.annotation.meta.field
 @ApiModel
@@ -40,55 +38,6 @@ final case class OperationIdResponse(
 
 object OperationIdResponse {
   implicit val encoder: Encoder[OperationIdResponse] = deriveEncoder[OperationIdResponse]
-}
-
-@ApiModel
-final case class OperationResponse(
-  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
-  operationId: OperationId,
-  @(ApiModelProperty @field)(dataType = "string", example = "Active")
-  status: OperationStatus,
-  slug: String,
-  translations: Seq[OperationTranslation] = Seq.empty,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  defaultLanguage: Language,
-  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
-  createdAt: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
-  updatedAt: Option[ZonedDateTime],
-  countriesConfiguration: Seq[OperationCountryConfiguration],
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
-  operationKind: OperationKind
-)
-
-object OperationResponse extends CirceFormatters {
-  implicit val encoder: Encoder[OperationResponse] = deriveEncoder[OperationResponse]
-  implicit val decoder: Decoder[OperationResponse] = deriveDecoder[OperationResponse]
-
-  def apply(operation: Operation, tags: Map[QuestionId, Seq[TagId]]): OperationResponse = {
-    OperationResponse(
-      operationId = operation.operationId,
-      status = operation.status,
-      slug = operation.slug,
-      translations = operation.questions.map { question =>
-        OperationTranslation(title = question.details.operationTitle, language = question.question.language)
-      },
-      defaultLanguage = operation.defaultLanguage,
-      createdAt = operation.createdAt,
-      updatedAt = operation.updatedAt,
-      countriesConfiguration = operation.questions.map { question =>
-        OperationCountryConfiguration(
-          countryCode = question.question.country,
-          tagIds = tags.get(question.question.questionId).toSeq.flatten,
-          landingSequenceId = question.details.landingSequenceId,
-          startDate = question.details.startDate,
-          questionId = Some(question.question.questionId),
-          endDate = question.details.endDate
-        )
-      },
-      operationKind = operation.operationKind
-    )
-  }
 }
 
 @ApiModel

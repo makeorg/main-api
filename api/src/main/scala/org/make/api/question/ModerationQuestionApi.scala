@@ -211,6 +211,7 @@ object AuthorRequest {
 
 final case class CreateInitialProposalRequest(
   content: String,
+  country: Country,
   author: AuthorRequest,
   @(ApiModelProperty @field)(dataType = "list[string]") tags: Seq[TagId]
 ) {
@@ -257,10 +258,14 @@ trait DefaultModerationQuestionComponent
               decodeRequest {
                 entity(as[CreateInitialProposalRequest]) { request =>
                   provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
+                    Validation.validate(
+                      Validation.validChoices("country", None, Seq(request.country), question.countries.toList)
+                    )
                     provideAsync(
                       proposalService.createInitialProposal(
                         request.content,
                         question,
+                        request.country,
                         request.tags,
                         request.author,
                         userAuth.user.userId,

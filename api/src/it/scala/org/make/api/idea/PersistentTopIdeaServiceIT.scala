@@ -18,6 +18,7 @@
  */
 
 package org.make.api.idea
+import cats.data.NonEmptyList
 import org.make.api.DatabaseTest
 import org.make.api.question.DefaultPersistentQuestionServiceComponent
 import org.make.core.idea.{Idea, IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
@@ -55,7 +56,7 @@ class PersistentTopIdeaServiceIT
   def createQuestion(id: QuestionId): Question = Question(
     questionId = id,
     slug = id.value,
-    country = Country("FR"),
+    countries = NonEmptyList.of(Country("FR")),
     language = Language("fr"),
     question = id.value,
     shortTitle = None,
