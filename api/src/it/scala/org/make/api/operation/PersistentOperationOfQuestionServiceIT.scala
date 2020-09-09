@@ -177,6 +177,41 @@ class PersistentOperationOfQuestionServiceIT
         operationOfQuestion.size shouldBe 1
       }
     }
+
+    Scenario("openAt filter") {
+      val now = Some(ZonedDateTime.now)
+      val yesterday = now.map(_.minusDays(1))
+      val tomorrow = now.map(_.plusDays(1))
+      val openOOQ = generateOperationOfQuestion.copy(
+        questionId = QuestionId("openAtTestCase1"),
+        startDate = yesterday,
+        endDate = tomorrow
+      )
+      val closedOOQ = generateOperationOfQuestion.copy(
+        questionId = QuestionId("openAtTestCase2"),
+        startDate = None,
+        endDate = yesterday
+      )
+
+      val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
+        _ <- createOperationOfQuestion(openOOQ)
+        _ <- createOperationOfQuestion(closedOOQ)
+        result <- persistentOperationOfQuestionService.search(
+          0,
+          None,
+          None,
+          None,
+          Some(Seq(QuestionId("openAtTestCase1"), QuestionId("openAtTestCase2"))),
+          None,
+          None,
+          now
+        )
+      } yield result
+
+      whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
+        operationOfQuestion.size shouldBe 1
+      }
+    }
   }
 
   Feature("Find an operationOfQuestion by operation") {
