@@ -167,26 +167,32 @@ trait DefaultIndexationComponent
         logger.info(s"Elasticsearch Reindexation")
         indicesToReindex(forceIdeas, forceOrganisations, forceProposals, forceOperationOfQuestions).flatMap {
           indicesNotUpToDate =>
-            // !mandatory: run organisation indexation before proposals and not in parallel
-            reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
+            // !mandatory: run question indexation before organisation and not in parallel
+            reindexOperationOfQuestionsIfNeeded(indicesNotUpToDate.contains(IndexOperationOfQuestions))
               .map(_ => indicesNotUpToDate)
               .recoverWith {
                 case e =>
-                  logger.error("Organisations indexation failed", e)
+                  logger.error("Questions indexation failed", e)
                   Future.successful(indicesNotUpToDate)
               }
+        }.flatMap { indicesNotUpToDate =>
+          // !mandatory: run organisation indexation before proposals and not in parallel
+          reindexOrganisationsIfNeeded(indicesNotUpToDate.contains(IndexOrganisations))
+            .map(_ => indicesNotUpToDate)
+            .recoverWith {
+              case e =>
+                logger.error("Organisations indexation failed", e)
+                Future.successful(indicesNotUpToDate)
+            }
         }.flatMap { indicesNotUpToDate =>
           report(25d).map(_ => indicesNotUpToDate)
         }.flatMap { indicesNotUpToDate =>
           val futureIdeasIndexation: Future[Done] = reindexIdeasIfNeeded(indicesNotUpToDate.contains(IndexIdeas))
           val futureProposalsIndexation = reindexProposalsIfNeeded(indicesNotUpToDate.contains(IndexProposals))
-          val futureOperationOfQuestionsIndexation =
-            reindexOperationOfQuestionsIfNeeded(indicesNotUpToDate.contains(IndexOperationOfQuestions))
 
           for {
             _ <- futureIdeasIndexation
             _ <- futureProposalsIndexation
-            _ <- futureOperationOfQuestionsIndexation
           } yield ()
         }
       }
