@@ -41,7 +41,7 @@ import org.make.core.Validation.{validateOptional, _}
 import org.make.core.auth.UserRights
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId}
-import org.make.core.{CirceFormatters, HttpCodes, Order}
+import org.make.core.{CirceFormatters, HttpCodes, Order, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
@@ -105,6 +105,14 @@ trait ModerationOrganisationApi extends Directives {
   def moderationGetOrganisation: Route
 
   @ApiOperation(value = "get-organisations", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(name = "_start", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_end", paramType = "query", dataType = "integer"),
+      new ApiImplicitParam(name = "_sort", paramType = "query", dataType = "string"),
+      new ApiImplicitParam(name = "_order", paramType = "query", dataType = "string")
+    )
+  )
   @ApiResponses(
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[OrganisationResponse]]))
   )
@@ -123,7 +131,8 @@ trait ModerationOrganisationApiComponent {
 trait DefaultModerationOrganisationApiComponent
     extends ModerationOrganisationApiComponent
     with MakeAuthenticationDirectives
-    with StrictLogging {
+    with StrictLogging
+    with ParameterExtractors {
   this: OrganisationServiceComponent
     with MakeDataHandlerComponent
     with SessionHistoryCoordinatorServiceComponent
