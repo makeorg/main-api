@@ -41,15 +41,16 @@ sealed abstract class ApplicationName(val value: String) extends StringEnumEntry
 
 object ApplicationName extends StringEnum[ApplicationName] with StringCirceEnum[ApplicationName] {
 
-  case object MainFrontend extends ApplicationName("main-front")
-  case object LegacyFrontend extends ApplicationName("legacy-front")
   case object Backoffice extends ApplicationName("backoffice")
-  case object Widget extends ApplicationName("widget")
-  case object WidgetManager extends ApplicationName("widget-manager")
-  case object Dial extends ApplicationName("dial")
   case object BiBatchs extends ApplicationName("bi-batchs")
+  case object Dial extends ApplicationName("dial")
   case object DialBatchs extends ApplicationName("dial-batchs")
   case object Infrastructure extends ApplicationName("infra")
+  case object LegacyFrontend extends ApplicationName("legacy-front")
+  case object MainFrontend extends ApplicationName("main-front")
+  case object OldBackoffice extends ApplicationName("bo")
+  case object Widget extends ApplicationName("widget")
+  case object WidgetManager extends ApplicationName("widget-manager")
 
   override def values: IndexedSeq[ApplicationName] = findValues
 

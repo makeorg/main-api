@@ -26,13 +26,10 @@ import org.make.api.ConfigComponent
 class MailJetTemplateConfiguration(config: Config) extends Extension with ConfigurationSupport {
   val from: String = config.getString("from")
   val fromName: String = config.getString("from-name")
+  val mainFrontendUrl: String = config.getString("front-main-url")
+  val backofficeUrl: String = config.getString("backoffice-url")
 
   override protected def configuration: Config = config
-
-  def getMainFrontendUrl(): String = {
-    config.getString("front-main-url")
-  }
-
 }
 
 trait MailJetTemplateConfigurationComponent {
