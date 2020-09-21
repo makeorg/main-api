@@ -100,7 +100,8 @@ trait DefaultPostServiceComponent extends PostServiceComponent with StrictLoggin
         .asyncPageToPageSource(offset => webflowClient.getPosts(100, offset))
         .mapConcat(identity)
         .collect {
-          case post @ WebflowPost(id, _, _, Some(true), Some(postDate), _, _) => (id, toPost(post, postDate))
+          case post @ WebflowPost(id, false, false, _, _, Some(true), Some(postDate), _, _) =>
+            (id, toPost(post, postDate))
         }
         .wireTap {
           case (postId, Invalid(errors)) =>

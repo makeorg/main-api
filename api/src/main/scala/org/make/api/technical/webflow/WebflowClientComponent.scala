@@ -278,6 +278,8 @@ object WebflowItem {
 
   case class WebflowPost(
     id: String,
+    archived: Boolean,
+    draft: Boolean,
     name: String,
     slug: String,
     displayHome: Option[Boolean],
@@ -287,8 +289,10 @@ object WebflowItem {
   )
 
   implicit val webflowPostDecoder: Decoder[WebflowPost] =
-    Decoder.forProduct7(
+    Decoder.forProduct9(
       "_id",
+      "_archived",
+      "_draft",
       "name",
       "slug",
       "afficher-cet-article-sur-le-site-de-make-org",
