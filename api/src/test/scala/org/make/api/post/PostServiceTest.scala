@@ -57,6 +57,8 @@ class PostServiceTest
   val defaultImageRef: WebflowImageRef = WebflowImageRef(url = "https://example.com/image", alt = Some("image alt"))
   def webflowPost(
     id: String,
+    archived: Boolean = false,
+    draft: Boolean = false,
     name: String = "Post name",
     slug: String = "post-slug",
     displayHome: Option[Boolean] = Some(true),
@@ -66,6 +68,8 @@ class PostServiceTest
   ): WebflowPost =
     WebflowPost(
       id = id,
+      archived = archived,
+      draft = draft,
       name = name,
       slug = slug,
       displayHome = displayHome,
@@ -88,6 +92,16 @@ class PostServiceTest
 
       whenReady(postService.fetchPostsForHome(), Timeout(3.seconds)) { posts =>
         posts.size shouldBe 2
+      }
+    }
+
+    Scenario("webflow returns unpublished posts") {
+      webflowResult = Future.successful(
+        Seq(webflowPost("post-id-unpublished-1", archived = true), webflowPost("post-id-unpublished-2", draft = true))
+      )
+
+      whenReady(postService.fetchPostsForHome(), Timeout(3.seconds)) { posts =>
+        posts.size shouldBe 0
       }
     }
 
