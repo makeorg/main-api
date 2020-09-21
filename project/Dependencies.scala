@@ -35,6 +35,8 @@ object Dependencies {
   val swaggerUiVersion: String = "3.20.9"
   private val refinedVersion: String = "0.9.15"
   private val staminaVersion: String = "0.1.5+1-74109b8e"
+  private val calibanVersion = "0.9.1"
+  private val zioVersion = "1.0.0"
 
   val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
   val logger: ModuleID = "org.apache.logging.log4j"         % "log4j"            % log4jVersion
@@ -121,6 +123,11 @@ object Dependencies {
   val sprayJson: ModuleID = "io.spray"        %% "spray-json"   % "1.3.5"
   val jsonLenses = "net.virtual-void"         %% "json-lenses"  % "0.6.2"
   val scalaCheck: ModuleID = "org.scalacheck" %% "scalacheck"   % "1.14.3"
+
+  val zio: ModuleID = "dev.zio"                           %% "zio"               % zioVersion
+  val zioStreams: ModuleID = "dev.zio"                    %% "zio-streams"       % zioVersion
+  val caliban: ModuleID = "com.github.ghostdogpr"         %% "caliban"           % calibanVersion
+  val calibanAkkaHttp: ModuleID = "com.github.ghostdogpr" %% "caliban-akka-http" % calibanVersion
 
   // Test related dependencies
   val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion     % "it,test"
