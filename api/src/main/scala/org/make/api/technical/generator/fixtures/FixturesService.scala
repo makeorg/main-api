@@ -23,19 +23,12 @@ import java.util.concurrent.Executors
 
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.ActorSystemComponent
 import org.make.api.operation.{
   CreateOperationOfQuestion,
   OperationOfQuestionServiceComponent,
   OperationServiceComponent
 }
-import org.make.api.technical.generator.EntitiesGen
-import org.make.api.user.UserServiceComponent
-import org.make.core.operation.{OperationId, SimpleOperation}
-import org.make.core.question.{Question, QuestionId}
-import org.make.core.user.{User, UserId}
-
-import scala.concurrent.{ExecutionContext, Future}
-import org.make.api.ActorSystemComponent
 import org.make.api.proposal.{
   ProposalServiceComponent,
   RefuseProposalRequest,
@@ -43,12 +36,20 @@ import org.make.api.proposal.{
   UpdateVoteRequest
 }
 import org.make.api.question.QuestionServiceComponent
-import org.make.core.{DateHelper, RequestContext}
+import org.make.api.technical.ExecutorServiceHelper._
+import org.make.api.technical.generator.EntitiesGen
+import org.make.api.user.UserServiceComponent
+import org.make.core.operation.{OperationId, SimpleOperation}
 import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag.TagId
+import org.make.core.user.{User, UserId}
+import org.make.core.{DateHelper, RequestContext}
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Parameters
 import org.scalacheck.rng.Seed
+
+import scala.concurrent.{ExecutionContext, Future}
 
 trait FixturesService {
   def generate(
@@ -75,7 +76,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
 
     private val nThreads = 32
     implicit private val executionContext: ExecutionContext =
-      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(nThreads))
+      Executors.newFixedThreadPool(nThreads).instrument("fixtures").toExecutionContext
 
     def generateOperation(maybeOperationId: Option[OperationId], adminUserId: UserId): Future[OperationId] = {
       maybeOperationId match {

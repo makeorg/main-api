@@ -43,6 +43,7 @@ import org.make.api.idea.IdeaServiceComponent
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.EventBusServiceComponent
+import org.make.api.technical.ExecutorServiceHelper._
 import org.make.core.idea.{Idea, IdeaId}
 import org.make.core.proposal.indexed.IndexedProposal
 import org.make.core.proposal.{Proposal, ProposalId, ProposalStatus}
@@ -85,7 +86,7 @@ trait DefaultSemanticComponent extends SemanticComponent with ErrorAccumulatingC
 
     private val httpThreads = 12
     implicit private val executionContext: ExecutionContext =
-      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(httpThreads))
+      Executors.newFixedThreadPool(httpThreads).instrument("semantic-http").toExecutionContext
 
     lazy val semanticUrl = new URL(semanticConfiguration.url)
 

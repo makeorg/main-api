@@ -19,12 +19,22 @@
 
 package org.make.api.technical
 
-import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.ExecutorService
 
-class MonitorableExecutionContext(executorService: ThreadPoolExecutor) {
+import kamon.instrumentation.executor.ExecutorInstrumentation
 
-  def activeTasks: Int = executorService.getActiveCount
-  def currentTasks: Int = executorService.getPoolSize
-  def maxTasks: Int = executorService.getMaximumPoolSize
-  def waitingTasks: Int = executorService.getQueue.size()
+import scala.concurrent.ExecutionContext
+
+object ExecutorServiceHelper {
+
+  implicit class RichExecutorService(val self: ExecutorService) extends AnyVal {
+    def instrument(name: String): ExecutorService = {
+      ExecutorInstrumentation.instrument(self, name)
+    }
+
+    def toExecutionContext: ExecutionContext = {
+      ExecutionContext.fromExecutorService(self)
+    }
+  }
+
 }

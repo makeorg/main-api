@@ -21,15 +21,15 @@ package org.make.api.technical.healthcheck
 
 import java.util.concurrent.Executors
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
+import org.make.api.technical.ExecutorServiceHelper._
 import org.make.api.technical.TimeSettings
 import org.make.api.technical.healthcheck.HealthCheckCommands._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
-import akka.actor.ActorRef
 
 class HealthCheckSupervisor extends Actor with ActorLogging {
 
@@ -46,7 +46,8 @@ class HealthCheckSupervisor extends Actor with ActorLogging {
 
   private implicit val timeout: Timeout = TimeSettings.defaultTimeout
 
-  val healthCheckExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+  val healthCheckExecutionContext: ExecutionContext =
+    Executors.newFixedThreadPool(10).instrument("healthchecks").toExecutionContext
 
   override def receive: Receive = {
     case CheckExternalServices =>

@@ -29,18 +29,19 @@ import org.make.api.proposal.{
 import org.make.api.question.PersistentQuestionServiceComponent
 import org.make.api.tag.{PersistentTagServiceComponent, TagServiceComponent}
 import org.make.api.tagtype.PersistentTagTypeServiceComponent
+import org.make.api.technical.ExecutorServiceHelper._
 import org.make.api.technical.IdGeneratorComponent
-import org.make.core.idea.{Idea, IdeaId, IdeaMapping, IdeaMappingId, IdeaStatus}
+import org.make.core.idea._
 import org.make.core.proposal.indexed.{IndexedProposal, ProposalsSearchResult}
 import org.make.core.proposal.{IdeaSearchFilter, SearchFilters, SearchQuery, TagsSearchFilter}
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.tag.{Tag, TagId, TagTypeId}
 import org.make.core.user.UserId
-import org.make.core.{DateHelper, Order, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core._
 
-import Ordering.Float.TotalOrdering
+import scala.Ordering.Float.TotalOrdering
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 trait IdeaMappingService {
   def create(
@@ -180,8 +181,10 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
                     )
                   }(
                     bf = implicitly,
-                    executor =
-                      implicitly[ExecutionContext](ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1)))
+                    Executors
+                      .newFixedThreadPool(1)
+                      .instrument("updateProposalsIdea")
+                      .toExecutionContext
                   )
                   .map(_.flatten)
               }

@@ -26,7 +26,6 @@ import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvi
 import com.github.t3hnar.bcrypt._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.StrictLogging
-import kamon.instrumentation.executor.ExecutorInstrumentation
 import org.apache.commons.dbcp2.BasicDataSource
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.MigrationVersion
@@ -34,8 +33,10 @@ import org.flywaydb.core.api.configuration.FluentConfiguration
 import org.make.api.technical.MonitorableExecutionContext
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool, GlobalSettings, LoggingSQLAndTimeSettings}
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
+import org.make.api.technical.ExecutorServiceHelper._
 
 class DatabaseConfiguration(override protected val configuration: Config)
     extends Extension
@@ -56,14 +57,13 @@ class DatabaseConfiguration(override protected val configuration: Config)
   readDatasource.setMaxTotal(configuration.getInt("database.pools.read.max-total"))
   readDatasource.setMaxIdle(configuration.getInt("database.pools.read.max-idle"))
 
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  private val readExecutor: ThreadPoolExecutor = Executors
-    .newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
-    .asInstanceOf[ThreadPoolExecutor]
-  val readThreadPool: MonitorableExecutionContext =
-    new MonitorableExecutionContext(readExecutor)
-
-  ExecutorInstrumentation.instrument(readExecutor, "db-read-executor")
+  val (readExecutor: MonitorableExecutionContext, readThreadPool: ExecutionContext) = {
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+    val executor = Executors
+      .newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
+      .asInstanceOf[ThreadPoolExecutor]
+    (new MonitorableExecutionContext(executor), executor.instrument("db-read-executor").toExecutionContext)
+  }
 
   private val writeDatasource = new BasicDataSource()
   writeDatasource.setDriverClassName("org.postgresql.Driver")
@@ -74,14 +74,13 @@ class DatabaseConfiguration(override protected val configuration: Config)
   writeDatasource.setMaxTotal(configuration.getInt("database.pools.write.max-total"))
   writeDatasource.setMaxIdle(configuration.getInt("database.pools.write.max-idle"))
 
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  private val writeExecutor: ThreadPoolExecutor = Executors
-    .newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
-    .asInstanceOf[ThreadPoolExecutor]
-  val writeThreadPool: MonitorableExecutionContext =
-    new MonitorableExecutionContext(writeExecutor)
-
-  ExecutorInstrumentation.instrument(writeExecutor, "db-write-executor")
+  val (writeExecutor: MonitorableExecutionContext, writeThreadPool: ExecutionContext) = {
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+    val executor = Executors
+      .newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
+      .asInstanceOf[ThreadPoolExecutor]
+    (new MonitorableExecutionContext(executor), executor.instrument("db-write-executor").toExecutionContext)
+  }
 
   ConnectionPool.add("READ", new DataSourceConnectionPool(dataSource = readDatasource))
   ConnectionPool.add("WRITE", new DataSourceConnectionPool(dataSource = writeDatasource))

@@ -103,8 +103,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
   actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
   private val threadPoolMonitor =
     actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
-  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readThreadPool, "db-read-pool")
-  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeThreadPool, "db-write-pool")
+  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readExecutor, "db-read-pool")
+  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeExecutor, "db-write-pool")
 
   // Start the shards
   (0 until 100).foreach { i =>
