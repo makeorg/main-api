@@ -125,10 +125,7 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
     }
 
     override def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]] = {
-      persistentCrmTemplatesService.find(start = 0, end = Some(1), questionId = None, locale = locale).map {
-        case templates if templates.isEmpty => None
-        case templates                      => Some(templates.head)
-      }
+      locale.fold(Future.successful[Option[CrmTemplates]](None))(persistentCrmTemplatesService.getDefaultTemplate)
     }
   }
 }

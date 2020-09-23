@@ -40,6 +40,7 @@ trait PersistentCrmTemplatesService {
   def persist(crmTemplates: CrmTemplates): Future[CrmTemplates]
   def modify(crmTemplates: CrmTemplates): Future[CrmTemplates]
   def getById(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]]
+  def getDefaultTemplate(locale: String): Future[Option[CrmTemplates]]
   def find(
     start: Int,
     end: Option[Int],
@@ -122,6 +123,17 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
           select
             .from(PersistentCrmTemplates.as(crmTemplatesAlias))
             .where(sqls.eq(crmTemplatesAlias.id, crmTemplatesId.value))
+        }.map(PersistentCrmTemplates.apply()).single.apply()
+      }).map(_.map(_.toCrmTemplates))
+    }
+
+    override def getDefaultTemplate(locale: String): Future[Option[CrmTemplates]] = {
+      implicit val context: EC = readExecutionContext
+      Future(NamedDB("READ").retryableTx { implicit session =>
+        withSQL {
+          select
+            .from(PersistentCrmTemplates.as(crmTemplatesAlias))
+            .where(sqls.eq(crmTemplatesAlias.locale, locale).and(sqls.isNull(crmTemplatesAlias.questionId)))
         }.map(PersistentCrmTemplates.apply()).single.apply()
       }).map(_.map(_.toCrmTemplates))
     }
