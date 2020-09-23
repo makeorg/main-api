@@ -102,7 +102,7 @@ object MakeSettings extends ExtensionId[MakeSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): MakeSettings =
     new MakeSettings(system.settings.config.getConfig("make-api"))
 
-  override def lookup(): ExtensionId[MakeSettings] = MakeSettings
+  override def lookup: ExtensionId[MakeSettings] = MakeSettings
 }
 
 trait MakeSettingsExtension { self: Actor =>

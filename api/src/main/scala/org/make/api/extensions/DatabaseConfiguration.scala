@@ -150,6 +150,6 @@ object DatabaseConfiguration extends ExtensionId[DatabaseConfiguration] with Ext
   override def createExtension(system: ExtendedActorSystem): DatabaseConfiguration =
     new DatabaseConfiguration(system.settings.config.getConfig("make-api"))
 
-  override def lookup(): ExtensionId[DatabaseConfiguration] =
+  override def lookup: ExtensionId[DatabaseConfiguration] =
     DatabaseConfiguration
 }

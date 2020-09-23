@@ -32,7 +32,7 @@ object SecurityConfiguration extends ExtensionId[SecurityConfiguration] with Ext
   override def createExtension(system: ExtendedActorSystem): SecurityConfiguration =
     new SecurityConfiguration(system.settings.config.getConfig("make-api.security"))
 
-  override def lookup(): ExtensionId[SecurityConfiguration] = SecurityConfiguration
+  override def lookup: ExtensionId[SecurityConfiguration] = SecurityConfiguration
   override def get(system: ActorSystem): SecurityConfiguration = super.get(system)
 }
 
