@@ -26,7 +26,7 @@ import org.make.api.technical.job.JobSerializers
 import org.make.api.userhistory.UserHistorySerializers
 import stamina.{Persister, StaminaAkkaSerializer}
 
-class MakeEventSerializer extends StaminaAkkaSerializer(allSerializers.head, allSerializers.tail: _*)
+class MakeEventSerializer extends StaminaAkkaSerializer(allSerializers.toList)
 
 object MakeEventSerializer {
   val allSerializers: Seq[Persister[_, _]] =

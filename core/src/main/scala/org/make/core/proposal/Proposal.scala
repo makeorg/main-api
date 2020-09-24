@@ -34,9 +34,9 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{LabelId, ThemeId}
 import org.make.core.tag.{TagId, TagType, TagTypeId}
 import org.make.core.user.UserId
-import org.make.core.{MakeSerializable, RequestContext, StringValue, Timestamped}
+import org.make.core.{MakeSerializable, RequestContext, SprayJsonFormatters, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 import scala.annotation.meta.field
 
@@ -84,16 +84,7 @@ object ProposalId {
   implicit lazy val proposalIdDecoder: Decoder[ProposalId] =
     Decoder.decodeString.map(ProposalId(_))
 
-  implicit val proposalIdFormatter: JsonFormat[ProposalId] = new JsonFormat[ProposalId] {
-    override def read(json: JsValue): ProposalId = json match {
-      case JsString(s) => ProposalId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: ProposalId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val proposalIdFormatter: JsonFormat[ProposalId] = SprayJsonFormatters.forStringValue(ProposalId.apply)
 }
 
 final case class OrganisationInfo(organisationId: UserId, organisationName: Option[String])

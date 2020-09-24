@@ -40,7 +40,7 @@ import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, 
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
-import org.make.core.question.{Question, QuestionId}
+import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.tag.TagId
 import org.make.core.user.UserType
@@ -56,6 +56,9 @@ import org.make.core.{
 import scalaoauth2.provider.AuthInfo
 
 import org.make.core.ApiParamMagnetHelper._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Api(value = "Proposal")
 @Path(value = "/proposals")
@@ -354,9 +357,7 @@ trait DefaultProposalApiComponent
                   }).flatten: _*)
 
                   val contextFilterRequest: Option[ContextFilterRequest] =
-                    operationId.orElse(source).orElse(location).orElse(question).map { _ =>
-                      ContextFilterRequest(operationId, source, location, question)
-                    }
+                    ContextFilterRequest.parse(operationId, source, location, question)
                   val searchRequest: SearchRequest = SearchRequest(
                     proposalIds = proposalIds,
                     questionIds = questionIds,
@@ -414,14 +415,21 @@ trait DefaultProposalApiComponent
               decodeRequest {
                 entity(as[ProposeProposalRequest]) { request: ProposeProposalRequest =>
                   provideAsyncOrNotFound(userService.getUser(auth.user.userId)) { user =>
-                    provideAsync(questionService.getQuestion(request.questionId)) { maybeQuestion =>
-                      val question: Question = maybeQuestion.getOrElse(
-                        throw ValidationFailedError(
-                          Seq(
-                            ValidationError("question", "mandatory", Some("This proposal refers to no known question"))
+                    provideAsync(questionService.getQuestion(request.questionId).flatMap {
+                      case Some(question) => Future.successful(question)
+                      case _ =>
+                        Future.failed(
+                          ValidationFailedError(
+                            Seq(
+                              ValidationError(
+                                "question",
+                                "mandatory",
+                                Some("This proposal refers to no known question")
+                              )
+                            )
                           )
                         )
-                      )
+                    }) { question =>
                       onSuccess(
                         proposalService
                           .propose(

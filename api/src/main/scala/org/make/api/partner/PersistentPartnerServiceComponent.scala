@@ -184,7 +184,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
 
 object DefaultPersistentPartnerServiceComponent {
 
-  case class PersistentPartner(
+  final case class PersistentPartner(
     id: String,
     name: String,
     logo: Option[String],

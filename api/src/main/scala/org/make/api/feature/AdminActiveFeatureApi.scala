@@ -255,7 +255,7 @@ trait DefaultAdminActiveFeatureApiComponent
   }
 }
 
-case class CreateActiveFeatureRequest(
+final case class CreateActiveFeatureRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "f403b357-a528-4657-b4e4-6dc07516f16a")
   featureId: FeatureId,
   @(ApiModelProperty @field)(dataType = "string", example = "afe70bf6-ae1b-4fd0-9051-0732958ca810")

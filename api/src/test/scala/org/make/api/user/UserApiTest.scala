@@ -39,7 +39,6 @@ import org.make.api.proposal.{
 }
 import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.ClientService.ClientInformation
@@ -97,7 +96,7 @@ class UserApiTest
   override val proposalService: ProposalService = mock[ProposalService]
   override val questionService: QuestionService = mock[QuestionService]
   override val storageService: StorageService = mock[StorageService]
-  override val storageConfiguration: StorageConfiguration = mock[StorageConfiguration]
+  override val storageConfiguration: StorageConfiguration = StorageConfiguration("", "", 4242L)
   override val userRegistrationValidator: UserRegistrationValidator = mock[UserRegistrationValidator]
   override val clientService: ClientService = mock[ClientService]
 
@@ -1772,8 +1771,6 @@ class UserApiTest
   }
 
   Feature("upload avatar") {
-    val maxUploadFileSize = 4242L
-    when(storageConfiguration.maxFileSize).thenReturn(maxUploadFileSize)
     Scenario("unauthorized not connected") {
       Post("/user/ABCD/upload-avatar") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
@@ -1836,7 +1833,7 @@ class UserApiTest
             Map("filename" -> "image.jpeg")
           )
       )
-      Post("/user/sylvain-user-id/upload-avatar", entityOfSize(maxUploadFileSize.toInt + 1))
+      Post("/user/sylvain-user-id/upload-avatar", entityOfSize(storageConfiguration.maxFileSize.toInt + 1))
         .withHeaders(Authorization(OAuth2BearerToken(adminToken))) ~> routes ~> check {
         status should be(StatusCodes.PayloadTooLarge)
       }

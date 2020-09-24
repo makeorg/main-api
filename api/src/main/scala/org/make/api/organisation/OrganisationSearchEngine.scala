@@ -80,17 +80,14 @@ trait DefaultOrganisationSearchEngineComponent extends OrganisationSearchEngineC
 
       client.executeAsFuture {
         request
-      }.map(_.to[IndexedOrganisation]).map {
-        case indexedSeq if indexedSeq.isEmpty => None
-        case other                            => Some(other.head)
-      }
+      }.map(_.to[IndexedOrganisation]).map(_.headOption)
     }
 
     override def searchOrganisations(query: OrganisationSearchQuery): Future[OrganisationSearchResult] = {
       val searchFilters = OrganisationSearchFilters.getOrganisationSearchFilters(query)
       val request: SearchRequest = searchWithType(organisationAlias)
         .bool(BoolQuery(must = searchFilters))
-        .sortBy(OrganisationSearchFilters.getSort(query))
+        .sortBy(OrganisationSearchFilters.getSort(query).toList)
         .size(OrganisationSearchFilters.getLimitSearch(query))
         .from(OrganisationSearchFilters.getSkipSearch(query))
 

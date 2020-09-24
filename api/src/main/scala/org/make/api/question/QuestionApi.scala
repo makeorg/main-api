@@ -443,7 +443,7 @@ trait DefaultQuestionApiComponent
                   Seq(sortValue),
                   choices
                 )
-              }.toSeq: _*)
+              }.toList: _*)
               val filters: Option[OperationOfQuestionSearchFilters] = Some(
                 OperationOfQuestionSearchFilters(
                   questionIds = questionIds.map(QuestionIdsSearchFilter.apply),

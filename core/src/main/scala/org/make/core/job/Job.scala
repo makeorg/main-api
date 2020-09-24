@@ -67,6 +67,7 @@ object Job {
   implicit val progressJsonFormat: JsonFormat[Progress] = new JsonFormat[Progress] {
     override def write(obj: Progress): JsValue = JsNumber(obj.value)
 
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     override def read(json: JsValue): Progress = json match {
       case n @ JsNumber(value) =>
         refineV[ProgressRefinement](value.toDouble) match {
@@ -87,25 +88,16 @@ object Job {
     val ReindexPosts: JobId = JobId("ReindexPosts")
     val SyncCrmData: JobId = JobId("SyncCrmData")
 
-    implicit val jobIdFormatter: JsonFormat[JobId] = new JsonFormat[JobId] {
-      override def read(json: JsValue): JobId = json match {
-        case JsString(s) => JobId(s)
-        case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-      }
-
-      override def write(obj: JobId): JsValue = {
-        JsString(obj.value)
-      }
-    }
+    implicit val jobIdFormatter: JsonFormat[JobId] = SprayJsonFormatters.forStringValue(JobId.apply)
   }
 
   sealed abstract class JobStatus extends Product with Serializable
 
   object JobStatus {
 
-    case class Running(progress: Progress) extends JobStatus
+    final case class Running(progress: Progress) extends JobStatus
 
-    case class Finished(outcome: Option[String]) extends JobStatus
+    final case class Finished(outcome: Option[String]) extends JobStatus
 
     implicit val statusJsonFormat: JsonFormat[JobStatus] = new JsonFormat[JobStatus] {
 

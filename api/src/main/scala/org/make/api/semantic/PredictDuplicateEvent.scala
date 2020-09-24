@@ -26,7 +26,7 @@ import org.make.core.proposal.ProposalId
 import org.make.core.{AvroSerializers, EventWrapper}
 
 sealed trait PredictDuplicate
-case class PredictDuplicateEvent(
+final case class PredictDuplicateEvent(
   proposalId: ProposalId,
   predictedDuplicates: Seq[ProposalId],
   predictedScores: Seq[Double],

@@ -258,7 +258,7 @@ trait DefaultModerationTagTypeApiComponent
 
 }
 
-case class CreateTagTypeRequest(
+final case class CreateTagTypeRequest(
   label: String,
   @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
   display: TagTypeDisplay,
@@ -270,7 +270,7 @@ object CreateTagTypeRequest {
   implicit val decoder: Decoder[CreateTagTypeRequest] = deriveDecoder[CreateTagTypeRequest]
 }
 
-case class UpdateTagTypeRequest(
+final case class UpdateTagTypeRequest(
   label: String,
   @(ApiModelProperty @field)(dataType = "string", example = "DISPLAYED", allowableValues = "DISPLAYED,HIDDEN,INHERIT")
   display: TagTypeDisplay,

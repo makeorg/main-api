@@ -19,6 +19,12 @@
 
 package org.make.core
 
+import cats.instances.string._
+
 trait StringValue {
   def value: String
+}
+
+object StringValue {
+  implicit def catsOrder[T <: StringValue]: cats.Order[T] = cats.Order.by(_.value)
 }

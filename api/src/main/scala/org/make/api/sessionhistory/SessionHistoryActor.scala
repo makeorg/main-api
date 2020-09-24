@@ -212,10 +212,10 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       "Transforming session {} to user {} with events {}",
       persistenceId,
       userId.value,
-      state.toSeq.flatMap(_.events).map(_.toString).mkString(", ")
+      state.toList.flatMap(_.events).map(_.toString).mkString(", ")
     )
 
-    val events: Seq[UserHistoryEvent[_]] = state.toSeq.flatMap(_.events).sortBy(_.action.date.toString).flatMap {
+    val events: Seq[UserHistoryEvent[_]] = state.toList.flatMap(_.events).sortBy(_.action.date.toString).flatMap {
       case event: TransferableToUser[_] => Seq[UserHistoryEvent[_]](event.toUserHistoryEvent(userId))
       case _                            => Seq.empty[UserHistoryEvent[_]]
     }
@@ -231,6 +231,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     context.become(transforming(userId, Seq.empty, requestContext))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def closed(userId: UserId): Receive = {
     case GetSessionHistory(_)               => sender() ! state.getOrElse(SessionHistory(Nil))
     case GetCurrentSession(_, newSessionId) => retrieveOrExpireSession(newSessionId)
@@ -264,6 +265,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       releaseLockForQualification(proposalId, qualification)
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def transforming(userId: UserId, pendingEvents: Seq[(ActorRef, Any)], requestContext: RequestContext): Receive = {
     case SessionClosed(originalSender) =>
       context.system.eventStream.publish(
@@ -330,7 +332,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     sender() ! SessionVotesValues(voteAndQualifications)
   }
 
-  private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = state.toSeq.flatMap(_.events).flatMap {
+  private def actions(proposalIds: Seq[ProposalId]): Seq[VoteRelatedAction] = state.toList.flatMap(_.events).flatMap {
     case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey, trust)))
         if proposalIds.contains(proposalId) =>
       Some(VoteAction(proposalId, date, voteKey, trust))
@@ -352,7 +354,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case _ => None
   }
 
-  private def voteActions(): Seq[VoteRelatedAction] = state.toSeq.flatMap(_.events).flatMap {
+  private def voteActions(): Seq[VoteRelatedAction] = state.toList.flatMap(_.events).flatMap {
     case LogSessionVoteEvent(_, _, SessionAction(date, _, SessionVote(proposalId, voteKey, trust))) =>
       Some(VoteAction(proposalId, date, voteKey, trust))
     case LogSessionUnvoteEvent(_, _, SessionAction(date, _, SessionUnvote(proposalId, voteKey, trust))) =>
@@ -372,6 +374,13 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
     case _ => None
   }
 
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.AsInstanceOf",
+      "org.wartremover.warts.IsInstanceOf",
+      "org.wartremover.warts.TraversableOps"
+    )
+  )
   private def voteByProposalId(actions: Seq[VoteRelatedAction]): Map[ProposalId, VoteAction] = {
     actions.filter {
       case _: GenericVoteAction => true
@@ -389,6 +398,13 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
       }
   }
 
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.AsInstanceOf",
+      "org.wartremover.warts.IsInstanceOf",
+      "org.wartremover.warts.TraversableOps"
+    )
+  )
   private def qualifications(actions: Seq[VoteRelatedAction]): Map[ProposalId, Map[QualificationKey, VoteTrust]] = {
     actions.filter {
       case _: GenericQualificationAction => true
@@ -442,7 +458,7 @@ class SessionHistoryActor(userHistoryCoordinator: ActorRef, lockDuration: Finite
 }
 
 object SessionHistoryActor {
-  case class SessionHistory(events: List[SessionHistoryEvent[_]]) extends MakeSerializable
+  final case class SessionHistory(events: List[SessionHistoryEvent[_]]) extends MakeSerializable
 
   object SessionHistory {
     implicit val persister: RootJsonFormat[SessionHistory] = DefaultJsonProtocol.jsonFormat1(SessionHistory.apply)

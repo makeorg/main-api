@@ -25,7 +25,7 @@ import io.circe.{Decoder, Encoder, Json}
 import org.make.core.user.{Role, UserId}
 import org.make.core.{StringValue, Timestamped}
 
-case class Client(
+final case class Client(
   clientId: ClientId,
   name: String,
   allowedGrantTypes: Seq[String],
@@ -39,7 +39,7 @@ case class Client(
   tokenExpirationSeconds: Int
 ) extends Timestamped
 
-case class ClientId(value: String) extends StringValue
+final case class ClientId(value: String) extends StringValue
 
 object ClientId {
   implicit lazy val proposalIdEncoder: Encoder[ClientId] =

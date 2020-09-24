@@ -25,6 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 package object migrations extends StrictLogging {
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def retryableFuture[T](future: => Future[T], times: Int = 3)(
     implicit executionContext: ExecutionContext
   ): Future[T] = {

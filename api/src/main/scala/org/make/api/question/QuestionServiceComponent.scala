@@ -85,7 +85,7 @@ trait QuestionService {
   ): Future[Option[QuestionTopIdeaResultWithSeed]]
 }
 
-case class SearchQuestionRequest(
+final case class SearchQuestionRequest(
   maybeQuestionIds: Option[Seq[QuestionId]] = None,
   maybeOperationIds: Option[Seq[OperationId]] = None,
   country: Option[Country] = None,

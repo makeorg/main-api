@@ -56,6 +56,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
   readDatasource.setMaxTotal(configuration.getInt("database.pools.read.max-total"))
   readDatasource.setMaxIdle(configuration.getInt("database.pools.read.max-idle"))
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private val readExecutor: ThreadPoolExecutor = Executors
     .newFixedThreadPool(configuration.getInt("database.pools.read.max-total"))
     .asInstanceOf[ThreadPoolExecutor]
@@ -73,6 +74,7 @@ class DatabaseConfiguration(override protected val configuration: Config)
   writeDatasource.setMaxTotal(configuration.getInt("database.pools.write.max-total"))
   writeDatasource.setMaxIdle(configuration.getInt("database.pools.write.max-idle"))
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private val writeExecutor: ThreadPoolExecutor = Executors
     .newFixedThreadPool(configuration.getInt("database.pools.write.max-total"))
     .asInstanceOf[ThreadPoolExecutor]

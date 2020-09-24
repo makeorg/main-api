@@ -50,7 +50,8 @@ object PersistentUserServiceComponent {
 
   val ROLE_SEPARATOR = ","
 
-  case class PersistentUser(
+  @SuppressWarnings(Array("org.wartremover.warts.ArrayEquals"))
+  final case class PersistentUser(
     uuid: String,
     createdAt: ZonedDateTime,
     updatedAt: ZonedDateTime,
@@ -244,6 +245,7 @@ object PersistentUserServiceComponent {
 
     override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.email)
 
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
     def apply(
       userResultName: ResultName[PersistentUser] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentUser = {
@@ -304,7 +306,7 @@ object PersistentUserServiceComponent {
     }
   }
 
-  case class FollowedUsers(userId: String, followedUserId: String, date: ZonedDateTime)
+  final case class FollowedUsers(userId: String, followedUserId: String, date: ZonedDateTime)
 
   object FollowedUsers extends SQLSyntaxSupport[FollowedUsers] with ShortenedNames with StrictLogging {
 
@@ -1219,5 +1221,5 @@ trait DefaultPersistentUserServiceComponent
 }
 
 object DefaultPersistentUserServiceComponent {
-  case class UpdateFailed() extends Exception
+  final case class UpdateFailed() extends Exception
 }

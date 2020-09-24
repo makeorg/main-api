@@ -30,12 +30,12 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
 import org.make.core.user.UserType.{UserTypeOrganisation, UserTypePersonality, UserTypeUser}
-import org.make.core.{DateHelper, MakeSerializable, StringValue, Timestamped}
-import spray.json.{JsString, JsValue, JsonFormat}
+import org.make.core.{DateHelper, MakeSerializable, SprayJsonFormatters, StringValue, Timestamped}
+import spray.json.JsonFormat
 
 import scala.annotation.meta.field
 
-sealed abstract class Role(val value: String) extends StringEnumEntry
+sealed abstract class Role(val value: String) extends StringEnumEntry with Product with Serializable
 
 object Role extends StringEnum[Role] with FallbackingStringCirceEnum[Role] {
 
@@ -67,9 +67,9 @@ object UserType extends StringEnum[UserType] with FallbackingStringCirceEnum[Use
 
 }
 
-case class MailingErrorLog(error: String, date: ZonedDateTime)
+final case class MailingErrorLog(error: String, date: ZonedDateTime)
 
-case class User(
+final case class User(
   userId: UserId,
   email: String,
   firstName: Option[String],
@@ -129,27 +129,18 @@ case class User(
   def isB2C: Boolean = userType == UserType.UserTypeUser
 }
 
-case class UserId(value: String) extends StringValue
+final case class UserId(value: String) extends StringValue
 
 object UserId {
   implicit lazy val userIdEncoder: Encoder[UserId] = (a: UserId) => Json.fromString(a.value)
   implicit lazy val userIdDecoder: Decoder[UserId] =
     Decoder.decodeString.map(UserId(_))
 
-  implicit val userIdFormatter: JsonFormat[UserId] = new JsonFormat[UserId] {
-    override def read(json: JsValue): UserId = json match {
-      case JsString(s) => UserId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: UserId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val userIdFormatter: JsonFormat[UserId] = SprayJsonFormatters.forStringValue(UserId.apply)
 
 }
 
-sealed abstract class ConnectionMode(val value: String) extends StringEnumEntry
+sealed abstract class ConnectionMode(val value: String) extends StringEnumEntry with Product with Serializable
 
 object ConnectionMode extends StringEnum[ConnectionMode] with StringCirceEnum[ConnectionMode] {
 
@@ -161,7 +152,7 @@ object ConnectionMode extends StringEnum[ConnectionMode] with StringCirceEnum[Co
 
 }
 
-case class ReconnectInfo(
+final case class ReconnectInfo(
   reconnectToken: String,
   firstName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")

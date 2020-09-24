@@ -36,6 +36,7 @@ trait ImportTagsData extends Migration with StrictLogging with TagHelper {
   def country: Country
   def language: Language
 
+  @SuppressWarnings(Array("org.wartremover.warts.Null"))
   var question: Question = _
 
   override def initialize(api: MakeApi): Future[Unit] = {
@@ -43,16 +44,17 @@ trait ImportTagsData extends Migration with StrictLogging with TagHelper {
       .findOneBySlug(operationSlug)
       .flatMap {
         case None =>
-          throw new IllegalStateException(s"Unable to find an operation with slug $operationSlug")
+          Future.failed(new IllegalStateException(s"Unable to find an operation with slug $operationSlug"))
         case Some(operation) =>
           api.questionService.findQuestion(Some(operation.operationId), country, language)
       }
-      .map {
+      .flatMap {
         case None =>
-          throw new IllegalStateException(s"Unable to find the question for the operation with slug $operationSlug")
+          Future.failed(
+            new IllegalStateException(s"Unable to find the question for the operation with slug $operationSlug")
+          )
         case Some(q) =>
-          this.question = q
-          ()
+          Future.successful(this.question = q)
       }
   }
 

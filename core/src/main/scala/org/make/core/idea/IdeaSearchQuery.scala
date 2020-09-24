@@ -37,7 +37,7 @@ import org.make.core.reference.Language
   * @param limit   number of items to fetch
   * @param skip    number of items to skip
   */
-case class IdeaSearchQuery(
+final case class IdeaSearchQuery(
   filters: Option[IdeaSearchFilters] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
@@ -52,7 +52,7 @@ case class IdeaSearchQuery(
   * @param name        Name to search into idea
   * @param questionId  The questionId to filter
   */
-case class IdeaSearchFilters(
+final case class IdeaSearchFilters(
   name: Option[NameSearchFilter] = None,
   questionId: Option[QuestionIdSearchFilter] = None,
   status: Option[StatusSearchFilter] = None
@@ -111,7 +111,7 @@ object IdeaSearchFilters extends ElasticDsl {
     def languageOmission(boostedLanguage: String): Double =
       if (ideaSearchQuery.language.contains(Language(boostedLanguage))) 1 else 0
 
-    val query = for {
+    for {
       filters                            <- ideaSearchQuery.filters
       NameSearchFilter(text, maybeFuzzy) <- filters.name
     } yield {
@@ -159,11 +159,6 @@ object IdeaSearchFilters extends ElasticDsl {
             .fields(fieldsBoosts)
       }
     }
-
-    query match {
-      case None => None
-      case _    => query
-    }
   }
 
   def buildQuestionIdSearchFilter(ideaSearchQuery: IdeaSearchQuery): Option[Query] = {
@@ -196,19 +191,19 @@ object IdeaSearchFilters extends ElasticDsl {
 
 }
 
-case class NameSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
-case class QuestionIdSearchFilter(questionId: QuestionId)
-case class OperationIdSearchFilter(operationId: OperationId)
-case class QuestionSearchFilter(question: String)
-case class StatusSearchFilter(status: Seq[IdeaStatus])
-case class ContextSearchFilter(
+final case class NameSearchFilter(text: String, fuzzy: Option[Fuzziness] = None)
+final case class QuestionIdSearchFilter(questionId: QuestionId)
+final case class OperationIdSearchFilter(operationId: OperationId)
+final case class QuestionSearchFilter(question: String)
+final case class StatusSearchFilter(status: Seq[IdeaStatus])
+final case class ContextSearchFilter(
   operation: Option[OperationId] = None,
   source: Option[String] = None,
   location: Option[String] = None,
   question: Option[String] = None
 )
-case class SlugSearchFilter(slug: String)
-case class IdeaSearchFilter(ideaId: IdeaId)
-case class Limit(value: Int)
+final case class SlugSearchFilter(slug: String)
+final case class IdeaSearchFilter(ideaId: IdeaId)
+final case class Limit(value: Int)
 
-case class Skip(value: Int)
+final case class Skip(value: Int)

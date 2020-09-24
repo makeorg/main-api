@@ -27,9 +27,9 @@ import io.circe.{Decoder, Encoder, Json}
 import org.make.core.SprayJsonFormatters._
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
-import org.make.core.{CirceFormatters, MakeSerializable, StringValue, Timestamped}
+import org.make.core.{CirceFormatters, MakeSerializable, SprayJsonFormatters, StringValue, Timestamped}
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 final case class Idea(
   ideaId: IdeaId,
@@ -60,16 +60,7 @@ object IdeaId {
   implicit lazy val ideaIdDecoder: Decoder[IdeaId] =
     Decoder.decodeString.map(IdeaId(_))
 
-  implicit val ideaIdFormatter: JsonFormat[IdeaId] = new JsonFormat[IdeaId] {
-    override def read(json: JsValue): IdeaId = json match {
-      case JsString(value) => IdeaId(value)
-      case other           => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: IdeaId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val ideaIdFormatter: JsonFormat[IdeaId] = SprayJsonFormatters.forStringValue(IdeaId.apply)
 }
 
 sealed abstract class IdeaStatus(val value: String) extends StringEnumEntry

@@ -30,7 +30,7 @@ import org.make.core.user.UserId
 
 import scala.annotation.meta.field
 
-case class OrganisationSearchResponse(
+final case class OrganisationSearchResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
   organisationId: UserId,
   organisationName: Option[String],

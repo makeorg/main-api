@@ -202,7 +202,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
 
 object DefaultPersistentTopIdeaCommentServiceComponent {
 
-  case class PersistentTopIdeaComment(
+  final case class PersistentTopIdeaComment(
     id: String,
     topIdeaId: String,
     personalityId: String,

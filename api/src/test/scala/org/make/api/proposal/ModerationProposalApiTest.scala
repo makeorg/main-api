@@ -520,21 +520,19 @@ class ModerationProposalApiTest
       )
     )
 
-  val indexedProposal: IndexedProposal = mock[IndexedProposal]
-  when(indexedProposal.question).thenReturn(
-    Some(
-      IndexedProposalQuestion(
-        questionId = QuestionId("question-fire-and-ice"),
-        slug = "question-fire-and-ice",
-        title = "title",
-        question = "question ?",
-        countries = NonEmptyList.of(Country("FR")),
-        language = Language("fr"),
-        startDate = None,
-        endDate = None,
-        isOpen = true
-      )
+  val indexedProposal: IndexedProposal = indexedProposal(id = idGenerator.nextProposalId()).copy(question = Some(
+    IndexedProposalQuestion(
+      questionId = QuestionId("question-fire-and-ice"),
+      slug = "question-fire-and-ice",
+      title = "title",
+      question = "question ?",
+      countries = NonEmptyList.of(Country("FR")),
+      language = Language("fr"),
+      startDate = None,
+      endDate = None,
+      isOpen = true
     )
+  )
   )
 
   when(proposalService.getProposalById(eqTo(ProposalId("123456")), any[RequestContext]))

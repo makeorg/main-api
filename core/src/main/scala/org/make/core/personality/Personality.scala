@@ -21,19 +21,19 @@ package org.make.core.personality
 
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
+import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.question.QuestionId
 import org.make.core.user.UserId
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.JsonFormat
 
-case class Personality(
+final case class Personality(
   personalityId: PersonalityId,
   userId: UserId,
   questionId: QuestionId,
   personalityRoleId: PersonalityRoleId
 )
 
-case class PersonalityId(value: String) extends StringValue
+final case class PersonalityId(value: String) extends StringValue
 
 object PersonalityId {
   implicit lazy val personalityIdEncoder: Encoder[PersonalityId] =
@@ -41,21 +41,13 @@ object PersonalityId {
   implicit lazy val personalityIdDecoder: Decoder[PersonalityId] =
     Decoder.decodeString.map(PersonalityId(_))
 
-  implicit val personalityIdFormatter: JsonFormat[PersonalityId] = new JsonFormat[PersonalityId] {
-    override def read(json: JsValue): PersonalityId = json match {
-      case JsString(s) => PersonalityId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: PersonalityId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val personalityIdFormatter: JsonFormat[PersonalityId] =
+    SprayJsonFormatters.forStringValue(PersonalityId.apply)
 }
 
-case class PersonalityRole(personalityRoleId: PersonalityRoleId, name: String)
+final case class PersonalityRole(personalityRoleId: PersonalityRoleId, name: String)
 
-case class PersonalityRoleField(
+final case class PersonalityRoleField(
   personalityRoleFieldId: PersonalityRoleFieldId,
   personalityRoleId: PersonalityRoleId,
   name: String,
@@ -63,7 +55,7 @@ case class PersonalityRoleField(
   required: Boolean
 )
 
-case class PersonalityRoleFieldId(value: String) extends StringValue
+final case class PersonalityRoleFieldId(value: String) extends StringValue
 
 object PersonalityRoleFieldId {
   implicit lazy val personalityRoleFieldIdEncoder: Encoder[PersonalityRoleFieldId] =
@@ -72,19 +64,10 @@ object PersonalityRoleFieldId {
     Decoder.decodeString.map(PersonalityRoleFieldId(_))
 
   implicit val personalityRoleFieldIdFormatter: JsonFormat[PersonalityRoleFieldId] =
-    new JsonFormat[PersonalityRoleFieldId] {
-      override def read(json: JsValue): PersonalityRoleFieldId = json match {
-        case JsString(s) => PersonalityRoleFieldId(s)
-        case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-      }
-
-      override def write(obj: PersonalityRoleFieldId): JsValue = {
-        JsString(obj.value)
-      }
-    }
+    SprayJsonFormatters.forStringValue(PersonalityRoleFieldId.apply)
 }
 
-case class PersonalityRoleId(value: String) extends StringValue
+final case class PersonalityRoleId(value: String) extends StringValue
 
 object PersonalityRoleId {
   implicit lazy val personalityRoleIdEncoder: Encoder[PersonalityRoleId] =
@@ -92,16 +75,8 @@ object PersonalityRoleId {
   implicit lazy val personalityRoleIdDecoder: Decoder[PersonalityRoleId] =
     Decoder.decodeString.map(PersonalityRoleId(_))
 
-  implicit val personalityRoleIdFormatter: JsonFormat[PersonalityRoleId] = new JsonFormat[PersonalityRoleId] {
-    override def read(json: JsValue): PersonalityRoleId = json match {
-      case JsString(s) => PersonalityRoleId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: PersonalityRoleId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val personalityRoleIdFormatter: JsonFormat[PersonalityRoleId] =
+    SprayJsonFormatters.forStringValue(PersonalityRoleId.apply)
 }
 
 sealed abstract class FieldType(val value: String) extends StringEnumEntry

@@ -30,7 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class MakeDowningActor extends Actor with ActorLogging {
 
-  val constructr = Coordination(context.system.name, context.system)
+  private val constructr = Coordination(context.system.name, context.system)
 
   override def preStart(): Unit = {
     context.system.scheduler.scheduleWithFixedDelay(10.seconds, 10.seconds, self, AutoDown)

@@ -28,8 +28,8 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.kafka.common.serialization.Deserializer
 
 class MakeKafkaAvroDeserializer[T](registryUrl: String, format: RecordFormat[T]) extends Deserializer[T] {
-  val identityMapCapacity = 1000
-  val delegate = new KafkaAvroDeserializer(new CachedSchemaRegistryClient(registryUrl, identityMapCapacity))
+  private val identityMapCapacity = 1000
+  private val delegate = new KafkaAvroDeserializer(new CachedSchemaRegistryClient(registryUrl, identityMapCapacity))
 
   override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {
     delegate.configure(configs, isKey)
@@ -39,6 +39,7 @@ class MakeKafkaAvroDeserializer[T](registryUrl: String, format: RecordFormat[T])
     delegate.close()
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   override def deserialize(topic: String, data: Array[Byte]): T = {
     format.from(delegate.deserialize(topic, data).asInstanceOf[GenericRecord])
   }

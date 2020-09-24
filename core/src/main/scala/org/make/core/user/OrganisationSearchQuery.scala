@@ -35,7 +35,7 @@ import org.make.core.user.indexed.OrganisationElasticsearchFieldNames
   * @param skip          number of items to skip
   * @param sortAlgorithm algorithm used for sorting
   */
-case class OrganisationSearchQuery(
+final case class OrganisationSearchQuery(
   filters: Option[OrganisationSearchFilters] = None,
   limit: Option[Int] = None,
   skip: Option[Int] = None,
@@ -54,7 +54,7 @@ case class OrganisationSearchQuery(
   * @param country           Country to filter
   * @param language          Language to filter
   */
-case class OrganisationSearchFilters(
+final case class OrganisationSearchFilters(
   organisationIds: Option[OrganisationIdsSearchFilter] = None,
   organisationName: Option[OrganisationNameSearchFilter] = None,
   slug: Option[SlugSearchFilter] = None,
@@ -195,9 +195,9 @@ object OrganisationSearchFilters extends ElasticDsl {
   }
 }
 
-case class OrganisationIdsSearchFilter(organisationIds: Seq[UserId])
-case class OrganisationNameSearchFilter(text: String)
-case class SlugSearchFilter(slug: String)
-case class DescriptionSearchFilter(description: String)
-case class CountrySearchFilter(country: Country)
-case class LanguageSearchFilter(language: Language)
+final case class OrganisationIdsSearchFilter(organisationIds: Seq[UserId])
+final case class OrganisationNameSearchFilter(text: String)
+final case class SlugSearchFilter(slug: String)
+final case class DescriptionSearchFilter(description: String)
+final case class CountrySearchFilter(country: Country)
+final case class LanguageSearchFilter(language: Language)

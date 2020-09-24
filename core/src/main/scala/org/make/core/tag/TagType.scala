@@ -22,9 +22,9 @@ package org.make.core.tag
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
+import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.JsonFormat
 
 final case class TagTypeId(value: String) extends StringValue
 
@@ -32,16 +32,7 @@ object TagTypeId {
   implicit lazy val tagIdEncoder: Encoder[TagTypeId] = (a: TagTypeId) => Json.fromString(a.value)
   implicit lazy val tagIdDecoder: Decoder[TagTypeId] = Decoder.decodeString.map(TagTypeId(_))
 
-  implicit val tagIdFormatter: JsonFormat[TagTypeId] = new JsonFormat[TagTypeId] {
-    override def read(json: JsValue): TagTypeId = json match {
-      case JsString(s) => TagTypeId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: TagTypeId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val tagIdFormatter: JsonFormat[TagTypeId] = SprayJsonFormatters.forStringValue(TagTypeId.apply)
 
 }
 

@@ -19,6 +19,7 @@
 
 package org.make.api.sequence
 
+import cats.syntax.list._
 import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
@@ -128,7 +129,7 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
     ): Future[Option[SequenceResult]] = {
 
       logger.warn(
-        s"Sequence fallback for user ${requestContext.sessionId} and question ${sequenceConfiguration.questionId}"
+        s"Sequence fallback for user ${requestContext.sessionId.value} and question ${sequenceConfiguration.questionId.value}"
       )
 
       val proposalsToExclude: Seq[ProposalId] = proposalsVoted ++ initialSequenceProposals.map(_.id)
@@ -251,8 +252,8 @@ trait DefaultSequenceServiceComponent extends SequenceServiceComponent {
         allNewProposals    <- futureNewProposalsPool(maybeSegment, proposalsVoted)
         allTestedProposals <- futureTestedProposalsPool(maybeSegment, proposalsVoted)
 
-        newProposals = allNewProposals.groupBy(_.userId).values.map(_.head).toSeq
-        testedProposals = allTestedProposals.groupBy(_.userId).values.map(_.head).toSeq
+        newProposals = allNewProposals.toList.groupByNel(_.userId).values.map(_.head).toSeq
+        testedProposals = allTestedProposals.toList.groupByNel(_.userId).values.map(_.head).toSeq
         // votes should equal proposalsVoted as new/tested pools are filtered from proposalsVoted
         votes = proposalsVoted.filter(
           id => newProposals.map(_.id).contains(id) || testedProposals.map(_.id).contains(id)

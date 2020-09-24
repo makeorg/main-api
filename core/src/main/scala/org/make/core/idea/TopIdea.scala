@@ -21,9 +21,9 @@ package org.make.core.idea
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
+import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.question.QuestionId
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.JsonFormat
 
 final case class TopIdeaId(value: String) extends StringValue
 
@@ -33,16 +33,7 @@ object TopIdeaId {
   implicit lazy val topIdeaIdDecoder: Decoder[TopIdeaId] =
     Decoder.decodeString.map(TopIdeaId(_))
 
-  implicit val topIdeaIdFormatter: JsonFormat[TopIdeaId] = new JsonFormat[TopIdeaId] {
-    override def read(json: JsValue): TopIdeaId = json match {
-      case JsString(value) => TopIdeaId(value)
-      case other           => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: TopIdeaId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val topIdeaIdFormatter: JsonFormat[TopIdeaId] = SprayJsonFormatters.forStringValue(TopIdeaId.apply)
 }
 
 final case class TopIdea(

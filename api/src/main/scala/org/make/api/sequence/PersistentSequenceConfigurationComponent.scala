@@ -167,11 +167,8 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
     override def persist(sequenceConfig: SequenceConfiguration): Future[Boolean] = {
       implicit val context: EC = readExecutionContext
       findOne(sequenceConfig.sequenceId).flatMap {
-        case Some(_) => updateConfig(sequenceConfig)
+        case Some(_) => updateConfig(sequenceConfig).map(_ == 1)
         case None    => insertConfig(sequenceConfig)
-      }.map {
-        case result: Boolean => result
-        case result: Int     => result == 1
       }
     }
     override def delete(questionId: QuestionId): Future[Unit] = {
@@ -188,7 +185,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
 
 object DefaultPersistentSequenceConfigurationServiceComponent {
 
-  case class PersistentSequenceConfiguration(
+  final case class PersistentSequenceConfiguration(
     sequenceId: String,
     questionId: String,
     newProposalsRatio: Double,

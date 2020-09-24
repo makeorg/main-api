@@ -74,7 +74,7 @@ trait TagHelper {
 }
 
 object TagHelper {
-  case class TagsDataLine(
+  final case class TagsDataLine(
     label: String,
     tagTypeId: TagTypeId,
     tagDisplay: TagDisplay,

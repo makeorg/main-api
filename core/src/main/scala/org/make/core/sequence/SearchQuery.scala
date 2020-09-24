@@ -39,7 +39,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
   * @param limit   number of items to fetch
   * @param skip    number of items to skip
   */
-case class SearchQuery(
+final case class SearchQuery(
   filters: Option[SearchFilters] = None,
   sorts: Seq[Sort] = Seq.empty,
   limit: Option[Int] = None,
@@ -59,7 +59,7 @@ object SearchQuery {
   * @param status  The Status of sequence
   * @param context The Context of sequence
   */
-case class SearchFilters(
+final case class SearchFilters(
   title: Option[TitleSearchFilter] = None,
   slug: Option[SlugSearchFilter] = None,
   status: Option[StatusSearchFilter] = None,
@@ -230,35 +230,35 @@ object SearchFilters extends ElasticDsl {
   }
 }
 
-case class TagsSearchFilter(tagIds: Seq[TagId])
+final case class TagsSearchFilter(tagIds: Seq[TagId])
 object TagsSearchFilter {
   implicit val tagsSearchFilterFormatted: RootJsonFormat[TagsSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(TagsSearchFilter.apply)
 
 }
 
-case class TitleSearchFilter(text: String, fuzzy: Option[Int] = None)
+final case class TitleSearchFilter(text: String, fuzzy: Option[Int] = None)
 object TitleSearchFilter {
   implicit val titleSearchFilterFormatted: RootJsonFormat[TitleSearchFilter] =
     DefaultJsonProtocol.jsonFormat2(TitleSearchFilter.apply)
 
 }
 
-case class SlugSearchFilter(text: String)
+final case class SlugSearchFilter(text: String)
 object SlugSearchFilter {
   implicit val slugSearchFilterFormatted: RootJsonFormat[SlugSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(SlugSearchFilter.apply)
 
 }
 
-case class StatusSearchFilter(status: SequenceStatus)
+final case class StatusSearchFilter(status: SequenceStatus)
 object StatusSearchFilter extends SprayJsonFormatters {
   implicit val statusSearchFilterFormatted: RootJsonFormat[StatusSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(StatusSearchFilter.apply)
 
 }
 
-case class ContextSearchFilter(
+final case class ContextSearchFilter(
   operation: Option[OperationId],
   source: Option[String],
   location: Option[String],
@@ -271,20 +271,20 @@ object ContextSearchFilter {
 
 }
 
-case class OperationSearchFilter(operationId: OperationId)
+final case class OperationSearchFilter(operationId: OperationId)
 object OperationSearchFilter {
   implicit val operationSearchFilterFormatted: RootJsonFormat[OperationSearchFilter] =
     DefaultJsonProtocol.jsonFormat1(OperationSearchFilter.apply)
 }
 
-case class Limit(value: Int)
+final case class Limit(value: Int)
 object Limit {
   implicit val limitFormatted: RootJsonFormat[Limit] =
     DefaultJsonProtocol.jsonFormat1(Limit.apply)
 
 }
 
-case class Skip(value: Int)
+final case class Skip(value: Int)
 object Skip {
   implicit val skipFormatted: RootJsonFormat[Skip] =
     DefaultJsonProtocol.jsonFormat1(Skip.apply)

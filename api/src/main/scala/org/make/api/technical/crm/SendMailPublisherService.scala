@@ -462,7 +462,7 @@ trait DefaultSendMailPublisherServiceComponent
           .orFail(s"proposal ${proposal.proposalId} doesn't have a question!")
         question <- OptionT(questionService.getQuestion(questionId))
           .orFail(
-            s"question ${proposal.questionId.getOrElse("''")} not found, it is on proposal ${proposal.proposalId}"
+            s"question ${proposal.questionId.fold("''")(_.value)} not found, it is on proposal ${proposal.proposalId}"
           )
         crmTemplates <- OptionT(crmTemplatesService.findOne(Some(questionId), getLocale(user.country, user.language))).orFail {
           val locale = getLocale(user.country, user.language)

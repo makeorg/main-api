@@ -21,11 +21,12 @@ package org.make.api.technical
 
 import scalikejdbc.{DBConnection, DBSession, Tx, TxBoundary}
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 object DatabaseTransactions {
 
-  val retries = 5
+  private val retries = 5
 
   implicit class RichDatabase(val self: DBConnection) extends AnyVal {
 
@@ -34,6 +35,8 @@ object DatabaseTransactions {
         finishInternal(result, tx, retries)
       }
 
+      @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+      @tailrec
       private def finishInternal(result: A, tx: Tx, retries: Int): A = {
         (retries, Try(tx.commit())) match {
           case (_, Success(_)) => result

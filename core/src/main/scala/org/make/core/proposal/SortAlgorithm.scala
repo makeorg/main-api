@@ -139,7 +139,7 @@ final case class ActorVoteAlgorithm(override val seed: Int) extends SortAlgorith
 }
 
 // Sort proposal by their controversy score
-case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
+final case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
       .sortByFieldDesc(ProposalElasticsearchFieldName.controversy.field)
@@ -155,7 +155,7 @@ case class ControversyAlgorithm(threshold: Double, votesCountThreshold: Int) ext
 }
 
 // Sort proposal by their top score
-case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
+final case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
       .sortByFieldDesc(ProposalElasticsearchFieldName.scoreLowerBound.field)
@@ -164,7 +164,7 @@ case class PopularAlgorithm(votesCountThreshold: Int) extends SortAlgorithm {
 }
 
 // Sort proposal by their realistic score
-case class RealisticAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
+final case class RealisticAlgorithm(threshold: Double, votesCountThreshold: Int) extends SortAlgorithm {
   override def sortDefinition(request: SearchRequest): SearchRequest = {
     request
       .sortByFieldDesc(ProposalElasticsearchFieldName.scoreRealistic.field)

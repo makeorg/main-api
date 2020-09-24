@@ -344,7 +344,7 @@ private object OrganisationValidation {
   }
 }
 
-case class OrganisationResponse(
+final case class OrganisationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d5612156-4954-49f7-9c78-0eda3d44164c")
   id: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")

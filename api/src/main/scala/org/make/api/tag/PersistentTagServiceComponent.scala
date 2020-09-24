@@ -65,7 +65,11 @@ trait PersistentTagService {
   def count(persistentTagFilter: PersistentTagFilter): Future[Int]
 }
 
-case class PersistentTagFilter(label: Option[String], questionId: Option[QuestionId], tagTypeId: Option[TagTypeId])
+final case class PersistentTagFilter(
+  label: Option[String],
+  questionId: Option[QuestionId],
+  tagTypeId: Option[TagTypeId]
+)
 object PersistentTagFilter {
   def empty: PersistentTagFilter = PersistentTagFilter(None, None, None)
 }
@@ -334,7 +338,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
 
 object DefaultPersistentTagServiceComponent {
 
-  case class PersistentTag(
+  final case class PersistentTag(
     id: String,
     label: String,
     display: TagDisplay,

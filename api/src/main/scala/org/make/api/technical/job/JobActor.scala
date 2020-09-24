@@ -90,21 +90,21 @@ object JobActor {
     }
 
     object Command {
-      case class Start(id: JobId) extends Command
-      case class Heartbeat(id: JobId) extends Command
-      case class Report(id: JobId, progress: Progress) extends Command
-      case class Finish(id: JobId, failure: Option[Throwable]) extends Command
-      case class Get(id: JobId) extends Command
-      case class Kill(id: JobId) extends Command
+      final case class Start(id: JobId) extends Command
+      final case class Heartbeat(id: JobId) extends Command
+      final case class Report(id: JobId, progress: Progress) extends Command
+      final case class Finish(id: JobId, failure: Option[Throwable]) extends Command
+      final case class Get(id: JobId) extends Command
+      final case class Kill(id: JobId) extends Command
     }
 
     sealed abstract class Response extends Protocol
 
     object Response {
-      case class JobAcceptance(isAccepted: Boolean) extends Response
-      case object Ack extends Response
-      case object NotRunning extends Response
-      case class State(value: Option[Job]) extends Response
+      final case class JobAcceptance(isAccepted: Boolean) extends Response
+      final case object Ack extends Response
+      final case object NotRunning extends Response
+      final case class State(value: Option[Job]) extends Response
     }
 
   }

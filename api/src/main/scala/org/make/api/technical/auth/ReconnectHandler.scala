@@ -40,13 +40,18 @@ class Reconnect extends GrantHandler {
   )(implicit ctx: ExecutionContext): Future[GrantHandlerResult[U]] = {
 
     val reconnectRequest = ReconnectRequest(request)
-    handler.findUser(maybeValidatedClientCred, reconnectRequest).flatMap { maybeUser =>
-      val user = maybeUser.getOrElse(throw new InvalidGrant("reconnect token or password is incorrect"))
-      val scope = reconnectRequest.scope
-      val authInfo = AuthInfo(user, maybeValidatedClientCred.map(_.clientId), scope, None)
+    handler
+      .findUser(maybeValidatedClientCred, reconnectRequest)
+      .flatMap {
+        case Some(user) => Future.successful(user)
+        case _          => Future.failed(new InvalidGrant("reconnect token or password is incorrect"))
+      }
+      .flatMap { user =>
+        val scope = reconnectRequest.scope
+        val authInfo = AuthInfo(user, maybeValidatedClientCred.map(_.clientId), scope, None)
 
-      issueAccessToken(handler, authInfo)
-    }
+        issueAccessToken(handler, authInfo)
+      }
   }
 }
 
@@ -54,7 +59,7 @@ object Reconnect {
   val RECONNECT_TOKEN = "reconnect_token"
 }
 
-case class ReconnectRequest(request: AuthorizationRequest)
+final case class ReconnectRequest(request: AuthorizationRequest)
     extends AuthorizationRequest(request.headers, request.params) {
 
   def reconnectToken: String = requireParam("reconnect_token")

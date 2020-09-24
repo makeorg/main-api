@@ -335,6 +335,7 @@ object UserHistorySerializers extends SprayJsonFormatters {
               voteAndQualifications.map {
                 case (key, proposalVotes) =>
                   val fields: Map[String, JsValue] = proposalVotes.fields
+                  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
                   val qualifications =
                     fields("qualificationKeys").asInstanceOf[JsArray].elements.map(_.asInstanceOf[JsString])
                   val newQualifications: Map[String, JsValue] = qualifications.map(_.value -> JsString("trusted")).toMap

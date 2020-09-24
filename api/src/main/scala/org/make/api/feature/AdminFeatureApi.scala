@@ -296,13 +296,13 @@ trait DefaultAdminFeatureApiComponent
   }
 }
 
-case class CreateFeatureRequest(name: String, slug: String)
+final case class CreateFeatureRequest(name: String, slug: String)
 
 object CreateFeatureRequest {
   implicit val decoder: Decoder[CreateFeatureRequest] = deriveDecoder[CreateFeatureRequest]
 }
 
-case class UpdateFeatureRequest(name: String, slug: String)
+final case class UpdateFeatureRequest(name: String, slug: String)
 
 object UpdateFeatureRequest {
   implicit val decoder: Decoder[UpdateFeatureRequest] = deriveDecoder[UpdateFeatureRequest]

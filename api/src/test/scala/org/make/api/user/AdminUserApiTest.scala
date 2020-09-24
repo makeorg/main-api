@@ -53,7 +53,7 @@ class AdminUserApiTest
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val storageService: StorageService = mock[StorageService]
-  override val storageConfiguration: StorageConfiguration = mock[StorageConfiguration]
+  override val storageConfiguration: StorageConfiguration = StorageConfiguration("", "", 4242L)
 
   val routes: Route = sealRoute(handleRejections(MakeApi.rejectionHandler) {
     adminUserApi.routes
@@ -905,8 +905,6 @@ class AdminUserApiTest
   }
 
   Feature("upload avatar") {
-    val maxUploadFileSize = 4242L
-    when(storageConfiguration.maxFileSize).thenReturn(maxUploadFileSize)
     Scenario("unauthorized not connected") {
       Post(s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}") ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
@@ -976,7 +974,7 @@ class AdminUserApiTest
 
       Post(
         s"/admin/users/upload-avatar/${UserType.UserTypeOrganisation.value}",
-        entityOfSize(maxUploadFileSize.toInt + 1)
+        entityOfSize(storageConfiguration.maxFileSize.toInt + 1)
       ).withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.PayloadTooLarge)
       }

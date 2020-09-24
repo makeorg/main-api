@@ -151,7 +151,7 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
 
 object DefaultPersistentPersonalityRoleServiceComponent {
 
-  case class PersistentPersonalityRole(id: String, name: String) {
+  final case class PersistentPersonalityRole(id: String, name: String) {
     def toPersonalityRole: PersonalityRole = {
       PersonalityRole(personalityRoleId = PersonalityRoleId(id), name = name)
     }

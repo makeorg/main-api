@@ -38,11 +38,11 @@ import org.make.core.sequence.SequenceId
 import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import org.make.core.user.UserId
 import spray.json.DefaultJsonProtocol._
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat}
+import spray.json.{DefaultJsonProtocol, JsonFormat, RootJsonFormat}
 
 import scala.annotation.meta.field
 
-case class QuestionWithDetails(question: Question, details: OperationOfQuestion)
+final case class QuestionWithDetails(question: Question, details: OperationOfQuestion)
 
 final case class Operation(
   status: OperationStatus,
@@ -66,16 +66,7 @@ object OperationId {
   implicit lazy val operationIdDecoder: Decoder[OperationId] =
     Decoder.decodeString.map(OperationId(_))
 
-  implicit val operationIdFormatter: JsonFormat[OperationId] = new JsonFormat[OperationId] {
-    override def read(json: JsValue): OperationId = json match {
-      case JsString(s) => OperationId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: OperationId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val operationIdFormatter: JsonFormat[OperationId] = SprayJsonFormatters.forStringValue(OperationId.apply)
 }
 
 final case class IntroCard(
@@ -280,7 +271,7 @@ object OperationStatus
 
 }
 
-case class SimpleOperation(
+final case class SimpleOperation(
   operationId: OperationId,
   status: OperationStatus,
   slug: String,
@@ -296,7 +287,7 @@ object SimpleOperation extends CirceFormatters {
   implicit val decoder: Decoder[SimpleOperation] = deriveDecoder[SimpleOperation]
 }
 
-sealed abstract class OperationKind(val value: String) extends StringEnumEntry
+sealed abstract class OperationKind(val value: String) extends StringEnumEntry with Product with Serializable
 
 object OperationKind
     extends StringEnum[OperationKind]

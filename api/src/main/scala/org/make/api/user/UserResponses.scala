@@ -33,7 +33,7 @@ import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
 
 import scala.annotation.meta.field
 
-case class UserResponse(
+final case class UserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55") userId: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],
@@ -92,7 +92,7 @@ object UserResponse extends CirceFormatters {
   )
 }
 
-case class CurrentUserResponse(
+final case class CurrentUserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "9bccc3ce-f5b9-47c0-b907-01a9cb159e55")
   userId: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
@@ -121,7 +121,7 @@ object CurrentUserResponse {
   implicit val decoder: Decoder[CurrentUserResponse] = deriveDecoder[CurrentUserResponse]
 }
 
-case class UserProfileResponse(
+final case class UserProfileResponse(
   firstName: Option[String],
   lastName: Option[String],
   dateOfBirth: Option[LocalDate],
@@ -138,7 +138,10 @@ object UserProfileResponse {
   implicit val decoder: Decoder[UserProfileResponse] = deriveDecoder[UserProfileResponse]
 }
 
-case class MailingErrorLogResponse(error: String, @(ApiModelProperty @field)(dataType = "dateTime") date: ZonedDateTime)
+final case class MailingErrorLogResponse(
+  error: String,
+  @(ApiModelProperty @field)(dataType = "dateTime") date: ZonedDateTime
+)
 
 object MailingErrorLogResponse extends CirceFormatters {
   implicit val encoder: Encoder[MailingErrorLogResponse] = deriveEncoder[MailingErrorLogResponse]
@@ -148,7 +151,7 @@ object MailingErrorLogResponse extends CirceFormatters {
     MailingErrorLogResponse(error = mailingErrorLog.error, date = mailingErrorLog.date)
 }
 
-case class ProfileResponse(
+final case class ProfileResponse(
   @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: Option[LocalDate],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String],

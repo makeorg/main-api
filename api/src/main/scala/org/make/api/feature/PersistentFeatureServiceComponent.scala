@@ -200,7 +200,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
 
 object DefaultPersistentFeatureServiceComponent {
 
-  case class PersistentFeature(id: String, slug: String, name: String) {
+  final case class PersistentFeature(id: String, slug: String, name: String) {
     def toFeature: Feature =
       Feature(featureId = FeatureId(id), slug = slug, name = name)
   }

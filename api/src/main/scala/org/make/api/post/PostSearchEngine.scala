@@ -71,7 +71,7 @@ trait DefaultPostSearchEngineComponent extends PostSearchEngineComponent with Ci
       val searchFilters = PostSearchFilters.getPostSearchFilters(query)
       val request: SearchRequest = searchWithType(postAlias)
         .bool(BoolQuery(must = searchFilters))
-        .sortBy(PostSearchFilters.getSort(query))
+        .sortBy(PostSearchFilters.getSort(query).toList)
         .size(PostSearchFilters.getLimitSearch(query))
         .from(PostSearchFilters.getSkipSearch(query))
 

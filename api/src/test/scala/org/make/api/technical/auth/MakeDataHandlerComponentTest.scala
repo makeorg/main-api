@@ -133,8 +133,9 @@ class MakeDataHandlerComponentTest
   val persistentClientService: PersistentClientService = mock[PersistentClientService]
   val request: AuthorizationRequest = mock[AuthorizationRequest]
   val requestWithRoles: AuthorizationRequest = mock[AuthorizationRequest]
-  val exampleUser: User = mock[User]
-  val exampleUserWithRoles: User = mock[User]
+  val exampleUser: User = user(id = idGenerator.nextUserId(), roles = Nil)
+  val exampleUserWithRoles: User =
+    user(id = idGenerator.nextUserId(), roles = Seq(CustomRole("role-client"), CustomRole("role-admin-client")))
   val exampleToken = Token(
     accessToken = "access_token",
     refreshToken = Some("refresh_token"),
@@ -196,7 +197,6 @@ class MakeDataHandlerComponentTest
     .thenReturn(Future.successful(exampleUser))
   when(persistentUserService.findByEmailAndPassword(eqTo(validUsername), any[String]))
     .thenReturn(Future.successful(Some(exampleUser)))
-  when(exampleUser.roles).thenReturn(Seq.empty)
 
   when(persistentUserService.verificationTokenExists(any[String])).thenReturn(Future(false))
 
@@ -275,7 +275,6 @@ class MakeDataHandlerComponentTest
         persistentUserService
           .findByEmailAndPassword(eqTo(validUsernameWithRoles), any[String])
       ).thenReturn(Future.successful(Some(exampleUserWithRoles)))
-      when(exampleUserWithRoles.roles).thenReturn(Seq(CustomRole("role-client"), CustomRole("role-admin-client")))
 
       Given("a valid client")
       val clientCredential = ClientCredential(clientId = clientWithRolesId, clientSecret = secret)

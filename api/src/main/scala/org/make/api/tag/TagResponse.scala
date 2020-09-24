@@ -29,7 +29,7 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import scala.annotation.meta.field
 
 @ApiModel
-case class TagResponse(
+final case class TagResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "cb46cea0-e6a0-430a-a4e4-cc05860eea5d") id: TagId,
   label: String,
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "DISPLAYED,HIDDEN,INHERIT") display: TagDisplay,

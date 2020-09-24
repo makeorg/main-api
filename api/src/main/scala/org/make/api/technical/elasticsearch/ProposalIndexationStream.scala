@@ -229,6 +229,7 @@ trait ProposalIndexationStream
     maybeResult.value
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   private def createIndexedProposal(
     proposal: Proposal,
     segment: Option[String],
@@ -378,5 +379,5 @@ trait ProposalIndexationStream
 sealed trait ProposalFlow {
   val proposal: IndexedProposal
 }
-case class IndexProposalFlow(override val proposal: IndexedProposal) extends ProposalFlow
-case class UpdateProposalFlow(override val proposal: IndexedProposal) extends ProposalFlow
+final case class IndexProposalFlow(override val proposal: IndexedProposal) extends ProposalFlow
+final case class UpdateProposalFlow(override val proposal: IndexedProposal) extends ProposalFlow

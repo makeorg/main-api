@@ -46,10 +46,10 @@ trait BuildInfoRoutes extends MakeDirectives {
 
 }
 
-case class BuildInformation(
+final case class BuildInformation(
   name: String = BuildInfo.name,
   version: String = BuildInfo.version,
-  gitHeadCommit: String = BuildInfo.gitHeadCommit.get,
+  gitHeadCommit: String = BuildInfo.gitHeadCommit.getOrElse("no commit information"),
   gitBranch: String = BuildInfo.gitCurrentBranch,
   buildTime: String = BuildInfo.buildTime
 )

@@ -36,6 +36,7 @@ import org.make.core.user.UserId
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@SuppressWarnings(Array("org.wartremover.warts.Throw"))
 trait ParameterExtractors {
 
   implicit def eitherNoneOrT[T](

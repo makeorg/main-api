@@ -24,9 +24,9 @@ import java.util.Date
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.sessionhistory.{SessionHistoryCoordinatorService, SessionHistoryCoordinatorServiceComponent}
-import org.make.api.technical.ReadJournalComponent.MakeReadJournal
 import org.make.api.technical._
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandler, MakeDataHandlerComponent}
 import org.make.api.userhistory.{UserHistoryCoordinatorService, UserHistoryCoordinatorServiceComponent}
@@ -63,6 +63,8 @@ trait MakeApiTestBase
     with MakeSettingsComponent
     with ActorSystemComponent {
   this: MakeAuthentication =>
+
+  type MakeReadJournal = CassandraReadJournal
 
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val idGenerator: IdGenerator = mock[IdGenerator]

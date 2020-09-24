@@ -24,9 +24,9 @@ import java.time.ZonedDateTime
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
+import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.user.UserId
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.JsonFormat
 
 final case class TopIdeaCommentId(value: String) extends StringValue
 
@@ -36,16 +36,8 @@ object TopIdeaCommentId {
   implicit lazy val topIdeaCommentIdDecoder: Decoder[TopIdeaCommentId] =
     Decoder.decodeString.map(TopIdeaCommentId(_))
 
-  implicit val topIdeaCommentIdFormatter: JsonFormat[TopIdeaCommentId] = new JsonFormat[TopIdeaCommentId] {
-    override def read(json: JsValue): TopIdeaCommentId = json match {
-      case JsString(value) => TopIdeaCommentId(value)
-      case other           => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: TopIdeaCommentId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val topIdeaCommentIdFormatter: JsonFormat[TopIdeaCommentId] =
+    SprayJsonFormatters.forStringValue(TopIdeaCommentId.apply)
 }
 
 final case class TopIdeaComment(

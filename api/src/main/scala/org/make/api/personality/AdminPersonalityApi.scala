@@ -397,7 +397,7 @@ object UpdatePersonalityRequest {
   implicit val decoder: Decoder[UpdatePersonalityRequest] = deriveDecoder[UpdatePersonalityRequest]
 }
 
-case class PersonalityResponse(
+final case class PersonalityResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "d22c8e70-f709-42ff-8a52-9398d159c753") id: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org") email: String,
   firstName: Option[String],

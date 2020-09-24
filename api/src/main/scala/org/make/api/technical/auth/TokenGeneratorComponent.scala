@@ -47,6 +47,7 @@ trait DefaultTokenGeneratorComponent extends TokenGeneratorComponent {
     override def tokenToHash(token: String): String =
       SecurityHelper.defaultHash(token).toUpperCase()
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def generateToken(
       tokenExistsFunction: String => Future[Boolean],
       depth: Int = MAX_RETRY

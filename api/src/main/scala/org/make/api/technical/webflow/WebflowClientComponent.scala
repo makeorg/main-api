@@ -203,9 +203,9 @@ object WebflowClientException {
         extends QueueException("Queue was closed (pool shut down) while running the request. Try again later.")
   }
 
-  case class RequestException(action: String, code: StatusCode, response: String)
+  final case class RequestException(action: String, code: StatusCode, response: String)
       extends WebflowClientException(s"$action failed with status $code: $response")
-  case class RateLimitException(maxLimit: String, response: String)
+  final case class RateLimitException(maxLimit: String, response: String)
       extends WebflowClientException(s"Rate limit reached ($maxLimit per minute): $response")
 }
 
@@ -229,7 +229,7 @@ object WebflowItems {
   type PostWebflowItemResponse = WebflowItems[WebflowPost]
 }
 
-case class WebflowItemMetas(
+final case class WebflowItemMetas(
   archived: Boolean,
   draft: Boolean,
   id: String,
@@ -263,7 +263,7 @@ object WebflowItemMetas {
 
 }
 
-case class WebflowItem[Item](item: Item, metas: WebflowItemMetas)
+final case class WebflowItem[Item](item: Item, metas: WebflowItemMetas)
 
 object WebflowItem {
   implicit def decoder[Item: Decoder]: Decoder[WebflowItem[Item]] =
@@ -276,7 +276,7 @@ object WebflowItem {
     implicit val webflowImageRefDecoder: Decoder[WebflowImageRef] = deriveDecoder[WebflowImageRef]
   }
 
-  case class WebflowPost(
+  final case class WebflowPost(
     id: String,
     archived: Boolean,
     draft: Boolean,

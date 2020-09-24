@@ -229,6 +229,7 @@ class UserHistoryActor
     context.become(migrating(Seq.empty))
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def migrating(pendingEvents: Seq[(ActorRef, Any)]): Receive = {
     case MigrationCompletedWithNewState(newState) =>
       context.become(receiveCommand)
@@ -311,15 +312,15 @@ object UserHistoryActor {
   ) extends UserRelatedEvent
   final case class InjectSessionEvents(userId: UserId, events: Seq[UserHistoryEvent[_]]) extends UserRelatedEvent
 
-  case class ReloadState(userId: UserId) extends UserRelatedEvent
+  final case class ReloadState(userId: UserId) extends UserRelatedEvent
 
   case object SessionEventsInjected extends UserHistoryActorProtocol
 
   case object LogAcknowledged extends UserHistoryActorProtocol
 
-  case class MigrationCompletedWithNewState(newState: Option[UserVotesAndQualifications])
+  final case class MigrationCompletedWithNewState(newState: Option[UserVotesAndQualifications])
       extends UserHistoryActorProtocol
-  case class MigrationFailure(e: Throwable) extends UserHistoryActorProtocol
+  final case class MigrationFailure(e: Throwable) extends UserHistoryActorProtocol
 
   final case class UserVotedProposals(proposals: Seq[ProposalId]) extends UserHistoryActorProtocol with VotedProposals
   final case class UserVotesValues(votesValues: Map[ProposalId, VoteAndQualifications])

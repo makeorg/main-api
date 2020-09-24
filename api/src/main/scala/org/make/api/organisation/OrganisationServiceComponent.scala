@@ -104,7 +104,7 @@ trait OrganisationService extends ShortenedNames {
   ): Future[ProposalsResultWithUserVoteSeededResponse]
 }
 
-case class OrganisationRegisterData(
+final case class OrganisationRegisterData(
   name: String,
   email: String,
   password: Option[String],
@@ -115,7 +115,7 @@ case class OrganisationRegisterData(
   website: Option[String]
 )
 
-case class OrganisationUpdateData(
+final case class OrganisationUpdateData(
   name: Option[String],
   email: Option[String],
   avatar: Option[String],

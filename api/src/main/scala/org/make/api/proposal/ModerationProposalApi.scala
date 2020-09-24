@@ -524,9 +524,8 @@ trait DefaultModerationProposalApiComponent
                     }
 
                     val contextFilterRequest: Option[ContextFilterRequest] =
-                      operationId.orElse(source).orElse(location).orElse(question).map { _ =>
-                        ContextFilterRequest(operationId, source, location, question)
-                      }
+                      ContextFilterRequest.parse(operationId, source, location, question)
+
                     val exhaustiveSearchRequest: ExhaustiveSearchRequest = ExhaustiveSearchRequest(
                       proposalIds = proposalIds,
                       initialProposal = initialProposal,

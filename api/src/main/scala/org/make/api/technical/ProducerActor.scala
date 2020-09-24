@@ -66,6 +66,7 @@ abstract class ProducerActor[Wrapper, Event]
     new KafkaProducer(props, new StringSerializer(), valueSerializer)
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Null"))
   protected def sendRecord(kafkaTopic: String, record: Wrapper): Unit = {
     producer.send(
       new ProducerRecord[String, Wrapper](kafkaTopic, None.orNull, System.currentTimeMillis(), None.orNull, record),

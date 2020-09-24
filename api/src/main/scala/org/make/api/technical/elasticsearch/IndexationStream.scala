@@ -28,7 +28,7 @@ trait IndexationStream {
   val parallelism = 5
   val singleAsync = 1
 
-  def filterIsDefined[T]: Flow[Option[T], T, NotUsed] = Flow[Option[T]].filter(_.isDefined).map(_.get)
+  def filterIsDefined[T]: Flow[Option[T], T, NotUsed] = Flow[Option[T]].collect { case Some(t) => t }
   def filterIsEmpty[T](item: T): Flow[Option[T], T, NotUsed] = Flow[Option[T]].filter(_.isEmpty).map(_ => item)
   def grouped[T]: Flow[T, Seq[T], NotUsed] = Flow[T].groupedWithin(10, 20.milliseconds)
 

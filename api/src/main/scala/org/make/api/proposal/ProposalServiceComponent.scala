@@ -799,11 +799,11 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       val inSequence = page.contains("sequence") | page.contains("widget")
       (proposalKey, proposalKey.contains(newHash), inSequence, isInSegment) match {
         case (None, _, _, _) =>
-          logger.warn(s"No proposal key for proposal $proposalId, on context $requestContext")
+          logger.warn(s"No proposal key for proposal ${proposalId.value}, on context ${requestContext.toString}")
           incrementTrollCounter(requestContext)
           Troll
         case (Some(_), false, _, _) =>
-          logger.warn(s"Bad proposal key found for proposal $proposalId, on context $requestContext")
+          logger.warn(s"Bad proposal key found for proposal ${proposalId.value}, on context ${requestContext.toString}")
           incrementTrollCounter(requestContext)
           Troll
         case (Some(_), true, true, true) => Segment
@@ -1095,6 +1095,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             sortAlgorithm = Some(B2BFirstAlgorithm)
           )
         ).flatMap { results =>
+          @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
           def recursiveLock(availableProposals: List[ProposalId]): Future[Option[ModerationProposalResponse]] = {
             availableProposals match {
               case Nil => Future.successful(None)

@@ -156,7 +156,7 @@ object ProposalElasticsearchFieldName extends StringEnum[ProposalElasticsearchFi
   override def values: IndexedSeq[ProposalElasticsearchFieldName] = findValues
 }
 
-case class IndexedProposal(
+final case class IndexedProposal(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
   id: ProposalId,
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")

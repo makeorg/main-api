@@ -46,6 +46,7 @@ import scala.jdk.CollectionConverters._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.HttpConnectionContext
 
+@SuppressWarnings(Array("org.wartremover.warts.While"))
 object MakeMain extends App with StrictLogging with MakeApi {
 
   Thread.setDefaultUncaughtExceptionHandler { (thread, exception) =>
@@ -54,7 +55,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   val envName: Option[String] = Option(System.getenv("ENV_NAME"))
 
-  val resourceName = envName match {
+  private val resourceName = envName match {
     case Some(name) if !name.isEmpty => s"$name-application.conf"
     case None                        => "default-application.conf"
   }
@@ -78,6 +79,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       .resolve()
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   override implicit val actorSystem: ExtendedActorSystem =
     ActorSystem.apply("make-api", configuration).asInstanceOf[ExtendedActorSystem]
 
@@ -88,19 +90,20 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   Kamon.init(configuration)
 
-  val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
+  private val databaseConfiguration = actorSystem.registerExtension(DatabaseConfiguration)
 
   Await.result(elasticsearchClient.initialize(), 10.seconds)
 
   Await.result(swiftClient.init(), 10.seconds)
 
-  val guardian = actorSystem.actorOf(MakeGuardian.props(makeApi = this), MakeGuardian.name)
+  private val guardian = actorSystem.actorOf(MakeGuardian.props(makeApi = this), MakeGuardian.name)
 
   Await.result(guardian ? Ping, atMost = 5.seconds)
 
   actorSystem.systemActorOf(ClusterShardingMonitor.props, ClusterShardingMonitor.name)
   actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
-  val threadPoolMonitor = actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
+  private val threadPoolMonitor =
+    actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readThreadPool, "db-read-pool")
   threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeThreadPool, "db-write-pool")
 
@@ -123,8 +126,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
 
   implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
 
-  val host = settings.Http.host
-  val port = settings.Http.port
+  private val host = settings.Http.host
+  private val port = settings.Http.port
 
   val bindingFuture: Future[ServerBinding] =
     Http().bindAndHandleAsync(
@@ -151,7 +154,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
       // ReloadSequences should always be the last in this list
       ReloadSequences
     )
-  val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
+  private val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
 
   // Run migrations sequentially
   sequentially(migrationsToRun) { migration =>

@@ -73,7 +73,7 @@ import scala.concurrent.Future
   **/
 
 @ApiModel
-case class SequenceConfiguration(
+final case class SequenceConfiguration(
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   sequenceId: SequenceId,
   @(ApiModelProperty @field)(dataType = "string", example = "d2b2694a-25cf-4eaa-9181-026575d58cf8")

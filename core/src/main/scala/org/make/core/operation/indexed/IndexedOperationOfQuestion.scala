@@ -94,7 +94,7 @@ object OperationOfQuestionElasticsearchFieldName extends StringEnum[OperationOfQ
   override def values: IndexedSeq[OperationOfQuestionElasticsearchFieldName] = findValues
 }
 
-case class IndexedOperationOfQuestion(
+final case class IndexedOperationOfQuestion(
   @(ApiModelProperty @field)(dataType = "string", example = "42ccc3ce-f5b9-e7c0-b927-01a9cb159e55") questionId: QuestionId,
   question: String,
   slug: String,

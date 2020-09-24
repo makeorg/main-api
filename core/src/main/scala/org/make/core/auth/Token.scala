@@ -25,7 +25,7 @@ import org.make.core.Timestamped
 import org.make.core.question.QuestionId
 import org.make.core.user.{Role, UserId}
 
-case class Token(
+final case class Token(
   accessToken: String,
   refreshToken: Option[String],
   scope: Option[String],
@@ -36,4 +36,9 @@ case class Token(
   override val updatedAt: Option[ZonedDateTime] = None
 ) extends Timestamped
 
-case class UserRights(userId: UserId, roles: Seq[Role], availableQuestions: Seq[QuestionId], emailVerified: Boolean)
+final case class UserRights(
+  userId: UserId,
+  roles: Seq[Role],
+  availableQuestions: Seq[QuestionId],
+  emailVerified: Boolean
+)

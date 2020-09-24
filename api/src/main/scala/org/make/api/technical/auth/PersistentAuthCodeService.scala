@@ -96,7 +96,7 @@ trait DefaultPersistentAuthCodeServiceComponent extends PersistentAuthCodeServic
   }
 }
 
-case class PersistentAuthCode(
+final case class PersistentAuthCode(
   authorizationCode: String,
   scope: Option[String],
   redirectUri: Option[String],

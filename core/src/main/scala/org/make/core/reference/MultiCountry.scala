@@ -24,7 +24,7 @@ import org.make.core.StringValue
 import org.make.core.Validation.{maxLength, validate}
 import spray.json.{JsString, JsValue, JsonFormat}
 
-case class Country(value: String) extends StringValue {
+final case class Country(value: String) extends StringValue {
   override def toString: String = value
 
   validate(maxLength("country", 3, value))
@@ -38,6 +38,7 @@ object Country {
     Decoder.decodeString.map(country => Country(country.toUpperCase()))
 
   implicit val CountryFormatter: JsonFormat[Country] = new JsonFormat[Country] {
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     override def read(json: JsValue): Country = json match {
       case JsString(s) => Country(s.toUpperCase())
       case other       => throw new IllegalArgumentException(s"Unable to convert $other")
@@ -49,7 +50,7 @@ object Country {
   }
 }
 
-case class Language(value: String) extends StringValue {
+final case class Language(value: String) extends StringValue {
   override def toString: String = value
 
   validate(maxLength("language", 3, value))
@@ -63,6 +64,7 @@ object Language {
     Decoder.decodeString.map(language => Language(language.toLowerCase()))
 
   implicit val LanguageFormatter: JsonFormat[Language] = new JsonFormat[Language] {
+    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     override def read(json: JsValue): Language = json match {
       case JsString(s) => Language(s.toLowerCase())
       case other       => throw new IllegalArgumentException(s"Unable to convert $other")

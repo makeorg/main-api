@@ -36,7 +36,7 @@ object ProposalScorerHelper extends StrictLogging {
     random.setSeed(seed)
   }
 
-  case class ScoreComponent(name: String, weight: Double, mean: Double, std: Double)
+  final case class ScoreComponent(name: String, weight: Double, mean: Double, std: Double)
 
   val topScoreComponents: Seq[ScoreComponent] = Seq(
     ScoreComponent("engagement", 1, 0.8, 0.1),
@@ -48,7 +48,7 @@ object ProposalScorerHelper extends StrictLogging {
 
   val combinedStd: Double = math.sqrt(topScoreComponents.map(sc => math.pow(sc.weight, 2)).sum)
 
-  case class ScoreCounts(
+  final case class ScoreCounts(
     votes: Int,
     agreeCount: Int,
     disagreeCount: Int,
@@ -315,15 +315,15 @@ object ProposalScorerHelper extends StrictLogging {
      * The prior for the qualification is 0.01 because we want a value close to 0 but not null
      * The prior is used with a basis of 1 vote
      */
-    val VotePrior = 0.33
-    val QualificationPrior = 0.01
-    val CountPrior = 1
+    private val VotePrior = 0.33
+    private val QualificationPrior = 0.01
+    private val CountPrior = 1
 
     /*
      * Note on confidence intervals:
      * For a normal (gaussian) random variable, the 95% confidence interval is mean +/- 2 * standard error
      */
-    val ConfidenceInterval95Percent = 2
+    private val ConfidenceInterval95Percent = 2
 
     private def totalVoteCount(votes: Seq[BaseVote], counter: BaseVote => Int): Int = {
       votes.map(counter).sum
@@ -381,7 +381,7 @@ object ProposalScorerHelper extends StrictLogging {
    * pp is the probability estimate
    * sd is the standard deviation estimate
    * */
-  case class RateEstimate(rate: Double, sd: Double)
+  final case class RateEstimate(rate: Double, sd: Double)
 
   def rateEstimate(successes: Int, trials: Int): RateEstimate = {
     val nn: Double = (trials + 4).toDouble

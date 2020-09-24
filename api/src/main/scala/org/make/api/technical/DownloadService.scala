@@ -54,6 +54,7 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
     implicit val ec: ExecutionContext =
       ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     @Trace(operationName = "client-downloadImage")
     override def downloadImage(
       imageUrl: String,

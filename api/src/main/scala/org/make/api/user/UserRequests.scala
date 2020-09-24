@@ -54,7 +54,7 @@ import org.make.core.{CirceFormatters, Validation}
 import scala.annotation.meta.field
 import scala.util.{Success, Try}
 
-case class ProfileRequest(
+final case class ProfileRequest(
   @(ApiModelProperty @field)(dataType = "date", example = "1970-01-01") dateOfBirth: Option[LocalDate],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]],
@@ -178,7 +178,7 @@ trait UserProfileRequestValidation {
   val legalAdvisorApproval: Option[Boolean]
 }
 
-case class RegisterUserRequest(
+final case class RegisterUserRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "yopmail+test@make.org")
   email: String,
   @(ApiModelProperty @field)(dataType = "string", example = "p4ssw0rd")
@@ -235,7 +235,7 @@ object RegisterUserRequest extends CirceFormatters {
   implicit val decoder: Decoder[RegisterUserRequest] = deriveDecoder[RegisterUserRequest]
 }
 
-case class UserProfileRequest(
+final case class UserProfileRequest(
   firstName: String,
   lastName: Option[String],
   dateOfBirth: Option[LocalDate],
@@ -270,7 +270,7 @@ object UserProfileRequest {
   implicit val decoder: Decoder[UserProfileRequest] = deriveDecoder[UserProfileRequest]
 }
 
-case class UpdateUserRequest(
+final case class UpdateUserRequest(
   @(ApiModelProperty @field)(dataType = "date") dateOfBirth: Option[String],
   firstName: Option[String],
   lastName: Option[String],
@@ -352,7 +352,7 @@ object SocialProvider extends StringEnum[SocialProvider] with StringCirceEnum[So
   override def values: IndexedSeq[SocialProvider] = findValues
 }
 
-case class SocialLoginRequest(
+final case class SocialLoginRequest(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "facebook,google,google_people")
   provider: SocialProvider,
   token: String,

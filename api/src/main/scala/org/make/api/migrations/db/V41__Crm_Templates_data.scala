@@ -25,6 +25,7 @@ import org.flywaydb.core.api.migration._
 
 class V41__Crm_Templates_data extends BaseJavaMigration {
 
+  @SuppressWarnings(Array("org.wartremover.warts.While"))
   override def migrate(context: Context): Unit = {
     val isProd = System.getenv("ENV_NAME") == "prod"
 

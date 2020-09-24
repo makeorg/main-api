@@ -54,7 +54,7 @@ object OrganisationElasticsearchFieldNames {
   }
 }
 
-case class IndexedOrganisation(
+final case class IndexedOrganisation(
   organisationId: UserId,
   organisationName: Option[String],
   slug: Option[String],

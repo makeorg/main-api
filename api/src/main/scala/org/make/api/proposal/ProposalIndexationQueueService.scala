@@ -76,4 +76,4 @@ trait DefaultProposalIndexerServiceComponent
   }
 }
 
-case class QueueOfferException(message: String) extends Exception(message)
+final case class QueueOfferException(message: String) extends Exception(message)

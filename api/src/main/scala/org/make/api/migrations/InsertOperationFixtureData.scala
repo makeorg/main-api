@@ -40,7 +40,9 @@ trait InsertOperationFixtureData extends Migration with ProposalHelper with Stri
   // This method _must_ be implemented with a def, or else it will lead to NPE at startup
   def dataResource: String
 
+  @SuppressWarnings(Array("org.wartremover.warts.Null"))
   var question: Question = _
+  @SuppressWarnings(Array("org.wartremover.warts.Null"))
   var tags: Seq[Tag] = _
 
   override def extractDataLine(line: String): Option[FixtureDataLine] = {

@@ -19,11 +19,11 @@
 
 package org.make.core.crmTemplate
 import io.circe.{Decoder, Encoder, Json}
-import org.make.core.StringValue
+import org.make.core.{SprayJsonFormatters, StringValue}
 import org.make.core.question.QuestionId
-import spray.json.{JsString, JsValue, JsonFormat}
+import spray.json.JsonFormat
 
-case class CrmTemplates(
+final case class CrmTemplates(
   crmTemplatesId: CrmTemplatesId,
   questionId: Option[QuestionId],
   locale: Option[String],
@@ -47,7 +47,7 @@ object CrmTemplates {
   }
 }
 
-case class CrmTemplatesId(value: String) extends StringValue
+final case class CrmTemplatesId(value: String) extends StringValue
 
 object CrmTemplatesId {
   implicit lazy val CrmTemplatesIdEncoder: Encoder[CrmTemplatesId] =
@@ -55,19 +55,11 @@ object CrmTemplatesId {
   implicit lazy val CrmTemplatesIdDecoder: Decoder[CrmTemplatesId] =
     Decoder.decodeString.map(CrmTemplatesId(_))
 
-  implicit val CrmTemplatesIdFormatter: JsonFormat[CrmTemplatesId] = new JsonFormat[CrmTemplatesId] {
-    override def read(json: JsValue): CrmTemplatesId = json match {
-      case JsString(s) => CrmTemplatesId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: CrmTemplatesId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val CrmTemplatesIdFormatter: JsonFormat[CrmTemplatesId] =
+    SprayJsonFormatters.forStringValue(CrmTemplatesId.apply)
 }
 
-case class TemplateId(value: String) extends StringValue
+final case class TemplateId(value: String) extends StringValue
 
 object TemplateId {
   implicit lazy val TemplateIdEncoder: Encoder[TemplateId] =
@@ -75,14 +67,5 @@ object TemplateId {
   implicit lazy val TemplateIdDecoder: Decoder[TemplateId] =
     Decoder.decodeInt.map(id => TemplateId(id.toString))
 
-  implicit val TemplateIdFormatter: JsonFormat[TemplateId] = new JsonFormat[TemplateId] {
-    override def read(json: JsValue): TemplateId = json match {
-      case JsString(s) => TemplateId(s)
-      case other       => throw new IllegalArgumentException(s"Unable to convert $other")
-    }
-
-    override def write(obj: TemplateId): JsValue = {
-      JsString(obj.value)
-    }
-  }
+  implicit val TemplateIdFormatter: JsonFormat[TemplateId] = SprayJsonFormatters.forStringValue(TemplateId.apply)
 }

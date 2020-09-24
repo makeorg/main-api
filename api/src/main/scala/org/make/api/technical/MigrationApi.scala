@@ -269,6 +269,7 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                     .exists(url => Try(Uri(url)).isSuccess && !url.startsWith(storageConfiguration.baseUrl))
                 }
                 .map { user =>
+                  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
                   val avatarUrl = user.profile.flatMap(_.avatarUrl).get
                   val largeAvatarUrl = avatarUrl match {
                     case url if url.startsWith("https://graph.facebook.com/v7.0/") => s"$url?width=512&height=512"

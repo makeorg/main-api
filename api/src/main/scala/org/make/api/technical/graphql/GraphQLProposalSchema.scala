@@ -138,10 +138,7 @@ object GraphQLProposalQuery {
       requestContext: RequestContext,
       sortAlgorithmConfiguration: SortAlgorithmConfiguration
     ): SearchQuery = {
-      val context: Option[ContextFilterRequest] =
-        operationId.orElse(source).orElse(location).orElse(question).map { _ =>
-          ContextFilterRequest(operationId, source, location, question)
-        }
+      val context: Option[ContextFilterRequest] = ContextFilterRequest.parse(operationId, source, location, question)
 
       val filters: Option[SearchFilters] =
         SearchFilters.parse(

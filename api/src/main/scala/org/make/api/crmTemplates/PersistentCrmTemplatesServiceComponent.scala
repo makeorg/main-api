@@ -181,7 +181,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
 
 object DefaultPersistentCrmTemplatesServiceComponent {
 
-  case class PersistentCrmTemplates(
+  final case class PersistentCrmTemplates(
     id: String,
     questionId: Option[String],
     locale: Option[String],

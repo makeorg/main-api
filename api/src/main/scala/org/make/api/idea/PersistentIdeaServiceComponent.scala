@@ -175,7 +175,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
 
 object DefaultPersistentIdeaServiceComponent {
 
-  case class PersistentIdea(
+  final case class PersistentIdea(
     id: String,
     name: String,
     question: Option[String],
