@@ -19,6 +19,10 @@
 
 package org.make.api.crmTemplates
 
+import cats.instances.future._
+import cats.instances.option._
+import cats.syntax.traverse._
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.technical._
 import org.make.core.crmTemplate.{CrmTemplates, CrmTemplatesId, TemplateId}
 import org.make.core.question.QuestionId
@@ -43,6 +47,7 @@ trait CrmTemplatesService extends ShortenedNames {
   ): Future[Seq[CrmTemplates]]
   def count(questionId: Option[QuestionId], locale: Option[String]): Future[Int]
   def getDefaultTemplate(locale: Option[String]): Future[Option[CrmTemplates]]
+  def findOne(questionId: Option[QuestionId], locale: String): Future[Option[CrmTemplates]]
 }
 
 trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
@@ -50,7 +55,7 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
 
   override lazy val crmTemplatesService: CrmTemplatesService = new DefaultCrmTemplatesService
 
-  class DefaultCrmTemplatesService extends CrmTemplatesService {
+  class DefaultCrmTemplatesService extends CrmTemplatesService with StrictLogging {
 
     override def getCrmTemplates(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]] = {
       persistentCrmTemplatesService.getById(crmTemplatesId)
@@ -98,6 +103,23 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
             .map(Some.apply)
         case None => Future.successful(None)
       }
+    }
+
+    def findOne(questionId: Option[QuestionId], locale: String): Future[Option[CrmTemplates]] = {
+      val result = questionId
+        .traverse(_ => persistentCrmTemplatesService.find(0, Some(1), questionId, None).map(_.headOption))
+        .flatMap {
+          case Some(templates @ Some(_)) => Future.successful(templates)
+          case _                         => persistentCrmTemplatesService.getDefaultTemplate(locale)
+        }
+
+      result.foreach(
+        r =>
+          if (r.isEmpty)
+            logger.error(s"No templates found for question: ${questionId.toString} and locale $locale.")
+      )
+
+      result
     }
 
     override def find(
