@@ -519,24 +519,14 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
       val hashedPassword = if (!user.emailVerified) None else user.hashedPassword
 
-      val updatedProfile: Option[Profile] = user.profile.map {
+      val profile: Option[Profile] = user.profile.orElse(Profile.parseProfile())
+      val updatedProfile: Option[Profile] = profile.map(
         _.copy(facebookId = userInfo.facebookId, googleId = userInfo.googleId, gender = userInfo.gender.map {
           case "male"   => Male
           case "female" => Female
           case _        => Other
-        }, genderName = userInfo.gender)
-      }.orElse {
-        Profile.parseProfile(
-          facebookId = userInfo.facebookId,
-          googleId = userInfo.googleId,
-          gender = userInfo.gender.map {
-            case "male"   => Male
-            case "female" => Female
-            case _        => Other
-          },
-          genderName = userInfo.gender
-        )
-      }
+        }, genderName = userInfo.gender, dateOfBirth = userInfo.dateOfBirth.orElse(profile.flatMap(_.dateOfBirth)))
+      )
       val updatedUser: User =
         user.copy(
           firstName = userInfo.firstName,

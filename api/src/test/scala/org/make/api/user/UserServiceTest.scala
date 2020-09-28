@@ -410,8 +410,38 @@ class UserServiceTest
           accountCreation should be(false)
 
           verify(persistentUserService, times(1)).updateSocialUser(any[User])
+          user.profile.map(_.dateOfBirth) should be(returnedProfile.map(_.dateOfBirth))
           user.lastIp should be(Some("NEW 127.0.0.1"))
 
+      }
+    }
+
+    Scenario("successful update user from social with date of birth") {
+      clearInvocations(eventBusService)
+      clearInvocations(persistentUserService)
+
+      val info = UserInfo(
+        email = Some("facebook@make.org"),
+        firstName = Some("facebook"),
+        country = Country("FR"),
+        language = Language("fr"),
+        dateOfBirth = Some(LocalDate.now)
+      )
+
+      val returnedProfile = Profile.parseProfile(dateOfBirth = Some(LocalDate.parse("1984-10-11")))
+
+      val returnedUser = TestUtils.user(id = UserId("AAA-BBB-CCC-DDD"), profile = returnedProfile)
+
+      when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
+      when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
+      val futureUser = userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty)
+
+      whenReady(futureUser, Timeout(2.seconds)) {
+        case (user, accountCreation) =>
+          user shouldBe a[User]
+          user.profile.get.dateOfBirth should be(info.dateOfBirth)
+
+          verify(persistentUserService, times(1)).updateSocialUser(any[User])
       }
     }
 
