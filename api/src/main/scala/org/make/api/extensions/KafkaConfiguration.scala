@@ -45,7 +45,7 @@ object KafkaConfiguration extends ExtensionId[KafkaConfiguration] with Extension
   override def createExtension(system: ExtendedActorSystem): KafkaConfiguration =
     new KafkaConfiguration(system.settings.config.getConfig("make-api.kafka"))
 
-  override def lookup(): ExtensionId[KafkaConfiguration] = KafkaConfiguration
+  override def lookup: ExtensionId[KafkaConfiguration] = KafkaConfiguration
 }
 
 trait KafkaConfigurationExtension { this: Actor =>

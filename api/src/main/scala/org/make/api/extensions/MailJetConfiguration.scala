@@ -51,7 +51,7 @@ object MailJetConfiguration extends ExtensionId[MailJetConfiguration] with Exten
   override def createExtension(system: ExtendedActorSystem): MailJetConfiguration =
     new MailJetConfiguration(system.settings.config.getConfig("make-api.mail-jet"))
 
-  override def lookup(): ExtensionId[MailJetConfiguration] = MailJetConfiguration
+  override def lookup: ExtensionId[MailJetConfiguration] = MailJetConfiguration
 }
 
 trait MailJetConfigurationComponent {

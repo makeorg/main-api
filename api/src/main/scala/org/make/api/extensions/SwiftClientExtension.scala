@@ -28,6 +28,6 @@ object SwiftClientExtension extends ExtensionId[SwiftClientExtension] with Exten
   override def createExtension(system: ExtendedActorSystem): SwiftClientExtension =
     new SwiftClientExtension(SwiftClient.create(system))
 
-  override def lookup(): ExtensionId[SwiftClientExtension] =
+  override def lookup: ExtensionId[SwiftClientExtension] =
     SwiftClientExtension
 }
