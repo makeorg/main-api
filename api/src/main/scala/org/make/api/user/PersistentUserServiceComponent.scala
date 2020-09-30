@@ -1069,6 +1069,7 @@ trait DefaultPersistentUserServiceComponent
               column.updatedAt -> DateHelper.now(),
               column.firstName -> user.firstName,
               column.lastName -> user.lastName,
+              column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth),
               column.lastIp -> user.lastIp,
               column.lastConnection -> DateHelper.now(),
               column.avatarUrl -> user.profile.flatMap(_.avatarUrl),

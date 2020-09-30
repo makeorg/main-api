@@ -122,7 +122,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     lastConnection = before,
     verificationToken = Some("VERIFTOKEN"),
     verificationTokenExpiresAt = Some(before),
-    roles = Seq(Role.RoleAdmin, Role.RoleModerator)
+    roles = Seq(Role.RoleAdmin, Role.RoleModerator),
+    profile = Profile.parseProfile(dateOfBirth = Some(LocalDate.parse("1970-01-01")))
   )
 
   val userOrganisationDGSE = TestUtilsIT.user(
@@ -781,7 +782,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
             email = "to_be@ignored.fake",
             firstName = Some("new firstName"),
             emailVerified = false,
-            hashedPassword = Some("passpass")
+            hashedPassword = Some("passpass"),
+            profile = socialUser.profile.map(_.copy(dateOfBirth = Some(LocalDate.parse("2000-01-01"))))
           )
         )
       } yield update
@@ -794,6 +796,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           updatedUser.firstName should be(Some("new firstName"))
           updatedUser.hashedPassword should be(Some("passpass"))
           updatedUser.emailVerified should be(false)
+          updatedUser.profile.flatMap(_.dateOfBirth) should be(Some(LocalDate.parse("2000-01-01")))
         }
       }
     }
