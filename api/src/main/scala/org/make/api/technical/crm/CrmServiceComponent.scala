@@ -56,10 +56,11 @@ import org.make.core.Validation.emailRegex
 import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.question.Question
 import org.make.core.user.{User, UserId, UserType}
+import org.make.api.technical.ExecutorServiceHelper._
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 import org.make.core.{DateHelper, Order}
 import org.make.api.proposal.ProposalServiceComponent
@@ -112,12 +113,18 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     private val persistCrmUsersParallelism = 5
 
     private val poolSize: Int = 10
-    implicit private val executionContext: ExecutionContextExecutor =
-      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(poolSize, new ThreadFactory {
-        val counter = new AtomicInteger()
-        override def newThread(runnable: Runnable): Thread =
-          new Thread(runnable, "crm-batchs-" + counter.getAndIncrement())
-      }))
+    implicit private val executionContext: ExecutionContext =
+      Executors
+        .newFixedThreadPool(
+          poolSize,
+          new ThreadFactory {
+            val counter = new AtomicInteger()
+            override def newThread(runnable: Runnable): Thread =
+              new Thread(runnable, "crm-batchs-" + counter.getAndIncrement())
+          }
+        )
+        .instrument("crm-batchs")
+        .toExecutionContext
 
     private val localDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 00:00:00")
     private val dateFormatter: DateTimeFormatter =

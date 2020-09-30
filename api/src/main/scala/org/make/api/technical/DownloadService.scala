@@ -26,14 +26,14 @@ import akka.http.javadsl.model.headers.Accept
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.FileIO
+import com.typesafe.scalalogging.StrictLogging
+import kamon.annotation.api.Trace
+import org.make.api.ActorSystemComponent
+import org.make.api.technical.ExecutorServiceHelper._
 
 import scala.concurrent.duration.DurationInt
-import com.typesafe.scalalogging.StrictLogging
-import org.make.api.ActorSystemComponent
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-import kamon.annotation.api.Trace
 
 trait DownloadServiceComponent {
   def downloadService: DownloadService
@@ -52,7 +52,7 @@ trait DefaultDownloadServiceComponent extends DownloadServiceComponent with Stri
   class DefaultDownloadService extends DownloadService {
 
     implicit val ec: ExecutionContext =
-      ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))
+      Executors.newFixedThreadPool(4).instrument("avatar-downloader").toExecutionContext
 
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     @Trace(operationName = "client-downloadImage")

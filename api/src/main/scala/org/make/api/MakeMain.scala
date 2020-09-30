@@ -33,7 +33,6 @@ import kamon.Kamon
 import org.make.api.MakeGuardian.Ping
 import org.make.api.extensions.ThreadPoolMonitoringActor.MonitorThreadPool
 import org.make.api.extensions.{DatabaseConfiguration, MakeSettings, ThreadPoolMonitoringActor}
-import org.make.api.migrations._
 import org.make.api.proposal.ShardedProposal
 import org.make.api.sessionhistory.ShardedSessionHistory
 import org.make.api.technical.MakePersistentActor.StartShard
@@ -104,8 +103,8 @@ object MakeMain extends App with StrictLogging with MakeApi {
   actorSystem.systemActorOf(MemoryMonitoringActor.props, MemoryMonitoringActor.name)
   private val threadPoolMonitor =
     actorSystem.systemActorOf(ThreadPoolMonitoringActor.props, ThreadPoolMonitoringActor.name)
-  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readThreadPool, "db-read-pool")
-  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeThreadPool, "db-write-pool")
+  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.readExecutor, "db-read-pool")
+  threadPoolMonitor ! MonitorThreadPool(databaseConfiguration.writeExecutor, "db-write-pool")
 
   // Start the shards
   (0 until 100).foreach { i =>
@@ -144,21 +143,6 @@ object MakeMain extends App with StrictLogging with MakeApi {
       logger.error(s"Failed to bind to $host:$port!", ex)
       actorSystem.terminate()
     case _ =>
-  }
-
-  Thread.sleep(5000)
-
-  val migrations: Seq[Migration] =
-    Seq(
-      CreateSequenceConfigurations,
-      // ReloadSequences should always be the last in this list
-      ReloadSequences
-    )
-  private val migrationsToRun = migrations.filter(_.runInProduction || settings.Dev.environmentType == "dynamic")
-
-  // Run migrations sequentially
-  sequentially(migrationsToRun) { migration =>
-    migration.initialize(this).flatMap(_ => migration.migrate(this))
   }
 
 }

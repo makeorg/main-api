@@ -17,16 +17,24 @@
  *
  */
 
-package org.make.api.migrations
-import org.make.api.MakeApi
+package org.make.api.technical
 
-import scala.concurrent.Future
+import java.util.concurrent.ExecutorService
 
-object ReloadSequences extends Migration {
-  override def initialize(api: MakeApi): Future[Unit] = Future.successful {}
-  override def migrate(api: MakeApi): Future[Unit] = {
-    api.sequenceConfigurationService.reloadConfigurations()
-    Future.successful {}
+import kamon.instrumentation.executor.ExecutorInstrumentation
+
+import scala.concurrent.ExecutionContext
+
+object ExecutorServiceHelper {
+
+  implicit class RichExecutorService(val self: ExecutorService) extends AnyVal {
+    def instrument(name: String): ExecutorService = {
+      ExecutorInstrumentation.instrument(self, name)
+    }
+
+    def toExecutionContext: ExecutionContext = {
+      ExecutionContext.fromExecutorService(self)
+    }
   }
-  override def runInProduction: Boolean = true
+
 }
