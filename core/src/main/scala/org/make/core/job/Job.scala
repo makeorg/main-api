@@ -21,6 +21,7 @@ package org.make.core
 package job
 
 import java.time.ZonedDateTime
+import java.time.{Duration => JavaDuration}
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Interval
@@ -34,8 +35,7 @@ import spray.json._
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 
 final case class Job(id: JobId, status: JobStatus, createdAt: Option[ZonedDateTime], updatedAt: Option[ZonedDateTime])
-    extends MakeSerializable
-    with Timestamped {
+    extends Timestamped {
 
   /** Check whether the job is stuck, given the expected heart rate.
     *
@@ -46,10 +46,7 @@ final case class Job(id: JobId, status: JobStatus, createdAt: Option[ZonedDateTi
   def isStuck(heartRate: Duration): Boolean = {
     status match {
       case Running(_) =>
-        updatedAt.forall(
-          date =>
-            java.time.Duration.between(date, DateHelper.now()).toMillis > (heartRate.toMillis * missableHeartbeats)
-        )
+        updatedAt.forall(JavaDuration.between(_, DateHelper.now()).toMillis > (heartRate.toMillis * missableHeartbeats))
       case _ => false
     }
   }

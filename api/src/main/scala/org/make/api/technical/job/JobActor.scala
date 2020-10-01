@@ -24,17 +24,66 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria}
 import eu.timepit.refined.auto._
-import org.make.api.technical.{ActorCommand, ActorProtocol}
 import org.make.api.technical.job.JobActor.Protocol.Command._
 import org.make.api.technical.job.JobActor.Protocol.Response._
 import org.make.api.technical.job.JobEvent._
-import org.make.core.DateHelper
+import org.make.api.technical.{ActorCommand, ActorProtocol}
 import org.make.core.job.Job
 import org.make.core.job.Job.{JobId, JobStatus, Progress}
+import org.make.core.{DateHelper, MakeSerializable}
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, RootJsonFormat}
 
 import scala.concurrent.duration.Duration
 
 object JobActor {
+
+  sealed trait JobState extends MakeSerializable {
+    def toOption: Option[Job]
+    def isStopped: Boolean
+    def isStuck(heartRate: Duration): Boolean
+
+    def persistIfRunning(replyTo: ActorRef[Process], event: JobEvent): Effect[JobEvent, JobState] = {
+      if (isStopped) {
+        Effect.reply(replyTo)(NotRunning)
+      } else {
+        Effect.persist(event).thenReply(replyTo)(_ => Ack)
+      }
+    }
+  }
+
+  case object EmptyJob extends JobState {
+    override def toOption: Option[Job] = None
+    override def isStopped: Boolean = true
+    override def isStuck(heartRate: Duration): Boolean = false
+
+    implicit val emptyJobJsonFormat: RootJsonFormat[EmptyJob.type] = new RootJsonFormat[EmptyJob.type] {
+      private val Key = "empty"
+
+      @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+      override def read(json: JsValue): EmptyJob.type = json match {
+        case JsString(Key) => EmptyJob
+        case other         => throw new IllegalStateException(s"$other is not an EmptyJob.")
+      }
+
+      override def write(obj: EmptyJob.type): JsValue = JsString(Key)
+    }
+  }
+
+  final case class DefinedJob(job: Job) extends JobState {
+    override def toOption: Option[Job] = Some(job)
+    override def isStopped: Boolean = {
+      job.status match {
+        case JobStatus.Running(_) => false
+        case _                    => true
+      }
+    }
+
+    override def isStuck(heartRate: Duration): Boolean = job.isStuck(heartRate)
+  }
+
+  object DefinedJob {
+    implicit val jsonFormat: RootJsonFormat[DefinedJob] = DefaultJsonProtocol.jsonFormat1(DefinedJob.apply)
+  }
 
   sealed abstract class Protocol extends ActorProtocol
 
@@ -69,9 +118,9 @@ object JobActor {
     Behaviors.setup { context =>
       val id: JobId = JobId(context.self.path.name)
       val persistenceId: PersistenceId = PersistenceId.ofUniqueId(id.value)
-      EventSourcedBehavior[Protocol.Command, JobEvent, State](
+      EventSourcedBehavior[Protocol.Command, JobEvent, JobState](
         persistenceId,
-        emptyState = State(value = None),
+        emptyState = EmptyJob,
         commandHandler(heartRate),
         eventHandler
       ).withJournalPluginId(JournalPluginId)
@@ -80,45 +129,31 @@ object JobActor {
     }
   }
 
-  def commandHandler(heartRate: Duration): (State, Protocol.Command) => Effect[JobEvent, State] = {
+  def commandHandler(heartRate: Duration): (JobState, Protocol.Command) => Effect[JobEvent, JobState] = {
     case (state, Start(id, replyTo: ActorRef[JobAcceptance])) =>
-      val startable = state.value.forall(
-        job =>
-          job.status match {
-            case JobStatus.Running(_) => job.isStuck(heartRate)
-            case _                    => true
-          }
-      )
-      if (startable) {
+      if (state.isStopped || state.isStuck(heartRate)) {
         Effect.persist(Started(id, DateHelper.now())).thenReply(replyTo)(_ => JobAcceptance(true))
       } else {
         Effect.reply(replyTo)(JobAcceptance(false))
       }
-    case (state, Heartbeat(id, replyTo)) => persistIfRunning(replyTo, state, HeartbeatReceived(id, DateHelper.now()))
+    case (state, Heartbeat(id, replyTo)) => state.persistIfRunning(replyTo, HeartbeatReceived(id, DateHelper.now()))
     case (state, Report(id, progress, replyTo)) =>
-      persistIfRunning(replyTo, state, Progressed(id, DateHelper.now(), progress))
+      state.persistIfRunning(replyTo, Progressed(id, DateHelper.now(), progress))
     case (state, Finish(id, outcome, replyTo)) =>
-      persistIfRunning(replyTo, state, Finished(id, DateHelper.now(), outcome.flatMap(e => Option(e.getMessage))))
-    case (state, Get(_, replyTo)) => Effect.reply(replyTo)(state)
+      state.persistIfRunning(replyTo, Finished(id, DateHelper.now(), outcome.flatMap(e => Option(e.getMessage))))
+    case (state, Get(_, replyTo)) => Effect.reply(replyTo)(State(state.toOption))
     case (_, Kill(_))             => Effect.stop().thenStop()
   }
 
-  private def persistIfRunning(replyTo: ActorRef[Process], state: State, event: JobEvent): Effect[JobEvent, State] =
-    state match {
-      case State(Some(Job(_, JobStatus.Running(_), _, _))) => Effect.persist(event).thenReply(replyTo)(_ => Ack)
-      case _                                               => Effect.reply(replyTo)(NotRunning)
-    }
-
-  val eventHandler: (State, JobEvent) => State = {
-    case (_, Started(id, date)) =>
-      State(Some(Job(id, JobStatus.Running(0d), Some(date), Some(date))))
-    case (state, HeartbeatReceived(_, date)) =>
-      State(value = state.value.map(_.copy(updatedAt = Some(date))))
-    case (state, Progressed(_, date, progress)) =>
-      State(value = state.value.map(_.copy(status = JobStatus.Running(progress), updatedAt = Some(date))))
-    case (state, Finished(_, date, outcome)) =>
-      State(value = state.value.map(_.copy(status = JobStatus.Finished(outcome), updatedAt = Some(date))))
-    case (state, _) => state
+  val eventHandler: (JobState, JobEvent) => JobState = {
+    case (_, Started(id, date)) => DefinedJob(Job(id, JobStatus.Running(0d), Some(date), Some(date)))
+    case (EmptyJob, _)          => EmptyJob
+    case (DefinedJob(job), HeartbeatReceived(_, date)) =>
+      DefinedJob(job.copy(updatedAt = Some(date)))
+    case (DefinedJob(job), Progressed(_, date, progress)) =>
+      DefinedJob(job.copy(status = JobStatus.Running(progress), updatedAt = Some(date)))
+    case (DefinedJob(job), Finished(_, date, outcome)) =>
+      DefinedJob(job.copy(status = JobStatus.Finished(outcome), updatedAt = Some(date)))
   }
 
 }
