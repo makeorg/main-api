@@ -19,4 +19,11 @@
 
 package org.make.api.technical
 
+import org.make.core.StringValue
+
 trait ActorProtocol extends Product with Serializable
+
+trait ActorCommand[+T <: StringValue] {
+  self: ActorProtocol =>
+  def id: T
+}

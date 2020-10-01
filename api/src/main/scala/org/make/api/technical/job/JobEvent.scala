@@ -57,5 +57,4 @@ object JobEvent {
   object Finished {
     implicit val formatter: RootJsonFormat[Finished] = DefaultJsonProtocol.jsonFormat3(Finished.apply)
   }
-
 }

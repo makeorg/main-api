@@ -53,7 +53,7 @@ object KafkaActorTest {
     """.stripMargin
 
   def defaultActorSystem(conf: String): ActorSystem = {
-    val system = ActorSystem("test-system", ConfigFactory.parseString(conf))
+    val system = ActorSystem("test_system", ConfigFactory.parseString(conf))
     val cluster = Cluster(system)
     cluster.join(cluster.selfAddress)
     system

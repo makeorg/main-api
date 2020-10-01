@@ -20,7 +20,7 @@
 package org.make.api.technical.elasticsearch
 
 import akka.Done
-import akka.stream._
+import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
 import akka.stream.scaladsl._
 import akka.util.Timeout
 import com.sksamuel.elastic4s.http.ElasticDsl._
@@ -28,7 +28,7 @@ import com.sksamuel.elastic4s.http.index.CreateIndexResponse
 import com.sksamuel.elastic4s.http.index.admin.AliasActionResponse
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.auto._
-import org.make.api.ActorSystemComponent
+import org.make.api.ActorSystemTypedComponent
 import org.make.api.idea._
 import org.make.api.operation.PersistentOperationOfQuestionServiceComponent
 import org.make.api.post.PostServiceComponent
@@ -81,10 +81,10 @@ trait DefaultIndexationComponent
     with OperationOfQuestionIndexationStream
     with PostIndexationStream {
 
-  this: ElasticsearchConfigurationComponent
+  this: ActorSystemTypedComponent
+    with ElasticsearchConfigurationComponent
     with ElasticsearchClientComponent
     with StrictLogging
-    with ActorSystemComponent
     with JobCoordinatorServiceComponent
     with ReadJournalComponent
     with PersistentOperationOfQuestionServiceComponent
@@ -283,7 +283,7 @@ trait DefaultIndexationComponent
       client.executeAsFuture(createIndex(indexName).source(elasticsearchClient.mappingForAlias(aliasName)))
     }
 
-    private def executeIndexProposal(proposalIndexName: String)(implicit mat: Materializer): Future[Done] = {
+    private def executeIndexProposal(proposalIndexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
 
       val result =
@@ -303,7 +303,7 @@ trait DefaultIndexationComponent
       result
     }
 
-    private def executeIndexIdeas(indexName: String)(implicit mat: Materializer): Future[Done] = {
+    private def executeIndexIdeas(indexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
 
       val result = persistentIdeaService
@@ -323,7 +323,7 @@ trait DefaultIndexationComponent
       result
     }
 
-    private def executeIndexOrganisations(indexName: String)(implicit mat: Materializer): Future[Done] = {
+    private def executeIndexOrganisations(indexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
 
       val result = persistentUserService
@@ -331,7 +331,7 @@ trait DefaultIndexationComponent
         .flatMap { organisations =>
           logger.info(s"Organisations to index: ${organisations.size}")
           Source[User](organisations)
-            .via(OrganisationStream.flowIndexOrganisations(indexName)(mat))
+            .via(OrganisationStream.flowIndexOrganisations(indexName))
             .runWith(Sink.ignore)
         }
 
@@ -344,7 +344,7 @@ trait DefaultIndexationComponent
       result
     }
 
-    private def executeIndexOperationOfQuestions(indexName: String)(implicit mat: Materializer): Future[Done] = {
+    private def executeIndexOperationOfQuestions(indexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
 
       val result = persistentOperationOfQuestionService
@@ -366,7 +366,7 @@ trait DefaultIndexationComponent
       result
     }
 
-    private def executeIndexPosts(indexName: String)(implicit mat: Materializer): Future[Done] = {
+    private def executeIndexPosts(indexName: String): Future[Done] = {
       val start = System.currentTimeMillis()
 
       val result = Source

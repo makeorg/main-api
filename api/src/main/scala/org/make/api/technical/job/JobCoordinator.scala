@@ -19,31 +19,25 @@
 
 package org.make.api.technical.job
 
-import akka.actor.{Actor, ActorRef, Props}
-import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
-import org.make.api.technical.job.JobActor.Protocol.Command
+import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
+import org.make.api.technical.ShardingNoEnvelopeMessageExtractor
 
 import scala.concurrent.duration.Duration
 
-class JobCoordinator(heartRate: Duration) extends Actor {
-  ClusterSharding(context.system).start(
-    ShardedJob.shardName,
-    ShardedJob.props(heartRate),
-    ClusterShardingSettings(context.system),
-    ShardedJob.extractEntityId,
-    ShardedJob.extractShardId
-  )
-
-  override def receive: Receive = {
-    case cmd: Command => shardedJob.forward(cmd)
-  }
-
-  def shardedJob: ActorRef = {
-    ClusterSharding(context.system).shardRegion(ShardedJob.shardName)
-  }
-}
-
 object JobCoordinator {
-  val name = "job-coordinator"
-  def props(heartRate: Duration): Props = Props(new JobCoordinator(heartRate))
+  private val name = "job-coordinator"
+
+  private val TypeKey: EntityTypeKey[JobActor.Protocol.Command] =
+    EntityTypeKey[JobActor.Protocol.Command]("job")
+
+  val Key: ServiceKey[JobActor.Protocol.Command] = ServiceKey(name)
+
+  def apply(system: ActorSystem[_], heartRate: Duration): ActorRef[JobActor.Protocol.Command] = {
+    ClusterSharding(system).init(
+      Entity(TypeKey)(_ => JobActor(heartRate))
+        .withMessageExtractor(ShardingNoEnvelopeMessageExtractor[JobActor.Protocol.Command](5))
+    )
+  }
 }

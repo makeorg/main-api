@@ -19,6 +19,9 @@
 
 package org.make.api
 
+import akka.actor.typed.SpawnProtocol
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{Actor, ActorLogging, Props}
 import org.make.api.MakeGuardian.{Ping, Pong}
 import org.make.api.idea.{IdeaConsumerActor, IdeaProducerActor}
@@ -37,6 +40,7 @@ import org.make.core.job.Job
 
 class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
   override def preStart(): Unit = {
+
     context.watch(context.actorOf(MakeDowningActor.props, MakeDowningActor.name))
 
     context.watch(context.actorOf(DeadLettersListenerActor.props, DeadLettersListenerActor.name))
@@ -105,11 +109,13 @@ class MakeGuardian(makeApi: MakeApi) extends Actor with ActorLogging {
 
     context.watch(context.actorOf(HealthCheckSupervisor.props, HealthCheckSupervisor.name))
 
-    context.watch {
-      val (props, name) =
-        MakeBackoffSupervisor.propsAndName(JobCoordinator.props(Job.defaultHeartRate), JobCoordinator.name)
-      context.actorOf(props, name)
-    }
+    val jobCoordinatorRef = JobCoordinator(makeApi.actorSystemTyped, Job.defaultHeartRate)
+    context.watch(jobCoordinatorRef)
+    context.system.toTyped.receptionist ! Receptionist.Register(JobCoordinator.Key, jobCoordinatorRef)
+
+    val spawnActorRef = context.spawn(SpawnProtocol(), MakeGuardian.SpawnActorKey.id)
+    context.watch(spawnActorRef)
+    context.system.toTyped.receptionist ! Receptionist.Register(MakeGuardian.SpawnActorKey, spawnActorRef)
 
     ()
   }
@@ -126,4 +132,6 @@ object MakeGuardian {
 
   case object Ping
   case object Pong
+
+  val SpawnActorKey: ServiceKey[SpawnProtocol.Command] = ServiceKey("spawn-actor")
 }

@@ -17,24 +17,25 @@
  *
  */
 
-name := "make-core"
+package org.make.api.technical
 
-libraryDependencies ++= Seq(
-  Dependencies.akkaPersistenceQuery,
-  Dependencies.akkaClusterSharding,
-  Dependencies.akkaHttpSwagger, // TODO: import only swagger not akka-http
-  Dependencies.elastic4s,
-  Dependencies.elastic4sHttp,
-  Dependencies.enumeratum,
-  Dependencies.enumeratumCirce,
-  Dependencies.enumeratumScalacheck,
-  Dependencies.avro4s,
-  Dependencies.circeGeneric,
-  Dependencies.refinedCirce,
-  Dependencies.refinedScala,
-  Dependencies.stamina,
-  Dependencies.slugify,
-  Dependencies.jsoup,
-  Dependencies.refinedScalaCheck,
-  Dependencies.scalaCheck
-)
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.typed.scaladsl.AskPattern.Askable
+import akka.actor.typed.{ActorRef, ActorSystem, Scheduler}
+import akka.util.Timeout
+
+import scala.concurrent.Future
+
+object ActorSystemHelper {
+  implicit class RichActorSystem(val self: ActorSystem[_]) extends AnyVal {
+    import self.executionContext
+
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+    def findRefByKey[T](key: ServiceKey[T])(implicit timeout: Timeout, scheduler: Scheduler): Future[ActorRef[T]] = {
+      (self.receptionist ? Receptionist.Find(key)).map {
+        case key.Listing(services) => services.head
+      }
+
+    }
+  }
+}

@@ -25,18 +25,22 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, SpawnProtocol}
 import akka.http.scaladsl.model.StatusCodes
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.{EventEnvelope, Offset}
-import akka.stream.scaladsl
 import akka.stream.scaladsl.Source
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
+import org.make.api._
 import org.make.api.extensions.{MailJetConfiguration, MailJetConfigurationComponent}
 import org.make.api.operation.{OperationService, OperationServiceComponent}
+import org.make.api.proposal.{ProposalService, ProposalServiceComponent}
 import org.make.api.question.{QuestionService, QuestionServiceComponent, SearchQuestionRequest}
-import org.make.api.technical.{EventBusService, EventBusServiceComponent, ReadJournalComponent}
+import org.make.api.technical._
+import org.make.api.technical.crm.CrmServiceComponentTest.configuration
+import org.make.api.technical.crm.arbitraries._
 import org.make.api.technical.job.{JobCoordinatorService, JobCoordinatorServiceComponent}
 import org.make.api.user.{
   PersistentUserToAnonymizeService,
@@ -45,14 +49,16 @@ import org.make.api.user.{
   UserServiceComponent
 }
 import org.make.api.userhistory._
-import org.make.api.{ActorSystemComponent, MakeUnitTest, StaminaTestUtils, TestUtils}
 import org.make.core.history.HistoryActions.VoteTrust.Trusted
 import org.make.core.operation._
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
-import org.make.core.proposal._
 import org.make.core.proposal.ProposalActionType.ProposalVoteAction
+import org.make.core.proposal.ProposalStatus.Accepted
+import org.make.core.proposal._
+import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.user.{Role, User, UserId, UserType}
 import org.make.core.{DateHelper, RequestContext}
 import org.mockito.Mockito.clearInvocations
 import org.mockito.verification.After
@@ -62,21 +68,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.io
-import org.make.api.proposal.ProposalServiceComponent
-import org.make.api.proposal.ProposalService
-import org.make.core.user.UserId
-import org.make.core.user.Role
-import org.make.core.user.User
-import org.make.core.proposal.indexed.IndexedProposal
-import org.make.core.proposal.ProposalStatus.Accepted
-import org.make.core.proposal.indexed.SequencePool
-import org.make.core.proposal.indexed.IndexedProposalQuestion
-import org.make.core.proposal.indexed.IndexedAuthor
-import org.make.core.proposal.indexed.IndexedScores
-import org.make.core.user.UserType
-
-import arbitraries._
+import scala.io.{Source => IOSource}
 
 class CrmServiceComponentTest
     extends MakeUnitTest
@@ -84,7 +76,7 @@ class CrmServiceComponentTest
     with OperationServiceComponent
     with QuestionServiceComponent
     with MailJetConfigurationComponent
-    with ActorSystemComponent
+    with ActorSystemTypedComponent
     with UserHistoryCoordinatorServiceComponent
     with UserServiceComponent
     with ReadJournalComponent
@@ -95,11 +87,14 @@ class CrmServiceComponentTest
     with EventBusServiceComponent
     with JobCoordinatorServiceComponent
     with ScalaCheckDrivenPropertyChecks
-    with PrivateMethodTester {
+    with PrivateMethodTester
+    with DefaultSpawnActorServiceComponent
+    with SpawnActorRefComponent {
 
   type MakeReadJournal = CassandraReadJournal
 
-  override lazy val actorSystem: ActorSystem = CrmServiceComponentTest.actorSystem
+  override implicit val actorSystemTyped: ActorSystem[Nothing] =
+    ActorSystem[Nothing](Behaviors.empty[Nothing], "CrmServiceComponentTest", ConfigFactory.parseString(configuration))
   override val userHistoryCoordinatorService: UserHistoryCoordinatorService = mock[UserHistoryCoordinatorService]
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
   override val userJournal: MakeReadJournal = mock[MakeReadJournal]
@@ -116,6 +111,8 @@ class CrmServiceComponentTest
   override val eventBusService: EventBusService = mock[EventBusService]
   override val proposalService: ProposalService = mock[ProposalService]
   override val jobCoordinatorService: JobCoordinatorService = mock[JobCoordinatorService]
+  override val spawnActorRef: ActorRef[SpawnProtocol.Command] =
+    actorSystemTyped.systemActorOf(SpawnProtocol(), "spawner")
 
   when(mailJetConfiguration.userListBatchSize).thenReturn(1000)
   when(mailJetConfiguration.csvDirectory).thenReturn("/tmp/make/crm")
@@ -537,7 +534,7 @@ class CrmServiceComponentTest
 
   when(userJournal.currentEventsByPersistenceId(eqTo(fooUser.userId.value), any[Long], any[Long]))
     .thenReturn(
-      scaladsl.Source(
+      Source(
         List(
           registerCitizenEventEnvelope,
           userProposalEventEnvelope,
@@ -555,7 +552,7 @@ class CrmServiceComponentTest
     fooUser.copy(userId = UserId("user-without-registered-event"), createdAt = Some(zonedDateTimeNow))
 
   when(userJournal.currentEventsByPersistenceId(eqTo(userWithoutRegisteredEvent.userId.value), any[Long], any[Long]))
-    .thenReturn(scaladsl.Source(List.empty))
+    .thenReturn(Source(List.empty))
 
   Feature("data normalization") {
     Scenario("users properties are normalized when user has no register event") {
@@ -1441,7 +1438,7 @@ class CrmServiceComponentTest
         Timeout(30.seconds)
       ) { fileList =>
         val file = fileList.head
-        val bufferedFile = io.Source.fromFile(file.toFile)
+        val bufferedFile = IOSource.fromFile(file.toFile)
         val fileToSeq = bufferedFile.getLines.toSeq
         val lineCount = fileToSeq.size
         val firstLine = fileToSeq.head
@@ -1525,5 +1522,4 @@ class CrmServiceComponentTest
 
 object CrmServiceComponentTest {
   val configuration: String = "akka.log-dead-letters-during-shutdown = off"
-  val actorSystem = ActorSystem("CrmServiceComponentTest", ConfigFactory.parseString(configuration))
 }

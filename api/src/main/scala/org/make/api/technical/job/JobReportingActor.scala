@@ -19,13 +19,13 @@
 
 package org.make.api.technical.job
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props, Timers}
-import akka.pattern.ask
+import akka.actor.typed.{ActorRef, Behavior, Scheduler}
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.technical.job.JobReportingActor.JobReportingActorFacade
-import org.make.api.technical.job.JobReportingActor.Protocol._
-import org.make.api.technical.{ActorProtocol, TimeSettings}
+import org.make.api.technical.ActorProtocol
+import org.make.api.technical.job.JobReportingActor.Protocol.{Command, Response}
 import org.make.core.job.Job.{JobId, Progress}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,71 +33,91 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-class JobReportingActor(
-  id: JobId,
-  work: JobReportingActorFacade => Future[Unit],
-  override val jobCoordinatorService: JobCoordinatorService,
-  heartRate: FiniteDuration
-) extends Actor
-    with JobCoordinatorServiceComponent
-    with StrictLogging
-    with Timers {
+object JobReportingActor extends StrictLogging {
 
-  private implicit val timeout: Timeout = TimeSettings.defaultTimeout
-
-  override def preStart(): Unit = {
-    timers.startTimerWithFixedDelay(s"${self.path.name}-heartbeat", Tick, heartRate)
-    work(JobReportingActorFacade(self)).onComplete { result =>
-      (self ? Finish(result.fold(Some.apply, _ => None))).mapTo[Ack.type].onComplete(_ => self ! PoisonPill)
-    }
-  }
-
-  override def receive: Receive = {
-    case Tick =>
-      jobCoordinatorService.heartbeat(id).onComplete {
-        case Failure(e) =>
-          logger.error(s"Could not send heartbeat for job $id", e)
-          self ! PoisonPill
-        case Success(_) =>
-      }
-    case Report(progress) =>
-      val originalSender = sender()
-      jobCoordinatorService.report(id, progress).map(_ => originalSender ! Ack)
-      ()
-    case Finish(outcome) =>
-      val originalSender = sender()
-      jobCoordinatorService.finish(id, outcome).map(_ => originalSender ! Ack)
-      ()
-  }
-
-}
-
-object JobReportingActor {
-
-  def props(
-    id: JobId,
-    work: JobReportingActorFacade => Future[Unit],
-    jobCoordinatorService: JobCoordinatorService,
-    heartRate: FiniteDuration
-  ): Props =
-    Props(new JobReportingActor(id, work, jobCoordinatorService, heartRate))
-
-  final class JobReportingActorFacade private (actor: ActorRef) {
-    def apply(progress: Progress)(implicit timeout: Timeout): Future[Unit] =
-      (actor ? Report(progress)).mapTo[Ack.type].map(_ => ())
+  final class JobReportingActorFacade private (actor: ActorRef[Command]) {
+    def apply(progress: Progress)(implicit timeout: Timeout, scheduler: Scheduler): Future[Unit] =
+      (actor ? (Command.Report(progress, _))).map(_ => ())
   }
 
   object JobReportingActorFacade {
-    def apply(actor: ActorRef): JobReportingActorFacade = new JobReportingActorFacade(actor)
+    def apply(actor: ActorRef[Command]): JobReportingActorFacade = new JobReportingActorFacade(actor)
   }
 
   sealed abstract class Protocol extends ActorProtocol
 
   object Protocol {
-    final case class Report(progress: Progress) extends Protocol
-    final case class Finish(outcome: Option[Throwable]) extends Protocol
-    final case object Tick extends Protocol
-    final case object Ack extends Protocol
+    sealed abstract class Command extends Protocol
+
+    object Command {
+      final case class Report(progress: Progress, replyTo: ActorRef[Response.Ack.type]) extends Command
+      final case class Finish(outcome: Option[Throwable]) extends Command
+      case object Tick extends Command
+      case object HeartbeatSuccess extends Command
+      case object HeartbeatFailure extends Command
+      final case class ReportResult(replyTo: ActorRef[Response.Ack.type]) extends Command
+      case object Stop extends Command
+    }
+
+    sealed abstract class Response extends Protocol
+
+    object Response {
+      case object Ack extends Response
+    }
+
   }
 
+  def apply(
+    jobId: JobId,
+    work: JobReportingActorFacade => Future[Unit],
+    jobCoordinatorService: JobCoordinatorService,
+    heartRate: FiniteDuration
+  ): Behavior[Protocol.Command] = {
+    Behaviors.setup { context =>
+      Behaviors.withTimers { timers =>
+        timers.startTimerWithFixedDelay(s"${context.self.path.name}-heartbeat", Command.Tick, heartRate)
+
+        context.pipeToSelf(work(JobReportingActorFacade(context.self))) { result =>
+          Command.Finish(result.failed.toOption)
+        }
+
+        Behaviors.receiveMessage {
+          case Command.Tick =>
+            val futureResult = jobCoordinatorService.heartbeat(jobId)
+            context.pipeToSelf(futureResult) {
+              case Success(_) => Command.HeartbeatSuccess
+              case Failure(e) =>
+                logger.error(s"Could not send heartbeat for job $jobId", e)
+                Command.HeartbeatFailure
+            }
+            Behaviors.same
+          case Command.HeartbeatSuccess => Behaviors.same
+          case Command.HeartbeatFailure => Behaviors.stopped
+          case Command.Report(progress, replyTo) =>
+            val futureResult = jobCoordinatorService.report(jobId, progress)
+            context.pipeToSelf(futureResult) {
+              case Success(_) => Command.ReportResult(replyTo)
+              case Failure(e) =>
+                logger.error(s"Job $jobId failed to report", e)
+                Command.ReportResult(replyTo)
+            }
+            Behaviors.same
+          case Command.ReportResult(replyTo) =>
+            replyTo ! Response.Ack
+            Behaviors.same
+          case Command.Finish(outcome) =>
+            val futureResult = jobCoordinatorService.finish(jobId, outcome)
+            context.pipeToSelf(futureResult) {
+              case Success(_) => Command.Stop
+              case Failure(e) =>
+                logger.error(s"Job $jobId failed to finish", e)
+                Command.Stop
+            }
+            Behaviors.same
+          case Command.Stop => Behaviors.stopped
+        }
+      }
+    }
+
+  }
 }

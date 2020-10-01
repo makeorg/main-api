@@ -49,19 +49,19 @@ object Dependencies {
     ("io.netty" % "netty-transport-native-kqueue" % nettyVersion).classifier("osx-x86_64")
   val nettyAll: ModuleID = "io.netty" % "netty-all" % nettyVersion
 
-  val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"         % circeVersion
-  val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor"            % akkaVersion
-  val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster"          % akkaVersion
-  val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"    % akkaVersion
-  val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
-  val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream"           % akkaVersion
-  val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"             % akkaHttpVersion
-  val akkaHttp2Support: ModuleID = "com.typesafe.akka"    %% "akka-http2-support"    % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"       % "1.33.0"
+  val circeGeneric: ModuleID = "io.circe"                 %% "circe-generic"               % circeVersion
+  val akka: ModuleID = "com.typesafe.akka"                %% "akka-actor-typed"            % akkaVersion
+  val akkaCluster: ModuleID = "com.typesafe.akka"         %% "akka-cluster-typed"          % akkaVersion
+  val akkaClusterTools: ModuleID = "com.typesafe.akka"    %% "akka-cluster-tools"          % akkaVersion
+  val akkaClusterSharding: ModuleID = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
+  val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
+  val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
+  val akkaHttp2Support: ModuleID = "com.typesafe.akka"    %% "akka-http2-support"          % akkaHttpVersion
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.33.0"
   val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.0")
     .exclude("javax.ws.rs", "jsr311-api")
-  val akkaPersistence: ModuleID = "com.typesafe.akka"       %% "akka-persistence-query" % akkaVersion
-  val akkaPersistenceQuesry: ModuleID = "com.typesafe.akka" %% "akka-persistence"       % akkaVersion
+  val akkaPersistence: ModuleID = "com.typesafe.akka"      %% "akka-persistence-typed" % akkaVersion
+  val akkaPersistenceQuery: ModuleID = "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion
   val akkaPersistenceCassandra: ModuleID =
     ("com.typesafe.akka" %% "akka-persistence-cassandra" % "0.102")
       .exclude("io.netty", "netty-handler")
@@ -130,7 +130,7 @@ object Dependencies {
   val calibanAkkaHttp: ModuleID = "com.github.ghostdogpr" %% "caliban-akka-http" % calibanVersion
 
   // Test related dependencies
-  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion     % "it,test"
+  val akkaTest: ModuleID = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion     % "it,test"
   val akkaStreamTest: ModuleID = "com.typesafe.akka"      %% "akka-stream-testkit"      % akkaVersion     % "it,test"
   val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.2"         % "it,test"
   val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-14"          % "3.2.2.0"       % "it,test"

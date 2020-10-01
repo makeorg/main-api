@@ -21,50 +21,41 @@ package org.make.api.technical.job
 
 import java.util.UUID
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.TestKit
-import akka.util.Timeout
+import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
+import akka.actor.typed.{ActorRef, ActorSystem, SpawnProtocol}
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobReportingActor.JobReportingActorFacade
-import org.make.api.technical.{DefaultIdGeneratorComponent, TimeSettings}
-import org.make.api.{ActorSystemComponent, MakeBackoffSupervisor, ShardingActorTest}
+import org.make.api.technical.{DefaultIdGeneratorComponent, DefaultSpawnActorServiceComponent, SpawnActorRefComponent}
+import org.make.api.{ActorSystemTypedComponent, ShardingTypedActorTest}
 import org.make.core.job.Job.JobStatus._
 import org.make.core.job.Job.{JobId, Progress}
-import org.scalatest.concurrent.Eventually.eventually
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
 class JobCoordinatorServiceTest
-    extends ShardingActorTest
+    extends ShardingTypedActorTest
     with DefaultJobCoordinatorServiceComponent
     with DefaultIdGeneratorComponent
     with JobCoordinatorComponent
-    with ActorSystemComponent
-    with ScalaCheckDrivenPropertyChecks {
+    with ActorSystemTypedComponent
+    with ScalaCheckDrivenPropertyChecks
+    with DefaultSpawnActorServiceComponent
+    with SpawnActorRefComponent {
 
   val heartRate: FiniteDuration = 10.milliseconds
 
-  override val actorSystem: ActorSystem = system
+  override implicit val actorSystemTyped: ActorSystem[Nothing] = system
+  override val spawnActorRef: ActorRef[SpawnProtocol.Command] =
+    system.systemActorOf(SpawnProtocol(), "spawn-actor-test")
 
-  override lazy val jobCoordinator: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / s"${JobCoordinator.name}-backoff")
-      .resolveOne(),
-    atMost = timeout.duration
-  )
-
-  locally {
-    val (props, name) = MakeBackoffSupervisor.propsAndName(JobCoordinator.props(heartRate), JobCoordinator.name)
-    actorSystem.actorOf(props, name)
-  }
-
-  private implicit val timeout: Timeout = TimeSettings.defaultTimeout
+  override val jobCoordinator: ActorRef[JobActor.Protocol.Command] =
+    JobCoordinator(system, heartRate)
 
   Feature("Job monitoring") {
     Scenario("it works") {
@@ -108,8 +99,6 @@ class JobCoordinatorServiceTest
       }
     }
   }
-
-  override protected def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
 }
 

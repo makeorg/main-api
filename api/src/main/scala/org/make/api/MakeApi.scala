@@ -19,6 +19,8 @@
 
 package org.make.api
 
+import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
+import akka.actor.typed.{SpawnProtocol, ActorRef => TypedActorRef, ActorSystem => ActorSystemTyped}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
@@ -72,6 +74,7 @@ import org.make.api.tagtype.{
   DefaultTagTypeServiceComponent,
   ModerationTagTypeApi
 }
+import org.make.api.technical.ActorSystemHelper._
 import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.{ConfigurationsApi, DefaultConfigurationsApiComponent}
@@ -88,15 +91,7 @@ import org.make.api.technical.generator.fixtures.{
   DefaultFixturesServiceComponent,
   FixturesApi
 }
-import org.make.api.technical.graphql.{
-  DefaultGraphQLApiComponent,
-  DefaultGraphQLAuthorServiceComponent,
-  DefaultGraphQLIdeaServiceComponent,
-  DefaultGraphQLOrganisationServiceComponent,
-  DefaultGraphQLQuestionServiceComponent,
-  DefaultGraphQLRuntimeComponent,
-  DefaultGraphQLTagServiceComponent
-}
+import org.make.api.technical.graphql._
 import org.make.api.technical.healthcheck._
 import org.make.api.technical.job._
 import org.make.api.technical.monitoring.DefaultMonitoringService
@@ -128,6 +123,7 @@ import scala.concurrent.duration.DurationInt
 
 trait MakeApi
     extends ActorSystemComponent
+    with ActorSystemTypedComponent
     with AvroSerializers
     with BuildInfoRoutes
     with DefaultActiveFeatureServiceComponent
@@ -252,6 +248,7 @@ trait MakeApi
     with DefaultSocialProvidersConfigurationComponent
     with DefaultSocialServiceComponent
     with DefaultSortAlgorithmConfigurationComponent
+    with DefaultSpawnActorServiceComponent
     with DefaultStorageConfigurationComponent
     with DefaultStorageServiceComponent
     with DefaultSwiftClientComponent
@@ -279,6 +276,7 @@ trait MakeApi
     with ProposalCoordinatorComponent
     with SequenceConfigurationActorComponent
     with SessionHistoryCoordinatorComponent
+    with SpawnActorRefComponent
     with StrictLogging
     with UserHistoryCoordinatorComponent {
 
@@ -303,12 +301,13 @@ trait MakeApi
     atMost = 10.seconds
   )
 
-  override lazy val jobCoordinator: ActorRef = Await.result(
-    actorSystem
-      .actorSelection(actorSystem / MakeGuardian.name / s"${JobCoordinator.name}-backoff")
-      .resolveOne()(Timeout(5.seconds)),
-    atMost = 5.seconds
-  )
+  override lazy val jobCoordinator: TypedActorRef[JobActor.Protocol.Command] = Await.result({
+    actorSystemTyped.findRefByKey(JobCoordinator.Key)
+  }, atMost = 5.seconds)
+
+  override lazy val spawnActorRef: TypedActorRef[SpawnProtocol.Command] = Await.result({
+    actorSystemTyped.findRefByKey(MakeGuardian.SpawnActorKey)
+  }, atMost = 5.seconds)
 
   override lazy val sequenceConfigurationActor: ActorRef = Await.result(
     actorSystem
@@ -541,6 +540,10 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
       res
     }
 
+}
+
+trait ActorSystemTypedComponent {
+  implicit def actorSystemTyped: ActorSystemTyped[Nothing]
 }
 
 trait ActorSystemComponent {

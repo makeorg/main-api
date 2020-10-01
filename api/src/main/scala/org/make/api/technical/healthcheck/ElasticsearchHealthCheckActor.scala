@@ -18,6 +18,7 @@
  */
 
 package org.make.api.technical.healthcheck
+
 import akka.actor.{ActorSystem, Props}
 import com.sksamuel.elastic4s.IndexAndType
 import com.sksamuel.elastic4s.http.ElasticClient

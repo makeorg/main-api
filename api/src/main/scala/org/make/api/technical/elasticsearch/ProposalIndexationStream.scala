@@ -22,7 +22,7 @@ package org.make.api.technical.elasticsearch
 import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, ZonedDateTime}
 
-import akka.stream.FlowShape
+import akka.stream.{FlowShape, Materializer}
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Flow, GraphDSL, Merge, Partition, Sink, Source}
 import akka.{Done, NotUsed}
@@ -30,7 +30,6 @@ import cats.data.OptionT
 import cats.implicits._
 import com.sksamuel.elastic4s.IndexAndType
 import com.typesafe.scalalogging.StrictLogging
-import org.make.api.ActorSystemComponent
 import org.make.api.operation.{OperationOfQuestionServiceComponent, OperationServiceComponent}
 import org.make.api.organisation.OrganisationServiceComponent
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
@@ -78,7 +77,6 @@ trait ProposalIndexationStream
     with QuestionServiceComponent
     with TagServiceComponent
     with TagTypeServiceComponent
-    with ActorSystemComponent
     with ProposalSearchEngineComponent
     with SequenceConfigurationComponent
     with SemanticComponent
@@ -86,7 +84,7 @@ trait ProposalIndexationStream
     with SegmentServiceComponent {
 
   object ProposalStream {
-    val maybeIndexedProposal: Flow[ProposalId, Option[IndexedProposal], NotUsed] =
+    def maybeIndexedProposal(implicit mat: Materializer): Flow[ProposalId, Option[IndexedProposal], NotUsed] =
       Flow[ProposalId].mapAsync(parallelism)(proposalId => getIndexedProposal(proposalId))
 
     def runIndexProposals(proposalIndexName: String): Flow[Seq[IndexedProposal], Done, NotUsed] =
@@ -116,13 +114,13 @@ trait ProposalIndexationStream
         semanticService.indexProposals(proposals).map(_ => Done)
       }
 
-    def flowIndexProposals(proposalIndexName: String): Flow[ProposalId, Done, NotUsed] =
+    def flowIndexProposals(proposalIndexName: String)(implicit mat: Materializer): Flow[ProposalId, Done, NotUsed] =
       maybeIndexedProposal
         .via(filterIsDefined[IndexedProposal])
         .groupedWithin(100, 500.milliseconds)
         .via(runIndexProposals(proposalIndexName))
 
-    val indexOrUpdateFlow: Flow[ProposalId, Seq[IndexedProposal], NotUsed] =
+    def indexOrUpdateFlow(implicit mat: Materializer): Flow[ProposalId, Seq[IndexedProposal], NotUsed] =
       Flow.fromGraph[ProposalId, Seq[IndexedProposal], NotUsed](GraphDSL.create() {
         implicit builder: GraphDSL.Builder[NotUsed] =>
           val source = builder.add(maybeIndexedProposal)
@@ -158,7 +156,9 @@ trait ProposalIndexationStream
     case None             => Future.successful[Option[Question]](None)
   }
 
-  private def getSelectedStakeTag(tags: Seq[Tag], tagTypes: Seq[TagType]): Future[Option[IndexedTag]] = {
+  private def getSelectedStakeTag(tags: Seq[Tag], tagTypes: Seq[TagType])(
+    implicit mat: Materializer
+  ): Future[Option[IndexedTag]] = {
     tagTypes.find(_.label.toLowerCase == "stake") match {
       case None => Future.failed(new IllegalStateException("Unable to find stake tag types"))
       case Some(stakeTypeTag) =>
@@ -187,7 +187,7 @@ trait ProposalIndexationStream
     }
   }
 
-  def getIndexedProposal(proposalId: ProposalId): Future[Option[IndexedProposal]] = {
+  def getIndexedProposal(proposalId: ProposalId)(implicit mat: Materializer): Future[Option[IndexedProposal]] = {
 
     val maybeResult: OptionT[Future, IndexedProposal] = for {
       proposal         <- OptionT(proposalCoordinatorService.getProposal(proposalId))
