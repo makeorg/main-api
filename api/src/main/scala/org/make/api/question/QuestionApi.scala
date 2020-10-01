@@ -671,7 +671,7 @@ trait DefaultQuestionApiComponent
               (
                 country: Country,
                 language: Language,
-                status: Option[OperationOfQuestion.Status],
+                maybeStatus: Option[OperationOfQuestion.Status],
                 limit: Option[Int],
                 skip: Option[Int],
                 sortAlgorithm: Option[SortAlgorithm]
@@ -679,7 +679,7 @@ trait DefaultQuestionApiComponent
                 val filters = OperationOfQuestionSearchFilters(
                   country = Some(CountrySearchFilter(BusinessConfig.validateCountry(country))),
                   language = Some(LanguageSearchFilter(BusinessConfig.validateLanguage(country, language))),
-                  status = status.map(StatusSearchFilter.apply)
+                  status = maybeStatus.map(status => StatusSearchFilter(status))
                 )
                 provideAsync(
                   operationOfQuestionService.search(

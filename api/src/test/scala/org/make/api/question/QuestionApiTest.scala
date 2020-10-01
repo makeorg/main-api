@@ -158,7 +158,9 @@ class QuestionApiTest
   when(operationOfQuestionService.search(any[OperationOfQuestionSearchQuery])).thenAnswer {
     query: OperationOfQuestionSearchQuery =>
       val result =
-        indexedOperationOfQuestions.filter(i => query.filters.flatMap(_.status).map(_.status).fold(true)(_ == i.status))
+        indexedOperationOfQuestions.filter(
+          i => query.filters.flatMap(_.status).map(_.status).fold(true)(_.toList.contains(i.status))
+        )
       Future.successful(OperationOfQuestionSearchResult(result.size, result))
   }
 

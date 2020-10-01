@@ -19,9 +19,12 @@
 
 package org.make.api.views
 
+import java.time.ZonedDateTime
+
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
+import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.searches.suggestion.Fuzziness
 import org.make.api.MakeApiTestBase
 import org.make.api.extensions.MakeSettingsComponent
@@ -39,8 +42,9 @@ import org.make.core.operation.{
   QuestionContentSearchFilter
 }
 import org.make.core.operation
-import org.make.core.operation.indexed.OperationOfQuestionSearchResult
+import org.make.core.operation.indexed.{IndexedOperationOfQuestion, OperationOfQuestionSearchResult}
 import org.make.core.proposal.{ContentSearchFilter, OperationKindsSearchFilter, SearchFilters, SearchQuery}
+import org.make.core.reference.Country
 import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery}
 import org.make.core.user.indexed.OrganisationSearchResult
 
@@ -218,6 +222,35 @@ class ViewApiTest
         search.questions.total shouldBe 0
 //  Edit this following part when further implemented
         search.organisations shouldBe OrganisationsSearchResultResponse.empty
+      }
+    }
+  }
+
+  Feature("available countries") {
+    Scenario("it works") {
+      val ooqs = {
+        def gen(startDate: Option[ZonedDateTime], endDate: Option[ZonedDateTime], first: Country, others: Country*) = {
+          val q = question(id = idGenerator.nextQuestionId(), countries = NonEmptyList.of(first, others: _*))
+          val o = simpleOperation(id = idGenerator.nextOperationId())
+          val ooq = operationOfQuestion(q.questionId, o.operationId, startDate = startDate, endDate = endDate)
+          IndexedOperationOfQuestion.createFromOperationOfQuestion(ooq, o, q)
+        }
+        Seq(
+          gen(startDate = Some(ZonedDateTime.now.minusDays(1)), endDate = None, Country("FR")),
+          gen(startDate = None, endDate = Some(ZonedDateTime.now.minusDays(1)), Country("DE"), Country("FR"))
+        )
+      }
+
+      when(operationOfQuestionService.count(any[OperationOfQuestionSearchQuery]))
+        .thenReturn(Future.successful(ooqs.size))
+      when(operationOfQuestionService.search(any))
+        .thenReturn(Future.successful(OperationOfQuestionSearchResult(ooqs.size, ooqs)))
+
+      Get("/views/countries") ~> routes ~> check {
+        entityAs[Seq[AvailableCountry]] should contain theSameElementsAs Seq(
+          AvailableCountry("FR", true),
+          AvailableCountry("DE", false)
+        )
       }
     }
   }
