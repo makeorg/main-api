@@ -27,14 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, ThreadFactory}
 import java.util.stream.Collectors
 
-import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
-import akka.{Done, NotUsed}
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.http.scaladsl.model.StatusCodes
 import akka.persistence.query.EventEnvelope
 import akka.stream._
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.{ByteString, Timeout}
+import akka.{Done, NotUsed}
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import enumeratum.values.{StringEnum, StringEnumEntry}
@@ -43,13 +43,15 @@ import io.circe.Decoder
 import org.make.api.ActorSystemTypedComponent
 import org.make.api.extensions.MailJetConfigurationComponent
 import org.make.api.operation.OperationServiceComponent
+import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.question.{QuestionServiceComponent, SearchQuestionRequest}
+import org.make.api.technical.ExecutorServiceHelper._
 import org.make.api.technical.RichFutures._
 import org.make.api.technical.crm.BasicCrmResponse.ManageManyContactsResponse
 import org.make.api.technical.crm.ManageContactAction.{AddNoForce, Remove}
 import org.make.api.technical.job.JobActor.Protocol.Response.JobAcceptance
 import org.make.api.technical.job.JobCoordinatorServiceComponent
-import org.make.api.technical.{EventBusServiceComponent, ReadJournalComponent, StreamUtils, TimeSettings}
+import org.make.api.technical.{RichFutures => _, _}
 import org.make.api.user.{PersistentUserToAnonymizeServiceComponent, UserServiceComponent}
 import org.make.api.userhistory._
 import org.make.core.DateHelper.isLast30daysDate
@@ -57,14 +59,12 @@ import org.make.core.Validation.emailRegex
 import org.make.core.job.Job.JobId.SyncCrmData
 import org.make.core.question.Question
 import org.make.core.user.{User, UserId, UserType}
-import org.make.api.technical.ExecutorServiceHelper._
+import org.make.core.{DateHelper, Order}
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
-import org.make.core.{DateHelper, Order}
-import org.make.api.proposal.ProposalServiceComponent
 
 trait CrmService {
   def sendEmail(message: SendEmail): Future[SendEmailResponse]
@@ -101,7 +101,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     with CrmClientComponent
     with EventBusServiceComponent
     with ErrorAccumulatingCirceSupport
-    with JobCoordinatorServiceComponent =>
+    with JobCoordinatorServiceComponent
+    with SpawnActorServiceComponent =>
 
   override lazy val crmService: DefaultCrmService = new DefaultCrmService
 
@@ -146,9 +147,8 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           e match {
             case CrmClientException.RequestException.SendEmailException(StatusCodes.BadRequest, _) =>
             case _ =>
-              actorSystemTyped.scheduler.scheduleOnce(mailJetConfiguration.delayBeforeResend, () =>
-                eventBusService.publish(message)
-              )
+              actorSystemTyped.scheduler
+                .scheduleOnce(mailJetConfiguration.delayBeforeResend, () => eventBusService.publish(message))
           }
       }
 
@@ -370,7 +370,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         .filter(Files.size(_) > 0)
         .mapAsync(1) { csv =>
           for {
-            responseHardBounce <- sendCsvToHardBounceList(csv, list)
+            responseHardBounce  <- sendCsvToHardBounceList(csv, list)
             responseOptIn       <- sendCsvToOptInList(csv, list)
             responseUnsubscribe <- sendCsvToUnsubscribeList(csv, list)
             result              <- verifyJobCompletion(responseHardBounce, responseOptIn, responseUnsubscribe)
@@ -386,8 +386,12 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
     ): Future[Unit] = {
       val jobIds = Seq(responseHardBounce, responseOptIn, responseUnsubscribe)
       val promise = Promise[Unit]()
-      actorSystemTyped.systemActorOf(CrmSynchroCsvMonitor.props(crmClient, jobIds, promise, mailJetConfiguration.tickInterval))
-      promise.future
+      spawnActorService
+        .spawn(
+          behavior = CrmSynchroCsvMonitor(crmClient, promise, mailJetConfiguration.tickInterval)(jobIds),
+          name = "CrmSynchroCsvMonitor"
+        )
+        .flatMap(_ => promise.future)
     }
 
     private def computeAndPersistCrmUsers(questionResolver: QuestionResolver): Future[Unit] = {

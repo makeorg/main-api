@@ -19,116 +19,120 @@
 
 package org.make.api.technical.crm
 
-import akka.actor.{Actor, Props}
-import akka.pattern.pipe
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import com.typesafe.scalalogging.StrictLogging
+import org.make.api.technical.ActorProtocol
 import org.make.api.technical.crm.BasicCrmResponse.ManageContactsWithCsvResponse
-import org.make.api.technical.crm.CrmSynchroCsvMonitor.Protocol._
+import org.make.api.technical.crm.CrmSynchroCsvMonitor.Protocol.Command
 
-import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
-class CrmSynchroCsvMonitor(
-  crmClient: CrmClient,
-  jobIds: Seq[Long],
-  promise: Promise[Unit],
-  tickInterval: FiniteDuration
-)(implicit executionContext: ExecutionContext)
-    extends Actor
-    with StrictLogging {
+object CrmSynchroCsvMonitor extends StrictLogging {
 
-  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  private val queue: mutable.Queue[Long] = mutable.Queue[Long]()
-  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  private val pendingCalls: mutable.Set[Long] = mutable.Set[Long]()
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+  def apply(crmClient: CrmClient, promise: Promise[Unit], tickInterval: FiniteDuration)(
+    jobIds: Seq[Long]
+  )(implicit executionContext: ExecutionContext): Behavior[Protocol.Command] = {
 
-  override def preStart(): Unit = {
-    jobIds.foreach(queue.enqueue)
-    context.system.scheduler.scheduleWithFixedDelay(0.seconds, tickInterval, self, Tick)
-    ()
-  }
-
-  override def receive: Receive = {
-    case Tick                              => handleTick()
-    case CrmCallSucceeded(jobId, response) => handleSuccessfulResponse(jobId, response)
-    case CrmCallFailed(jobId, e)           => handleErrorResponse(jobId, e)
-    case _                                 =>
-  }
-
-  def blocked: Receive = {
-    case Tick => // Do nothing
-    case QuotaAvailable =>
-      logger.info("Job checker becomes available again")
-      context.become(receive)
-    case CrmCallSucceeded(jobId, response) => handleSuccessfulResponse(jobId, response)
-    case CrmCallFailed(jobId, e)           => handleErrorResponse(jobId, e)
-    case _                                 =>
-  }
-
-  private def handleTick(): Unit = {
-
-    if (queue.isEmpty) {
-      if (pendingCalls.isEmpty) {
-        promise.success {}
-        context.stop(self)
-      }
-    } else {
-      val current = queue.dequeue()
-      pendingCalls += current
-
-      crmClient
-        .monitorCsvImport(current)
-        .map(CrmCallSucceeded(current, _))
-        .recoverWith {
-          case e => Future.successful(CrmCallFailed(current, e))
+    def running(jobIds: Seq[Long], pendingCalls: Seq[Long]): Behavior[Protocol.Command] = {
+      Behaviors.setup { implicit context =>
+        Behaviors.receiveMessage {
+          case Command.Tick           => handleTick(jobIds, pendingCalls)
+          case Command.QuotaAvailable => Behaviors.same
+          case Command.CrmCallSucceeded(jobId, response) =>
+            handleSuccessfulResponse(jobId, response)(jobIds, pendingCalls)(running)
+          case Command.CrmCallFailed(jobId, e) =>
+            handleErrorResponse(jobId, e)(jobIds, pendingCalls)(running)
         }
-        .pipeTo(self)
-      ()
-    }
-  }
-
-  private def handleErrorResponse(jobId: Long, e: Throwable): Unit = {
-    pendingCalls -= jobId
-    queue.enqueue(jobId)
-
-    e match {
-      case QuotaExceeded(_, message) =>
-        context.become(blocked)
-        context.system.scheduler.scheduleOnce(1.hour, self, QuotaAvailable)
-        logger.warn(s"Job checker is becoming blocked for an hour, received message is $message")
-      case other => logger.error(s"Error when checking status for job $jobId", other)
-    }
-  }
-
-  private def handleSuccessfulResponse(jobId: Long, response: ManageContactsWithCsvResponse): Unit = {
-    pendingCalls -= jobId
-    if (response.data.forall(response => response.status == "Completed" || response.status == "Abort")) {
-      logger.info(s"Job $jobId completed successfully: $response")
-      if (response.data.forall(response => response.errorCount > 0)) {
-        logger.error(
-          s"Job $jobId has errors: $response, " +
-            s"file should be at https://api.mailjet.com/v3/DATA/Batchjob/$jobId/CSVError/text:csv"
-        )
       }
-    } else {
-      queue.enqueue(jobId)
+    }
+
+    def blocked(jobIds: Seq[Long], pendingCalls: Seq[Long]): Behavior[Protocol.Command] = {
+      Behaviors.withTimers { timers =>
+        timers.startSingleTimer(Command.QuotaAvailable, 1.hour)
+        Behaviors.receiveMessage {
+          case Command.Tick => Behaviors.same
+          case Command.QuotaAvailable =>
+            logger.info("Job checker becomes available again")
+            running(jobIds, pendingCalls)
+          case Command.CrmCallSucceeded(jobId, response) =>
+            handleSuccessfulResponse(jobId, response)(jobIds, pendingCalls)(blocked)
+          case Command.CrmCallFailed(jobId, e) =>
+            handleErrorResponse(jobId, e)(jobIds, pendingCalls)(blocked)
+        }
+      }
+    }
+
+    def handleTick(jobIds: Seq[Long], pendingCalls: Seq[Long])(
+      implicit context: ActorContext[Command]
+    ): Behavior[Command] = {
+      (jobIds, pendingCalls) match {
+        case (Seq(), Seq()) =>
+          promise.success {}
+          Behaviors.stopped
+        case (Seq(), _) =>
+          Behaviors.same
+        case (toMonitor +: tail, _) =>
+          val futureCall: Future[ManageContactsWithCsvResponse] = crmClient.monitorCsvImport(toMonitor)
+          context.pipeToSelf(futureCall) {
+            case Success(response) => Command.CrmCallSucceeded(toMonitor, response)
+            case Failure(e)        => Command.CrmCallFailed(toMonitor, e)
+          }
+          running(tail, pendingCalls :+ toMonitor)
+      }
+
+    }
+
+    def handleErrorResponse(jobId: Long, error: Throwable)(jobIds: Seq[Long], pendingCalls: Seq[Long])(
+      next: (Seq[Long], Seq[Long]) => Behavior[Command]
+    ): Behavior[Command] =
+      error match {
+        case QuotaExceeded(_, message) =>
+          logger.warn(s"Job checker is becoming blocked for an hour, received message is $message")
+          blocked(jobIds :+ jobId, pendingCalls.filterNot(_ == jobId))
+        case other =>
+          logger.error(s"Error when checking status for job $jobId", other)
+          next(jobIds :+ jobId, pendingCalls.filterNot(_ == jobId))
+      }
+
+    def handleSuccessfulResponse(jobId: Long, response: BasicCrmResponse.ManageContactsWithCsvResponse)(
+      jobIds: Seq[Long],
+      pendingCalls: Seq[Long]
+    )(next: (Seq[Long], Seq[Long]) => Behavior[Command]): Behavior[Command] =
+      if (response.data.forall(response => response.status == "Completed" || response.status == "Abort")) {
+        logger.info(s"Job $jobId completed successfully: $response")
+        if (response.data.forall(response => response.errorCount > 0)) {
+          logger.error(
+            s"Job $jobId has errors: $response, " +
+              s"file should be at https://api.mailjet.com/v3/DATA/Batchjob/$jobId/CSVError/text:csv"
+          )
+        }
+        next(jobIds, pendingCalls.filterNot(_ == jobId))
+      } else {
+        next(jobIds :+ jobId, pendingCalls.filterNot(_ == jobId))
+      }
+
+    Behaviors.withTimers { timers =>
+      timers.startTimerWithFixedDelay(Command.Tick, tickInterval)
+      running(jobIds, Seq.empty)
     }
   }
-}
 
-object CrmSynchroCsvMonitor {
-  def props(crmClient: CrmClient, jobIds: Seq[Long], promise: Promise[Unit], tickInterval: FiniteDuration)(
-    implicit executionContext: ExecutionContext
-  ): Props =
-    Props(new CrmSynchroCsvMonitor(crmClient, jobIds, promise, tickInterval))
-
-  sealed abstract class Protocol extends Product with Serializable
+  sealed abstract class Protocol extends ActorProtocol
 
   object Protocol {
-    final case object Tick extends Protocol
-    final case object QuotaAvailable extends Protocol
-    final case class CrmCallSucceeded(jobId: Long, response: ManageContactsWithCsvResponse) extends Protocol
-    final case class CrmCallFailed(jobId: Long, error: Throwable) extends Protocol
+
+    sealed abstract class Command extends Protocol
+
+    object Command {
+      case object Tick extends Command
+      case object QuotaAvailable extends Command
+      final case class CrmCallSucceeded(jobId: Long, response: ManageContactsWithCsvResponse) extends Command
+      final case class CrmCallFailed(jobId: Long, error: Throwable) extends Command
+    }
   }
+
 }
