@@ -525,7 +525,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           case "male"   => Male
           case "female" => Female
           case _        => Other
-        }, genderName = userInfo.gender, dateOfBirth = userInfo.dateOfBirth.orElse(profile.flatMap(_.dateOfBirth)))
+        }, genderName = userInfo.gender, dateOfBirth = profile.flatMap(_.dateOfBirth).orElse(userInfo.dateOfBirth))
       )
       val updatedUser: User =
         user.copy(
