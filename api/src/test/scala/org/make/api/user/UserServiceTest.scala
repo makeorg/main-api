@@ -420,6 +420,36 @@ class UserServiceTest
       clearInvocations(eventBusService)
       clearInvocations(persistentUserService)
 
+      val now = LocalDate.now
+      val info = UserInfo(
+        email = Some("facebook@make.org"),
+        firstName = Some("facebook"),
+        country = Country("FR"),
+        language = Language("fr"),
+        dateOfBirth = Some(now)
+      )
+
+      val returnedProfileNoDoB = Profile.parseProfile()
+      val returnedUserNoDoB = TestUtils.user(id = UserId("BBB-CCC-DDD-EEEE"), profile = returnedProfileNoDoB)
+
+      when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUserNoDoB)))
+      when(persistentUserService.updateSocialUser(any[User])).thenReturn(Future.successful(true))
+      val futureUserNoDoB = userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty)
+
+      whenReady(futureUserNoDoB, Timeout(2.seconds)) {
+        case (user, _) =>
+          user.profile.get.dateOfBirth should be(info.dateOfBirth)
+
+          verify(persistentUserService, times(1)).updateSocialUser(argThat[User] { user: User =>
+            user.profile.flatMap(_.dateOfBirth).contains(now)
+          })
+      }
+    }
+
+    Scenario("successful update user from social without date of birth") {
+      clearInvocations(eventBusService)
+      clearInvocations(persistentUserService)
+
       val info = UserInfo(
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
@@ -428,8 +458,8 @@ class UserServiceTest
         dateOfBirth = Some(LocalDate.now)
       )
 
-      val returnedProfile = Profile.parseProfile(dateOfBirth = Some(LocalDate.parse("1984-10-11")))
-
+      val currentDateOfBirth = LocalDate.parse("1984-10-11")
+      val returnedProfile = Profile.parseProfile(dateOfBirth = Some(currentDateOfBirth))
       val returnedUser = TestUtils.user(id = UserId("AAA-BBB-CCC-DDD"), profile = returnedProfile)
 
       when(persistentUserService.findByEmail(any[String])).thenReturn(Future.successful(Some(returnedUser)))
@@ -437,11 +467,12 @@ class UserServiceTest
       val futureUser = userService.createOrUpdateUserFromSocial(info, None, None, RequestContext.empty)
 
       whenReady(futureUser, Timeout(2.seconds)) {
-        case (user, accountCreation) =>
-          user shouldBe a[User]
-          user.profile.get.dateOfBirth should be(info.dateOfBirth)
+        case (user, _) =>
+          user.profile.get.dateOfBirth should be(returnedProfile.flatMap(_.dateOfBirth))
 
-          verify(persistentUserService, times(1)).updateSocialUser(any[User])
+          verify(persistentUserService, times(1)).updateSocialUser(argThat[User] { user: User =>
+            user.profile.flatMap(_.dateOfBirth).contains(currentDateOfBirth)
+          })
       }
     }
 
