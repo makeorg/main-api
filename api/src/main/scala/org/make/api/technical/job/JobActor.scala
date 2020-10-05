@@ -38,23 +38,28 @@ import scala.concurrent.duration.Duration
 object JobActor {
 
   sealed trait JobState extends MakeSerializable {
-    def toOption: Option[Job]
     def isStopped: Boolean
     def isStuck(heartRate: Duration): Boolean
-
-    def persistIfRunning(replyTo: ActorRef[Process], event: JobEvent): Effect[JobEvent, JobState] = {
-      if (isStopped) {
-        Effect.reply(replyTo)(NotRunning)
-      } else {
-        Effect.persist(event).thenReply(replyTo)(_ => Ack)
-      }
-    }
+    def handleCommand(heartRate: Duration): JobActor.Protocol.Command => Effect[JobEvent, JobState]
+    def handleEvent: JobEvent                                         => JobState
   }
 
   case object EmptyJob extends JobState {
-    override def toOption: Option[Job] = None
     override def isStopped: Boolean = true
     override def isStuck(heartRate: Duration): Boolean = false
+
+    override def handleCommand(heartRate: Duration): JobActor.Protocol.Command => Effect[JobEvent, JobState] = {
+      case Start(id, replyTo: ActorRef[JobAcceptance]) =>
+        Effect.persist(Started(id, DateHelper.now())).thenReply(replyTo)(_ => JobAcceptance(true))
+      case command: StatusCommand => Effect.reply(command.replyTo)(NotRunning)
+      case Get(_, replyTo)        => Effect.reply(replyTo)(State(None))
+      case Kill(_)                => Effect.stop().thenStop()
+    }
+
+    override def handleEvent: JobEvent => JobState = {
+      case Started(id, date) => DefinedJob(Job(id, JobStatus.Running(0d), Some(date), Some(date)))
+      case _                 => this
+    }
 
     implicit val emptyJobJsonFormat: RootJsonFormat[EmptyJob.type] = new RootJsonFormat[EmptyJob.type] {
       private val Key = "empty"
@@ -70,7 +75,14 @@ object JobActor {
   }
 
   final case class DefinedJob(job: Job) extends JobState {
-    override def toOption: Option[Job] = Some(job)
+    private def persistIfRunning(replyTo: ActorRef[Process], event: JobEvent): Effect[JobEvent, JobState] = {
+      if (isStopped) {
+        Effect.reply(replyTo)(NotRunning)
+      } else {
+        Effect.persist(event).thenReply(replyTo)(_ => Ack)
+      }
+    }
+
     override def isStopped: Boolean = {
       job.status match {
         case JobStatus.Running(_) => false
@@ -79,6 +91,32 @@ object JobActor {
     }
 
     override def isStuck(heartRate: Duration): Boolean = job.isStuck(heartRate)
+
+    override def handleCommand(heartRate: Duration): JobActor.Protocol.Command => Effect[JobEvent, JobState] = {
+      case Start(id, replyTo: ActorRef[JobAcceptance]) =>
+        if (isStopped || isStuck(heartRate)) {
+          Effect.persist(Started(id, DateHelper.now())).thenReply(replyTo)(_ => JobAcceptance(true))
+        } else {
+          Effect.reply(replyTo)(JobAcceptance(false))
+        }
+      case Heartbeat(id, replyTo) => persistIfRunning(replyTo, HeartbeatReceived(id, DateHelper.now()))
+      case Report(id, progress, replyTo) =>
+        persistIfRunning(replyTo, Progressed(id, DateHelper.now(), progress))
+      case Finish(id, outcome, replyTo) =>
+        persistIfRunning(replyTo, Finished(id, DateHelper.now(), outcome.flatMap(e => Option(e.getMessage))))
+      case Get(_, replyTo) => Effect.reply(replyTo)(State(Some(job)))
+      case Kill(_)         => Effect.stop().thenStop()
+    }
+
+    override def handleEvent: JobEvent => JobState = {
+      case Started(id, date) => DefinedJob(Job(id, JobStatus.Running(0d), Some(date), Some(date)))
+      case HeartbeatReceived(_, date) =>
+        DefinedJob(job.copy(updatedAt = Some(date)))
+      case Progressed(_, date, progress) =>
+        DefinedJob(job.copy(status = JobStatus.Running(progress), updatedAt = Some(date)))
+      case Finished(_, date, outcome) =>
+        DefinedJob(job.copy(status = JobStatus.Finished(outcome), updatedAt = Some(date)))
+    }
   }
 
   object DefinedJob {
@@ -91,10 +129,18 @@ object JobActor {
     sealed abstract class Command extends Protocol with ActorCommand[JobId]
 
     object Command {
+      sealed trait StatusCommand {
+        def replyTo: ActorRef[Process]
+      }
+
       final case class Start(id: JobId, replyTo: ActorRef[JobAcceptance]) extends Command
-      final case class Heartbeat(id: JobId, replyTo: ActorRef[Process]) extends Command
-      final case class Report(id: JobId, progress: Progress, replyTo: ActorRef[Process]) extends Command
-      final case class Finish(id: JobId, failure: Option[Throwable], replyTo: ActorRef[Process]) extends Command
+      final case class Heartbeat(id: JobId, replyTo: ActorRef[Process]) extends Command with StatusCommand
+      final case class Report(id: JobId, progress: Progress, replyTo: ActorRef[Process])
+          extends Command
+          with StatusCommand
+      final case class Finish(id: JobId, failure: Option[Throwable], replyTo: ActorRef[Process])
+          extends Command
+          with StatusCommand
       final case class Get(id: JobId, replyTo: ActorRef[State]) extends Command
       final case class Kill(id: JobId) extends Command
     }
@@ -129,31 +175,10 @@ object JobActor {
     }
   }
 
-  def commandHandler(heartRate: Duration): (JobState, Protocol.Command) => Effect[JobEvent, JobState] = {
-    case (state, Start(id, replyTo: ActorRef[JobAcceptance])) =>
-      if (state.isStopped || state.isStuck(heartRate)) {
-        Effect.persist(Started(id, DateHelper.now())).thenReply(replyTo)(_ => JobAcceptance(true))
-      } else {
-        Effect.reply(replyTo)(JobAcceptance(false))
-      }
-    case (state, Heartbeat(id, replyTo)) => state.persistIfRunning(replyTo, HeartbeatReceived(id, DateHelper.now()))
-    case (state, Report(id, progress, replyTo)) =>
-      state.persistIfRunning(replyTo, Progressed(id, DateHelper.now(), progress))
-    case (state, Finish(id, outcome, replyTo)) =>
-      state.persistIfRunning(replyTo, Finished(id, DateHelper.now(), outcome.flatMap(e => Option(e.getMessage))))
-    case (state, Get(_, replyTo)) => Effect.reply(replyTo)(State(state.toOption))
-    case (_, Kill(_))             => Effect.stop().thenStop()
+  def commandHandler(heartRate: Duration)(state: JobState, command: Protocol.Command): Effect[JobEvent, JobState] = {
+    state.handleCommand(heartRate)(command)
   }
 
-  val eventHandler: (JobState, JobEvent) => JobState = {
-    case (_, Started(id, date)) => DefinedJob(Job(id, JobStatus.Running(0d), Some(date), Some(date)))
-    case (EmptyJob, _)          => EmptyJob
-    case (DefinedJob(job), HeartbeatReceived(_, date)) =>
-      DefinedJob(job.copy(updatedAt = Some(date)))
-    case (DefinedJob(job), Progressed(_, date, progress)) =>
-      DefinedJob(job.copy(status = JobStatus.Running(progress), updatedAt = Some(date)))
-    case (DefinedJob(job), Finished(_, date, outcome)) =>
-      DefinedJob(job.copy(status = JobStatus.Finished(outcome), updatedAt = Some(date)))
-  }
+  def eventHandler(state: JobState, event: JobEvent): JobState = state.handleEvent(event)
 
 }
