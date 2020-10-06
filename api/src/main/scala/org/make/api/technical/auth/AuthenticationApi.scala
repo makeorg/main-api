@@ -233,15 +233,58 @@ trait DefaultAuthenticationApiComponent
       }
     }
 
-    override def accessTokenRoute: Route = pathPrefix("oauth") {
-      path("access_token") {
-        makeOperation("OauthAccessToken", EndpointType.Public) { requestContext =>
-          post {
+    override def accessTokenRoute: Route =
+      post {
+        path("oauth" / "access_token") {
+          makeOperation("OauthAccessToken", EndpointType.Public) { requestContext =>
             formFieldMap { fields =>
-              onComplete(
-                tokenEndpoint
+              extractRequest { request =>
+                val headers: Map[String, Seq[String]] =
+                  request.headers.groupMap(_.name())(_.value())
+                onComplete(
+                  tokenEndpoint
+                    .handleRequest(
+                      new AuthorizationRequest(headers, fields.map { case (k, v) => k -> Seq(v) }),
+                      oauth2DataHandler
+                    )
+                    .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
+                      case Left(e) => Future.successful(Left(e))
+                      case Right(result) =>
+                        sessionHistoryCoordinatorService
+                          .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
+                          .map(_ => Right(result))
+                    }
+                ) {
+                  case Success(maybeGrantResponse) =>
+                    maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
+                      setMakeSecure(grantResult.accessToken, grantResult.authInfo.user.userId) {
+                        complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                      }
+                    })
+                  case Failure(ex) => failWith(ex)
+                }
+              }
+            }
+          }
+        }
+      }
+
+    override def makeAccessTokenRoute: Route =
+      post {
+        path("oauth" / "make_access_token") {
+          makeOperation("OauthMakeAccessToken", EndpointType.Public) { requestContext =>
+            extractRequest { request =>
+              val headers: Map[String, Seq[String]] =
+                request.headers.groupMap(_.name())(_.value())
+              formFieldMap { fields =>
+                val allFields = fields ++ Map(
+                  "client_id" -> makeSettings.Authentication.defaultClientId,
+                  "client_secret" -> makeSettings.Authentication.defaultClientSecret
+                )
+
+                val future: Future[Either[OAuthError, GrantHandlerResult[UserRights]]] = tokenEndpoint
                   .handleRequest(
-                    new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
+                    new AuthorizationRequest(headers, allFields.map { case (k, v) => k -> Seq(v) }),
                     oauth2DataHandler
                   )
                   .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
@@ -251,54 +294,17 @@ trait DefaultAuthenticationApiComponent
                         .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
                         .map(_ => Right(result))
                   }
-              ) {
-                case Success(maybeGrantResponse) =>
-                  maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
-                    setMakeSecure(grantResult.accessToken, grantResult.authInfo.user.userId) {
-                      complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
-                    }
-                  })
-                case Failure(ex) => failWith(ex)
-              }
-            }
-          }
-        }
-      }
-    }
 
-    override def makeAccessTokenRoute: Route = pathPrefix("oauth") {
-      path("make_access_token") {
-        makeOperation("OauthMakeAccessToken", EndpointType.Public) { requestContext =>
-          post {
-            formFieldMap { fields =>
-              val allFields = fields ++ Map(
-                "client_id" -> makeSettings.Authentication.defaultClientId,
-                "client_secret" -> makeSettings.Authentication.defaultClientSecret
-              )
-
-              val future: Future[Either[OAuthError, GrantHandlerResult[UserRights]]] = tokenEndpoint
-                .handleRequest(
-                  new AuthorizationRequest(Map(), allFields.map { case (k, v) => k -> Seq(v) }),
-                  oauth2DataHandler
-                )
-                .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
-                  case Left(e) => Future.successful(Left(e))
-                  case Right(result) =>
-                    sessionHistoryCoordinatorService
-                      .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
-                      .map(_ => Right(result))
+                onComplete(future) {
+                  case Success(Right(result)) => handleGrantResult(fields, result)
+                  case Success(Left(_))       => complete(Unauthorized)
+                  case Failure(ex)            => failWith(ex)
                 }
-
-              onComplete(future) {
-                case Success(Right(result)) => handleGrantResult(fields, result)
-                case Success(Left(_))       => complete(Unauthorized)
-                case Failure(ex)            => failWith(ex)
               }
             }
           }
         }
       }
-    }
 
     override def getAccessTokenRoute: Route = pathPrefix("oauth") {
       get {
