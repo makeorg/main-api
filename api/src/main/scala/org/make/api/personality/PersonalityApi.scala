@@ -110,6 +110,7 @@ trait PersonalityApi extends Directives {
   @ApiOperation(value = "create-top-idea-comments-for-personality", httpMethod = "POST", code = HttpCodes.Created)
   @ApiImplicitParams(
     value = Array(
+      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(
         value = "body",
         paramType = "body",

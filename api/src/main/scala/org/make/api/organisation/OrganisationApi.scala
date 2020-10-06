@@ -152,7 +152,7 @@ trait OrganisationApi extends Directives {
   )
   @ApiImplicitParams(
     value = Array(
-      new ApiImplicitParam(name = "userId", paramType = "path", dataType = "string"),
+      new ApiImplicitParam(name = "organisationId", paramType = "path", dataType = "string"),
       new ApiImplicitParam(
         value = "body",
         paramType = "body",
