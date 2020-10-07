@@ -33,7 +33,6 @@ import io.swagger.annotations.ApiModelProperty
 import org.make.core.SprayJsonFormatters._
 import org.make.core._
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.reference.Language
 import org.make.core.sequence.SequenceId
 import org.make.core.technical.enumeratum.EnumKeys.StringEnumKeys
 import org.make.core.user.UserId
@@ -48,8 +47,6 @@ final case class Operation(
   status: OperationStatus,
   operationId: OperationId,
   slug: String,
-  defaultLanguage: Language,
-  allowedSources: Seq[String],
   events: List[OperationAction],
   questions: Seq[QuestionWithDetails],
   operationKind: OperationKind,
@@ -275,8 +272,6 @@ final case class SimpleOperation(
   operationId: OperationId,
   status: OperationStatus,
   slug: String,
-  allowedSources: Seq[String],
-  defaultLanguage: Language,
   operationKind: OperationKind,
   createdAt: Option[ZonedDateTime],
   updatedAt: Option[ZonedDateTime]

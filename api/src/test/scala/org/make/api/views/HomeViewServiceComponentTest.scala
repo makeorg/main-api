@@ -60,8 +60,6 @@ class HomeViewServiceComponentTest
     operationId = OperationId("default"),
     status = OperationStatus.Active,
     slug = "default",
-    allowedSources = Seq("core"),
-    defaultLanguage = Language("fr"),
     operationKind = OperationKind.PublicConsultation,
     createdAt = Some(now),
     updatedAt = Some(now)

@@ -28,7 +28,7 @@ import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
 import org.make.core.operation.OperationActionType._
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -56,20 +56,12 @@ trait OperationService extends ShortenedNames {
   def findOne(operationId: OperationId): Future[Option[Operation]]
   def findOneSimple(operationId: OperationId): Future[Option[SimpleOperation]]
   def findOneBySlug(slug: String): Future[Option[Operation]]
-  def create(
-    userId: UserId,
-    slug: String,
-    defaultLanguage: Language,
-    allowedSources: Seq[String],
-    operationKind: OperationKind
-  ): Future[OperationId]
+  def create(userId: UserId, slug: String, operationKind: OperationKind): Future[OperationId]
   def update(
     operationId: OperationId,
     userId: UserId,
     slug: Option[String] = None,
-    defaultLanguage: Option[Language] = None,
     status: Option[OperationStatus] = None,
-    allowedSources: Option[Seq[String]] = None,
     operationKind: Option[OperationKind]
   ): Future[Option[OperationId]]
   def count(slug: Option[String], operationKinds: Option[Seq[OperationKind]]): Future[Int]
@@ -126,21 +118,13 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       persistentOperationService.getBySlug(slug)
     }
 
-    override def create(
-      userId: UserId,
-      slug: String,
-      defaultLanguage: Language,
-      allowedSources: Seq[String],
-      operationKind: OperationKind
-    ): Future[OperationId] = {
+    override def create(userId: UserId, slug: String, operationKind: OperationKind): Future[OperationId] = {
       val now = DateHelper.now()
 
       val operation: SimpleOperation = SimpleOperation(
         operationId = idGenerator.nextOperationId(),
         status = OperationStatus.Pending,
         slug = slug,
-        defaultLanguage = defaultLanguage,
-        allowedSources = allowedSources,
         operationKind = operationKind,
         createdAt = Some(now),
         updatedAt = Some(now)
@@ -164,9 +148,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
       operationId: OperationId,
       userId: UserId,
       slug: Option[String] = None,
-      defaultLanguage: Option[Language] = None,
       status: Option[OperationStatus] = None,
-      allowedSources: Option[Seq[String]] = None,
       operationKind: Option[OperationKind]
     ): Future[Option[OperationId]] = {
 
@@ -179,8 +161,6 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
               operationId = operationId,
               status = status.getOrElse(operation.status),
               slug = slug.getOrElse(operation.slug),
-              allowedSources = allowedSources.getOrElse(operation.allowedSources),
-              defaultLanguage = defaultLanguage.getOrElse(operation.defaultLanguage),
               operationKind = operationKind.getOrElse(operation.operationKind),
               createdAt = operation.createdAt,
               updatedAt = operation.updatedAt
@@ -202,11 +182,7 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
 
     private def operationToString(operation: SimpleOperation): String = {
       scala.collection
-        .Map[String, String](
-          "operationId" -> operation.operationId.value,
-          "status" -> operation.status.value,
-          "defaultLanguage" -> operation.defaultLanguage.value
-        )
+        .Map[String, String]("operationId" -> operation.operationId.value, "status" -> operation.status.value)
         .asJson
         .toString
     }

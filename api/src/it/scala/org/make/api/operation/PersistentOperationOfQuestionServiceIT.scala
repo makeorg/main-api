@@ -104,8 +104,6 @@ class PersistentOperationOfQuestionServiceIT
       operationId = operationOfQuestion.operationId,
       status = OperationStatus.Active,
       slug = s"slug-operation-${operationOfQuestion.operationId.value}",
-      allowedSources = Seq.empty,
-      defaultLanguage = Language("fr"),
       operationKind = OperationKind.PublicConsultation,
       createdAt = None,
       updatedAt = None
@@ -285,8 +283,6 @@ class PersistentOperationOfQuestionServiceIT
               operationId,
               OperationStatus.Active,
               "-my-slug",
-              Seq.empty,
-              Language("fr"),
               OperationKind.PublicConsultation,
               Some(DateHelper.now()),
               Some(DateHelper.now())

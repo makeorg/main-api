@@ -64,8 +64,6 @@ class OperationServiceTest
     status = OperationStatus.Pending,
     operationId = OperationId("foo"),
     slug = "first-operation",
-    defaultLanguage = Language("fr"),
-    allowedSources = Seq.empty,
     operationKind = OperationKind.PublicConsultation,
     events = List(
       OperationAction(

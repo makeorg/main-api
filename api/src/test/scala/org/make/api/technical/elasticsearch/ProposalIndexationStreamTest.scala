@@ -100,8 +100,6 @@ class ProposalIndexationStreamTest extends MakeUnitTest with ProposalIndexationS
           operationId = id,
           status = OperationStatus.Active,
           slug = id.value,
-          defaultLanguage = Language("fr"),
-          allowedSources = Seq.empty,
           operationKind = OperationKind.PublicConsultation,
           createdAt = Some(ZonedDateTime.parse("2019-11-07T14:14:14.014Z")),
           updatedAt = None

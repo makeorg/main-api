@@ -107,8 +107,6 @@ class QuestionApiTest
     status = OperationStatus.Active,
     operationId = OperationId("operationid"),
     slug = "operation-slug",
-    defaultLanguage = Language("fr"),
-    allowedSources = Seq("core"),
     operationKind = OperationKind.PublicConsultation,
     events = List.empty,
     questions = Seq.empty,
@@ -131,8 +129,6 @@ class QuestionApiTest
     baseOperation.operationId,
     baseOperation.status,
     baseOperation.slug,
-    baseOperation.allowedSources,
-    baseOperation.defaultLanguage,
     baseOperation.operationKind,
     baseOperation.createdAt,
     baseOperation.updatedAt
@@ -254,7 +250,6 @@ class QuestionApiTest
         val questionDetailsResponse: QuestionDetailsResponse = entityAs[QuestionDetailsResponse]
         questionDetailsResponse.operationId should be(baseOperation.operationId)
         questionDetailsResponse.slug should be(baseQuestion.slug)
-        questionDetailsResponse.allowedSources should be(baseOperation.allowedSources)
         questionDetailsResponse.countries should be(baseQuestion.countries)
         questionDetailsResponse.language should be(baseQuestion.language)
         questionDetailsResponse.wording.title should be(baseOperationOfQuestion.operationTitle)

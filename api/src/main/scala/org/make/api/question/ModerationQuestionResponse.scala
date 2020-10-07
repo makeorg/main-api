@@ -203,7 +203,6 @@ final case class QuestionDetailsResponse(
   countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
-  allowedSources: Seq[String],
   @(ApiModelProperty @field)(dataType = "dateTime")
   startDate: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "dateTime")
@@ -253,7 +252,6 @@ object QuestionDetailsResponse extends CirceFormatters {
     slug = question.slug,
     countries = question.countries,
     language = question.language,
-    allowedSources = operation.allowedSources,
     startDate = operationOfQuestion.startDate,
     endDate = operationOfQuestion.endDate,
     landingSequenceId = operationOfQuestion.landingSequenceId,

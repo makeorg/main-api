@@ -83,13 +83,7 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         case Some(operationId) => Future.successful(operationId)
         case None =>
           val operation: SimpleOperation = EntitiesGen.genSimpleOperation.value
-          operationService.create(
-            userId = adminUserId,
-            slug = operation.slug,
-            defaultLanguage = operation.defaultLanguage,
-            allowedSources = operation.allowedSources,
-            operationKind = operation.operationKind
-          )
+          operationService.create(userId = adminUserId, slug = operation.slug, operationKind = operation.operationKind)
       }
     }
 

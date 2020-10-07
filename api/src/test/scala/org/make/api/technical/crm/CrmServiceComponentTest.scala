@@ -298,8 +298,6 @@ class CrmServiceComponentTest
     status = OperationStatus.Active,
     operationId = OperationId("default"),
     slug = "default",
-    defaultLanguage = Language("fr"),
-    allowedSources = Seq.empty,
     operationKind = OperationKind.PublicConsultation,
     events = List.empty,
     createdAt = None,
@@ -1057,8 +1055,6 @@ class CrmServiceComponentTest
               operationId,
               OperationStatus.Pending,
               question.slug,
-              Seq("core"),
-              Language("fr"),
               OperationKind.PrivateConsultation,
               None,
               None

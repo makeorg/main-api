@@ -30,7 +30,6 @@ import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.DateHelper
 import org.make.core.operation._
 import org.make.core.operation.OperationActionType._
-import org.make.core.reference.Language
 import org.make.core.sequence.SequenceId
 import org.make.core.tag.{Tag, TagDisplay, TagType}
 import org.make.core.user.{Role, User, UserId}
@@ -51,7 +50,6 @@ class OperationServiceIT
   override protected val cockroachExposedPort: Int = 40007
 
   val userId: UserId = UserId(UUID.randomUUID().toString)
-  private val languageFr: Language = Language("fr")
 
   val johnDoe: User = TestUtilsIT.user(
     id = userId,
@@ -85,8 +83,6 @@ class OperationServiceIT
     updatedAt = None,
     status = OperationStatus.Pending,
     slug = "hello-operation",
-    defaultLanguage = languageFr,
-    allowedSources = Seq.empty,
     operationKind = OperationKind.PublicConsultation
   )
 
@@ -96,7 +92,6 @@ class OperationServiceIT
                |an operation with
                |status = Pending
                |slug = "hello-operation"
-               |defaultLanguage = fr
                |""".stripMargin)
       When("""I persist it""")
       And("I update operation")
@@ -107,14 +102,11 @@ class OperationServiceIT
         operationId <- operationService.create(
           userId = userId,
           slug = simpleOperation.slug,
-          defaultLanguage = simpleOperation.defaultLanguage,
-          allowedSources = simpleOperation.allowedSources,
           operationKind = simpleOperation.operationKind
         )
         _ <- operationService.update(
           operationId = operationId,
           slug = Some("hello-updated-operation"),
-          defaultLanguage = Some(Language("pt")),
           userId = userId,
           operationKind = Some(OperationKind.GreatCause)
         )
@@ -135,8 +127,7 @@ class OperationServiceIT
           .get("operation")
           .toString should be(s"""Some({
             |  "operationId" : "${operation.operationId.value}",
-            |  "status" : "Pending",
-            |  "defaultLanguage" : "fr"
+            |  "status" : "Pending"
             |})""".stripMargin)
         And("operations events should contain an update event")
         operation.events
@@ -146,8 +137,7 @@ class OperationServiceIT
           .get("operation")
           .toString should be(s"""Some({
             |  "operationId" : "${operation.operationId.value}",
-            |  "status" : "Pending",
-            |  "defaultLanguage" : "pt"
+            |  "status" : "Pending"
             |})""".stripMargin)
       }
     }

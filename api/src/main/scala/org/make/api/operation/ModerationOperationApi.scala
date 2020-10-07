@@ -167,13 +167,8 @@ trait DefaultModerationOperationApiComponent
                           .requireNotPresent("slug", maybeOperation, Some(s"Slug '${request.slug}' already exist"))
                       )
                       onSuccess(
-                        operationService.create(
-                          userId = auth.user.userId,
-                          slug = request.slug,
-                          defaultLanguage = request.defaultLanguage,
-                          allowedSources = request.allowedSources,
-                          operationKind = request.operationKind
-                        )
+                        operationService
+                          .create(userId = auth.user.userId, slug = request.slug, operationKind = request.operationKind)
                       ) { operationId =>
                         complete(StatusCodes.Created -> OperationIdResponse(operationId))
                       }
@@ -208,8 +203,6 @@ trait DefaultModerationOperationApiComponent
                             userId = auth.user.userId,
                             slug = Some(request.slug),
                             status = request.status,
-                            defaultLanguage = Some(request.defaultLanguage),
-                            allowedSources = Some(request.allowedSources),
                             operationKind = Some(request.operationKind)
                           )
                         ) {
