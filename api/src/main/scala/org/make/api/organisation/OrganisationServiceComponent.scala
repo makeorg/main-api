@@ -429,15 +429,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                 filters = Some(
                   SearchFilters(
                     proposal = Some(ProposalSearchFilter(proposalIds = proposalIds)),
-                    operationKinds = Some(
-                      OperationKindsSearchFilter(
-                        Seq(
-                          OperationKind.GreatCause,
-                          OperationKind.PublicConsultation,
-                          OperationKind.BusinessConsultation
-                        )
-                      )
-                    )
+                    operationKinds = Some(OperationKindsSearchFilter(OperationKind.publicKinds))
                   )
                 ),
                 sort = sort,

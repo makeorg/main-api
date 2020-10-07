@@ -236,11 +236,7 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
           Some(
             ElasticApi.termsQuery(
               OperationOfQuestionElasticsearchFieldName.operationKind.field,
-              Seq(
-                OperationKind.PublicConsultation.value,
-                OperationKind.GreatCause.value,
-                OperationKind.BusinessConsultation.value
-              )
+              OperationKind.publicKinds.map(_.value)
             )
           )
       }

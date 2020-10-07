@@ -86,15 +86,7 @@ class ViewApiTest
               filters = Some(
                 SearchFilters(
                   content = Some(ContentSearchFilter("toto")),
-                  operationKinds = Some(
-                    OperationKindsSearchFilter(
-                      Seq(
-                        OperationKind.GreatCause,
-                        OperationKind.PublicConsultation,
-                        OperationKind.BusinessConsultation
-                      )
-                    )
-                  ),
+                  operationKinds = Some(OperationKindsSearchFilter(OperationKind.publicKinds)),
                   country = None,
                   language = None
                 )
@@ -112,15 +104,7 @@ class ViewApiTest
               filters = Some(
                 OperationOfQuestionSearchFilters(
                   question = Some(QuestionContentSearchFilter("toto", fuzzy = Some(Fuzziness.Auto))),
-                  operationKinds = Some(
-                    operation.OperationKindsSearchFilter(
-                      Seq(
-                        OperationKind.GreatCause,
-                        OperationKind.PublicConsultation,
-                        OperationKind.BusinessConsultation
-                      )
-                    )
-                  )
+                  operationKinds = Some(operation.OperationKindsSearchFilter(OperationKind.publicKinds))
                 )
               ),
               limit = None
@@ -159,15 +143,7 @@ class ViewApiTest
               filters = Some(
                 SearchFilters(
                   content = Some(ContentSearchFilter("lownoresults")),
-                  operationKinds = Some(
-                    OperationKindsSearchFilter(
-                      Seq(
-                        OperationKind.GreatCause,
-                        OperationKind.PublicConsultation,
-                        OperationKind.BusinessConsultation
-                      )
-                    )
-                  ),
+                  operationKinds = Some(OperationKindsSearchFilter(OperationKind.publicKinds)),
                   country = None,
                   language = None
                 )
@@ -185,15 +161,7 @@ class ViewApiTest
               filters = Some(
                 OperationOfQuestionSearchFilters(
                   question = Some(QuestionContentSearchFilter("lownoresults", fuzzy = Some(Fuzziness.Auto))),
-                  operationKinds = Some(
-                    operation.OperationKindsSearchFilter(
-                      Seq(
-                        OperationKind.GreatCause,
-                        OperationKind.PublicConsultation,
-                        OperationKind.BusinessConsultation
-                      )
-                    )
-                  )
+                  operationKinds = Some(operation.OperationKindsSearchFilter(OperationKind.publicKinds))
                 )
               ),
               limit = None

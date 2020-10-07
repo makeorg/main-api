@@ -82,7 +82,7 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())
   )
@@ -91,7 +91,7 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     events = List(
       OperationAction(
         date = now,
@@ -129,7 +129,7 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("secondOperation"),
     slug = "second-operation",
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())
   )
@@ -147,7 +147,7 @@ class ModerationOperationApiTest
       |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
       |    }
       |  ],
-      |  "operationKind": "PUBLIC_CONSULTATION"
+      |  "operationKind": "BUSINESS_CONSULTATION"
       |}
     """.stripMargin
 
@@ -224,7 +224,7 @@ class ModerationOperationApiTest
     .thenReturn(Future.successful(Some(firstFullOperation.copy(operationId = OperationId("updateOperationId")))))
   when(
     operationService
-      .create(userId = tyrion.userId, slug = "my-create-operation", operationKind = OperationKind.PublicConsultation)
+      .create(userId = tyrion.userId, slug = "my-create-operation", operationKind = OperationKind.BusinessConsultation)
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
 
   when(operationService.findOneSimple(OperationId("updateOperationId")))

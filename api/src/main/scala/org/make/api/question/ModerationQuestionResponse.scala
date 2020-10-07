@@ -210,7 +210,7 @@ final case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
   canPropose: Boolean,
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  @(ApiModelProperty @field)(dataType = "string", example = "BUSINESS_CONSULTATION")
   operationKind: OperationKind,
   sequenceConfig: SequenceCardsConfigurationResponse,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about")

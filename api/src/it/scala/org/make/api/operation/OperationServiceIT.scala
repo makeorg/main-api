@@ -83,7 +83,7 @@ class OperationServiceIT
     updatedAt = None,
     status = OperationStatus.Pending,
     slug = "hello-operation",
-    operationKind = OperationKind.PublicConsultation
+    operationKind = OperationKind.BusinessConsultation
   )
 
   Feature("An operation can be created") {

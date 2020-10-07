@@ -298,7 +298,7 @@ class CrmServiceComponentTest
     status = OperationStatus.Active,
     operationId = OperationId("default"),
     slug = "default",
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     events = List.empty,
     createdAt = None,
     updatedAt = None,

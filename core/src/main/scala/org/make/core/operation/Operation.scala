@@ -290,10 +290,11 @@ object OperationKind
     with StringEnumKeys[OperationKind] {
 
   case object GreatCause extends OperationKind("GREAT_CAUSE")
-  case object PublicConsultation extends OperationKind("PUBLIC_CONSULTATION")
   case object PrivateConsultation extends OperationKind("PRIVATE_CONSULTATION")
   case object BusinessConsultation extends OperationKind("BUSINESS_CONSULTATION")
 
   override def values: IndexedSeq[OperationKind] = findValues
+
+  val publicKinds: Seq[OperationKind] = Seq(OperationKind.GreatCause, OperationKind.BusinessConsultation)
 
 }

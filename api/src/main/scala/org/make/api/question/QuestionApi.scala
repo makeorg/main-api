@@ -99,7 +99,7 @@ trait QuestionApi extends Directives {
         name = "operationKinds",
         paramType = "query",
         dataType = "string",
-        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION"
+        allowableValues = "GREAT_CAUSE,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION"
       ),
       new ApiImplicitParam(name = "language", paramType = "query", dataType = "string"),
       new ApiImplicitParam(name = "country", paramType = "query", dataType = "string"),

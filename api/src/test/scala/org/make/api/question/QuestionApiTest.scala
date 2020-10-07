@@ -107,7 +107,7 @@ class QuestionApiTest
     status = OperationStatus.Active,
     operationId = OperationId("operationid"),
     slug = "operation-slug",
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     events = List.empty,
     questions = Seq.empty,
     createdAt = Some(DateHelper.now()),

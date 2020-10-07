@@ -50,7 +50,7 @@ final case class ModerationOperationResponse(
   createdAt: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "dateTime")
   updatedAt: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  @(ApiModelProperty @field)(dataType = "string", example = "BUSINESS_CONSULTATION")
   operationKind: OperationKind
 )
 

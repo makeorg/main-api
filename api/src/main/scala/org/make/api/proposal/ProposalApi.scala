@@ -37,7 +37,6 @@ import org.make.api.user.UserServiceComponent
 import org.make.core.Order
 import org.make.core.auth.UserRights
 import org.make.core.idea.IdeaId
-import org.make.core.operation.OperationKind.{BusinessConsultation, GreatCause, PublicConsultation}
 import org.make.core.operation.{OperationId, OperationKind}
 import org.make.core.proposal._
 import org.make.core.proposal.indexed.ProposalElasticsearchFieldName
@@ -106,7 +105,7 @@ trait ProposalApi extends Directives {
         name = "operationKinds",
         paramType = "query",
         dataType = "string",
-        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
+        allowableValues = "GREAT_CAUSE,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
         allowMultiple = true
       ),
       new ApiImplicitParam(name = "isOrganisation", paramType = "query", dataType = "boolean"),
@@ -375,7 +374,7 @@ trait DefaultProposalApiComponent
                       if (questionIds.exists(_.nonEmpty)) {
                         None
                       } else {
-                        Some(Seq(GreatCause, PublicConsultation, BusinessConsultation))
+                        Some(OperationKind.publicKinds)
                       }
                     },
                     userTypes = userType.orElse(isOrganisation.flatMap { isOrganisation =>

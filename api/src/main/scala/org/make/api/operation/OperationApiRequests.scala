@@ -35,7 +35,7 @@ import scala.util.Try
 @ApiModel
 final case class ModerationCreateOperationRequest(
   slug: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  @(ApiModelProperty @field)(dataType = "string", example = "BUSINESS_CONSULTATION")
   operationKind: OperationKind
 ) {
   OperationValidation.validateSlug(slug = slug)
@@ -49,7 +49,7 @@ final case class ModerationUpdateOperationRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "Active")
   status: Option[OperationStatus],
   slug: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  @(ApiModelProperty @field)(dataType = "string", example = "BUSINESS_CONSULTATION")
   operationKind: OperationKind
 ) {
   OperationValidation.validateSlug(slug = slug)

@@ -64,7 +64,7 @@ class OperationServiceTest
     status = OperationStatus.Pending,
     operationId = OperationId("foo"),
     slug = "first-operation",
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     events = List(
       OperationAction(
         date = now,

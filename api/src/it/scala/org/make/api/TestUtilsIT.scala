@@ -212,7 +212,7 @@ trait TestUtilsIT {
     id: OperationId,
     status: OperationStatus = OperationStatus.Active,
     slug: String = "operation-slug",
-    operationKind: OperationKind = OperationKind.PublicConsultation,
+    operationKind: OperationKind = OperationKind.BusinessConsultation,
     createdAt: Option[ZonedDateTime] = None,
     updatedAt: Option[ZonedDateTime] = None
   ): SimpleOperation =

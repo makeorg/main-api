@@ -104,7 +104,7 @@ class PersistentOperationOfQuestionServiceIT
       operationId = operationOfQuestion.operationId,
       status = OperationStatus.Active,
       slug = s"slug-operation-${operationOfQuestion.operationId.value}",
-      operationKind = OperationKind.PublicConsultation,
+      operationKind = OperationKind.BusinessConsultation,
       createdAt = None,
       updatedAt = None
     )
@@ -283,7 +283,7 @@ class PersistentOperationOfQuestionServiceIT
               operationId,
               OperationStatus.Active,
               "-my-slug",
-              OperationKind.PublicConsultation,
+              OperationKind.BusinessConsultation,
               Some(DateHelper.now()),
               Some(DateHelper.now())
             )

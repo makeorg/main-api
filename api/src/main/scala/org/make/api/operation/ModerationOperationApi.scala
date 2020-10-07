@@ -110,7 +110,7 @@ trait ModerationOperationApi extends Directives {
         name = "operationKind",
         paramType = "query",
         dataType = "string",
-        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
+        allowableValues = "GREAT_CAUSE,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
         allowMultiple = true
       )
     )
