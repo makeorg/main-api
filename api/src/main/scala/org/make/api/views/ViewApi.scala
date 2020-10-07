@@ -33,9 +33,11 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.core.auth.UserRights
 import org.make.core.operation.{
   OperationKind,
+  OperationOfQuestion,
   OperationOfQuestionSearchFilters,
   OperationOfQuestionSearchQuery,
-  QuestionContentSearchFilter
+  QuestionContentSearchFilter,
+  StatusSearchFilter
 }
 import org.make.core.proposal.{CountrySearchFilter, LanguageSearchFilter, SearchQuery}
 import org.make.core.reference.{Country, Language}
@@ -79,7 +81,14 @@ trait ViewApi extends Directives {
   @Path(value = "/search")
   def searchView: Route
 
-  def routes: Route = homePageView ~ searchView
+  @ApiOperation(value = "list-available-countries", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[Array[AvailableCountry]]))
+  )
+  @Path(value = "/countries")
+  def listAvailableCountries: Route
+
+  def routes: Route = homePageView ~ searchView ~ listAvailableCountries
 }
 
 trait ViewApiComponent {
@@ -203,6 +212,53 @@ trait DefaultViewApiComponent
                 }
               }
             }
+          }
+        }
+      }
+    }
+
+    override def listAvailableCountries: Route = {
+      get {
+        path("views" / "countries") {
+          makeOperation("ListAvailableCountries") { _ =>
+            val query = OperationOfQuestionSearchQuery(filters = Some(
+              OperationOfQuestionSearchFilters(
+                operationKinds = Some(
+                  operation.OperationKindsSearchFilter(
+                    Seq(OperationKind.GreatCause, OperationKind.PublicConsultation, OperationKind.BusinessConsultation)
+                  )
+                ),
+                status = Some(StatusSearchFilter(OperationOfQuestion.Status.Open, OperationOfQuestion.Status.Finished))
+              )
+            )
+            )
+            provideAsync(
+              operationOfQuestionService
+                .count(query)
+                .flatMap(
+                  count =>
+                    operationOfQuestionService
+                      .search(query.copy(limit = Some(count.toInt)))
+                      .map(
+                        _.results
+                          .flatMap(
+                            ooq =>
+                              ooq.countries
+                                .map(_.value)
+                                .toList
+                                .zip(LazyList.continually(ooq.status == OperationOfQuestion.Status.Open))
+                          )
+                          .foldLeft(Map.empty[String, AvailableCountry]) {
+                            case (map, (country, open)) =>
+                              map.updatedWith(country)(
+                                existing =>
+                                  Some(AvailableCountry(country, open || existing.exists(_.activeConsultations)))
+                              )
+                          }
+                          .values
+                      )
+                )
+            )(complete(_))
           }
         }
       }

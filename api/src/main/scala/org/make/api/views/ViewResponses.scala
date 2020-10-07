@@ -76,3 +76,10 @@ object SearchViewResponse {
   implicit val encoder: Encoder[SearchViewResponse] = deriveEncoder[SearchViewResponse]
   implicit val decoder: Decoder[SearchViewResponse] = deriveDecoder[SearchViewResponse]
 }
+
+final case class AvailableCountry(countryCode: String, activeConsultations: Boolean)
+
+object AvailableCountry {
+  implicit val decoder: Decoder[AvailableCountry] = deriveDecoder
+  implicit val encoder: Encoder[AvailableCountry] = deriveEncoder
+}

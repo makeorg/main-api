@@ -290,6 +290,9 @@ class OperationOfQuestionSearchEngineIT
       val query = OperationOfQuestionSearchQuery(filters =
         Some(OperationOfQuestionSearchFilters(country = Some(CountrySearchFilter(country = Country("ES")))))
       )
+      whenReady(elasticsearchOperationOfQuestionAPI.count(query), Timeout(3.seconds)) { result =>
+        result should be(2)
+      }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be(2)
       }
@@ -301,6 +304,9 @@ class OperationOfQuestionSearchEngineIT
       val query = OperationOfQuestionSearchQuery(filters =
         Some(OperationOfQuestionSearchFilters(question = Some(QuestionContentSearchFilter(text = "question"))))
       )
+      whenReady(elasticsearchOperationOfQuestionAPI.count(query), Timeout(3.seconds)) { result =>
+        result should be(5)
+      }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be > 0L
       }
@@ -314,6 +320,9 @@ class OperationOfQuestionSearchEngineIT
         )
       )
       )
+      whenReady(elasticsearchOperationOfQuestionAPI.count(query), Timeout(3.seconds)) { result =>
+        result should be(1)
+      }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be > 0L
         result.results.exists(_.slug == "aines-question") shouldBe true
@@ -328,6 +337,9 @@ class OperationOfQuestionSearchEngineIT
         )
       )
       )
+      whenReady(elasticsearchOperationOfQuestionAPI.count(query), Timeout(3.seconds)) { result =>
+        result should be(0)
+      }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total == 0 shouldBe true
       }
@@ -342,6 +354,9 @@ class OperationOfQuestionSearchEngineIT
 
     Scenario("chronological") {
       val query = OperationOfQuestionSearchQuery(sortAlgorithm = Some(Chronological))
+      whenReady(elasticsearchOperationOfQuestionAPI.count(query), Timeout(3.seconds)) { result =>
+        result should be(6)
+      }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be(6)
         resultsAreSorted(result.results)
@@ -350,6 +365,9 @@ class OperationOfQuestionSearchEngineIT
 
     Scenario("featured") {
       val query = OperationOfQuestionSearchQuery(sortAlgorithm = Some(Featured))
+      whenReady(elasticsearchOperationOfQuestionAPI.count(query), Timeout(3.seconds)) { result =>
+        result should be(6)
+      }
       whenReady(elasticsearchOperationOfQuestionAPI.searchOperationOfQuestions(query), Timeout(3.seconds)) { result =>
         result.total should be(6)
         val (featured, notFeatured) = result.results.splitAt(2)

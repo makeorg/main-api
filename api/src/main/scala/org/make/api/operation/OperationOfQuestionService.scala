@@ -55,6 +55,7 @@ trait OperationOfQuestionService {
   def updateWithQuestion(operationOfQuestion: OperationOfQuestion, question: Question): Future[OperationOfQuestion]
   def update(operationOfQuestion: OperationOfQuestion): Future[OperationOfQuestion]
   def count(request: SearchOperationsOfQuestions): Future[Int]
+  def count(query: OperationOfQuestionSearchQuery): Future[Long]
 
   /**
     * Deletes an OperationOfQuestion and all its associated objects:
@@ -118,6 +119,9 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
   override lazy val operationOfQuestionService: OperationOfQuestionService = new DefaultOperationOfQuestionService
 
   class DefaultOperationOfQuestionService extends OperationOfQuestionService {
+
+    override def count(query: OperationOfQuestionSearchQuery): Future[Long] =
+      elasticsearchOperationOfQuestionAPI.count(query)
 
     override def find(
       start: Int = 0,

@@ -23,6 +23,7 @@ package operation
 import java.time.{ZoneOffset, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 
+import cats.data.NonEmptyList
 import com.sksamuel.elastic4s.{ElasticApi, Operator}
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
@@ -259,9 +260,16 @@ object OperationOfQuestionSearchFilters extends ElasticDsl {
   def buildStatusSearchFilter(operationOfQuestionSearchQuery: OperationOfQuestionSearchQuery): Option[Query] = {
     operationOfQuestionSearchQuery.filters.flatMap {
       _.status match {
-        case Some(StatusSearchFilter(status)) =>
+        case Some(StatusSearchFilter(NonEmptyList(status, Nil))) =>
           Some(
             ElasticApi.termQuery(OperationOfQuestionElasticsearchFieldName.status.field, status.entryName.toLowerCase)
+          )
+        case Some(StatusSearchFilter(statuses)) =>
+          Some(
+            ElasticApi.termsQuery(
+              OperationOfQuestionElasticsearchFieldName.status.field,
+              statuses.map(_.entryName.toLowerCase).toList
+            )
           )
         case _ => None
       }
@@ -279,4 +287,8 @@ final case class StartDateSearchFilter(startDate: ZonedDateTime)
 final case class EndDateSearchFilter(endDate: ZonedDateTime)
 final case class OperationKindsSearchFilter(operationKinds: Seq[OperationKind])
 final case class FeaturedSearchFilter(featured: Boolean)
-final case class StatusSearchFilter(status: OperationOfQuestion.Status)
+final case class StatusSearchFilter(status: NonEmptyList[OperationOfQuestion.Status])
+object StatusSearchFilter {
+  def apply(head: OperationOfQuestion.Status, tail: OperationOfQuestion.Status*): StatusSearchFilter =
+    StatusSearchFilter(NonEmptyList.of(head, tail: _*))
+}

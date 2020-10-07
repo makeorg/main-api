@@ -47,6 +47,7 @@ trait OperationOfQuestionSearchEngineComponent {
 
 trait OperationOfQuestionSearchEngine {
   def findOperationOfQuestionById(questionId: QuestionId): Future[Option[IndexedOperationOfQuestion]]
+  def count(query: OperationOfQuestionSearchQuery): Future[Long]
   def searchOperationOfQuestions(query: OperationOfQuestionSearchQuery): Future[OperationOfQuestionSearchResult]
   def indexOperationOfQuestion(
     record: IndexedOperationOfQuestion,
@@ -83,6 +84,16 @@ trait DefaultOperationOfQuestionSearchEngineComponent
       client
         .executeAsFuture(get(id = questionId.value).from(operationOfQuestionAlias))
         .map(_.toOpt[IndexedOperationOfQuestion])
+    }
+
+    override def count(query: OperationOfQuestionSearchQuery): Future[Long] = {
+      val request = searchWithType(operationOfQuestionAlias)
+        .bool(BoolQuery(must = OperationOfQuestionSearchFilters.getOperationOfQuestionSearchFilters(query)))
+        .limit(0)
+
+      client.executeAsFuture(request).map { response =>
+        response.totalHits
+      }
     }
 
     override def searchOperationOfQuestions(
