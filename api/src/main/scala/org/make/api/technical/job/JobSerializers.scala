@@ -19,15 +19,19 @@
 
 package org.make.api.technical.job
 
+import org.make.api.technical.job.JobActor.{DefinedJob, EmptyJob}
 import org.make.api.technical.job.JobEvent._
 import org.make.core.SprayJsonFormatters
-import org.make.core.job.Job
-import stamina.V1
-import stamina.json.{persister, JsonPersister}
+import spray.json.DefaultJsonProtocol._
+
+import stamina.{V1, V2}
+import stamina.json.{from, persister, JsonPersister}
 
 object JobSerializers extends SprayJsonFormatters {
 
-  private val jobSerializer: JsonPersister[Job, V1] = persister[Job]("job")
+  private val jobSerializer: JsonPersister[DefinedJob, V2] =
+    persister[DefinedJob, V2]("job", from[V1].to[V2](job => Map("job" -> job).toJson))
+  private val emptyJobSerializer: JsonPersister[EmptyJob.type, V1] = persister[EmptyJob.type]("empty-job")
   private val startedSerializer: JsonPersister[Started, V1] = persister[Started]("job-started")
   private val heartbeatReceivedSerializer: JsonPersister[HeartbeatReceived, V1] =
     persister[HeartbeatReceived]("job-heartbeat-received")
@@ -35,6 +39,13 @@ object JobSerializers extends SprayJsonFormatters {
   private val finishedSerializer: JsonPersister[Finished, V1] = persister[Finished]("job-finished")
 
   val serializers: Seq[JsonPersister[_, _]] =
-    Seq(jobSerializer, startedSerializer, heartbeatReceivedSerializer, progressedSerializer, finishedSerializer)
+    Seq(
+      jobSerializer,
+      emptyJobSerializer,
+      startedSerializer,
+      heartbeatReceivedSerializer,
+      progressedSerializer,
+      finishedSerializer
+    )
 
 }

@@ -30,10 +30,14 @@ object ActorSystemHelper {
   implicit class RichActorSystem(val self: ActorSystem[_]) extends AnyVal {
     import self.executionContext
 
-    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     def findRefByKey[T](key: ServiceKey[T])(implicit timeout: Timeout, scheduler: Scheduler): Future[ActorRef[T]] = {
-      (self.receptionist ? Receptionist.Find(key)).map {
-        case key.Listing(services) => services.head
+      (self.receptionist ? Receptionist.Find(key)).flatMap {
+        case key.Listing(services) =>
+          services.find(_.path.address.hasLocalScope) match {
+            case Some(ref) => Future.successful(ref)
+            case None =>
+              Future.failed(new IllegalStateException(s"Receptionist unable to find actor ref for key: $key"))
+          }
       }
 
     }
