@@ -63,7 +63,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
         withSQL {
           insert
             .into(PersistentUserToAnonymize)
-            .namedValues(column.email -> email, column.requestDate -> DateHelper.now)
+            .namedValues(column.email -> email, column.requestDate -> DateHelper.now())
         }.execute().apply()
       }).map(_ => ())
     }
@@ -76,7 +76,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
             .from(PersistentUserToAnonymize.as(userToAnonymizeAlias))
             .orderBy(userToAnonymizeAlias.requestDate)
             .asc
-        }.map(PersistentUserToAnonymize.apply()).list.apply
+        }.map(PersistentUserToAnonymize.apply()).list().apply()
       }).map(_.map(_.email))
     }
 
@@ -86,7 +86,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
         withSQL {
           delete
             .from(PersistentUserToAnonymize.as(userToAnonymizeAlias))
-        }.update.apply()
+        }.update().apply()
       })
 
       result.onComplete {
@@ -105,7 +105,7 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
           delete
             .from(PersistentUserToAnonymize.as(userToAnonymizeAlias))
             .where(sqls.in(userToAnonymizeAlias.email, emails))
-        }.update.apply()
+        }.update().apply()
       })
 
       result.onComplete {

@@ -72,7 +72,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
           select
             .from(PersistentTopIdea.as(topIdeaAlias))
             .where(sqls.eq(topIdeaAlias.id, topIdeaId.value))
-        }.map(PersistentTopIdea.apply()).single.apply
+        }.map(PersistentTopIdea.apply()).single().apply()
       })
 
       futurePersistentTopIdea.map(_.map(_.toTopIdea))
@@ -85,7 +85,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
           select
             .from(PersistentTopIdea.as(topIdeaAlias))
             .where(sqls.eq(topIdeaAlias.id, topIdeaId.value).and(sqls.eq(topIdeaAlias.questionId, questionId.value)))
-        }.map(PersistentTopIdea.apply()).single.apply
+        }.map(PersistentTopIdea.apply()).single().apply()
       })
 
       futurePersistentTopIdea.map(_.map(_.toTopIdea))
@@ -115,7 +115,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
             )
 
           sortOrderQuery(start, end, sort, order, query)
-        }.map(PersistentTopIdea.apply()).list.apply
+        }.map(PersistentTopIdea.apply()).list().apply()
       })
 
       futurePersistentTopIdeas.map(_.map(_.toTopIdea))
@@ -172,7 +172,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
           delete
             .from(PersistentTopIdea.as(topIdeaAlias))
             .where(sqls.eq(topIdeaAlias.id, topIdeaId.value))
-        }.update.apply()
+        }.update().apply()
         () // TODO check success
       })
     }
@@ -191,7 +191,7 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
                 name.map(name             => sqls.like(topIdeaAlias.name, name))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

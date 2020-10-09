@@ -79,7 +79,7 @@ trait DefaultPersistentAuthCodeServiceComponent extends PersistentAuthCodeServic
           select
             .from(PersistentAuthCode.as(alias))
             .where(sqls.eq(alias.authorizationCode, code))
-        }.map(PersistentAuthCode.apply()).single.apply
+        }.map(PersistentAuthCode.apply()).single().apply()
       }).map(_.map(_.toAuthCode))
     }
 

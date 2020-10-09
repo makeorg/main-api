@@ -120,7 +120,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
                 .eq(column.id, personalityRoleFieldId.value)
                 .and(sqls.eq(column.personalityRoleId, personalityRoleId.value))
             )
-        }.map(PersistentPersonalityRoleField.apply()).single.apply()
+        }.map(PersistentPersonalityRoleField.apply()).single().apply()
       }).map(_.map(_.toPersonalityRoleField))
     }
 
@@ -175,7 +175,7 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
                 maybeRequired.map(required   => sqls.eq(personalityRoleFieldAlias.required, required))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

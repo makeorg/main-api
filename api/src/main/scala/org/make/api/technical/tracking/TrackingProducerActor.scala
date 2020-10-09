@@ -42,6 +42,6 @@ class TrackingProducerActor extends BasicProducerActor[TrackingEventWrapper, Tra
 
 object TrackingProducerActor {
   val name: String = "tracking-event-producer"
-  val props: Props = Props[TrackingProducerActor]
+  val props: Props = Props[TrackingProducerActor]()
   val topicKey: String = "tracking-events"
 }

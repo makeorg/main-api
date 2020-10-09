@@ -43,7 +43,7 @@ class KafkaHealthCheckActor extends HealthCheck with KafkaConfigurationExtension
 
   override def healthCheck(): Future[String] = {
 
-    val promise = Promise[String]
+    val promise = Promise[String]()
 
     Using(createClient()) { client =>
       client

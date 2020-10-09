@@ -44,7 +44,7 @@ class ShardedUserHistory extends UserHistoryActor with ActorLogging {
 }
 
 object ShardedUserHistory {
-  val props: Props = Props[ShardedUserHistory]
+  val props: Props = Props[ShardedUserHistory]()
   val shardName: String = "user-history"
 
   val readJournal: String = "make-api.event-sourcing.users.read-journal"

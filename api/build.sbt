@@ -92,13 +92,13 @@ libraryDependencies += {
 }
 
 lazy val swaggerUiVersion: SettingKey[String] =
-  SettingKey[String]("swaggerUiVersion", "version of swagger ui")
+  SettingKey[String]("swaggerUiVersion", "version of swagger ui").withRank(KeyRanks.Invisible)
 
 swaggerUiVersion := {
   Dependencies.swaggerUiVersion
 }
 
-lazy val buildTime: SettingKey[String] = SettingKey[String]("buildTime", "time of build")
+lazy val buildTime: SettingKey[String] = SettingKey[String]("buildTime", "time of build").withRank(KeyRanks.Invisible)
 
 buildTime := ZonedDateTime.now(ZoneOffset.UTC).toString
 

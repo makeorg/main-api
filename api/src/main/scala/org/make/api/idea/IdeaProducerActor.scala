@@ -41,7 +41,7 @@ class IdeaProducerActor extends BasicProducerActor[IdeaEventWrapper, IdeaEvent] 
 }
 
 object IdeaProducerActor extends ProducerActorCompanion {
-  val props: Props = Props[IdeaProducerActor]
+  val props: Props = Props[IdeaProducerActor]()
   override val name: String = "kafka-idea-event-writer"
   override val topicKey: String = "ideas"
 }

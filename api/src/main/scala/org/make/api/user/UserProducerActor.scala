@@ -42,7 +42,7 @@ class UserProducerActor extends BasicProducerActor[UserEventWrapper, UserEvent] 
 }
 
 object UserProducerActor extends ProducerActorCompanion {
-  val props: Props = Props[UserProducerActor]
+  val props: Props = Props[UserProducerActor]()
   override val name: String = "kafka-user-event-writer"
   override val topicKey: String = "users"
 }

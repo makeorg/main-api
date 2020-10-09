@@ -73,7 +73,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
           select
             .from(PersistentActiveFeature.as(activeFeatureAlias))
             .where(sqls.eq(activeFeatureAlias.id, activeFeatureId.value))
-        }.map(PersistentActiveFeature.apply()).single.apply
+        }.map(PersistentActiveFeature.apply()).single().apply()
       })
 
       futurePersistentActiveFeature.map(_.map(_.toActiveFeature))
@@ -101,7 +101,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
           delete
             .from(PersistentActiveFeature.as(activeFeatureAlias))
             .where(sqls.eq(activeFeatureAlias.id, activeFeatureId.value))
-        }.update.apply()
+        }.update().apply()
       }).map(_ => ())
     }
 
@@ -126,7 +126,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
                   )
                 )
             sortOrderQuery(start, end, sort, order, query)
-          }.map(PersistentActiveFeature.apply()).list.apply
+          }.map(PersistentActiveFeature.apply()).list().apply()
       })
 
       futurePersistentActiveFeatures.map(_.map(_.toActiveFeature))
@@ -144,7 +144,7 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
                 maybeQuestionId.map(questionId => sqls.eq(activeFeatureAlias.questionId, questionId.value))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
   }

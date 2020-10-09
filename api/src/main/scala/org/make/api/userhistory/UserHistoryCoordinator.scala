@@ -41,6 +41,6 @@ class UserHistoryCoordinator extends Actor {
 }
 
 object UserHistoryCoordinator {
-  val props: Props = Props[UserHistoryCoordinator]
+  val props: Props = Props[UserHistoryCoordinator]()
   val name: String = "user-history-coordinator"
 }

@@ -66,7 +66,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
           select
             .from(PersistentIdea.as(ideaAlias))
             .where(sqls.eq(ideaAlias.id, ideaId.value))
-        }.map(PersistentIdea.apply()).single.apply
+        }.map(PersistentIdea.apply()).single().apply()
       })
 
       futurePersistentIdea.map(_.map(_.toIdea))
@@ -79,7 +79,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
           select
             .from(PersistentIdea.as(ideaAlias))
             .where(sqls.eq(ideaAlias.questionId, questionId.value).and(sqls.eq(ideaAlias.name, name)))
-        }.map(PersistentIdea.apply()).single.apply
+        }.map(PersistentIdea.apply()).single().apply()
       })
 
       futurePersistentIdea.map(_.map(_.toIdea))
@@ -97,7 +97,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
                 ideaFilters.questionId.map(questionId => sqls.eq(ideaAlias.questionId, questionId.value))
               )
             )
-        }.map(PersistentIdea.apply()).list.apply
+        }.map(PersistentIdea.apply()).list().apply()
       })
 
       futurePersistentIdeas.map(_.map(_.toIdea))
@@ -110,7 +110,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
           select
             .from(PersistentIdea.as(ideaAlias))
             .where(sqls.in(ideaAlias.id, ids.map(_.value)))
-        }.map(PersistentIdea.apply()).list.apply
+        }.map(PersistentIdea.apply()).list().apply()
       })
 
       futurePersistentIdeas.map(_.map(_.toIdea))
@@ -129,8 +129,8 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               column.questionId -> idea.questionId.map(_.value),
               column.operationId -> idea.operationId.map(_.value),
               column.status -> idea.status,
-              column.createdAt -> DateHelper.now,
-              column.updatedAt -> DateHelper.now
+              column.createdAt -> DateHelper.now(),
+              column.updatedAt -> DateHelper.now()
             )
         }.execute().apply()
       }).map(_ => idea)
@@ -141,7 +141,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
       Future(NamedDB("WRITE").retryableTx { implicit session =>
         withSQL {
           update(PersistentIdea)
-            .set(column.name -> name, column.updatedAt -> DateHelper.now, column.status -> status)
+            .set(column.name -> name, column.updatedAt -> DateHelper.now(), column.status -> status)
             .where(
               sqls
                 .eq(column.id, ideaId.value)
@@ -161,7 +161,7 @@ trait DefaultPersistentIdeaServiceComponent extends PersistentIdeaServiceCompone
               column.questionId -> idea.questionId.map(_.value),
               column.question -> idea.question,
               column.status -> idea.status,
-              column.updatedAt -> DateHelper.now
+              column.updatedAt -> DateHelper.now()
             )
             .where(
               sqls

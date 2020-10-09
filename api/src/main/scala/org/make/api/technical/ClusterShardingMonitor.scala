@@ -100,7 +100,7 @@ object ClusterShardingMonitor {
     BackoffSupervisor.props(
       BackoffOpts
         .onStop(
-          Props[ClusterShardingMonitor],
+          Props[ClusterShardingMonitor](),
           childName = "actor-sharding-monitor",
           minBackoff = 3.seconds,
           maxBackoff = 30.seconds,

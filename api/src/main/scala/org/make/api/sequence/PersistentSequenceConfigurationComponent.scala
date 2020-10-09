@@ -68,7 +68,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
           select
             .from(PersistentSequenceConfiguration.as(alias))
             .where(sqls.eq(name, value))
-        }.map(PersistentSequenceConfiguration.apply()).single.apply
+        }.map(PersistentSequenceConfiguration.apply()).single().apply()
       })
 
       futurePersistentTag.map(_.map(_.toSequenceConfiguration))
@@ -87,7 +87,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
         withSQL {
           select
             .from(PersistentSequenceConfiguration.as(alias))
-        }.map(PersistentSequenceConfiguration.apply()).list.apply
+        }.map(PersistentSequenceConfiguration.apply()).list().apply()
       })
 
       futurePersistentSequenceConfig.map(_.map(_.toSequenceConfiguration))
@@ -118,8 +118,8 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
               column.sequenceSize -> sequenceConfig.sequenceSize,
               column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName,
-              column.createdAt -> DateHelper.now,
-              column.updatedAt -> DateHelper.now,
+              column.createdAt -> DateHelper.now(),
+              column.updatedAt -> DateHelper.now(),
               column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight,
               column.scoreAdjustementVotesThreshold -> sequenceConfig.scoreAdjustementVotesThreshold,
               column.scoreAdjustementFactor -> sequenceConfig.scoreAdjustementFactor
@@ -150,7 +150,7 @@ trait DefaultPersistentSequenceConfigurationServiceComponent extends PersistentS
               column.maxTestedProposalCount -> sequenceConfig.maxTestedProposalCount,
               column.sequenceSize -> sequenceConfig.sequenceSize,
               column.selectionAlgorithmName -> sequenceConfig.selectionAlgorithmName,
-              column.updatedAt -> DateHelper.now,
+              column.updatedAt -> DateHelper.now(),
               column.nonSequenceVotesWeight -> sequenceConfig.nonSequenceVotesWeight,
               column.scoreAdjustementVotesThreshold -> sequenceConfig.scoreAdjustementVotesThreshold,
               column.scoreAdjustementFactor -> sequenceConfig.scoreAdjustementFactor

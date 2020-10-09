@@ -117,7 +117,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
           select
             .from(PersistentPartner.as(partnerAlias))
             .where(sqls.eq(partnerAlias.id, partnerId.value))
-        }.map(PersistentPartner.apply()).single.apply()
+        }.map(PersistentPartner.apply()).single().apply()
       }).map(_.map(_.toPartner))
     }
 
@@ -165,7 +165,7 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
                 partnerKind.map(kind              => sqls.eq(partnerAlias.partnerKind, kind))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

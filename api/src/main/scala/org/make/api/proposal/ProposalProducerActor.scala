@@ -43,7 +43,7 @@ class ProposalProducerActor extends BasicProducerActor[ProposalEventWrapper, Pub
 }
 
 object ProposalProducerActor extends ProducerActorCompanion {
-  val props: Props = Props[ProposalProducerActor]
+  val props: Props = Props[ProposalProducerActor]()
   val name: String = "kafka-proposals-event-writer"
   val topicKey = "proposals"
 }

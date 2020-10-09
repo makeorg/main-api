@@ -29,7 +29,7 @@ import wartremover.{Wart, Warts}
 
 lazy val commonSettings = Seq(
   organization := "org.make",
-  scalaVersion := "2.13.2",
+  scalaVersion := "2.13.3",
   licenses     += "AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl.html"),
   credentials ++= {
     if (System.getenv().containsKey("CI_BUILD")) {
@@ -67,7 +67,7 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-Yrangepos",
     "-Xlint:_",
-    "-Wconf:cat=w-flag-numeric-widen:s,any:e",
+    "-Wconf:cat=lint-byname-implicit:s,cat=w-flag-numeric-widen:s,any:e",
     "-encoding",
     "UTF-8",
     "-language:_",
@@ -95,7 +95,7 @@ lazy val commonSettings = Seq(
     Wart.Var
   )
 ) ++ Seq(Compile, Test).map { configuration =>
-  scalacOptions.in(configuration, console) += "-Wconf:cat=other-pure-statement:s,cat=unused-imports:s,cat=w-flag-numeric-widen:s,any:e"
+  scalacOptions.in(configuration, console) += "-Wconf:cat=lint-byname-implicit:s,cat=other-pure-statement:s,cat=unused-imports:s,cat=w-flag-numeric-widen:s,any:e"
 } ++ inConfig(IntegrationTest)(scalafmtConfigSettings) ++ inConfig(IntegrationTest)(rawScalastyleSettings())
 
 addCommandAlias("checkStyle", ";scalastyle;test:scalastyle;it:scalastyle;scalafmtCheckAll;scalafmtSbtCheck")

@@ -72,7 +72,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
           select
             .from(PersistentFeature.as(featureAlias))
             .where(sqls.eq(featureAlias.id, featureId.value))
-        }.map(PersistentFeature.apply()).single.apply
+        }.map(PersistentFeature.apply()).single().apply()
       })
 
       futurePersistentFeature.map(_.map(_.toFeature))
@@ -86,7 +86,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
             select
               .from(PersistentFeature.as(featureAlias))
               .where(sqls.eq(featureAlias.slug, slug))
-          }.map(PersistentFeature.apply()).list.apply
+          }.map(PersistentFeature.apply()).list().apply()
       })
 
       futurePersistentFeatures.map(_.map(_.toFeature))
@@ -125,7 +125,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
           delete
             .from(PersistentFeature.as(featureAlias))
             .where(sqls.eq(featureAlias.id, featureId.value))
-        }.update.apply()
+        }.update().apply()
       }).map(_ => ())
     }
 
@@ -137,7 +137,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
             select
               .from(PersistentFeature.as(featureAlias))
               .orderBy(featureAlias.slug)
-          }.map(PersistentFeature.apply()).list.apply
+          }.map(PersistentFeature.apply()).list().apply()
       })
 
       futurePersistentFeatures.map(_.map(_.toFeature))
@@ -152,7 +152,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
               .from(PersistentFeature.as(featureAlias))
               .where(sqls.in(featureAlias.id, featureIds.map(_.value)))
               .orderBy(featureAlias.slug)
-          }.map(PersistentFeature.apply()).list.apply
+          }.map(PersistentFeature.apply()).list().apply()
       })
 
       futurePersistentFeatures.map(_.map(_.toFeature))
@@ -177,7 +177,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
                 .where(sqls.toAndConditionOpt(maybeSlug.map(slug => sqls.eq(featureAlias.slug, slug))))
 
             sortOrderQuery(start, end, sort, order, query)
-          }.map(PersistentFeature.apply()).list.apply
+          }.map(PersistentFeature.apply()).list().apply()
       })
 
       futurePersistentFeatures.map(_.map(_.toFeature))
@@ -192,7 +192,7 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
           select(sqls.count)
             .from(PersistentFeature.as(featureAlias))
             .where(sqls.toAndConditionOpt(maybeSlug.map(slug => sqls.eq(featureAlias.slug, slug))))
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
   }

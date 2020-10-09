@@ -117,14 +117,14 @@ trait DefaultPersistentCrmUserServiceComponent extends PersistentCrmUserServiceC
             .orderBy(PersistentCrmUser.alias.accountCreationDate.asc, PersistentCrmUser.alias.email.asc)
             .limit(numberPerPage)
             .offset(offset)
-        }.map(PersistentCrmUser.apply()).list.apply()
+        }.map(PersistentCrmUser.apply()).list().apply()
       })
     }
 
     override def truncateCrmUsers(): Future[Unit] = {
       implicit val cxt: EC = writeExecutionContext
       Future(NamedDB("WRITE").retryableTx { implicit session =>
-        SQL(s"truncate table ${PersistentCrmUser.tableName}").execute.apply()
+        SQL(s"truncate table ${PersistentCrmUser.tableName}").execute().apply()
         ()
       })
     }

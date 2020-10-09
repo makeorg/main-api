@@ -33,6 +33,6 @@ class MailJetProducerActor extends BasicProducerActor[SendEmail, SendEmail] {
 
 object MailJetProducerActor {
   val name: String = "mailjet-email-producer"
-  val props: Props = Props[MailJetProducerActor]
+  val props: Props = Props[MailJetProducerActor]()
   val topicKey: String = "emails"
 }
