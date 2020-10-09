@@ -231,7 +231,7 @@ trait DefaultAdminClientApiComponent
     override def listClients: Route = get {
       path("admin" / "clients") {
         makeOperation("AdminListOauthClient") { _ =>
-          parameters(("_start".as[Int].?, "_end".as[Int].?, "name".?)) { (start, end, name) =>
+          parameters("_start".as[Int].?, "_end".as[Int].?, "name".?) { (start, end, name) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 provideAsync(clientService.count(name)) { count =>

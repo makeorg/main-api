@@ -22,7 +22,7 @@ import sbt._
 object Dependencies {
 
   private val akkaVersion = "2.6.9"
-  private val akkaHttpVersion = "10.1.12"
+  private val akkaHttpVersion = "10.2.1"
   private val alpakkaVersion = "1.1.2"
   private val nettyVersion = "4.1.52.Final"
   private val kafkaVersion = "1.1.0"
@@ -57,8 +57,8 @@ object Dependencies {
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
   val akkaHttp2Support: ModuleID = "com.typesafe.akka"    %% "akka-http2-support"          % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.33.0"
-  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.0")
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.35.0"
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"      %% "akka-persistence-typed" % akkaVersion
   val akkaPersistenceQuery: ModuleID = "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion

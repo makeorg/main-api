@@ -178,15 +178,13 @@ trait DefaultAdminTopIdeaApiComponent
     override def search: Route = get {
       path("admin" / "top-ideas") {
         parameters(
-          (
-            "_start".as[Int].?,
-            "_end".as[Int].?,
-            "_sort".?,
-            "_order".as[Order].?,
-            "ideaId".as[IdeaId].?,
-            "questionId".as[QuestionId].?,
-            "name".?
-          )
+          "_start".as[Int].?,
+          "_end".as[Int].?,
+          "_sort".?,
+          "_order".as[Order].?,
+          "ideaId".as[IdeaId].?,
+          "questionId".as[QuestionId].?,
+          "name".?
         ) {
           (
             start: Option[Int],

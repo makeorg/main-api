@@ -226,15 +226,13 @@ trait DefaultAdminQuestionPersonalityApiComponent
         path("admin" / "question-personalities") {
           makeOperation("ModerationGetQuestionPersonalities") { _ =>
             parameters(
-              (
-                "_start".as[Int].?,
-                "_end".as[Int].?,
-                "_sort".?,
-                "_order".as[Order].?,
-                "userId".as[UserId].?,
-                "questionId".as[QuestionId].?,
-                "personalityRoleId".as[PersonalityRoleId].?
-              )
+              "_start".as[Int].?,
+              "_end".as[Int].?,
+              "_sort".?,
+              "_order".as[Order].?,
+              "userId".as[UserId].?,
+              "questionId".as[QuestionId].?,
+              "personalityRoleId".as[PersonalityRoleId].?
             ) {
               (
                 start: Option[Int],

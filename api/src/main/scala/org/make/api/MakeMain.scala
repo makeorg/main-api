@@ -27,7 +27,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ExtendedActorSystem, PoisonPill, ActorSystem => ClassicActorSystem}
 import akka.cluster.Cluster
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.{Http, HttpConnectionContext}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import com.typesafe.config.{Config, ConfigFactory}
@@ -132,12 +132,7 @@ object MakeMain extends App with StrictLogging with MakeApi {
   private val port = settings.Http.port
 
   val bindingFuture: Future[ServerBinding] =
-    Http().bindAndHandleAsync(
-      handler = Route.asyncHandler(makeRoutes),
-      interface = host,
-      port = port,
-      connectionContext = HttpConnectionContext()
-    )
+    Http().newServerAt(interface = host, port = port).bind(Route.toFunction(makeRoutes))
 
   bindingFuture.map { serverBinding =>
     logger.info(s"Make API bound to ${serverBinding.localAddress} ")

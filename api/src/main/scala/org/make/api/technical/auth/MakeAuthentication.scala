@@ -70,7 +70,7 @@ trait MakeAuthentication extends ShortenedNames with MakeDirectives {
   def extractToken: Directive1[Option[String]] = {
     for {
       maybeCookie        <- optionalCookie(makeSettings.SecureCookie.name)
-      maybeAuthorization <- optionalHeaderValueByType[Authorization](())
+      maybeAuthorization <- optionalHeaderValueByType(Authorization)
     } yield maybeCookie.map(_.value).orElse(maybeAuthorization.map(_.credentials.token()))
   }
 

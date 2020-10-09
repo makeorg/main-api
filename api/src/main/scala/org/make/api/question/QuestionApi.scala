@@ -40,6 +40,7 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.CsvReceptacle._
 import org.make.core.Order
 import org.make.core.auth.UserRights
 import org.make.core.idea.TopIdeaId
@@ -56,7 +57,6 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import org.make.core.ApiParamMagnetHelper._
 
 trait QuestionApiComponent {
   def questionApi: QuestionApi
@@ -381,7 +381,7 @@ trait DefaultQuestionApiComponent
       path("questions" / questionId / "start-sequence") { questionId =>
         makeOperation("StartSequenceByQuestionId") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters("include".as[Seq[ProposalId]].*) { includes =>
+            parameters("include".csv[ProposalId]) { includes =>
               provideAsyncOrNotFound(
                 sequenceService
                   .startNewSequence(
@@ -404,20 +404,18 @@ trait DefaultQuestionApiComponent
       path("questions" / "search") {
         makeOperation("GetQuestionDetails") { _ =>
           parameters(
-            (
-              "questionIds".as[Seq[QuestionId]].?,
-              "questionContent".?,
-              "description".?,
-              "startDate".as[ZonedDateTime].?,
-              "endDate".as[ZonedDateTime].?,
-              "operationKinds".as[Seq[OperationKind]].?,
-              "language".as[Language].?,
-              "country".as[Country].?,
-              "limit".as[Int].?,
-              "skip".as[Int].?,
-              "sort".as[OperationOfQuestionElasticsearchFieldName].?,
-              "order".as[Order].?
-            )
+            "questionIds".as[Seq[QuestionId]].?,
+            "questionContent".?,
+            "description".?,
+            "startDate".as[ZonedDateTime].?,
+            "endDate".as[ZonedDateTime].?,
+            "operationKinds".as[Seq[OperationKind]].?,
+            "language".as[Language].?,
+            "country".as[Country].?,
+            "limit".as[Int].?,
+            "skip".as[Int].?,
+            "sort".as[OperationOfQuestionElasticsearchFieldName].?,
+            "order".as[Order].?
           ) {
             (
               questionIds: Option[Seq[QuestionId]],
@@ -476,7 +474,7 @@ trait DefaultQuestionApiComponent
     override def getPopularTags: Route = get {
       path("questions" / questionId / "popular-tags") { questionId =>
         makeOperation("GetQuestionPopularTags") { _ =>
-          parameters(("limit".as[Int].?, "skip".as[Int].?)) { (limit: Option[Int], skip: Option[Int]) =>
+          parameters("limit".as[Int].?, "skip".as[Int].?) { (limit: Option[Int], skip: Option[Int]) =>
             provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
               val offset = skip.getOrElse(0)
               val size = limit.map(_ + offset).getOrElse(Int.MaxValue)
@@ -494,7 +492,7 @@ trait DefaultQuestionApiComponent
     override def getTopProposals: Route = get {
       path("questions" / questionId / "top-proposals") { questionId =>
         makeOperation("GetTopProposals") { requestContext =>
-          parameters(("limit".as[Int].?, "mode".as[TopProposalsMode].?)) {
+          parameters("limit".as[Int].?, "mode".as[TopProposalsMode].?) {
             (limit: Option[Int], mode: Option[TopProposalsMode]) =>
               optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
                 provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
@@ -519,9 +517,7 @@ trait DefaultQuestionApiComponent
     override def getPartners: Route = get {
       path("questions" / questionId / "partners") { questionId =>
         makeOperation("GetQuestionPartners") { _ =>
-          parameters(
-            ("sortAlgorithm".as[String].?, "partnerKind".as[PartnerKind].?, "limit".as[Int].?, "skip".as[Int].?)
-          ) {
+          parameters("sortAlgorithm".as[String].?, "partnerKind".as[PartnerKind].?, "limit".as[Int].?, "skip".as[Int].?) {
             (sortAlgorithm: Option[String], partnerKind: Option[PartnerKind], limit: Option[Int], skip: Option[Int]) =>
               provideAsyncOrNotFound(questionService.getQuestion(questionId)) { _ =>
                 Validation.validate(Seq(sortAlgorithm.map { sortAlgo =>
@@ -563,7 +559,7 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "personalities") { questionId =>
           makeOperation("GetQuestionPersonalities") { _ =>
-            parameters(("personalityRole".as[String].?, "limit".as[Int].?, "skip".as[Int].?)) {
+            parameters("personalityRole".as[String].?, "limit".as[Int].?, "skip".as[Int].?) {
               (personalityRole: Option[String], limit: Option[Int], skip: Option[Int]) =>
                 provideAsync(
                   personalityRoleService
@@ -606,7 +602,7 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "top-ideas") { questionId =>
           makeOperation("GetQuestionTopIdeas") { _ =>
-            parameters(("limit".as[Int].?, "skip".as[Int].?, "seed".as[Int].?)) {
+            parameters("limit".as[Int].?, "skip".as[Int].?, "seed".as[Int].?) {
               (limit: Option[Int], skip: Option[Int], seed: Option[Int]) =>
                 provideAsync(
                   questionService
@@ -659,14 +655,12 @@ trait DefaultQuestionApiComponent
         path("questions") {
           makeOperation("ListQuestions") { _ =>
             parameters(
-              (
-                "country".as[Country],
-                "language".as[Language],
-                "status".as[OperationOfQuestion.Status].?,
-                "limit".as[Int].?,
-                "skip".as[Int].?,
-                "sortAlgorithm".as[SortAlgorithm].?
-              )
+              "country".as[Country],
+              "language".as[Language],
+              "status".as[OperationOfQuestion.Status].?,
+              "limit".as[Int].?,
+              "skip".as[Int].?,
+              "sortAlgorithm".as[SortAlgorithm].?
             ) {
               (
                 country: Country,

@@ -33,13 +33,13 @@ import org.make.api.proposal.{ProposalServiceComponent, ProposalsResultResponse,
 import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.technical.auth.ClientService.ClientInformation
 import org.make.api.technical.auth.{ClientServiceComponent, MakeDataHandlerComponent}
 import org.make.api.technical.storage._
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
-import org.make.core.ApiParamMagnetHelper._
 import org.make.core._
 import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.common.indexed.Sort
@@ -699,7 +699,7 @@ trait DefaultUserApiComponent
           decodeRequest {
             entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
               extractClientIP { clientIp =>
-                optionalHeaderValueByType[AuthorizationHeader](()) { maybeAuthorization =>
+                optionalHeaderValueByType(AuthorizationHeader) { maybeAuthorization =>
                   provideAsync(findClient(maybeAuthorization)) { client =>
                     val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
                     val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
@@ -753,14 +753,12 @@ trait DefaultUserApiComponent
         makeOperation("UserVotedProposals") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
             parameters(
-              (
-                "votes".as[Seq[VoteKey]].*,
-                "qualifications".as[Seq[QualificationKey]].*,
-                "sort".?,
-                "order".as[Order].?,
-                "limit".as[Int].?,
-                "skip".as[Int].?
-              )
+              "votes".csv[VoteKey],
+              "qualifications".csv[QualificationKey],
+              "sort".?,
+              "order".as[Order].?,
+              "limit".as[Int].?,
+              "skip".as[Int].?
             ) {
               (
                 votes: Option[Seq[VoteKey]],
@@ -1004,7 +1002,7 @@ trait DefaultUserApiComponent
       path("user" / userId / "proposals") { userId: UserId =>
         makeOperation("UserProposals") { requestContext =>
           makeOAuth2 { userAuth: AuthInfo[UserRights] =>
-            parameters(("sort".?, "order".as[Order].?, "limit".as[Int].?, "skip".as[Int].?)) {
+            parameters("sort".?, "order".as[Order].?, "limit".as[Int].?, "skip".as[Int].?) {
               (sort: Option[String], order: Option[Order], limit: Option[Int], skip: Option[Int]) =>
                 val connectedUserId: UserId = userAuth.user.userId
                 if (connectedUserId != userId) {
