@@ -49,14 +49,15 @@ trait DefaultProposalIndexerServiceComponent
   class DefaultProposalIndexerService extends ProposalIndexerService {
     lazy val bufferSize: Int =
       elasticsearchConfiguration.entityBufferSize * elasticsearchConfiguration.entityBulkSize
+    val backoff: RestartSettings = RestartSettings(minBackoff = 1.second, maxBackoff = 20.seconds, randomFactor = 0.2)
     lazy val proposalIndexationQueue: SourceQueueWithComplete[ProposalId] =
       Source
         .queue[ProposalId](bufferSize = bufferSize, OverflowStrategy.backpressure)
-        .via(RestartFlow.withBackoff(minBackoff = 1.second, maxBackoff = 20.seconds, randomFactor = 0.2) { () =>
+        .via(RestartFlow.withBackoff(backoff) { () =>
           ProposalStream.indexOrUpdateFlow
         })
         .withAttributes(ActorAttributes.dispatcher(api.elasticsearchDispatcher))
-        .via(RestartFlow.withBackoff(minBackoff = 1.second, maxBackoff = 20.seconds, randomFactor = 0.2) { () =>
+        .via(RestartFlow.withBackoff(backoff) { () =>
           ProposalStream.semanticIndex
         })
         .withAttributes(ActorAttributes.dispatcher(api.elasticsearchDispatcher))
