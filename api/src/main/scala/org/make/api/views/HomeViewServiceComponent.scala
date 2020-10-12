@@ -32,14 +32,14 @@ import org.make.core.post.indexed.{
   PostSearchFilters,
   PostSearchQuery
 }
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.UserType
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait HomeViewService {
-  def getHomePageViewResponse(country: Country, language: Language): Future[HomePageViewResponse]
+  def getHomePageViewResponse(country: Country): Future[HomePageViewResponse]
 }
 
 trait HomeViewServiceComponent {
@@ -53,15 +53,12 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
 
   class DefaultHomeViewService extends HomeViewService {
 
-    override def getHomePageViewResponse(country: Country, language: Language): Future[HomePageViewResponse] = {
+    override def getHomePageViewResponse(country: Country): Future[HomePageViewResponse] = {
 
       def searchQuestionOfOperations(query: OperationOfQuestionSearchQuery): Future[Seq[QuestionOfOperationResponse]] =
         elasticsearchOperationOfQuestionAPI
           .searchOperationOfQuestions(
-            query.copy(filters = query.filters.map(
-              _.copy(language = Some(LanguageSearchFilter(language)), country = Some(CountrySearchFilter(country)))
-            )
-            )
+            query.copy(filters = query.filters.map(_.copy(country = Some(CountrySearchFilter(country)))))
           )
           .map(_.results.map(QuestionOfOperationResponse.apply))
 

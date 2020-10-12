@@ -31,18 +31,11 @@ import org.make.api.proposal.ProposalServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.core.auth.UserRights
-import org.make.core.operation.{
-  OperationKind,
-  OperationOfQuestion,
-  OperationOfQuestionSearchFilters,
-  OperationOfQuestionSearchQuery,
-  QuestionContentSearchFilter,
-  StatusSearchFilter
-}
+import org.make.core.operation._
 import org.make.core.proposal.{CountrySearchFilter, LanguageSearchFilter, SearchQuery}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{OrganisationNameSearchFilter, OrganisationSearchFilters, OrganisationSearchQuery}
-import org.make.core.{operation, proposal, user, BusinessConfig, HttpCodes, ParameterExtractors}
+import org.make.core._
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -53,6 +46,16 @@ trait ViewApi extends Directives {
 
   @ApiOperation(value = "get-home-page-view", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
+    value = Array(new ApiImplicitParam(name = "country", paramType = "path", dataType = "string", example = "FR"))
+  )
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[HomePageViewResponse]))
+  )
+  @Path(value = "/home-page/{country}")
+  def homePageView: Route
+
+  @ApiOperation(value = "deprecated-get-home-page-view", httpMethod = "GET", code = HttpCodes.OK)
+  @ApiImplicitParams(
     value = Array(
       new ApiImplicitParam(name = "country", paramType = "path", dataType = "string", example = "FR"),
       new ApiImplicitParam(name = "language", paramType = "path", dataType = "string", example = "fr")
@@ -62,7 +65,7 @@ trait ViewApi extends Directives {
     value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[HomePageViewResponse]))
   )
   @Path(value = "/home-page/{country}/{language}")
-  def homePageView: Route
+  def homePageViewWithLanguage: Route
 
   @ApiOperation(value = "get-search-view", httpMethod = "GET", code = HttpCodes.OK)
   @ApiImplicitParams(
@@ -115,16 +118,21 @@ trait DefaultViewApiComponent
     private val country: PathMatcher1[Country] = Segment.map(Country.apply)
     private val language: PathMatcher1[Language] = Segment.map(Language.apply)
 
+    override def homePageViewWithLanguage: Route = {
+      get {
+        path("views" / "home-page" / country / language) { (country, _) =>
+          makeOperation("GetHomePageView") { _ =>
+            provideAsync(homeViewService.getHomePageViewResponse(country))(complete(_))
+          }
+        }
+      }
+    }
+
     override def homePageView: Route = {
       get {
-        path("views" / "home-page" / country / language) { (country, language) =>
+        path("views" / "home-page" / country) { country =>
           makeOperation("GetHomePageView") { _ =>
-            provideAsync(
-              homeViewService.getHomePageViewResponse(
-                country = BusinessConfig.validateCountry(country),
-                language = BusinessConfig.validateLanguage(country, language)
-              )
-            )(complete(_))
+            provideAsync(homeViewService.getHomePageViewResponse(country))(complete(_))
           }
         }
       }
