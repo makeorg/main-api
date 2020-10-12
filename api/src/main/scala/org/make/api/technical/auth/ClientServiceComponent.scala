@@ -19,10 +19,11 @@
 
 package org.make.api.technical.auth
 
+import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.ClientService.ClientInformation
-import org.make.core.{ValidationError, ValidationFailedError}
+import org.make.api.technical.auth.ClientErrorCode.{BadCredentials, UnknownClient}
+import org.make.api.technical.auth.ClientService.ClientError
 import org.make.core.auth.{Client, ClientId}
 import org.make.core.user.{CustomRole, UserId}
 
@@ -58,11 +59,25 @@ trait ClientService {
     tokenExpirationSeconds: Int
   ): Future[Option[Client]]
   def count(name: Option[String]): Future[Int]
-  def getClientOrDefault(clientInformation: Option[ClientInformation]): Future[Client]
+  def getClient(clientId: ClientId, secret: Option[String]): Future[Either[ClientError, Client]]
+  def getDefaultClient(): Future[Either[ClientError, Client]]
 }
 
 object ClientService {
-  final case class ClientInformation(clientId: ClientId, clientSecret: String)
+  final case class ClientError(code: ClientErrorCode, label: String)
+}
+
+sealed abstract class ClientErrorCode(val value: String) extends StringEnumEntry
+
+object ClientErrorCode extends StringEnum[ClientErrorCode] with StringCirceEnum[ClientErrorCode] {
+
+  case object UnknownClient extends ClientErrorCode("unknown_client")
+  case object BadCredentials extends ClientErrorCode("bad_credentials")
+  case object CredentialsMissing extends ClientErrorCode("credentials_missing")
+  case object ForbiddenGrantType extends ClientErrorCode("forbidden_grant_type")
+  case object MissingRole extends ClientErrorCode("missing_role")
+
+  override def values: IndexedSeq[ClientErrorCode] = findValues
 }
 
 trait DefaultClientServiceComponent extends ClientServiceComponent {
@@ -139,42 +154,23 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
       persistentClientService.count(name = name)
     }
 
-    override def getClientOrDefault(clientInformation: Option[ClientInformation]): Future[Client] = {
-      clientInformation match {
-        case Some(ClientInformation(clientId, clientSecret)) =>
-          def failure[T]: Future[T] = {
-            Future.failed(
-              ValidationFailedError(
-                Seq(
-                  ValidationError(
-                    "client",
-                    "not_found",
-                    Some(s"Client $clientId doesn't exist or provided secret doesn't match")
-                  )
-                )
-              )
-            )
+    override def getClient(clientId: ClientId, secret: Option[String]): Future[Either[ClientError, Client]] = {
+      getClient(clientId).map {
+        case Some(client) =>
+          if (client.secret == secret) {
+            Right(client)
+          } else {
+            Left(ClientError(BadCredentials, s"Credentials mismatch for client ${clientId.value}."))
           }
-          getClient(clientId).flatMap {
-            case Some(client) if client.secret.contains(clientSecret) => Future.successful(client)
-            case _                                                    => failure
-          }
-        case _ =>
-          getClient(ClientId(makeSettings.Authentication.defaultClientId)).flatMap {
-            case Some(client) => Future.successful(client)
-            case None =>
-              Future.failed(
-                ValidationFailedError(
-                  Seq(
-                    ValidationError(
-                      "client",
-                      "not_found",
-                      Some(s"Default Client doesn't exist, check your data integrity")
-                    )
-                  )
-                )
-              )
-          }
+
+        case None => Left(ClientError(UnknownClient, s"Client ${clientId.value} was not found."))
+      }
+    }
+
+    override def getDefaultClient(): Future[Either[ClientError, Client]] = {
+      getClient(ClientId(makeSettings.Authentication.defaultClientId)).map {
+        case Some(client) => Right(client)
+        case None         => Left(ClientError(UnknownClient, "Default client was not found, check your configuration."))
       }
     }
   }

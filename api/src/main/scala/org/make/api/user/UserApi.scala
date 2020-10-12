@@ -22,7 +22,6 @@ package org.make.api.user
 import java.time.LocalDate
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{BasicHttpCredentials, Authorization => AuthorizationHeader}
 import akka.http.scaladsl.server._
 import com.typesafe.scalalogging.StrictLogging
 import io.swagger.annotations._
@@ -34,14 +33,14 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.CsvReceptacle._
-import org.make.api.technical.auth.ClientService.ClientInformation
-import org.make.api.technical.auth.{ClientServiceComponent, MakeDataHandlerComponent}
+import org.make.api.technical.auth.MakeDataHandlerComponent
+import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage._
 import org.make.api.user.social.SocialServiceComponent
 import org.make.api.user.validation.UserRegistrationValidatorComponent
 import org.make.api.userhistory.{UserHistoryCoordinatorServiceComponent, _}
 import org.make.core._
-import org.make.core.auth.{Client, ClientId, UserRights}
+import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
@@ -589,7 +588,7 @@ trait DefaultUserApiComponent
     with StorageServiceComponent
     with StorageConfigurationComponent
     with UserRegistrationValidatorComponent
-    with ClientServiceComponent =>
+    with ClientDirectives =>
 
   override lazy val userApi: UserApi = new DefaultUserApi
 
@@ -684,56 +683,45 @@ trait DefaultUserApiComponent
       }
     }
 
-    private def findClient(header: Option[AuthorizationHeader]): Future[Client] = {
-      val maybeClientInformation: Option[ClientInformation] = header match {
-        case Some(AuthorizationHeader(BasicHttpCredentials(clientId, clientSecret))) =>
-          Some(ClientInformation(ClientId(clientId), clientSecret))
-        case _ => None
-      }
-      clientService.getClientOrDefault(maybeClientInformation)
-    }
-
     override def socialLogin: Route = post {
       path("user" / "login" / "social") {
         makeOperation("SocialLogin", EndpointType.CoreOnly) { requestContext =>
           decodeRequest {
             entity(as[SocialLoginRequest]) { request: SocialLoginRequest =>
               extractClientIP { clientIp =>
-                optionalHeaderValueByType(AuthorizationHeader) { maybeAuthorization =>
-                  provideAsync(findClient(maybeAuthorization)) { client =>
-                    val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
-                    val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
-                    val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
+                extractClientOrDefault { client =>
+                  val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
+                  val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
+                  val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
 
-                    val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
-                      case Some(questionId) => questionService.getQuestion(questionId)
-                      case _                => Future.successful(None)
-                    }
-                    provideAsync(futureMaybeQuestion) { maybeQuestion =>
-                      onSuccess(
-                        socialService
-                          .login(
-                            request.provider,
-                            request.token,
-                            country,
-                            language,
-                            Some(ip),
-                            maybeQuestion.map(_.questionId),
-                            requestContext,
-                            client.clientId
-                          )
-                          .flatMap {
-                            case (userId, social) =>
-                              sessionHistoryCoordinatorService
-                                .convertSession(requestContext.sessionId, userId, requestContext)
-                                .map(_ => (userId, social))
-                          }
-                      ) {
-                        case (userId, social) =>
-                          setMakeSecure(social.access_token, userId) {
-                            complete(StatusCodes.Created -> social)
-                          }
-                      }
+                  val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
+                    case Some(questionId) => questionService.getQuestion(questionId)
+                    case _                => Future.successful(None)
+                  }
+                  provideAsync(futureMaybeQuestion) { maybeQuestion =>
+                    onSuccess(
+                      socialService
+                        .login(
+                          request.provider,
+                          request.token,
+                          country,
+                          language,
+                          Some(ip),
+                          maybeQuestion.map(_.questionId),
+                          requestContext,
+                          client.clientId
+                        )
+                        .flatMap {
+                          case (userId, social) =>
+                            sessionHistoryCoordinatorService
+                              .convertSession(requestContext.sessionId, userId, requestContext)
+                              .map(_ => (userId, social))
+                        }
+                    ) {
+                      case (userId, social) =>
+                        setMakeSecure(social.access_token, userId) {
+                          complete(StatusCodes.Created -> social)
+                        }
                     }
                   }
                 }
@@ -1354,7 +1342,7 @@ trait DefaultUserApiComponent
                             profession = result.profile.flatMap(_.profession),
                             description = result.profile.flatMap(_.description),
                             postalCode = result.profile.flatMap(_.postalCode),
-                            optInNewsletter = result.profile.map(_.optInNewsletter).getOrElse(true),
+                            optInNewsletter = result.profile.forall(_.optInNewsletter),
                             website = result.profile.flatMap(_.website)
                           )
                         )

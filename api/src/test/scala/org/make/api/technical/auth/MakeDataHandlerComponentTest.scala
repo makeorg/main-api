@@ -25,17 +25,16 @@ import java.time.format.DateTimeFormatter
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
+import org.make.api.technical.auth.ClientService.ClientError
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
 import org.make.core.DateHelper
 import org.make.core.auth.{Client, ClientId, Token, UserRights}
-import org.make.core.session.VisitorId
 import org.make.core.technical.IdGenerator
 import org.make.core.user.{CustomRole, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider._
 
-import scala.collection.immutable.TreeMap
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, Future}
 
@@ -45,7 +44,7 @@ class MakeDataHandlerComponentTest
     with MakeSettingsComponent
     with PersistentTokenServiceComponent
     with PersistentUserServiceComponent
-    with PersistentClientServiceComponent
+    with ClientServiceComponent
     with IdGeneratorComponent
     with OauthTokenGeneratorComponent
     with PersistentAuthCodeServiceComponent
@@ -56,10 +55,105 @@ class MakeDataHandlerComponentTest
   override val oauthTokenGenerator: OauthTokenGenerator = mock[OauthTokenGenerator]
   override val makeSettings: MakeSettings = mock[MakeSettings]
   override val persistentAuthCodeService: PersistentAuthCodeService = mock[PersistentAuthCodeService]
+  override val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
+  override val persistentUserService: PersistentUserService = mock[PersistentUserService]
+  override val clientService: ClientService = mock[ClientService]
 
-  val clientId = "0cdd82cb-5cc0-4875-bb54-5c3709449429"
-  val clientWithRolesId = "d45efaff-b8af-46ea-873b-d93a38f667b1"
-  val secret = Some("secret")
+  // Users and mocks
+  val userWithoutRoles: User = user(id = UserId("userWithoutRoles"), roles = Nil, email = "john.doe@example.com")
+  val userWithRoles: User =
+    user(
+      id = UserId("userWithRoles"),
+      email = "admin@example.com",
+      roles = Seq(CustomRole("role-client"), CustomRole("role-admin-client"))
+    )
+
+  val users: Seq[User] = Seq(userWithoutRoles, userWithRoles)
+
+  when(persistentUserService.findByEmailAndPassword(any[String], any[String])).thenAnswer[String] { email =>
+    Future.successful(users.find(_.email == email))
+  }
+
+  when(persistentUserService.get(any[UserId])).thenAnswer[UserId] { id =>
+    Future.successful(users.find(_.userId == id))
+  }
+
+  when(persistentUserService.persist(any[User])).thenAnswer[User] { user =>
+    Future.successful(user)
+  }
+
+  when(persistentUserService.verificationTokenExists(any[String])).thenReturn(Future(false))
+
+  // Clients and mocks
+  val secret: String = "secret"
+  private val tokenLifeTime = 1800
+
+  val defaultClient: Client = client(
+    clientId = ClientId("0cdd82cb-5cc0-4875-bb54-5c3709449429"),
+    name = "client",
+    allowedGrantTypes = Seq(OAuthGrantType.PASSWORD, OAuthGrantType.REFRESH_TOKEN),
+    secret = Some(secret),
+    tokenExpirationSeconds = tokenLifeTime
+  )
+
+  val clientWithExpiration: Client = client(
+    clientId = ClientId("client-with-expiration"),
+    name = "client",
+    allowedGrantTypes = Seq(OAuthGrantType.PASSWORD),
+    secret = Some(secret),
+    tokenExpirationSeconds = 42
+  )
+
+  val clientWithRoles: Client = client(
+    clientId = ClientId("d45efaff-b8af-46ea-873b-d93a38f667b1"),
+    name = "client-with-roles",
+    allowedGrantTypes = Seq(OAuthGrantType.PASSWORD),
+    secret = Some(secret),
+    roles = Seq(CustomRole("role-client"), CustomRole("role-admin-client")),
+    tokenExpirationSeconds = tokenLifeTime
+  )
+
+  val clientWithoutUserId: Client = client(
+    clientId = ClientId("clientWithoutUserId"),
+    name = "clientWithoutUserId",
+    allowedGrantTypes = Seq(OAuthGrantType.CLIENT_CREDENTIALS),
+    secret = Some(secret),
+    tokenExpirationSeconds = tokenLifeTime
+  )
+
+  val clientForClientCredentials: Client = client(
+    clientId = ClientId("clientForClientCredentials"),
+    name = "clientForClientCredentials",
+    allowedGrantTypes = Seq(OAuthGrantType.CLIENT_CREDENTIALS),
+    secret = Some(secret),
+    defaultUserId = Some(userWithRoles.userId),
+    roles = Seq(CustomRole("role-client")),
+    tokenExpirationSeconds = tokenLifeTime
+  )
+
+  val clients: Map[ClientId, Client] =
+    Seq(defaultClient, clientWithRoles, clientWithExpiration, clientWithoutUserId, clientForClientCredentials)
+      .map(client => client.clientId -> client)
+      .toMap
+
+  when(clientService.getClient(any[ClientId])).thenAnswer[ClientId] { id =>
+    Future.successful(clients.get(id))
+  }
+
+  when(clientService.getClient(any[ClientId], any[Option[String]])).thenAnswer {
+    (clientId: ClientId, password: Option[String]) =>
+      clients.get(clientId) match {
+        case None =>
+          Future.successful(
+            Left(ClientError(ClientErrorCode.UnknownClient, s"No client for credentials ${clientId.value}:$secret"))
+          )
+        case Some(client) if client.secret == password => Future.successful(Right(client))
+        case _ =>
+          Future.successful(
+            Left(ClientError(ClientErrorCode.BadCredentials, s"Secrets don't match for client ${clientId.value}"))
+          )
+      }
+  }
 
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
   private val secureCookieConfiguration = mock[makeSettings.SecureCookie.type]
@@ -70,73 +164,18 @@ class MakeDataHandlerComponentTest
   when(secureCookieConfiguration.domain).thenReturn(".foo.com")
   when(secureCookieConfiguration.lifetime).thenReturn(Duration("4 hours"))
   private val oauthConfiguration = mock[makeSettings.Oauth.type]
-  private val tokenLifeTime = 1800
   when(oauthConfiguration.refreshTokenLifetime).thenReturn(tokenLifeTime * 8)
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
   when(makeSettings.SecureCookie).thenReturn(secureCookieConfiguration)
   when(makeSettings.Oauth).thenReturn(oauthConfiguration)
-  when(authenticationConfiguration.defaultClientId).thenReturn(clientId)
+  when(authenticationConfiguration.defaultClientId).thenReturn(defaultClient.clientId.value)
   when(visitorCookieConfiguration.name).thenReturn("cookie-visitor")
   when(visitorCookieConfiguration.createdAtName).thenReturn("cookie-visitor-created-at")
   when(visitorCookieConfiguration.isSecure).thenReturn(false)
   when(visitorCookieConfiguration.domain).thenReturn(".foo.com")
   when(makeSettings.VisitorCookie).thenReturn(visitorCookieConfiguration)
-  when(idGenerator.nextId()).thenReturn("some-id")
-  when(idGenerator.nextVisitorId()).thenReturn(VisitorId("some-id"))
 
-  val invalidClientId = "invalidClientId"
-
-  val exampleClient = Client(
-    clientId = ClientId(clientId),
-    name = "client",
-    allowedGrantTypes = Seq("grant_type", "other_grant_type"),
-    secret = secret,
-    scope = None,
-    redirectUri = None,
-    defaultUserId = None,
-    roles = Seq.empty,
-    tokenExpirationSeconds = tokenLifeTime
-  )
-
-  val exampleClientWithExpiration = Client(
-    clientId = ClientId("client-with-expiration"),
-    name = "client",
-    allowedGrantTypes = Seq("grant_type", "other_grant_type"),
-    secret = secret,
-    scope = None,
-    redirectUri = None,
-    defaultUserId = None,
-    roles = Seq.empty,
-    tokenExpirationSeconds = 42
-  )
-
-  val exampleClientWithRoles = Client(
-    clientId = ClientId(clientWithRolesId),
-    name = "client-with-roles",
-    allowedGrantTypes = Seq("grant_type", "other_grant_type"),
-    secret = secret,
-    scope = None,
-    redirectUri = None,
-    defaultUserId = None,
-    roles = Seq(CustomRole("role-client"), CustomRole("role-admin-client")),
-    tokenExpirationSeconds = tokenLifeTime
-  )
-
-  val validUsername = "john.doe@example.com"
-  val validHashedPassword = "hash:abcde"
-
-  val validUsernameWithRoles = "admin@example.com"
-  val validHashedPasswordWithRoles = "hash:abcdef"
-
-  val persistentTokenService: PersistentTokenService = mock[PersistentTokenService]
-  val persistentUserService: PersistentUserService = mock[PersistentUserService]
-  val persistentClientService: PersistentClientService = mock[PersistentClientService]
-  val request: AuthorizationRequest = mock[AuthorizationRequest]
-  val requestWithRoles: AuthorizationRequest = mock[AuthorizationRequest]
-  val exampleUser: User = user(id = idGenerator.nextUserId(), roles = Nil)
-  val exampleUserWithRoles: User =
-    user(id = idGenerator.nextUserId(), roles = Seq(CustomRole("role-client"), CustomRole("role-admin-client")))
-  val exampleToken = Token(
+  val exampleToken: Token = Token(
     accessToken = "access_token",
     refreshToken = Some("refresh_token"),
     scope = None,
@@ -147,58 +186,33 @@ class MakeDataHandlerComponentTest
       availableQuestions = Seq.empty,
       emailVerified = true
     ),
-    client = exampleClient
+    client = defaultClient
   )
 
+  val passwordRequest: PasswordRequest = {
+    val request = mock[PasswordRequest]
+    when(request.grantType).thenReturn(OAuthGrantType.PASSWORD)
+    when(request.username).thenReturn(userWithoutRoles.email)
+    when(request.password).thenReturn("passpass")
+    request
+  }
+
+  val passwordWithRolesRequest: PasswordRequest = {
+    val request = mock[PasswordRequest]
+    when(request.grantType).thenReturn(OAuthGrantType.PASSWORD)
+    when(request.username).thenReturn(userWithRoles.email)
+    when(request.password).thenReturn("passpass")
+    request
+  }
+
   private val lifeTimeBig = 213123L
-  val accessTokenExample = AccessToken(
+  val accessTokenExample: AccessToken = AccessToken(
     token = "access_token",
     refreshToken = Some("refresh_token"),
     scope = None,
     lifeSeconds = Some(lifeTimeBig),
     createdAt = new SimpleDateFormat("yyyy-MM-dd").parse("2017-01-01")
   )
-
-  when(request.params).thenReturn(Map[String, Seq[String]]())
-  when(request.requireParam(eqTo("username"))).thenReturn(validUsername)
-  when(request.requireParam(eqTo("password"))).thenReturn("passpass")
-
-  when(requestWithRoles.params).thenReturn(Map[String, Seq[String]]())
-  when(requestWithRoles.requireParam(eqTo("username"))).thenReturn(validUsernameWithRoles)
-  when(requestWithRoles.requireParam(eqTo("password"))).thenReturn("passpass")
-
-  //A valid client
-  when(persistentClientService.findByClientIdAndSecret(eqTo(clientId), eqTo(secret)))
-    .thenReturn(Future.successful(Some(exampleClient)))
-  when(persistentClientService.get(ClientId(clientId))).thenReturn(Future(Some(exampleClient)))
-
-  when(persistentClientService.get(exampleClientWithExpiration.clientId))
-    .thenReturn(Future(Some(exampleClientWithExpiration)))
-
-  when(persistentClientService.findByClientIdAndSecret(eqTo(clientWithRolesId), eqTo(secret)))
-    .thenReturn(Future.successful(Some(exampleClientWithRoles)))
-  when(persistentClientService.get(ClientId(clientWithRolesId))).thenReturn(Future(Some(exampleClientWithRoles)))
-
-  //A invalid client
-  when(persistentClientService.findByClientIdAndSecret(eqTo(invalidClientId), eqTo(None)))
-    .thenReturn(Future.successful(None))
-
-  //A valid request
-  when(request.params).thenReturn(Map("username" -> Seq(validUsername), "password" -> Seq(validHashedPassword)))
-  when(request.headers).thenReturn(TreeMap[String, Seq[String]]())
-
-  //A valid request
-  when(requestWithRoles.params)
-    .thenReturn(Map("username" -> Seq(validUsernameWithRoles), "password" -> Seq(validHashedPasswordWithRoles)))
-  when(requestWithRoles.headers).thenReturn(TreeMap[String, Seq[String]]())
-
-  //A valid user impl
-  when(persistentUserService.persist(exampleUser))
-    .thenReturn(Future.successful(exampleUser))
-  when(persistentUserService.findByEmailAndPassword(eqTo(validUsername), any[String]))
-    .thenReturn(Future.successful(Some(exampleUser)))
-
-  when(persistentUserService.verificationTokenExists(any[String])).thenReturn(Future(false))
 
   when(persistentTokenService.persist(any[Token])).thenAnswer { token: Token =>
     Future.successful(token)
@@ -207,44 +221,71 @@ class MakeDataHandlerComponentTest
   Feature("find User form client credentials and request") {
     Scenario("best case") {
       Given("a valid client")
-      val clientCredential = ClientCredential(clientId = clientId, clientSecret = secret)
+      val clientCredential = ClientCredential(clientId = defaultClient.clientId.value, clientSecret = Some(secret))
       And("a valid user in a valid request")
 
       When("findUser is called")
       val futureMaybeUser: Future[Option[UserRights]] =
-        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
+        oauth2DataHandler.findUser(Some(clientCredential), passwordRequest)
 
       Then("the User is returned")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
-        maybeUser.isDefined shouldBe true
+        maybeUser should be(defined)
       }
     }
 
     Scenario("nonexistent client") {
       Given("a invalid client")
-      val clientCredential = ClientCredential(clientId = invalidClientId, clientSecret = None)
+      val clientCredential = ClientCredential(clientId = "Invalid Client Id", clientSecret = None)
       And("a valid user in a valid request")
 
       When("findUser is called")
+
       val futureMaybeUser: Future[Option[UserRights]] =
-        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
+        oauth2DataHandler.findUser(Some(clientCredential), passwordRequest)
 
       Then("the User cannot be found")
-      whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
-        maybeUser shouldBe None
+      whenReady(futureMaybeUser.failed, Timeout(3.seconds)) {
+        case _: ClientAccessUnauthorizedException =>
+        case other =>
+          logger.error(s"Unexpected exception encountered:", other)
+          fail(s"Unexpected exception encountered: $other")
+      }
+    }
+
+    Scenario("flow not defined for client client") {
+      Given("a invalid client")
+      val clientCredential = ClientCredential(clientId = defaultClient.clientId.value, clientSecret = Some(secret))
+      And("a valid user in a valid request")
+      val refreshRequest = mock[RefreshTokenRequest]
+      when(refreshRequest.grantType).thenReturn(OAuthGrantType.AUTHORIZATION_CODE)
+
+      When("findUser is called")
+
+      val futureMaybeUser: Future[Option[UserRights]] =
+        oauth2DataHandler.findUser(Some(clientCredential), refreshRequest)
+
+      Then("the User cannot be found")
+      whenReady(futureMaybeUser.failed, Timeout(3.seconds)) {
+        case _: ClientAccessUnauthorizedException =>
+        case other =>
+          logger.error(s"Unexpected exception encountered:", other)
+          fail(s"Unexpected exception encountered: $other")
       }
     }
 
     Scenario("nonexistent user") {
       Given("a valid client")
-      val clientCredential = ClientCredential(clientId = clientId, clientSecret = secret)
+      val clientCredential = ClientCredential(clientId = defaultClient.clientId.value, clientSecret = Some(secret))
       And("a nonexistent user in a valid request")
-      when(persistentUserService.findByEmailAndPassword(any[String], any[String]))
-        .thenReturn(Future.successful(None))
+      val request = mock[PasswordRequest]
+      when(request.grantType).thenReturn(OAuthGrantType.PASSWORD)
+      when(request.username).thenReturn("unknown@example.com")
+      when(request.password).thenReturn("some password")
 
       When("findUser is called")
       val futureMaybeUser: Future[Option[UserRights]] =
-        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
+        oauth2DataHandler.findUser(Some(clientCredential), request)
 
       Then("the User cannot be found")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
@@ -254,35 +295,31 @@ class MakeDataHandlerComponentTest
 
     Scenario("user with insufficient roles") {
       Given("a valid client")
-      val clientCredential = ClientCredential(clientId = clientWithRolesId, clientSecret = secret)
-      And("a valid user in a valid request")
+      val clientCredential = ClientCredential(clientId = clientWithRoles.clientId.value, clientSecret = Some(secret))
+      And("a valid user in a valid request but with insufficient roles")
 
       When("findUser is called")
       val futureMaybeUser: Future[Option[UserRights]] =
-        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(request))
+        oauth2DataHandler.findUser(Some(clientCredential), passwordRequest)
 
-      Then("the User is returned")
-      whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
-        maybeUser.isDefined shouldBe false
+      Then("An error is raised")
+      whenReady(futureMaybeUser.failed, Timeout(3.seconds)) {
+        case _: ClientAccessUnauthorizedException =>
+        case other =>
+          logger.error(s"Unexpected exception encountered:", other)
+          fail(s"Unexpected exception encountered: $other")
       }
 
     }
 
     Scenario("user with one of the client roles") {
-      when(persistentUserService.persist(exampleUserWithRoles))
-        .thenReturn(Future.successful(exampleUserWithRoles))
-      when(
-        persistentUserService
-          .findByEmailAndPassword(eqTo(validUsernameWithRoles), any[String])
-      ).thenReturn(Future.successful(Some(exampleUserWithRoles)))
-
       Given("a valid client")
-      val clientCredential = ClientCredential(clientId = clientWithRolesId, clientSecret = secret)
+      val clientCredential = ClientCredential(clientId = clientWithRoles.clientId.value, clientSecret = Some(secret))
       And("a valid user in a valid request")
 
       When("findUser is called")
       val futureMaybeUser: Future[Option[UserRights]] =
-        oauth2DataHandler.findUser(Some(clientCredential), PasswordRequest(requestWithRoles))
+        oauth2DataHandler.findUser(Some(clientCredential), passwordWithRolesRequest)
 
       Then("the User is returned")
       whenReady(futureMaybeUser, Timeout(3.seconds)) { maybeUser =>
@@ -290,6 +327,68 @@ class MakeDataHandlerComponentTest
       }
     }
 
+    Scenario("Using the client grant type with no client defined") {
+      val request = mock[ClientCredentialsRequest]
+      when(request.grantType).thenReturn(OAuthGrantType.CLIENT_CREDENTIALS)
+
+      val clientCredential = ClientCredential(clientWithoutUserId.clientId.value, Some(secret))
+
+      whenReady(oauth2DataHandler.findUser(Some(clientCredential), request), Timeout(3.seconds)) {
+        _ should be(None)
+      }
+    }
+
+    Scenario("Using the client grant type with a client without a user") {
+      val request = mock[ClientCredentialsRequest]
+      when(request.grantType).thenReturn(OAuthGrantType.CLIENT_CREDENTIALS)
+
+      whenReady(oauth2DataHandler.findUser(None, request).failed, Timeout(3.seconds)) {
+        case _: ClientAccessUnauthorizedException =>
+        case other =>
+          logger.error(s"Unexpected exception encountered:", other)
+          fail(s"Unexpected exception encountered: $other")
+      }
+    }
+
+    Scenario("Using the client grant type with a client with a user") {
+      val request = mock[ClientCredentialsRequest]
+      when(request.grantType).thenReturn(OAuthGrantType.CLIENT_CREDENTIALS)
+
+      val eventualUser = oauth2DataHandler.findUser(
+        Some(ClientCredential(clientForClientCredentials.clientId.value, clientForClientCredentials.secret)),
+        request
+      )
+      whenReady(eventualUser, Timeout(3.seconds))(_.map(_.userId) should contain(userWithRoles.userId))
+    }
+
+    Scenario("Using the client grant type with a client with a bad secret key") {
+      val request = mock[ClientCredentialsRequest]
+      when(request.grantType).thenReturn(OAuthGrantType.CLIENT_CREDENTIALS)
+
+      val eventualUser = oauth2DataHandler.findUser(
+        Some(ClientCredential(clientForClientCredentials.clientId.value, Some("bad-client"))),
+        request
+      )
+      whenReady(eventualUser.failed, Timeout(3.seconds)) {
+        case _: ClientAccessUnauthorizedException =>
+        case other =>
+          logger.error(s"Unexpected exception encountered:", other)
+          fail(s"Unexpected exception encountered: $other")
+      }
+    }
+
+    Scenario("Using the client grant type with a bad client id") {
+      val request = mock[ClientCredentialsRequest]
+      when(request.grantType).thenReturn(OAuthGrantType.CLIENT_CREDENTIALS)
+
+      val eventualUser = oauth2DataHandler.findUser(Some(ClientCredential("unknown", Some(secret))), request)
+      whenReady(eventualUser.failed, Timeout(3.seconds)) {
+        case _: ClientAccessUnauthorizedException =>
+        case other =>
+          logger.error(s"Unexpected exception encountered:", other)
+          fail(s"Unexpected exception encountered: $other")
+      }
+    }
   }
 
   Feature("Create a new AccessToken") {
@@ -320,12 +419,10 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
 
       When("I create a new AccessToken")
-      when(persistentTokenService.persist(eqTo(exampleToken)))
-        .thenReturn(Future.successful(exampleToken))
       val futureAccessToken: Future[AccessToken] = oauth2DataHandler.createAccessToken(authInfo)
 
-      Then("persistentClientService must be called with a '0cdd82cb-5cc0-4875-bb54-5c3709449429' as ClientId")
-      verify(persistentClientService).get(ClientId("0cdd82cb-5cc0-4875-bb54-5c3709449429"))
+      Then("clientService must be called for the default client")
+      verify(clientService).getClient(defaultClient.clientId)
 
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeToken =>
         And("I should get an AccessToken")
@@ -337,7 +434,7 @@ class MakeDataHandlerComponentTest
         And("I should get an AccessToken with a refresh token value equal to \"refresh_token\"")
         maybeToken.refreshToken shouldBe Some("refresh_token")
         And("I should get an AccessToken with an empty scope")
-        maybeToken.scope shouldBe empty
+        maybeToken.scope should be(None)
       }
     }
 
@@ -364,23 +461,21 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
 
       When("I create a new AccessToken")
-      when(persistentTokenService.persist(eqTo(exampleToken)))
-        .thenReturn(Future.successful(exampleToken))
       val futureAccessToken: Future[AccessToken] = oauth2DataHandler.createAccessToken(authInfo)
 
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeToken =>
-        Then("persistentClientService must be called with a 'client-with-expiration' as ClientId")
-        verify(persistentClientService).get(ClientId("client-with-expiration"))
+        Then("clientService must be called for clientWithExpiration")
+        verify(clientService).getClient(clientWithExpiration.clientId)
         And("I should get an AccessToken")
         maybeToken shouldBe a[AccessToken]
         And("I should get an AccessToken with a token value equal to \"access_token\"")
         maybeToken.token shouldBe "access_token"
         And("I should get an AccessToken with a expiresIn value equal to 42")
         maybeToken.lifeSeconds shouldBe Some(42)
-        And("I should get an AccessToken with a refresh token value equal to \"refresh_token\"")
-        maybeToken.refreshToken shouldBe Some("refresh_token")
+        And("I should get an AccessToken with no refresh token, since the refresh flow is not defined for client")
+        maybeToken.refreshToken shouldBe None
         And("I should get an AccessToken with an empty scope")
-        maybeToken.scope shouldBe empty
+        maybeToken.scope should be(None)
       }
     }
   }
@@ -400,7 +495,7 @@ class MakeDataHandlerComponentTest
             availableQuestions = Seq.empty,
             emailVerified = true
           ),
-          Some(clientId),
+          Some(defaultClient.clientId.value),
           None,
           None
         )
@@ -419,7 +514,7 @@ class MakeDataHandlerComponentTest
         scope = None,
         expiresIn = expiresIn,
         user = authInfo.user,
-        client = exampleClient,
+        client = defaultClient,
         createdAt = Some(exampleDate),
         updatedAt = Some(exampleDate)
       )
@@ -447,7 +542,7 @@ class MakeDataHandlerComponentTest
         availableQuestions = Seq.empty,
         emailVerified = true
       ),
-      Some(clientId),
+      Some(defaultClient.clientId.value),
       None,
       None
     )
@@ -499,7 +594,7 @@ class MakeDataHandlerComponentTest
         And("I should get an AccessToken with a expiresIn value equal to 213123L")
         maybeAccessToken.lifeSeconds shouldBe Some(lifeTimeBig)
         And("I should get an AccessToken with an empty scope")
-        maybeAccessToken.scope shouldBe empty
+        maybeAccessToken.scope should be(None)
         And("I should get an AccessToken with a createdAt equal to 2017-01-01")
         maybeAccessToken.createdAt.toString shouldBe createdAt.toString
       }
@@ -515,9 +610,6 @@ class MakeDataHandlerComponentTest
 
       when(persistentTokenService.deleteByAccessToken(same(accessTokenExample.token)))
         .thenReturn(Future.successful(0))
-
-      when(persistentTokenService.persist(any[Token]))
-        .thenReturn(Future.successful(exampleToken))
 
       When("I call method refreshAccessToken")
       val oauth2DataHandlerWithMockedMethods = new DefaultMakeDataHandler
@@ -564,7 +656,7 @@ class MakeDataHandlerComponentTest
       Then("I get an empty result")
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByRefreshToken(refreshToken)
       whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>
-        maybeAuthInfo shouldBe empty
+        maybeAuthInfo should be(None)
       }
     }
 
@@ -579,7 +671,7 @@ class MakeDataHandlerComponentTest
       Then("I get an empty result")
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByRefreshToken(refreshToken)
       whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>
-        maybeAuthInfo shouldBe empty
+        maybeAuthInfo should be(None)
       }
     }
 
@@ -611,7 +703,7 @@ class MakeDataHandlerComponentTest
 
       Then("I get an empty result")
       whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>
-        maybeAuthInfo shouldBe empty
+        maybeAuthInfo should be(None)
       }
     }
   }
@@ -647,7 +739,7 @@ class MakeDataHandlerComponentTest
 
       Then("I get an empty result")
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeAccessToken =>
-        maybeAccessToken shouldBe empty
+        maybeAccessToken should be(None)
       }
     }
 
@@ -727,8 +819,6 @@ class MakeDataHandlerComponentTest
         .thenReturn(Future.successful((newAccessToken, "new_access_token_hashed")))
       when(oauthTokenGenerator.generateRefreshToken())
         .thenReturn(Future.successful(("refresh_token", "refresh_token_hashed")))
-      when(persistentTokenService.persist(any[Token]))
-        .thenReturn(Future.successful(exampleToken))
 
       val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)
       whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>

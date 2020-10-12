@@ -41,16 +41,16 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.technical.auth.ClientService.ClientInformation
+import org.make.api.technical.auth.ClientService.ClientError
 import org.make.api.technical.auth._
+import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.SocialProvider.Google
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.user.social._
 import org.make.api.user.validation.{UserRegistrationValidator, UserRegistrationValidatorComponent}
-import org.make.api.userhistory.ResetPasswordEvent
-import org.make.api.userhistory.UserHistoryCoordinatorServiceComponent
+import org.make.api.userhistory.{ResetPasswordEvent, UserHistoryCoordinatorServiceComponent}
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
 import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.common.indexed.Sort
@@ -61,7 +61,7 @@ import org.make.core.proposal.indexed._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext, Requirement, Validation, ValidationError, ValidationFailedError}
+import org.make.core._
 import scalaoauth2.provider.{AccessToken, AuthInfo}
 
 import scala.collection.immutable.Seq
@@ -86,8 +86,8 @@ class UserApiTest
     with StorageServiceComponent
     with StorageConfigurationComponent
     with UserRegistrationValidatorComponent
-    with ClientServiceComponent {
-
+    with ClientServiceComponent
+    with ClientDirectives {
   override val userService: UserService = mock[UserService]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
   override val socialService: SocialService = mock[SocialService]
@@ -103,8 +103,6 @@ class UserApiTest
   private val authenticationConfiguration = mock[makeSettings.Authentication.type]
 
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
-  private val defaultClientId = "default-client"
-  when(authenticationConfiguration.defaultClientId).thenReturn(defaultClientId)
   when(idGenerator.nextId()).thenReturn("some-id")
 
   override val proposalJournal: MakeReadJournal = mock[MakeReadJournal]
@@ -117,43 +115,9 @@ class UserApiTest
 
   val expiresInSecond = 1000
 
-  when(clientService.getClient(ClientId(authenticationConfiguration.defaultClientId))).thenReturn(
-    Future.successful(
-      Some(
-        Client(
-          clientId = ClientId(defaultClientId),
-          name = defaultClientId,
-          allowedGrantTypes = Seq.empty,
-          secret = None,
-          scope = None,
-          redirectUri = None,
-          createdAt = None,
-          updatedAt = None,
-          defaultUserId = None,
-          roles = Seq.empty,
-          tokenExpirationSeconds = 200
-        )
-      )
-    )
-  )
+  val defaultClient: Client = client(ClientId("default-client"), "default-client")
 
-  when(clientService.getClientOrDefault(None)).thenReturn(
-    Future.successful(
-      Client(
-        clientId = ClientId(defaultClientId),
-        name = defaultClientId,
-        allowedGrantTypes = Seq.empty,
-        secret = None,
-        scope = None,
-        redirectUri = None,
-        createdAt = None,
-        updatedAt = None,
-        defaultUserId = None,
-        roles = Seq.empty,
-        tokenExpirationSeconds = 200
-      )
-    )
-  )
+  when(clientService.getDefaultClient()).thenReturn(Future.successful(Right(defaultClient)))
 
   val fakeUser: User = TestUtils.user(
     id = UserId("ABCD"),
@@ -820,11 +784,10 @@ class UserApiTest
       val clientId = ClientId(s"CLIENT - $token")
       val clientSecret = s"CLIENT SECRET - $token"
 
-      val client =
-        Client(clientId, clientId.value, Seq.empty, Some(clientSecret), None, None, None, None, None, Seq.empty, 200)
+      val specificClient = client(clientId, clientId.value)
 
-      when(clientService.getClientOrDefault(Some(ClientInformation(clientId, clientSecret))))
-        .thenReturn(Future.successful(client))
+      when(clientService.getClient(clientId, Some(clientSecret)))
+        .thenReturn(Future.successful(Right(specificClient)))
 
       when(
         socialService.login(
@@ -835,7 +798,7 @@ class UserApiTest
           any[Option[String]],
           any[Option[QuestionId]],
           any[RequestContext],
-          eqTo(client.clientId)
+          eqTo(specificClient.clientId)
         )
       ).thenReturn(
         Future.successful(
@@ -868,7 +831,7 @@ class UserApiTest
           eqTo(Some("192.0.0.2")),
           eqTo(None),
           any[RequestContext],
-          eqTo(client.clientId)
+          eqTo(specificClient.clientId)
         )
       }
     }
@@ -885,13 +848,9 @@ class UserApiTest
            |""".stripMargin
 
       val clientId = ClientId(s"CLIENT - $token")
-      val clientSecret = s"CLIENT SECRET - $token"
 
-      val client =
-        Client(clientId, clientId.value, Seq.empty, Some(clientSecret), None, None, None, None, None, Seq.empty, 200)
-
-      when(clientService.getClientOrDefault(Some(ClientInformation(clientId, "wrong secret"))))
-        .thenReturn(Future.failed(ValidationFailedError(Seq.empty)))
+      when(clientService.getClient(clientId, Some("wrong secret")))
+        .thenReturn(Future.successful(Left(ClientError(ClientErrorCode.BadCredentials, "Bad credentials"))))
 
       when(
         socialService.login(
@@ -902,7 +861,7 @@ class UserApiTest
           any[Option[String]],
           any[Option[QuestionId]],
           any[RequestContext],
-          eqTo(client.clientId)
+          eqTo(clientId)
         )
       ).thenReturn(
         Future.successful(
@@ -926,7 +885,7 @@ class UserApiTest
           Authorization(BasicHttpCredentials(clientId.value, "wrong secret"))
         ) ~> routes ~> check {
 
-        status should be(StatusCodes.BadRequest)
+        status should be(StatusCodes.Unauthorized)
       }
     }
   }

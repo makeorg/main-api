@@ -28,6 +28,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
 import org.make.api.proposal.ProposalScorerHelper.ScoreCounts
+import org.make.core.auth.{Client, ClientId}
 import org.make.core.idea.IdeaId
 import org.make.core.operation._
 import org.make.core.post.indexed.IndexedPost
@@ -379,7 +380,7 @@ trait TestUtils {
       updatedAt = updatedAt
     )
 
-  val defaultMetas = Metas(title = Some("Metas title"), description = Some("Meta description"), picture = None)
+  val defaultMetas: Metas = Metas(title = Some("Metas title"), description = Some("Meta description"), picture = None)
   def operationOfQuestion(
     questionId: QuestionId,
     operationId: OperationId,
@@ -474,6 +475,30 @@ trait TestUtils {
       summary = summary,
       country = country
     )
+
+  def client(
+    clientId: ClientId,
+    name: String = "default",
+    allowedGrantTypes: Seq[String] = Seq.empty,
+    secret: Option[String] = None,
+    scope: Option[String] = None,
+    redirectUri: Option[String] = None,
+    defaultUserId: Option[UserId] = None,
+    roles: Seq[Role] = Seq.empty,
+    tokenExpirationSeconds: Int = 300
+  ): Client = {
+    Client(
+      clientId = clientId,
+      name = name,
+      allowedGrantTypes = allowedGrantTypes,
+      secret = secret,
+      scope = scope,
+      redirectUri = redirectUri,
+      defaultUserId = defaultUserId,
+      roles = roles,
+      tokenExpirationSeconds = tokenExpirationSeconds
+    )
+  }
 }
 
 object TestUtils extends TestUtils
