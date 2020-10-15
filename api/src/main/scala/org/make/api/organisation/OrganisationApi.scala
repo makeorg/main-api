@@ -33,6 +33,7 @@ import org.make.api.proposal.{
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.user.UserResponse
 import org.make.core.auth.UserRights
 import org.make.core.common.indexed.Sort
@@ -43,7 +44,6 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user.UserId
 import org.make.core.{HttpCodes, Order, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
-import org.make.core.ApiParamMagnetHelper._
 
 @Api(value = "Organisations")
 @Path(value = "/organisations")
@@ -226,13 +226,11 @@ trait DefaultOrganisationApiComponent
         path("organisations") {
           makeOperation("GetOrganisations") { _ =>
             parameters(
-              (
-                "organisationIds".as[Seq[UserId]].?,
-                "organisationName".as[String].?,
-                "slug".as[String].?,
-                "country".as[Country].?,
-                "language".as[Language].?
-              )
+              "organisationIds".as[Seq[UserId]].?,
+              "organisationName".as[String].?,
+              "slug".as[String].?,
+              "country".as[Country].?,
+              "language".as[Language].?
             ) {
               (
                 organisationIds: Option[Seq[UserId]],
@@ -255,7 +253,7 @@ trait DefaultOrganisationApiComponent
         path("organisations" / organisationId / "proposals") { organisationId =>
           makeOperation("GetOrganisationProposals") { requestContext =>
             optionalMakeOAuth2 { optionalUserAuth: Option[AuthInfo[UserRights]] =>
-              parameters(("sort".?, "order".as[Order].?, "limit".as[Int].?, "skip".as[Int].?)) {
+              parameters("sort".?, "order".as[Order].?, "limit".as[Int].?, "skip".as[Int].?) {
                 (sort: Option[String], order: Option[Order], limit: Option[Int], skip: Option[Int]) =>
                   provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
                     val defaultSort = Some("createdAt")
@@ -303,14 +301,12 @@ trait DefaultOrganisationApiComponent
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               provideAsyncOrNotFound(organisationService.getOrganisation(organisationId)) { _ =>
                 parameters(
-                  (
-                    "votes".as[Seq[VoteKey]].*,
-                    "qualifications".as[Seq[QualificationKey]].*,
-                    "sort".?,
-                    "order".as[Order].?,
-                    "limit".as[Int].?,
-                    "skip".as[Int].?
-                  )
+                  "votes".csv[VoteKey],
+                  "qualifications".csv[QualificationKey],
+                  "sort".?,
+                  "order".as[Order].?,
+                  "limit".as[Int].?,
+                  "skip".as[Int].?
                 ) {
                   (
                     votes: Option[Seq[VoteKey]],

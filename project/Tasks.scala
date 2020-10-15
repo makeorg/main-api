@@ -17,12 +17,12 @@
  *
  */
 
-import sbt.{settingKey, taskKey, SettingKey, TaskKey}
+import sbt.{settingKey, taskKey, KeyRanks, SettingKey, TaskKey}
 
 object Tasks {
 
   lazy val compileScalastyle: TaskKey[Unit] = taskKey[Unit]("compileScalastyle")
   lazy val testScalastyle: TaskKey[Unit] = taskKey[Unit]("testScalastyle")
-  lazy val imageName: SettingKey[String] = settingKey[String]("imageName")
+  lazy val imageName: SettingKey[String] = settingKey[String]("imageName").withRank(KeyRanks.Invisible)
 
 }

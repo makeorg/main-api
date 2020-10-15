@@ -233,7 +233,7 @@ trait DefaultModerationOrganisationApiComponent
       get {
         path("moderation" / "organisations") {
           makeOperation("ModerationGetOrganisations") { _ =>
-            parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "organisationName".?)) {
+            parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "organisationName".?) {
               (
                 start: Option[Int],
                 end: Option[Int],

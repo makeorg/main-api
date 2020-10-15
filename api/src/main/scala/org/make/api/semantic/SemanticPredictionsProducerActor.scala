@@ -41,6 +41,6 @@ class SemanticPredictionsProducerActor extends BasicProducerActor[PredictionsEve
 }
 object SemanticPredictionsProducerActor {
   val name: String = "predictions-producer"
-  val props: Props = Props[SemanticPredictionsProducerActor]
+  val props: Props = Props[SemanticPredictionsProducerActor]()
   val topicKey: String = "predictions"
 }

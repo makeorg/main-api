@@ -125,7 +125,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
           select
             .from(PersistentIdeaMapping.as(PersistentIdeaMapping.alias))
             .where(sqls.eq(PersistentIdeaMapping.column.id, id.value))
-        }.map(PersistentIdeaMapping(PersistentIdeaMapping.alias.resultName)(_)).single.apply()
+        }.map(PersistentIdeaMapping(PersistentIdeaMapping.alias.resultName)(_)).single().apply()
       }).map(_.map(_.toIdeaMapping))
     }
 
@@ -171,7 +171,7 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
                 ideaId.map(idea => sqls.eq(PersistentIdeaMapping.column.ideaId, idea.value))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

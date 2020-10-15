@@ -65,7 +65,7 @@ class MakeDowningActor extends Actor with ActorLogging {
 object MakeDowningActor {
 
   val name: String = "MakeDowningActor"
-  val props: Props = Props[MakeDowningActor]
+  val props: Props = Props[MakeDowningActor]()
 
   case object AutoDown
 }

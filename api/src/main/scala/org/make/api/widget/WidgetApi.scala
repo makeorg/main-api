@@ -90,7 +90,7 @@ trait DefaultWidgetApiComponent
       path("widget" / "questions" / questionSlug / "start-sequence") { questionSlug =>
         makeOperation("GetWidgetSequenceByQuestionSlug") { requestContext =>
           optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
-            parameters(("tagsIds".as[immutable.Seq[TagId]].?, "limit".as[Int].?)) {
+            parameters("tagsIds".as[immutable.Seq[TagId]].?, "limit".as[Int].?) {
               (tagsIds: Option[Seq[TagId]], limit: Option[Int]) =>
                 provideAsyncOrNotFound(
                   persistentQuestionService

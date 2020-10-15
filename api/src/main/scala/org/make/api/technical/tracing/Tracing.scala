@@ -26,10 +26,10 @@ object Tracing {
 
   private val EntrypointKey: Context.Key[Option[String]] = Context.key(EntrypointPatternConverter.name, None)
 
-  def entrypoint: Option[String] = Kamon.currentContext.get(EntrypointKey)
+  def entrypoint: Option[String] = Kamon.currentContext().get(EntrypointKey)
 
   def entrypoint(name: String): Unit = {
-    Kamon.storeContext(Kamon.currentContext.withEntry(EntrypointKey, Some(name)))
+    Kamon.storeContext(Kamon.currentContext().withEntry(EntrypointKey, Some(name)))
     ()
   }
 

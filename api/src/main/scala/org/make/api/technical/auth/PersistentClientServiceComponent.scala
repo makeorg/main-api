@@ -146,7 +146,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
           select
             .from(PersistentClient.as(clientAlias))
             .where(sqls.eq(clientAlias.uuid, clientId.value))
-        }.map(PersistentClient.apply()).single.apply
+        }.map(PersistentClient.apply()).single().apply()
       })
 
       futureClient.map(_.map(_.toClient))
@@ -164,7 +164,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
                 //TODO: Test this function with both secret value: Some(secret) || None
                 .and(sqls.eq(clientAlias.secret, secret))
             )
-        }.map(PersistentClient.apply()).single.apply
+        }.map(PersistentClient.apply()).single().apply()
       })
 
       futurePersistentClient.map(_.map(_.toClient))
@@ -245,7 +245,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
                 )
 
             sortOrderQuery(start, end, None, None, query)
-          }.map(PersistentClient.apply()).list.apply
+          }.map(PersistentClient.apply()).list().apply()
       })
 
       futurePersistentClients.map(_.map(_.toClient))
@@ -265,7 +265,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
                   .map(n => sqls.like(sqls"lower(${clientAlias.name})", s"%${n.toLowerCase.replace("%", "\\%")}%"))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
   }

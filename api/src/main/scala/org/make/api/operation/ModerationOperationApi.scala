@@ -30,12 +30,12 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.user.UserServiceComponent
 import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
-import org.make.core.ApiParamMagnetHelper._
 
 @Api(
   value = "Moderation Operation",
@@ -248,14 +248,12 @@ trait DefaultModerationOperationApiComponent
         path("moderation" / "operations") {
           makeOperation("ModerationGetOperations") { _ =>
             parameters(
-              (
-                "_start".as[Int].?,
-                "_end".as[Int].?,
-                "_sort".?,
-                "_order".as[Order].?,
-                "slug".?,
-                "operationKind".as[Seq[OperationKind]].*
-              )
+              "_start".as[Int].?,
+              "_end".as[Int].?,
+              "_sort".?,
+              "_order".as[Order].?,
+              "slug".?,
+              "operationKind".csv[OperationKind]
             ) {
               (
                 start: Option[Int],

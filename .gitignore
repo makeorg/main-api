@@ -8,3 +8,4 @@ ddata*
 /.vscode
 project/metals.sbt
 /local.sbt
+.bsp

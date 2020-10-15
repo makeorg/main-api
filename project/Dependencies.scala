@@ -21,19 +21,19 @@ import sbt._
 
 object Dependencies {
 
-  private val akkaVersion = "2.6.9"
-  private val akkaHttpVersion = "10.1.12"
+  private val akkaVersion = "2.6.10"
+  private val akkaHttpVersion = "10.2.1"
   private val alpakkaVersion = "1.1.2"
   private val nettyVersion = "4.1.52.Final"
   private val kafkaVersion = "1.1.0"
   private val elastic4sVersion = "6.7.8"
-  private val jerseyVersion = "2.31"
-  private val kamonVersion = "2.1.6"
+  private val jerseyVersion = "2.32"
+  private val kamonVersion = "2.1.7"
   private val log4jVersion = "2.13.3"
   private val circeVersion = "0.13.0"
-  val kanelaVersion: String = "1.0.6"
+  val kanelaVersion: String = "1.0.7"
   val swaggerUiVersion: String = "3.20.9"
-  private val refinedVersion: String = "0.9.16"
+  private val refinedVersion: String = "0.9.17"
   private val staminaVersion: String = "0.1.5+1-74109b8e"
   private val calibanVersion = "0.9.1"
   private val zioVersion = "1.0.1"
@@ -57,8 +57,8 @@ object Dependencies {
   val akkaStream: ModuleID = "com.typesafe.akka"          %% "akka-stream-typed"           % akkaVersion
   val akkaHttp: ModuleID = "com.typesafe.akka"            %% "akka-http"                   % akkaHttpVersion
   val akkaHttp2Support: ModuleID = "com.typesafe.akka"    %% "akka-http2-support"          % akkaHttpVersion
-  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.33.0"
-  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.0")
+  val akkaHttpCirce: ModuleID = "de.heikoseeberger"       %% "akka-http-circe"             % "1.35.0"
+  val akkaHttpSwagger: ModuleID = ("com.github.swagger-akka-http" %% "swagger-akka-http" % "1.2.0")
     .exclude("javax.ws.rs", "jsr311-api")
   val akkaPersistence: ModuleID = "com.typesafe.akka"      %% "akka-persistence-typed" % akkaVersion
   val akkaPersistenceQuery: ModuleID = "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion
@@ -135,8 +135,8 @@ object Dependencies {
   val scalaTest: ModuleID = "org.scalatest"               %% "scalatest"                % "3.2.2"         % "it,test"
   val scalaTestScalaCheck: ModuleID = "org.scalatestplus" %% "scalacheck-1-14"          % "3.2.2.0"       % "it,test"
   val akkaHttpTest: ModuleID = "com.typesafe.akka"        %% "akka-http-testkit"        % akkaHttpVersion % "it,test"
-  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % "1.15.0"        % "it,test"
-  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % "1.15.0"        % "it,test"
+  val mockito: ModuleID = "org.mockito"                   %% "mockito-scala"            % "1.16.0"        % "it,test"
+  val mockitoScalatest: ModuleID = "org.mockito"          %% "mockito-scala-scalatest"  % "1.16.0"        % "it,test"
   val dockerScalatest: ModuleID = "com.whisk"             %% "docker-testkit-scalatest" % "0.9.9"         % "it"
   val dockerClient: ModuleID = ("com.whisk" %% "docker-testkit-impl-docker-java" % "0.9.9" % "it")
     .exclude("io.netty", "netty-handler")

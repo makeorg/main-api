@@ -329,7 +329,7 @@ trait DefaultAdminPersonalityRoleApiComponent
     override def listPersonalityRoles: Route = get {
       path("admin" / "personality-roles") {
         makeOperation("GetPersonalityRoles") { _ =>
-          parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "name".?)) {
+          parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "name".?) {
             (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[Order], name: Option[String]) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
@@ -438,15 +438,13 @@ trait DefaultAdminPersonalityRoleApiComponent
       path("admin" / "personality-roles" / personalityRoleId / "fields") { personalityRoleId =>
         makeOperation("GetPersonalityRoleFields") { _ =>
           parameters(
-            (
-              "_start".as[Int].?,
-              "_end".as[Int].?,
-              "_sort".?,
-              "_order".as[Order].?,
-              "name".?,
-              "fieldType".as[FieldType].?,
-              "required".as[Boolean].?
-            )
+            "_start".as[Int].?,
+            "_end".as[Int].?,
+            "_sort".?,
+            "_order".as[Order].?,
+            "name".?,
+            "fieldType".as[FieldType].?,
+            "required".as[Boolean].?
           ) {
             (
               start: Option[Int],

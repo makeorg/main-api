@@ -138,7 +138,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .map { (operation, actions, questions) =>
               operation.copy(operationActions = actions.toVector, questions = questions.toVector)
             }
-            .list
+            .list()
             .apply()
       })
 
@@ -162,7 +162,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
                 .from(PersistentOperation.as(operationAlias))
                 .where(operationWhereOpts(slug, operationKinds, None, None))
             sortOrderQuery(start, end, sort, order, query)
-          }.map(PersistentOperation.apply()).list.apply()
+          }.map(PersistentOperation.apply()).list().apply()
       })
 
       futurePersistentOperations.map(_.map(_.toSimpleOperation))
@@ -205,7 +205,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .map { (operation, actions, questions) =>
               operation.copy(operationActions = actions.toVector, questions = questions.toVector)
             }
-            .single
+            .single()
             .apply()
       })
 
@@ -220,7 +220,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             select
               .from(PersistentOperation.as(operationAlias))
               .where(sqls.eq(operationAlias.uuid, operationId.value))
-          }.map(PersistentOperation.apply()).single.apply()
+          }.map(PersistentOperation.apply()).single().apply()
       })
 
       futureMaybePersistentOperation.map(_.map(_.toSimpleOperation))
@@ -241,7 +241,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .map { (operation, actions, questions) =>
               operation.copy(operationActions = actions.toVector, questions = questions.toVector)
             }
-            .single
+            .single()
             .apply()
       })
 
@@ -294,7 +294,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
           select(sqls.count)
             .from(PersistentOperation.as(operationAlias))
             .where(operationWhereOpts(slug, operationKinds, None, None))
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

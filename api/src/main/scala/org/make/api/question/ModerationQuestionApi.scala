@@ -316,16 +316,14 @@ trait DefaultModerationQuestionComponent
       path("moderation" / "questions") {
         makeOperation("ModerationSearchQuestion") { _ =>
           parameters(
-            (
-              "slug".?,
-              "operationId".as[OperationId].?,
-              "country".as[Country].?,
-              "language".as[Language].?,
-              "_start".as[Int].?,
-              "_end".as[Int].?,
-              "_sort".?,
-              "_order".as[Order].?
-            )
+            "slug".?,
+            "operationId".as[OperationId].?,
+            "country".as[Country].?,
+            "language".as[Language].?,
+            "_start".as[Int].?,
+            "_end".as[Int].?,
+            "_sort".?,
+            "_order".as[Order].?
           ) { (maybeSlug, operationId, country, language, start, end, sort, order) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireModerationRole(userAuth.user) {

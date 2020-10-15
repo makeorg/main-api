@@ -57,7 +57,7 @@ object MemoryMonitoringActor {
     BackoffSupervisor.props(
       BackoffOpts
         .onStop(
-          Props[MemoryMonitoringActor],
+          Props[MemoryMonitoringActor](),
           childName = "memory-monitor",
           minBackoff = 3.seconds,
           maxBackoff = 30.seconds,

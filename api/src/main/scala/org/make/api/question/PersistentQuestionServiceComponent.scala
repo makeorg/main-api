@@ -99,7 +99,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 
@@ -110,7 +110,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
           select
             .from(PersistentQuestion.as(questionAlias))
             .where(sqls.eq(questionAlias.questionId, questionId.value))
-        }.map(PersistentQuestion.apply()).single.apply()
+        }.map(PersistentQuestion.apply()).single().apply()
       }).map(_.map(_.toQuestion))
     }
 
@@ -125,7 +125,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 .eq(questionAlias.slug, questionIdValueOrSlug)
                 .or(sqls.eq(questionAlias.questionId, questionIdValueOrSlug))
             )
-        }.map(PersistentQuestion.apply()).single.apply()
+        }.map(PersistentQuestion.apply()).single().apply()
       }).map(_.map(_.toQuestion))
     }
 
@@ -136,7 +136,7 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
           select
             .from(PersistentQuestion.as(questionAlias))
             .where(sqls.in(questionAlias.questionId, questionIds.map(_.value)))
-        }.map(PersistentQuestion.apply()).list.apply()
+        }.map(PersistentQuestion.apply()).list().apply()
       }).map(_.map(_.toQuestion))
     }
 

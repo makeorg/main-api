@@ -32,6 +32,7 @@ import org.make.api.sessionhistory.{RequestSessionVoteValues, SessionHistoryCoor
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.user.UserServiceComponent
 import org.make.core.Order
 import org.make.core.auth.UserRights
@@ -54,8 +55,6 @@ import org.make.core.{
   ValidationFailedError
 }
 import scalaoauth2.provider.AuthInfo
-
-import org.make.core.ApiParamMagnetHelper._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -281,29 +280,27 @@ trait DefaultProposalApiComponent
           makeOperation("Search") { requestContext =>
             optionalMakeOAuth2 { userAuth: Option[AuthInfo[UserRights]] =>
               parameters(
-                (
-                  "proposalIds".as[Seq[ProposalId]].?,
-                  "questionId".as[Seq[QuestionId]].?,
-                  "tagsIds".as[Seq[TagId]].?,
-                  "operationId".as[OperationId].?,
-                  "content".?,
-                  "slug".?,
-                  "seed".as[Int].?,
-                  "source".?,
-                  "location".?,
-                  "question".?,
-                  "language".as[Language].?,
-                  "country".as[Country].?,
-                  "sort".as[ProposalElasticsearchFieldName].?,
-                  "order".as[Order].?,
-                  "limit".as[Int].?,
-                  "skip".as[Int].?,
-                  "sortAlgorithm".?,
-                  "operationKinds".as[Seq[OperationKind]].*,
-                  "isOrganisation".as[Boolean].?,
-                  "userType".as[Seq[UserType]].?,
-                  "ideaIds".as[Seq[IdeaId]].?
-                )
+                "proposalIds".as[Seq[ProposalId]].?,
+                "questionId".as[Seq[QuestionId]].?,
+                "tagsIds".as[Seq[TagId]].?,
+                "operationId".as[OperationId].?,
+                "content".?,
+                "slug".?,
+                "seed".as[Int].?,
+                "source".?,
+                "location".?,
+                "question".?,
+                "language".as[Language].?,
+                "country".as[Country].?,
+                "sort".as[ProposalElasticsearchFieldName].?,
+                "order".as[Order].?,
+                "limit".as[Int].?,
+                "skip".as[Int].?,
+                "sortAlgorithm".?,
+                "operationKinds".csv[OperationKind],
+                "isOrganisation".as[Boolean].?,
+                "userType".as[Seq[UserType]].?,
+                "ideaIds".as[Seq[IdeaId]].?
               ) {
                 (
                   proposalIds: Option[Seq[ProposalId]],

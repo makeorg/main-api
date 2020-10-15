@@ -68,5 +68,5 @@ class HealthCheckSupervisor extends Actor with ActorLogging {
 object HealthCheckSupervisor {
   val name: String = "health-checks"
 
-  def props: Props = Props[HealthCheckSupervisor]
+  def props: Props = Props[HealthCheckSupervisor]()
 }

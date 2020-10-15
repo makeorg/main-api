@@ -229,15 +229,13 @@ trait DefaultModerationTagApiComponent
         path("moderation" / "tags") {
           makeOperation("ModerationSearchTag") { _ =>
             parameters(
-              (
-                "_start".as[Int].?,
-                "_end".as[Int].?,
-                "_sort".?,
-                "_order".as[Order].?,
-                "label".?,
-                "tagTypeId".as[TagTypeId].?,
-                "questionId".as[QuestionId].?
-              )
+              "_start".as[Int].?,
+              "_end".as[Int].?,
+              "_sort".?,
+              "_order".as[Order].?,
+              "label".?,
+              "tagTypeId".as[TagTypeId].?,
+              "questionId".as[QuestionId].?
             ) {
               (
                 start: Option[Int],

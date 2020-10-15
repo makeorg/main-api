@@ -24,7 +24,7 @@ import java.time.{Instant, LocalDate}
 import java.util.Date
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Remote-Address`, Authorization, BasicHttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{`X-Forwarded-For`, Authorization, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.util.ByteString
 import cats.data.NonEmptyList
@@ -310,7 +310,7 @@ class UserApiTest
 
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
       Post("/user", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
           eqTo(
@@ -361,7 +361,7 @@ class UserApiTest
 
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
       Post("/user", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
           eqTo(
@@ -410,7 +410,7 @@ class UserApiTest
 
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
       Post("/user", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         verify(userService).register(
           eqTo(
@@ -774,7 +774,7 @@ class UserApiTest
 
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
       Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Created)
         header("Set-Cookie").get.value should include("cookie-secure")
         verify(socialService).login(
@@ -801,7 +801,7 @@ class UserApiTest
 
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
       Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.BadRequest)
       }
     }
@@ -855,7 +855,7 @@ class UserApiTest
       val addr: InetAddress = InetAddress.getByName("192.0.0.2")
       Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(
-          `Remote-Address`(RemoteAddress(addr)),
+          `X-Forwarded-For`(RemoteAddress(addr)),
           Authorization(BasicHttpCredentials(clientId.value, clientSecret))
         ) ~> routes ~> check {
 
@@ -922,7 +922,7 @@ class UserApiTest
       val addr: InetAddress = InetAddress.getByName("192.0.0.2")
       Post("/user/login/social", HttpEntity(ContentTypes.`application/json`, request))
         .withHeaders(
-          `Remote-Address`(RemoteAddress(addr)),
+          `X-Forwarded-For`(RemoteAddress(addr)),
           Authorization(BasicHttpCredentials(clientId.value, "wrong secret"))
         ) ~> routes ~> check {
 
@@ -1461,7 +1461,7 @@ class UserApiTest
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
 
       Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr))) ~> routes ~> check {
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr))) ~> routes ~> check {
         status should be(StatusCodes.Unauthorized)
       }
     }
@@ -1486,7 +1486,7 @@ class UserApiTest
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
 
       Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr)))
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr)))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(userService).update(
@@ -1527,7 +1527,7 @@ class UserApiTest
       val addr: InetAddress = InetAddress.getByName("192.0.0.1")
 
       Patch("/user", HttpEntity(ContentTypes.`application/json`, request))
-        .withHeaders(`Remote-Address`(RemoteAddress(addr)))
+        .withHeaders(`X-Forwarded-For`(RemoteAddress(addr)))
         .withHeaders(Authorization(OAuth2BearerToken(citizenToken))) ~> routes ~> check {
         status should be(StatusCodes.OK)
         verify(userService).update(

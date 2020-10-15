@@ -93,7 +93,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.questionId, questionId.value))
-        }.map(PersistentTag.apply()).list().apply
+        }.map(PersistentTag.apply()).list().apply()
       })
 
       futurePersistentTag.map(_.map(_.toTag))
@@ -106,7 +106,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.id, tagId.value))
-        }.map(PersistentTag.apply()).single.apply
+        }.map(PersistentTag.apply()).single().apply()
       })
 
       futurePersistentTag.map(_.map(_.toTag))
@@ -119,7 +119,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .orderBy(tagAlias.weight, tagAlias.label)
-        }.map(PersistentTag.apply()).list.apply
+        }.map(PersistentTag.apply()).list().apply()
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -133,7 +133,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.in(tagAlias.id, uniqueTagsIds))
-        }.map(PersistentTag.apply()).list.apply
+        }.map(PersistentTag.apply()).list().apply()
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -157,7 +157,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                 )
             )
             .orderBy(tagAlias.weight, tagAlias.label)
-        }.map(PersistentTag.apply()).list.apply
+        }.map(PersistentTag.apply()).list().apply()
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -171,7 +171,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.label, preparedLabel))
-        }.map(PersistentTag.apply()).list.apply
+        }.map(PersistentTag.apply()).list().apply()
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -185,7 +185,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           select
             .from(PersistentTag.as(tagAlias))
             .where(sqls.like(tagAlias.label, s"%$preparedPartialLabel%"))
-        }.map(PersistentTag.apply()).list.apply
+        }.map(PersistentTag.apply()).list().apply()
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -246,7 +246,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
           delete
             .from(PersistentTag.as(tagAlias))
             .where(sqls.eq(tagAlias.id, tagId.value))
-        }.update.apply()
+        }.update().apply()
       })
 
       result.onComplete {
@@ -306,7 +306,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
               )
 
           sortOrderQuery(start, end, sort, order, query)
-        }.map(PersistentTag.apply()).list.apply
+        }.map(PersistentTag.apply()).list().apply()
       })
 
       futurePersistentTags.map(_.map(_.toTag))
@@ -330,7 +330,7 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
                 persistentTagFilter.questionId.map(questionId => sqls.eq(tagAlias.questionId, questionId.value))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
   }

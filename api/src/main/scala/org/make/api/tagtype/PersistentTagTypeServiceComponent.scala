@@ -64,7 +64,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
           select
             .from(PersistentTagType.as(tagTypeAlias))
             .where(sqls.eq(tagTypeAlias.id, tagTypeId.value))
-        }.map(PersistentTagType.apply()).single.apply
+        }.map(PersistentTagType.apply()).single().apply()
       })
 
       futurePersistentTagType.map(_.map(_.toTagType))
@@ -80,7 +80,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               .where(requiredForEnrichment.map(required => sqls.eq(tagTypeAlias.requiredForEnrichment, required)))
               .orderBy(tagTypeAlias.weightType)
               .desc
-          }.map(PersistentTagType.apply()).list.apply
+          }.map(PersistentTagType.apply()).list().apply()
       })
 
       futurePersistentTagTypes.map(_.map(_.toTagType))
@@ -97,7 +97,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               .where(sqls.in(tagTypeAlias.id, uniqueTagTypesIds))
               .orderBy(tagTypeAlias.weightType)
               .desc
-          }.map(PersistentTagType.apply()).list.apply
+          }.map(PersistentTagType.apply()).list().apply()
       })
 
       futurePersistentTagTypes.map(_.map(_.toTagType))
@@ -115,8 +115,8 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               column.display -> tagType.display,
               column.weightType -> tagType.weight,
               column.requiredForEnrichment -> tagType.requiredForEnrichment,
-              column.createdAt -> DateHelper.now,
-              column.updatedAt -> DateHelper.now
+              column.createdAt -> DateHelper.now(),
+              column.updatedAt -> DateHelper.now()
             )
         }.execute().apply()
       }).map(_ => tagType)
@@ -133,7 +133,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
               column.display -> tagType.display,
               column.weightType -> tagType.weight,
               column.requiredForEnrichment -> tagType.requiredForEnrichment,
-              column.updatedAt -> DateHelper.now
+              column.updatedAt -> DateHelper.now()
             )
             .where(
               sqls
@@ -155,7 +155,7 @@ trait DefaultPersistentTagTypeServiceComponent extends PersistentTagTypeServiceC
           delete
             .from(PersistentTagType.as(tagTypeAlias))
             .where(sqls.eq(tagTypeAlias.id, tagTypeId.value))
-        }.update.apply()
+        }.update().apply()
       })
 
       result.onComplete {

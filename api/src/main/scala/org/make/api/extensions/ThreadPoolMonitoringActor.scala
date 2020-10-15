@@ -60,7 +60,7 @@ class ThreadPoolMonitoringActor extends Actor {
 
 object ThreadPoolMonitoringActor {
   val innerName: String = "ThreadPoolMonitoringActor"
-  val innerProps: Props = Props[ThreadPoolMonitoringActor]
+  val innerProps: Props = Props[ThreadPoolMonitoringActor]()
 
   val name: String = "BackoffThreadPoolMonitoringActor"
   private val maxNrOfRetries = 50

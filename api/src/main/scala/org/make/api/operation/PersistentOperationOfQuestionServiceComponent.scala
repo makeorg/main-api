@@ -249,7 +249,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
           select
             .from(PersistentOperationOfQuestion.as(PersistentOperationOfQuestion.alias))
             .where(sqls.eq(PersistentOperationOfQuestion.column.questionId, id))
-        }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)(_)).single.apply()
+        }.map(PersistentOperationOfQuestion(PersistentOperationOfQuestion.alias.resultName)(_)).single().apply()
       }).map(_.map(_.toOperationOfQuestion))
     }
 
@@ -308,7 +308,7 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
                 )
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

@@ -39,6 +39,7 @@ import org.make.api.question.QuestionServiceComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
+import org.make.api.technical.CsvReceptacle._
 import org.make.core.Validation.{validate, validateColor, validateField, validateOptionalUserInput, validateUserInput}
 import org.make.core._
 import org.make.core.auth.UserRights
@@ -48,7 +49,6 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.sequence.SequenceId
 import org.make.core.user.Role.RoleAdmin
 import scalaoauth2.provider.AuthInfo
-import org.make.core.ApiParamMagnetHelper._
 
 import scala.annotation.meta.field
 
@@ -241,16 +241,14 @@ trait DefaultModerationOperationOfQuestionApiComponent
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               parameters(
-                (
-                  "_start".as[Int].?,
-                  "_end".as[Int].?,
-                  "_sort".?,
-                  "_order".as[Order].?,
-                  "questionId".as[Seq[QuestionId]].?,
-                  "operationId".as[OperationId].?,
-                  "operationKind".as[Seq[OperationKind]].*,
-                  "openAt".as[ZonedDateTime].?
-                )
+                "_start".as[Int].?,
+                "_end".as[Int].?,
+                "_sort".?,
+                "_order".as[Order].?,
+                "questionId".as[Seq[QuestionId]].?,
+                "operationId".as[OperationId].?,
+                "operationKind".csv[OperationKind],
+                "openAt".as[ZonedDateTime].?
               ) {
                 (
                   start: Option[Int],

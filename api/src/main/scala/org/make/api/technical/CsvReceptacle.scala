@@ -17,16 +17,24 @@
  *
  */
 
-package org.make.core
+package org.make.api.technical
 
 import akka.http.scaladsl.common.RepeatedValueReceptacle
-import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.directives.ParameterDirectives.{ParamDef, ParamDefAux}
+import akka.http.scaladsl.server.directives.ParameterDirectives.ParamSpec
+import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.unmarshalling.FromStringUnmarshaller
 
-object ApiParamMagnetHelper {
-  implicit def repeatedCsvFlatteningParamMagnet[T](
-    implicit aux: ParamDefAux[RepeatedValueReceptacle[Seq[T]], Directive1[Iterable[Seq[T]]]]
-  ): ParamDefAux[RepeatedValueReceptacle[Seq[T]], Directive1[Option[Seq[T]]]] = ParamDef.paramDef { repeated =>
-    aux.apply(repeated).map(nested => if (nested.isEmpty) None else Some(nested.flatten.toSeq))
+final case class CsvReceptacle[T](underlying: RepeatedValueReceptacle[Seq[T]])
+
+object CsvReceptacle extends Directives {
+
+  implicit class RepeatedCsvFlatteningParamOps(val name: String) extends AnyVal {
+    def csv[T]: CsvReceptacle[T] = CsvReceptacle(name.as[Seq[T]].*)
   }
+
+  implicit def paramSpec[T: FromStringUnmarshaller](a: CsvReceptacle[T]): ParamSpec.Aux[Option[Seq[T]]] =
+    ParamSpec(
+      ParamSpec.forRepVR(a.underlying).get.map(nested => if (nested.isEmpty) None else Some(nested.flatten.toSeq))
+    )
+
 }

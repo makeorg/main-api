@@ -92,7 +92,7 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
           select
             .from(PersistentPersonalityRole.as(personalityRoleAlias))
             .where(sqls.eq(personalityRoleAlias.id, personalityRoleId.value))
-        }.map(PersistentPersonalityRole.apply()).single.apply()
+        }.map(PersistentPersonalityRole.apply()).single().apply()
       }).map(_.map(_.toPersonalityRole))
     }
 
@@ -132,7 +132,7 @@ trait DefaultPersistentPersonalityRoleServiceComponent extends PersistentPersona
                 maybeRoleIds.map(roleIds => sqls.in(personalityRoleAlias.id, roleIds.map(_.value)))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

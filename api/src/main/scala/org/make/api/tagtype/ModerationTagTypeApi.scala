@@ -232,7 +232,7 @@ trait DefaultModerationTagTypeApiComponent
     override def moderationListTagTypes: Route = get {
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
-          parameters(("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "label".?)) {
+          parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "label".?) {
             (start, end, _, _, label_filter) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {

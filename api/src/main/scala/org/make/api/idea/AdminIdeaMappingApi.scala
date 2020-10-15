@@ -239,16 +239,14 @@ trait DefaultAdminIdeaMappingApiComponent
     override def search: Route = get {
       path("admin" / "idea-mappings") {
         parameters(
-          (
-            "_start".as[Int].?,
-            "_end".as[Int].?,
-            "_sort".?,
-            "_order".as[Order].?,
-            "questionId".as[QuestionId].?,
-            "stakeTagId".as[TagIdOrNone].?,
-            "solutionTypeTagId".as[TagIdOrNone].?,
-            "ideaId".as[IdeaId].?
-          )
+          "_start".as[Int].?,
+          "_end".as[Int].?,
+          "_sort".?,
+          "_order".as[Order].?,
+          "questionId".as[QuestionId].?,
+          "stakeTagId".as[TagIdOrNone].?,
+          "solutionTypeTagId".as[TagIdOrNone].?,
+          "ideaId".as[IdeaId].?
         ) {
           (
             start: Option[Int],

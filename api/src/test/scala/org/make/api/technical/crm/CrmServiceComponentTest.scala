@@ -1439,7 +1439,7 @@ class CrmServiceComponentTest
       ) { fileList =>
         val file = fileList.head
         val bufferedFile = IOSource.fromFile(file.toFile)
-        val fileToSeq = bufferedFile.getLines.toSeq
+        val fileToSeq = bufferedFile.getLines().toSeq
         val lineCount = fileToSeq.size
         val firstLine = fileToSeq.head
         lineCount should be(2)

@@ -123,7 +123,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
           select
             .from(PersistentCrmTemplates.as(crmTemplatesAlias))
             .where(sqls.eq(crmTemplatesAlias.id, crmTemplatesId.value))
-        }.map(PersistentCrmTemplates.apply()).single.apply()
+        }.map(PersistentCrmTemplates.apply()).single().apply()
       }).map(_.map(_.toCrmTemplates))
     }
 
@@ -134,7 +134,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
           select
             .from(PersistentCrmTemplates.as(crmTemplatesAlias))
             .where(sqls.eq(crmTemplatesAlias.locale, locale).and(sqls.isNull(crmTemplatesAlias.questionId)))
-        }.map(PersistentCrmTemplates.apply()).single.apply()
+        }.map(PersistentCrmTemplates.apply()).single().apply()
       }).map(_.map(_.toCrmTemplates))
     }
 
@@ -172,7 +172,7 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
                 locale.map(locale         => sqls.eq(crmTemplatesAlias.locale, locale))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

@@ -438,7 +438,7 @@ trait DefaultPersistentUserServiceComponent
             .leftJoin(PersistentUser.as(userAlias))
             .on(userAlias.uuid, followedUsersAlias.followedUserId)
             .where(sqls.eq(followedUsersAlias.userId, userId.value).and(sqls.eq(userAlias.publicProfile, true)))
-        }.map(FollowedUsers.apply()).list.apply()
+        }.map(FollowedUsers.apply()).list().apply()
       })
 
       futureUserFollowed.map(_.map(_.followedUserId))
@@ -451,7 +451,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.uuid, uuid.value))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -464,7 +464,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.in(userAlias.uuid, ids.map(_.value)))
-        }.map(PersistentUser.apply()).list.apply
+        }.map(PersistentUser.apply()).list().apply()
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
@@ -477,7 +477,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       }).map(_.filter { persistentUser =>
         persistentUser.hashedPassword != null && password.isBcrypted(persistentUser.hashedPassword)
       })
@@ -492,7 +492,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.uuid, userId.value))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       }).map(_.filter { persistentUser =>
         persistentUser.hashedPassword == null || password.exists(_.isBcrypted(persistentUser.hashedPassword))
       })
@@ -507,7 +507,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.uuid, userId.value).and(sqls.eq(userAlias.userType, userType)))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -520,7 +520,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -537,7 +537,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.reconnectToken, reconnectToken))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       }).map(_.filter { persistentUser =>
         persistentUser.hashedPassword != null && password.isBcrypted(persistentUser.hashedPassword) &&
         persistentUser.reconnectTokenCreatedAt.exists(_.plusMinutes(validityReconnectToken).isAfter(DateHelper.now()))
@@ -579,7 +579,7 @@ trait DefaultPersistentUserServiceComponent
             )
 
           sortOrderQuery(start, limit.orElse(defaultLimit), sort, order, query)
-        }.map(PersistentUser.apply()).list.apply
+        }.map(PersistentUser.apply()).list().apply()
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -592,7 +592,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.userType, UserType.UserTypeOrganisation))
-        }.map(PersistentUser.apply()).list.apply
+        }.map(PersistentUser.apply()).list().apply()
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
@@ -627,7 +627,7 @@ trait DefaultPersistentUserServiceComponent
               )
 
           sortOrderQuery(start, end.orElse(defaultLimit), sort.orElse(Some("organisationName")), order, query)
-        }.map(PersistentUser.apply()).list.apply
+        }.map(PersistentUser.apply()).list().apply()
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
@@ -640,7 +640,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.uuid, userId.value).and(sqls.eq(userAlias.resetToken, resetToken)))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -656,7 +656,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.uuid, userId.value).and(sqls.eq(userAlias.verificationToken, verificationToken)))
-        }.map(PersistentUser.apply()).single.apply
+        }.map(PersistentUser.apply()).single().apply()
       })
 
       futurePersistentUser.map(_.map(_.toUser))
@@ -669,7 +669,7 @@ trait DefaultPersistentUserServiceComponent
           select(userAlias.result.uuid)
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
-        }.map(_.string(userAlias.resultName.uuid)).single.apply
+        }.map(_.string(userAlias.resultName.uuid)).single().apply()
       })
 
       futurePersistentUserId.map(_.map(UserId(_)))
@@ -697,7 +697,7 @@ trait DefaultPersistentUserServiceComponent
             .limit(limit)
             .offset(offset)
 
-        }.map(PersistentUser.apply()).list.apply
+        }.map(PersistentUser.apply()).list().apply()
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
@@ -710,7 +710,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.isNull(userAlias.registerQuestionId))
-        }.map(PersistentUser.apply()).list.apply
+        }.map(PersistentUser.apply()).list().apply()
       })
 
       futurePersistentUsers.map(_.map(_.toUser))
@@ -723,7 +723,7 @@ trait DefaultPersistentUserServiceComponent
           select(count(userAlias.email))
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.email, email))
-        }.map(_.int(1) > 0).single.apply
+        }.map(_.int(1) > 0).single().apply()
       }).map(_.getOrElse(false))
     }
 
@@ -734,7 +734,7 @@ trait DefaultPersistentUserServiceComponent
           select(count(userAlias.verificationToken))
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.verificationToken, verificationToken))
-        }.map(_.int(1) > 0).single.apply
+        }.map(_.int(1) > 0).single().apply()
       }).map(_.getOrElse(false))
     }
 
@@ -745,7 +745,7 @@ trait DefaultPersistentUserServiceComponent
           select(count(userAlias.resetToken))
             .from(PersistentUser.as(userAlias))
             .where(sqls.eq(userAlias.resetToken, resetToken))
-        }.map(_.int(1) > 0).single.apply
+        }.map(_.int(1) > 0).single().apply()
       }).map(_.getOrElse(false))
     }
 
@@ -1159,7 +1159,7 @@ trait DefaultPersistentUserServiceComponent
                   )
                 )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 
@@ -1184,7 +1184,7 @@ trait DefaultPersistentUserServiceComponent
                 maybeUserType.map(userType => sqls.eq(userAlias.userType, userType))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 
@@ -1195,7 +1195,7 @@ trait DefaultPersistentUserServiceComponent
           select
             .from(PersistentUser.as(userAlias))
             .where(sqls.in(userAlias.email, emails))
-        }.map(PersistentUser.apply()).list.apply
+        }.map(PersistentUser.apply()).list().apply()
       })
 
       futurePersistentUsers.map(_.map(_.toUser))

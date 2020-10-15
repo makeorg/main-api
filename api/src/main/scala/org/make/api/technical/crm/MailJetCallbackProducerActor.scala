@@ -42,6 +42,6 @@ class MailJetCallbackProducerActor extends BasicProducerActor[MailJetEventWrappe
 
 object MailJetCallbackProducerActor {
   val name: String = "mailjet-callback-event-producer"
-  val props: Props = Props[MailJetCallbackProducerActor]
+  val props: Props = Props[MailJetCallbackProducerActor]()
   val topicKey: String = "mailjet-events"
 }

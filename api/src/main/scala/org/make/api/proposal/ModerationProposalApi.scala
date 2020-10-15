@@ -36,6 +36,7 @@ import org.make.api.semantic.SimilarIdea
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirectives, ReadJournalComponent}
+import org.make.api.technical.CsvReceptacle._
 import org.make.api.user.UserServiceComponent
 import org.make.core.Order
 import org.make.core.auth.UserRights
@@ -58,7 +59,6 @@ import org.make.core.{
   ValidationFailedError
 }
 import scalaoauth2.provider.AuthInfo
-import org.make.core.ApiParamMagnetHelper._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -432,30 +432,28 @@ trait DefaultModerationProposalApiComponent
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireModerationRole(userAuth.user) {
                 parameters(
-                  (
-                    "proposalIds".as[Seq[ProposalId]].?,
-                    "createdBefore".as[ZonedDateTime].?,
-                    "initialProposal".as[Boolean].?,
-                    "tagsIds".as[Seq[TagId]].?,
-                    "operationId".as[OperationId].?,
-                    "questionId".as[Seq[QuestionId]].?,
-                    "ideaId".as[Seq[IdeaId]].?,
-                    "content".?,
-                    "source".?,
-                    "location".?,
-                    "question".?,
-                    "status".as[Seq[ProposalStatus]].*,
-                    "minVotesCount".as[Int].?,
-                    "toEnrich".as[Boolean].?,
-                    "minScore".as[Float].?,
-                    "language".as[Language].?,
-                    "country".as[Country].?,
-                    "limit".as[Int].?,
-                    "skip".as[Int].?,
-                    "sort".?,
-                    "order".as[Order].?,
-                    "userType".as[Seq[UserType]].*
-                  )
+                  "proposalIds".as[Seq[ProposalId]].?,
+                  "createdBefore".as[ZonedDateTime].?,
+                  "initialProposal".as[Boolean].?,
+                  "tagsIds".as[Seq[TagId]].?,
+                  "operationId".as[OperationId].?,
+                  "questionId".as[Seq[QuestionId]].?,
+                  "ideaId".as[Seq[IdeaId]].?,
+                  "content".?,
+                  "source".?,
+                  "location".?,
+                  "question".?,
+                  "status".csv[ProposalStatus],
+                  "minVotesCount".as[Int].?,
+                  "toEnrich".as[Boolean].?,
+                  "minScore".as[Float].?,
+                  "language".as[Language].?,
+                  "country".as[Country].?,
+                  "limit".as[Int].?,
+                  "skip".as[Int].?,
+                  "sort".?,
+                  "order".as[Order].?,
+                  "userType".csv[UserType]
                 ) {
                   (
                     proposalIds: Option[Seq[ProposalId]],

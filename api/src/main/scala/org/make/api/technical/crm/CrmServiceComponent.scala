@@ -287,7 +287,7 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
       var size: Long = max
       element: ByteString =>
         if (size + element.size > max) {
-          val path = Files.createFile(csvDirectory.resolve(s"${DateHelper.now.toString}.csv"))
+          val path = Files.createFile(csvDirectory.resolve(s"${DateHelper.now().toString}.csv"))
           size = element.size
           Some(path)
         } else {

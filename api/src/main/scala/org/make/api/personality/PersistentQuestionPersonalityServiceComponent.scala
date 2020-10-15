@@ -109,7 +109,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
           select
             .from(PersistentPersonality.as(personalityAlias))
             .where(sqls.eq(personalityAlias.id, personalityId.value))
-        }.map(PersistentPersonality.apply()).single.apply()
+        }.map(PersistentPersonality.apply()).single().apply()
       }).map(_.map(_.toPersonality))
     }
 
@@ -157,7 +157,7 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
                 personalityRoleId.map(role => sqls.eq(personalityAlias.personalityRoleId, role.value))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 

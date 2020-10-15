@@ -47,7 +47,7 @@ object StaminaTestUtils {
       .putBytes(eventKey.getBytes("UTF-8"))
       .putInt(version)
       .append(ByteString(eventAsJsonString))
-      .result
+      .result()
       .toArray
 
     makeEventSerializer.fromBinary(bytes).asInstanceOf[A]

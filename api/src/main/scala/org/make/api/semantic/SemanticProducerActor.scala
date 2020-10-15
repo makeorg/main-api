@@ -42,6 +42,6 @@ class SemanticProducerActor extends BasicProducerActor[PredictDuplicateEventWrap
 
 object SemanticProducerActor {
   val name: String = "duplicate-detector-producer"
-  val props: Props = Props[SemanticProducerActor]
+  val props: Props = Props[SemanticProducerActor]()
   val topicKey: String = "duplicates-predicted"
 }

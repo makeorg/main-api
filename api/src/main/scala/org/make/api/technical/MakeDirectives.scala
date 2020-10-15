@@ -300,7 +300,7 @@ trait MakeDirectives
             // If the make-secure cookie is used, then rely on the cookie and auto-refresh mecanism
             case Some(_) => route
             case None =>
-              optionalHeaderValueByType[Authorization](()) {
+              optionalHeaderValueByType(Authorization) {
                 // If there is a OAuth2 bearer token, then it is either not found or expired
                 case Some(Authorization(OAuth2BearerToken(_))) =>
                   reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2(realm)))
@@ -497,7 +497,7 @@ trait MakeDirectives
     mapInnerRoute { route =>
       optionalNonEmptyHeaderValueByName(Origin.name) { mayBeOriginHeaderValue =>
         respondWithDefaultHeaders(defaultCorsHeaders(mayBeOriginHeaderValue)) {
-          optionalHeaderValueByType[`Access-Control-Request-Headers`](()) {
+          optionalHeaderValueByType(`Access-Control-Request-Headers`) {
             case Some(requestHeader) =>
               respondWithDefaultHeader(`Access-Control-Allow-Headers`(requestHeader.value)) {
                 route

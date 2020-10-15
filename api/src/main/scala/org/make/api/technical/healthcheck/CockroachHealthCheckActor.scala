@@ -34,7 +34,7 @@ class CockroachHealthCheckActor(healthCheckExecutionContext: ExecutionContext) e
     implicit val cxt: EC = healthCheckExecutionContext
 
     val futureResults: Future[List[Map[String, Any]]] = Future(NamedDB("READ").retryableTx { implicit session =>
-      sql"select first_name from make_user where email='admin@make.org'".map(_.toMap).list.apply()
+      sql"select first_name from make_user where email='admin@make.org'".map(_.toMap()).list().apply()
     })
 
     futureResults

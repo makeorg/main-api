@@ -182,15 +182,13 @@ trait DefaultAdminPartnerApiComponent
         path("admin" / "partners") {
           makeOperation("ModerationGetPartners") { _ =>
             parameters(
-              (
-                "_start".as[Int].?,
-                "_end".as[Int].?,
-                "_sort".?,
-                "_order".as[Order].?,
-                "questionId".as[QuestionId].?,
-                "organisationId".as[UserId].?,
-                "partnerKind".as[PartnerKind].?
-              )
+              "_start".as[Int].?,
+              "_end".as[Int].?,
+              "_sort".?,
+              "_order".as[Order].?,
+              "questionId".as[QuestionId].?,
+              "organisationId".as[UserId].?,
+              "partnerKind".as[PartnerKind].?
             ) {
               (
                 start: Option[Int],

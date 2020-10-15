@@ -619,7 +619,7 @@ class ProposalActor(sessionHistoryCoordinatorService: SessionHistoryCoordinatorS
     getStateOrSendProposalNotFound() { _ =>
       lock match {
         case Some(ProposalLock(moderatorId, moderatorName, deadline))
-            if moderatorId != command.moderatorId && deadline.hasTimeLeft =>
+            if moderatorId != command.moderatorId && deadline.hasTimeLeft() =>
           sender() ! AlreadyLockedBy(moderatorName)
 
         case maybeLock if maybeLock.forall(_.deadline.isOverdue()) =>

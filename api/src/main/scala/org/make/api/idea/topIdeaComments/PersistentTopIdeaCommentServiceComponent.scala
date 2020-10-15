@@ -74,7 +74,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
           select
             .from(PersistentTopIdeaComment.as(topIdeaCommentAlias))
             .where(sqls.eq(topIdeaCommentAlias.id, topIdeaCommentId.value))
-        }.map(PersistentTopIdeaComment.apply()).single.apply
+        }.map(PersistentTopIdeaComment.apply()).single().apply()
       })
 
       futurePersistentTopIdeaComment.map(_.map(_.toTopIdeaComment))
@@ -131,7 +131,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
           delete
             .from(PersistentTopIdeaComment.as(topIdeaCommentAlias))
             .where(sqls.eq(topIdeaCommentAlias.id, topIdeaCommentId.value))
-        }.update.apply()
+        }.update().apply()
         () // TODO check success
       })
     }
@@ -161,7 +161,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
             case Some(limit) => query.limit(limit)
             case None        => query
           }
-        }.map(PersistentTopIdeaComment.apply()).list.apply
+        }.map(PersistentTopIdeaComment.apply()).list().apply()
       })
 
       futurePersistentTopIdeaComments.map(_.map(_.toTopIdeaComment))
@@ -180,7 +180,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
                 personalityIds.map(ids => sqls.in(topIdeaCommentAlias.personalityId, ids.map(_.value)))
               )
             )
-        }.map(_.int(1)).single.apply().getOrElse(0)
+        }.map(_.int(1)).single().apply().getOrElse(0)
       })
     }
 
@@ -193,7 +193,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
             .from(PersistentTopIdeaComment.as(topIdeaCommentAlias))
             .where(sqls.in(topIdeaCommentAlias.topIdeaId, topIdeaIds.map(_.value)))
             .groupBy(topIdeaCommentAlias.topIdeaId)
-        }.map(rs => (rs.string(1), rs.int(2))).list.apply().toMap
+        }.map(rs => (rs.string(1), rs.int(2))).list().apply().toMap
       })
     }
 

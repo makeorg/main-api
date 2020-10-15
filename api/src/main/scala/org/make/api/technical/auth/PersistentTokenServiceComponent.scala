@@ -157,8 +157,8 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
                 clientResultName = clientAlias.resultName
               )
             )
-            .single
-            .apply
+            .single()
+            .apply()
       })
 
       futurePersistentToken.map(_.map(_.toToken))
@@ -178,7 +178,9 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
               .innerJoin(PersistentClient.as(clientAlias))
               .on(clientAlias.uuid, tokenAlias.clientUuid)
               .where(sqls.eq(tokenAlias.accessToken, accessToken))
-          }.map(PersistentToken.apply(tokenAlias.resultName, userAlias.resultName, clientAlias.resultName)).single.apply
+          }.map(PersistentToken.apply(tokenAlias.resultName, userAlias.resultName, clientAlias.resultName))
+            .single()
+            .apply()
       })
 
       futurePersistentToken.map(_.map(_.toToken))
@@ -198,7 +200,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
             .orderBy(tokenAlias.updatedAt)
             .desc
             .limit(1)
-        }.map(PersistentToken.apply()).single.apply
+        }.map(PersistentToken.apply()).single().apply()
       })
 
       futurePersistentToken.map(_.map(_.toToken))
