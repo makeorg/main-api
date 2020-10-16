@@ -366,9 +366,7 @@ trait TestUtils {
     id: OperationId,
     status: OperationStatus = OperationStatus.Active,
     slug: String = "operation-slug",
-    allowedSources: Seq[String] = Seq.empty,
-    defaultLanguage: Language = Language("fr"),
-    operationKind: OperationKind = OperationKind.PublicConsultation,
+    operationKind: OperationKind = OperationKind.BusinessConsultation,
     createdAt: Option[ZonedDateTime] = None,
     updatedAt: Option[ZonedDateTime] = None
   ): SimpleOperation =
@@ -376,8 +374,6 @@ trait TestUtils {
       operationId = id,
       status = status,
       slug = slug,
-      defaultLanguage = defaultLanguage,
-      allowedSources = allowedSources,
       operationKind = operationKind,
       createdAt = createdAt,
       updatedAt = updatedAt

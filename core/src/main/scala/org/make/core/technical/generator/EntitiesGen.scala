@@ -65,18 +65,14 @@ trait EntitiesGen {
 
   def genSimpleOperation: Gen[SimpleOperation] =
     for {
-      status               <- arbitrary[OperationStatus]
-      slug                 <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(20))
-      allowedSources       <- CustomGenerators.LoremIpsumGen.words
-      (_, defaultLanguage) <- genCountryLanguage
-      operationKind        <- arbitrary[OperationKind]
-      date                 <- Gen.calendar.map(_.toZonedDateTime)
+      status        <- arbitrary[OperationStatus]
+      slug          <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(20))
+      operationKind <- arbitrary[OperationKind]
+      date          <- Gen.calendar.map(_.toZonedDateTime)
     } yield SimpleOperation(
       operationId = IdGenerator.uuidGenerator.nextOperationId(),
       status = status,
       slug = slug,
-      allowedSources = allowedSources,
-      defaultLanguage = defaultLanguage,
       operationKind = operationKind,
       createdAt = Some(date),
       updatedAt = Some(date)

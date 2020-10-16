@@ -26,10 +26,8 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.operation.ResultsLinkRequest.ResultsLinkKind
-import org.make.core.Validation
 import org.make.core.Validation.{validateUserInput, _}
 import org.make.core.operation.{OperationKind, OperationStatus, ResultsLink}
-import org.make.core.reference.Language
 
 import scala.annotation.meta.field
 import scala.util.Try
@@ -37,13 +35,10 @@ import scala.util.Try
 @ApiModel
 final case class ModerationCreateOperationRequest(
   slug: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  defaultLanguage: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
-  operationKind: OperationKind,
-  allowedSources: Seq[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "BUSINESS_CONSULTATION")
+  operationKind: OperationKind
 ) {
-  OperationValidation.validateParams(defaultLanguage = defaultLanguage, slug = slug, allowedSources = allowedSources)
+  OperationValidation.validateSlug(slug = slug)
 }
 
 object ModerationCreateOperationRequest {
@@ -54,13 +49,10 @@ final case class ModerationUpdateOperationRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "Active")
   status: Option[OperationStatus],
   slug: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  defaultLanguage: Language,
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
-  operationKind: OperationKind,
-  allowedSources: Seq[String]
+  @(ApiModelProperty @field)(dataType = "string", example = "BUSINESS_CONSULTATION")
+  operationKind: OperationKind
 ) {
-  OperationValidation.validateParams(defaultLanguage = defaultLanguage, slug = slug, allowedSources = allowedSources)
+  OperationValidation.validateSlug(slug = slug)
 }
 
 object ModerationUpdateOperationRequest {
@@ -68,19 +60,8 @@ object ModerationUpdateOperationRequest {
 }
 
 private object OperationValidation {
-  private val maxLanguageLength = 3
-
-  def validateParams(defaultLanguage: Language, slug: String, allowedSources: Seq[String]): Unit = {
-    allowedSources.foreach { source =>
-      validate(validateUserInput("allowedSources", source, None))
-    }
-    validate(
-      maxLength("defaultLanguage", maxLanguageLength, defaultLanguage.value),
-      maxLength("countryConfiguration", maxLanguageLength, defaultLanguage.value),
-      requireValidSlug("slug", Some(slug), Some("Invalid slug")),
-      validateUserInput("slug", slug, None)
-    )
-    validate(Validation.requireNonEmpty("allowedSources", allowedSources))
+  def validateSlug(slug: String): Unit = {
+    validate(requireValidSlug("slug", Some(slug), Some("Invalid slug")), validateUserInput("slug", slug, None))
   }
 }
 

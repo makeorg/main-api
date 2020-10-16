@@ -82,9 +82,7 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
-    defaultLanguage = Language("fr"),
-    allowedSources = Seq("core"),
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())
   )
@@ -93,9 +91,7 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("firstOperation"),
     slug = "first-operation",
-    defaultLanguage = Language("fr"),
-    allowedSources = Seq("core"),
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     events = List(
       OperationAction(
         date = now,
@@ -133,9 +129,7 @@ class ModerationOperationApiTest
     status = OperationStatus.Pending,
     operationId = OperationId("secondOperation"),
     slug = "second-operation",
-    defaultLanguage = Language("it"),
-    allowedSources = Seq("core"),
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     createdAt = Some(DateHelper.now()),
     updatedAt = Some(DateHelper.now())
   )
@@ -144,7 +138,6 @@ class ModerationOperationApiTest
     """
       |{
       |  "slug": "my-create-operation",
-      |  "defaultLanguage": "fr",
       |  "countriesConfiguration": [
       |    {
       |      "countryCode": "FR",
@@ -154,8 +147,7 @@ class ModerationOperationApiTest
       |      "landingSequenceId": "29625b5a-56da-4539-b195-15303187c20b"
       |    }
       |  ],
-      |  "allowedSources": ["core"],
-      |  "operationKind": "PUBLIC_CONSULTATION"
+      |  "operationKind": "BUSINESS_CONSULTATION"
       |}
     """.stripMargin
 
@@ -164,7 +156,6 @@ class ModerationOperationApiTest
       |{
       |  "status": "Active",
       |  "slug": "my-update-operation",
-      |  "defaultLanguage": "fr",
       |  "countriesConfiguration": [
       |    {
       |      "countryCode": "FR",
@@ -176,7 +167,6 @@ class ModerationOperationApiTest
       |      "endDate": "2018-05-02"
       |    }
       |  ],
-      |  "allowedSources": ["core"],
       |  "operationKind": "GREAT_CAUSE"
       |}
     """.stripMargin
@@ -233,13 +223,8 @@ class ModerationOperationApiTest
   when(operationService.findOneBySlug("existing-operation-slug-second"))
     .thenReturn(Future.successful(Some(firstFullOperation.copy(operationId = OperationId("updateOperationId")))))
   when(
-    operationService.create(
-      userId = tyrion.userId,
-      slug = "my-create-operation",
-      defaultLanguage = Language("fr"),
-      allowedSources = Seq("core"),
-      operationKind = OperationKind.PublicConsultation
-    )
+    operationService
+      .create(userId = tyrion.userId, slug = "my-create-operation", operationKind = OperationKind.BusinessConsultation)
   ).thenReturn(Future.successful(OperationId("createdOperationId")))
 
   when(operationService.findOneSimple(OperationId("updateOperationId")))
@@ -250,8 +235,6 @@ class ModerationOperationApiTest
       userId = tyrion.userId,
       status = Some(OperationStatus.Active),
       slug = Some("my-update-operation"),
-      defaultLanguage = Some(Language("fr")),
-      allowedSources = Some(Seq("core")),
       operationKind = Some(OperationKind.GreatCause)
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
@@ -261,8 +244,6 @@ class ModerationOperationApiTest
       userId = tyrion.userId,
       status = Some(OperationStatus.Active),
       slug = Some("existing-operation-slug-second"),
-      defaultLanguage = Some(Language("fr")),
-      allowedSources = Some(Seq("core")),
       operationKind = Some(OperationKind.GreatCause)
     )
   ).thenReturn(Future.successful(Some(OperationId("updateOperationId"))))
@@ -312,7 +293,6 @@ class ModerationOperationApiTest
         val firstOperationResult: ModerationOperationResponse =
           moderationOperationsResponse.filter(_.id.value == "firstOperation").head
         firstOperationResult.slug should be("first-operation")
-        firstOperationResult.defaultLanguage should be(Language("fr"))
       }
     }
 
@@ -332,7 +312,6 @@ class ModerationOperationApiTest
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationsResponse.head
         secondOperationResult.slug should be("second-operation")
-        secondOperationResult.defaultLanguage should be(Language("it"))
       }
     }
   }
@@ -383,7 +362,6 @@ class ModerationOperationApiTest
           entityAs[ModerationOperationResponse]
         firstOperationResult shouldBe a[ModerationOperationResponse]
         firstOperationResult.slug should be("first-operation")
-        firstOperationResult.defaultLanguage should be(Language("fr"))
       }
     }
   }

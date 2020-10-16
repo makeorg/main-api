@@ -27,7 +27,6 @@ import io.swagger.annotations.{ApiModel, ApiModelProperty}
 import org.make.api.operation.ResultsLinkRequest.ResultsLinkKind
 import org.make.core.CirceFormatters
 import org.make.core.operation._
-import org.make.core.reference.Language
 
 import scala.annotation.meta.field
 @ApiModel
@@ -47,14 +46,11 @@ final case class ModerationOperationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "Active")
   status: OperationStatus,
   slug: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  defaultLanguage: Language,
   @(ApiModelProperty @field)(dataType = "dateTime")
   createdAt: Option[ZonedDateTime],
   @(ApiModelProperty @field)(dataType = "dateTime")
   updatedAt: Option[ZonedDateTime],
-  allowedSources: Seq[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "PUBLIC_CONSULTATION")
+  @(ApiModelProperty @field)(dataType = "string", example = "BUSINESS_CONSULTATION")
   operationKind: OperationKind
 )
 
@@ -67,10 +63,8 @@ object ModerationOperationResponse extends CirceFormatters {
       id = operation.operationId,
       status = operation.status,
       slug = operation.slug,
-      defaultLanguage = operation.defaultLanguage,
       createdAt = operation.createdAt,
       updatedAt = operation.updatedAt,
-      allowedSources = operation.allowedSources,
       operationKind = operation.operationKind
     )
   }

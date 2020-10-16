@@ -91,9 +91,7 @@ class PersistentOperationServiceIT
     updatedAt = None,
     status = OperationStatus.Pending,
     slug = "hello-operation",
-    defaultLanguage = Language("fr"),
-    allowedSources = Seq("core"),
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     events = List(
       OperationAction(
         date = now,
@@ -223,8 +221,7 @@ class PersistentOperationServiceIT
            |an operation with
            |status = Pending
            |slug = "hello-operation"
-           |defaultLanguage = fr
-           |kind = "PUBLIC_CONSULTATION"
+           |kind = "BUSINESS_CONSULTATION"
            |""".stripMargin)
       When("""I persist it""")
       And("I get the persisted operation")
@@ -233,9 +230,7 @@ class PersistentOperationServiceIT
         operationId = fullOperation.operationId,
         status = fullOperation.status,
         slug = fullOperation.slug,
-        allowedSources = fullOperation.allowedSources,
-        defaultLanguage = fullOperation.defaultLanguage,
-        operationKind = OperationKind.PublicConsultation,
+        operationKind = OperationKind.BusinessConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -267,10 +262,8 @@ class PersistentOperationServiceIT
         operation.status.value should be("Pending")
         And("""operation slug should be "hello-operation" """)
         operation.slug should be("hello-operation")
-        And("""operation default translation should be "fr" """)
-        operation.defaultLanguage should be(Language("fr"))
-        And("""operation kind should be "consultation" """)
-        operation.operationKind should be(OperationKind.PublicConsultation)
+        And("""operation kind should be "business" """)
+        operation.operationKind should be(OperationKind.BusinessConsultation)
         And("""operation should have 2 questions""")
         operation.questions.size should be(2)
         And(s"""operation landing sequence id for FR configuration should be "${sequenceIdFR.value}" """)
@@ -287,8 +280,6 @@ class PersistentOperationServiceIT
         createEvent.makeUserId should be(userId)
         createEvent.actionType should be("create")
         createEvent.arguments should be(Map("arg1" -> "valueArg1"))
-        And("the allowedSources should contain 'core'")
-        operation.allowedSources.head should be("core")
       }
     }
 
@@ -300,9 +291,7 @@ class PersistentOperationServiceIT
         operationId = operationIdForGetById,
         slug = "get-by-id-operation",
         status = OperationStatus.Active,
-        allowedSources = Seq.empty,
-        defaultLanguage = Language("fr"),
-        operationKind = OperationKind.PublicConsultation,
+        operationKind = OperationKind.BusinessConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -330,9 +319,7 @@ class PersistentOperationServiceIT
           operationId = operationIdForGetBySlug,
           slug = "get-by-slug-operation",
           status = OperationStatus.Active,
-          allowedSources = Seq.empty,
-          defaultLanguage = Language("fr"),
-          operationKind = OperationKind.PublicConsultation,
+          operationKind = OperationKind.BusinessConsultation,
           createdAt = None,
           updatedAt = None
         )
@@ -362,9 +349,7 @@ class PersistentOperationServiceIT
         operationId = operationId,
         status = OperationStatus.Active,
         slug = "simple-operation",
-        allowedSources = Seq.empty,
-        defaultLanguage = Language("fr"),
-        operationKind = OperationKind.PublicConsultation,
+        operationKind = OperationKind.BusinessConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -386,9 +371,7 @@ class PersistentOperationServiceIT
         operationId = operationId,
         status = OperationStatus.Active,
         slug = s"${operationId.value}-sorted-slug",
-        allowedSources = Seq.empty,
-        defaultLanguage = Language("fr"),
-        operationKind = OperationKind.PublicConsultation,
+        operationKind = OperationKind.BusinessConsultation,
         createdAt = None,
         updatedAt = None
       )
@@ -403,7 +386,7 @@ class PersistentOperationServiceIT
           end = Some(2),
           sort = Some("uuid"),
           order = Some(Order.desc),
-          operationKinds = Some(Seq(OperationKind.PublicConsultation))
+          operationKinds = Some(Seq(OperationKind.BusinessConsultation))
         )
       } yield results
 

@@ -38,7 +38,7 @@ import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.api.technical.ScalikeSupport._
 import org.make.core.{DateHelper, Order}
 import org.make.core.operation._
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.UserId
 import scalikejdbc._
 import spray.json.DefaultJsonProtocol._
@@ -179,9 +179,6 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
               column.uuid -> operation.operationId.value,
               column.status -> operation.status,
               column.slug -> operation.slug,
-              column.defaultLanguage -> operation.defaultLanguage.value,
-              column.allowedSources -> session.connection
-                .createArrayOf("VARCHAR", operation.allowedSources.toArray),
               column.operationKind -> operation.operationKind,
               column.createdAt -> nowDate,
               column.updatedAt -> nowDate
@@ -257,8 +254,6 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
             .set(
               column.status -> operation.status,
               column.slug -> operation.slug,
-              column.defaultLanguage -> operation.defaultLanguage.value,
-              column.allowedSources -> session.connection.createArrayOf("VARCHAR", operation.allowedSources.toArray),
               column.operationKind -> operation.operationKind,
               column.updatedAt -> nowDate
             )
@@ -317,8 +312,6 @@ object DefaultPersistentOperationServiceComponent {
     operationActions: Seq[PersistentOperationAction],
     status: String,
     slug: String,
-    defaultLanguage: String,
-    allowedSources: Seq[String],
     operationKind: String,
     createdAt: ZonedDateTime,
     updatedAt: ZonedDateTime
@@ -331,8 +324,6 @@ object DefaultPersistentOperationServiceComponent {
         updatedAt = Some(updatedAt),
         status = OperationStatus.withValue(status),
         slug = slug,
-        defaultLanguage = Language(defaultLanguage),
-        allowedSources = allowedSources,
         operationKind = OperationKind.withValue(operationKind),
         events = operationActions
           .map(
@@ -353,10 +344,8 @@ object DefaultPersistentOperationServiceComponent {
         operationId = OperationId(uuid),
         status = OperationStatus.withValue(status),
         slug = slug,
-        defaultLanguage = Language(defaultLanguage),
         createdAt = Some(createdAt),
         updatedAt = Some(updatedAt),
-        allowedSources = allowedSources,
         operationKind = OperationKind.withValue(operationKind)
       )
   }
@@ -399,7 +388,7 @@ object DefaultPersistentOperationServiceComponent {
       with StrictLogging {
 
     override val columnNames: Seq[String] =
-      Seq("uuid", "status", "slug", "default_language", "allowed_sources", "operation_kind", "created_at", "updated_at")
+      Seq("uuid", "status", "slug", "operation_kind", "created_at", "updated_at")
 
     override val tableName: String = "operation"
 
@@ -415,11 +404,6 @@ object DefaultPersistentOperationServiceComponent {
         uuid = resultSet.string(operationResultName.uuid),
         status = resultSet.string(operationResultName.status),
         slug = resultSet.string(operationResultName.slug),
-        defaultLanguage = resultSet.string(operationResultName.defaultLanguage),
-        allowedSources = resultSet
-          .arrayOpt(operationResultName.allowedSources)
-          .map(_.getArray.asInstanceOf[Array[String]].toSeq)
-          .getOrElse(Seq.empty),
         operationKind = resultSet.string(operationResultName.operationKind),
         operationActions = Seq.empty,
         questions = Seq.empty,

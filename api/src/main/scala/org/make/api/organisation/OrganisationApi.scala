@@ -265,15 +265,7 @@ trait DefaultOrganisationApiComponent
                           filters = Some(
                             SearchFilters(
                               user = Some(UserSearchFilter(organisationId)),
-                              operationKinds = Some(
-                                OperationKindsSearchFilter(
-                                  Seq(
-                                    OperationKind.GreatCause,
-                                    OperationKind.PublicConsultation,
-                                    OperationKind.BusinessConsultation
-                                  )
-                                )
-                              )
+                              operationKinds = Some(OperationKindsSearchFilter(OperationKind.publicKinds))
                             )
                           ),
                           sort = Some(

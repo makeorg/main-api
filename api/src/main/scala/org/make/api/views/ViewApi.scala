@@ -147,15 +147,7 @@ trait DefaultViewApiComponent
                   filters = Some(
                     proposal.SearchFilters(
                       content = Some(proposal.ContentSearchFilter(content.toLowerCase)),
-                      operationKinds = Some(
-                        proposal.OperationKindsSearchFilter(
-                          Seq(
-                            OperationKind.GreatCause,
-                            OperationKind.PublicConsultation,
-                            OperationKind.BusinessConsultation
-                          )
-                        )
-                      ),
+                      operationKinds = Some(proposal.OperationKindsSearchFilter(OperationKind.publicKinds)),
                       country = country.map(CountrySearchFilter.apply),
                       language = language.map(LanguageSearchFilter.apply)
                     )
@@ -167,15 +159,7 @@ trait DefaultViewApiComponent
                   filters = Some(
                     OperationOfQuestionSearchFilters(
                       question = Some(QuestionContentSearchFilter(content.toLowerCase, fuzzy = Some(Fuzziness.Auto))),
-                      operationKinds = Some(
-                        operation.OperationKindsSearchFilter(
-                          Seq(
-                            OperationKind.GreatCause,
-                            OperationKind.PublicConsultation,
-                            OperationKind.BusinessConsultation
-                          )
-                        )
-                      ),
+                      operationKinds = Some(operation.OperationKindsSearchFilter(OperationKind.publicKinds)),
                       country = country.map(operation.CountrySearchFilter.apply),
                       language = language.map(operation.LanguageSearchFilter.apply)
                     )
@@ -221,11 +205,7 @@ trait DefaultViewApiComponent
           makeOperation("ListAvailableCountries") { _ =>
             val query = OperationOfQuestionSearchQuery(filters = Some(
               OperationOfQuestionSearchFilters(
-                operationKinds = Some(
-                  operation.OperationKindsSearchFilter(
-                    Seq(OperationKind.GreatCause, OperationKind.PublicConsultation, OperationKind.BusinessConsultation)
-                  )
-                ),
+                operationKinds = Some(operation.OperationKindsSearchFilter(OperationKind.publicKinds)),
                 status = Some(StatusSearchFilter(OperationOfQuestion.Status.Open, OperationOfQuestion.Status.Finished))
               )
             )

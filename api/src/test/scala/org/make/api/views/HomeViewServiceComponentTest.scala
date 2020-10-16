@@ -60,9 +60,7 @@ class HomeViewServiceComponentTest
     operationId = OperationId("default"),
     status = OperationStatus.Active,
     slug = "default",
-    allowedSources = Seq("core"),
-    defaultLanguage = Language("fr"),
-    operationKind = OperationKind.PublicConsultation,
+    operationKind = OperationKind.BusinessConsultation,
     createdAt = Some(now),
     updatedAt = Some(now)
   )
@@ -112,7 +110,7 @@ class HomeViewServiceComponentTest
     defaultOperation.copy(
       operationId = OperationId("ope2"),
       slug = "ope2",
-      operationKind = OperationKind.PublicConsultation
+      operationKind = OperationKind.BusinessConsultation
     )
   val operation3: SimpleOperation =
     defaultOperation.copy(operationId = OperationId("ope3"), slug = "ope3", operationKind = OperationKind.GreatCause)
@@ -126,13 +124,13 @@ class HomeViewServiceComponentTest
     defaultOperation.copy(
       operationId = OperationId("ope5"),
       slug = "ope5",
-      operationKind = OperationKind.PublicConsultation
+      operationKind = OperationKind.BusinessConsultation
     )
   val operation6: SimpleOperation =
     defaultOperation.copy(
       operationId = OperationId("ope6"),
       slug = "ope6",
-      operationKind = OperationKind.PublicConsultation
+      operationKind = OperationKind.BusinessConsultation
     )
   val question1: Question = defaultQuestion.copy(
     questionId = QuestionId("question1"),

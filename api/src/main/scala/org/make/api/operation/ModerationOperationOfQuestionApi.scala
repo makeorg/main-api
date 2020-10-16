@@ -88,7 +88,7 @@ trait ModerationOperationOfQuestionApi extends Directives {
         paramType = "query",
         required = false,
         dataType = "string",
-        allowableValues = "GREAT_CAUSE,PUBLIC_CONSULTATION,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
+        allowableValues = "GREAT_CAUSE,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
         allowMultiple = true
       ),
       new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string")
