@@ -91,7 +91,7 @@ trait ViewApi extends Directives {
   @Path(value = "/countries")
   def listAvailableCountries: Route
 
-  def routes: Route = homePageView ~ searchView ~ listAvailableCountries
+  def routes: Route = homePageView ~ homePageViewWithLanguage ~ searchView ~ listAvailableCountries
 }
 
 trait ViewApiComponent {
