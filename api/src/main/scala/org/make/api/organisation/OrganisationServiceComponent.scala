@@ -31,33 +31,22 @@ import org.make.api.user.{
   PersistentUserToAnonymizeServiceComponent,
   UserServiceComponent
 }
+import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.api.userhistory.{
   OrganisationEmailChangedEvent,
   OrganisationRegisteredEvent,
   OrganisationUpdatedEvent,
   UserHistoryCoordinatorServiceComponent
 }
-import org.make.api.userhistory.UserHistoryActor.{RequestUserVotedProposals, RequestVoteValues}
 import org.make.core.common.indexed.Sort
 import org.make.core.history.HistoryActions
 import org.make.core.operation.OperationKind
 import org.make.core.profile.Profile
-import org.make.core.proposal.{
-  OperationKindsSearchFilter,
-  ProposalId,
-  ProposalSearchFilter,
-  ProposalStatus,
-  QualificationKey,
-  SearchFilters,
-  SearchQuery,
-  StatusSearchFilter,
-  UserSearchFilter,
-  VoteKey
-}
+import org.make.core.proposal.{CountrySearchFilter => _, LanguageSearchFilter => _, _}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core.user.indexed.OrganisationSearchResult
-import org.make.core.{user, BusinessConfig, DateHelper, Order, RequestContext}
+import org.make.core.{user, DateHelper, Order, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -241,9 +230,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       requestContext: RequestContext
     ): Future[User] = {
 
-      val country = BusinessConfig.validateCountry(organisationRegisterData.country)
-      val language =
-        BusinessConfig.validateLanguage(organisationRegisterData.country, organisationRegisterData.language)
+      val country = organisationRegisterData.country
+      val language = organisationRegisterData.language
 
       val lowerCasedEmail: String = organisationRegisterData.email.toLowerCase()
 

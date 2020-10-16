@@ -41,7 +41,6 @@ import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{EndpointType, IdGeneratorComponent, MakeAuthenticationDirectives}
 import org.make.api.technical.CsvReceptacle._
-import org.make.core.Order
 import org.make.core.auth.UserRights
 import org.make.core.idea.TopIdeaId
 import org.make.core.operation._
@@ -52,7 +51,7 @@ import org.make.core.proposal.ProposalId
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.{CountrySearchFilter => _, DescriptionSearchFilter => _, LanguageSearchFilter => _, _}
-import org.make.core.{BusinessConfig, HttpCodes, ParameterExtractors, Validation}
+import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -656,7 +655,7 @@ trait DefaultQuestionApiComponent
           makeOperation("ListQuestions") { _ =>
             parameters(
               "country".as[Country],
-              "language".as[Language],
+              "language".as[Language].?,
               "status".as[OperationOfQuestion.Status].?,
               "limit".as[Int].?,
               "skip".as[Int].?,
@@ -664,15 +663,15 @@ trait DefaultQuestionApiComponent
             ) {
               (
                 country: Country,
-                language: Language,
+                maybeLanguage: Option[Language],
                 maybeStatus: Option[OperationOfQuestion.Status],
                 limit: Option[Int],
                 skip: Option[Int],
                 sortAlgorithm: Option[SortAlgorithm]
               ) =>
                 val filters = OperationOfQuestionSearchFilters(
-                  country = Some(CountrySearchFilter(BusinessConfig.validateCountry(country))),
-                  language = Some(LanguageSearchFilter(BusinessConfig.validateLanguage(country, language))),
+                  country = Some(CountrySearchFilter(country)),
+                  language = maybeLanguage.map(LanguageSearchFilter.apply),
                   status = maybeStatus.map(status => StatusSearchFilter(status))
                 )
                 provideAsync(

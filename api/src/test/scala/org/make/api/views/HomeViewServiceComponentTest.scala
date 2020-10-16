@@ -208,7 +208,7 @@ class HomeViewServiceComponentTest
 
   val operations: Seq[SimpleOperation] = Seq(operation1, operation2, operation3, operation4, operation5, operation6)
   val questions: Seq[Question] = Seq(question1, question2, question3, question4, question5, question6)
-  val operationOfQuestions = OperationOfQuestionSearchResult(
+  val operationOfQuestions: OperationOfQuestionSearchResult = OperationOfQuestionSearchResult(
     total = 6L,
     results = Seq(
       operationOfQuestion1,
@@ -308,7 +308,7 @@ class HomeViewServiceComponentTest
       ).thenReturn(Future.successful(PostSearchResult(2, indexedPosts)))
 
       val futureHomePageViewResponse: Future[HomePageViewResponse] =
-        homeViewService.getHomePageViewResponse(Country("FR"), Language("fr"))
+        homeViewService.getHomePageViewResponse(Country("FR"))
       whenReady(futureHomePageViewResponse, Timeout(3.seconds)) { homePageViewResponse =>
         homePageViewResponse.posts should be(postsResponses)
         homePageViewResponse.currentQuestions should be(
