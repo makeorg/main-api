@@ -92,14 +92,17 @@ trait DefaultSendMailPublisherServiceComponent
     with OperationOfQuestionServiceComponent =>
 
   private def getProposalUrl(proposal: Proposal, questionSlug: String): String = {
-    val utmParams =
-      s"utm_source=crm&utm_medium=email&utm_campaign=$questionSlug&utm_term=publication&utm_content=cta_share"
+    val params = Map(
+      "utm_source" -> "crm",
+      "utm_medium" -> "email",
+      "utm_campaign" -> questionSlug,
+      "utm_term" -> "publication",
+      "utm_content" -> "cta_share"
+    ).mkString("&")
     val country: String = proposal.creationContext.country.map(_.value).getOrElse("FR")
-    val language: String = proposal.creationContext.language.map(_.value).getOrElse("fr")
 
-    val appPath =
-      s"$country-$language/consultation/$questionSlug/proposal/${proposal.proposalId.value}/${proposal.slug}"
-    s"${mailJetTemplateConfiguration.mainFrontendUrl}/$appPath?$utmParams"
+    val appPath = s"$country/consultation/$questionSlug/proposal/${proposal.proposalId.value}/${proposal.slug}"
+    s"${mailJetTemplateConfiguration.mainFrontendUrl}/$appPath?$params"
   }
 
   private def getAccountValidationUrl(
@@ -115,8 +118,7 @@ trait DefaultSendMailPublisherServiceComponent
 
     val utmParams = s"utm_source=crm&utm_medium=email&utm_campaign=$utmCampaign&utm_term=validation&utm_content=cta"
     val appParams = s"operation=$operationIdValue&language=$language&country=$country&question=$questionIdValue"
-    val appPath =
-      s"${user.country.value}-${user.language.value}/account-activation/${user.userId.value}/$verificationToken"
+    val appPath = s"${user.country.value}/account-activation/${user.userId.value}/$verificationToken"
 
     s"${mailJetTemplateConfiguration.mainFrontendUrl}/$appPath?$appParams&$utmParams"
   }
@@ -134,7 +136,7 @@ trait DefaultSendMailPublisherServiceComponent
       case Some(ApplicationName.Backoffice) =>
         s"${mailJetTemplateConfiguration.backofficeUrl}/#/$appPath"
       case _ =>
-        s"${mailJetTemplateConfiguration.mainFrontendUrl}/$country-$language/$appPath?$appParams"
+        s"${mailJetTemplateConfiguration.mainFrontendUrl}/$country/$appPath?$appParams"
     }
 
   }
@@ -146,11 +148,16 @@ trait DefaultSendMailPublisherServiceComponent
     proposal: Proposal
   ): String = {
     val country: String = proposal.creationContext.country.map(_.value).getOrElse("FR")
-    val language: String = proposal.creationContext.language.map(_.value).getOrElse("fr")
     val term: String = if (isAccepted) "publication" else "refus"
     val utmTerm: String = if (userType != UserType.UserTypeUser) s"${term}acteur" else term
-    val utmParams = s"utm_source=crm&utm_medium=email&utm_content=cta&utm_campaign=$questionSlug&utm_term=$utmTerm"
-    s"${mailJetTemplateConfiguration.mainFrontendUrl}/$country-$language/consultation/$questionSlug/selection?$utmParams&introCard=false"
+    val params = Map(
+      "utm_source" -> "crm",
+      "utm_medium" -> "email",
+      "utm_content" -> "cta",
+      "utm_campaign" -> questionSlug,
+      "utm_term" -> utmTerm
+    ).mkString("&")
+    s"${mailJetTemplateConfiguration.mainFrontendUrl}/$country/consultation/$questionSlug/selection?$params&introCard=false"
   }
 
   private def getLocale(country: Country, language: Language): String = {
