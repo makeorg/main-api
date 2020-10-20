@@ -23,6 +23,7 @@ import java.time.ZonedDateTime
 
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.deriveDecoder
+import org.make.core.reference.Country
 import org.make.core.{CirceFormatters, StringValue}
 
 final case class Post(
@@ -34,7 +35,8 @@ final case class Post(
   thumbnailUrl: URL,
   thumbnailAlt: Option[String],
   sourceUrl: URL,
-  summary: String
+  summary: String,
+  country: Country
 )
 
 object Post extends CirceFormatters {

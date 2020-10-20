@@ -25,6 +25,7 @@ import com.sksamuel.elastic4s.ElasticApi
 import com.sksamuel.elastic4s.http.ElasticDsl
 import com.sksamuel.elastic4s.searches.queries.Query
 import com.sksamuel.elastic4s.searches.sort.{FieldSort, SortOrder}
+import org.make.core.reference.Country
 
 final case class PostSearchQuery(
   filters: Option[PostSearchFilters] = None,
@@ -36,23 +37,29 @@ final case class PostSearchQuery(
 
 final case class PostSearchFilters(
   postIds: Option[PostIdsSearchFilter] = None,
-  displayHome: Option[DisplayHomeSearchFilter] = None
+  displayHome: Option[DisplayHomeSearchFilter] = None,
+  country: Option[PostCountryFilter] = None
 )
 
 object PostSearchFilters extends ElasticDsl {
 
   def parse(
     postIds: Option[PostIdsSearchFilter] = None,
-    displayHome: Option[DisplayHomeSearchFilter] = None
+    displayHome: Option[DisplayHomeSearchFilter] = None,
+    postCountry: Option[PostCountryFilter] = None
   ): Option[PostSearchFilters] = {
-    (postIds, displayHome) match {
-      case (None, None) => None
-      case _            => Some(PostSearchFilters(postIds, displayHome))
+    (postIds, displayHome, postCountry) match {
+      case (None, None, None) => None
+      case _                  => Some(PostSearchFilters(postIds, displayHome, postCountry))
     }
   }
 
   def getPostSearchFilters(postSearchQuery: PostSearchQuery): Seq[Query] = {
-    Seq(buildPostIdsSearchFilter(postSearchQuery.filters), buildDisplayHomeSearchFilter(postSearchQuery.filters)).flatten
+    Seq(
+      buildPostIdsSearchFilter(postSearchQuery.filters),
+      buildDisplayHomeSearchFilter(postSearchQuery.filters),
+      buildPostCountrySearchFilter(postSearchQuery.filters)
+    ).flatten
   }
 
   def getSkipSearch(postSearchQuery: PostSearchQuery): Int =
@@ -83,7 +90,15 @@ object PostSearchFilters extends ElasticDsl {
     } yield ElasticApi.termQuery(PostElasticsearchFieldNames.displayHome, displayHome)
   }
 
+  def buildPostCountrySearchFilter(maybeFilters: Option[PostSearchFilters]): Option[Query] = {
+    for {
+      filters                    <- maybeFilters
+      PostCountryFilter(country) <- filters.country
+    } yield ElasticApi.termQuery(PostElasticsearchFieldNames.country, country.value)
+  }
+
 }
 
 final case class PostIdsSearchFilter(postIds: Seq[PostId])
 final case class DisplayHomeSearchFilter(displayHome: Boolean)
+final case class PostCountryFilter(country: Country)

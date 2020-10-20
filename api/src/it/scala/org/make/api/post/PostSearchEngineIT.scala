@@ -32,6 +32,7 @@ import org.make.api.{ActorSystemComponent, ItMakeTest}
 import org.make.core.{CirceFormatters, Order}
 import org.make.core.post.PostId
 import org.make.core.post.indexed._
+import org.make.core.reference.Country
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -75,7 +76,13 @@ class PostSearchEngineIT
     ),
     indexedPost(PostId("post-3"), slug = "waddaya-mean", displayHome = false),
     indexedPost(PostId("post-4"), postDate = ZonedDateTime.parse("2020-12-31T00:00:00.000Z")),
-    indexedPost(PostId("post-5"), postDate = ZonedDateTime.parse("2020-01-01T00:00:00.000Z"))
+    indexedPost(PostId("post-5"), postDate = ZonedDateTime.parse("2020-01-01T00:00:00.000Z")),
+    indexedPost(
+      PostId("post-6"),
+      postDate = ZonedDateTime.parse("2020-01-01T00:00:00.000Z"),
+      displayHome = false,
+      country = Country("DE")
+    )
   )
 
   Feature("get post by id") {
@@ -108,6 +115,15 @@ class PostSearchEngineIT
       whenReady(elasticsearchPostAPI.searchPosts(query), Timeout(3.seconds)) { result =>
         result.total should be(3L)
         result.results.map(_.postId) shouldBe Seq(PostId("post-4"), PostId("post-2"), PostId("post-5"))
+      }
+    }
+
+    Scenario("Search by country") {
+      val query = PostSearchQuery(filters = Some(PostSearchFilters(country = Some(PostCountryFilter(Country("DE"))))))
+
+      whenReady(elasticsearchPostAPI.searchPosts(query), Timeout(3.seconds)) { result =>
+        result.total should be(1L)
+        result.results.headOption.map(_.postId) should contain(PostId("post-6"))
       }
     }
   }

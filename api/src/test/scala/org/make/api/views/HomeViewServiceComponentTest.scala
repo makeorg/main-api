@@ -298,7 +298,12 @@ class HomeViewServiceComponentTest
         postService.search(
           eqTo(
             PostSearchQuery(
-              filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
+              filters = Some(
+                PostSearchFilters(
+                  displayHome = Some(DisplayHomeSearchFilter(true)),
+                  country = Some(PostCountryFilter(Country("FR")))
+                )
+              ),
               sort = Some(PostElasticsearchFieldNames.postDate),
               order = Some(Order.desc),
               limit = Some(3)

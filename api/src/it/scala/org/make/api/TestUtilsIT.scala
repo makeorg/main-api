@@ -295,7 +295,8 @@ trait TestUtilsIT {
     thumbnailUrl: URL = new URL("https://example.com/thumbnail"),
     thumbnailAlt: Option[String] = Some("image alternative"),
     sourceUrl: URL = new URL("https://example.com/source"),
-    summary: String = "This is a summary for an awesome post."
+    summary: String = "This is a summary for an awesome post.",
+    country: Country = Country("FR")
   ): Post = Post(
     postId = postId,
     name = name,
@@ -305,7 +306,8 @@ trait TestUtilsIT {
     thumbnailUrl = thumbnailUrl,
     thumbnailAlt = thumbnailAlt,
     sourceUrl = sourceUrl,
-    summary = summary
+    summary = summary,
+    country = country
   )
 
   def indexedPost(
@@ -317,7 +319,8 @@ trait TestUtilsIT {
     thumbnailUrl: URL = new URL("https://example.com/thumbnail"),
     thumbnailAlt: Option[String] = Some("image alternative"),
     sourceUrl: URL = new URL("https://example.com/source"),
-    summary: String = "This is a summary for an awesome post."
+    summary: String = "This is a summary for an awesome post.",
+    country: Country = Country("FR")
   ): IndexedPost =
     IndexedPost(
       postId = postId,
@@ -328,7 +331,8 @@ trait TestUtilsIT {
       thumbnailUrl = thumbnailUrl,
       thumbnailAlt = thumbnailAlt,
       sourceUrl = sourceUrl,
-      summary = summary
+      summary = summary,
+      country = country
     )
 }
 
