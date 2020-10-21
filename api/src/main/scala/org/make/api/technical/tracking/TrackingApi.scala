@@ -23,16 +23,26 @@ import javax.ws.rs.Path
 import io.swagger.annotations._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
+import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
-import org.make.api.technical.auth.MakeAuthentication
 import org.make.api.technical.monitoring.MonitoringServiceComponent
-import org.make.api.technical.{EndpointType, EventBusServiceComponent, IdGeneratorComponent, MakeDirectives}
+import org.make.api.technical.{
+  EndpointType,
+  EventBusServiceComponent,
+  IdGeneratorComponent,
+  MakeAuthenticationDirectives,
+  MakeDirectives
+}
 import org.make.core.{HttpCodes, RequestContext}
+import org.make.core.auth.UserRights
+import org.slf4j.event.Level
+import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import scala.util.Try
 
 @Api(value = "Tracking")
 @Path(value = "/tracking")
@@ -66,7 +76,21 @@ trait TrackingApi extends Directives {
   @Path(value = "/performance")
   def trackFrontPerformances: Route
 
-  final def routes: Route = frontTracking ~ trackFrontPerformances
+  @ApiOperation(value = "backoffice-logs", httpMethod = "POST", code = HttpCodes.NoContent)
+  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.NoContent, message = "No Content")))
+  @ApiImplicitParams(
+    value = Array(
+      new ApiImplicitParam(
+        name = "body",
+        paramType = "body",
+        dataType = "org.make.api.technical.tracking.BackofficeLogs"
+      )
+    )
+  )
+  @Path(value = "/backoffice/logs")
+  def backofficeLogs: Route
+
+  final def routes: Route = backofficeLogs ~ frontTracking ~ trackFrontPerformances
 }
 
 trait TrackingApiComponent {
@@ -77,13 +101,41 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
   this: EventBusServiceComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
-    with MakeAuthentication
+    with MakeAuthenticationDirectives
     with SessionHistoryCoordinatorServiceComponent
-    with MonitoringServiceComponent =>
+    with MonitoringServiceComponent
+    with StrictLogging =>
 
   override lazy val trackingApi: TrackingApi = new DefaultTrackingApi
 
   class DefaultTrackingApi extends TrackingApi {
+
+    def backofficeLogs: Route = {
+      post {
+        path("tracking" / "backoffice" / "logs") {
+          makeOperation("BackofficeLogs") { _ =>
+            makeOAuth2 { auth: AuthInfo[UserRights] =>
+              requireModerationRole(auth.user) {
+                decodeRequest {
+                  entity(as[BackofficeLogs]) { request: BackofficeLogs =>
+                    (request.level match {
+                      case Level.DEBUG => logger.debug(_: String)
+                      case Level.ERROR => logger.error(_: String)
+                      case Level.INFO  => logger.info(_: String)
+                      case Level.TRACE => logger.trace(_: String)
+                      case Level.WARN  => logger.warn(_: String)
+                    })(request.message)
+                    complete(StatusCodes.NoContent)
+                  }
+                }
+              }
+            }
+          }
+
+        }
+      }
+    }
+
     def frontTracking: Route =
       post {
         path("tracking" / "front") {
@@ -115,6 +167,13 @@ trait DefaultTrackingApiComponent extends TrackingApiComponent with MakeDirectiv
       }
 
   }
+}
+
+final case class BackofficeLogs(level: Level, message: String)
+
+object BackofficeLogs {
+  implicit val levelDecoder: Decoder[Level] = Decoder[String].emapTry(name => Try(Level.valueOf(name.toUpperCase)))
+  implicit val decoder: Decoder[BackofficeLogs] = deriveDecoder
 }
 
 final case class FrontTrackingRequest(
