@@ -24,7 +24,7 @@ Configuration:
   Loggers:
     logger:
       - name: org.make
-        level: debug
+        level: info
         additivity: false
         AppenderRef:
           - ref: AkkaConsole
@@ -54,7 +54,13 @@ Configuration:
           - ref: AkkaConsole
           - ref: console
       - name: akka.event.slf4j
-        level: debug
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: AkkaConsole
+          - ref: console
+      - name: org.flywaydb.core
+        level: warn
         additivity: false
         AppenderRef:
           - ref: AkkaConsole
