@@ -34,6 +34,7 @@ import org.make.api.technical.webflow.WebflowItem.WebflowPost
 import org.make.api.technical.webflow.{WebflowClientComponent, WebflowConfigurationComponent, WebflowItem}
 import org.make.core.post.indexed.{PostSearchQuery, PostSearchResult}
 import org.make.core.post.{Post, PostId}
+import org.make.core.reference.Country
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -91,7 +92,8 @@ trait DefaultPostServiceComponent extends PostServiceComponent with StrictLoggin
               thumbnailUrl = url,
               thumbnailAlt = webflowPost.thumbnailImage.flatMap(_.alt),
               sourceUrl = new URL(s"${webflowConfiguration.blogUrl}/post/${webflowPost.slug}"),
-              summary = summary
+              summary = summary,
+              country = Country("FR") // Posts from webflow are for France atm
             )
           }
       }

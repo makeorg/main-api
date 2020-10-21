@@ -23,11 +23,9 @@ import java.time.ZonedDateTime
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
-import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
 import org.make.core.post.{Post, PostId}
-
-import scala.annotation.meta.field
+import org.make.core.reference.Country
 
 object PostElasticsearchFieldNames {
   val postId = "postId"
@@ -39,18 +37,20 @@ object PostElasticsearchFieldNames {
   val thumbnailAlt = "thumbnailAlt"
   val sourceUrl = "sourceUrl"
   val summary = "summary"
+  val country = "country"
 }
 
 final case class IndexedPost(
-  @(ApiModelProperty @field)(dataType = "string", example = "6e02345a-8eff-4f2a-a732-83ff831ef10e") postId: PostId,
+  postId: PostId,
   name: String,
   slug: String,
   displayHome: Boolean,
-  @(ApiModelProperty @field)(dataType = "dateTime") postDate: ZonedDateTime,
+  postDate: ZonedDateTime,
   thumbnailUrl: URL,
   thumbnailAlt: Option[String],
   sourceUrl: URL,
-  summary: String
+  summary: String,
+  country: Country
 )
 
 object IndexedPost extends CirceFormatters {
@@ -67,7 +67,8 @@ object IndexedPost extends CirceFormatters {
       thumbnailUrl = post.thumbnailUrl,
       thumbnailAlt = post.thumbnailAlt,
       sourceUrl = post.sourceUrl,
-      summary = post.summary
+      summary = post.summary,
+      country = post.country
     )
   }
 }

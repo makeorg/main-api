@@ -28,6 +28,7 @@ import org.make.core.Order
 import org.make.core.operation._
 import org.make.core.post.indexed.{
   DisplayHomeSearchFilter,
+  PostCountryFilter,
   PostElasticsearchFieldNames,
   PostSearchFilters,
   PostSearchQuery
@@ -91,7 +92,12 @@ trait DefaultHomeViewServiceComponent extends HomeViewServiceComponent {
       val futurePosts: Future[Seq[PostResponse]] = postService
         .search(
           PostSearchQuery(
-            filters = Some(PostSearchFilters(displayHome = Some(DisplayHomeSearchFilter(true)))),
+            filters = Some(
+              PostSearchFilters(
+                displayHome = Some(DisplayHomeSearchFilter(true)),
+                country = Some(PostCountryFilter(country))
+              )
+            ),
             sort = Some(PostElasticsearchFieldNames.postDate),
             order = Some(Order.desc),
             limit = Some(3)
