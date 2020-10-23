@@ -99,10 +99,10 @@ final case class IndexedOperationOfQuestion(
   question: String,
   slug: String,
   questionShortTitle: Option[String],
-  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
-  startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(example = "2019-01-23T16:32:00.000Z")
-  endDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  startDate: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  endDate: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "string", example = "Finished") status: OperationOfQuestion.Status,
   theme: QuestionTheme,
   description: String,

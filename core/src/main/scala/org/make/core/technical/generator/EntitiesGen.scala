@@ -98,8 +98,8 @@ trait EntitiesGen {
     for {
       operation         <- genSimpleOperation
       question          <- genQuestion(Some(operation.operationId))
-      startDate         <- Gen.option(CustomGenerators.Time.zonedDateTime)
-      endDate           <- Gen.option(CustomGenerators.Time.zonedDateTime.suchThat(date => startDate.forall(_.isBefore(date))))
+      startDate         <- CustomGenerators.Time.zonedDateTime
+      endDate           <- CustomGenerators.Time.zonedDateTime.suchThat(date => startDate.isBefore(date))
       title             <- CustomGenerators.LoremIpsumGen.sentence()
       canPropose        <- arbitrary[Boolean]
       resultsLink       <- Gen.option(genResultsLink)

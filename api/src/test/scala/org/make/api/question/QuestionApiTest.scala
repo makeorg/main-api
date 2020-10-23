@@ -117,8 +117,8 @@ class QuestionApiTest
   val baseOperationOfQuestion = operationOfQuestion(
     questionId = baseQuestion.questionId,
     operationId = baseOperation.operationId,
-    startDate = Some(ZonedDateTime.parse("2018-10-21T10:15:30+00:00")),
-    endDate = None,
+    startDate = ZonedDateTime.parse("2018-10-21T10:15:30+00:00"),
+    endDate = ZonedDateTime.parse("2068-10-21T10:15:30+00:00"),
     operationTitle = "operation title",
     landingSequenceId = SequenceId("sequenceId"),
     resultsLink = Some(ResultsLink.Internal.TopIdeas)
@@ -134,17 +134,17 @@ class QuestionApiTest
     baseOperation.updatedAt
   )
   val openOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
-    baseOperationOfQuestion.copy(startDate = Some(now.minusDays(1)), endDate = Some(now.plusDays(1))),
+    baseOperationOfQuestion.copy(startDate = now.minusDays(1), endDate = now.plusDays(1)),
     baseSimpleOperation,
     baseQuestion
   )
   val finishedOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
-    baseOperationOfQuestion.copy(startDate = Some(now.minusDays(2)), endDate = Some(now.minusDays(1))),
+    baseOperationOfQuestion.copy(startDate = now.minusDays(2), endDate = now.minusDays(1)),
     baseSimpleOperation,
     baseQuestion
   )
   val upcomingOperationOfQuestion = IndexedOperationOfQuestion.createFromOperationOfQuestion(
-    baseOperationOfQuestion.copy(startDate = Some(now.plusDays(1)), endDate = Some(now.plusDays(2))),
+    baseOperationOfQuestion.copy(startDate = now.plusDays(1), endDate = now.plusDays(2)),
     baseSimpleOperation,
     baseQuestion
   )

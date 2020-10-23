@@ -204,9 +204,9 @@ final case class QuestionDetailsResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "dateTime")
-  startDate: Option[ZonedDateTime],
+  startDate: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "dateTime")
-  endDate: Option[ZonedDateTime],
+  endDate: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
   canPropose: Boolean,
@@ -290,9 +290,9 @@ final case class QuestionOfOperationResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
   @(ApiModelProperty @field)(dataType = "dateTime")
-  startDate: Option[ZonedDateTime],
+  startDate: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "dateTime")
-  endDate: Option[ZonedDateTime],
+  endDate: ZonedDateTime,
   theme: QuestionThemeResponse,
   displayResults: Boolean,
   resultsLink: Option[ResultsLinkResponse],

@@ -19,27 +19,24 @@
 
 package org.make.core.operation
 
-import java.time.ZonedDateTime
-
 import eu.timepit.refined.auto._
 import eu.timepit.refined.scalacheck.numeric._
 import eu.timepit.refined.types.numeric.PosShort
 import org.make.core.{DateHelper, MakeUnitTest}
 import org.make.core.operation.OperationOfQuestion.Status._
-import org.make.core.technical.generator.{CustomGenerators, EntitiesGen}
+import org.make.core.technical.generator.EntitiesGen
 import org.scalacheck.Arbitrary
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class OperationOfQuestionTest extends MakeUnitTest with EntitiesGen with ScalaCheckDrivenPropertyChecks {
 
   private implicit val arbOperationOfQuestion: Arbitrary[OperationOfQuestion] = Arbitrary(genOperationOfQuestion)
-  private implicit val arbZonedDateTime: Arbitrary[ZonedDateTime] = Arbitrary(CustomGenerators.Time.zonedDateTime)
 
   Feature("status") {
 
     Scenario("with a start date in the future operation is upcoming") {
       forAll { (ooq: OperationOfQuestion, delta: PosShort) =>
-        ooq.copy(startDate = Some(DateHelper.now().plusSeconds(delta.toLong))).status should be(Upcoming)
+        ooq.copy(startDate = DateHelper.now().plusSeconds(delta.toLong)).status should be(Upcoming)
       }
     }
 
@@ -47,10 +44,7 @@ class OperationOfQuestionTest extends MakeUnitTest with EntitiesGen with ScalaCh
       forAll { (ooq: OperationOfQuestion, delta: PosShort, duration: PosShort) =>
         val now = DateHelper.now()
         ooq
-          .copy(
-            startDate = Some(now.minusSeconds(delta.toLong + duration.toLong)),
-            endDate = Some(now.minusSeconds(delta.toLong))
-          )
+          .copy(startDate = now.minusSeconds(delta.toLong + duration.toLong), endDate = now.minusSeconds(delta.toLong))
           .status should be(Finished)
       }
     }
@@ -59,29 +53,8 @@ class OperationOfQuestionTest extends MakeUnitTest with EntitiesGen with ScalaCh
       forAll { (ooq: OperationOfQuestion, halfDuration: PosShort) =>
         val now = DateHelper.now()
         ooq
-          .copy(
-            startDate = Some(now.minusSeconds(halfDuration.toLong)),
-            endDate = Some(now.plusSeconds(halfDuration.toLong))
-          )
+          .copy(startDate = now.minusSeconds(halfDuration.toLong), endDate = now.plusSeconds(halfDuration.toLong))
           .status should be(Open)
-      }
-    }
-
-    Scenario("without a start date operation cannot be upcoming") {
-      forAll { (ooq: OperationOfQuestion, date: ZonedDateTime) =>
-        ooq.copy(startDate = None, endDate = Some(date)).status shouldNot be(Upcoming)
-      }
-    }
-
-    Scenario("without an end date operation cannot be finished") {
-      forAll { (ooq: OperationOfQuestion, date: ZonedDateTime) =>
-        ooq.copy(startDate = Some(date), endDate = None).status shouldNot be(Finished)
-      }
-    }
-
-    Scenario("without start and end date operation is open") {
-      forAll { ooq: OperationOfQuestion =>
-        ooq.copy(startDate = None, endDate = None).status should be(Open)
       }
     }
 

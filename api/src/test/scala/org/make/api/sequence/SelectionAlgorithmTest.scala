@@ -136,8 +136,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           question = "test question ?",
           countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           isOpen = true
         )
       ),
@@ -221,8 +221,8 @@ class SelectionAlgorithmTest extends MakeUnitTest with DefaultSelectionAlgorithm
           question = "test question ?",
           countries = NonEmptyList.of(Country("FR")),
           language = Language("fr"),
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           isOpen = true
         )
       ),

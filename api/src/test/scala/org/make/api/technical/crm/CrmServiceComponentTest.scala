@@ -905,8 +905,8 @@ class CrmServiceComponentTest
               "",
               NonEmptyList.of(Country("FR")),
               Language("fr"),
-              None,
-              None,
+              ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+              ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
               isOpen = true
             )
           ),
@@ -960,8 +960,8 @@ class CrmServiceComponentTest
               "",
               NonEmptyList.of(Country("FR")),
               Language("fr"),
-              None,
-              None,
+              ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+              ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
               isOpen = true
             )
           ),

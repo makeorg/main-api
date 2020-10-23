@@ -81,8 +81,8 @@ trait OperationOfQuestionService {
 
 final case class CreateOperationOfQuestion(
   operationId: OperationId,
-  startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime],
+  startDate: ZonedDateTime,
+  endDate: ZonedDateTime,
   operationTitle: String,
   slug: String,
   countries: NonEmptyList[Country],

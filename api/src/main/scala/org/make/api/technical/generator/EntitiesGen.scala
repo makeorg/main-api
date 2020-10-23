@@ -40,7 +40,7 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
 
   def genCreateOperationOfQuestion(operationId: OperationId): Gen[CreateOperationOfQuestion] =
     for {
-      date                 <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
+      date                 <- Gen.calendar.map(_.toZonedDateTime)
       operationTitle       <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
       shortTitle           <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(30))
       slug                 <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(30))
@@ -53,7 +53,7 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
     } yield CreateOperationOfQuestion(
       operationId = operationId,
       startDate = date,
-      endDate = date.map(_.plusMonths(3)),
+      endDate = date.plusMonths(3),
       operationTitle = operationTitle,
       slug = slug,
       countries = NonEmptyList.of(country),

@@ -454,10 +454,10 @@ trait DefaultModerationOperationOfQuestionApiComponent
 
 @ApiModel
 final case class ModifyOperationOfQuestionRequest(
-  @(ApiModelProperty @field)(example = "2019-01-23T00:00:00.000Z")
-  startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
-  endDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  startDate: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  endDate: ZonedDateTime,
   operationTitle: String,
   question: String,
   @(ApiModelProperty @field)(dataType = "string")
@@ -522,10 +522,10 @@ object ModifyOperationOfQuestionRequest extends CirceFormatters {
 final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId,
-  @(ApiModelProperty @field)(example = "2019-01-23T00:00:00.000Z")
-  startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
-  endDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  startDate: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  endDate: ZonedDateTime,
   operationTitle: String,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   countries: NonEmptyList[Country],
@@ -576,10 +576,10 @@ final case class OperationOfQuestionResponse(
   id: QuestionId,
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId,
-  @(ApiModelProperty @field)(example = "2019-01-23T00:00:00.000Z")
-  startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(example = "2019-03-23T00:00:00.000Z")
-  endDate: Option[ZonedDateTime],
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  startDate: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "dateTime")
+  endDate: ZonedDateTime,
   @(ApiModelProperty @field)(dataType = "string", example = "fd735649-e63d-4464-9d93-10da54510a12")
   landingSequenceId: SequenceId,
   operationTitle: String,

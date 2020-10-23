@@ -97,8 +97,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         OperationOfQuestion(
           questionId = questionId,
           operationId = OperationId("some-operation"),
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "some title",
           landingSequenceId = SequenceId("some-sequence"),
           canPropose = true,
@@ -163,8 +163,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         OperationOfQuestion(
           questionId = QuestionId("question-1"),
           operationId = operationId,
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "opération en Français",
           landingSequenceId = SequenceId("landing-1"),
           canPropose = true,
@@ -199,8 +199,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
           operationId = operationId,
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "Operation in English",
           landingSequenceId = SequenceId("landing-2"),
           canPropose = true,
@@ -284,8 +284,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         OperationOfQuestion(
           questionId = QuestionId("question-1"),
           operationId = OperationId("operation-1"),
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "some title",
           landingSequenceId = SequenceId("sequence-1"),
           canPropose = true,
@@ -320,8 +320,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         OperationOfQuestion(
           questionId = QuestionId("question-2"),
           operationId = OperationId("operation-2"),
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "some title",
           landingSequenceId = SequenceId("sequence-2"),
           canPropose = true,
@@ -480,8 +480,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           ContentTypes.`application/json`,
           CreateOperationOfQuestionRequest(
             operationId = OperationId("some-operation"),
-            startDate = Some(ZonedDateTime.parse("2018-12-01T10:15:30+00:00")),
-            endDate = None,
+            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
             operationTitle = "my-operation",
             countries = NonEmptyList.of(Country("FR")),
             language = Language("fr"),
@@ -528,8 +528,8 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         .withEntity(
           ContentTypes.`application/json`,
           ModifyOperationOfQuestionRequest(
-            startDate = Some(ZonedDateTime.parse("2018-12-01T10:15:30+00:00")),
-            endDate = None,
+            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
             canPropose = true,
             question = "question ?",
             operationTitle = "new title",
@@ -574,6 +574,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
             | "startDate": "2018-12-01T10:15:30.000Z",
+            | "endDate": "2068-12-01T10:15:30.000Z",
             | "canPropose": true,
             | "question": "question ?",
             | "operationTitle": "title",
@@ -614,6 +615,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
           ContentTypes.`application/json`,
           """{
            | "startDate": "2018-12-01T10:15:30.000Z",
+           | "endDate": "2068-12-01T10:15:30.000Z",
            | "canPropose": true,
            | "question": "question ?",
            | "operationTitle": "title",
@@ -653,6 +655,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(ContentTypes.`application/json`, """{
                                                        | "startDate": "2018-12-01T10:15:30.000Z",
+                                                       | "endDate": "2068-12-01T10:15:30.000Z",
                                                        | "canPropose": true,
                                                        | "question": "question ?",
                                                        | "operationTitle": "title",

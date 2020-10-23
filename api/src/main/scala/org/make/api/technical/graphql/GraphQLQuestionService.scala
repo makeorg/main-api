@@ -77,6 +77,6 @@ final case class GraphQLQuestion(
   wording: SimpleQuestionWordingResponse,
   countries: NonEmptyList[Country],
   language: Language,
-  startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime]
+  startDate: ZonedDateTime,
+  endDate: ZonedDateTime
 )

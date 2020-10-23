@@ -27,8 +27,8 @@ import org.make.core.operation.indexed.OperationOfQuestionElasticsearchFieldName
 sealed abstract class SortAlgorithm(priority: FieldSort*) extends EnumEntry {
 
   private val sort = priority.toSeq ++ Seq(
-    FieldSort(field = endDate.field, order = SortOrder.DESC, missing = Some("_first")),
-    FieldSort(field = slug.field, order = SortOrder.ASC, missing = None)
+    FieldSort(field = endDate.field, order = SortOrder.DESC),
+    FieldSort(field = slug.field, order = SortOrder.ASC)
   )
 
   def sortDefinition(request: SearchRequest): SearchRequest = request.sortBy(sort)
@@ -38,7 +38,7 @@ sealed abstract class SortAlgorithm(priority: FieldSort*) extends EnumEntry {
 object SortAlgorithm extends Enum[SortAlgorithm] {
 
   case object Chronological extends SortAlgorithm
-  case object Featured extends SortAlgorithm(FieldSort(field = featured.field, order = SortOrder.DESC, missing = None))
+  case object Featured extends SortAlgorithm(FieldSort(field = featured.field, order = SortOrder.DESC))
 
   override def values: IndexedSeq[SortAlgorithm] = findValues
 

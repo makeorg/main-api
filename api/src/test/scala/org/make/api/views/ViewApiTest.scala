@@ -197,15 +197,20 @@ class ViewApiTest
   Feature("available countries") {
     Scenario("it works") {
       val ooqs = {
-        def gen(startDate: Option[ZonedDateTime], endDate: Option[ZonedDateTime], first: Country, others: Country*) = {
+        def gen(startDate: ZonedDateTime, endDate: ZonedDateTime, first: Country, others: Country*) = {
           val q = question(id = idGenerator.nextQuestionId(), countries = NonEmptyList.of(first, others: _*))
           val o = simpleOperation(id = idGenerator.nextOperationId())
           val ooq = operationOfQuestion(q.questionId, o.operationId, startDate = startDate, endDate = endDate)
           IndexedOperationOfQuestion.createFromOperationOfQuestion(ooq, o, q)
         }
         Seq(
-          gen(startDate = Some(ZonedDateTime.now.minusDays(1)), endDate = None, Country("FR")),
-          gen(startDate = None, endDate = Some(ZonedDateTime.now.minusDays(1)), Country("DE"), Country("FR"))
+          gen(startDate = ZonedDateTime.now.minusDays(1), endDate = ZonedDateTime.now.plusDays(1), Country("FR")),
+          gen(
+            startDate = ZonedDateTime.now.minusDays(2),
+            endDate = ZonedDateTime.now.minusDays(1),
+            Country("DE"),
+            Country("FR")
+          )
         )
       }
 

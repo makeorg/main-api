@@ -19,6 +19,8 @@
 
 package org.make.api.personality
 
+import java.time.ZonedDateTime
+
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -470,8 +472,8 @@ class PersonalityApiTest
                 wording = SimpleQuestionWordingResponse("title", "question"),
                 countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
-                startDate = None,
-                endDate = None
+                startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+                endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z")
               ),
               topIdea = QuestionTopIdeaWithAvatarResponse(
                 id = TopIdeaId("top-idea-id"),
@@ -494,8 +496,8 @@ class PersonalityApiTest
                 wording = SimpleQuestionWordingResponse("title", "question"),
                 countries = NonEmptyList.of(Country("FR")),
                 language = Language("fr"),
-                startDate = None,
-                endDate = None
+                startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+                endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z")
               ),
               topIdea = QuestionTopIdeaWithAvatarResponse(
                 id = TopIdeaId("top-idea-id-two"),
