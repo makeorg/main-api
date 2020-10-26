@@ -31,10 +31,11 @@ import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.core.auth.{Client, ClientId, UserRights}
 import org.make.core.user.{CustomRole, Role, UserId}
-import org.make.core.{HttpCodes, Validation}
+import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider._
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Api(value = "Client OAuth")
 @Path(value = "/admin/clients")
@@ -139,7 +140,8 @@ trait DefaultAdminClientApiComponent
     extends AdminClientApiComponent
     with MakeDirectives
     with MakeAuthenticationDirectives
-    with StrictLogging {
+    with StrictLogging
+    with ParameterExtractors {
   self: MakeDataHandlerComponent
     with IdGeneratorComponent
     with MakeSettingsComponent
@@ -231,11 +233,11 @@ trait DefaultAdminClientApiComponent
     override def listClients: Route = get {
       path("admin" / "clients") {
         makeOperation("AdminListOauthClient") { _ =>
-          parameters("_start".as[Int].?, "_end".as[Int].?, "name".?) { (start, end, name) =>
+          parameters("_start".as[Start].?, "_end".as[End].?, "name".?) { (start, end, name) =>
             makeOAuth2 { userAuth: AuthInfo[UserRights] =>
               requireAdminRole(userAuth.user) {
                 provideAsync(clientService.count(name)) { count =>
-                  onSuccess(clientService.search(start.getOrElse(0), end, name)) { clients =>
+                  onSuccess(clientService.search(start.orZero, end, name)) { clients =>
                     complete((StatusCodes.OK, List(`X-Total-Count`(count.toString)), clients.map(ClientResponse.apply)))
                   }
                 }

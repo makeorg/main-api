@@ -28,6 +28,7 @@ import org.make.core.reference.{Country, Language}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class PersistentPartnerServiceIT
     extends DatabaseTest
@@ -85,7 +86,7 @@ class PersistentPartnerServiceIT
         partners <- persistentPartnerService.find(
           questionId = None,
           organisationId = None,
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -110,7 +111,7 @@ class PersistentPartnerServiceIT
         partners <- persistentPartnerService.find(
           questionId = Some(QuestionId("question2")),
           organisationId = None,
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -134,7 +135,7 @@ class PersistentPartnerServiceIT
         partners <- persistentPartnerService.find(
           questionId = None,
           organisationId = None,
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,

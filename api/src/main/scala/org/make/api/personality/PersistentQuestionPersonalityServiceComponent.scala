@@ -33,6 +33,7 @@ import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentQuestionPersonalityServiceComponent {
   def persistentQuestionPersonalityService: PersistentQuestionPersonalityService
@@ -43,8 +44,8 @@ trait PersistentQuestionPersonalityService {
   def modify(personality: Personality): Future[Personality]
   def getById(personalityId: PersonalityId): Future[Option[Personality]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     userId: Option[UserId],
@@ -114,8 +115,8 @@ trait DefaultPersistentQuestionPersonalityServiceComponent extends PersistentQue
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       userId: Option[UserId],

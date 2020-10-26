@@ -38,6 +38,7 @@ import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait OperationOfQuestionService {
   // TODO: do we really need all these to be separate?
@@ -45,8 +46,8 @@ trait OperationOfQuestionService {
   def findByOperationId(operationId: OperationId): Future[Seq[OperationOfQuestion]]
   def findByQuestionSlug(slug: String): Future[Option[OperationOfQuestion]]
   def find(
-    start: Int = 0,
-    end: Option[Int] = None,
+    start: Start = Start.zero,
+    end: Option[End] = None,
     sort: Option[String] = None,
     order: Option[Order] = None,
     request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()
@@ -124,8 +125,8 @@ trait DefaultOperationOfQuestionServiceComponent extends OperationOfQuestionServ
       elasticsearchOperationOfQuestionAPI.count(query)
 
     override def find(
-      start: Int = 0,
-      end: Option[Int] = None,
+      start: Start = Start.zero,
+      end: Option[End] = None,
       sort: Option[String] = None,
       order: Option[Order] = None,
       request: SearchOperationsOfQuestions = SearchOperationsOfQuestions()

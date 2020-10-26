@@ -27,6 +27,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
+import org.make.core.technical.Pagination.Start
 
 class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClientServiceComponent {
 
@@ -143,7 +144,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
 
       val futureClientsLists: Future[Seq[Client]] = for {
         _            <- futurePersistedClientList
-        foundClients <- persistentClientService.search(start = 0, end = None, name = None)
+        foundClients <- persistentClientService.search(start = Start.zero, end = None, name = None)
       } yield foundClients
 
       whenReady(futureClientsLists, Timeout(3.seconds)) { clientsList =>
@@ -162,7 +163,7 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
 
       val futureClientsLists: Future[Seq[Client]] = for {
         _            <- futurePersistedClientList
-        foundClients <- persistentClientService.search(start = 0, end = None, name = Some("name-toto"))
+        foundClients <- persistentClientService.search(start = Start.zero, end = None, name = Some("name-toto"))
       } yield foundClients
 
       whenReady(futureClientsLists, Timeout(3.seconds)) { clientsList =>

@@ -29,6 +29,7 @@ import org.make.core.user.{CustomRole, UserId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait ClientServiceComponent {
   def clientService: ClientService
@@ -46,7 +47,7 @@ trait ClientService {
     roles: Seq[CustomRole],
     tokenExpirationSeconds: Int
   ): Future[Client]
-  def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]]
+  def search(start: Start, end: Option[End], name: Option[String]): Future[Seq[Client]]
   def updateClient(
     clientId: ClientId,
     name: String,
@@ -116,7 +117,7 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
       )
     }
 
-    override def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]] = {
+    override def search(start: Start, end: Option[End], name: Option[String]): Future[Seq[Client]] = {
       persistentClientService.search(start = start, end = end, name = name)
     }
 

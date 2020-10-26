@@ -39,6 +39,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.user.{User, UserId, UserType}
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class PersonalityApiTest
     extends MakeApiTestBase
@@ -339,7 +340,7 @@ class PersonalityApiTest
     Scenario("personality not in question") {
       when(
         questionPersonalityService.find(
-          eqTo(0),
+          eqTo(Start.zero),
           eqTo(None),
           eqTo(None),
           eqTo(None),
@@ -359,7 +360,7 @@ class PersonalityApiTest
     Scenario("empty list of top ideas") {
       when(
         questionPersonalityService.find(
-          eqTo(0),
+          eqTo(Start.zero),
           eqTo(None),
           eqTo(None),
           eqTo(None),
@@ -416,7 +417,7 @@ class PersonalityApiTest
     Scenario("all comments") {
       when(
         questionPersonalityService.find(
-          eqTo(0),
+          eqTo(Start.zero),
           eqTo(None),
           eqTo(None),
           eqTo(None),

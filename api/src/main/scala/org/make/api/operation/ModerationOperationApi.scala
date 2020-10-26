@@ -36,6 +36,7 @@ import org.make.core.auth.UserRights
 import org.make.core.operation._
 import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
+import org.make.core.technical.Pagination._
 
 @Api(
   value = "Moderation Operation",
@@ -241,16 +242,16 @@ trait DefaultModerationOperationApiComponent
         path("moderation" / "operations") {
           makeOperation("ModerationGetOperations") { _ =>
             parameters(
-              "_start".as[Int].?,
-              "_end".as[Int].?,
+              "_start".as[Start].?,
+              "_end".as[End].?,
               "_sort".?,
               "_order".as[Order].?,
               "slug".?,
               "operationKind".csv[OperationKind]
             ) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
                 slug: Option[String],
@@ -262,7 +263,7 @@ trait DefaultModerationOperationApiComponent
                       provideAsync(
                         operationService
                           .findSimple(
-                            start = start.getOrElse(0),
+                            start = start.orZero,
                             end = end,
                             sort = sort,
                             order = order,

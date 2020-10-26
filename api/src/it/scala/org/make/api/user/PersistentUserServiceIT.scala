@@ -33,6 +33,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.{End, Start}
 
 class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserServiceComponent {
 
@@ -536,7 +537,13 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     Scenario("find organisations with params") {
       whenReady(
         persistentUserService
-          .findOrganisations(start = 0, end = Some(2), sort = Some("organisation_name"), order = Some(Order.asc), None)
+          .findOrganisations(
+            start = Start.zero,
+            end = Some(End(2)),
+            sort = Some("organisation_name"),
+            order = Some(Order.asc),
+            None
+          )
       ) { organisations =>
         organisations.size should be(2)
         organisations.head.userId shouldBe UserId("CIA")
@@ -545,18 +552,20 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     }
 
     Scenario(("find organisation with organisation name filter")) {
-      whenReady(persistentUserService.findOrganisations(start = 0, end = None, sort = None, order = None, Some("CIA"))) {
-        organisations =>
-          organisations.size should be(1)
-          organisations.head.userId should be(UserId("CIA"))
+      whenReady(
+        persistentUserService.findOrganisations(start = Start.zero, end = None, sort = None, order = None, Some("CIA"))
+      ) { organisations =>
+        organisations.size should be(1)
+        organisations.head.userId should be(UserId("CIA"))
       }
     }
 
     Scenario(("find organisation with organisation name filter - check case insensitivity")) {
-      whenReady(persistentUserService.findOrganisations(start = 0, end = None, sort = None, order = None, Some("cia"))) {
-        organisations =>
-          organisations.size should be(1)
-          organisations.head.userId should be(UserId("CIA"))
+      whenReady(
+        persistentUserService.findOrganisations(start = Start.zero, end = None, sort = None, order = None, Some("cia"))
+      ) { organisations =>
+        organisations.size should be(1)
+        organisations.head.userId should be(UserId("CIA"))
       }
     }
   }
@@ -565,8 +574,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     Scenario("find all moderators") {
       whenReady(
         persistentUserService.adminFindUsers(
-          start = 0,
-          limit = None,
+          start = Start.zero,
+          end = None,
           sort = None,
           order = None,
           email = None,
@@ -585,8 +594,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(
         persistentUserService
           .adminFindUsers(
-            start = 0,
-            limit = None,
+            start = Start.zero,
+            end = None,
             sort = None,
             order = None,
             email = Some("doe@example.com"),

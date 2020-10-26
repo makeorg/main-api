@@ -35,6 +35,7 @@ import org.make.core.tag.TagId
 import org.make.core.{HttpCodes, Order, ParameterExtractors}
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Path("/admin/idea-mappings")
 @Api(value = "Admin Idea Mappings")
@@ -225,8 +226,8 @@ trait DefaultAdminIdeaMappingApiComponent
     override def search: Route = get {
       path("admin" / "idea-mappings") {
         parameters(
-          "_start".as[Int].?,
-          "_end".as[Int].?,
+          "_start".as[Start].?,
+          "_end".as[End].?,
           "_sort".?,
           "_order".as[Order].?,
           "questionId".as[QuestionId].?,
@@ -235,8 +236,8 @@ trait DefaultAdminIdeaMappingApiComponent
           "ideaId".as[IdeaId].?
         ) {
           (
-            start: Option[Int],
-            end: Option[Int],
+            start: Option[Start],
+            end: Option[End],
             sort: Option[String],
             order: Option[Order],
             questionId: Option[QuestionId],
@@ -250,7 +251,7 @@ trait DefaultAdminIdeaMappingApiComponent
                   provideAsync(ideaMappingService.count(questionId, stakeTagId, solutionTypeTagId, ideaId)) { count =>
                     provideAsync(
                       ideaMappingService
-                        .search(start.getOrElse(0), end, sort, order, questionId, stakeTagId, solutionTypeTagId, ideaId)
+                        .search(start.orZero, end, sort, order, questionId, stakeTagId, solutionTypeTagId, ideaId)
                     ) { mappings =>
                       complete(
                         (

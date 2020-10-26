@@ -29,6 +29,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class DefaultPersistentCrmTemplatesServiceComponentIT
     extends DatabaseTest
@@ -183,16 +184,19 @@ class DefaultPersistentCrmTemplatesServiceComponentIT
 
       waitForCompletion(insertDependencies)
 
-      whenReady(persistentCrmTemplatesService.find(0, None, Some(questionId1), None), Timeout(2.seconds)) { result =>
-        result.map(_.crmTemplatesId.value).sorted should be(Seq("template-id-1"))
+      whenReady(persistentCrmTemplatesService.find(Start.zero, None, Some(questionId1), None), Timeout(2.seconds)) {
+        result =>
+          result.map(_.crmTemplatesId.value).sorted should be(Seq("template-id-1"))
       }
 
-      whenReady(persistentCrmTemplatesService.find(0, None, Some(questionId2), None), Timeout(2.seconds)) { result =>
-        result.map(_.crmTemplatesId.value).sorted should be(Seq("template-id-2"))
+      whenReady(persistentCrmTemplatesService.find(Start.zero, None, Some(questionId2), None), Timeout(2.seconds)) {
+        result =>
+          result.map(_.crmTemplatesId.value).sorted should be(Seq("template-id-2"))
       }
 
-      whenReady(persistentCrmTemplatesService.find(0, None, None, Some("fr_FR")), Timeout(2.seconds)) { result =>
-        result.map(_.crmTemplatesId.value) should contain("template-id-4")
+      whenReady(persistentCrmTemplatesService.find(Start.zero, None, None, Some("fr_FR")), Timeout(2.seconds)) {
+        result =>
+          result.map(_.crmTemplatesId.value) should contain("template-id-4")
       }
 
       whenReady(persistentCrmTemplatesService.count(Some(QuestionId("unknown")), None)) { _ should be(0) }

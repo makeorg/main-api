@@ -33,6 +33,7 @@ import org.make.core.auth.UserRights
 import org.make.core.feature.{Feature, FeatureId}
 import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
+import org.make.core.technical.Pagination._
 
 import scala.annotation.meta.field
 
@@ -216,10 +217,10 @@ trait DefaultAdminFeatureApiComponent
       get {
         path("admin" / "features") {
           makeOperation("AdminSearchFeature") { _ =>
-            parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "slug".?) {
+            parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "slug".?) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
                 maybeSlug: Option[String]
@@ -229,7 +230,7 @@ trait DefaultAdminFeatureApiComponent
                     provideAsync(featureService.count(slug = maybeSlug)) { count =>
                       onSuccess(
                         featureService
-                          .find(start = start.getOrElse(0), end = end, sort = sort, order = order, slug = maybeSlug)
+                          .find(start = start.orZero, end = end, sort = sort, order = order, slug = maybeSlug)
                       ) { filteredFeatures =>
                         complete(
                           (

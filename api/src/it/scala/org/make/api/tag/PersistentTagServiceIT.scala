@@ -33,6 +33,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.{End, Start}
 
 class PersistentTagServiceIT
     extends DatabaseTest
@@ -374,8 +375,8 @@ class PersistentTagServiceIT
         _ <- persistentTagTypeService.persist(tagTypeEighth)
         _ <- persistentTagService.persist(calliope)
         result <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
+          start = Start.zero,
+          end = Some(End(10)),
           sort = None,
           order = None,
           onlyDisplayed = false,
@@ -405,16 +406,16 @@ class PersistentTagServiceIT
         _ <- persistentTagService.persist(athena)
         _ <- persistentTagService.persist(ariane)
         resultFirst <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
+          start = Start.zero,
+          end = Some(End(10)),
           sort = None,
           order = None,
           onlyDisplayed = false,
           persistentTagFilter = PersistentTagFilter.empty.copy(questionId = Some(questionFirst.questionId))
         )
         resultSecond <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
+          start = Start.zero,
+          end = Some(End(10)),
           sort = None,
           order = None,
           onlyDisplayed = false,
@@ -450,8 +451,8 @@ class PersistentTagServiceIT
         _ <- persistentTagTypeService.persist(tagTypeThird)
         _ <- persistentTagService.persist(clio)
         result <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
+          start = Start.zero,
+          end = Some(End(10)),
           sort = None,
           order = None,
           onlyDisplayed = false,
@@ -475,8 +476,8 @@ class PersistentTagServiceIT
         _ <- persistentTagTypeService.persist(tagTypeFourth)
         _ <- persistentTagService.persist(thalia)
         result <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
+          start = Start.zero,
+          end = Some(End(10)),
           sort = None,
           order = None,
           onlyDisplayed = false,
@@ -498,7 +499,7 @@ class PersistentTagServiceIT
       When("I search tags by onlyDisplayed")
       val futureTagListResultOnlyDisplayed: Future[Seq[Tag]] = for {
         result <- persistentTagService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -526,8 +527,8 @@ class PersistentTagServiceIT
         _ <- persistentOperationService.persist(fakeOperation.copy(operationId = operationIdThird, slug = "ope-third"))
         _ <- persistentTagService.persist(hera)
         result <- persistentTagService.find(
-          start = 0,
-          end = Some(10),
+          start = Start.zero,
+          end = Some(End(10)),
           sort = None,
           order = None,
           onlyDisplayed = false,

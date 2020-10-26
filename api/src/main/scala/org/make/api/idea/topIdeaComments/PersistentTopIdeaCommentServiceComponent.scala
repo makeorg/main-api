@@ -21,18 +21,21 @@ package org.make.api.idea.topIdeaComments
 
 import java.time.ZonedDateTime
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeDBExecutionContextComponent
 import org.make.api.idea.topIdeaComments.DefaultPersistentTopIdeaCommentServiceComponent.PersistentTopIdeaComment
 import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ScalikeSupport._
-import org.make.api.technical.ShortenedNames
+import org.make.api.technical.{PersistentCompanion, ShortenedNames}
 import org.make.core.DateHelper
 import org.make.core.idea._
 import org.make.core.user.UserId
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
+import org.make.api.technical.PersistentServiceUtils.sortOrderQuery
 
 trait PersistentTopIdeaCommentServiceComponent {
   def persistentTopIdeaCommentService: PersistentTopIdeaCommentService
@@ -44,8 +47,8 @@ trait PersistentTopIdeaCommentService {
   def modify(topIdeaComment: TopIdeaComment): Future[TopIdeaComment]
   def remove(topIdeaCommentId: TopIdeaCommentId): Future[Unit]
   def search(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     topIdeaIds: Option[Seq[TopIdeaId]],
     personalityIds: Option[Seq[UserId]]
   ): Future[Seq[TopIdeaComment]]
@@ -64,7 +67,7 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
       with ShortenedNames
       with StrictLogging {
 
-    private val topIdeaCommentAlias = PersistentTopIdeaComment.topIdeaCommentAlias
+    private val topIdeaCommentAlias = PersistentTopIdeaComment.alias
     private val column = PersistentTopIdeaComment.column
 
     override def getById(topIdeaCommentId: TopIdeaCommentId): Future[Option[TopIdeaComment]] = {
@@ -137,8 +140,8 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
     }
 
     override def search(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       topIdeaIds: Option[Seq[TopIdeaId]],
       personalityIds: Option[Seq[UserId]]
     ): Future[Seq[TopIdeaComment]] = {
@@ -154,13 +157,8 @@ trait DefaultPersistentTopIdeaCommentServiceComponent extends PersistentTopIdeaC
                 personalityIds.map(ids => sqls.in(topIdeaCommentAlias.personalityId, ids.map(_.value)))
               )
             )
-            .orderBy(topIdeaCommentAlias.createdAt)
-            .asc
 
-          end match {
-            case Some(limit) => query.limit(limit)
-            case None        => query
-          }
+          sortOrderQuery(start, end, None, None, query)
         }.map(PersistentTopIdeaComment.apply()).list().apply()
       })
 
@@ -229,8 +227,8 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
       )
   }
 
-  object PersistentTopIdeaComment
-      extends SQLSyntaxSupport[PersistentTopIdeaComment]
+  implicit object PersistentTopIdeaComment
+      extends PersistentCompanion[PersistentTopIdeaComment, TopIdeaComment]
       with ShortenedNames
       with StrictLogging {
 
@@ -250,10 +248,12 @@ object DefaultPersistentTopIdeaCommentServiceComponent {
 
     override val tableName: String = "top_idea_comment"
 
-    lazy val topIdeaCommentAlias: SyntaxProvider[PersistentTopIdeaComment] = syntax("top_idea_comment")
+    override lazy val alias: SyntaxProvider[PersistentTopIdeaComment] = syntax("top_idea_comment")
+
+    override lazy val defaultSortColumns: NonEmptyList[SQLSyntax] = NonEmptyList.of(alias.createdAt)
 
     def apply(
-      topIdeaCommentResultName: ResultName[PersistentTopIdeaComment] = topIdeaCommentAlias.resultName
+      topIdeaCommentResultName: ResultName[PersistentTopIdeaComment] = alias.resultName
     )(resultSet: WrappedResultSet): PersistentTopIdeaComment = {
       PersistentTopIdeaComment.apply(
         id = resultSet.string(topIdeaCommentResultName.id),

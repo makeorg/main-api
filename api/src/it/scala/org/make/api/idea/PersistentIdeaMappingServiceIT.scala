@@ -31,6 +31,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.{End, Start}
 
 class PersistentIdeaMappingServiceIT
     extends DatabaseTest
@@ -44,8 +45,8 @@ class PersistentIdeaMappingServiceIT
   def persistMapping(mapping: IdeaMapping): Future[IdeaMapping] = persistentIdeaMappingService.persist(mapping)
 
   val findMapping: (
-    Int,
-    Option[Int],
+    Start,
+    Option[End],
     Option[String],
     Option[Order],
     Option[QuestionId],
@@ -197,34 +198,43 @@ class PersistentIdeaMappingServiceIT
 
       waitForCompletion(insertDependencies)
 
-      whenReady(findMapping(0, None, None, None, None, Some(Right(tag1)), None, None), Timeout(5.seconds)) { results =>
-        results.map(_.id.value).sorted should be(Seq("find-1", "find-2", "find-6"))
-      }
-
-      whenReady(findMapping(0, None, None, None, None, None, Some(Right(tag1)), None), Timeout(5.seconds)) { results =>
-        results should be(empty)
-      }
-
-      whenReady(findMapping(0, None, None, None, None, None, None, Some(idea2)), Timeout(5.seconds)) { results =>
-        results.map(_.id.value).sorted should be(Seq("find-3", "find-5", "find-6"))
-      }
-
-      whenReady(findMapping(0, None, None, None, None, Some(Left(None)), None, None), Timeout(5.seconds)) { results =>
-        results.map(_.id.value).filter(_.startsWith("find")).sorted should be(Seq("find-5", "find-7", "find-8"))
-      }
-
-      whenReady(findMapping(0, None, None, None, None, None, Some(Left(None)), None), Timeout(5.seconds)) { results =>
-        results.map(_.id.value).filter(_.startsWith("find")).sorted should be(Seq("find-6", "find-7", "find-8"))
-      }
-
-      whenReady(findMapping(0, None, None, None, Some(questionId1), None, Some(Left(None)), None), Timeout(5.seconds)) {
+      whenReady(findMapping(Start.zero, None, None, None, None, Some(Right(tag1)), None, None), Timeout(5.seconds)) {
         results =>
-          results.map(_.id.value).sorted should be(Seq("find-6", "find-7"))
+          results.map(_.id.value).sorted should be(Seq("find-1", "find-2", "find-6"))
       }
 
-      whenReady(findMapping(0, None, None, None, Some(questionId2), None, Some(Left(None)), None), Timeout(5.seconds)) {
+      whenReady(findMapping(Start.zero, None, None, None, None, None, Some(Right(tag1)), None), Timeout(5.seconds)) {
         results =>
-          results.map(_.id.value).sorted should be(Seq("find-8"))
+          results should be(empty)
+      }
+
+      whenReady(findMapping(Start.zero, None, None, None, None, None, None, Some(idea2)), Timeout(5.seconds)) {
+        results =>
+          results.map(_.id.value).sorted should be(Seq("find-3", "find-5", "find-6"))
+      }
+
+      whenReady(findMapping(Start.zero, None, None, None, None, Some(Left(None)), None, None), Timeout(5.seconds)) {
+        results =>
+          results.map(_.id.value).filter(_.startsWith("find")).sorted should be(Seq("find-5", "find-7", "find-8"))
+      }
+
+      whenReady(findMapping(Start.zero, None, None, None, None, None, Some(Left(None)), None), Timeout(5.seconds)) {
+        results =>
+          results.map(_.id.value).filter(_.startsWith("find")).sorted should be(Seq("find-6", "find-7", "find-8"))
+      }
+
+      whenReady(
+        findMapping(Start.zero, None, None, None, Some(questionId1), None, Some(Left(None)), None),
+        Timeout(5.seconds)
+      ) { results =>
+        results.map(_.id.value).sorted should be(Seq("find-6", "find-7"))
+      }
+
+      whenReady(
+        findMapping(Start.zero, None, None, None, Some(questionId2), None, Some(Left(None)), None),
+        Timeout(5.seconds)
+      ) { results =>
+        results.map(_.id.value).sorted should be(Seq("find-8"))
       }
     }
 

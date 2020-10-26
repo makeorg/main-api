@@ -30,6 +30,7 @@ import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
 import org.make.core.Order
 import scalikejdbc._
+import org.make.core.technical.Pagination._
 
 import scala.concurrent.Future
 
@@ -42,8 +43,8 @@ trait PersistentActiveFeatureService {
   def persist(activeFeature: ActiveFeature): Future[ActiveFeature]
   def remove(activeFeatureId: ActiveFeatureId): Future[Unit]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     maybeQuestionId: Option[QuestionId]
@@ -106,8 +107,8 @@ trait DefaultPersistentActiveFeatureServiceComponent extends PersistentActiveFea
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       maybeQuestionId: Option[QuestionId]

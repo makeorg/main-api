@@ -21,27 +21,28 @@ package org.make.api.technical
 
 import org.make.core.Order
 import scalikejdbc.PagingSQLBuilder
+import org.make.core.technical.Pagination._
 
 object PersistentServiceUtils {
 
   def sortOrderQuery[Persistent, Model](
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     query: PagingSQLBuilder[Persistent]
   )(implicit companion: PersistentCompanion[Persistent, Model]): PagingSQLBuilder[Persistent] = {
     val queryOrdered = (sort, order) match {
       case (Some(field), Some(Order.desc)) if companion.columnNames.contains(field) =>
-        query.orderBy(companion.alias.field(field)).desc.offset(start)
+        query.orderBy(companion.alias.field(field)).desc.offset(start.value)
       case (Some(field), _) if companion.columnNames.contains(field) =>
-        query.orderBy(companion.alias.field(field)).asc.offset(start)
-      case (_, _) => query.orderBy(companion.defaultSortColumns.toList: _*).asc.offset(start)
+        query.orderBy(companion.alias.field(field)).asc.offset(start.value)
+      case (_, _) => query.orderBy(companion.defaultSortColumns.toList: _*).asc.offset(start.value)
     }
 
     end match {
-      case Some(limit) => queryOrdered.limit(limit)
-      case None        => queryOrdered
+      case Some(End(value)) => queryOrdered.limit(value - start.value)
+      case None             => queryOrdered
     }
   }
 

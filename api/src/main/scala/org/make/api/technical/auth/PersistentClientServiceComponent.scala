@@ -34,6 +34,7 @@ import org.make.core.user.{Role, UserId}
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentClientServiceComponent {
   def persistentClientService: PersistentClientService
@@ -125,7 +126,7 @@ trait PersistentClientService {
   def findByClientIdAndSecret(clientId: String, secret: Option[String]): Future[Option[Client]]
   def persist(client: Client): Future[Client]
   def update(client: Client): Future[Option[Client]]
-  def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]]
+  def search(start: Start, end: Option[End], name: Option[String]): Future[Seq[Client]]
   def count(name: Option[String]): Future[Int]
 }
 
@@ -227,7 +228,7 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
       }
     }
 
-    override def search(start: Int, end: Option[Int], name: Option[String]): Future[Seq[Client]] = {
+    override def search(start: Start, end: Option[End], name: Option[String]): Future[Seq[Client]] = {
       implicit val context: EC = readExecutionContext
 
       val futurePersistentClients: Future[List[PersistentClient]] = Future(NamedDB("READ").retryableTx {

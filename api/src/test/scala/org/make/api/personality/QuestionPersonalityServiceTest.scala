@@ -41,6 +41,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class QuestionPersonalityServiceTest
     extends MakeUnitTest
@@ -144,11 +145,11 @@ class QuestionPersonalityServiceTest
       ).thenReturn(Future.successful(OperationOfQuestionSearchResult(total = 0L, results = Seq.empty)))
       when(
         topIdeaService
-          .search(eqTo(0), eqTo(None), eqTo(None), eqTo(None), eqTo(None), eqTo(Some(Seq.empty)), eqTo(None))
+          .search(eqTo(Start.zero), eqTo(None), eqTo(None), eqTo(None), eqTo(None), eqTo(Some(Seq.empty)), eqTo(None))
       ).thenReturn(Future.successful(Seq.empty))
       when(
         topIdeaCommentService
-          .search(eqTo(0), eqTo(None), eqTo(Some(Seq.empty)), eqTo(Some(Seq.empty)))
+          .search(eqTo(Start.zero), eqTo(None), eqTo(Some(Seq.empty)), eqTo(Some(Seq.empty)))
       ).thenReturn(Future.successful(Seq.empty))
       when(topIdeaCommentService.countForAll(eqTo(Seq.empty)))
         .thenReturn(Future.successful(Map.empty))
@@ -166,7 +167,7 @@ class QuestionPersonalityServiceTest
     Scenario("all comments") {
       when(
         questionPersonalityService.find(
-          eqTo(0),
+          eqTo(Start.zero),
           eqTo(None),
           eqTo(None),
           eqTo(None),
@@ -293,7 +294,7 @@ class QuestionPersonalityServiceTest
       )
       when(
         topIdeaService.search(
-          eqTo(0),
+          eqTo(Start.zero),
           eqTo(None),
           eqTo(None),
           eqTo(None),
@@ -328,7 +329,7 @@ class QuestionPersonalityServiceTest
       when(
         topIdeaCommentService
           .search(
-            eqTo(0),
+            eqTo(Start.zero),
             eqTo(None),
             eqTo(Some(Seq(TopIdeaId("top-idea-id"), TopIdeaId("top-idea-id-2")))),
             eqTo(Some(Seq(UserId("personality-id"))))

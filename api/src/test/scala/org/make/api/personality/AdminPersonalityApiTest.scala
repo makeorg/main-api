@@ -26,6 +26,7 @@ import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.user.{PersonalityRegisterData, UserService, UserServiceComponent}
 import org.make.api.{MakeApiTestBase, TestUtils}
 import org.make.core.RequestContext
+import org.make.core.technical.Pagination.Start
 import org.make.core.user.{User, UserId, UserType}
 
 import scala.concurrent.Future
@@ -171,8 +172,8 @@ class AdminPersonalityApiTest
 
       when(
         userService.adminFindUsers(
-          start = 0,
-          limit = None,
+          start = Start.zero,
+          end = None,
           sort = None,
           order = None,
           email = None,

@@ -38,6 +38,7 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 @Api(value = "Moderation Tags")
 @Path(value = "/moderation/tags")
@@ -229,8 +230,8 @@ trait DefaultModerationTagApiComponent
         path("moderation" / "tags") {
           makeOperation("ModerationSearchTag") { _ =>
             parameters(
-              "_start".as[Int].?,
-              "_end".as[Int].?,
+              "_start".as[Start].?,
+              "_end".as[End].?,
               "_sort".?,
               "_order".as[Order].?,
               "label".?,
@@ -238,8 +239,8 @@ trait DefaultModerationTagApiComponent
               "questionId".as[QuestionId].?
             ) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
                 maybeLabel: Option[String],
@@ -255,7 +256,7 @@ trait DefaultModerationTagApiComponent
                     ) { count =>
                       onSuccess(
                         tagService.find(
-                          start = start.getOrElse(0),
+                          start = start.orZero,
                           end = end,
                           sort = sort,
                           order = order,

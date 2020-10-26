@@ -31,6 +31,7 @@ import org.make.core.{DateHelper, Order, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait TagServiceComponent {
   def tagService: TagService
@@ -71,8 +72,8 @@ trait TagService extends ShortenedNames {
   ): Future[Option[Tag]]
   def retrieveIndexedTags(tags: Seq[Tag], tagTypes: Seq[TagType]): Seq[IndexedTag]
   def find(
-    start: Int = 0,
-    end: Option[Int] = None,
+    start: Start = Start.zero,
+    end: Option[End] = None,
     sort: Option[String] = None,
     order: Option[Order] = None,
     onlyDisplayed: Boolean = false,
@@ -197,8 +198,8 @@ trait DefaultTagServiceComponent
     }
 
     override def find(
-      start: Int = 0,
-      end: Option[Int] = None,
+      start: Start = Start.zero,
+      end: Option[End] = None,
       sort: Option[String] = None,
       order: Option[Order] = None,
       onlyDisplayed: Boolean = false,

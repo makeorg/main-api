@@ -24,6 +24,7 @@ import org.make.core.question.QuestionId
 import org.make.core.Order
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait TopIdeaService {
   def create(
@@ -36,8 +37,8 @@ trait TopIdeaService {
   ): Future[TopIdea]
   def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]]
   def search(
-    start: Int = 0,
-    end: Option[Int] = None,
+    start: Start = Start.zero,
+    end: Option[End] = None,
     sort: Option[String] = None,
     order: Option[Order] = None,
     ideaId: Option[IdeaId],
@@ -82,8 +83,8 @@ trait DefaultTopIdeaServiceComponent extends TopIdeaServiceComponent {
     }
 
     override def search(
-      start: Int = 0,
-      end: Option[Int] = None,
+      start: Start = Start.zero,
+      end: Option[End] = None,
       sort: Option[String] = None,
       order: Option[Order] = None,
       ideaId: Option[IdeaId],

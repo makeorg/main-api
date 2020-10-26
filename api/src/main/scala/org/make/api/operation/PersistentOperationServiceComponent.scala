@@ -45,6 +45,7 @@ import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentOperationServiceComponent {
   def persistentOperationService: PersistentOperationService
@@ -57,8 +58,8 @@ trait PersistentOperationService {
     openAt: Option[LocalDate] = None
   ): Future[Seq[Operation]]
   def findSimple(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     slug: Option[String] = None,
@@ -103,7 +104,7 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
       openAt: Option[LocalDate]
     ): Option[SQLSyntax] =
       sqls.toAndConditionOpt(
-        slug.map(slug              => sqls.eq(operationAlias.slug, slug)),
+        slug.map(slug              => sqls.like(operationAlias.slug, s"%$slug%")),
         operationKinds.map(opKinds => sqls.in(operationAlias.operationKind, opKinds)),
         country.map(country        => sqls.like(questionAlias.countries, s"%${country.value}%")),
         openAt.map(
@@ -146,8 +147,8 @@ trait DefaultPersistentOperationServiceComponent extends PersistentOperationServ
     }
 
     override def findSimple(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       slug: Option[String] = None,

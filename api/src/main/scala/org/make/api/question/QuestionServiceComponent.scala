@@ -40,6 +40,7 @@ import org.make.core.{Order, ValidationError, ValidationFailedError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait QuestionService {
   def getQuestion(questionId: QuestionId): Future[Option[Question]]
@@ -60,8 +61,8 @@ trait QuestionService {
     slug: String
   ): Future[Question]
   def getQuestionPersonalities(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     questionId: QuestionId,
     personalityRoleId: Option[PersonalityRoleId]
   ): Future[Seq[QuestionPersonalityResponse]]
@@ -73,8 +74,8 @@ trait QuestionService {
     skip: Option[Int]
   ): Future[OrganisationSearchResult]
   def getTopIdeas(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     seed: Option[Int],
     questionId: QuestionId
   ): Future[QuestionTopIdeasResponseWithSeed]
@@ -91,8 +92,8 @@ final case class SearchQuestionRequest(
   country: Option[Country] = None,
   language: Option[Language] = None,
   maybeSlug: Option[String] = None,
-  skip: Option[Int] = None,
-  limit: Option[Int] = None,
+  skip: Option[Start] = None,
+  end: Option[End] = None,
   sort: Option[String] = None,
   order: Option[Order] = None
 )
@@ -185,8 +186,8 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     }
 
     override def getQuestionPersonalities(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       questionId: QuestionId,
       personalityRoleId: Option[PersonalityRoleId]
     ): Future[Seq[QuestionPersonalityResponse]] = {
@@ -249,8 +250,8 @@ trait DefaultQuestionService extends QuestionServiceComponent {
     }
 
     override def getTopIdeas(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       seed: Option[Int],
       questionId: QuestionId
     ): Future[QuestionTopIdeasResponseWithSeed] = {

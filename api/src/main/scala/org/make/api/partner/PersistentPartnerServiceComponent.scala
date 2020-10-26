@@ -34,6 +34,7 @@ import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentPartnerServiceComponent {
   def persistentPartnerService: PersistentPartnerService
@@ -44,8 +45,8 @@ trait PersistentPartnerService {
   def modify(partner: Partner): Future[Partner]
   def getById(partnerId: PartnerId): Future[Option[Partner]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     questionId: Option[QuestionId],
@@ -122,8 +123,8 @@ trait DefaultPersistentPartnerServiceComponent extends PersistentPartnerServiceC
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       questionId: Option[QuestionId],

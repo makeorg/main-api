@@ -42,6 +42,7 @@ import org.make.core.personality.{
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Api(
   value = "Admin Personality Roles",
@@ -329,21 +330,20 @@ trait DefaultAdminPersonalityRoleApiComponent
     override def listPersonalityRoles: Route = get {
       path("admin" / "personality-roles") {
         makeOperation("GetPersonalityRoles") { _ =>
-          parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "name".?) {
-            (start: Option[Int], end: Option[Int], sort: Option[String], order: Option[Order], name: Option[String]) =>
+          parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "name".?) {
+            (
+              start: Option[Start],
+              end: Option[End],
+              sort: Option[String],
+              order: Option[Order],
+              name: Option[String]
+            ) =>
               makeOAuth2 { auth: AuthInfo[UserRights] =>
                 requireAdminRole(auth.user) {
                   provideAsync(personalityRoleService.count(roleIds = None, name = name)) { count =>
                     provideAsync(
                       personalityRoleService
-                        .find(
-                          start = start.getOrElse(0),
-                          end = end,
-                          sort = sort,
-                          order = order,
-                          roleIds = None,
-                          name = name
-                        )
+                        .find(start = start.orZero, end = end, sort = sort, order = order, roleIds = None, name = name)
                     ) { personalityRoles =>
                       complete(
                         (
@@ -438,8 +438,8 @@ trait DefaultAdminPersonalityRoleApiComponent
       path("admin" / "personality-roles" / personalityRoleId / "fields") { personalityRoleId =>
         makeOperation("GetPersonalityRoleFields") { _ =>
           parameters(
-            "_start".as[Int].?,
-            "_end".as[Int].?,
+            "_start".as[Start].?,
+            "_end".as[End].?,
             "_sort".?,
             "_order".as[Order].?,
             "name".?,
@@ -447,8 +447,8 @@ trait DefaultAdminPersonalityRoleApiComponent
             "required".as[Boolean].?
           ) {
             (
-              start: Option[Int],
-              end: Option[Int],
+              start: Option[Start],
+              end: Option[End],
               sort: Option[String],
               order: Option[Order],
               name: Option[String],
@@ -469,7 +469,7 @@ trait DefaultAdminPersonalityRoleApiComponent
                     provideAsync(
                       personalityRoleFieldService
                         .find(
-                          start = start.getOrElse(0),
+                          start = start.orZero,
                           end = end,
                           sort = sort,
                           order = order,

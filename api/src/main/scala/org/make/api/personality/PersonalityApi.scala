@@ -43,6 +43,7 @@ import org.make.core.question.QuestionId
 import org.make.core.user.{User, UserId}
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination.Start
 
 @Api(value = "Personalities")
 @Path(value = "/personalities")
@@ -280,7 +281,7 @@ trait DefaultPersonalityApiComponent
             provideAsyncOrNotFound(userService.getPersonality(userId)) { _ =>
               provideAsync(
                 questionPersonalityService
-                  .find(0, None, None, None, userId = Some(userId), questionId = maybeQuestionId, None)
+                  .find(Start.zero, None, None, None, userId = Some(userId), questionId = maybeQuestionId, None)
               ) {
                 case Seq() => complete(Seq.empty[PersonalityOpinionResponse])
                 case personalities =>

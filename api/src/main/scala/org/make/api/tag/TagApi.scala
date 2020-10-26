@@ -30,6 +30,7 @@ import org.make.api.technical.{IdGeneratorComponent, MakeAuthenticationDirective
 import org.make.core.question.QuestionId
 import org.make.core.tag.TagId
 import org.make.core.{tag, HttpCodes, ParameterExtractors}
+import org.make.core.technical.Pagination._
 
 @Api(value = "Tags")
 @Path(value = "/tags")
@@ -88,11 +89,11 @@ trait DefaultTagApiComponent extends TagApiComponent with MakeAuthenticationDire
     override def listTags: Route = get {
       path("tags") {
         makeOperation("Search") { _ =>
-          parameters("start".as[Int].?, "end".as[Int].?, "questionId".as[QuestionId].?) {
+          parameters("start".as[Start].?, "end".as[End].?, "questionId".as[QuestionId].?) {
             (start, end, maybeQuestionId) =>
               onSuccess(
                 tagService.find(
-                  start = start.getOrElse(0),
+                  start = start.orZero,
                   end = end,
                   onlyDisplayed = true,
                   tagFilter = TagFilter(questionId = maybeQuestionId)

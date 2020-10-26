@@ -32,13 +32,14 @@ import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentIdeaMappingService {
 
   def persist(mapping: IdeaMapping): Future[IdeaMapping]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     questionId: Option[QuestionId],
@@ -84,8 +85,8 @@ trait DefaultPersistentIdeaMappingServiceComponent extends PersistentIdeaMapping
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       questionId: Option[QuestionId],

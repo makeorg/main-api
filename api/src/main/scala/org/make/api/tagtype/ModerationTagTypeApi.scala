@@ -35,6 +35,7 @@ import org.make.core.{HttpCodes, Order, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Api(value = "Moderation Tag Types")
 @Path(value = "/moderation/tag-types")
@@ -232,8 +233,14 @@ trait DefaultModerationTagTypeApiComponent
     override def moderationListTagTypes: Route = get {
       path("moderation" / "tag-types") {
         makeOperation("ModerationSearchTagType") { _ =>
-          parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "label".?) {
-            (start, end, _, _, label_filter) =>
+          parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "label".?) {
+            (
+              start: Option[Start],
+              end: Option[End],
+              _: Option[String],
+              _: Option[Order],
+              label_filter: Option[String]
+            ) =>
               makeOAuth2 { userAuth: AuthInfo[UserRights] =>
                 requireModerationRole(userAuth.user) {
                   onSuccess(tagTypeService.findAll()) { tagTypes =>
@@ -243,7 +250,9 @@ trait DefaultModerationTagTypeApiComponent
                       (
                         StatusCodes.OK,
                         List(`X-Total-Count`(filteredTagTypes.size.toString)),
-                        filteredTagTypes.slice(start.getOrElse(0), end.getOrElse(10)).map(TagTypeResponse.apply)
+                        filteredTagTypes
+                          .slice(start.orZero.value, end.getOrElse(End(10)).value)
+                          .map(TagTypeResponse.apply)
                       )
                     )
                   }

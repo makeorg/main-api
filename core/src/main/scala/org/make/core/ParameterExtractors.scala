@@ -35,6 +35,7 @@ import org.make.core.tag.{TagId, TagTypeId}
 import org.make.core.user.UserId
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.make.core.technical.Pagination._
 
 @SuppressWarnings(Array("org.wartremover.warts.Throw"))
 trait ParameterExtractors {
@@ -125,5 +126,11 @@ trait ParameterExtractors {
     implicit enum: StringEnum[A]
   ): Unmarshaller[String, A] =
     Unmarshaller.strict(s => enum.withValueEither(s).fold(e => throw new Exception(e), identity))
+
+  implicit val startFromIntUnmarshaller: Unmarshaller[String, Start] =
+    Unmarshaller.intFromStringUnmarshaller.map(Start.apply)
+  implicit val endFromIntUnmarshaller: Unmarshaller[String, End] = Unmarshaller.intFromStringUnmarshaller.map(End.apply)
+  implicit val limitFromIntUnmarshaller: Unmarshaller[String, Limit] =
+    Unmarshaller.intFromStringUnmarshaller.map(Limit.apply)
 
 }

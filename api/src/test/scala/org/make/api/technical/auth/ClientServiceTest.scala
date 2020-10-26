@@ -28,6 +28,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class ClientServiceTest
     extends MakeUnitTest
@@ -81,12 +82,12 @@ class ClientServiceTest
 
   Feature("find clients") {
     Scenario("find all clients") {
-      when(persistentClientService.search(start = 0, end = None, name = None))
+      when(persistentClientService.search(start = Start.zero, end = None, name = None))
         .thenReturn(Future.successful(Seq.empty))
-      val futureFindAll: Future[Seq[Client]] = clientService.search(start = 0, end = None, name = None)
+      val futureFindAll: Future[Seq[Client]] = clientService.search(start = Start.zero, end = None, name = None)
 
       whenReady(futureFindAll, Timeout(3.seconds)) { _ =>
-        verify(persistentClientService).search(start = 0, end = None, name = None)
+        verify(persistentClientService).search(start = Start.zero, end = None, name = None)
       }
     }
   }

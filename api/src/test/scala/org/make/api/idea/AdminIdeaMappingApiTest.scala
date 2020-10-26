@@ -31,6 +31,7 @@ import org.make.core.tag.TagId
 import org.make.core.user.UserId
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class AdminIdeaMappingApiTest
     extends MakeApiTestBase
@@ -247,7 +248,7 @@ class AdminIdeaMappingApiTest
       when(
         ideaMappingService
           .search(
-            start = 0,
+            start = Start.zero,
             end = None,
             sort = None,
             order = None,

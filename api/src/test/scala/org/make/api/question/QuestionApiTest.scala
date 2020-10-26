@@ -59,6 +59,7 @@ import org.make.core.{DateHelper, Order, RequestContext}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.{End, Start}
 
 class QuestionApiTest
     extends MakeApiTestBase
@@ -224,7 +225,7 @@ class QuestionApiTest
       partnerService.find(
         questionId = Some(baseQuestion.questionId),
         organisationId = None,
-        start = 0,
+        start = Start.zero,
         end = None,
         sort = Some("weight"),
         order = Some(Order.desc),
@@ -439,8 +440,8 @@ class QuestionApiTest
     Scenario("partners without organisationId") {
       when(
         partnerService.find(
-          eqTo(0),
-          eqTo(Some(1000)),
+          eqTo(Start.zero),
+          eqTo(Some(End(1000))),
           eqTo(None),
           eqTo(None),
           eqTo(Some(QuestionId("question-id"))),
@@ -482,8 +483,8 @@ class QuestionApiTest
         )
       when(
         partnerService.find(
-          eqTo(0),
-          eqTo(Some(1000)),
+          eqTo(Start.zero),
+          eqTo(Some(End(1000))),
           eqTo(None),
           eqTo(None),
           eqTo(Some(QuestionId("question-id"))),
@@ -531,7 +532,7 @@ class QuestionApiTest
 
       when(
         personalityRoleService
-          .find(start = 0, end = None, sort = None, order = None, roleIds = None, name = Some("WRONG"))
+          .find(start = Start.zero, end = None, sort = None, order = None, roleIds = None, name = Some("WRONG"))
       ).thenReturn(Future.successful(Seq.empty))
 
       Get("/questions/question-id/personalities?personalityRole=WRONG") ~> routes ~> check {
@@ -542,14 +543,16 @@ class QuestionApiTest
     Scenario("ok response") {
       when(
         questionService.getQuestionPersonalities(
-          start = 0,
+          start = Start.zero,
           end = None,
           questionId = QuestionId("question-id"),
           personalityRoleId = None
         )
       ).thenReturn(Future.successful(Seq.empty))
-      when(personalityRoleService.find(start = 0, end = None, sort = None, order = None, roleIds = None, name = None))
-        .thenReturn(Future.successful(Seq(PersonalityRole(PersonalityRoleId("candidate"), "CANDIDATE"))))
+      when(
+        personalityRoleService
+          .find(start = Start.zero, end = None, sort = None, order = None, roleIds = None, name = None)
+      ).thenReturn(Future.successful(Seq(PersonalityRole(PersonalityRoleId("candidate"), "CANDIDATE"))))
 
       Get("/questions/question-id/personalities") ~> routes ~> check {
         status should be(StatusCodes.OK)
@@ -562,7 +565,7 @@ class QuestionApiTest
     Scenario("ok response") {
       when(
         questionService.getTopIdeas(
-          start = eqTo(0),
+          start = eqTo(Start.zero),
           end = eqTo(None),
           seed = eqTo(None),
           questionId = eqTo(QuestionId("question-id"))

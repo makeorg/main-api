@@ -30,6 +30,7 @@ import org.make.core.user.UserId
 import org.make.core.Order
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.{End, Start}
 
 class AdminQuestionPersonalityApiTest
     extends MakeApiTestBase
@@ -55,8 +56,8 @@ class AdminQuestionPersonalityApiTest
     when(
       questionPersonalityService
         .find(
-          start = any[Int],
-          end = any[Option[Int]],
+          start = any[Start],
+          end = any[Option[End]],
           sort = any[Option[String]],
           order = any[Option[Order]],
           userId = any[Option[UserId]],
@@ -110,8 +111,8 @@ class AdminQuestionPersonalityApiTest
       when(
         questionPersonalityService
           .find(
-            start = any[Int],
-            end = any[Option[Int]],
+            start = any[Start],
+            end = any[Option[End]],
             sort = any[Option[String]],
             order = any[Option[Order]],
             userId = eqTo(Some(UserId("user-id"))),
@@ -223,7 +224,7 @@ class AdminQuestionPersonalityApiTest
         questionPersonalityService.find(
           questionId = None,
           userId = None,
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -234,7 +235,7 @@ class AdminQuestionPersonalityApiTest
         .thenReturn(Future.successful(1))
       when(
         personalityRoleService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,

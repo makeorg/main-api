@@ -50,6 +50,7 @@ import org.make.core.{user, DateHelper, Order, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait OrganisationServiceComponent {
   def organisationService: OrganisationService
@@ -59,8 +60,8 @@ trait OrganisationService extends ShortenedNames {
   def getOrganisation(id: UserId): Future[Option[User]]
   def getOrganisations: Future[Seq[User]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     organisationName: Option[String]
@@ -145,8 +146,8 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       * sort and order are here to sort the result
       */
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       organisationName: Option[String]

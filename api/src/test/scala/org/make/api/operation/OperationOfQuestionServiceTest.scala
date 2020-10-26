@@ -43,6 +43,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
+import org.make.core.technical.Pagination.{End, Start}
 
 class OperationOfQuestionServiceTest
     extends MakeUnitTest
@@ -83,12 +84,12 @@ class OperationOfQuestionServiceTest
         operationKind = None,
         openAt = None
       )
-      operationOfQuestionService.find(42, Some(84), None, Some(Order.asc), req)
+      operationOfQuestionService.find(Start(42), Some(End(84)), None, Some(Order.asc), req)
 
       verify(persistentOperationOfQuestionService)
         .search(
-          42,
-          Some(84),
+          Start(42),
+          Some(End(84)),
           None,
           Some(Order.asc),
           Some(Seq(QuestionId("q-id"))),

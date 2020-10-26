@@ -34,6 +34,7 @@ import org.make.core.feature.{ActiveFeature, ActiveFeatureId, FeatureId}
 import org.make.core.question.QuestionId
 import org.make.core.{HttpCodes, Order, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
+import org.make.core.technical.Pagination._
 
 import scala.annotation.meta.field
 
@@ -198,15 +199,15 @@ trait DefaultAdminActiveFeatureApiComponent
         path("admin" / "active-features") {
           makeOperation("AdminSearchActiveFeature") { _ =>
             parameters(
-              "_start".as[Int].?,
-              "_end".as[Int].?,
+              "_start".as[Start].?,
+              "_end".as[End].?,
               "_sort".?,
               "_order".as[Order].?,
               "questionId".as[QuestionId].?
             ) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
                 maybeQuestionId: Option[QuestionId]
@@ -217,7 +218,7 @@ trait DefaultAdminActiveFeatureApiComponent
                       onSuccess(
                         activeFeatureService
                           .find(
-                            start = start.getOrElse(0),
+                            start = start.orZero,
                             end = end,
                             sort = sort,
                             order = order,

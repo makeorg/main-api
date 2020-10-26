@@ -31,6 +31,7 @@ import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentFeatureServiceComponent {
   def persistentFeatureService: PersistentFeatureService
@@ -45,8 +46,8 @@ trait PersistentFeatureService {
   def findAll(): Future[Seq[Feature]]
   def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     slug: Option[String]
@@ -159,8 +160,8 @@ trait DefaultPersistentFeatureServiceComponent extends PersistentFeatureServiceC
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       maybeSlug: Option[String]

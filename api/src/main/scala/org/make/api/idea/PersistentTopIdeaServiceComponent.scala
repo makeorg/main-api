@@ -32,6 +32,7 @@ import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentTopIdeaServiceComponent {
   def persistentTopIdeaService: PersistentTopIdeaService
@@ -41,8 +42,8 @@ trait PersistentTopIdeaService {
   def getById(topIdeaId: TopIdeaId): Future[Option[TopIdea]]
   def getByIdAndQuestionId(topIdeaId: TopIdeaId, questionId: QuestionId): Future[Option[TopIdea]]
   def search(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     ideaId: Option[IdeaId],
@@ -92,8 +93,8 @@ trait DefaultPersistentTopIdeaServiceComponent extends PersistentTopIdeaServiceC
     }
 
     override def search(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       ideaId: Option[IdeaId],

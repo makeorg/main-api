@@ -35,6 +35,7 @@ import org.make.core.question.QuestionId
 import org.make.core.{HttpCodes, Order, ParameterExtractors, ValidationError}
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Path("/admin/top-ideas")
 @Api(value = "Admin Top Idea")
@@ -178,8 +179,8 @@ trait DefaultAdminTopIdeaApiComponent
     override def search: Route = get {
       path("admin" / "top-ideas") {
         parameters(
-          "_start".as[Int].?,
-          "_end".as[Int].?,
+          "_start".as[Start].?,
+          "_end".as[End].?,
           "_sort".?,
           "_order".as[Order].?,
           "ideaId".as[IdeaId].?,
@@ -187,8 +188,8 @@ trait DefaultAdminTopIdeaApiComponent
           "name".?
         ) {
           (
-            start: Option[Int],
-            end: Option[Int],
+            start: Option[Start],
+            end: Option[End],
             sort: Option[String],
             order: Option[Order],
             ideaId: Option[IdeaId],
@@ -201,7 +202,7 @@ trait DefaultAdminTopIdeaApiComponent
                   provideAsync(topIdeaService.count(ideaId, questionId, name)) { count =>
                     provideAsync(
                       topIdeaService
-                        .search(start.getOrElse(0), end, sort, order, ideaId, questionId.map(Seq(_)), name)
+                        .search(start.orZero, end, sort, order, ideaId, questionId.map(Seq(_)), name)
                     ) { topIdeas =>
                       complete(
                         (StatusCodes.OK, List(`X-Total-Count`(count.toString)), topIdeas.map(TopIdeaResponse.apply))

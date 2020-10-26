@@ -45,6 +45,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class QuestionServiceTest
     extends MakeUnitTest
@@ -93,7 +94,7 @@ class QuestionServiceTest
     Scenario("Get question personalities") {
       when(
         questionPersonalityService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -107,7 +108,7 @@ class QuestionServiceTest
 
       whenReady(
         questionService.getQuestionPersonalities(
-          start = 0,
+          start = Start.zero,
           end = None,
           questionId = QuestionId("question-id"),
           personalityRoleId = None
@@ -183,7 +184,13 @@ class QuestionServiceTest
     Scenario("get top ideas") {
       when(
         topIdeaService
-          .search(start = 0, end = None, ideaId = None, questionIds = Some(Seq(QuestionId("question-id"))), name = None)
+          .search(
+            start = Start.zero,
+            end = None,
+            ideaId = None,
+            questionIds = Some(Seq(QuestionId("question-id"))),
+            name = None
+          )
       ).thenReturn(
         Future
           .successful(
@@ -231,7 +238,8 @@ class QuestionServiceTest
         )
 
       whenReady(
-        questionService.getTopIdeas(start = 0, end = None, seed = Some(1337), questionId = QuestionId("question-id")),
+        questionService
+          .getTopIdeas(start = Start.zero, end = None, seed = Some(1337), questionId = QuestionId("question-id")),
         Timeout(3.seconds)
       ) { result =>
         result.questionTopIdeas.size should be(2)
@@ -245,7 +253,13 @@ class QuestionServiceTest
     Scenario("get top ideas if no proposals found") {
       when(
         topIdeaService
-          .search(start = 0, end = None, ideaId = None, questionIds = Some(Seq(QuestionId("question-id"))), name = None)
+          .search(
+            start = Start.zero,
+            end = None,
+            ideaId = None,
+            questionIds = Some(Seq(QuestionId("question-id"))),
+            name = None
+          )
       ).thenReturn(
         Future
           .successful(
@@ -276,7 +290,8 @@ class QuestionServiceTest
         .thenReturn(Future.successful(Map()))
 
       whenReady(
-        questionService.getTopIdeas(start = 0, end = None, seed = Some(1337), questionId = QuestionId("question-id")),
+        questionService
+          .getTopIdeas(start = Start.zero, end = None, seed = Some(1337), questionId = QuestionId("question-id")),
         Timeout(3.seconds)
       ) { result =>
         result.questionTopIdeas.size should be(2)

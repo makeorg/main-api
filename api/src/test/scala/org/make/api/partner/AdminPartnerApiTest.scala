@@ -28,6 +28,7 @@ import org.make.core.partner.{Partner, PartnerId, PartnerKind}
 import org.make.core.question.QuestionId
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class AdminPartnerApiTest
     extends MakeApiTestBase
@@ -181,7 +182,7 @@ class AdminPartnerApiTest
         partnerService.find(
           questionId = None,
           organisationId = None,
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
