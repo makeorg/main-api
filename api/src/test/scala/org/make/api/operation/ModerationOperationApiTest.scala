@@ -116,8 +116,8 @@ class ModerationOperationApiTest
         details = operationOfQuestion(
           questionId = QuestionId("first-question-id"),
           operationId = OperationId("firstOperation"),
-          startDate = Some(ZonedDateTime.parse("2018-02-02T10:15:30+00:00")),
-          endDate = None,
+          startDate = ZonedDateTime.parse("2018-02-02T10:15:30+00:00"),
+          endDate = ZonedDateTime.parse("2068-02-02T10:15:30+00:00"),
           operationTitle = "première operation",
           landingSequenceId = SequenceId("first-sequence-id")
         )

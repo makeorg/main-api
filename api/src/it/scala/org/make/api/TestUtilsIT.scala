@@ -243,8 +243,8 @@ trait TestUtilsIT {
   def operationOfQuestion(
     questionId: QuestionId,
     operationId: OperationId,
-    startDate: Option[ZonedDateTime] = None,
-    endDate: Option[ZonedDateTime] = None,
+    startDate: ZonedDateTime = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+    endDate: ZonedDateTime = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
     operationTitle: String = "operation title",
     landingSequenceId: SequenceId = SequenceId("sequence-id"),
     canPropose: Boolean = true,

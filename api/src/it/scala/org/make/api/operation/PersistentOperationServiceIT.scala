@@ -114,8 +114,8 @@ class PersistentOperationServiceIT
         details = OperationOfQuestion(
           questionId = QuestionId("some-question"),
           operationId = operationId,
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "bonjour operation",
           landingSequenceId = sequenceIdFR,
           canPropose = true,
@@ -161,8 +161,8 @@ class PersistentOperationServiceIT
         details = OperationOfQuestion(
           questionId = QuestionId("some-question-gb"),
           operationId = operationId,
-          startDate = None,
-          endDate = None,
+          startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+          endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
           operationTitle = "hello operation",
           landingSequenceId = sequenceIdGB,
           canPropose = true,

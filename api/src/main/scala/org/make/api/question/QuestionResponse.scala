@@ -45,8 +45,8 @@ final case class SimpleQuestionResponse(
   countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
-  @(ApiModelProperty @field)(dataType = "dateTime") startDate: Option[ZonedDateTime],
-  @(ApiModelProperty @field)(dataType = "dateTime") endDate: Option[ZonedDateTime]
+  @(ApiModelProperty @field)(dataType = "dateTime") startDate: ZonedDateTime,
+  @(ApiModelProperty @field)(dataType = "dateTime") endDate: ZonedDateTime
 )
 
 object SimpleQuestionResponse extends CirceFormatters {

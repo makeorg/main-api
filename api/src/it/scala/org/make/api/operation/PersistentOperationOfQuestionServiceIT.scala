@@ -56,8 +56,8 @@ class PersistentOperationOfQuestionServiceIT
   def generateOperationOfQuestion: OperationOfQuestion = OperationOfQuestion(
     operationId = operationId,
     questionId = questionId,
-    startDate = None,
-    endDate = None,
+    startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+    endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
     operationTitle = "title",
     landingSequenceId = sequenceIdFR,
     canPropose = true,
@@ -178,9 +178,9 @@ class PersistentOperationOfQuestionServiceIT
     }
 
     Scenario("openAt filter") {
-      val now = Some(ZonedDateTime.now)
-      val yesterday = now.map(_.minusDays(1))
-      val tomorrow = now.map(_.plusDays(1))
+      val now = ZonedDateTime.now
+      val yesterday = now.minusDays(1)
+      val tomorrow = now.plusDays(1)
       val openOOQ = generateOperationOfQuestion.copy(
         questionId = QuestionId("openAtTestCase1"),
         startDate = yesterday,
@@ -188,7 +188,7 @@ class PersistentOperationOfQuestionServiceIT
       )
       val closedOOQ = generateOperationOfQuestion.copy(
         questionId = QuestionId("openAtTestCase2"),
-        startDate = None,
+        startDate = yesterday.minusDays(1),
         endDate = yesterday
       )
 
@@ -203,7 +203,7 @@ class PersistentOperationOfQuestionServiceIT
           Some(Seq(QuestionId("openAtTestCase1"), QuestionId("openAtTestCase2"))),
           None,
           None,
-          now
+          Some(now)
         )
       } yield result
 

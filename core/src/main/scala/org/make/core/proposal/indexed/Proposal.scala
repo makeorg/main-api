@@ -213,8 +213,8 @@ final case class IndexedProposalQuestion(
   question: String,
   countries: NonEmptyList[Country],
   language: Language,
-  startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime],
+  startDate: ZonedDateTime,
+  endDate: ZonedDateTime,
   isOpen: Boolean
 )
 

@@ -105,20 +105,8 @@ trait DefaultOperationOfQuestionSearchEngineComponent
         .sortBy(
           Seq(
             OperationOfQuestionSearchFilters.getSort(query),
-            Some(
-              FieldSort(
-                field = OperationOfQuestionElasticsearchFieldName.endDate.field,
-                order = SortOrder.DESC,
-                missing = Some("_first")
-              )
-            ),
-            Some(
-              FieldSort(
-                field = OperationOfQuestionElasticsearchFieldName.startDate.field,
-                order = SortOrder.DESC,
-                missing = Some("_first")
-              )
-            )
+            Some(FieldSort(field = OperationOfQuestionElasticsearchFieldName.endDate.field, order = SortOrder.DESC)),
+            Some(FieldSort(field = OperationOfQuestionElasticsearchFieldName.startDate.field, order = SortOrder.DESC))
           ).flatten
         )
         .size(OperationOfQuestionSearchFilters.getLimitSearch(query))

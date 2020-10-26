@@ -194,6 +194,8 @@ trait TestUtils {
     author: IndexedAuthor = defaultAuthor,
     questionId: QuestionId = QuestionId("question-id"),
     operationId: Option[OperationId] = Some(OperationId("operation-id")),
+    startDate: ZonedDateTime = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+    endDate: ZonedDateTime = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
     requestContext: Option[RequestContext] = None,
     content: String = "Il faut tester l'indexation des propositions",
     countries: NonEmptyList[Country] = NonEmptyList.of(Country("FR")),
@@ -276,8 +278,8 @@ trait TestUtils {
           question = questionId.value,
           countries = countries,
           language = language,
-          startDate = None,
-          endDate = None,
+          startDate = startDate,
+          endDate = endDate,
           isOpen = true
         )
       ),
@@ -384,8 +386,8 @@ trait TestUtils {
   def operationOfQuestion(
     questionId: QuestionId,
     operationId: OperationId,
-    startDate: Option[ZonedDateTime] = None,
-    endDate: Option[ZonedDateTime] = None,
+    startDate: ZonedDateTime = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+    endDate: ZonedDateTime = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
     operationTitle: String = "operation title",
     landingSequenceId: SequenceId = SequenceId("sequence-id"),
     canPropose: Boolean = true,

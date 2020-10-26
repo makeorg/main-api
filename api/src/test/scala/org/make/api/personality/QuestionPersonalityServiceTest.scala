@@ -19,6 +19,8 @@
 
 package org.make.api.personality
 
+import java.time.ZonedDateTime
+
 import cats.data.NonEmptyList
 import org.make.api.MakeUnitTest
 import org.make.api.idea.topIdeaComments.{TopIdeaCommentService, TopIdeaCommentServiceComponent}
@@ -236,8 +238,8 @@ class QuestionPersonalityServiceTest
               IndexedOperationOfQuestion(
                 operationId = OperationId("operation-id-one"),
                 questionId = QuestionId("question-id-one"),
-                startDate = None,
-                endDate = None,
+                startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+                endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
                 operationTitle = "title",
                 question = "",
                 slug = "",
@@ -262,8 +264,8 @@ class QuestionPersonalityServiceTest
               IndexedOperationOfQuestion(
                 operationId = OperationId("operation-id-two"),
                 questionId = QuestionId("question-id-two"),
-                startDate = None,
-                endDate = None,
+                startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+                endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
                 operationTitle = "title",
                 question = "",
                 slug = "",

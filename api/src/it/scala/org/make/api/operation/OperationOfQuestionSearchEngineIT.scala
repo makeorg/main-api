@@ -80,8 +80,8 @@ class OperationOfQuestionSearchEngineIT
       question = "First question ?",
       slug = "first-question",
       questionShortTitle = Some("first-short-title"),
-      startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      endDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
+      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
+      endDate = ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z")),
       theme = QuestionTheme(
         gradientStart = "#424242",
         gradientEnd = "#424242",
@@ -113,8 +113,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Second question ?",
       slug = "second-question",
       questionShortTitle = Some("second-short-title"),
-      startDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
-      endDate = Some(ZonedDateTime.from(dateFormatter.parse("2020-06-02T01:01:01.123Z"))),
+      startDate = ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z")),
+      endDate = ZonedDateTime.from(dateFormatter.parse("2020-06-02T01:01:01.123Z")),
       theme = QuestionTheme(
         gradientStart = "#424242",
         gradientEnd = "#424242",
@@ -146,8 +146,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Third question ?",
       slug = "third-question",
       questionShortTitle = None,
-      startDate = Some(ZonedDateTime.from(dateFormatter.parse("2018-11-22T01:01:01.123Z"))),
-      endDate = Some(ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z"))),
+      startDate = ZonedDateTime.from(dateFormatter.parse("2018-11-22T01:01:01.123Z")),
+      endDate = ZonedDateTime.from(dateFormatter.parse("2019-06-02T01:01:01.123Z")),
       theme = QuestionTheme(
         gradientStart = "#424242",
         gradientEnd = "#424242",
@@ -179,8 +179,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Fourth question ?",
       slug = "fourth-question",
       questionShortTitle = None,
-      startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      endDate = Some(ZonedDateTime.from(dateFormatter.parse("2018-06-02T01:01:01.123Z"))),
+      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
+      endDate = ZonedDateTime.from(dateFormatter.parse("2018-06-02T01:01:01.123Z")),
       theme = QuestionTheme(
         gradientStart = "#424242",
         gradientEnd = "#424242",
@@ -212,8 +212,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Fifth question ?",
       slug = "fifth-question",
       questionShortTitle = Some("fifth-short-title"),
-      startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      endDate = None,
+      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
+      endDate = ZonedDateTime.from(dateFormatter.parse("2067-06-02T01:01:01.123Z")),
       theme = QuestionTheme(
         gradientStart = "#424242",
         gradientEnd = "#424242",
@@ -245,8 +245,8 @@ class OperationOfQuestionSearchEngineIT
       question = "Question sur les aînés avec accents ?",
       slug = "aines-question",
       questionShortTitle = Some("aines-short-title"),
-      startDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
-      endDate = Some(ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z"))),
+      startDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
+      endDate = ZonedDateTime.from(dateFormatter.parse("2017-06-02T01:01:01.123Z")),
       theme = QuestionTheme(
         gradientStart = "#424242",
         gradientEnd = "#424242",
@@ -349,7 +349,7 @@ class OperationOfQuestionSearchEngineIT
   Feature("sort algorithms") {
 
     def resultsAreSorted(results: Seq[IndexedOperationOfQuestion]): Assertion = {
-      results.sortBy(result => (result.endDate.fold(Long.MinValue)(-_.toEpochSecond), result.slug)) should be(results)
+      results.sortBy(result => (-result.endDate.toEpochSecond, result.slug)) should be(results)
     }
 
     Scenario("chronological") {

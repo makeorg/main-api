@@ -181,8 +181,8 @@ object QuestionTheme {
 final case class OperationOfQuestion(
   questionId: QuestionId,
   operationId: OperationId,
-  startDate: Option[ZonedDateTime],
-  endDate: Option[ZonedDateTime],
+  startDate: ZonedDateTime,
+  endDate: ZonedDateTime,
   operationTitle: String,
   landingSequenceId: SequenceId,
   canPropose: Boolean,
@@ -204,9 +204,9 @@ final case class OperationOfQuestion(
 
   def status: OperationOfQuestion.Status = {
     val now = DateHelper.now()
-    if (startDate.exists(_.isAfter(now))) {
+    if (startDate.isAfter(now)) {
       OperationOfQuestion.Status.Upcoming
-    } else if (endDate.exists(_.isBefore(now))) {
+    } else if (endDate.isBefore(now)) {
       OperationOfQuestion.Status.Finished
     } else {
       OperationOfQuestion.Status.Open

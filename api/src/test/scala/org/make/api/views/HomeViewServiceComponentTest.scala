@@ -76,8 +76,8 @@ class HomeViewServiceComponentTest
   val defaultOperationOfQuestion: IndexedOperationOfQuestion = IndexedOperationOfQuestion(
     questionId = defaultQuestion.questionId,
     operationId = defaultOperation.operationId,
-    startDate = Some(now.minusDays(20)),
-    endDate = Some(now.plusDays(10)),
+    startDate = now.minusDays(20),
+    endDate = now.plusDays(10),
     operationTitle = "default opeOfQues",
     question = "",
     slug = "",
@@ -184,7 +184,7 @@ class HomeViewServiceComponentTest
     defaultOperationOfQuestion.copy(
       questionId = question3.questionId,
       operationId = operation3.operationId,
-      endDate = defaultOperationOfQuestion.endDate.map(_.plusDays(1)),
+      endDate = defaultOperationOfQuestion.endDate.plusDays(1),
       featured = true,
       status = OperationOfQuestion.Status.Open
     )
@@ -194,15 +194,15 @@ class HomeViewServiceComponentTest
     defaultOperationOfQuestion.copy(
       questionId = question5.questionId,
       operationId = operation5.operationId,
-      startDate = Some(now.plusDays(5)),
+      startDate = now.plusDays(5),
       status = OperationOfQuestion.Status.Upcoming
     )
   val operationOfQuestion6: IndexedOperationOfQuestion =
     defaultOperationOfQuestion.copy(
       questionId = question6.questionId,
       operationId = operation6.operationId,
-      startDate = Some(now.minusDays(8)),
-      endDate = Some(now.minusDays(1)),
+      startDate = now.minusDays(8),
+      endDate = now.minusDays(1),
       status = OperationOfQuestion.Status.Upcoming
     )
 
