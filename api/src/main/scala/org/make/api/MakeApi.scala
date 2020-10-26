@@ -116,7 +116,7 @@ import org.make.api.userhistory.{
 }
 import org.make.api.views._
 import org.make.api.widget.{DefaultWidgetApiComponent, DefaultWidgetServiceComponent, WidgetApi}
-import org.make.core.{AvroSerializers, ValidationError, ValidationFailedError}
+import org.make.core.{AvroSerializers, DefaultDateHelperComponent, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.{OAuthGrantType, _}
 
 import scala.concurrent.Await
@@ -150,6 +150,7 @@ trait MakeApi
     with DefaultCrmClientComponent
     with DefaultCrmServiceComponent
     with DefaultCrmTemplatesServiceComponent
+    with DefaultDateHelperComponent
     with DefaultDownloadServiceComponent
     with DefaultElasticSearchApiComponent
     with DefaultElasticsearchClientComponent

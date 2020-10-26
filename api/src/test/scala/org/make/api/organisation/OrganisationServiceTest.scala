@@ -62,6 +62,7 @@ import org.make.core.user.Role.RoleActor
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult}
 import org.make.core.{DateHelper, RequestContext}
+import org.mockito.Mockito.clearInvocations
 import org.scalatest.RecoverMethods
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -99,7 +100,7 @@ class OrganisationServiceTest
 
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
 
-  val returnedOrganisation = TestUtils.user(
+  val returnedOrganisation: User = TestUtils.user(
     id = UserId("AAA-BBB-CCC"),
     email = "any@mail.com",
     firstName = None,
@@ -112,7 +113,7 @@ class OrganisationServiceTest
     userType = UserType.UserTypeOrganisation
   )
 
-  val returnedOrganisation2 = TestUtils.user(
+  val returnedOrganisation2: User = TestUtils.user(
     id = UserId("AAA-BBB-CCC-DDD"),
     email = "some@mail.com",
     firstName = None,
@@ -129,8 +130,7 @@ class OrganisationServiceTest
       when(persistentUserService.findByUserIdAndUserType(any[UserId], any[UserType]))
         .thenReturn(Future.successful(Some(returnedOrganisation)))
 
-      whenReady(organisationService.getOrganisation(UserId("AAA-BBB-CCC")), Timeout(2.seconds)) { user =>
-        user shouldBe a[Option[_]]
+      whenReady(organisationService.getOrganisation(returnedOrganisation.userId), Timeout(2.seconds)) { user =>
         user.isDefined shouldBe true
         user.get.email shouldBe "any@mail.com"
       }
@@ -164,7 +164,6 @@ class OrganisationServiceTest
       )
 
       whenReady(futureOrganisation, Timeout(2.seconds)) { user =>
-        user shouldBe a[User]
         user.email should be("any@mail.com")
         user.organisationName should be(Some("John Doe Corp."))
       }
@@ -226,16 +225,17 @@ class OrganisationServiceTest
       val futureOrganisation =
         organisationService.update(updatedOrganisation, None, oldEmail, RequestContext.empty)
 
-      whenReady(futureOrganisation, Timeout(2.seconds)) { organisation =>
-        organisation shouldBe a[UserId]
+      whenReady(futureOrganisation, Timeout(2.seconds)) { _ =>
+        verify(eventBusService, times(1))
+          .publish(argMatching[AnyRef]({ case _: OrganisationEmailChangedEvent => }))
+        verify(eventBusService, times(1))
+          .publish(argMatching[AnyRef]({ case _: OrganisationUpdatedEvent => }))
       }
-      verify(eventBusService, times(1))
-        .publish(argMatching[AnyRef]({ case _: OrganisationEmailChangedEvent => }))
-      verify(eventBusService, times(1))
-        .publish(argMatching[AnyRef]({ case _: OrganisationUpdatedEvent => }))
+
     }
 
     Scenario("successfully update an organisation without changing anything") {
+      clearInvocations(persistentUserToAnonymizeService)
       when(persistentUserService.emailExists(any[String])).thenReturn(Future.successful(false))
       when(persistentUserService.modifyOrganisation(any[User]))
         .thenReturn(Future.successful(Right(returnedOrganisation)))
@@ -247,8 +247,8 @@ class OrganisationServiceTest
       val futureOrganisation =
         organisationService.update(returnedOrganisation, None, returnedOrganisation.email, RequestContext.empty)
 
-      whenReady(futureOrganisation, Timeout(2.seconds)) { organisation =>
-        organisation shouldBe a[UserId]
+      whenReady(futureOrganisation, Timeout(2.seconds)) { _ =>
+        verify(persistentUserToAnonymizeService, never).create(returnedOrganisation.email)
       }
     }
 
@@ -278,7 +278,6 @@ class OrganisationServiceTest
         .thenReturn(Future.successful(Seq(returnedOrganisation, returnedOrganisation2)))
 
       whenReady(organisationService.getOrganisations, Timeout(2.seconds)) { organisationList =>
-        organisationList shouldBe a[Seq[_]]
         organisationList.size shouldBe 2
         organisationList.head.email shouldBe "any@mail.com"
       }
@@ -318,7 +317,9 @@ class OrganisationServiceTest
       elasticsearchOrganisationAPI.searchOrganisations(
         eqTo(
           OrganisationSearchQuery(filters = Some(
-            OrganisationSearchFilters(organisationIds = Some(OrganisationIdsSearchFilter(Seq(UserId("AAA-BBB-CCC")))))
+            OrganisationSearchFilters(organisationIds =
+              Some(OrganisationIdsSearchFilter(Seq(returnedOrganisation.userId)))
+            )
           )
           )
         )
@@ -370,11 +371,11 @@ class OrganisationServiceTest
     }
 
     Scenario("search by organisationIds") {
-      val futureJohnDoeCorp = organisationService.search(None, None, Some(Seq(UserId("AAA-BBB-CCC"))), None, None)
+      val futureJohnDoeCorp = organisationService.search(None, None, Some(Seq(returnedOrganisation.userId)), None, None)
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
         organisationsList.total shouldBe 1
-        organisationsList.results.head.organisationId shouldBe UserId("AAA-BBB-CCC")
+        organisationsList.results.head.organisationId shouldBe returnedOrganisation.userId
       }
     }
 
@@ -383,7 +384,7 @@ class OrganisationServiceTest
 
       whenReady(futureJohnDoeCorp, Timeout(2.seconds)) { organisationsList =>
         organisationsList.total shouldBe 1
-        organisationsList.results.head.organisationId shouldBe UserId("AAA-BBB-CCC")
+        organisationsList.results.head.organisationId shouldBe returnedOrganisation.userId
       }
     }
   }
@@ -485,7 +486,7 @@ class OrganisationServiceTest
 
       val futureProposalsVoted =
         organisationService.getVotedProposals(
-          organisationId = UserId("AAA-BBB-CCC"),
+          organisationId = returnedOrganisation.userId,
           maybeUserId = None,
           filterVotes = None,
           filterQualifications = None,
@@ -510,7 +511,7 @@ class OrganisationServiceTest
 
       val futureProposalsVoted =
         organisationService.getVotedProposals(
-          organisationId = UserId("AAA-BBB-CCC"),
+          organisationId = returnedOrganisation.userId,
           maybeUserId = None,
           filterVotes = None,
           filterQualifications = None,

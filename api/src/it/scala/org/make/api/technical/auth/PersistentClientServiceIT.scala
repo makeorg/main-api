@@ -23,6 +23,7 @@ import java.sql.SQLException
 
 import org.make.api.DatabaseTest
 import org.make.core.auth.{Client, ClientId}
+import org.make.core.user.{Role, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
@@ -50,42 +51,48 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         name = "client",
         allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
         secret = Some("secret"),
-        scope = None,
-        redirectUri = None,
-        defaultUserId = None,
-        roles = Seq.empty,
-        tokenExpirationSeconds = 20
+        scope = Some("scope"),
+        redirectUri = Some("https://example.com/redirect"),
+        defaultUserId = Some(UserId("11111111-1111-1111-1111-111111111111")),
+        roles = Seq(Role.RoleCitizen),
+        tokenExpirationSeconds = 20,
+        refreshExpirationSeconds = 30,
+        reconnectExpirationSeconds = 50
       )
 
       When("I persist apiclient")
       And("I get the persisted client")
 
-      val futureClient: Future[Client] = persistentClientService.persist(client)
+      val futureClient: Future[Client] =
+        persistentClientService
+          .persist(client)
+          .flatMap(_ => persistentClientService.get(client.clientId))
+          .flatMap {
+            case None         => Future.failed(new IllegalArgumentException("Client not found"))
+            case Some(client) => Future.successful(client)
+          }
 
-      whenReady(futureClient, Timeout(3.seconds)) { client =>
-        And("clientId should be apiclient")
-        client.clientId shouldBe ClientId("apiclient")
+      whenReady(futureClient, Timeout(3.seconds)) { savedClient =>
+        Then("clientId should be apiclient")
+        savedClient.clientId shouldBe client.clientId
 
         And("allowedGrantTypes should be first_grant_type and second_grant_type")
-        client.allowedGrantTypes shouldBe Seq("first_grant_type", "second_grant_type")
+        savedClient.allowedGrantTypes shouldBe client.allowedGrantTypes
 
         And("secret should be secret")
-        client.secret should contain("secret")
+        savedClient.secret should be(client.secret)
 
         And("scope should be an instance of Option[String]")
-        client.scope should be(None)
-
-        And("scope should be secret")
-        client.scope should be(None)
+        savedClient.scope should be(client.scope)
 
         And("redirectUrl should be an instance of Option[String]")
-        client.redirectUri should be(None)
-
-        And("redirectUri should be secret")
-        client.redirectUri should be(None)
+        savedClient.redirectUri should be(client.redirectUri)
 
         And("tokenExpirationSeconds should be 20")
-        client.tokenExpirationSeconds should be(20)
+        savedClient.tokenExpirationSeconds should be(client.tokenExpirationSeconds)
+
+        And("refreshExpirationSeconds should be 30")
+        savedClient.refreshExpirationSeconds should be(client.refreshExpirationSeconds)
       }
     }
 
@@ -107,7 +114,9 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
         redirectUri = None,
         defaultUserId = None,
         roles = Seq.empty,
-        tokenExpirationSeconds = 300
+        tokenExpirationSeconds = 300,
+        refreshExpirationSeconds = 400,
+        reconnectExpirationSeconds = 50
       )
 
       When("I persist client with existing clientId")
@@ -131,7 +140,9 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       redirectUri = None,
       defaultUserId = None,
       roles = Seq.empty,
-      tokenExpirationSeconds = 300
+      tokenExpirationSeconds = 300,
+      refreshExpirationSeconds = 400,
+      reconnectExpirationSeconds = 50
     )
 
     Scenario("Get a list of all oauth clients") {
@@ -183,7 +194,9 @@ class PersistentClientServiceIT extends DatabaseTest with DefaultPersistentClien
       redirectUri = None,
       defaultUserId = None,
       roles = Seq.empty,
-      tokenExpirationSeconds = 300
+      tokenExpirationSeconds = 300,
+      refreshExpirationSeconds = 400,
+      reconnectExpirationSeconds = 50
     )
 
     Scenario("Update client") {

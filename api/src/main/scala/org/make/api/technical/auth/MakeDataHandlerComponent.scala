@@ -26,6 +26,7 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.auth.ClientService.ClientError
+import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.DateHelper
@@ -50,7 +51,12 @@ trait MakeDataHandler extends DataHandler[UserRights] {
   ): Future[Option[AuthCode]]
   def removeTokenByUserId(userId: UserId): Future[Int]
   def removeToken(token: String): Future[Unit]
-  def refreshIfTokenIsExpired(token: String): Future[Option[AccessToken]]
+  def refreshIfTokenIsExpired(token: String): Future[Option[Token]]
+}
+
+object MakeDataHandler {
+  val RefreshTokenExpirationParameter: String = "refresh_expires_in"
+  val CreatedAtParameter: String = "created_at"
 }
 
 trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
@@ -66,14 +72,11 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
   class DefaultMakeDataHandler extends MakeDataHandler {
 
-    lazy val validityDurationRefreshTokenSeconds: Int = makeSettings.Oauth.refreshTokenLifetime
-    lazy val validityDurationReconnectTokenSeconds: Int = makeSettings.Oauth.reconnectTokenLifetime
-
-    private val accessTokenCache: Cache[String, AccessToken] =
+    private val accessTokenCache: Cache[String, Token] =
       CacheBuilder
         .newBuilder()
         .expireAfterWrite(5, TimeUnit.MINUTES)
-        .build[String, AccessToken]()
+        .build[String, Token]()
 
     private val authInfoByAccessTokenCache: Cache[String, AuthInfo[UserRights]] =
       CacheBuilder
@@ -87,7 +90,11 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         refreshToken = token.refreshToken,
         scope = token.scope,
         lifeSeconds = Some(token.expiresIn.toLong),
-        createdAt = Date.from(token.createdAt.getOrElse(DateHelper.now()).toInstant)
+        createdAt = Date.from(token.createdAt.getOrElse(DateHelper.now()).toInstant),
+        params = Map(
+          CreatedAtParameter -> DateHelper.format(token.createdAt.getOrElse(DateHelper.now())),
+          RefreshTokenExpirationParameter -> token.refreshExpiresIn.toString
+        )
       )
     }
 
@@ -111,7 +118,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
             .findByReconnectTokenAndPassword(
               reconnectRequest.reconnectToken,
               reconnectRequest.password,
-              validityDurationReconnectTokenSeconds
+              client.reconnectExpirationSeconds
             )
         case _: ClientCredentialsRequest =>
           client.defaultUserId match {
@@ -202,6 +209,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
           refreshToken = maybeRefreshToken,
           scope = None,
           expiresIn = client.tokenExpirationSeconds,
+          refreshExpiresIn = client.refreshExpirationSeconds,
           user = authInfo.user,
           client = client
         )
@@ -267,9 +275,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def findAuthInfoByRefreshToken(refreshToken: String): Future[Option[AuthInfo[UserRights]]] = {
       persistentTokenService.findByRefreshToken(refreshToken).flatMap {
-        case Some(token) if toAccessToken(token.copy(expiresIn = validityDurationRefreshTokenSeconds)).isExpired =>
-          Future.successful(None)
-        case Some(token) =>
+        case Some(token) if !token.isRefreshTokenExpired =>
           Future.successful(
             Some(
               AuthInfo(
@@ -280,7 +286,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
               )
             )
           )
-        case None => Future.successful(None)
+        case _ => Future.successful(None)
       }
     }
 
@@ -305,16 +311,19 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
     override def findAccessToken(token: String): Future[Option[AccessToken]] = {
       Option(accessTokenCache.getIfPresent(token))
-        .filter(!_.isExpired)
+        .filter(!_.isAccessTokenExpired)
         .map(token => Future.successful(Some(token)))
         .getOrElse {
-          val future = persistentTokenService.get(token).map(_.map(toAccessToken).filter(!_.isExpired))
+          val future = persistentTokenService
+            .get(token)
+            .map(_.filter(!_.isAccessTokenExpired))
           future.onComplete {
             case Success(Some(userToken)) => accessTokenCache.put(token, userToken)
             case _                        =>
           }
           future
         }
+        .map(_.map(toAccessToken))
     }
 
     override def removeTokenByUserId(userId: UserId): Future[Int] = {
@@ -352,21 +361,21 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       }
     }
 
-    override def refreshIfTokenIsExpired(tokenValue: String): Future[Option[AccessToken]] = {
+    override def refreshIfTokenIsExpired(tokenValue: String): Future[Option[Token]] = {
       Option(accessTokenCache.getIfPresent(tokenValue))
         .map(token => Future.successful(Some(token)))
         .getOrElse {
-          persistentTokenService.get(tokenValue).map(_.map(toAccessToken))
+          persistentTokenService.get(tokenValue)
         }
         .flatMap {
-          case Some(token @ AccessToken(_, Some(refreshToken), _, _, _, _))
-              if token.isExpired &&
-                !token
-                  .copy(lifeSeconds = Some(validityDurationRefreshTokenSeconds.toLong))
-                  .isExpired =>
-            findAuthInfoByAccessToken(token).flatMap {
-              case Some(authInfo) => refreshAccessToken(authInfo, refreshToken).map(Some(_))
-              case _              => Future.successful(None)
+          case Some(token @ Token(_, Some(refreshToken), _, _, _, _, _, _, _))
+              if token.isAccessTokenExpired &&
+                !token.isRefreshTokenExpired =>
+            findAuthInfoByAccessToken(toAccessToken(token)).flatMap {
+              case Some(authInfo) =>
+                refreshAccessToken(authInfo, refreshToken)
+                  .flatMap(token => persistentTokenService.get(token.token))
+              case _ => Future.successful(None)
             }
           case _ => Future.successful(None)
         }

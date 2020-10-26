@@ -49,6 +49,7 @@ object PersistentTokenServiceComponent {
     createdAt: Option[ZonedDateTime],
     updatedAt: Option[ZonedDateTime],
     expiresIn: Int,
+    refreshExpiresIn: Int,
     makeUserUuid: PersistentUser,
     clientUuid: PersistentClient
   ) {
@@ -61,7 +62,8 @@ object PersistentTokenServiceComponent {
         updatedAt = updatedAt,
         expiresIn = expiresIn,
         user = makeUserUuid.toUserRights,
-        client = clientUuid.toClient
+        client = clientUuid.toClient,
+        refreshExpiresIn = refreshExpiresIn
       )
     }
   }
@@ -77,7 +79,8 @@ object PersistentTokenServiceComponent {
         "updated_at",
         "expires_in",
         "make_user_uuid",
-        "client_uuid"
+        "client_uuid",
+        "refresh_expires_in"
       )
 
     override val tableName: String = "access_token"
@@ -98,6 +101,7 @@ object PersistentTokenServiceComponent {
         createdAt = resultSet.zonedDateTimeOpt(tokenResultName.createdAt),
         updatedAt = resultSet.zonedDateTimeOpt(tokenResultName.updatedAt),
         expiresIn = resultSet.int(tokenResultName.expiresIn),
+        refreshExpiresIn = resultSet.int(tokenResultName.refreshExpiresIn),
         makeUserUuid = persistentUser,
         clientUuid = persistentClient
       )
@@ -219,6 +223,7 @@ trait DefaultPersistentTokenServiceComponent extends PersistentTokenServiceCompo
               column.createdAt -> DateHelper.now(),
               column.updatedAt -> DateHelper.now(),
               column.expiresIn -> token.expiresIn,
+              column.refreshExpiresIn -> token.refreshExpiresIn,
               column.makeUserUuid -> token.user.userId.value,
               column.clientUuid -> token.client.clientId.value
             )

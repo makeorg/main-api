@@ -26,7 +26,13 @@ import java.time.{LocalDate, ZonedDateTime}
 import akka.http.scaladsl.model.{ContentType, MediaTypes}
 import com.github.t3hnar.bcrypt._
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.proposal.{ProposalService, ProposalServiceComponent, ProposalsResultSeededResponse}
+import org.make.api.proposal.PublishedProposalEvent.ReindexProposal
+import org.make.api.proposal.{
+  ProposalResponse,
+  ProposalService,
+  ProposalServiceComponent,
+  ProposalsResultSeededResponse
+}
 import org.make.api.question.AuthorRequest
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
@@ -42,12 +48,12 @@ import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.auth.UserRights
 import org.make.core.profile.Gender.Female
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
-import org.make.core.proposal.SearchQuery
+import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.technical.IdGenerator
 import org.make.core.user._
-import org.make.core.{DateHelper, RequestContext}
+import org.make.core.{DateHelper, DateHelperComponent, RequestContext}
 import org.mockito.Mockito.clearInvocations
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider.{AccessToken, AuthInfo}
@@ -71,7 +77,8 @@ class UserServiceTest
     with MakeSettingsComponent
     with UserRegistrationValidatorComponent
     with StorageServiceComponent
-    with DownloadServiceComponent {
+    with DownloadServiceComponent
+    with DateHelperComponent {
 
   override val idGenerator: IdGenerator = mock[IdGenerator]
   override val persistentUserService: PersistentUserService = mock[PersistentUserService]
@@ -88,6 +95,13 @@ class UserServiceTest
   override val oauth2DataHandler: MakeDataHandler = mock[MakeDataHandler]
   override val storageService: StorageService = mock[StorageService]
   override val downloadService: DownloadService = mock[DownloadService]
+
+  val currentDate: ZonedDateTime = DateHelper.now()
+
+  override val dateHelper: DateHelper = mock[DateHelper]
+
+  when(dateHelper.now()).thenReturn(currentDate)
+  when(dateHelper.computeBirthDate(any[Int])).thenReturn(LocalDate.parse("1970-01-01"))
 
   when(makeSettings.defaultUserAnonymousParticipation).thenReturn(false)
   when(makeSettings.validationTokenExpiresIn).thenReturn(Duration("30 days"))
@@ -285,7 +299,6 @@ class UserServiceTest
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, accountCreation) =>
-          user shouldBe a[User]
           user.email should be(info.email.getOrElse(""))
           user.firstName should be(info.firstName)
           user.profile.get.facebookId should be(info.facebookId)
@@ -346,7 +359,6 @@ class UserServiceTest
 
       whenReady(futureUserWithGender, Timeout(2.seconds)) {
         case (user, accountCreation) =>
-          user shouldBe a[User]
           user.email should be(infoWithGender.email.getOrElse(""))
           user.firstName should be(infoWithGender.firstName)
           user.profile.get.facebookId should be(infoWithGender.facebookId)
@@ -403,7 +415,6 @@ class UserServiceTest
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, accountCreation) =>
-          user shouldBe a[User]
           user.email should be(info.email.getOrElse(""))
           user.firstName should be(info.firstName)
           user.profile.get.facebookId should be(info.facebookId)
@@ -518,7 +529,6 @@ class UserServiceTest
 
       whenReady(futureUser, Timeout(2.seconds)) {
         case (user, accountCreation) =>
-          user shouldBe a[User]
           user.email should be(info.email.getOrElse(""))
           user.firstName should be(info.firstName)
           user.profile.get.facebookId should be(info.facebookId)
@@ -728,9 +738,9 @@ class UserServiceTest
 
       whenReady(userService.validateEmail(fooUser, "verificationToken"), Timeout(2.seconds)) { tokenResponse =>
         tokenResponse should be(a[TokenResponse])
-        tokenResponse.access_token should be(accessTokenValue)
-        tokenResponse.refresh_token should be(refreshTokenValue)
-        tokenResponse.token_type should be("Bearer")
+        tokenResponse.accessToken should be(accessTokenValue)
+        tokenResponse.refreshToken should contain(refreshTokenValue)
+        tokenResponse.tokenType should be("Bearer")
       }
     }
   }
@@ -846,13 +856,21 @@ class UserServiceTest
       When("I update fields")
       Then("fields are updated into user")
 
-      when(proposalService.searchForUser(any[Option[UserId]], any[SearchQuery], any[RequestContext]))
-        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
+      val proposals = Seq(
+        ProposalResponse(indexedProposal(ProposalId("update a user 1")), myProposal = true, None, "none"),
+        ProposalResponse(indexedProposal(ProposalId("update a user 2")), myProposal = true, None, "none"),
+        ProposalResponse(indexedProposal(ProposalId("update a user 3")), myProposal = true, None, "none")
+      )
+
+      when(proposalService.searchForUser(eqTo(Some(fooUser.userId)), any[SearchQuery], any[RequestContext]))
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, proposals, None)))
 
       val futureUser = userService.update(fooUser, RequestContext.empty)
 
-      whenReady(futureUser, Timeout(3.seconds)) { result =>
-        result shouldBe a[User]
+      whenReady(futureUser, Timeout(3.seconds)) { _ =>
+        proposals.foreach(
+          p => verify(eventBusService).publish(ReindexProposal(p.id, currentDate, RequestContext.empty))
+        )
       }
     }
   }
@@ -863,8 +881,14 @@ class UserServiceTest
       When("I update fields")
       Then("fields are updated into user")
 
+      clearInvocations(eventBusService)
+      val userId = UserId("update a personality")
+
+      when(proposalService.searchForUser(eqTo(Some(userId)), any[SearchQuery], any[RequestContext]))
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
+
       val futureUser = userService.updatePersonality(
-        personality = fooUser.copy(email = "fooUpdated@example.com"),
+        personality = fooUser.copy(email = "fooUpdated@example.com", userId = userId),
         moderatorId = Some(UserId("moderaor-id")),
         oldEmail = fooUser.email,
         requestContext = RequestContext.empty
@@ -904,6 +928,8 @@ class UserServiceTest
   Feature("anonymize user") {
     when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.successful({}))
     Scenario("anonymize user") {
+      clearInvocations(eventBusService)
+
       when(proposalService.anonymizeByUserId(any[UserId])).thenReturn(Future.successful({}))
       when(persistentUserService.removeAnonymizedUserFromFollowedUserTable(any[UserId]))
         .thenReturn(Future.successful({}))

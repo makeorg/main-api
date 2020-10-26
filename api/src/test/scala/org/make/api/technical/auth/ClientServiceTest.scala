@@ -71,7 +71,9 @@ class ClientServiceTest
         redirectUri = None,
         defaultUserId = None,
         roles = Seq.empty,
-        tokenExpirationSeconds = 300
+        tokenExpirationSeconds = 300,
+        refreshExpirationSeconds = 400,
+        reconnectExpirationSeconds = 900
       )
 
       whenReady(futureNewClient, Timeout(3.seconds)) { _ =>
@@ -94,28 +96,9 @@ class ClientServiceTest
 
   Feature("update a client") {
     Scenario("update a client") {
-      val oldClient = Client(
-        clientId = ClientId("client"),
-        name = "old-client",
-        allowedGrantTypes = Seq.empty,
-        secret = Some("secret"),
-        scope = None,
-        redirectUri = None,
-        defaultUserId = None,
-        roles = Seq.empty,
-        tokenExpirationSeconds = 300
-      )
-      val newClient = Client(
-        clientId = ClientId("client"),
-        name = "new-client",
-        allowedGrantTypes = Seq.empty,
-        secret = Some("secret"),
-        scope = None,
-        redirectUri = None,
-        defaultUserId = None,
-        roles = Seq.empty,
-        tokenExpirationSeconds = 300
-      )
+      val oldClient = client(clientId = ClientId("client"), name = "old-client", secret = Some("secret"))
+      val newClient = client(clientId = ClientId("client"), name = "new-client", secret = Some("secret"))
+
       when(persistentClientService.get(ClientId("client")))
         .thenReturn(Future.successful(Some(oldClient)))
       when(persistentClientService.update(any[Client]))
@@ -130,7 +113,9 @@ class ClientServiceTest
         redirectUri = None,
         defaultUserId = None,
         roles = Seq.empty,
-        tokenExpirationSeconds = 300
+        tokenExpirationSeconds = 300,
+        refreshExpirationSeconds = 400,
+        reconnectExpirationSeconds = 900
       )
 
       whenReady(futureClient, Timeout(3.seconds)) { client =>
@@ -150,7 +135,9 @@ class ClientServiceTest
         redirectUri = None,
         defaultUserId = None,
         roles = Seq.empty,
-        tokenExpirationSeconds = 300
+        tokenExpirationSeconds = 300,
+        refreshExpirationSeconds = 400,
+        reconnectExpirationSeconds = 900
       )
 
       whenReady(futureClient) { client =>

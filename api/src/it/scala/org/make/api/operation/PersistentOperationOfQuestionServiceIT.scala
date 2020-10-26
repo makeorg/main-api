@@ -224,7 +224,6 @@ class PersistentOperationOfQuestionServiceIT
       } yield result
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
-        operationOfQuestion shouldBe a[Seq[_]]
         operationOfQuestion.size shouldBe 1
         operationOfQuestion.head.questionId shouldBe baseOperationOfQuestion.questionId
         operationOfQuestion.head.operationId shouldBe baseOperationOfQuestion.operationId

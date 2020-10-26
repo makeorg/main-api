@@ -122,7 +122,6 @@ class PersistentTagServiceIT
       whenReady(futureTag, Timeout(3.seconds)) { result =>
         Then("result should be an instance of Tag")
         val tag = result.get
-        tag shouldBe a[Tag]
 
         And("the tag label must be Stark")
         tag.label shouldBe "Stark"

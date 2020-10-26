@@ -50,7 +50,6 @@ class MakeSettings(config: Config) extends Extension {
   }
 
   object SecureCookie {
-    val lifetime: Duration = Duration(config.getString("cookie-secure.lifetime"))
     val name: String = config.getString("cookie-secure.name")
     val expirationName: String = config.getString("cookie-secure.expiration-name")
     val isSecure: Boolean = config.getBoolean("cookie-secure.is-secure")
@@ -68,11 +67,6 @@ class MakeSettings(config: Config) extends Extension {
     val name: String = config.getString("cookie-user-id.name")
     val isSecure: Boolean = config.getBoolean("cookie-user-id.is-secure")
     val domain: String = config.getString("cookie-user-id.domain")
-  }
-
-  object Oauth {
-    val refreshTokenLifetime: Int = config.getInt("oauth.refresh-token-lifetime")
-    val reconnectTokenLifetime: Int = config.getInt("oauth.reconnect-token-lifetime")
   }
 
   object Http {

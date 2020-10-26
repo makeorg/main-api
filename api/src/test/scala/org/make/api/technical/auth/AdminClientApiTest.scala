@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import org.make.api.MakeApiTestBase
-import org.make.core.auth.{Client, ClientId}
+import org.make.core.auth.ClientId
 import org.make.core.user.{CustomRole, UserId}
 
 import scala.concurrent.Future
@@ -35,17 +35,7 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
   val routes: Route = sealRoute(adminClientApi.routes)
 
   Feature("create a client") {
-    val validClient = Client(
-      clientId = ClientId("apiclient"),
-      name = "client",
-      allowedGrantTypes = Seq.empty,
-      secret = Some("secret"),
-      scope = None,
-      redirectUri = None,
-      defaultUserId = None,
-      roles = Seq.empty,
-      tokenExpirationSeconds = 300
-    )
+    val validClient = client(clientId = ClientId("apiclient"), name = "client", secret = Some("secret"))
 
     when(
       clientService
@@ -57,7 +47,9 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
           redirectUri = eqTo(Some("http://redirect-uri.com")),
           defaultUserId = eqTo(Some(UserId("123456-12345"))),
           roles = eqTo(Seq(CustomRole("role_custom"), CustomRole("role_default"))),
-          tokenExpirationSeconds = eqTo(300)
+          tokenExpirationSeconds = eqTo(300),
+          refreshExpirationSeconds = eqTo(400),
+          reconnectExpirationSeconds = eqTo(900)
         )
     ).thenReturn(Future.successful(validClient))
 
@@ -92,7 +84,9 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
               |  "redirectUri" : "http://redirect-uri.com",
               |  "defaultUserId" : "123456-12345",
               |  "roles" : ["role_custom","role_default"],
-              |  "tokenExpirationSeconds": 300
+              |  "tokenExpirationSeconds": 300,
+              |  "refreshExpirationSeconds": 400,
+              |  "reconnectExpirationSeconds": 900
               |}""".stripMargin))
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
         status should be(StatusCodes.Created)
@@ -101,20 +95,10 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
   }
 
   Feature("get a client") {
-    val client = Client(
-      clientId = ClientId("apiclient"),
-      name = "client",
-      allowedGrantTypes = Seq.empty,
-      secret = Some("secret"),
-      scope = None,
-      redirectUri = None,
-      defaultUserId = None,
-      roles = Seq.empty,
-      tokenExpirationSeconds = 300
-    )
+    val readClient = client(clientId = ClientId("apiclient"), name = "client", secret = Some("secret"))
 
-    when(clientService.getClient(eqTo(client.clientId)))
-      .thenReturn(Future.successful(Some(client)))
+    when(clientService.getClient(eqTo(readClient.clientId)))
+      .thenReturn(Future.successful(Some(readClient)))
     when(clientService.getClient(eqTo(ClientId("fake-client"))))
       .thenReturn(Future.successful(None))
 
@@ -155,31 +139,22 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
   }
 
   Feature("update a client") {
-    val client = Client(
+    val clientBeforeUpdate = client(
       clientId = ClientId("apiclient"),
       name = "client",
       allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
-      secret = Some("secret"),
-      scope = None,
-      redirectUri = None,
-      defaultUserId = None,
-      roles = Seq.empty,
-      tokenExpirationSeconds = 300
+      secret = Some("secret")
     )
-    val updatedClient = Client(
+
+    val updatedClient = client(
       clientId = ClientId("apiclient"),
       name = "updated client",
       allowedGrantTypes = Seq("first_grant_type", "second_grant_type"),
-      secret = Some("secret"),
-      scope = None,
-      redirectUri = None,
-      defaultUserId = None,
-      roles = Seq.empty,
-      tokenExpirationSeconds = 300
+      secret = Some("secret")
     )
 
-    when(clientService.getClient(eqTo(client.clientId)))
-      .thenReturn(Future.successful(Some(client)))
+    when(clientService.getClient(eqTo(clientBeforeUpdate.clientId)))
+      .thenReturn(Future.successful(Some(clientBeforeUpdate)))
     when(
       clientService.updateClient(
         eqTo(ClientId("apiclient")),
@@ -190,7 +165,9 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
         eqTo(None),
         eqTo(None),
         eqTo(Seq.empty),
-        eqTo(300)
+        eqTo(300),
+        eqTo(400),
+        eqTo(900)
       )
     ).thenReturn(Future.successful(Some(updatedClient)))
     when(
@@ -203,6 +180,8 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
         any[Option[String]],
         any[Option[UserId]],
         any[Seq[CustomRole]],
+        any[Int],
+        any[Int],
         any[Int]
       )
     ).thenReturn(Future.successful(None))
@@ -238,7 +217,9 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "redirectUri" : null,
                                                |  "defaultUserId" : null,
                                                |  "roles" : [],
-                                               |  "tokenExpirationSeconds": 300
+                                               |  "tokenExpirationSeconds": 300,
+                                               |  "refreshExpirationSeconds": 400,
+                                               |  "reconnectExpirationSeconds": 900
                                                |}""".stripMargin)
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {
@@ -260,7 +241,9 @@ class AdminClientApiTest extends MakeApiTestBase with DefaultAdminClientApiCompo
                                                |  "redirectUri" : null,
                                                |  "defaultUserId" : null,
                                                |  "roles" : [],
-                                               |  "tokenExpirationSeconds": 300
+                                               |  "tokenExpirationSeconds": 300,
+                                               |  "refreshExpirationSeconds": 400,
+                                               |  "reconnectExpirationSeconds": 900
                                                |}""".stripMargin)
         )
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {

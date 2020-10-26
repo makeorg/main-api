@@ -167,12 +167,14 @@ trait DefaultAdminClientApiComponent
                       clientService.createClient(
                         name = request.name,
                         allowedGrantTypes = request.allowedGrantTypes,
-                        secret = Some(request.secret),
+                        secret = request.secret,
                         scope = request.scope,
                         redirectUri = request.redirectUri,
                         defaultUserId = request.defaultUserId,
                         roles = request.roles.map(CustomRole.apply),
-                        tokenExpirationSeconds = request.tokenExpirationSeconds
+                        tokenExpirationSeconds = request.tokenExpirationSeconds,
+                        refreshExpirationSeconds = request.refreshExpirationSeconds,
+                        reconnectExpirationSeconds = request.reconnectExpirationSeconds
                       )
                     ) { client =>
                       complete(StatusCodes.Created -> ClientResponse(client))
@@ -212,12 +214,14 @@ trait DefaultAdminClientApiComponent
                       clientId = clientId,
                       name = request.name,
                       allowedGrantTypes = request.allowedGrantTypes,
-                      secret = Some(request.secret),
+                      secret = request.secret,
                       scope = request.scope,
                       redirectUri = request.redirectUri,
                       defaultUserId = request.defaultUserId,
                       roles = request.roles.map(CustomRole.apply),
-                      tokenExpirationSeconds = request.tokenExpirationSeconds
+                      tokenExpirationSeconds = request.tokenExpirationSeconds,
+                      refreshExpirationSeconds = request.refreshExpirationSeconds,
+                      reconnectExpirationSeconds = request.reconnectExpirationSeconds
                     )
                   ) { client =>
                     complete(ClientResponse(client))
@@ -266,7 +270,9 @@ final case class ClientResponse(
   @(ApiModelProperty @field)(dataType = "list[string]")
   roles: Seq[Role],
   @(ApiModelProperty @field)(dataType = "int", example = "300")
-  tokenExpirationSeconds: Int
+  tokenExpirationSeconds: Int,
+  refreshExpirationSeconds: Int,
+  reconnectExpirationSeconds: Int
 )
 
 object ClientResponse {
@@ -282,14 +288,16 @@ object ClientResponse {
       redirectUri = client.redirectUri,
       defaultUserId = client.defaultUserId,
       roles = client.roles,
-      tokenExpirationSeconds = client.tokenExpirationSeconds
+      tokenExpirationSeconds = client.tokenExpirationSeconds,
+      refreshExpirationSeconds = client.refreshExpirationSeconds,
+      reconnectExpirationSeconds = client.reconnectExpirationSeconds
     )
 }
 
 final case class AdminCreateClientRequest(
   name: String,
   @(ApiModelProperty @field)(dataType = "string", example = "ebe271b8-236f-46da-94ca-fec0b83534ca")
-  secret: String,
+  secret: Option[String],
   allowedGrantTypes: Seq[String],
   @(ApiModelProperty @field)(dataType = "string", example = "3ffd4b4a-c603-4fbb-aada-639edd169836")
   scope: Option[String],
@@ -302,7 +310,9 @@ final case class AdminCreateClientRequest(
   )
   roles: Seq[String],
   @(ApiModelProperty @field)(dataType = "int", example = "300")
-  tokenExpirationSeconds: Int
+  tokenExpirationSeconds: Int,
+  refreshExpirationSeconds: Int,
+  reconnectExpirationSeconds: Int
 )
 
 object AdminCreateClientRequest {

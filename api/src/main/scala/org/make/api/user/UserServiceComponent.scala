@@ -50,7 +50,14 @@ import org.make.core.question.QuestionId
 import org.make.core.reference.{Country, Language}
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
-import org.make.core.{BusinessConfig, DateHelper, Order, RequestContext, ValidationError, ValidationFailedError}
+import org.make.core.{
+  BusinessConfig,
+  DateHelperComponent,
+  Order,
+  RequestContext,
+  ValidationError,
+  ValidationFailedError
+}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -188,7 +195,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     with UserRegistrationValidatorComponent
     with StorageServiceComponent
     with DownloadServiceComponent
-    with UserHistoryCoordinatorServiceComponent =>
+    with UserHistoryCoordinatorServiceComponent
+    with DateHelperComponent =>
 
   override lazy val userService: UserService = new DefaultUserService
 
@@ -250,9 +258,9 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         hashedPassword = userRegisterData.password.map(_.bcrypt),
         enabled = true,
         emailVerified = false,
-        lastConnection = DateHelper.now(),
+        lastConnection = dateHelper.now(),
         verificationToken = Some(hashedVerificationToken),
-        verificationTokenExpiresAt = Some(DateHelper.now().plusSeconds(validationTokenExpiresIn)),
+        verificationTokenExpiresAt = Some(dateHelper.now().plusSeconds(validationTokenExpiresIn)),
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = userRegisterData.roles,
@@ -286,11 +294,11 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         hashedPassword = None,
         enabled = true,
         emailVerified = true,
-        lastConnection = DateHelper.now(),
+        lastConnection = dateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = Some(resetToken),
-        resetTokenExpiresAt = Some(DateHelper.now().plusSeconds(resetTokenB2BExpiresIn)),
+        resetTokenExpiresAt = Some(dateHelper.now().plusSeconds(resetTokenB2BExpiresIn)),
         roles = Seq(Role.RoleCitizen),
         country = country,
         language = language,
@@ -382,7 +390,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
             optInPartner = user.profile.flatMap(_.optInPartner),
             registerQuestionId = user.profile.flatMap(_.registerQuestionId),
-            eventDate = DateHelper.now()
+            eventDate = dateHelper.now()
           )
         )
         user
@@ -426,7 +434,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             email = user.email,
             country = user.country,
             language = user.language,
-            eventDate = DateHelper.now()
+            eventDate = dateHelper.now()
           )
         )
         user
@@ -495,7 +503,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         hashedPassword = None,
         enabled = true,
         emailVerified = true,
-        lastConnection = DateHelper.now(),
+        lastConnection = dateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -573,7 +581,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
           optInPartner = user.profile.flatMap(_.optInPartner),
           registerQuestionId = user.profile.flatMap(_.registerQuestionId),
-          eventDate = DateHelper.now()
+          eventDate = dateHelper.now()
         )
       )
       eventBusService.publish(
@@ -583,7 +591,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           language = user.language,
           requestContext = requestContext,
           isSocialLogin = true,
-          eventDate = DateHelper.now()
+          eventDate = dateHelper.now()
         )
       )
       user.profile.flatMap(_.avatarUrl).foreach { avatarUrl =>
@@ -595,7 +603,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             language = user.language,
             requestContext = requestContext,
             avatarUrl = avatarUrl,
-            eventDate = DateHelper.now()
+            eventDate = dateHelper.now()
           )
         )
       }
@@ -607,7 +615,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         result <- persistentUserService.requestResetPassword(
           userId,
           resetToken,
-          Some(DateHelper.now().plusSeconds(resetTokenExpiresIn))
+          Some(dateHelper.now().plusSeconds(resetTokenExpiresIn))
         )
       } yield result
     }
@@ -628,12 +636,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         )
         )
       } yield {
-        TokenResponse(
-          "Bearer",
-          accessToken.token,
-          accessToken.expiresIn.getOrElse(1L),
-          accessToken.refreshToken.getOrElse("")
-        )
+        TokenResponse.fromAccessToken(accessToken)
       }
     }
 
@@ -643,7 +646,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           eventBusService.publish(
             UserUpdatedOptInNewsletterEvent(
               connectedUserId = Some(userId),
-              eventDate = DateHelper.now(),
+              eventDate = dateHelper.now(),
               userId = userId,
               requestContext = RequestContext.empty,
               optInNewsletter = optInNewsletter
@@ -668,7 +671,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 UserUpdatedOptInNewsletterEvent(
                   connectedUserId = Some(userId),
                   userId = userId,
-                  eventDate = DateHelper.now(),
+                  eventDate = dateHelper.now(),
                   requestContext = RequestContext.empty,
                   optInNewsletter = optInNewsletter
                 )
@@ -722,7 +725,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
               result.results.foreach(
                 proposal =>
                   eventBusService
-                    .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+                    .publish(ReindexProposal(proposal.id, dateHelper.now(), RequestContext.empty))
               )
           )
       } else {
@@ -748,7 +751,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             result.results.foreach(
               proposal =>
                 eventBusService
-                  .publish(ReindexProposal(proposal.id, DateHelper.now(), RequestContext.empty))
+                  .publish(ReindexProposal(proposal.id, dateHelper.now(), RequestContext.empty))
             )
         )
     }
@@ -778,7 +781,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 requestContext = requestContext,
                 country = personality.country,
                 language = personality.language,
-                eventDate = DateHelper.now(),
+                eventDate = dateHelper.now(),
                 oldEmail = oldEmail,
                 newEmail = email
               )
@@ -817,7 +820,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         hashedPassword = None,
         enabled = false,
         emailVerified = false,
-        lastConnection = DateHelper.now(),
+        lastConnection = dateHelper.now(),
         verificationToken = None,
         verificationTokenExpiresAt = None,
         resetToken = None,
@@ -828,7 +831,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         lastMailingError = None,
         organisationName = None,
         userType = UserType.UserTypeUser,
-        createdAt = Some(DateHelper.now()),
+        createdAt = Some(dateHelper.now()),
         publicProfile = false
       )
       val futureDelete: Future[Unit] = for {
@@ -844,7 +847,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             userId = user.userId,
             requestContext = requestContext,
             country = user.country,
-            eventDate = DateHelper.now(),
+            eventDate = dateHelper.now(),
             language = user.language,
             adminId = adminId
           )
@@ -861,7 +864,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         eventBusService.publish(
           UserFollowEvent(
             connectedUserId = Some(userId),
-            eventDate = DateHelper.now(),
+            eventDate = dateHelper.now(),
             userId = userId,
             requestContext = requestContext,
             followedUserId = followedUserId
@@ -881,7 +884,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           UserUnfollowEvent(
             connectedUserId = Some(userId),
             userId = userId,
-            eventDate = DateHelper.now(),
+            eventDate = dateHelper.now(),
             requestContext = requestContext,
             unfollowedUserId = followedUserId
           )
@@ -902,7 +905,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       getUserByEmail(email).flatMap {
         case Some(user) => Future.successful(user)
         case None =>
-          val dateOfBirth: Option[LocalDate] = userInfo.age.map(DateHelper.computeBirthDate)
+          val dateOfBirth: Option[LocalDate] = userInfo.age.map(dateHelper.computeBirthDate)
 
           userService
             .register(
@@ -947,7 +950,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       val futureReconnectInfo = for {
         user           <- persistentUserService.get(userId)
         reconnectToken <- generateReconnectToken()
-        _              <- persistentUserService.updateReconnectToken(userId, reconnectToken, DateHelper.now())
+        _              <- persistentUserService.updateReconnectToken(userId, reconnectToken, dateHelper.now())
       } yield (user, reconnectToken)
 
       futureReconnectInfo.map {
@@ -970,7 +973,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         case Some(user)
             // if last verification token was changed more than 10 minutes ago
             if user.verificationTokenExpiresAt
-              .forall(_.minusSeconds(validationTokenExpiresIn).plusMinutes(10).isBefore(DateHelper.now()))
+              .forall(_.minusSeconds(validationTokenExpiresIn).plusMinutes(10).isBefore(dateHelper.now()))
               && !user.emailVerified =>
           userTokenGenerator.generateVerificationToken().flatMap {
             case (_, token) =>
@@ -978,7 +981,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 .updateUser(
                   user.copy(
                     verificationToken = Some(token),
-                    verificationTokenExpiresAt = Some(DateHelper.now().plusSeconds(validationTokenExpiresIn))
+                    verificationTokenExpiresAt = Some(dateHelper.now().plusSeconds(validationTokenExpiresIn))
                   )
                 )
                 .map(_.verificationToken)

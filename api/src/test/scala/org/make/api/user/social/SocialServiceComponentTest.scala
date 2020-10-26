@@ -39,7 +39,7 @@ import org.make.api.user.social.models.google.{
   PeoplePhoto,
   UserInfo => GoogleUserInfos
 }
-import org.make.api.user.{SocialLoginResponse, UserService, UserServiceComponent}
+import org.make.api.user.{UserService, UserServiceComponent}
 import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.RequestContext
 import org.make.core.auth.{ClientId, UserRights}
@@ -315,11 +315,10 @@ class SocialServiceComponentTest
       whenReady(futureTokenResposnse, Timeout(2.seconds)) {
         case (id, socialLoginResponse) =>
           id should be(userId)
-          socialLoginResponse shouldBe a[SocialLoginResponse]
-          socialLoginResponse.access_token should be(accessTokenValue)
-          socialLoginResponse.refresh_token should be(refreshTokenValue)
-          socialLoginResponse.token_type should be("Bearer")
-          socialLoginResponse.account_creation should be(false)
+          socialLoginResponse.accessToken should be(accessTokenValue)
+          socialLoginResponse.refreshToken should contain(refreshTokenValue)
+          socialLoginResponse.tokenType should be("Bearer")
+          socialLoginResponse.accountCreation should be(false)
       }
     }
 
@@ -343,8 +342,7 @@ class SocialServiceComponentTest
         )
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
-        exception shouldBe a[Exception]
-        exception.asInstanceOf[Exception].getMessage should be("invalid token from google")
+        exception.getMessage should be("invalid token from google")
       }
     }
   }
@@ -419,7 +417,7 @@ class SocialServiceComponentTest
       ) {
         case (userId, response) =>
           userId should be(userId1)
-          response.access_token should be("token")
+          response.accessToken should be("token")
           verify(userService).createOrUpdateUserFromSocial(argThat[UserInfo] { userInfo =>
             userInfo.dateOfBirth.contains(LocalDate.parse("1970-01-01")) &&
             userInfo.email.contains(email) &&
@@ -500,7 +498,7 @@ class SocialServiceComponentTest
       ) {
         case (userId, response) =>
           userId should be(userId1)
-          response.access_token should be("token")
+          response.accessToken should be("token")
           verify(userService).createOrUpdateUserFromSocial(argThat[UserInfo] { userInfo =>
             userInfo.dateOfBirth.isEmpty &&
             userInfo.email.contains(email) &&
@@ -591,7 +589,7 @@ class SocialServiceComponentTest
       ) {
         case (userId, response) =>
           userId should be(userId1)
-          response.access_token should be("token")
+          response.accessToken should be("token")
           verify(userService).createOrUpdateUserFromSocial(argThat[UserInfo] { userInfo =>
             userInfo.dateOfBirth.contains(LocalDate.parse("1970-01-03")) &&
             userInfo.email.contains(email) &&
@@ -816,11 +814,10 @@ class SocialServiceComponentTest
       whenReady(futureTokenResposnse, Timeout(2.seconds)) {
         case (id, socialLoginResponse) =>
           id should be(userId)
-          socialLoginResponse shouldBe a[SocialLoginResponse]
-          socialLoginResponse.access_token should be(accessTokenValue)
-          socialLoginResponse.refresh_token should be(refreshTokenValue)
-          socialLoginResponse.token_type should be("Bearer")
-          socialLoginResponse.account_creation should be(false)
+          socialLoginResponse.accessToken should be(accessTokenValue)
+          socialLoginResponse.refreshToken should contain(refreshTokenValue)
+          socialLoginResponse.tokenType should be("Bearer")
+          socialLoginResponse.accountCreation should be(false)
       }
     }
 
@@ -844,8 +841,7 @@ class SocialServiceComponentTest
         )
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
-        exception shouldBe a[Exception]
-        exception.asInstanceOf[Exception].getMessage should be("invalid token from facebook")
+        exception.getMessage should be("invalid token from facebook")
       }
     }
   }
