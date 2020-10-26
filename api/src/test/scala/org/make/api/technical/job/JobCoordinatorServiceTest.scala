@@ -80,7 +80,7 @@ class JobCoordinatorServiceTest
         jobCoordinatorService.get(id).map(_.map(_.status)).will(be(Some(Running(0d))))
 
         And("it should progress")
-        work.report(progress).will(be(()))
+        work.report(progress).will(be {})
         jobCoordinatorService.get(id).map(_.map(_.status)).will(be(Some(Running(progress))))
 
         And("its heart should beat")
@@ -112,7 +112,7 @@ object JobCoordinatorServiceTest {
     val future: Future[Unit] = promise.future
 
     def complete(outcome: Option[Exception]): Unit = outcome match {
-      case None        => promise.complete(Success(()))
+      case None        => promise.complete(Success {})
       case Some(error) => promise.failure(error)
     }
 

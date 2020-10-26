@@ -39,6 +39,7 @@ import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
+import org.make.api.technical.directives.FutureDirectives
 import org.make.api.technical.monitoring.MonitoringMessageHelper
 import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
@@ -64,6 +65,7 @@ trait MakeDirectives
     with ErrorAccumulatingCirceSupport
     with CirceFormatters
     with MakeDataHandlerComponent
+    with FutureDirectives
     with TracingDirectives {
   this: IdGeneratorComponent
     with MakeSettingsComponent
@@ -163,7 +165,7 @@ trait MakeDirectives
                 value = token.token,
                 secure = makeSettings.SecureCookie.isSecure,
                 httpOnly = true,
-                maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
+                maxAge = Some(token.expiresIn.getOrElse(makeSettings.SecureCookie.lifetime.toSeconds)),
                 path = Some("/"),
                 domain = Some(makeSettings.SecureCookie.domain)
               )
@@ -411,23 +413,6 @@ trait MakeDirectives
     }
   }
 
-  def provideAsync[T](provider: => Future[T]): Directive1[T] =
-    extract(_ => provider).flatMap { fa =>
-      onComplete(fa).flatMap {
-        case Success(value) => provide(value)
-        case Failure(e)     => failWith(e)
-      }
-    }
-
-  def provideAsyncOrNotFound[T](provider: => Future[Option[T]]): Directive1[T] =
-    extract(_ => provider).flatMap { fa =>
-      onComplete(fa).flatMap {
-        case Success(Some(value)) => provide(value)
-        case Success(None)        => complete(StatusCodes.NotFound)
-        case Failure(e)           => failWith(e)
-      }
-    }
-
   def getMakeHttpOrigin(mayBeOriginValue: Option[String]): Option[HttpOrigin] = {
     mayBeOriginValue.flatMap { origin =>
       if (authorizedUris.contains(origin)) {
@@ -536,7 +521,7 @@ trait MakeDirectives
     }
   }
 
-  def setMakeSecure(access_token: String, userId: UserId): Directive0 = {
+  def setMakeSecure(accessToken: String, userId: UserId): Directive0 = {
     mapResponseHeaders { responseHeaders =>
       if (responseHeaders.exists {
             case `Set-Cookie`(cookie) => cookie.name == makeSettings.SecureCookie.name
@@ -548,7 +533,7 @@ trait MakeDirectives
           `Set-Cookie`(
             HttpCookie(
               name = makeSettings.SecureCookie.name,
-              value = access_token,
+              value = accessToken,
               secure = makeSettings.SecureCookie.isSecure,
               httpOnly = true,
               maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),

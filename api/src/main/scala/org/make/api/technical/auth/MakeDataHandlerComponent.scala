@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
+import org.make.api.technical.auth.ClientService.ClientError
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
 import org.make.core.DateHelper
@@ -55,7 +56,7 @@ trait MakeDataHandler extends DataHandler[UserRights] {
 trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
   this: PersistentTokenServiceComponent
     with PersistentUserServiceComponent
-    with PersistentClientServiceComponent
+    with ClientServiceComponent
     with OauthTokenGeneratorComponent
     with IdGeneratorComponent
     with PersistentAuthCodeServiceComponent
@@ -97,59 +98,68 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       maybeCredential: Option[ClientCredential],
       request: AuthorizationRequest
     ): Future[Boolean] = {
-      maybeCredential match {
-        case Some(ClientCredential(clientId, secret)) =>
-          persistentClientService.findByClientIdAndSecret(clientId, secret).map(_.isDefined)
-        case _ => Future.successful(false)
-      }
-
-      // TODO: handle scope validation
+      findClient(maybeCredential, request.grantType).map(_.isRight)
     }
 
-    private def findUser(client: Client, request: AuthorizationRequest): Future[Option[User]] =
-      request match {
-        case passwordRequest: PasswordRequest   => findUserForPasswordFlow(client, passwordRequest)
-        case reconnectRequest: ReconnectRequest => findUserForReconnectFlow(client, reconnectRequest)
-        case _: ClientCredentialsRequest        => findUserForClientCredentialsFlow(client)
-        case _                                  => Future.successful(None)
-      }
-
-    private def findUserForClientCredentialsFlow(client: Client): Future[Option[User]] = {
-      client.defaultUserId match {
-        case Some(userId) =>
+    private def findUser(client: Client, request: AuthorizationRequest): Future[Option[User]] = {
+      val eventualMaybeUser: Future[Option[User]] = request match {
+        case passwordRequest: PasswordRequest =>
           persistentUserService
-            .get(userId)
-            .flatMap {
-              case Some(user) if !userIsRelatedToClient(client)(user) =>
-                Future.failed(ClientAccessUnauthorizedException(user, client))
-              case other => Future.successful(other)
-            }
-        case None => Future.successful(None)
+            .findByEmailAndPassword(passwordRequest.username.toLowerCase(), passwordRequest.password)
+        case reconnectRequest: ReconnectRequest =>
+          persistentUserService
+            .findByReconnectTokenAndPassword(
+              reconnectRequest.reconnectToken,
+              reconnectRequest.password,
+              validityDurationReconnectTokenSeconds
+            )
+        case _: ClientCredentialsRequest =>
+          client.defaultUserId match {
+            case Some(userId) => persistentUserService.get(userId)
+            case None         => Future.successful(None)
+          }
+        case _ => Future.successful(None)
+      }
+
+      eventualMaybeUser.flatMap {
+        case Some(user) if !userIsRelatedToClient(client)(user) =>
+          Future.failed(ClientAccessUnauthorizedException.insufficientRole(user, client))
+        case other => Future.successful(other)
       }
     }
 
-    private def findUserForReconnectFlow(client: Client, reconnectRequest: ReconnectRequest): Future[Option[User]] = {
-      persistentUserService
-        .findByReconnectTokenAndPassword(
-          reconnectRequest.reconnectToken,
-          reconnectRequest.password,
-          validityDurationReconnectTokenSeconds
-        )
-        .flatMap {
-          case Some(user) if !userIsRelatedToClient(client)(user) =>
-            Future.failed(ClientAccessUnauthorizedException(user, client))
-          case other => Future.successful(other)
-        }
-    }
-
-    private def findUserForPasswordFlow(client: Client, passwordRequest: PasswordRequest): Future[Option[User]] = {
-      persistentUserService
-        .findByEmailAndPassword(passwordRequest.username.toLowerCase(), passwordRequest.password)
-        .flatMap {
-          case Some(user) if !userIsRelatedToClient(client)(user) =>
-            Future.failed(ClientAccessUnauthorizedException(user, client))
-          case other => Future.successful(other)
-        }
+    private def findClient(
+      maybeCredentials: Option[ClientCredential],
+      grantType: String
+    ): Future[Either[ClientError, Client]] = {
+      (maybeCredentials match {
+        case None =>
+          // Do not use the default client when using the client credential grant type
+          if (grantType == OAuthGrantType.CLIENT_CREDENTIALS) {
+            Future.successful(
+              Left(
+                ClientError(
+                  ClientErrorCode.CredentialsMissing,
+                  "Client credentials are mandatory for the client_credentials grant type"
+                )
+              )
+            )
+          } else {
+            clientService.getDefaultClient()
+          }
+        case Some(credentials) =>
+          clientService.getClient(ClientId(credentials.clientId), credentials.clientSecret)
+      }).map {
+        case Right(client) =>
+          if (client.allowedGrantTypes.contains(grantType)) {
+            Right(client)
+          } else {
+            Left(
+              ClientError(ClientErrorCode.ForbiddenGrantType, s"Grant type $grantType is not allowed for this client")
+            )
+          }
+        case error => error
+      }
     }
 
     override def findUser(
@@ -157,38 +167,9 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       request: AuthorizationRequest
     ): Future[Option[UserRights]] = {
 
-      val findClient: Future[Option[Client]] = request match {
-        // if client information is not provided in password flow, use the default ones
-        case _: PasswordRequest =>
-          maybeCredential match {
-            case Some(ClientCredential(clientId, clientSecret)) =>
-              persistentClientService.findByClientIdAndSecret(clientId, clientSecret)
-            case None =>
-              persistentClientService.get(ClientId(makeSettings.Authentication.defaultClientId))
-          }
-        case _: ReconnectRequest =>
-          maybeCredential match {
-            case Some(ClientCredential(clientId, clientSecret)) =>
-              persistentClientService.findByClientIdAndSecret(clientId, clientSecret)
-            case None =>
-              persistentClientService.get(ClientId(makeSettings.Authentication.defaultClientId))
-          }
-        // For other flows going here, the client is retrieved normally
-        // this means ClientCredentials and Implicit flows. Implicit will probably need more work
-        case _ =>
-          maybeCredential match {
-            case Some(ClientCredential(clientId, clientSecret)) =>
-              persistentClientService.findByClientIdAndSecret(clientId, clientSecret)
-            case None => Future.successful(None)
-          }
-      }
-
-      findClient.flatMap {
-        case Some(client) =>
-          findUser(client, request).map(
-            _.map(user => UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified))
-          )
-        case _ => Future.successful(None)
+      findClient(maybeCredential, request.grantType).flatMap {
+        case Right(client) => findUser(client, request).map(_.map(UserRights.fromUser))
+        case Left(e)       => Future.failed(ClientAccessUnauthorizedException(e.code, e.label))
       }
     }
 
@@ -198,35 +179,37 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
       val clientId: String = authInfo.clientId.getOrElse(makeSettings.Authentication.defaultClientId)
 
-      val futureClient = persistentClientService.get(ClientId(clientId))
-      val futureResult: Future[(Token, String, String)] = for {
+      val futureClient = clientService.getClient(ClientId(clientId))
+      val futureResult: Future[Token] = for {
         (accessToken, _)  <- futureAccessTokens
         (refreshToken, _) <- futureRefreshTokens
         maybeClient       <- futureClient
         client <- maybeClient.fold(
-          Future.failed[Client](new IllegalArgumentException(s"Client with id $clientId not found"))
+          Future.failed[Client](
+            ClientAccessUnauthorizedException(ClientErrorCode.UnknownClient, s"Client with id $clientId not found")
+          )
         )(Future.successful)
       } yield {
-        (
-          Token(
-            accessToken = accessToken,
-            refreshToken = Some(refreshToken),
-            scope = None,
-            expiresIn = client.tokenExpirationSeconds,
-            user = authInfo.user,
-            client = client
-          ),
-          accessToken,
-          refreshToken
+        val maybeRefreshToken =
+          if (client.allowedGrantTypes.contains(OAuthGrantType.REFRESH_TOKEN)) {
+            Some(refreshToken)
+          } else {
+            None
+          }
+
+        Token(
+          accessToken = accessToken,
+          refreshToken = maybeRefreshToken,
+          scope = None,
+          expiresIn = client.tokenExpirationSeconds,
+          user = authInfo.user,
+          client = client
         )
       }
 
-      futureResult.flatMap { result =>
-        val (token, accessToken, refreshToken) = result
-        persistentTokenService
-          .persist(token)
-          .map(_.copy(accessToken = accessToken, refreshToken = Some(refreshToken)))
-      }.map(toAccessToken)
+      futureResult
+        .flatMap(persistentTokenService.persist)
+        .map(toAccessToken)
     }
 
     override def getStoredAccessToken(authInfo: AuthInfo[UserRights]): Future[Option[AccessToken]] = {
@@ -253,7 +236,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       persistentAuthCodeService.findByCode(code).flatMap {
         case None => Future.successful(None)
         case Some(authCode) =>
-          persistentClientService.get(authCode.client).flatMap {
+          clientService.getClient(authCode.client).flatMap {
             case Some(client) =>
               persistentUserService
                 .get(authCode.user)
@@ -271,7 +254,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
                     )
                   case None => Future.successful(None)
                   case Some(user) =>
-                    Future.failed(ClientAccessUnauthorizedException(user, client))
+                    Future.failed(ClientAccessUnauthorizedException.insufficientRole(user, client))
                 }
             case _ => Future.successful(None)
           }
@@ -345,7 +328,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
       redirectUri: Option[String]
     ): Future[Option[AuthCode]] = {
 
-      persistentClientService.get(clientId).flatMap {
+      clientService.getClient(clientId).flatMap {
         case None => Future.successful(None)
         case Some(client) =>
           persistentUserService.get(userId).flatMap {
@@ -364,7 +347,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
                   )
                 )
                 .map(Some(_))
-            case Some(user) => Future.failed(ClientAccessUnauthorizedException(user, client))
+            case Some(user) => Future.failed(ClientAccessUnauthorizedException.insufficientRole(user, client))
           }
       }
     }
@@ -398,9 +381,15 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 final case class TokenAlreadyRefreshed(refreshToken: String)
     extends Exception(s"Refresh token $refreshToken has already been refreshed")
 
-final case class ClientAccessUnauthorizedException(user: User, client: Client)
-    extends Exception(
+final case class ClientAccessUnauthorizedException(error: ClientErrorCode, message: String) extends Exception(message)
+
+object ClientAccessUnauthorizedException {
+  def insufficientRole(user: User, client: Client): ClientAccessUnauthorizedException = {
+    ClientAccessUnauthorizedException(
+      ClientErrorCode.MissingRole,
       s"User: ${user.userId} tried to connect to client ${client.clientId} with insufficient roles. " +
         s"Expected one of: ${client.roles.map(_.value).mkString(", ")}." +
         s"Actual: ${user.roles.map(_.value).mkString(", ")}"
     )
+  }
+}

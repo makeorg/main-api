@@ -79,6 +79,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth._
 import org.make.api.technical.businessconfig.{ConfigurationsApi, DefaultConfigurationsApiComponent}
 import org.make.api.technical.crm._
+import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.elasticsearch.{
   DefaultElasticSearchApiComponent,
   DefaultElasticsearchClientComponent,
@@ -126,6 +127,7 @@ trait MakeApi
     with ActorSystemTypedComponent
     with AvroSerializers
     with BuildInfoRoutes
+    with ClientDirectives
     with DefaultActiveFeatureServiceComponent
     with DefaultAdminActiveFeatureApiComponent
     with DefaultAdminClientApiComponent
@@ -496,7 +498,7 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
     case TokenAlreadyRefreshed(message)  => complete(StatusCodes.PreconditionFailed -> message)
     case _: EntityStreamSizeException    => complete(StatusCodes.PayloadTooLarge)
     case e: ClientAccessUnauthorizedException =>
-      complete(StatusCodes.Forbidden -> ValidationError("authentication", "forbidden", Some(e.getMessage)))
+      complete(StatusCodes.Unauthorized -> ValidationError("authentication", e.error.value, Some(e.getMessage)))
     case e =>
       logger.error(s"Error on request $routeName with id $requestId", e)
       complete(

@@ -22,6 +22,7 @@ package org.make.api.technical.auth
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.DefaultIdGeneratorComponent
+import org.make.api.technical.auth.ClientService.ClientError
 import org.make.core.auth.{Client, ClientId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -37,35 +38,29 @@ class ClientServiceTest
 
   override val persistentClientService: PersistentClientService = mock[PersistentClientService]
   override val makeSettings: MakeSettings = mock[MakeSettings]
+  val authentication: makeSettings.Authentication.type = mock[makeSettings.Authentication.type]
+  when(makeSettings.Authentication).thenReturn(authentication)
+  when(authentication.defaultClientId).thenReturn("default-client-id")
+
+  val defaultClient: Client = client(clientId = ClientId("default-client-id"), name = "default-client")
+
+  when(persistentClientService.persist(any[Client])).thenAnswer[Client](client => Future.successful(client))
+
+  when(persistentClientService.get(defaultClient.clientId)).thenReturn(Future.successful(Some(defaultClient)))
 
   Feature("get client") {
     Scenario("get client from ClientId") {
-      clientService.getClient(ClientId("valid-client"))
+      when(persistentClientService.get(ClientId("valid-client")))
+        .thenReturn(Future.successful(Some(client(clientId = ClientId("valid-client"), name = "valid-client"))))
 
-      verify(persistentClientService).get(ClientId("valid-client"))
+      whenReady(clientService.getClient(ClientId("valid-client")), Timeout(3.seconds)) { _ =>
+        verify(persistentClientService).get(ClientId("valid-client"))
+      }
     }
   }
 
   Feature("create client") {
     Scenario("creating a client success") {
-      when(persistentClientService.get(any[ClientId]))
-        .thenReturn(Future.successful(None))
-
-      val client =
-        Client(
-          clientId = ClientId("whatever"),
-          name = "client",
-          allowedGrantTypes = Seq.empty,
-          secret = Some("secret"),
-          scope = None,
-          redirectUri = None,
-          defaultUserId = None,
-          roles = Seq.empty,
-          tokenExpirationSeconds = 300
-        )
-
-      when(persistentClientService.persist(any[Client]))
-        .thenReturn(Future.successful(client))
 
       val futureNewClient: Future[Client] = clientService.createClient(
         name = "client",
@@ -138,7 +133,7 @@ class ClientServiceTest
       )
 
       whenReady(futureClient, Timeout(3.seconds)) { client =>
-        client.map(_.name) shouldEqual Some(newClient.name)
+        client.map(_.name) should contain(newClient.name)
       }
     }
 
@@ -163,4 +158,39 @@ class ClientServiceTest
     }
   }
 
+  Feature("getClient") {
+    Scenario("Client exists") {
+      val existingClient = client(clientId = ClientId("Client exists"), name = "Client exists", secret = Some("secret"))
+      when(persistentClientService.get(existingClient.clientId)).thenReturn(Future.successful(Some(existingClient)))
+
+      whenReady(clientService.getClient(existingClient.clientId, Some("secret")), Timeout(2.seconds)) {
+        _ should be(Right(existingClient))
+      }
+
+    }
+    Scenario("Client exists, but password mismatches") {
+      val existingClient = client(
+        clientId = ClientId("Client exists, but password mismatches"),
+        name = "Client exists, but password mismatches",
+        secret = Some("secret")
+      )
+      when(persistentClientService.get(existingClient.clientId)).thenReturn(Future.successful(Some(existingClient)))
+
+      whenReady(clientService.getClient(existingClient.clientId, Some("fake")), Timeout(2.seconds)) {
+        case Left(ClientError(ClientErrorCode.BadCredentials, _)) =>
+        case other =>
+          fail(s"Unexoected response: ${other.toString}")
+      }
+    }
+    Scenario("Client provided but doesn't exist") {
+      val clientId = ClientId("Unknown-client")
+      when(persistentClientService.get(clientId)).thenReturn(Future.successful(None))
+
+      whenReady(clientService.getClient(clientId, Some("fake")), Timeout(2.seconds)) {
+        case Left(ClientError(ClientErrorCode.UnknownClient, _)) =>
+        case other =>
+          fail(s"Unexoected response: ${other.toString}")
+      }
+    }
+  }
 }

@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 import org.make.core.Timestamped
 import org.make.core.question.QuestionId
-import org.make.core.user.{Role, UserId}
+import org.make.core.user.{Role, User, UserId}
 
 final case class Token(
   accessToken: String,
@@ -42,3 +42,9 @@ final case class UserRights(
   availableQuestions: Seq[QuestionId],
   emailVerified: Boolean
 )
+
+object UserRights {
+  def fromUser(user: User): UserRights = {
+    UserRights(user.userId, user.roles, user.availableQuestions, user.emailVerified)
+  }
+}

@@ -447,7 +447,7 @@ trait DefaultAuthenticationApiComponent
       path("resetCookies") {
         makeOperation("ResetCookies") { _ =>
           extractToken { token =>
-            onComplete(token.map(oauth2DataHandler.removeToken).getOrElse(Future.successful(()))) {
+            onComplete(token.map(oauth2DataHandler.removeToken).getOrElse(Future.successful {})) {
               case Success(_) =>
                 mapResponseHeaders(
                   _ ++ logoutCookies ++
