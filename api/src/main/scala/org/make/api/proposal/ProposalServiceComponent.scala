@@ -1084,11 +1084,12 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
 
       userService.getUser(moderator).flatMap { user =>
         val defaultNumberOfProposals = 50
+        val searchFilters = getSearchFilters(questionId, toEnrich, minVotesCount, minScore)
         search(
           maybeUserId = Some(moderator),
           requestContext = requestContext,
           query = SearchQuery(
-            filters = Some(getSearchFilters(questionId, toEnrich, minVotesCount, minScore)),
+            filters = Some(searchFilters),
             sort = Some(Sort(Some(ProposalElasticsearchFieldName.createdAt.field), Some(SortOrder.ASC))),
             limit = Some(defaultNumberOfProposals),
             language = None,
@@ -1127,7 +1128,17 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
                               requestContext
                             )
                           )
-                          .map(_ => Some(proposal))
+                          .map { _ =>
+                            searchFilters.status.foreach(
+                              filter =>
+                                if (!filter.status.contains(proposal.status)) {
+                                  logger.error(
+                                    s"Proposal id=${proposal.proposalId.value} with status=${proposal.status} incorrectly candidate for moderation, questionId=${questionId.value} moderator=${moderator.value} toEnrich=$toEnrich searchFilters=$searchFilters requestContext=$requestContext"
+                                  )
+                                }
+                            )
+                            Some(proposal)
+                          }
                           .recoverWith { case _ => recursiveLock(otherProposalIds) }
                     }
                 }
