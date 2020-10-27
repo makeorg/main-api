@@ -32,11 +32,15 @@ import scala.annotation.meta.field
 @ApiModel
 final case class OperationIdResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
+  id: OperationId,
+  @(ApiModelProperty @field)(dataType = "string", example = "49207ae1-0732-42f5-a0d0-af4ff8c4c2de")
   operationId: OperationId
 )
 
 object OperationIdResponse {
   implicit val encoder: Encoder[OperationIdResponse] = deriveEncoder[OperationIdResponse]
+
+  def apply(id: OperationId): OperationIdResponse = OperationIdResponse(id, id)
 }
 
 @ApiModel

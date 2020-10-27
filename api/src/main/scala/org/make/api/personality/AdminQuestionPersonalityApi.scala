@@ -376,9 +376,12 @@ object AdminQuestionPersonalityResponse {
 }
 
 final case class PersonalityIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") id: PersonalityId,
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") personalityId: PersonalityId
 )
 
 object PersonalityIdResponse {
   implicit val encoder: Encoder[PersonalityIdResponse] = deriveEncoder[PersonalityIdResponse]
+
+  def apply(id: PersonalityId): PersonalityIdResponse = PersonalityIdResponse(id, id)
 }

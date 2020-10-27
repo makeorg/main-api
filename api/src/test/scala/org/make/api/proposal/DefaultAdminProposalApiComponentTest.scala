@@ -322,6 +322,7 @@ class DefaultAdminProposalApiComponentTest
 
   private def proposal(id: ProposalId): ModerationProposalResponse = {
     ModerationProposalResponse(
+      id = id,
       proposalId = id,
       slug = "a-song-of-fire-and-ice",
       content = "A song of fire and ice",

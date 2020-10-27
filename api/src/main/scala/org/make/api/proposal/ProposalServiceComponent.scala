@@ -602,6 +602,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
             }
             Some(
               ModerationProposalResponse(
+                id = proposal.proposalId,
                 proposalId = proposal.proposalId,
                 slug = proposal.slug,
                 content = proposal.content,
