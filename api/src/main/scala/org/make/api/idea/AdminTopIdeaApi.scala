@@ -386,10 +386,14 @@ object TopIdeaResponse {
 @ApiModel
 final case class TopIdeaIdResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2")
+  id: TopIdeaId,
+  @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2")
   topIdeaId: TopIdeaId
 )
 object TopIdeaIdResponse {
   implicit val encoder: Encoder[TopIdeaIdResponse] = deriveEncoder[TopIdeaIdResponse]
+
+  def apply(id: TopIdeaId): TopIdeaIdResponse = TopIdeaIdResponse(id, id)
 }
 
 @ApiModel

@@ -25,12 +25,7 @@ import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.idea.AdminIdeaMappingApi.{
-  CreateIdeaMappingRequest,
-  IdeaMappingIdResponse,
-  IdeaMappingResponse,
-  UpdateIdeaMappingRequest
-}
+import org.make.api.idea.AdminIdeaMappingApi.{CreateIdeaMappingRequest, IdeaMappingResponse, UpdateIdeaMappingRequest}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth.MakeDataHandlerComponent
 import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthenticationDirectives}
@@ -119,7 +114,7 @@ trait AdminIdeaMappingApi extends Directives {
     )
   )
   @ApiResponses(
-    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaMappingIdResponse]))
+    value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[IdeaMappingResponse]))
   )
   def createIdeaMapping: Route
 
@@ -178,15 +173,6 @@ object AdminIdeaMappingApi {
         ideaId = mapping.ideaId
       )
     }
-  }
-
-  @ApiModel
-  final case class IdeaMappingIdResponse(
-    @(ApiModelProperty @field)(dataType = "string", example = "fa113d64-bc99-4e25-894c-03dccf3203e2")
-    ideaMappingId: IdeaMappingId
-  )
-  object IdeaMappingIdResponse {
-    implicit val encoder: Encoder[IdeaMappingIdResponse] = deriveEncoder[IdeaMappingIdResponse]
   }
 
   @ApiModel

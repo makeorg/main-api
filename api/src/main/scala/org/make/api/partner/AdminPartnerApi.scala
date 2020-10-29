@@ -349,9 +349,12 @@ object PartnerResponse {
 }
 
 final case class PartnerIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") id: PartnerId,
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") partnerId: PartnerId
 )
 
 object PartnerIdResponse {
   implicit val encoder: Encoder[PartnerIdResponse] = deriveEncoder[PartnerIdResponse]
+
+  def apply(id: PartnerId): PartnerIdResponse = PartnerIdResponse(id, id)
 }

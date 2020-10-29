@@ -190,6 +190,7 @@ class ModerationQuestionApiTest
         Future.successful(
           Some(
             ModerationProposalResponse(
+              id = ProposalId("aaa-bbb-ccc"),
               proposalId = ProposalId("aaa-bbb-ccc"),
               content = "il faut fou",
               slug = "il-faut-fou",
@@ -319,6 +320,7 @@ class ModerationQuestionApiTest
         .withEntity(HttpEntity(ContentTypes.`application/json`, request)) ~> routes ~> check {
         status should be(StatusCodes.Created)
         val proposalIdResponse: ProposalIdResponse = entityAs[ProposalIdResponse]
+        proposalIdResponse.id.value should be("proposal-id")
         proposalIdResponse.proposalId.value should be("proposal-id")
       }
     }

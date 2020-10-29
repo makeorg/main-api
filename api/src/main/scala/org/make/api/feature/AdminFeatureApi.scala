@@ -324,9 +324,13 @@ object FeatureResponse {
 
 final case class FeatureIdResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
+  id: FeatureId,
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e")
   featureId: FeatureId
 )
 
 object FeatureIdResponse {
   implicit val encoder: Encoder[FeatureIdResponse] = deriveEncoder[FeatureIdResponse]
+
+  def apply(id: FeatureId): FeatureIdResponse = FeatureIdResponse(id, id)
 }

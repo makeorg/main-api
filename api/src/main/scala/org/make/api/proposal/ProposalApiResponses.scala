@@ -93,6 +93,8 @@ object ModerationProposalAuthorResponse {
 
 final case class ModerationProposalResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
+  id: ProposalId,
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
   proposalId: ProposalId,
   slug: String,
   content: String,
@@ -143,12 +145,16 @@ object ProposalActionResponse extends CirceFormatters {
 @ApiModel
 final case class ProposalIdResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
+  id: ProposalId,
+  @(ApiModelProperty @field)(dataType = "string", example = "927074a0-a51f-4183-8e7a-bebc705c081b")
   proposalId: ProposalId
 )
 
 object ProposalIdResponse {
   implicit val encoder: Encoder[ProposalIdResponse] = deriveEncoder[ProposalIdResponse]
   implicit val decoder: Decoder[ProposalIdResponse] = deriveDecoder[ProposalIdResponse]
+
+  def apply(id: ProposalId): ProposalIdResponse = ProposalIdResponse(id, id)
 }
 
 final case class AuthorResponse(

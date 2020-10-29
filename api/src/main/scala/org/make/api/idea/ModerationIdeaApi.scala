@@ -389,12 +389,15 @@ object IdeaFiltersRequest {
 }
 
 final case class IdeaIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "a10086bb-4312-4486-8f57-91b5e92b3eb9") id: IdeaId,
   @(ApiModelProperty @field)(dataType = "string", example = "a10086bb-4312-4486-8f57-91b5e92b3eb9") ideaId: IdeaId
 )
 
 object IdeaIdResponse {
   implicit val encoder: Encoder[IdeaIdResponse] = deriveEncoder[IdeaIdResponse]
   implicit val decoder: Decoder[IdeaIdResponse] = deriveDecoder[IdeaIdResponse]
+
+  def apply(id: IdeaId): IdeaIdResponse = IdeaIdResponse(id, id)
 }
 
 final case class IdeaResponse(

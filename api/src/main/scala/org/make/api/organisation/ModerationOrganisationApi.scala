@@ -411,9 +411,12 @@ object OrganisationProfileResponse {
 }
 
 final case class OrganisationIdResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") id: UserId,
   @(ApiModelProperty @field)(dataType = "string", example = "e4be2934-64a5-4c58-a0a8-481471b4ff2e") userId: UserId
 )
 
 object OrganisationIdResponse {
   implicit val encoder: Encoder[OrganisationIdResponse] = deriveEncoder[OrganisationIdResponse]
+
+  def apply(id: UserId): OrganisationIdResponse = OrganisationIdResponse(id, id)
 }

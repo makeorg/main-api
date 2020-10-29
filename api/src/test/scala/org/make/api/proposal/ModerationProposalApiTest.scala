@@ -303,6 +303,7 @@ class ModerationProposalApiTest
     Future.successful(
       Some(
         ModerationProposalResponse(
+          id = proposalSim123.proposalId,
           proposalId = proposalSim123.proposalId,
           slug = proposalSim123.slug,
           content = proposalSim123.content,
@@ -341,6 +342,7 @@ class ModerationProposalApiTest
     Future.successful(
       Some(
         ModerationProposalResponse(
+          id = proposalSim124.proposalId,
           proposalId = proposalSim124.proposalId,
           slug = proposalSim124.slug,
           content = proposalSim124.content,
@@ -424,6 +426,7 @@ class ModerationProposalApiTest
 
   private def proposalResponse(id: ProposalId): ModerationProposalResponse = {
     ModerationProposalResponse(
+      id = id,
       proposalId = id,
       slug = "a-song-of-fire-and-ice",
       content = "A song of fire and ice",
