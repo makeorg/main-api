@@ -38,6 +38,7 @@ import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Api(
   value = "Admin Partner",
@@ -182,8 +183,8 @@ trait DefaultAdminPartnerApiComponent
         path("admin" / "partners") {
           makeOperation("ModerationGetPartners") { _ =>
             parameters(
-              "_start".as[Int].?,
-              "_end".as[Int].?,
+              "_start".as[Start].?,
+              "_end".as[End].?,
               "_sort".?,
               "_order".as[Order].?,
               "questionId".as[QuestionId].?,
@@ -191,8 +192,8 @@ trait DefaultAdminPartnerApiComponent
               "partnerKind".as[PartnerKind].?
             ) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
                 questionId: Option[QuestionId],
@@ -202,7 +203,7 @@ trait DefaultAdminPartnerApiComponent
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     provideAsync(
-                      partnerService.find(start.getOrElse(0), end, sort, order, questionId, organisationId, partnerKind)
+                      partnerService.find(start.orZero, end, sort, order, questionId, organisationId, partnerKind)
                     ) { result =>
                       provideAsync(partnerService.count(questionId, organisationId, partnerKind)) { count =>
                         complete(

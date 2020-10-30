@@ -30,6 +30,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.{End, Start}
 
 class AdminCrmTemplatesApiTest
     extends MakeApiTestBase
@@ -93,12 +94,12 @@ class AdminCrmTemplatesApiTest
 
   when(
     crmTemplatesService
-      .find(any[Int], any[Option[Int]], eqTo(Some(QuestionId("id"))), eqTo(Some("fr_FR")))
+      .find(any[Start], any[Option[End]], eqTo(Some(QuestionId("id"))), eqTo(Some("fr_FR")))
   ).thenReturn(Future.successful(Seq(validCrmTemplates)))
 
   when(
     crmTemplatesService
-      .find(any[Int], any[Option[Int]], eqTo(None), eqTo(None))
+      .find(any[Start], any[Option[End]], eqTo(None), eqTo(None))
   ).thenReturn(Future.successful(Seq(validCrmTemplates, validCrmTemplates.copy(crmTemplatesId = CrmTemplatesId("2")))))
 
   when(crmTemplatesService.updateCrmTemplates(any[UpdateCrmTemplates])).thenAnswer { arg: UpdateCrmTemplates =>

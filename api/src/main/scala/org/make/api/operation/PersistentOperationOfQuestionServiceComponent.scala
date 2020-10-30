@@ -44,11 +44,12 @@ import org.make.core.sequence.SequenceId
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentOperationOfQuestionService {
   def search(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     questionIds: Option[Seq[QuestionId]],
@@ -89,8 +90,8 @@ trait DefaultPersistentOperationOfQuestionServiceComponent extends PersistentOpe
     private val operationAlias = PersistentOperation.alias
 
     override def search(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       questionIds: Option[Seq[QuestionId]],

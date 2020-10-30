@@ -31,6 +31,7 @@ import org.make.core.user.UserId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class PersistentQuestionPersonalityServiceIT
     extends DatabaseTest
@@ -97,7 +98,7 @@ class PersistentQuestionPersonalityServiceIT
           personality.copy(personalityId = PersonalityId("personality3"), userId = UserId("user-id-3"))
         )
         personalities <- persistentQuestionPersonalityService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -132,7 +133,7 @@ class PersistentQuestionPersonalityServiceIT
           )
         )
         personalities <- persistentQuestionPersonalityService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,

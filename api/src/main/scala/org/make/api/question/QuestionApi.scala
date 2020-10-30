@@ -56,6 +56,7 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait QuestionApiComponent {
   def questionApi: QuestionApi
@@ -307,7 +308,7 @@ trait DefaultQuestionApiComponent
                     partnerService.find(
                       questionId = Some(question.questionId),
                       organisationId = None,
-                      start = 0,
+                      start = Start.zero,
                       end = None,
                       sort = Some("weight"),
                       order = Some(Order.desc),
@@ -532,8 +533,8 @@ trait DefaultQuestionApiComponent
                 provideAsync(
                   partnerService
                     .find(
-                      start = 0,
-                      end = Some(1000),
+                      start = Start.zero,
+                      end = Some(End(1000)),
                       sort = None,
                       order = None,
                       questionId = Some(questionId),
@@ -558,11 +559,18 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "personalities") { questionId =>
           makeOperation("GetQuestionPersonalities") { _ =>
-            parameters("personalityRole".as[String].?, "limit".as[Int].?, "skip".as[Int].?) {
-              (personalityRole: Option[String], limit: Option[Int], skip: Option[Int]) =>
+            parameters("personalityRole".as[String].?, "limit".as[Limit].?, "skip".as[Start].?) {
+              (personalityRole: Option[String], limit: Option[Limit], skip: Option[Start]) =>
                 provideAsync(
                   personalityRoleService
-                    .find(start = 0, end = None, sort = None, order = None, roleIds = None, name = personalityRole)
+                    .find(
+                      start = Start.zero,
+                      end = None,
+                      sort = None,
+                      order = None,
+                      roleIds = None,
+                      name = personalityRole
+                    )
                 ) { roles =>
                   val personalityRoleId: Option[PersonalityRoleId] = roles match {
                     case Seq(role) if personalityRole.nonEmpty => Some(role.personalityRoleId)
@@ -578,8 +586,8 @@ trait DefaultQuestionApiComponent
                   )
                   provideAsync(
                     questionService.getQuestionPersonalities(
-                      start = skip.getOrElse(0),
-                      end = limit,
+                      start = skip.orZero,
+                      end = limit.map(_.toEnd(skip.orZero)),
                       questionId = questionId,
                       personalityRoleId = personalityRoleId
                     )
@@ -601,11 +609,11 @@ trait DefaultQuestionApiComponent
       get {
         path("questions" / questionId / "top-ideas") { questionId =>
           makeOperation("GetQuestionTopIdeas") { _ =>
-            parameters("limit".as[Int].?, "skip".as[Int].?, "seed".as[Int].?) {
-              (limit: Option[Int], skip: Option[Int], seed: Option[Int]) =>
+            parameters("limit".as[Limit].?, "skip".as[Start].?, "seed".as[Int].?) {
+              (limit: Option[Limit], skip: Option[Start], seed: Option[Int]) =>
                 provideAsync(
                   questionService
-                    .getTopIdeas(skip.getOrElse(0), limit, seed, questionId)
+                    .getTopIdeas(skip.orZero, limit.map(_.toEnd(skip.orZero)), seed, questionId)
                 ) { response =>
                   complete(response)
                 }

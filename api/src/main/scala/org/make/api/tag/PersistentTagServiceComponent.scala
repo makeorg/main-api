@@ -38,6 +38,7 @@ import scalikejdbc._
 
 import scala.concurrent.Future
 import scala.util.Success
+import org.make.core.technical.Pagination._
 
 trait PersistentTagServiceComponent {
   def persistentTagService: PersistentTagService
@@ -55,8 +56,8 @@ trait PersistentTagService {
   def update(tag: Tag): Future[Option[Tag]]
   def remove(tagId: TagId): Future[Int]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     onlyDisplayed: Boolean,
@@ -264,8 +265,8 @@ trait DefaultPersistentTagServiceComponent extends PersistentTagServiceComponent
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       onlyDisplayed: Boolean,

@@ -55,6 +55,7 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.{End, Start}
 
 trait UserServiceComponent {
   def userService: UserService
@@ -67,8 +68,8 @@ trait UserService extends ShortenedNames {
   def getUserByUserIdAndPassword(userId: UserId, password: Option[String]): Future[Option[User]]
   def getUsersByUserIds(ids: Seq[UserId]): Future[Seq[User]]
   def adminFindUsers(
-    start: Int,
-    limit: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     email: Option[String],
@@ -218,8 +219,8 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     override def adminFindUsers(
-      start: Int,
-      limit: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       email: Option[String],
@@ -228,7 +229,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       role: Option[Role],
       userType: Option[UserType]
     ): Future[Seq[User]] = {
-      persistentUserService.adminFindUsers(start, limit, sort, order, email, firstName, lastName, role, userType)
+      persistentUserService.adminFindUsers(start, end, sort, order, email, firstName, lastName, role, userType)
     }
 
     private def registerUser(

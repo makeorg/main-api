@@ -46,6 +46,7 @@ import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 @Api(value = "Admin Users")
 @Path(value = "/admin")
@@ -402,8 +403,8 @@ trait DefaultAdminUserApiComponent
       path("admin" / "users") {
         makeOperation("AdminGetUsers") { _ =>
           parameters(
-            "_start".as[Int].?,
-            "_end".as[Int].?,
+            "_start".as[Start].?,
+            "_end".as[End].?,
             "_sort".?,
             "_order".as[Order].?,
             "email".?,
@@ -411,8 +412,8 @@ trait DefaultAdminUserApiComponent
             "userType".as[UserType].?
           ) {
             (
-              start: Option[Int],
-              end: Option[Int],
+              start: Option[Start],
+              end: Option[End],
               sort: Option[String],
               order: Option[Order],
               email: Option[String],
@@ -434,7 +435,7 @@ trait DefaultAdminUserApiComponent
                   ) { count =>
                     provideAsync(
                       userService.adminFindUsers(
-                        start.getOrElse(0),
+                        start.orZero,
                         end,
                         sort,
                         order,
@@ -556,10 +557,10 @@ trait DefaultAdminUserApiComponent
     override def getModerators: Route = get {
       path("admin" / "moderators") {
         makeOperation("GetModerators") { _ =>
-          parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "email".?, "firstName".?) {
+          parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "email".?, "firstName".?) {
             (
-              start: Option[Int],
-              end: Option[Int],
+              start: Option[Start],
+              end: Option[End],
               sort: Option[String],
               order: Option[Order],
               email: Option[String],
@@ -578,7 +579,7 @@ trait DefaultAdminUserApiComponent
                   ) { count =>
                     provideAsync(
                       userService.adminFindUsers(
-                        start.getOrElse(0),
+                        start.orZero,
                         end,
                         sort,
                         order,

@@ -33,6 +33,7 @@ import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait OperationServiceComponent {
   def operationService: OperationService
@@ -46,8 +47,8 @@ trait OperationService extends ShortenedNames {
     openAt: Option[LocalDate] = None
   ): Future[Seq[Operation]]
   def findSimple(
-    start: Int = 0,
-    end: Option[Int] = None,
+    start: Start = Start.zero,
+    end: Option[End] = None,
     sort: Option[String] = None,
     order: Option[Order] = None,
     slug: Option[String] = None,
@@ -88,8 +89,8 @@ trait DefaultOperationServiceComponent extends OperationServiceComponent with Sh
     }
 
     override def findSimple(
-      start: Int = 0,
-      end: Option[Int] = None,
+      start: Start = Start.zero,
+      end: Option[End] = None,
       sort: Option[String] = None,
       order: Option[Order] = None,
       slug: Option[String] = None,

@@ -25,6 +25,7 @@ import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersonalityRoleServiceComponent {
   def personalityRoleService: PersonalityRoleService
@@ -33,8 +34,8 @@ trait PersonalityRoleServiceComponent {
 trait PersonalityRoleService extends ShortenedNames {
   def getPersonalityRole(personalityRoleId: PersonalityRoleId): Future[Option[PersonalityRole]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     roleIds: Option[Seq[PersonalityRoleId]],
@@ -81,8 +82,8 @@ trait DefaultPersonalityRoleServiceComponent extends PersonalityRoleServiceCompo
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       roleIds: Option[Seq[PersonalityRoleId]],

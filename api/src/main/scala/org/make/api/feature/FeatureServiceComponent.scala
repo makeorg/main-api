@@ -25,6 +25,7 @@ import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait FeatureServiceComponent {
   def featureService: FeatureService
@@ -38,8 +39,8 @@ trait FeatureService extends ShortenedNames {
   def deleteFeature(featureId: FeatureId): Future[Unit]
   def findByFeatureIds(featureIds: Seq[FeatureId]): Future[Seq[Feature]]
   def find(
-    start: Int = 0,
-    end: Option[Int] = None,
+    start: Start = Start.zero,
+    end: Option[End] = None,
     sort: Option[String] = None,
     order: Option[Order] = None,
     slug: Option[String]
@@ -87,8 +88,8 @@ trait DefaultFeatureServiceComponent extends FeatureServiceComponent with Shorte
     }
 
     override def find(
-      start: Int = 0,
-      end: Option[Int] = None,
+      start: Start = Start.zero,
+      end: Option[End] = None,
       sort: Option[String] = None,
       order: Option[Order] = None,
       slug: Option[String]

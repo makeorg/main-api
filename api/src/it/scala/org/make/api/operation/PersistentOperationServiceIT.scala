@@ -38,6 +38,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.{End, Start}
 
 class PersistentOperationServiceIT
     extends DatabaseTest
@@ -382,8 +383,8 @@ class PersistentOperationServiceIT
         _ <- persistentOperationService.persist(simpleOperation(OperationId("|AAA operation")))
         _ <- persistentOperationService.persist(simpleOperation(OperationId("|CCC operation")))
         results <- persistentOperationService.findSimple(
-          start = 1,
-          end = Some(2),
+          start = Start(1),
+          end = Some(End(3)),
           sort = Some("uuid"),
           order = Some(Order.desc),
           operationKinds = Some(Seq(OperationKind.BusinessConsultation))

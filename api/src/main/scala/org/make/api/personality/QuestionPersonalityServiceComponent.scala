@@ -39,6 +39,7 @@ import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait QuestionPersonalityServiceComponent {
   def questionPersonalityService: QuestionPersonalityService
@@ -47,8 +48,8 @@ trait QuestionPersonalityServiceComponent {
 trait QuestionPersonalityService extends ShortenedNames {
   def getPersonality(personalityId: PersonalityId): Future[Option[Personality]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     userId: Option[UserId],
@@ -111,8 +112,8 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       userId: Option[UserId],
@@ -193,9 +194,9 @@ trait DefaultQuestionPersonalityServiceComponent extends QuestionPersonalityServ
         questionIds = questions.map(_.questionId)
         queryFilters = OperationOfQuestionSearchFilters(questionIds = Some(QuestionIdsSearchFilter(questionIds)))
         opOfQuestionsResult <- operationOfQuestionService.search(OperationOfQuestionSearchQuery(Some(queryFilters)))
-        topIdeas            <- topIdeaService.search(0, None, None, None, None, Some(questionIds), None)
+        topIdeas            <- topIdeaService.search(Start.zero, None, None, None, None, Some(questionIds), None)
         topIdeaComments <- topIdeaCommentService.search(
-          0,
+          Start.zero,
           None,
           Some(topIdeas.map(_.topIdeaId)),
           Some(personalities.map(_.userId).distinct)

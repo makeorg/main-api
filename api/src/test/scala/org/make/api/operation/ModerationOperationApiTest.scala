@@ -39,6 +39,7 @@ import org.make.core.user.{Role, User, UserId}
 import org.make.core.{DateHelper, ValidationError}
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class ModerationOperationApiTest
     extends MakeApiTestBase
@@ -185,7 +186,7 @@ class ModerationOperationApiTest
   when(operationService.findOneSimple(OperationId("fakeid"))).thenReturn(Future.successful(None))
   when(
     operationService.findSimple(
-      start = 0,
+      start = Start.zero,
       end = None,
       sort = None,
       order = None,
@@ -196,7 +197,8 @@ class ModerationOperationApiTest
   when(operationService.count(slug = Some("second-operation"), operationKinds = None))
     .thenReturn(Future.successful(1))
   when(
-    operationService.findSimple(start = 0, end = None, sort = None, order = None, slug = None, operationKinds = None)
+    operationService
+      .findSimple(start = Start.zero, end = None, sort = None, order = None, slug = None, operationKinds = None)
   ).thenReturn(Future.successful(Seq(firstOperation, secondOperation)))
   when(operationService.count(slug = None, operationKinds = None)).thenReturn(Future.successful(2))
   when(tagService.findByTagIds(Seq(TagId("hello")))).thenReturn(

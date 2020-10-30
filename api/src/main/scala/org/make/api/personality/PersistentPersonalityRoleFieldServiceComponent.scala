@@ -31,6 +31,7 @@ import org.make.core.Order
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentPersonalityRoleFieldServiceComponent {
   def persistentPersonalityRoleFieldService: PersistentPersonalityRoleFieldService
@@ -44,8 +45,8 @@ trait PersistentPersonalityRoleFieldService {
     personalityRoleId: PersonalityRoleId
   ): Future[Option[PersonalityRoleField]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     personalityRoleId: Option[PersonalityRoleId],
@@ -125,8 +126,8 @@ trait DefaultPersistentPersonalityRoleFieldServiceComponent extends PersistentPe
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       maybePersonalityRoleId: Option[PersonalityRoleId],

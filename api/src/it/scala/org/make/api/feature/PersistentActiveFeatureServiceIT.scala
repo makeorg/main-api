@@ -30,6 +30,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class PersistentActiveFeatureServiceIT
     extends DatabaseTest
@@ -115,7 +116,7 @@ class PersistentActiveFeatureServiceIT
       val futureFeaturesLists: Future[(Seq[ActiveFeature], Seq[ActiveFeature])] = for {
         persistedFeaturesList <- futurePersistedFeatureList
         foundFeatures <- persistentActiveFeatureService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -144,7 +145,7 @@ class PersistentActiveFeatureServiceIT
           newActiveFeature(FeatureId("feature"), Some(QuestionId("question-1")))
         )
         listFeatures <- persistentActiveFeatureService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,

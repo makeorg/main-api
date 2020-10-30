@@ -28,6 +28,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class CrmTemplatesServiceTest
     extends MakeUnitTest
@@ -181,12 +182,12 @@ class CrmTemplatesServiceTest
     )
 
     Scenario("find crmTemplates from CrmTemplatesId with questionId and locale fallback") {
-      when(persistentCrmTemplatesService.find(eqTo(0), eqTo(None), eqTo(Some(QuestionId("toto"))), eqTo(None)))
+      when(persistentCrmTemplatesService.find(eqTo(Start.zero), eqTo(None), eqTo(Some(QuestionId("toto"))), eqTo(None)))
         .thenReturn(Future.successful(Seq.empty))
-      when(persistentCrmTemplatesService.find(eqTo(0), eqTo(None), eqTo(None), eqTo(Some("locale-fallback"))))
+      when(persistentCrmTemplatesService.find(eqTo(Start.zero), eqTo(None), eqTo(None), eqTo(Some("locale-fallback"))))
         .thenReturn(Future.successful(Seq(aCrmTemplates, aCrmTemplates)))
       whenReady(
-        crmTemplatesService.find(0, None, Some(QuestionId("toto")), Some("locale-fallback")),
+        crmTemplatesService.find(Start.zero, None, Some(QuestionId("toto")), Some("locale-fallback")),
         Timeout(3.seconds)
       ) { result =>
         result.size shouldBe 2
@@ -194,19 +195,19 @@ class CrmTemplatesServiceTest
     }
 
     Scenario("find crmTemplates from CrmTemplatesId without questionId with locale") {
-      when(persistentCrmTemplatesService.find(eqTo(0), eqTo(None), eqTo(None), eqTo(Some("locale"))))
+      when(persistentCrmTemplatesService.find(eqTo(Start.zero), eqTo(None), eqTo(None), eqTo(Some("locale"))))
         .thenReturn(Future.successful(Seq(aCrmTemplates)))
 
-      whenReady(crmTemplatesService.find(0, None, None, Some("locale")), Timeout(3.seconds)) { result =>
+      whenReady(crmTemplatesService.find(Start.zero, None, None, Some("locale")), Timeout(3.seconds)) { result =>
         result.head.crmTemplatesId shouldBe CrmTemplatesId("id")
       }
     }
 
     Scenario("find crmTemplates from CrmTemplatesId without params") {
-      when(persistentCrmTemplatesService.find(eqTo(0), eqTo(None), eqTo(None), eqTo(None)))
+      when(persistentCrmTemplatesService.find(eqTo(Start.zero), eqTo(None), eqTo(None), eqTo(None)))
         .thenReturn(Future.successful(Seq.empty))
 
-      whenReady(crmTemplatesService.find(0, None, None, None), Timeout(3.seconds)) { result =>
+      whenReady(crmTemplatesService.find(Start.zero, None, None, None), Timeout(3.seconds)) { result =>
         result.isEmpty shouldBe true
       }
     }

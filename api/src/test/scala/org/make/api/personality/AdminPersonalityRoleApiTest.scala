@@ -33,6 +33,7 @@ import org.make.core.personality.{
 }
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class AdminPersonalityRoleApiTest
     extends MakeApiTestBase
@@ -157,8 +158,10 @@ class AdminPersonalityRoleApiTest
 
     Scenario("get personality roles with admin rights") {
 
-      when(personalityRoleService.find(start = 0, end = None, sort = None, order = None, roleIds = None, name = None))
-        .thenReturn(Future.successful(Seq(personalityRole)))
+      when(
+        personalityRoleService
+          .find(start = Start.zero, end = None, sort = None, order = None, roleIds = None, name = None)
+      ).thenReturn(Future.successful(Seq(personalityRole)))
       when(personalityRoleService.count(roleIds = None, name = None)).thenReturn(Future.successful(1))
 
       Get("/admin/personality-roles")
@@ -355,7 +358,7 @@ class AdminPersonalityRoleApiTest
       when(
         personalityRoleFieldService
           .find(
-            start = 0,
+            start = Start.zero,
             end = None,
             sort = None,
             order = None,

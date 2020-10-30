@@ -45,6 +45,7 @@ import org.make.core.{CirceFormatters, HttpCodes, Order, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Api(
   value = "Moderation Organisation",
@@ -233,10 +234,10 @@ trait DefaultModerationOrganisationApiComponent
       get {
         path("moderation" / "organisations") {
           makeOperation("ModerationGetOrganisations") { _ =>
-            parameters("_start".as[Int].?, "_end".as[Int].?, "_sort".?, "_order".as[Order].?, "organisationName".?) {
+            parameters("_start".as[Start].?, "_end".as[End].?, "_sort".?, "_order".as[Order].?, "organisationName".?) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
                 organisationName: Option[String]
@@ -244,7 +245,7 @@ trait DefaultModerationOrganisationApiComponent
                 makeOAuth2 { auth: AuthInfo[UserRights] =>
                   requireAdminRole(auth.user) {
                     provideAsync(organisationService.count(organisationName)) { count =>
-                      provideAsync(organisationService.find(start.getOrElse(0), end, sort, order, organisationName)) {
+                      provideAsync(organisationService.find(start.orZero, end, sort, order, organisationName)) {
                         result =>
                           complete(
                             (

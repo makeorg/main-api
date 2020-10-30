@@ -41,6 +41,7 @@ import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentUserServiceComponent {
   def persistentUserService: PersistentUserService
@@ -339,8 +340,8 @@ trait PersistentUserService {
   def findByUserIdAndUserType(userId: UserId, userType: UserType): Future[Option[User]]
   def findByEmail(email: String): Future[Option[User]]
   def adminFindUsers(
-    start: Int,
-    limit: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     email: Option[String],
@@ -351,8 +352,8 @@ trait PersistentUserService {
   ): Future[Seq[User]]
   def findAllOrganisations(): Future[Seq[User]]
   def findOrganisations(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     organisationName: Option[String]
@@ -427,7 +428,7 @@ trait DefaultPersistentUserServiceComponent
     private val column = PersistentUser.column
     private val followedUsersColumn = FollowedUsers.column
 
-    private val defaultLimit = Some(10)
+    private def defaultEnd(start: Start): Option[End] = Some(End(start.value + 10))
 
     override def getFollowedUsers(userId: UserId): Future[Seq[String]] = {
       implicit val cxt: EC = readExecutionContext
@@ -547,8 +548,8 @@ trait DefaultPersistentUserServiceComponent
     }
 
     override def adminFindUsers(
-      start: Int,
-      limit: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       email: Option[String],
@@ -577,8 +578,7 @@ trait DefaultPersistentUserServiceComponent
                 maybeUserType.map(userType => sqls.eq(userAlias.userType, userType))
               )
             )
-
-          sortOrderQuery(start, limit.orElse(defaultLimit), sort, order, query)
+          sortOrderQuery(start, end.orElse(defaultEnd(start)), sort, order, query)
         }.map(PersistentUser.apply()).list().apply()
       })
 
@@ -600,8 +600,8 @@ trait DefaultPersistentUserServiceComponent
     }
 
     override def findOrganisations(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       organisationName: Option[String]
@@ -625,8 +625,7 @@ trait DefaultPersistentUserServiceComponent
                     )
                   )
               )
-
-          sortOrderQuery(start, end.orElse(defaultLimit), sort.orElse(Some("organisationName")), order, query)
+          sortOrderQuery(start, end.orElse(defaultEnd(start)), sort.orElse(Some("organisationName")), order, query)
         }.map(PersistentUser.apply()).list().apply()
       })
 

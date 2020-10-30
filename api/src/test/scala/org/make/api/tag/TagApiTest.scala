@@ -29,6 +29,7 @@ import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.Order
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.{End, Start}
 
 class TagApiTest
     extends MakeApiTestBase
@@ -95,8 +96,8 @@ class TagApiTest
 
       when(
         tagService.find(
-          eqTo(0),
-          eqTo(Some(2)),
+          eqTo(Start.zero),
+          eqTo(Some(End(2))),
           any[Option[String]],
           any[Option[Order]],
           eqTo(true),

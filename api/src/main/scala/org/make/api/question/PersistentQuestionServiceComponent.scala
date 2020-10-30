@@ -35,6 +35,7 @@ import org.make.core.reference.{Country, Language}
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentQuestionServiceComponent {
   def persistentQuestionService: PersistentQuestionService
@@ -78,7 +79,9 @@ trait DefaultPersistentQuestionServiceComponent extends PersistentQuestionServic
                 request.maybeQuestionIds.map(questionIds => sqls.in(questionAlias.questionId, questionIds.map(_.value)))
               )
             )
-          sortOrderQuery(request.skip.getOrElse(0), request.limit, request.sort, request.order, query)
+          val start = request.skip.orZero
+          val end = request.end
+          sortOrderQuery(start, end, request.sort, request.order, query)
         }.map(PersistentQuestion.apply()).list().apply()
       }).map(_.map(_.toQuestion))
 

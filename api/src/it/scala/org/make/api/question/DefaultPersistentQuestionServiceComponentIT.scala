@@ -29,6 +29,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.{End, Start}
 
 class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with DefaultPersistentQuestionServiceComponent {
   override protected val cockroachExposedPort: Int = 40010
@@ -141,13 +142,19 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
         results.size should be(0)
       }
 
-      whenReady(persistentQuestionService.find(SearchQuestionRequest(limit = Some(2))), Timeout(2.seconds)) { results =>
-        results.size should be(2)
+      whenReady(persistentQuestionService.find(SearchQuestionRequest(end = Some(End(2)))), Timeout(2.seconds)) {
+        results =>
+          results.size should be(2)
       }
 
       whenReady(
         persistentQuestionService.find(
-          SearchQuestionRequest(limit = Some(3), order = Some(Order.desc), sort = Some("slug"), skip = Some(1))
+          SearchQuestionRequest(
+            skip = Some(Start(1)),
+            end = Some(End(4)),
+            order = Some(Order.desc),
+            sort = Some("slug")
+          )
         ),
         Timeout(2.seconds)
       ) { results =>
@@ -159,7 +166,7 @@ class DefaultPersistentQuestionServiceComponentIT extends DatabaseTest with Defa
 
       whenReady(
         persistentQuestionService.find(
-          SearchQuestionRequest(limit = Some(3), order = Some(Order.asc), sort = Some("slug"), skip = Some(2))
+          SearchQuestionRequest(end = Some(End(5)), order = Some(Order.asc), sort = Some("slug"), skip = Some(Start(2)))
         ),
         Timeout(2.seconds)
       ) { results =>

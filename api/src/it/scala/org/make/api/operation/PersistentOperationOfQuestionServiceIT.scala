@@ -36,6 +36,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class PersistentOperationOfQuestionServiceIT
     extends DatabaseTest
@@ -147,7 +148,7 @@ class PersistentOperationOfQuestionServiceIT
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _      <- createOperationOfQuestion(operationOfQuestion1)
         _      <- createOperationOfQuestion(operationOfQuestion2)
-        result <- persistentOperationOfQuestionService.search(0, None, None, None, None, None, None, None)
+        result <- persistentOperationOfQuestionService.search(Start.zero, None, None, None, None, None, None, None)
       } yield result
 
       whenReady(futureOperationOfQuestion, Timeout(3.seconds)) { operationOfQuestion =>
@@ -161,7 +162,7 @@ class PersistentOperationOfQuestionServiceIT
       val futureOperationOfQuestion: Future[Seq[OperationOfQuestion]] = for {
         _ <- createOperationOfQuestion(operationOfQuestion3)
         result <- persistentOperationOfQuestionService.search(
-          0,
+          Start.zero,
           None,
           None,
           None,
@@ -196,7 +197,7 @@ class PersistentOperationOfQuestionServiceIT
         _ <- createOperationOfQuestion(openOOQ)
         _ <- createOperationOfQuestion(closedOOQ)
         result <- persistentOperationOfQuestionService.search(
-          0,
+          Start.zero,
           None,
           None,
           None,

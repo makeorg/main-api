@@ -31,6 +31,7 @@ import org.make.core.user.Role.RoleActor
 import org.make.core.user.{User, UserId, UserType}
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.{End, Start}
 
 class ModerationOrganisationApiTest
     extends MakeApiTestBase
@@ -273,7 +274,7 @@ class ModerationOrganisationApiTest
       Then("I should get a forbidden status")
       when(
         organisationService
-          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[Order]], any[Option[String]])
+          .find(any[Start], any[Option[End]], any[Option[String]], any[Option[Order]], any[Option[String]])
       ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(tokenModerator))) ~> routes ~> check {
@@ -290,7 +291,7 @@ class ModerationOrganisationApiTest
       Then("I should get an OK status")
       when(
         organisationService
-          .find(any[Int], any[Option[Int]], any[Option[String]], any[Option[Order]], any[Option[String]])
+          .find(any[Start], any[Option[End]], any[Option[String]], any[Option[Order]], any[Option[String]])
       ).thenReturn(Future.successful(Seq(fakeOrganisation)))
       Get("/moderation/organisations")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin))) ~> routes ~> check {

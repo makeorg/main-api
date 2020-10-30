@@ -37,6 +37,7 @@ import org.make.core.{RequestContext, ValidationError}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class AdminUserApiTest
     extends MakeApiTestBase
@@ -225,8 +226,8 @@ class AdminUserApiTest
       when(
         userService
           .adminFindUsers(
-            start = 0,
-            limit = None,
+            start = Start.zero,
+            end = None,
             sort = None,
             order = None,
             email = None,
@@ -698,8 +699,8 @@ class AdminUserApiTest
       when(
         userService
           .adminFindUsers(
-            start = 0,
-            limit = None,
+            start = Start.zero,
+            end = None,
             sort = None,
             order = None,
             email = None,
@@ -721,8 +722,8 @@ class AdminUserApiTest
       ).thenReturn(Future.successful(1))
       when(
         userService.adminFindUsers(
-          start = 0,
-          limit = None,
+          start = Start.zero,
+          end = None,
           sort = None,
           order = None,
           email = None,

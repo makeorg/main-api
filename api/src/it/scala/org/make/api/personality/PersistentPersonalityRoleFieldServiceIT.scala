@@ -25,6 +25,7 @@ import org.make.core.personality.{PersonalityRole, PersonalityRoleField, Persona
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class PersistentPersonalityRoleFieldServiceIT
     extends DatabaseTest
@@ -83,7 +84,7 @@ class PersistentPersonalityRoleFieldServiceIT
             .copy(personalityRoleFieldId = PersonalityRoleFieldId("bool-field"), name = "Boolean field")
         )
         personalityRoleFields <- persistentPersonalityRoleFieldService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -104,7 +105,7 @@ class PersistentPersonalityRoleFieldServiceIT
     Scenario("search by name") {
       val futurePersonalityRoleField =
         persistentPersonalityRoleFieldService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,

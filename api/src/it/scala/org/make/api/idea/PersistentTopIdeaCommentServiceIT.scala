@@ -32,6 +32,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class PersistentTopIdeaCommentServiceIT
     extends DatabaseTest
@@ -250,14 +251,14 @@ class PersistentTopIdeaCommentServiceIT
       waitForCompletion(Future.traverse(topIdeaComments)(persistentTopIdeaCommentService.persist))
 
       whenReady(
-        persistentTopIdeaCommentService.search(0, None, Some(Seq(topIdeas(4).topIdeaId)), None),
+        persistentTopIdeaCommentService.search(Start.zero, None, Some(Seq(topIdeas(4).topIdeaId)), None),
         Timeout(5.seconds)
       ) { results =>
         results.map(_.topIdeaCommentId.value).sorted should be(Seq("find-1", "find-2"))
       }
 
       whenReady(
-        persistentTopIdeaCommentService.search(0, None, None, Some(Seq(personalities(3).userId))),
+        persistentTopIdeaCommentService.search(Start.zero, None, None, Some(Seq(personalities(3).userId))),
         Timeout(5.seconds)
       ) { results =>
         results.map(_.topIdeaCommentId.value).sorted should be(Seq("find-1", "find-3"))
@@ -265,7 +266,7 @@ class PersistentTopIdeaCommentServiceIT
 
       whenReady(
         persistentTopIdeaCommentService
-          .search(0, None, Some(Seq(topIdeas(4).topIdeaId)), Some(Seq(personalities(3).userId))),
+          .search(Start.zero, None, Some(Seq(topIdeas(4).topIdeaId)), Some(Seq(personalities(3).userId))),
         Timeout(5.seconds)
       ) { results =>
         results.map(_.topIdeaCommentId.value).sorted should be(Seq("find-1"))

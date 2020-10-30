@@ -24,6 +24,7 @@ import org.make.core.personality.{PersonalityRole, PersonalityRoleId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersistentPersonalityRoleServiceComponent {
 
@@ -64,7 +65,7 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
           personalityRole.copy(personalityRoleId = PersonalityRoleId("candidate-3"), name = "CANDIDATE_3")
         )
         personalityRoles <- persistentPersonalityRoleService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -83,7 +84,7 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
     Scenario("search by name") {
       val futurePersonalityRole =
         persistentPersonalityRoleService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
@@ -99,7 +100,7 @@ class PersistentPersonalityRoleServiceIT extends DatabaseTest with DefaultPersis
     Scenario("search by ids") {
       val futurePersonalityRole =
         persistentPersonalityRoleService.find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,

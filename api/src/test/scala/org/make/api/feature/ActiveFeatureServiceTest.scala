@@ -29,6 +29,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.{End, Start}
 
 class ActiveFeatureServiceTest
     extends MakeUnitTest
@@ -99,8 +100,8 @@ class ActiveFeatureServiceTest
       reset(persistentActiveFeatureService)
       when(
         persistentActiveFeatureService.find(
-          any[Int],
-          any[Option[Int]],
+          any[Start],
+          any[Option[End]],
           any[Option[String]],
           any[Option[Order]],
           eqTo(Some(QuestionId("find-activeFeature-1")))

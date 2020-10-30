@@ -31,6 +31,7 @@ import org.make.core.question.QuestionId
 import scalikejdbc._
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PersistentCrmTemplatesServiceComponent {
   def persistentCrmTemplatesService: PersistentCrmTemplatesService
@@ -42,8 +43,8 @@ trait PersistentCrmTemplatesService {
   def getById(crmTemplatesId: CrmTemplatesId): Future[Option[CrmTemplates]]
   def getDefaultTemplate(locale: String): Future[Option[CrmTemplates]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     questionId: Option[QuestionId],
     locale: Option[String]
   ): Future[Seq[CrmTemplates]]
@@ -139,8 +140,8 @@ trait DefaultPersistentCrmTemplatesServiceComponent extends PersistentCrmTemplat
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       questionId: Option[QuestionId],
       locale: Option[String]
     ): Future[Seq[CrmTemplates]] = {

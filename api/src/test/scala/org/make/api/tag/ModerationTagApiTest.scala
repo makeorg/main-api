@@ -32,6 +32,7 @@ import org.make.core.reference.{Country, Language}
 import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.{End, Start}
 
 class ModerationTagApiTest
     extends MakeApiTestBase
@@ -104,7 +105,7 @@ class ModerationTagApiTest
     .thenReturn(Future.successful(Seq(tag1, tag2)))
   when(
     tagService
-      .find(any[Int], any[Option[Int]], eqTo(Some("label")), eqTo(Some(Order.asc)), any[Boolean], any[TagFilter])
+      .find(any[Start], any[Option[End]], eqTo(Some("label")), eqTo(Some(Order.asc)), any[Boolean], any[TagFilter])
   ).thenReturn(Future.successful(Seq(tag1, tag2)))
 
   when(

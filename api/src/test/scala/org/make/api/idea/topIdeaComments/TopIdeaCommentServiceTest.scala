@@ -31,6 +31,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class TopIdeaCommentServiceTest
     extends MakeUnitTest
@@ -83,7 +84,7 @@ class TopIdeaCommentServiceTest
 
   Feature("search") {
     Scenario("search all  top idea comment") {
-      val start = 42
+      val start = Start(42)
       val end = None
       val topIdeaIds = None
       val personalityIds = Some(Seq(UserId("some-user"), UserId("another-user")))
@@ -96,7 +97,12 @@ class TopIdeaCommentServiceTest
     Scenario("get comments with personality") {
       when(
         persistentTopIdeaCommentService
-          .search(start = 0, end = None, topIdeaIds = Some(Seq(TopIdeaId("top-idea-id"))), personalityIds = None)
+          .search(
+            start = Start.zero,
+            end = None,
+            topIdeaIds = Some(Seq(TopIdeaId("top-idea-id"))),
+            personalityIds = None
+          )
       ).thenReturn(
         Future.successful(
           Seq(

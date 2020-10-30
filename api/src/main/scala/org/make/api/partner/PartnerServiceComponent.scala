@@ -27,6 +27,7 @@ import org.make.core.Order
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait PartnerServiceComponent {
   def partnerService: PartnerService
@@ -35,8 +36,8 @@ trait PartnerServiceComponent {
 trait PartnerService extends ShortenedNames {
   def getPartner(partnerId: PartnerId): Future[Option[Partner]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     sort: Option[String],
     order: Option[Order],
     questionId: Option[QuestionId],
@@ -98,8 +99,8 @@ trait DefaultPartnerServiceComponent extends PartnerServiceComponent {
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       sort: Option[String],
       order: Option[Order],
       questionId: Option[QuestionId],

@@ -51,6 +51,7 @@ import org.make.core.user.Role.RoleAdmin
 import scalaoauth2.provider.AuthInfo
 
 import scala.annotation.meta.field
+import org.make.core.technical.Pagination._
 
 @Api(value = "Moderation Operation of question")
 @Path(value = "/moderation/operations-of-questions")
@@ -241,8 +242,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
           makeOAuth2 { auth: AuthInfo[UserRights] =>
             requireModerationRole(auth.user) {
               parameters(
-                "_start".as[Int].?,
-                "_end".as[Int].?,
+                "_start".as[Start].?,
+                "_end".as[End].?,
                 "_sort".?,
                 "_order".as[Order].?,
                 "questionId".as[Seq[QuestionId]].?,
@@ -251,8 +252,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                 "openAt".as[ZonedDateTime].?
               ) {
                 (
-                  start: Option[Int],
-                  end: Option[Int],
+                  start: Option[Start],
+                  end: Option[End],
                   sort: Option[String],
                   order: Option[Order],
                   questionIds,
@@ -272,7 +273,7 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   provideAsync(
                     operationOfQuestionService
                       .find(
-                        start.getOrElse(0),
+                        start.orZero,
                         end,
                         sort,
                         order,

@@ -30,6 +30,7 @@ import org.make.core.question.QuestionId
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.core.Validation._
+import org.make.core.technical.Pagination._
 
 trait CrmTemplatesServiceComponent {
   def crmTemplatesService: CrmTemplatesService
@@ -40,8 +41,8 @@ trait CrmTemplatesService extends ShortenedNames {
   def createCrmTemplates(entity: CreateCrmTemplates): Future[CrmTemplates]
   def updateCrmTemplates(entity: UpdateCrmTemplates): Future[Option[CrmTemplates]]
   def find(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     questionId: Option[QuestionId],
     locale: Option[String]
   ): Future[Seq[CrmTemplates]]
@@ -107,7 +108,7 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
 
     def findOne(questionId: Option[QuestionId], locale: String): Future[Option[CrmTemplates]] = {
       val result = questionId
-        .traverse(_ => persistentCrmTemplatesService.find(0, Some(1), questionId, None).map(_.headOption))
+        .traverse(_ => persistentCrmTemplatesService.find(Start.zero, Some(End(1)), questionId, None).map(_.headOption))
         .flatMap {
           case Some(templates @ Some(_)) => Future.successful(templates)
           case _                         => persistentCrmTemplatesService.getDefaultTemplate(locale)
@@ -123,8 +124,8 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
     }
 
     override def find(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       questionId: Option[QuestionId],
       locale: Option[String]
     ): Future[Seq[CrmTemplates]] = {

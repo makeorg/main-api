@@ -52,6 +52,7 @@ import scalaoauth2.provider.AuthInfo
 import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 @Api(value = "Moderation questions")
 @Path(value = "/moderation/questions")
@@ -320,8 +321,8 @@ trait DefaultModerationQuestionComponent
             "operationId".as[OperationId].?,
             "country".as[Country].?,
             "language".as[Language].?,
-            "_start".as[Int].?,
-            "_end".as[Int].?,
+            "_start".as[Start].?,
+            "_end".as[End].?,
             "_sort".?,
             "_order".as[Order].?
           ) { (maybeSlug, operationId, country, language, start, end, sort, order) =>
@@ -332,7 +333,6 @@ trait DefaultModerationQuestionComponent
                 } else {
                   Some(userAuth.user.availableQuestions)
                 }
-                val first: Int = start.getOrElse(0)
                 val request: SearchQuestionRequest = SearchQuestionRequest(
                   maybeQuestionIds = questionIds,
                   maybeOperationIds = operationId.map(op => Seq(op)),
@@ -340,7 +340,7 @@ trait DefaultModerationQuestionComponent
                   language = language,
                   maybeSlug = maybeSlug,
                   skip = start,
-                  limit = end.map(offset => offset - first),
+                  end = end,
                   sort = sort,
                   order = order
                 )

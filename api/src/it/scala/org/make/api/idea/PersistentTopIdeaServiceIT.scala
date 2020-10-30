@@ -29,6 +29,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.{End, Start}
 
 class PersistentTopIdeaServiceIT
     extends DatabaseTest
@@ -39,8 +40,8 @@ class PersistentTopIdeaServiceIT
   override protected val cockroachExposedPort: Int = 40020
 
   val findTopIdea: (
-    Int,
-    Option[Int],
+    Start,
+    Option[End],
     Option[String],
     Option[Order],
     Option[IdeaId],
@@ -154,12 +155,13 @@ class PersistentTopIdeaServiceIT
 
       waitForCompletion(insertDependencies)
 
-      whenReady(findTopIdea(0, None, None, None, Some(idea2), None, None), Timeout(5.seconds)) { results =>
+      whenReady(findTopIdea(Start.zero, None, None, None, Some(idea2), None, None), Timeout(5.seconds)) { results =>
         results.map(_.topIdeaId.value).sorted should be(Seq("find-2", "find-4", "find-5"))
       }
 
-      whenReady(findTopIdea(0, None, None, None, None, Some(Seq(questionId2)), None), Timeout(5.seconds)) { results =>
-        results.map(_.topIdeaId.value).sorted should be(Seq("find-4", "find-6"))
+      whenReady(findTopIdea(Start.zero, None, None, None, None, Some(Seq(questionId2)), None), Timeout(5.seconds)) {
+        results =>
+          results.map(_.topIdeaId.value).sorted should be(Seq("find-4", "find-6"))
       }
     }
 

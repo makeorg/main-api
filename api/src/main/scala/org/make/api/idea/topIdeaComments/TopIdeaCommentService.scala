@@ -29,6 +29,7 @@ import org.make.core.user.UserId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait TopIdeaCommentService {
   def get(topIdeaCommentId: TopIdeaCommentId): Future[Option[TopIdeaComment]]
@@ -42,8 +43,8 @@ trait TopIdeaCommentService {
     qualification: Option[CommentQualificationKey]
   ): Future[TopIdeaComment]
   def search(
-    start: Int,
-    end: Option[Int],
+    start: Start,
+    end: Option[End],
     topIdeaIds: Option[Seq[TopIdeaId]],
     personalityIds: Option[Seq[UserId]]
   ): Future[Seq[TopIdeaComment]]
@@ -92,8 +93,8 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
     }
 
     override def search(
-      start: Int,
-      end: Option[Int],
+      start: Start,
+      end: Option[End],
       topIdeaIds: Option[Seq[TopIdeaId]],
       personalityIds: Option[Seq[UserId]]
     ): Future[Seq[TopIdeaComment]] = {
@@ -106,7 +107,7 @@ trait DefaultTopIdeaCommentServiceComponent extends TopIdeaCommentServiceCompone
       Source
         .future(
           persistentTopIdeaCommentService
-            .search(start = 0, end = None, topIdeaIds = Some(topIdeaIds), personalityIds = None)
+            .search(start = Start.zero, end = None, topIdeaIds = Some(topIdeaIds), personalityIds = None)
         )
         .mapConcat(identity)
         .mapAsync(1) { topIdeaComment =>

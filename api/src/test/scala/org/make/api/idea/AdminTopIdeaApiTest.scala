@@ -32,6 +32,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination.Start
 
 class AdminTopIdeaApiTest
     extends MakeApiTestBase
@@ -519,7 +520,15 @@ class AdminTopIdeaApiTest
 
       when(
         topIdeaService
-          .search(start = 0, end = None, sort = None, order = None, ideaId = None, questionIds = None, name = None)
+          .search(
+            start = Start.zero,
+            end = None,
+            sort = None,
+            order = None,
+            ideaId = None,
+            questionIds = None,
+            name = None
+          )
       ).thenReturn(Future.successful(Seq.empty))
 
       Get("/admin/top-ideas")

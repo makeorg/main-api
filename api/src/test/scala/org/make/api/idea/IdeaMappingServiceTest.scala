@@ -37,6 +37,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.make.core.technical.Pagination.Start
 
 class IdeaMappingServiceTest
     extends MakeUnitTest
@@ -288,7 +289,7 @@ class IdeaMappingServiceTest
       when(
         persistentIdeaMappingService
           .find(
-            start = 0,
+            start = Start.zero,
             end = None,
             sort = None,
             order = None,
@@ -323,7 +324,7 @@ class IdeaMappingServiceTest
       when(
         persistentIdeaMappingService
           .find(
-            start = 0,
+            start = Start.zero,
             end = None,
             sort = None,
             order = None,
@@ -366,7 +367,7 @@ class IdeaMappingServiceTest
       when(
         persistentIdeaMappingService
           .find(
-            start = 0,
+            start = Start.zero,
             end = None,
             sort = None,
             order = None,
@@ -422,7 +423,7 @@ class IdeaMappingServiceTest
       when(
         persistentIdeaMappingService
           .find(
-            start = 0,
+            start = Start.zero,
             end = None,
             sort = None,
             order = None,

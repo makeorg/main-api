@@ -35,6 +35,7 @@ import org.make.core.{HttpCodes, ParameterExtractors, Validation}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 @Api(value = "Admin Crm Templates")
 @Path(value = "/admin/crm/templates")
@@ -367,10 +368,10 @@ trait DefaultAdminCrmTemplatesApiComponent
       get {
         path("admin" / "crm" / "templates") {
           makeOperation("AdminSearchCrmTemplates") { _ =>
-            parameters("_start".as[Int].?, "_end".as[Int].?, "locale".?, "questionId".as[QuestionId].?) {
+            parameters("_start".as[Start].?, "_end".as[End].?, "locale".?, "questionId".as[QuestionId].?) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 maybeLocale: Option[String],
                 maybeQuestionId: Option[QuestionId]
               ) =>
@@ -378,12 +379,8 @@ trait DefaultAdminCrmTemplatesApiComponent
                   requireAdminRole(userAuth.user) {
                     provideAsync(crmTemplatesService.count(maybeQuestionId, maybeLocale)) { count =>
                       onSuccess(
-                        crmTemplatesService.find(
-                          start = start.getOrElse(0),
-                          end = end,
-                          questionId = maybeQuestionId,
-                          locale = maybeLocale
-                        )
+                        crmTemplatesService
+                          .find(start = start.orZero, end = end, questionId = maybeQuestionId, locale = maybeLocale)
                       ) { crmTemplates =>
                         complete(
                           (

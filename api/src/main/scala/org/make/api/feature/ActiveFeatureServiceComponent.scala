@@ -25,6 +25,7 @@ import org.make.core.question.QuestionId
 import org.make.core.Order
 
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait ActiveFeatureServiceComponent {
   def activeFeatureService: ActiveFeatureService
@@ -35,8 +36,8 @@ trait ActiveFeatureService extends ShortenedNames {
   def createActiveFeature(featureId: FeatureId, maybeQuestionId: Option[QuestionId]): Future[ActiveFeature]
   def deleteActiveFeature(activeFeatureId: ActiveFeatureId): Future[Unit]
   def find(
-    start: Int = 0,
-    end: Option[Int] = None,
+    start: Start = Start.zero,
+    end: Option[End] = None,
     sort: Option[String] = None,
     order: Option[Order] = None,
     maybeQuestionId: Option[QuestionId]
@@ -73,8 +74,8 @@ trait DefaultActiveFeatureServiceComponent extends ActiveFeatureServiceComponent
     }
 
     override def find(
-      start: Int = 0,
-      end: Option[Int] = None,
+      start: Start = Start.zero,
+      end: Option[End] = None,
       sort: Option[String] = None,
       order: Option[Order] = None,
       maybeQuestionId: Option[QuestionId]

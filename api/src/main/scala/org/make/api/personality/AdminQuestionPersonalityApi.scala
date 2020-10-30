@@ -39,6 +39,7 @@ import scalaoauth2.provider.AuthInfo
 import scala.annotation.meta.field
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 @Api(
   value = "Admin Question Personalities",
@@ -167,7 +168,7 @@ trait DefaultAdminQuestionPersonalityApiComponent
                   entity(as[CreateQuestionPersonalityRequest]) { request =>
                     provideAsync(
                       questionPersonalityService.find(
-                        start = 0,
+                        start = Start.zero,
                         end = None,
                         sort = None,
                         order = None,
@@ -226,8 +227,8 @@ trait DefaultAdminQuestionPersonalityApiComponent
         path("admin" / "question-personalities") {
           makeOperation("ModerationGetQuestionPersonalities") { _ =>
             parameters(
-              "_start".as[Int].?,
-              "_end".as[Int].?,
+              "_start".as[Start].?,
+              "_end".as[End].?,
               "_sort".?,
               "_order".as[Order].?,
               "userId".as[UserId].?,
@@ -235,8 +236,8 @@ trait DefaultAdminQuestionPersonalityApiComponent
               "personalityRoleId".as[PersonalityRoleId].?
             ) {
               (
-                start: Option[Int],
-                end: Option[Int],
+                start: Option[Start],
+                end: Option[End],
                 sort: Option[String],
                 order: Option[Order],
                 userId: Option[UserId],
@@ -247,12 +248,12 @@ trait DefaultAdminQuestionPersonalityApiComponent
                   requireAdminRole(auth.user) {
                     provideAsync(
                       questionPersonalityService
-                        .find(start.getOrElse(0), end, sort, order, userId, questionId, personalityRoleId)
+                        .find(start.orZero, end, sort, order, userId, questionId, personalityRoleId)
                     ) { personalities =>
                       provideAsync(questionPersonalityService.count(userId, questionId, personalityRoleId)) { count =>
                         provideAsync(
                           personalityRoleService.find(
-                            start = 0,
+                            start = Start.zero,
                             end = None,
                             sort = None,
                             order = None,

@@ -42,6 +42,7 @@ import org.make.core._
 import scala.Ordering.Float.TotalOrdering
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import org.make.core.technical.Pagination._
 
 trait IdeaMappingService {
   def create(
@@ -58,8 +59,8 @@ trait IdeaMappingService {
     migrateProposals: Boolean
   ): Future[Option[IdeaMapping]]
   def search(
-    start: Int = 0,
-    end: Option[Int] = None,
+    start: Start = Start.zero,
+    end: Option[End] = None,
     sort: Option[String] = None,
     order: Option[Order] = None,
     questionId: Option[QuestionId],
@@ -221,8 +222,8 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
     }
 
     override def search(
-      start: Int = 0,
-      end: Option[Int] = None,
+      start: Start = Start.zero,
+      end: Option[End] = None,
       sort: Option[String] = None,
       order: Option[Order] = None,
       questionId: Option[QuestionId],
@@ -241,7 +242,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
 
       persistentIdeaMappingService
         .find(
-          start = 0,
+          start = Start.zero,
           end = None,
           sort = None,
           order = None,
