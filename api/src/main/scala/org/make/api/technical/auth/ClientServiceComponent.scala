@@ -45,7 +45,9 @@ trait ClientService {
     redirectUri: Option[String],
     defaultUserId: Option[UserId],
     roles: Seq[CustomRole],
-    tokenExpirationSeconds: Int
+    tokenExpirationSeconds: Int,
+    refreshExpirationSeconds: Int,
+    reconnectExpirationSeconds: Int
   ): Future[Client]
   def search(start: Start, end: Option[End], name: Option[String]): Future[Seq[Client]]
   def updateClient(
@@ -57,7 +59,9 @@ trait ClientService {
     redirectUri: Option[String],
     defaultUserId: Option[UserId],
     roles: Seq[CustomRole],
-    tokenExpirationSeconds: Int
+    tokenExpirationSeconds: Int,
+    refreshExpirationSeconds: Int,
+    reconnectExpirationSeconds: Int
   ): Future[Option[Client]]
   def count(name: Option[String]): Future[Int]
   def getClient(clientId: ClientId, secret: Option[String]): Future[Either[ClientError, Client]]
@@ -100,7 +104,9 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
       redirectUri: Option[String],
       defaultUserId: Option[UserId],
       roles: Seq[CustomRole],
-      tokenExpirationSeconds: Int
+      tokenExpirationSeconds: Int,
+      refreshExpirationSeconds: Int,
+      reconnectExpirationSeconds: Int
     ): Future[Client] = {
       persistentClientService.persist(
         Client(
@@ -112,7 +118,9 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
           redirectUri = redirectUri,
           defaultUserId = defaultUserId,
           roles = roles,
-          tokenExpirationSeconds = tokenExpirationSeconds
+          tokenExpirationSeconds = tokenExpirationSeconds,
+          refreshExpirationSeconds = refreshExpirationSeconds,
+          reconnectExpirationSeconds = reconnectExpirationSeconds
         )
       )
     }
@@ -130,7 +138,9 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
       redirectUri: Option[String],
       defaultUserId: Option[UserId],
       roles: Seq[CustomRole],
-      tokenExpirationSeconds: Int
+      tokenExpirationSeconds: Int,
+      refreshExpirationSeconds: Int,
+      reconnectExpirationSeconds: Int
     ): Future[Option[Client]] = {
       getClient(clientId).flatMap {
         case Some(client) =>
@@ -144,7 +154,9 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
                 redirectUri = redirectUri,
                 defaultUserId = defaultUserId,
                 roles = roles,
-                tokenExpirationSeconds = tokenExpirationSeconds
+                tokenExpirationSeconds = tokenExpirationSeconds,
+                refreshExpirationSeconds = refreshExpirationSeconds,
+                reconnectExpirationSeconds = reconnectExpirationSeconds
               )
             )
         case None => Future.successful(None)

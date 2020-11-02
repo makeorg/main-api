@@ -95,15 +95,7 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       } yield {
         (
           user.userId,
-          SocialLoginResponse(
-            token = TokenResponse(
-              "Bearer",
-              accessToken.token,
-              accessToken.expiresIn.getOrElse(1L),
-              accessToken.refreshToken.getOrElse("")
-            ),
-            accountCreation = accountCreation
-          )
+          SocialLoginResponse(token = TokenResponse.fromAccessToken(accessToken), accountCreation = accountCreation)
         )
       }
     }

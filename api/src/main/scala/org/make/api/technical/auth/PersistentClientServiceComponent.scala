@@ -56,7 +56,9 @@ object PersistentClientServiceComponent {
     updatedAt: ZonedDateTime,
     defaultUserId: Option[String],
     roles: String,
-    tokenExpirationSeconds: Int
+    tokenExpirationSeconds: Int,
+    refreshExpirationSeconds: Int,
+    reconnectExpirationSeconds: Int
   ) {
     def toClient: Client =
       Client(
@@ -70,7 +72,9 @@ object PersistentClientServiceComponent {
         updatedAt = Some(updatedAt),
         defaultUserId = defaultUserId.map(UserId(_)),
         roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.apply),
-        tokenExpirationSeconds = tokenExpirationSeconds
+        tokenExpirationSeconds = tokenExpirationSeconds,
+        refreshExpirationSeconds = refreshExpirationSeconds,
+        reconnectExpirationSeconds = reconnectExpirationSeconds
       )
   }
 
@@ -91,7 +95,9 @@ object PersistentClientServiceComponent {
         "updated_at",
         "default_user_id",
         "roles",
-        "token_expiration_seconds"
+        "token_expiration_seconds",
+        "refresh_expiration_seconds",
+        "reconnect_expiration_seconds"
       )
 
     override val tableName: String = "oauth_client"
@@ -108,13 +114,15 @@ object PersistentClientServiceComponent {
         name = resultSet.string(clientResultName.name),
         allowedGrantTypes = resultSet.string(clientResultName.allowedGrantTypes),
         secret = resultSet.stringOpt(clientResultName.secret),
-        scope = resultSet.stringOpt(clientResultName.secret),
+        scope = resultSet.stringOpt(clientResultName.scope),
         redirectUri = resultSet.stringOpt(clientResultName.redirectUri),
         createdAt = resultSet.zonedDateTime(clientResultName.createdAt),
         updatedAt = resultSet.zonedDateTime(clientResultName.updatedAt),
         defaultUserId = resultSet.stringOpt(clientResultName.defaultUserId),
         roles = resultSet.string(clientResultName.roles),
-        tokenExpirationSeconds = resultSet.int(clientResultName.tokenExpirationSeconds)
+        tokenExpirationSeconds = resultSet.int(clientResultName.tokenExpirationSeconds),
+        refreshExpirationSeconds = resultSet.int(clientResultName.refreshExpirationSeconds),
+        reconnectExpirationSeconds = resultSet.int(clientResultName.reconnectExpirationSeconds)
       )
     }
   }
@@ -191,7 +199,9 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
               column.updatedAt -> nowDate,
               column.defaultUserId -> client.defaultUserId.map(_.value),
               column.roles -> client.roles.map(_.value).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR),
-              column.tokenExpirationSeconds -> client.tokenExpirationSeconds
+              column.tokenExpirationSeconds -> client.tokenExpirationSeconds,
+              column.refreshExpirationSeconds -> client.refreshExpirationSeconds,
+              column.reconnectExpirationSeconds -> client.reconnectExpirationSeconds
             )
         }.execute().apply()
       }).map(_ => client)
@@ -216,7 +226,9 @@ trait DefaultPersistentClientServiceComponent extends PersistentClientServiceCom
               column.updatedAt -> nowDate,
               column.defaultUserId -> client.defaultUserId.map(_.value),
               column.roles -> client.roles.map(_.value).mkString(PersistentClientServiceComponent.ROLE_SEPARATOR),
-              column.tokenExpirationSeconds -> client.tokenExpirationSeconds
+              column.tokenExpirationSeconds -> client.tokenExpirationSeconds,
+              column.refreshExpirationSeconds -> client.refreshExpirationSeconds,
+              column.reconnectExpirationSeconds -> client.reconnectExpirationSeconds
             )
             .where(sqls.eq(column.uuid, client.clientId.value))
         }.executeUpdate().apply()

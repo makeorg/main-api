@@ -24,7 +24,7 @@ import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.generic.semiauto.deriveDecoder
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
 import javax.ws.rs.Path
@@ -32,6 +32,7 @@ import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
+import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
 import org.make.core.auth.{AuthCode, ClientId, UserRights}
 import org.make.core.{DateHelper, HttpCodes}
 import scalaoauth2.provider._
@@ -176,18 +177,63 @@ trait AuthenticationApi extends Directives {
 }
 
 object AuthenticationApi {
+
   def grantResultToTokenResponse(grantResult: GrantHandlerResult[UserRights]): TokenResponse =
     TokenResponse(
       grantResult.tokenType,
       grantResult.accessToken,
       grantResult.expiresIn.getOrElse(1L),
-      grantResult.refreshToken.getOrElse("")
+      grantResult.refreshToken,
+      grantResult.params.get(RefreshTokenExpirationParameter).map(_.toLong),
+      grantResult.params.getOrElse(CreatedAtParameter, DateHelper.format(DateHelper.now()))
     )
 
-  final case class TokenResponse(token_type: String, access_token: String, expires_in: Long, refresh_token: String)
+  final case class TokenResponse(
+    @(ApiModelProperty @field)(name = "token_type")
+    tokenType: String,
+    @(ApiModelProperty @field)(name = "access_token")
+    accessToken: String,
+    @(ApiModelProperty @field)(name = "expires_in")
+    expiresIn: Long,
+    @(ApiModelProperty @field)(name = "refresh_token")
+    refreshToken: Option[String],
+    @(ApiModelProperty @field)(name = "refresh_expires_in", dataType = "int")
+    refreshExpiresIn: Option[Long],
+    @(ApiModelProperty @field)(name = "created_at")
+    createdAt: String
+  )
 
   object TokenResponse {
-    implicit val encoder: Encoder[TokenResponse] = deriveEncoder[TokenResponse]
+    def fromAccessToken(tokenResult: AccessToken): TokenResponse = {
+      TokenResponse(
+        "Bearer",
+        tokenResult.token,
+        tokenResult.expiresIn.getOrElse(1L),
+        tokenResult.refreshToken,
+        tokenResult.params.get(RefreshTokenExpirationParameter).map(_.toLong),
+        tokenResult.params.getOrElse(CreatedAtParameter, "")
+      )
+    }
+
+    implicit val encoder: Encoder[TokenResponse] = {
+      Encoder.forProduct6(
+        "token_type",
+        "access_token",
+        "expires_in",
+        "refresh_token",
+        "refresh_expires_in",
+        "created_at"
+      ) { response =>
+        (
+          response.tokenType,
+          response.accessToken,
+          response.expiresIn,
+          response.refreshToken,
+          response.refreshExpiresIn,
+          response.createdAt
+        )
+      }
+    }
   }
 
 }
@@ -257,8 +303,9 @@ trait DefaultAuthenticationApiComponent
                 ) {
                   case Success(maybeGrantResponse) =>
                     maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
-                      setMakeSecure(grantResult.accessToken, grantResult.authInfo.user.userId) {
-                        complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+                      val tokenResponse = AuthenticationApi.grantResultToTokenResponse(grantResult)
+                      setMakeSecure(tokenResponse, grantResult.authInfo.user.userId) {
+                        complete(tokenResponse)
                       }
                     })
                   case Failure(ex) => failWith(ex)
@@ -313,14 +360,7 @@ trait DefaultAuthenticationApiComponent
             makeOAuth2 { _ =>
               requireToken { token =>
                 provideAsyncOrNotFound(oauth2DataHandler.findAccessToken(token)) { tokenResult =>
-                  complete(
-                    TokenResponse(
-                      "Bearer",
-                      tokenResult.token,
-                      tokenResult.expiresIn.getOrElse(1L),
-                      tokenResult.refreshToken.getOrElse("")
-                    )
-                  )
+                  complete(TokenResponse.fromAccessToken(tokenResult))
                 }
               }
             }
@@ -337,8 +377,9 @@ trait DefaultAuthenticationApiComponent
             Found
           )
         case None =>
-          setMakeSecure(grantResult.accessToken, grantResult.authInfo.user.userId) {
-            complete(AuthenticationApi.grantResultToTokenResponse(grantResult))
+          val tokenResponse = AuthenticationApi.grantResultToTokenResponse(grantResult)
+          setMakeSecure(tokenResponse, grantResult.authInfo.user.userId) {
+            complete(tokenResponse)
           }
       }
     }

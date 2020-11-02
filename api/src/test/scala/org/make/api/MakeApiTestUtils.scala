@@ -83,7 +83,6 @@ trait MakeApiTestBase
   when(secureCookieConfiguration.name).thenReturn("cookie-secure")
   when(secureCookieConfiguration.expirationName).thenReturn("cookie-secure-expiration")
   when(secureCookieConfiguration.isSecure).thenReturn(false)
-  when(secureCookieConfiguration.lifetime).thenReturn(Duration("4 hours"))
   when(secureCookieConfiguration.domain).thenReturn(".foo.com")
   when(idGenerator.nextId()).thenReturn("some-id")
 
@@ -112,9 +111,6 @@ trait MakeApiTestBase
 
   when(idGenerator.nextTagId()).thenReturn(TagId("some-id"))
   when(idGenerator.nextTagTypeId()).thenReturn(TagTypeId("some-id"))
-
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
 
   private val successful: Future[Unit] = Future.successful {}
   when(sessionHistoryCoordinatorService.convertSession(any[SessionId], any[UserId], any[RequestContext]))

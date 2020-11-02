@@ -487,7 +487,9 @@ trait TestUtils {
     redirectUri: Option[String] = None,
     defaultUserId: Option[UserId] = None,
     roles: Seq[Role] = Seq.empty,
-    tokenExpirationSeconds: Int = 300
+    tokenExpirationSeconds: Int = 300,
+    refreshExpirationSeconds: Int = 400,
+    reconnectExpirationSeconds: Int = 900
   ): Client = {
     Client(
       clientId = clientId,
@@ -498,7 +500,9 @@ trait TestUtils {
       redirectUri = redirectUri,
       defaultUserId = defaultUserId,
       roles = roles,
-      tokenExpirationSeconds = tokenExpirationSeconds
+      tokenExpirationSeconds = tokenExpirationSeconds,
+      refreshExpirationSeconds = refreshExpirationSeconds,
+      reconnectExpirationSeconds = reconnectExpirationSeconds
     )
   }
 }

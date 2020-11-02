@@ -716,10 +716,12 @@ class UserApiTest
             UserId("12347"),
             SocialLoginResponse(
               token = TokenResponse(
-                token_type = "Bearer",
-                access_token = "access_token",
-                expires_in = expiresInSecond,
-                refresh_token = "refresh_token"
+                tokenType = "Bearer",
+                accessToken = "access_token",
+                expiresIn = expiresInSecond,
+                refreshToken = Some("refresh_token"),
+                refreshExpiresIn = Some(42),
+                createdAt = DateHelper.format(DateHelper.now())
               ),
               accountCreation = false
             )
@@ -805,11 +807,13 @@ class UserApiTest
           (
             UserId(""),
             SocialLoginResponse(
-              token_type = "",
-              access_token = "",
-              expires_in = 200L,
-              refresh_token = "",
-              account_creation = false
+              tokenType = "",
+              accessToken = "",
+              expiresIn = 200L,
+              refreshToken = None,
+              accountCreation = false,
+              refreshExpiresIn = None,
+              createdAt = DateHelper.format(DateHelper.now())
             )
           )
         )
@@ -868,11 +872,13 @@ class UserApiTest
           (
             UserId(""),
             SocialLoginResponse(
-              token_type = "",
-              access_token = "",
-              expires_in = 200L,
-              refresh_token = "",
-              account_creation = false
+              tokenType = "",
+              accessToken = "",
+              expiresIn = 200L,
+              refreshToken = None,
+              accountCreation = false,
+              refreshExpiresIn = None,
+              createdAt = DateHelper.format(DateHelper.now())
             )
           )
         )

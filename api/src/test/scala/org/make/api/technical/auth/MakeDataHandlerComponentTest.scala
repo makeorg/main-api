@@ -35,7 +35,7 @@ import org.make.core.user.{CustomRole, Role, User, UserId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider._
 
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 class MakeDataHandlerComponentTest
@@ -87,6 +87,7 @@ class MakeDataHandlerComponentTest
   // Clients and mocks
   val secret: String = "secret"
   private val tokenLifeTime = 1800
+  private val refreshLifeTime = 3600
 
   val defaultClient: Client = client(
     clientId = ClientId("0cdd82cb-5cc0-4875-bb54-5c3709449429"),
@@ -162,12 +163,8 @@ class MakeDataHandlerComponentTest
   when(secureCookieConfiguration.expirationName).thenReturn("cookie-secure-expiration")
   when(secureCookieConfiguration.isSecure).thenReturn(false)
   when(secureCookieConfiguration.domain).thenReturn(".foo.com")
-  when(secureCookieConfiguration.lifetime).thenReturn(Duration("4 hours"))
-  private val oauthConfiguration = mock[makeSettings.Oauth.type]
-  when(oauthConfiguration.refreshTokenLifetime).thenReturn(tokenLifeTime * 8)
   when(makeSettings.Authentication).thenReturn(authenticationConfiguration)
   when(makeSettings.SecureCookie).thenReturn(secureCookieConfiguration)
-  when(makeSettings.Oauth).thenReturn(oauthConfiguration)
   when(authenticationConfiguration.defaultClientId).thenReturn(defaultClient.clientId.value)
   when(visitorCookieConfiguration.name).thenReturn("cookie-visitor")
   when(visitorCookieConfiguration.createdAtName).thenReturn("cookie-visitor-created-at")
@@ -180,13 +177,15 @@ class MakeDataHandlerComponentTest
     refreshToken = Some("refresh_token"),
     scope = None,
     expiresIn = tokenLifeTime,
+    refreshExpiresIn = refreshLifeTime,
     user = UserRights(
       userId = UserId("user-id"),
       roles = Seq(Role.RoleCitizen),
       availableQuestions = Seq.empty,
       emailVerified = true
     ),
-    client = defaultClient
+    client = defaultClient,
+    createdAt = Some(DateHelper.now())
   )
 
   val passwordRequest: PasswordRequest = {
@@ -425,8 +424,6 @@ class MakeDataHandlerComponentTest
       verify(clientService).getClient(defaultClient.clientId)
 
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeToken =>
-        And("I should get an AccessToken")
-        maybeToken shouldBe a[AccessToken]
         And("I should get an AccessToken with a token value equal to \"access_token\"")
         maybeToken.token shouldBe "access_token"
         And("I should get an AccessToken with a expiresIn value equal to 1800")
@@ -466,8 +463,6 @@ class MakeDataHandlerComponentTest
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeToken =>
         Then("clientService must be called for clientWithExpiration")
         verify(clientService).getClient(clientWithExpiration.clientId)
-        And("I should get an AccessToken")
-        maybeToken shouldBe a[AccessToken]
         And("I should get an AccessToken with a token value equal to \"access_token\"")
         maybeToken.token shouldBe "access_token"
         And("I should get an AccessToken with a expiresIn value equal to 42")
@@ -508,11 +503,13 @@ class MakeDataHandlerComponentTest
         """.stripMargin)
       val exampleDate = ZonedDateTime.parse("2017-08-16T10:15:30+08:00", DateTimeFormatter.ISO_DATE_TIME)
       val expiresIn = 300
+      val refreshExpiresIn = 500
       val token = Token(
         accessToken = "AF8",
         refreshToken = Some("KKJ"),
         scope = None,
         expiresIn = expiresIn,
+        refreshExpiresIn = refreshExpiresIn,
         user = authInfo.user,
         client = defaultClient,
         createdAt = Some(exampleDate),
@@ -585,8 +582,6 @@ class MakeDataHandlerComponentTest
       And("method createAccessToken should be called")
 
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeAccessToken =>
-        And("I should get a new AccessToken")
-        maybeAccessToken shouldBe a[AccessToken]
         And("I should get an AccessToken with a token value equal to \"DFG\"")
         maybeAccessToken.token shouldBe "DFG"
         And("I should get an AccessToken with a refresh token value equal to \"ERT\"")
@@ -642,7 +637,7 @@ class MakeDataHandlerComponentTest
       Then("I get an AuthInfo Option")
       val futureAuthInfo = oauth2DataHandler.findAuthInfoByRefreshToken(refreshToken)
       whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>
-        maybeAuthInfo.get shouldBe a[AuthInfo[_]]
+        maybeAuthInfo should be(defined)
       }
     }
 
@@ -688,7 +683,7 @@ class MakeDataHandlerComponentTest
 
       Then("I get an AuthInfo Option")
       whenReady(futureAuthInfo, Timeout(3.seconds)) { maybeAuthInfo =>
-        maybeAuthInfo.get shouldBe a[AuthInfo[_]]
+        maybeAuthInfo should be(defined)
       }
     }
 
@@ -724,7 +719,7 @@ class MakeDataHandlerComponentTest
 
       Then("I get an Option of AccessToken")
       whenReady(futureAccessToken, Timeout(3.seconds)) { maybeAccessToken =>
-        maybeAccessToken.get shouldBe a[AccessToken]
+        maybeAccessToken should be(defined)
       }
     }
 
@@ -807,9 +802,21 @@ class MakeDataHandlerComponentTest
       when(persistentTokenService.get(eqTo(accessToken)))
         .thenReturn(
           Future.successful(
-            Some(exampleToken.copy(accessToken = accessToken, createdAt = Some(DateHelper.now().minusHours(1L))))
+            Some(
+              exampleToken.copy(
+                accessToken = accessToken,
+                createdAt = Some(DateHelper.now().minusHours(1L)),
+                expiresIn = 500,
+                refreshExpiresIn = 5000
+              )
+            )
           )
         )
+      when(persistentTokenService.get(eqTo(newAccessToken)))
+        .thenReturn(
+          Future.successful(Some(exampleToken.copy(accessToken = newAccessToken, createdAt = Some(DateHelper.now()))))
+        )
+
       when(persistentTokenService.findByRefreshToken(eqTo(exampleToken.refreshToken.get)))
         .thenReturn(Future.successful(Some(exampleToken)))
       when(persistentTokenService.deleteByAccessToken(same(exampleToken.accessToken)))
@@ -822,8 +829,8 @@ class MakeDataHandlerComponentTest
 
       val futureRefreshedToken = oauth2DataHandler.refreshIfTokenIsExpired(accessToken)
       whenReady(futureRefreshedToken, Timeout(3.seconds)) { maybeRefreshedToken =>
-        maybeRefreshedToken.isDefined shouldBe true
-        maybeRefreshedToken.get.token shouldBe newAccessToken
+        maybeRefreshedToken should be(defined)
+        maybeRefreshedToken.map(_.accessToken) should contain(newAccessToken)
       }
     }
 

@@ -21,7 +21,7 @@ package org.make.core.auth
 
 import java.time.ZonedDateTime
 
-import org.make.core.Timestamped
+import org.make.core.{DateHelper, Timestamped}
 import org.make.core.question.QuestionId
 import org.make.core.user.{Role, User, UserId}
 
@@ -30,11 +30,26 @@ final case class Token(
   refreshToken: Option[String],
   scope: Option[String],
   expiresIn: Int,
+  refreshExpiresIn: Int,
   user: UserRights,
   client: Client,
   override val createdAt: Option[ZonedDateTime] = None,
   override val updatedAt: Option[ZonedDateTime] = None
-) extends Timestamped
+) extends Timestamped {
+
+  def isAccessTokenExpired: Boolean = {
+    isExpiredAfter(expiresIn)
+  }
+  def isRefreshTokenExpired: Boolean = {
+    isExpiredAfter(refreshExpiresIn)
+  }
+
+  private def isExpiredAfter(interval: Int) = {
+    createdAt.forall { date =>
+      date.plusSeconds(interval).isBefore(DateHelper.now())
+    }
+  }
+}
 
 final case class UserRights(
   userId: UserId,

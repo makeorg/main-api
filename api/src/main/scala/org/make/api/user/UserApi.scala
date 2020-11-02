@@ -719,7 +719,7 @@ trait DefaultUserApiComponent
                         }
                     ) {
                       case (userId, social) =>
-                        setMakeSecure(social.access_token, userId) {
+                        setMakeSecure(social.toTokenResponse, userId) {
                           complete(StatusCodes.Created -> social)
                         }
                     }
@@ -866,7 +866,7 @@ trait DefaultUserApiComponent
                       token
                     }
                 ) { token =>
-                  setMakeSecure(token.access_token, userId) {
+                  setMakeSecure(token, userId) {
                     complete(StatusCodes.NoContent)
                   }
                 }

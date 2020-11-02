@@ -38,6 +38,7 @@ import org.make.api.MakeApi
 import org.make.api.Predef._
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.{MakeAuthentication, MakeDataHandlerComponent}
 import org.make.api.technical.directives.FutureDirectives
 import org.make.api.technical.monitoring.MonitoringMessageHelper
@@ -45,7 +46,7 @@ import org.make.api.technical.storage.Content
 import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.tracing.Tracing
 import org.make.core.Validation.validateField
-import org.make.core.auth.UserRights
+import org.make.core.auth.{Token, UserRights}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.Country
@@ -53,7 +54,7 @@ import org.make.core.session.{SessionId, VisitorId}
 import org.make.core.user.Role.{RoleAdmin, RoleModerator}
 import org.make.core.user.UserId
 import org.make.core.{RequestContext, _}
-import scalaoauth2.provider.{AccessToken, AuthInfo}
+import scalaoauth2.provider.AuthInfo
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -154,7 +155,7 @@ trait MakeDirectives
     }
   }
 
-  def addMaybeRefreshedSecureCookie(tokenRefreshed: Option[AccessToken]): Directive0 = {
+  def addMaybeRefreshedSecureCookie(tokenRefreshed: Option[Token]): Directive0 = {
     respondWithDefaultHeaders {
       Seq(
         tokenRefreshed.map(
@@ -162,21 +163,22 @@ trait MakeDirectives
             `Set-Cookie`(
               HttpCookie(
                 name = makeSettings.SecureCookie.name,
-                value = token.token,
+                value = token.accessToken,
                 secure = makeSettings.SecureCookie.isSecure,
                 httpOnly = true,
-                maxAge = Some(token.expiresIn.getOrElse(makeSettings.SecureCookie.lifetime.toSeconds)),
+                maxAge = Some(token.expiresIn),
                 path = Some("/"),
                 domain = Some(makeSettings.SecureCookie.domain)
               )
             )
         ),
         tokenRefreshed.map(
-          _ =>
+          token =>
             `Set-Cookie`(
               HttpCookie(
                 name = makeSettings.SecureCookie.expirationName,
-                value = DateHelper.format(DateHelper.now().plusSeconds(makeSettings.Oauth.refreshTokenLifetime)),
+                value =
+                  DateHelper.format(token.createdAt.getOrElse(DateHelper.now()).plusSeconds(token.refreshExpiresIn)),
                 secure = makeSettings.SecureCookie.isSecure,
                 httpOnly = false,
                 maxAge = Some(365.days.toSeconds),
@@ -456,12 +458,12 @@ trait MakeDirectives
 
   }
 
-  def makeAuthCookieHandlers(maybeRefreshedToken: Option[AccessToken]): Directive0 =
+  def makeAuthCookieHandlers(maybeRefreshedToken: Option[Token]): Directive0 =
     mapInnerRoute { route =>
       optionalCookie(makeSettings.SecureCookie.name) {
         case Some(secureCookie) =>
           val credentials: OAuth2BearerToken = maybeRefreshedToken match {
-            case Some(refreshedToken) => OAuth2BearerToken(refreshedToken.token)
+            case Some(refreshedToken) => OAuth2BearerToken(refreshedToken.accessToken)
             case None                 => OAuth2BearerToken(secureCookie.value)
           }
           mapRequest((request: HttpRequest) => request.addCredentials(credentials)) {
@@ -471,11 +473,11 @@ trait MakeDirectives
       }
     }
 
-  def makeTriggerAuthRefreshFromCookie(): Directive1[Option[AccessToken]] =
+  def makeTriggerAuthRefreshFromCookie(): Directive1[Option[Token]] =
     optionalCookie(makeSettings.SecureCookie.name).flatMap {
       case Some(secureCookie) =>
-        provideAsync[Option[AccessToken]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie.value))
-      case None => provide[Option[AccessToken]](None)
+        provideAsync[Option[Token]](oauth2DataHandler.refreshIfTokenIsExpired(secureCookie.value))
+      case None => provide[Option[Token]](None)
     }
 
   def corsHeaders(): Directive0 =
@@ -521,7 +523,7 @@ trait MakeDirectives
     }
   }
 
-  def setMakeSecure(accessToken: String, userId: UserId): Directive0 = {
+  def setMakeSecure(token: TokenResponse, userId: UserId): Directive0 = {
     mapResponseHeaders { responseHeaders =>
       if (responseHeaders.exists {
             case `Set-Cookie`(cookie) => cookie.name == makeSettings.SecureCookie.name
@@ -533,10 +535,10 @@ trait MakeDirectives
           `Set-Cookie`(
             HttpCookie(
               name = makeSettings.SecureCookie.name,
-              value = accessToken,
+              value = token.accessToken,
               secure = makeSettings.SecureCookie.isSecure,
               httpOnly = true,
-              maxAge = Some(makeSettings.SecureCookie.lifetime.toSeconds),
+              maxAge = Some(token.expiresIn),
               path = Some("/"),
               domain = Some(makeSettings.SecureCookie.domain)
             )
@@ -544,8 +546,11 @@ trait MakeDirectives
           `Set-Cookie`(
             HttpCookie(
               name = makeSettings.SecureCookie.expirationName,
-              value = DateHelper
-                .format(DateHelper.now().plusSeconds(makeSettings.SecureCookie.lifetime.toSeconds)),
+              value = DateHelper.format(
+                ZonedDateTime
+                  .parse(token.createdAt)
+                  .plusSeconds(token.refreshExpiresIn.getOrElse(token.expiresIn))
+              ),
               secure = makeSettings.SecureCookie.isSecure,
               httpOnly = false,
               maxAge = Some(365.days.toSeconds),

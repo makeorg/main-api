@@ -287,7 +287,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(futureUser, Timeout(3.seconds)) { result =>
         Then("result should be an instance of User")
         val user = result.get
-        user shouldBe a[User]
 
         And("the user first name must John")
         user.firstName.get shouldBe "John"
@@ -297,11 +296,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
         And("the user email should be verified")
         user.emailVerified shouldBe true
-
-        And("the user roles should be instance of Role")
-        user.roles.map(role => {
-          role shouldBe a[Role]
-        })
 
         And("the user has roles ROLE_ADMIN, ROLE_MODERATOR AND ROLE_CITIZEN")
         user.roles shouldBe Seq(Role.RoleAdmin, Role.RoleModerator, Role.RoleCitizen)
@@ -352,10 +346,8 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         } yield allUsers
 
       whenReady(futureUsers, Timeout(3.seconds)) { results =>
-        Then("results should be an instance of Seq[User]")
-        results shouldBe a[Seq[_]]
+        Then("results should not be empty")
         results.size should be > 0
-        results.head shouldBe a[User]
 
         And("""results should have at least "Jenna Doo" and "Jane Dee"""")
         results.exists(_.userId.value == jennaDoo.userId.value) shouldBe true
@@ -378,7 +370,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
       whenReady(futureUser, Timeout(3.seconds)) { result =>
         Then("result should be an instance of User")
         val user = result.get
-        user shouldBe a[User]
 
         And("the user hard bounce should be true")
         user.isHardBounce shouldBe true
@@ -414,8 +405,7 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
 
       whenReady(futureUserId, Timeout(3.seconds)) { result =>
         Then("result should be an instance of UserId")
-        val userId = result.get
-        userId shouldBe a[UserId]
+        result should be(defined)
       }
     }
 
@@ -481,7 +471,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           persistentUserService.modifyOrganisation(userOrganisationDGSE.copy(organisationName = Some("DGSE Updated"))),
           Timeout(3.seconds)
         ) { organisationUpdated =>
-          organisationUpdated shouldBe a[Either[_, User]]
           organisationUpdated.isRight shouldBe true
           organisationUpdated.exists(_.organisationName.contains("DGSE Updated")) shouldBe true
         }
@@ -498,7 +487,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           ),
           Timeout(3.seconds)
         ) { organisationUpdated =>
-          organisationUpdated shouldBe a[Either[_, User]]
           organisationUpdated.isRight shouldBe true
           organisationUpdated.exists(_.organisationName.contains("FSB Updated")) shouldBe true
           organisationUpdated.exists(_.email == "fsbupdated@secret-agency.com") shouldBe true
@@ -511,7 +499,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         persistentUserService.modifyOrganisation(userOrganisationCSIS.copy(organisationName = Some("CSIS Updated"))),
         Timeout(3.seconds)
       ) { organisationFailUpdate =>
-        organisationFailUpdate shouldBe a[Either[UpdateFailed, _]]
         organisationFailUpdate.isLeft shouldBe true
         organisationFailUpdate.left.getOrElse(throw new IllegalStateException("unexpected state")) shouldBe UpdateFailed()
       }
@@ -831,7 +818,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
           ),
           Timeout(3.seconds)
         ) { userUpdated =>
-          userUpdated shouldBe a[User]
           userUpdated.firstName shouldBe Some("FooFoo")
           userUpdated.lastName shouldBe Some("BarBar")
           userUpdated.anonymousParticipation shouldBe true
@@ -847,7 +833,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
         Timeout(3.seconds)
       ) { _ =>
         whenReady(persistentUserService.get(updateUser.userId), Timeout(3.seconds)) { userUpdated =>
-          userUpdated.get shouldBe a[User]
           userUpdated.get.hashedPassword shouldBe Some("ZAEAZE232323SFSSDF")
         }
       }

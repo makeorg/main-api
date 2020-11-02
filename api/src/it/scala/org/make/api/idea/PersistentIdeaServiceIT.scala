@@ -50,10 +50,7 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
       val futureIdea: Future[Idea] = persistentIdeaService.persist(simpleIdea)
 
       whenReady(futureIdea, Timeout(3.seconds)) { idea =>
-        Then("result should be an instance of idea")
-        idea shouldBe a[Idea]
-
-        And("the idea name must be fooIdea")
+        Then("the idea name must be fooIdea")
         idea.name shouldBe "fooIdea"
 
         And("the idea id must be foo-idea")
@@ -67,10 +64,7 @@ class PersistentIdeaServiceIT extends DatabaseTest with DefaultPersistentIdeaSer
       val futureIdea: Future[Idea] = persistentIdeaService.persist(completeIdea)
 
       whenReady(futureIdea, Timeout(3.seconds)) { idea =>
-        Then("result should be an instance of idea")
-        idea shouldBe a[Idea]
-
-        And("the idea name must be barIdea")
+        Then("the idea name must be barIdea")
         idea.name shouldBe "barIdea"
 
         And("the idea id must be foo-idea")

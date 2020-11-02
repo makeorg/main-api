@@ -285,12 +285,7 @@ class ModerationOperationApiTest
         .withHeaders(Authorization(OAuth2BearerToken(tyrionToken))) ~> operationRoutes ~> check {
         status should be(StatusCodes.OK)
         header("x-total-count").map(_.value) should be(Some("2"))
-        val moderationOperationsResponse: Seq[ModerationOperationResponse] =
-          entityAs[Seq[ModerationOperationResponse]]
-        moderationOperationsResponse.map { moderationOperationResponse =>
-          moderationOperationResponse shouldBe a[ModerationOperationResponse]
-        }
-
+        val moderationOperationsResponse = entityAs[Seq[ModerationOperationResponse]]
         moderationOperationsResponse.count(_.id.value == "firstOperation") should be(1)
         val firstOperationResult: ModerationOperationResponse =
           moderationOperationsResponse.filter(_.id.value == "firstOperation").head
@@ -310,7 +305,6 @@ class ModerationOperationApiTest
         header("x-total-count").map(_.value) should be(Some("1"))
         val moderationOperationsResponse: Seq[ModerationOperationResponse] =
           entityAs[Seq[ModerationOperationResponse]]
-        moderationOperationsResponse.head shouldBe a[ModerationOperationResponse]
 
         val secondOperationResult: ModerationOperationResponse = moderationOperationsResponse.head
         secondOperationResult.slug should be("second-operation")
@@ -362,7 +356,6 @@ class ModerationOperationApiTest
         status should be(StatusCodes.OK)
         val firstOperationResult: ModerationOperationResponse =
           entityAs[ModerationOperationResponse]
-        firstOperationResult shouldBe a[ModerationOperationResponse]
         firstOperationResult.slug should be("first-operation")
       }
     }

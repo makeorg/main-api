@@ -29,16 +29,22 @@ trait DateHelper {
   def now(): ZonedDateTime
   def computeBirthDate(age: Int): LocalDate
   def isLast30daysDate(date: ZonedDateTime): Boolean
+  def format(date: ZonedDateTime): String
 }
 
-object DateHelper extends DateHelper {
+trait DateHelperComponent {
+  def dateHelper: DateHelper
+}
+
+trait DefaultDateHelperComponent extends DateHelperComponent {
+  override val dateHelper: DateHelper = new DefaultDateHelper()
+}
+
+class DefaultDateHelper extends DateHelper {
+
   private val utc = ZoneOffset.UTC
 
-  def now(): ZonedDateTime = {
-    ZonedDateTime.now(utc).truncatedTo(ChronoUnit.MILLIS)
-  }
-
-  val dateFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
+  private val defaultDateFormatter: DateTimeFormatter = new DateTimeFormatterBuilder()
     .append(DateTimeFormatter.ISO_LOCAL_DATE)
     .appendLiteral("T")
     .appendValue(HOUR_OF_DAY, 2)
@@ -52,17 +58,28 @@ object DateHelper extends DateHelper {
     .appendOffsetId()
     .toFormatter()
 
-  def format(date: ZonedDateTime): String = {
-    dateFormatter.format(date)
+  override def now(): ZonedDateTime = {
+    ZonedDateTime.now(utc).truncatedTo(ChronoUnit.MILLIS)
   }
 
-  def isLast30daysDate(date: ZonedDateTime): Boolean = {
-    val days: Int = 30
-    date.isAfter(DateHelper.now().minusDays(days))
+  override def computeBirthDate(age: Int): LocalDate = {
+    val birthYear = now().toLocalDate.getYear - age
+    LocalDate.parse(s"$birthYear-01-01")
   }
+
+  override def isLast30daysDate(date: ZonedDateTime): Boolean = {
+    val days: Int = 30
+    date.isAfter(now().minusDays(days))
+  }
+
+  override def format(date: ZonedDateTime): String = {
+    defaultDateFormatter.format(date)
+  }
+}
+
+object DateHelper extends DefaultDateHelper {
 
   implicit object OrderedJavaTime extends Ordering[ZonedDateTime] {
-
     override def compare(x: ZonedDateTime, y: ZonedDateTime): Int = x.compareTo(y)
   }
 
@@ -78,8 +95,4 @@ object DateHelper extends DateHelper {
     }
   }
 
-  def computeBirthDate(age: Int): LocalDate = {
-    val birthYear = LocalDate.now().getYear - age
-    LocalDate.parse(s"$birthYear-01-01")
-  }
 }

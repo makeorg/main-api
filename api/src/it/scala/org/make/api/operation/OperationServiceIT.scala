@@ -116,7 +116,6 @@ class OperationServiceIT
       whenReady(futureMaybeOperation, Timeout(6.seconds)) { maybeOperation =>
         val operation: Operation = maybeOperation.get
         Then("operations should be an instance of Seq[Operation]")
-        operation shouldBe a[Operation]
         operation.slug shouldBe "hello-updated-operation"
         operation.operationKind shouldBe OperationKind.GreatCause
         And("operations events should contain a create event")

@@ -36,14 +36,14 @@ final case class Client(
   override val updatedAt: Option[ZonedDateTime] = None,
   defaultUserId: Option[UserId],
   roles: Seq[Role],
-  tokenExpirationSeconds: Int
+  tokenExpirationSeconds: Int,
+  refreshExpirationSeconds: Int,
+  reconnectExpirationSeconds: Int
 ) extends Timestamped
 
 final case class ClientId(value: String) extends StringValue
 
 object ClientId {
-  implicit lazy val proposalIdEncoder: Encoder[ClientId] =
-    (a: ClientId) => Json.fromString(a.value)
-  implicit lazy val proposalIdDecoder: Decoder[ClientId] =
-    Decoder.decodeString.map(ClientId(_))
+  implicit lazy val encoder: Encoder[ClientId] = (a: ClientId) => Json.fromString(a.value)
+  implicit lazy val decoder: Decoder[ClientId] = Decoder.decodeString.map(ClientId(_))
 }

@@ -44,7 +44,7 @@ class PersistentTokenServiceIT
   val before: ZonedDateTime = ZonedDateTime.parse("2017-06-01T12:30:40Z[UTC]")
   val now: ZonedDateTime = DateHelper.now()
 
-  val exampleUser = TestUtilsIT.user(
+  val user: User = TestUtilsIT.user(
     id = UserId("1"),
     email = "doe@example.com",
     firstName = Some("John"),
@@ -56,7 +56,7 @@ class PersistentTokenServiceIT
     verificationTokenExpiresAt = Some(before),
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen)
   )
-  val exampleClient = Client(
+  val client: Client = Client(
     clientId = ClientId("apiclient"),
     name = "client",
     allowedGrantTypes = Seq("grant_type", "other_grant_type"),
@@ -65,20 +65,23 @@ class PersistentTokenServiceIT
     redirectUri = None,
     defaultUserId = None,
     roles = Seq.empty,
-    tokenExpirationSeconds = 300
+    tokenExpirationSeconds = 300,
+    refreshExpirationSeconds = 400,
+    reconnectExpirationSeconds = 50
   )
-  val exampleToken = Token(
+  val exampleToken: Token = Token(
     accessToken = "ACCESS_TOKEN",
     refreshToken = Some("REFRESH_TOKEN"),
     scope = Some("scope"),
     expiresIn = 42,
+    refreshExpiresIn = 45,
     user = UserRights(
-      userId = exampleUser.userId,
-      roles = exampleUser.roles,
-      availableQuestions = exampleUser.availableQuestions,
+      userId = user.userId,
+      roles = user.roles,
+      availableQuestions = user.availableQuestions,
       emailVerified = true
     ),
-    client = exampleClient
+    client = client
   )
 
   Feature("The app can persist a token") {
@@ -96,8 +99,8 @@ class PersistentTokenServiceIT
           |    - user: "John Doe"
           |    - client: "apiclient"
         """.stripMargin)
-      val futureClient: Future[Client] = persistentClientService.persist(exampleClient)
-      val futureUser: Future[User] = persistentUserService.persist(exampleUser)
+      val futureClient: Future[Client] = persistentClientService.persist(client)
+      val futureUser: Future[User] = persistentUserService.persist(user)
       def futureTokenPersister: Future[Token] = persistentTokenService.persist(exampleToken)
 
       When("""I persist a Token with the user "John Doe" and the client "apiclient"""")
@@ -111,23 +114,22 @@ class PersistentTokenServiceIT
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
         Then("result must an instance of Token")
-        val token = result.get
-        token shouldBe a[Token]
+        val userToken = result.get
 
         And("""the access token must be "ACCESS_TOKEN"""")
-        token.accessToken shouldBe exampleToken.accessToken
+        userToken.accessToken shouldBe exampleToken.accessToken
 
         And("""the refresh token must be "REFRESH_TOKEN"""")
-        token.accessToken shouldBe exampleToken.accessToken
+        userToken.accessToken shouldBe exampleToken.accessToken
 
         And("the expires in must be 42")
-        token.accessToken shouldBe exampleToken.accessToken
+        userToken.accessToken shouldBe exampleToken.accessToken
 
         And("""the user must be "John Doe"""")
-        token.user.userId.value shouldBe exampleToken.user.userId.value
+        userToken.user.userId.value shouldBe exampleToken.user.userId.value
 
         And("""the client must be "apiclient"""")
-        token.client.clientId.value shouldBe exampleToken.client.clientId.value
+        userToken.client.clientId.value shouldBe exampleToken.client.clientId.value
 
         And("the Token cannot be persisted if duplicate")
         intercept[SQLException] {
@@ -142,21 +144,20 @@ class PersistentTokenServiceIT
     Scenario("Find a Token from a valid user") {
       Given("a valid User")
       When("a token is searched from this User")
-      val futureFoundToken: Future[Option[Token]] = persistentTokenService.findByUserId(exampleUser.userId)
+      val futureFoundToken: Future[Option[Token]] = persistentTokenService.findByUserId(user.userId)
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
         Then("the user's token is returned")
-        val token = result.get
-        token shouldBe a[Token]
+        val userToken = result.get
 
         And("""the access token must be "ACCESS_TOKEN"""")
-        token.accessToken shouldBe exampleToken.accessToken
+        userToken.accessToken shouldBe exampleToken.accessToken
 
         And("""the refresh token must be "REFRESH_TOKEN"""")
-        token.accessToken shouldBe exampleToken.accessToken
+        userToken.accessToken shouldBe exampleToken.accessToken
 
         And("""the token user must be "John Doe"""")
-        token.user.userId.value shouldBe exampleToken.user.userId.value
+        userToken.user.userId.value shouldBe exampleToken.user.userId.value
       }
     }
   }
@@ -178,11 +179,10 @@ class PersistentTokenServiceIT
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
         Then("an Option of Token is returned")
-        val token = result.get
-        token shouldBe a[Token]
+        val userToken = result.get
 
         And("""the access token should be "VALID_TOKEN"""")
-        token.accessToken shouldBe accessToken.accessToken
+        userToken.accessToken shouldBe accessToken.accessToken
       }
     }
 
@@ -215,13 +215,12 @@ class PersistentTokenServiceIT
 
       whenReady(futureFoundToken, Timeout(3.seconds)) { result =>
         Then("an Option of Token is returned")
-        val token = result.get
-        token shouldBe a[Token]
+        val userToken = result.get
 
         And("""the access token should be "VALID2_TOKEN"""")
-        token.accessToken shouldBe accessToken.accessToken
+        userToken.accessToken shouldBe accessToken.accessToken
         And("""the refresh token should be "VALID_REFRESH_TOKEN"""")
-        token.refreshToken shouldBe accessToken.refreshToken
+        userToken.refreshToken shouldBe accessToken.refreshToken
       }
     }
 

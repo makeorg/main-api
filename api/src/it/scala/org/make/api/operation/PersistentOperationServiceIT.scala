@@ -253,12 +253,8 @@ class PersistentOperationServiceIT
       } yield result
 
       whenReady(futureOperations, Timeout(3.seconds)) { operations =>
-        Then("operations should be an instance of Seq[Operation]")
-        operations shouldBe a[Seq[_]]
-        And(s"operations should contain operation with operationId ${operationId.value}")
+        Then(s"operations should contain operation with operationId ${operationId.value}")
         val operation: Operation = operations.filter(_.slug == simpleOperation.slug).head
-        And("operation should be an instance of Operation")
-        operation shouldBe a[Operation]
         And("""operation status should be Pending""")
         operation.status.value should be("Pending")
         And("""operation slug should be "hello-operation" """)
@@ -307,8 +303,7 @@ class PersistentOperationServiceIT
         }
 
       whenReady(futureMaybeOperation, Timeout(3.seconds)) { maybeOperation =>
-        maybeOperation should not be None
-        maybeOperation.get shouldBe a[Operation]
+        maybeOperation should be(defined)
       }
     }
 
@@ -335,8 +330,7 @@ class PersistentOperationServiceIT
         }
 
       whenReady(futureMaybeOperation, Timeout(3.seconds)) { maybeOperation =>
-        maybeOperation should not be None
-        maybeOperation.get shouldBe a[Operation]
+        maybeOperation should be(defined)
         maybeOperation.get.slug shouldBe "get-by-slug-operation"
       }
     }

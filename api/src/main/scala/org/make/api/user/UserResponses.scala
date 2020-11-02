@@ -200,23 +200,67 @@ object ProfileResponse extends CirceFormatters {
 }
 
 final case class SocialLoginResponse(
-  token_type: String,
-  access_token: String,
-  expires_in: Long,
-  refresh_token: String,
-  account_creation: Boolean
-)
+  @(ApiModelProperty @field)(name = "token_type")
+  tokenType: String,
+  @(ApiModelProperty @field)(name = "access_token")
+  accessToken: String,
+  @(ApiModelProperty @field)(name = "expires_in")
+  expiresIn: Long,
+  @(ApiModelProperty @field)(name = "refresh_token")
+  refreshToken: Option[String],
+  @(ApiModelProperty @field)(name = "account_creation")
+  accountCreation: Boolean,
+  @(ApiModelProperty @field)(name = "refresh_expires_in", dataType = "int")
+  refreshExpiresIn: Option[Long],
+  @(ApiModelProperty @field)(name = "created_at")
+  createdAt: String
+) {
+
+  def toTokenResponse: TokenResponse = {
+    TokenResponse(
+      tokenType = tokenType,
+      accessToken = accessToken,
+      expiresIn = expiresIn,
+      refreshToken = refreshToken,
+      refreshExpiresIn = refreshExpiresIn,
+      createdAt = createdAt
+    )
+  }
+}
 
 object SocialLoginResponse {
 
-  def apply(token: TokenResponse, accountCreation: Boolean): SocialLoginResponse = SocialLoginResponse(
-    token_type = token.token_type,
-    access_token = token.access_token,
-    expires_in = token.expires_in,
-    refresh_token = token.refresh_token,
-    account_creation = accountCreation
-  )
+  def apply(token: TokenResponse, accountCreation: Boolean): SocialLoginResponse = {
+    SocialLoginResponse(
+      tokenType = token.tokenType,
+      accessToken = token.accessToken,
+      expiresIn = token.expiresIn,
+      refreshToken = token.refreshToken,
+      accountCreation = accountCreation,
+      refreshExpiresIn = token.refreshExpiresIn,
+      createdAt = token.createdAt
+    )
+  }
 
-  implicit val encoder: Encoder[SocialLoginResponse] = deriveEncoder
+  implicit val encoder: Encoder[SocialLoginResponse] =
+    Encoder.forProduct7(
+      "token_type",
+      "access_token",
+      "expires_in",
+      "refresh_token",
+      "account_creation",
+      "refresh_expires_in",
+      "created_at"
+    ) { response =>
+      (
+        response.tokenType,
+        response.accessToken,
+        response.expiresIn,
+        response.refreshToken,
+        response.accountCreation,
+        response.refreshExpiresIn,
+        response.createdAt
+      )
+    }
 
 }

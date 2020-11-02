@@ -30,7 +30,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.make.api.MakeApiTestBase
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical.auth._
-import org.make.core.auth.UserRights
+import org.make.core.auth.{ClientId, Token, UserRights}
 import org.make.core.user.{Role, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import scalaoauth2.provider.{AccessToken, AuthInfo}
@@ -403,6 +403,7 @@ class MakeDirectivesTest
         createdAt = new Date(),
         params = Map.empty
       )
+
       val authInfo = AuthInfo(
         UserRights(
           userId = UserId("user-id"),
@@ -414,12 +415,27 @@ class MakeDirectivesTest
         None,
         None
       )
+
+      val token = Token(
+        accessToken = newToken.token,
+        refreshToken = newToken.refreshToken,
+        scope = newToken.scope,
+        expiresIn = newToken.lifeSeconds.getOrElse(42L).toInt,
+        refreshExpiresIn = 9999,
+        user = authInfo.user,
+        client = client(ClientId("connected token refreshed")),
+        createdAt = None,
+        updatedAt = None
+      )
+
       when(oauth2DataHandler.refreshIfTokenIsExpired(eqTo("valid-token")))
-        .thenReturn(Future.successful(Some(newToken)))
+        .thenReturn(Future.successful(Some(token)))
+
       when(oauth2DataHandler.findAccessToken(eqTo("valid-token")))
         .thenReturn(Future.successful(Some(newToken.copy(token = "new-token"))))
       when(oauth2DataHandler.findAccessToken(eqTo("new-token")))
         .thenReturn(Future.successful(Some(newToken)))
+
       when(oauth2DataHandler.findAuthInfoByAccessToken(eqTo(newToken)))
         .thenReturn(Future.successful(Some(authInfo)))
 
