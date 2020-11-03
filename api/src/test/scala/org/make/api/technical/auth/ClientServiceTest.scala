@@ -22,13 +22,13 @@ package org.make.api.technical.auth
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.make.api.technical.auth.ClientService.ClientError
 import org.make.core.auth.{Client, ClientId}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import org.make.core.technical.Pagination.Start
+import scalaoauth2.provider.InvalidClient
 
 class ClientServiceTest
     extends MakeUnitTest
@@ -165,7 +165,7 @@ class ClientServiceTest
       when(persistentClientService.get(existingClient.clientId)).thenReturn(Future.successful(Some(existingClient)))
 
       whenReady(clientService.getClient(existingClient.clientId, Some("fake")), Timeout(2.seconds)) {
-        case Left(ClientError(ClientErrorCode.BadCredentials, _)) =>
+        case Left(_: InvalidClient) =>
         case other =>
           fail(s"Unexoected response: ${other.toString}")
       }
@@ -175,7 +175,7 @@ class ClientServiceTest
       when(persistentClientService.get(clientId)).thenReturn(Future.successful(None))
 
       whenReady(clientService.getClient(clientId, Some("fake")), Timeout(2.seconds)) {
-        case Left(ClientError(ClientErrorCode.UnknownClient, _)) =>
+        case Left(_: InvalidClient) =>
         case other =>
           fail(s"Unexoected response: ${other.toString}")
       }

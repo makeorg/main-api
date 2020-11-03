@@ -19,17 +19,15 @@
 
 package org.make.api.technical.auth
 
-import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import org.make.api.extensions.MakeSettingsComponent
 import org.make.api.technical.IdGeneratorComponent
-import org.make.api.technical.auth.ClientErrorCode.{BadCredentials, UnknownClient}
-import org.make.api.technical.auth.ClientService.ClientError
 import org.make.core.auth.{Client, ClientId}
+import org.make.core.technical.Pagination._
 import org.make.core.user.{CustomRole, UserId}
+import scalaoauth2.provider.{InvalidClient, InvalidRequest, OAuthError}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import org.make.core.technical.Pagination._
 
 trait ClientServiceComponent {
   def clientService: ClientService
@@ -64,25 +62,8 @@ trait ClientService {
     reconnectExpirationSeconds: Int
   ): Future[Option[Client]]
   def count(name: Option[String]): Future[Int]
-  def getClient(clientId: ClientId, secret: Option[String]): Future[Either[ClientError, Client]]
-  def getDefaultClient(): Future[Either[ClientError, Client]]
-}
-
-object ClientService {
-  final case class ClientError(code: ClientErrorCode, label: String)
-}
-
-sealed abstract class ClientErrorCode(val value: String) extends StringEnumEntry
-
-object ClientErrorCode extends StringEnum[ClientErrorCode] with StringCirceEnum[ClientErrorCode] {
-
-  case object UnknownClient extends ClientErrorCode("unknown_client")
-  case object BadCredentials extends ClientErrorCode("bad_credentials")
-  case object CredentialsMissing extends ClientErrorCode("credentials_missing")
-  case object ForbiddenGrantType extends ClientErrorCode("forbidden_grant_type")
-  case object MissingRole extends ClientErrorCode("missing_role")
-
-  override def values: IndexedSeq[ClientErrorCode] = findValues
+  def getClient(clientId: ClientId, secret: Option[String]): Future[Either[OAuthError, Client]]
+  def getDefaultClient(): Future[Either[OAuthError, Client]]
 }
 
 trait DefaultClientServiceComponent extends ClientServiceComponent {
@@ -167,23 +148,23 @@ trait DefaultClientServiceComponent extends ClientServiceComponent {
       persistentClientService.count(name = name)
     }
 
-    override def getClient(clientId: ClientId, secret: Option[String]): Future[Either[ClientError, Client]] = {
+    override def getClient(clientId: ClientId, secret: Option[String]): Future[Either[OAuthError, Client]] = {
       getClient(clientId).map {
         case Some(client) =>
           if (client.secret == secret) {
             Right(client)
           } else {
-            Left(ClientError(BadCredentials, s"Credentials mismatch for client ${clientId.value}."))
+            Left(new InvalidClient(s"Credentials mismatch for client ${clientId.value}."))
           }
 
-        case None => Left(ClientError(UnknownClient, s"Client ${clientId.value} was not found."))
+        case None => Left(new InvalidClient(s"Client ${clientId.value} was not found."))
       }
     }
 
-    override def getDefaultClient(): Future[Either[ClientError, Client]] = {
+    override def getDefaultClient(): Future[Either[OAuthError, Client]] = {
       getClient(ClientId(makeSettings.Authentication.defaultClientId)).map {
         case Some(client) => Right(client)
-        case None         => Left(ClientError(UnknownClient, "Default client was not found, check your configuration."))
+        case None         => Left(new InvalidRequest("Default client was not found, check your configuration."))
       }
     }
   }

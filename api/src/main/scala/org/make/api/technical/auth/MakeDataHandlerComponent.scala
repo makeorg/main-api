@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.typesafe.scalalogging.StrictLogging
 import org.make.api.extensions.MakeSettingsComponent
-import org.make.api.technical.auth.ClientService.ClientError
 import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.PersistentUserServiceComponent
@@ -57,6 +56,12 @@ trait MakeDataHandler extends DataHandler[UserRights] {
 object MakeDataHandler {
   val RefreshTokenExpirationParameter: String = "refresh_expires_in"
   val CreatedAtParameter: String = "created_at"
+
+  def insufficientRole(user: User, client: Client): String = {
+    s"User: ${user.userId} tried to connect to client ${client.clientId} with insufficient roles. " +
+      s"Expected one of: ${client.roles.map(_.value).mkString(", ")}." +
+      s"Actual: ${user.roles.map(_.value).mkString(", ")}"
+  }
 }
 
 trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with StrictLogging with ShortenedNames {
@@ -130,7 +135,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
       eventualMaybeUser.flatMap {
         case Some(user) if !userIsRelatedToClient(client)(user) =>
-          Future.failed(ClientAccessUnauthorizedException.insufficientRole(user, client))
+          Future.failed(new AccessDenied(MakeDataHandler.insufficientRole(user, client)))
         case other => Future.successful(other)
       }
     }
@@ -138,18 +143,13 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
     private def findClient(
       maybeCredentials: Option[ClientCredential],
       grantType: String
-    ): Future[Either[ClientError, Client]] = {
+    ): Future[Either[OAuthError, Client]] = {
       (maybeCredentials match {
         case None =>
           // Do not use the default client when using the client credential grant type
           if (grantType == OAuthGrantType.CLIENT_CREDENTIALS) {
             Future.successful(
-              Left(
-                ClientError(
-                  ClientErrorCode.CredentialsMissing,
-                  "Client credentials are mandatory for the client_credentials grant type"
-                )
-              )
+              Left(new InvalidRequest("Client credentials are mandatory for the client_credentials grant type"))
             )
           } else {
             clientService.getDefaultClient()
@@ -161,9 +161,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
           if (client.allowedGrantTypes.contains(grantType)) {
             Right(client)
           } else {
-            Left(
-              ClientError(ClientErrorCode.ForbiddenGrantType, s"Grant type $grantType is not allowed for this client")
-            )
+            Left(new UnauthorizedClient(s"Grant type $grantType is not allowed for this client"))
           }
         case error => error
       }
@@ -176,7 +174,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
       findClient(maybeCredential, request.grantType).flatMap {
         case Right(client) => findUser(client, request).map(_.map(UserRights.fromUser))
-        case Left(e)       => Future.failed(ClientAccessUnauthorizedException(e.code, e.label))
+        case Left(e)       => Future.failed(e)
       }
     }
 
@@ -191,11 +189,9 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
         (accessToken, _)  <- futureAccessTokens
         (refreshToken, _) <- futureRefreshTokens
         maybeClient       <- futureClient
-        client <- maybeClient.fold(
-          Future.failed[Client](
-            ClientAccessUnauthorizedException(ClientErrorCode.UnknownClient, s"Client with id $clientId not found")
-          )
-        )(Future.successful)
+        client <- maybeClient.fold(Future.failed[Client](new InvalidClient(s"Client with id $clientId not found")))(
+          Future.successful
+        )
       } yield {
         val maybeRefreshToken =
           if (client.allowedGrantTypes.contains(OAuthGrantType.REFRESH_TOKEN)) {
@@ -262,7 +258,7 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
                     )
                   case None => Future.successful(None)
                   case Some(user) =>
-                    Future.failed(ClientAccessUnauthorizedException.insufficientRole(user, client))
+                    Future.failed(new AccessDenied(MakeDataHandler.insufficientRole(user, client)))
                 }
             case _ => Future.successful(None)
           }
@@ -356,7 +352,8 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
                   )
                 )
                 .map(Some(_))
-            case Some(user) => Future.failed(ClientAccessUnauthorizedException.insufficientRole(user, client))
+            case Some(user) =>
+              Future.failed(new AccessDenied(MakeDataHandler.insufficientRole(user, client)))
           }
       }
     }
@@ -389,16 +386,3 @@ trait DefaultMakeDataHandlerComponent extends MakeDataHandlerComponent with Stri
 
 final case class TokenAlreadyRefreshed(refreshToken: String)
     extends Exception(s"Refresh token $refreshToken has already been refreshed")
-
-final case class ClientAccessUnauthorizedException(error: ClientErrorCode, message: String) extends Exception(message)
-
-object ClientAccessUnauthorizedException {
-  def insufficientRole(user: User, client: Client): ClientAccessUnauthorizedException = {
-    ClientAccessUnauthorizedException(
-      ClientErrorCode.MissingRole,
-      s"User: ${user.userId} tried to connect to client ${client.clientId} with insufficient roles. " +
-        s"Expected one of: ${client.roles.map(_.value).mkString(", ")}." +
-        s"Actual: ${user.roles.map(_.value).mkString(", ")}"
-    )
-  }
-}

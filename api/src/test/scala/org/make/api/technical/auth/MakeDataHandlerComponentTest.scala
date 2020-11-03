@@ -25,7 +25,6 @@ import java.time.format.DateTimeFormatter
 
 import org.make.api.MakeUnitTest
 import org.make.api.extensions.{MakeSettings, MakeSettingsComponent}
-import org.make.api.technical.auth.ClientService.ClientError
 import org.make.api.technical.{IdGeneratorComponent, ShortenedNames}
 import org.make.api.user.{PersistentUserService, PersistentUserServiceComponent}
 import org.make.core.DateHelper
@@ -145,14 +144,10 @@ class MakeDataHandlerComponentTest
     (clientId: ClientId, password: Option[String]) =>
       clients.get(clientId) match {
         case None =>
-          Future.successful(
-            Left(ClientError(ClientErrorCode.UnknownClient, s"No client for credentials ${clientId.value}:$secret"))
-          )
+          Future.successful(Left(new InvalidClient(s"No client for credentials ${clientId.value}:$secret")))
         case Some(client) if client.secret == password => Future.successful(Right(client))
         case _ =>
-          Future.successful(
-            Left(ClientError(ClientErrorCode.BadCredentials, s"Secrets don't match for client ${clientId.value}"))
-          )
+          Future.successful(Left(new InvalidClient(s"Secrets don't match for client ${clientId.value}")))
       }
   }
 
@@ -245,10 +240,7 @@ class MakeDataHandlerComponentTest
 
       Then("the User cannot be found")
       whenReady(futureMaybeUser.failed, Timeout(3.seconds)) {
-        case _: ClientAccessUnauthorizedException =>
-        case other =>
-          logger.error(s"Unexpected exception encountered:", other)
-          fail(s"Unexpected exception encountered: $other")
+        _ should be(a[InvalidClient])
       }
     }
 
@@ -266,10 +258,7 @@ class MakeDataHandlerComponentTest
 
       Then("the User cannot be found")
       whenReady(futureMaybeUser.failed, Timeout(3.seconds)) {
-        case _: ClientAccessUnauthorizedException =>
-        case other =>
-          logger.error(s"Unexpected exception encountered:", other)
-          fail(s"Unexpected exception encountered: $other")
+        _ should be(a[UnauthorizedClient])
       }
     }
 
@@ -303,10 +292,7 @@ class MakeDataHandlerComponentTest
 
       Then("An error is raised")
       whenReady(futureMaybeUser.failed, Timeout(3.seconds)) {
-        case _: ClientAccessUnauthorizedException =>
-        case other =>
-          logger.error(s"Unexpected exception encountered:", other)
-          fail(s"Unexpected exception encountered: $other")
+        _ should be(a[AccessDenied])
       }
 
     }
@@ -342,10 +328,7 @@ class MakeDataHandlerComponentTest
       when(request.grantType).thenReturn(OAuthGrantType.CLIENT_CREDENTIALS)
 
       whenReady(oauth2DataHandler.findUser(None, request).failed, Timeout(3.seconds)) {
-        case _: ClientAccessUnauthorizedException =>
-        case other =>
-          logger.error(s"Unexpected exception encountered:", other)
-          fail(s"Unexpected exception encountered: $other")
+        _ should be(a[InvalidRequest])
       }
     }
 
@@ -369,10 +352,7 @@ class MakeDataHandlerComponentTest
         request
       )
       whenReady(eventualUser.failed, Timeout(3.seconds)) {
-        case _: ClientAccessUnauthorizedException =>
-        case other =>
-          logger.error(s"Unexpected exception encountered:", other)
-          fail(s"Unexpected exception encountered: $other")
+        _ should be(a[InvalidClient])
       }
     }
 
@@ -382,10 +362,7 @@ class MakeDataHandlerComponentTest
 
       val eventualUser = oauth2DataHandler.findUser(Some(ClientCredential("unknown", Some(secret))), request)
       whenReady(eventualUser.failed, Timeout(3.seconds)) {
-        case _: ClientAccessUnauthorizedException =>
-        case other =>
-          logger.error(s"Unexpected exception encountered:", other)
-          fail(s"Unexpected exception encountered: $other")
+        _ should be(a[InvalidClient])
       }
     }
   }

@@ -23,10 +23,10 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.make.api.technical.auth.ClientService.ClientError
-import org.make.api.technical.auth.{ClientErrorCode, ClientService, ClientServiceComponent}
+import org.make.api.technical.auth.{ClientService, ClientServiceComponent}
 import org.make.api.{MakeApi, MakeUnitTest}
 import org.make.core.auth.{Client, ClientId}
+import scalaoauth2.provider.InvalidClient
 
 import scala.concurrent.Future
 
@@ -47,12 +47,12 @@ class ClientDirectivesTest
   when(clientService.getClient(any[ClientId], any[Option[String]])).thenAnswer {
     (clientId: ClientId, secret: Option[String]) =>
       clients.find(_.clientId == clientId) match {
-        case None => Future.successful(Left(ClientError(ClientErrorCode.UnknownClient, "Unknown")))
+        case None => Future.successful(Left(new InvalidClient("Unknown")))
         case Some(client) =>
           if (client.secret == secret) {
             Future.successful(Right(client))
           } else {
-            Future.successful(Left(ClientError(ClientErrorCode.BadCredentials, "")))
+            Future.successful(Left(new InvalidClient("")))
           }
       }
   }

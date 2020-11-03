@@ -21,7 +21,7 @@ package org.make.api.technical.directives
 
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.server.Directive1
-import org.make.api.technical.auth.{ClientAccessUnauthorizedException, ClientServiceComponent}
+import org.make.api.technical.auth.ClientServiceComponent
 import org.make.core.auth.{Client, ClientId}
 
 trait ClientDirectives extends FutureDirectives {
@@ -35,7 +35,7 @@ trait ClientDirectives extends FutureDirectives {
           case other => Some(other)
         }
         provideAsync(clientService.getClient(ClientId(clientId), secret)).flatMap {
-          case Left(e)       => failWith(ClientAccessUnauthorizedException(e.code, e.label))
+          case Left(e)       => failWith(e)
           case Right(client) => provide(Some(client))
         }
       case _ => provide[Option[Client]](None)
@@ -47,7 +47,7 @@ trait ClientDirectives extends FutureDirectives {
       case Some(client) => provide(client)
       case None =>
         provideAsync(clientService.getDefaultClient()).flatMap {
-          case Left(e)       => failWith(ClientAccessUnauthorizedException(e.code, e.label))
+          case Left(e)       => failWith(e)
           case Right(client) => provide(client)
         }
     }

@@ -20,7 +20,6 @@
 package org.make.api.technical.auth
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.StatusCodes.{Found, Unauthorized}
 import akka.http.scaladsl.model.headers.{`Set-Cookie`, HttpCookie}
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
@@ -34,7 +33,7 @@ import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.api.technical.auth.MakeDataHandler.{CreatedAtParameter, RefreshTokenExpirationParameter}
 import org.make.core.auth.{AuthCode, ClientId, UserRights}
-import org.make.core.{DateHelper, HttpCodes}
+import org.make.core.{DateHelper, HttpCodes, RequestContext}
 import scalaoauth2.provider._
 
 import scala.annotation.meta.field
@@ -85,28 +84,6 @@ trait AuthenticationApi extends Directives {
   @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
   @Path(value = "/oauth/access_token")
   def getAccessTokenRoute: Route
-
-  @ApiOperation(
-    value = "reconnect",
-    httpMethod = "POST",
-    code = HttpCodes.OK,
-    consumes = "application/x-www-form-urlencoded"
-  )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.OK, message = "Ok", response = classOf[TokenResponse])))
-  @ApiImplicitParams(
-    value = Array(
-      new ApiImplicitParam(name = "reconnect_token", paramType = "form", dataType = "string"),
-      new ApiImplicitParam(name = "password", paramType = "form", dataType = "string"),
-      new ApiImplicitParam(
-        name = "grant_type",
-        paramType = "form",
-        dataType = "string",
-        defaultValue = "reconnect_token"
-      )
-    )
-  )
-  @Path(value = "/oauth/reconnect")
-  def reconnect: Route
 
   @ApiOperation(
     value = "logout",
@@ -173,7 +150,13 @@ trait AuthenticationApi extends Directives {
   def resetCookies: Route
 
   def routes: Route =
-    getAccessTokenRoute ~ accessTokenRoute ~ logoutRoute ~ makeAccessTokenRoute ~ form ~ createAuthorizationCode ~ reconnect ~ resetCookies
+    getAccessTokenRoute ~
+      accessTokenRoute ~
+      logoutRoute ~
+      makeAccessTokenRoute ~
+      form ~
+      createAuthorizationCode ~
+      resetCookies
 }
 
 object AuthenticationApi {
@@ -279,39 +262,42 @@ trait DefaultAuthenticationApiComponent
       }
     }
 
+    private def issueAccessToken(requestContext: RequestContext): Route = {
+      formFieldMap { fields =>
+        extractRequest { request =>
+          val headers: Map[String, Seq[String]] =
+            request.headers.groupMap(_.name())(_.value())
+          onComplete(
+            tokenEndpoint
+              .handleRequest(
+                new AuthorizationRequest(headers, fields.map { case (k, v) => k -> Seq(v) }),
+                oauth2DataHandler
+              )
+              .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
+                case Left(e) => Future.successful(Left(e))
+                case Right(result) =>
+                  sessionHistoryCoordinatorService
+                    .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
+                    .map(_ => Right(result))
+              }
+          ) {
+            case Success(Right(grantResult)) =>
+              val tokenResponse = AuthenticationApi.grantResultToTokenResponse(grantResult)
+              setMakeSecure(tokenResponse, grantResult.authInfo.user.userId) {
+                complete(tokenResponse)
+              }
+            case Success(Left(e)) => failWith(e)
+            case Failure(ex)      => failWith(ex)
+          }
+        }
+      }
+    }
+
     override def accessTokenRoute: Route =
       post {
         path("oauth" / "access_token") {
           makeOperation("OauthAccessToken", EndpointType.Public) { requestContext =>
-            formFieldMap { fields =>
-              extractRequest { request =>
-                val headers: Map[String, Seq[String]] =
-                  request.headers.groupMap(_.name())(_.value())
-                onComplete(
-                  tokenEndpoint
-                    .handleRequest(
-                      new AuthorizationRequest(headers, fields.map { case (k, v) => k -> Seq(v) }),
-                      oauth2DataHandler
-                    )
-                    .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
-                      case Left(e) => Future.successful(Left(e))
-                      case Right(result) =>
-                        sessionHistoryCoordinatorService
-                          .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
-                          .map(_ => Right(result))
-                    }
-                ) {
-                  case Success(maybeGrantResponse) =>
-                    maybeGrantResponse.fold(_ => complete(Unauthorized), grantResult => {
-                      val tokenResponse = AuthenticationApi.grantResultToTokenResponse(grantResult)
-                      setMakeSecure(tokenResponse, grantResult.authInfo.user.userId) {
-                        complete(tokenResponse)
-                      }
-                    })
-                  case Failure(ex) => failWith(ex)
-                }
-              }
-            }
+            issueAccessToken(requestContext)
           }
         }
       }
@@ -320,35 +306,7 @@ trait DefaultAuthenticationApiComponent
       post {
         path("oauth" / "make_access_token") {
           makeOperation("OauthMakeAccessToken", EndpointType.Public) { requestContext =>
-            extractRequest { request =>
-              val headers: Map[String, Seq[String]] =
-                request.headers.groupMap(_.name())(_.value())
-              formFieldMap { fields =>
-                val allFields = fields ++ Map(
-                  "client_id" -> makeSettings.Authentication.defaultClientId,
-                  "client_secret" -> makeSettings.Authentication.defaultClientSecret
-                )
-
-                val future: Future[Either[OAuthError, GrantHandlerResult[UserRights]]] = tokenEndpoint
-                  .handleRequest(
-                    new AuthorizationRequest(headers, allFields.map { case (k, v) => k -> Seq(v) }),
-                    oauth2DataHandler
-                  )
-                  .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
-                    case Left(e) => Future.successful(Left(e))
-                    case Right(result) =>
-                      sessionHistoryCoordinatorService
-                        .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
-                        .map(_ => Right(result))
-                  }
-
-                onComplete(future) {
-                  case Success(Right(result)) => handleGrantResult(fields, result)
-                  case Success(Left(_))       => complete(Unauthorized)
-                  case Failure(ex)            => failWith(ex)
-                }
-              }
-            }
+            issueAccessToken(requestContext)
           }
         }
       }
@@ -362,50 +320,6 @@ trait DefaultAuthenticationApiComponent
                 provideAsyncOrNotFound(oauth2DataHandler.findAccessToken(token)) { tokenResult =>
                   complete(TokenResponse.fromAccessToken(tokenResult))
                 }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    private def handleGrantResult(fields: Map[String, String], grantResult: GrantHandlerResult[UserRights]): Route = {
-      fields.get("redirect_uri") match {
-        case Some(redirectUri) =>
-          redirect(
-            s"$redirectUri#access_token=${grantResult.accessToken}&state=${fields.getOrElse("state", "")}",
-            Found
-          )
-        case None =>
-          val tokenResponse = AuthenticationApi.grantResultToTokenResponse(grantResult)
-          setMakeSecure(tokenResponse, grantResult.authInfo.user.userId) {
-            complete(tokenResponse)
-          }
-      }
-    }
-
-    override def reconnect: Route = pathPrefix("oauth") {
-      path("reconnect") {
-        makeOperation("OauthReconnect") { requestContext =>
-          post {
-            formFieldMap { fields =>
-              val future: Future[Either[OAuthError, GrantHandlerResult[UserRights]]] = tokenEndpoint
-                .handleRequest(
-                  new AuthorizationRequest(Map(), fields.map { case (k, v) => k -> Seq(v) }),
-                  oauth2DataHandler
-                )
-                .flatMap[Either[OAuthError, GrantHandlerResult[UserRights]]] {
-                  case Left(e) => Future.successful(Left(e))
-                  case Right(result) =>
-                    sessionHistoryCoordinatorService
-                      .convertSession(requestContext.sessionId, result.authInfo.user.userId, requestContext)
-                      .map(_ => Right(result))
-                }
-
-              onComplete(future) {
-                case Success(Right(result)) => handleGrantResult(fields, result)
-                case Success(Left(_))       => complete(Unauthorized)
-                case Failure(ex)            => failWith(ex)
               }
             }
           }

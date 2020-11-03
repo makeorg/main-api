@@ -495,11 +495,14 @@ object MakeApi extends StrictLogging with Directives with ErrorAccumulatingCirce
           entity = HttpEntity(ContentTypes.`application/json`, messages.asJson.toString)
         )
       )
+    case e: OAuthError =>
+      complete(
+        StatusCodes.getForKey(e.statusCode).getOrElse(StatusCodes.Unauthorized) ->
+          ValidationError("authentication", e.errorType, Some(e.description))
+      )
     case ConcurrentModification(message) => complete(StatusCodes.Conflict -> message)
     case TokenAlreadyRefreshed(message)  => complete(StatusCodes.PreconditionFailed -> message)
     case _: EntityStreamSizeException    => complete(StatusCodes.PayloadTooLarge)
-    case e: ClientAccessUnauthorizedException =>
-      complete(StatusCodes.Unauthorized -> ValidationError("authentication", e.error.value, Some(e.getMessage)))
     case e =>
       logger.error(s"Error on request $routeName with id $requestId", e)
       complete(

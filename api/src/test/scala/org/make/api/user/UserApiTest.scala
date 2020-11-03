@@ -41,7 +41,6 @@ import org.make.api.question.{QuestionService, QuestionServiceComponent}
 import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
 import org.make.api.technical._
 import org.make.api.technical.auth.AuthenticationApi.TokenResponse
-import org.make.api.technical.auth.ClientService.ClientError
 import org.make.api.technical.auth._
 import org.make.api.technical.directives.ClientDirectives
 import org.make.api.technical.storage.Content.FileContent
@@ -62,7 +61,7 @@ import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
 import org.make.core.user._
 import org.make.core._
-import scalaoauth2.provider.{AccessToken, AuthInfo}
+import scalaoauth2.provider.{AccessToken, AuthInfo, InvalidClient}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -854,7 +853,7 @@ class UserApiTest
       val clientId = ClientId(s"CLIENT - $token")
 
       when(clientService.getClient(clientId, Some("wrong secret")))
-        .thenReturn(Future.successful(Left(ClientError(ClientErrorCode.BadCredentials, "Bad credentials"))))
+        .thenReturn(Future.successful(Left(new InvalidClient("Bad credentials"))))
 
       when(
         socialService.login(
