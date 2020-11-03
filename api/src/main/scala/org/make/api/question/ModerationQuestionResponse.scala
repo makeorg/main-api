@@ -283,8 +283,12 @@ final case class QuestionOfOperationResponse(
   operationTitle: String,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation.png")
   consultationImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "consultation image alternative")
+  consultationImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/description.png")
   descriptionImage: Option[String],
+  @(ApiModelProperty @field)(dataType = "string", example = "description image alternative")
+  descriptionImageAlt: Option[String Refined MaxSize[W.`130`.T]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
@@ -313,7 +317,9 @@ object QuestionOfOperationResponse {
       shortTitle = indexedOperationOfQuestion.questionShortTitle,
       operationTitle = indexedOperationOfQuestion.operationTitle,
       consultationImage = indexedOperationOfQuestion.consultationImage,
+      consultationImageAlt = indexedOperationOfQuestion.consultationImageAlt,
       descriptionImage = indexedOperationOfQuestion.descriptionImage,
+      descriptionImageAlt = indexedOperationOfQuestion.descriptionImageAlt,
       countries = indexedOperationOfQuestion.countries,
       language = indexedOperationOfQuestion.language,
       startDate = indexedOperationOfQuestion.startDate,
