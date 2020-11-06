@@ -27,7 +27,7 @@ import io.circe.generic.semiauto._
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.technical.enumeratum.FallbackingCirceEnum.FallbackingStringCirceEnum
 import org.make.core.user.UserType.{UserTypeOrganisation, UserTypePersonality, UserTypeUser}
 import org.make.core.{DateHelper, MakeSerializable, SprayJsonFormatters, StringValue, Timestamped}
@@ -86,7 +86,6 @@ final case class User(
   resetTokenExpiresAt: Option[ZonedDateTime],
   roles: Seq[Role],
   country: Country,
-  language: Language,
   profile: Option[Profile],
   override val createdAt: Option[ZonedDateTime] = None,
   override val updatedAt: Option[ZonedDateTime] = None,

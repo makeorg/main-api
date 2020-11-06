@@ -26,7 +26,7 @@ import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import org.make.api.user.social.models
 import org.make.core.CirceFormatters
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 
 final case class UserInfo(
   azp: Option[String],
@@ -55,12 +55,11 @@ final case class UserInfo(
     }
   }
 
-  def toUserInfo(country: Country, language: Language): models.UserInfo = {
+  def toUserInfo(country: Country): models.UserInfo = {
     models.UserInfo(
       email = email,
       firstName = givenName,
       country = country,
-      language = language,
       googleId = iat,
       picture = pictureUrl,
       domain = hd,
@@ -158,13 +157,12 @@ final case class PeopleInfo(
   emailAddresses: Seq[PeopleEmailAddress],
   birthdays: Option[Seq[Birthday]] // make it optional until all the fronts use the right scopes
 ) {
-  def toUserInfo(country: Country, language: Language): models.UserInfo = {
+  def toUserInfo(country: Country): models.UserInfo = {
     val maybeEmail = emailAddresses.find(_.metadata.isPrimary).map(_.value)
     models.UserInfo(
       email = maybeEmail,
       firstName = names.find(_.metadata.isPrimary).map(_.givenName),
       country = country,
-      language = language,
       gender = None,
       googleId = Some(resourceName.split("/").last),
       facebookId = None,

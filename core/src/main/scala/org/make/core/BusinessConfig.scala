@@ -34,8 +34,7 @@ sealed trait BusinessConfig {
 final case class CountryConfiguration(
   @(ApiModelProperty @field)(dataType = "string", example = "BE") countryCode: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "fr") defaultLanguage: Language,
-  @(ApiModelProperty @field)(dataType = "list[string]") supportedLanguages: Seq[Language],
-  @(ApiModelProperty @field)(dataType = "boolean") coreIsAvailable: Boolean
+  @(ApiModelProperty @field)(dataType = "list[string]") supportedLanguages: Seq[Language]
 )
 object CountryConfiguration {
   implicit val encoder: Encoder[CountryConfiguration] = deriveEncoder[CountryConfiguration]
@@ -54,188 +53,148 @@ object BusinessConfig {
     CountryConfiguration(
       countryCode = Country("FR"),
       defaultLanguage = Language("fr"),
-      supportedLanguages = Seq(Language("fr")),
-      coreIsAvailable = true
+      supportedLanguages = Seq(Language("fr"))
     ),
     CountryConfiguration(
       countryCode = Country("IT"),
       defaultLanguage = Language("it"),
-      supportedLanguages = Seq(Language("it")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("it"))
     ),
     CountryConfiguration(
       countryCode = Country("GB"),
       defaultLanguage = Language("en"),
-      supportedLanguages = Seq(Language("en")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("en"))
     ),
     CountryConfiguration(
       countryCode = Country("DE"),
       defaultLanguage = Language("de"),
-      supportedLanguages = Seq(Language("de")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("de"))
     ),
     CountryConfiguration(
       countryCode = Country("AT"),
       defaultLanguage = Language("de"),
-      supportedLanguages = Seq(Language("de")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("de"))
     ),
     CountryConfiguration(
       countryCode = Country("BE"),
       defaultLanguage = Language("nl"),
-      supportedLanguages = Seq(Language("fr"), Language("nl")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("fr"), Language("nl"))
     ),
     CountryConfiguration(
       countryCode = Country("BG"),
       defaultLanguage = Language("bg"),
-      supportedLanguages = Seq(Language("bg")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("bg"))
     ),
     CountryConfiguration(
       countryCode = Country("CY"),
       defaultLanguage = Language("el"),
-      supportedLanguages = Seq(Language("el")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("el"))
     ),
     CountryConfiguration(
       countryCode = Country("CZ"),
       defaultLanguage = Language("cs"),
-      supportedLanguages = Seq(Language("cs")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("cs"))
     ),
     CountryConfiguration(
       countryCode = Country("DK"),
       defaultLanguage = Language("da"),
-      supportedLanguages = Seq(Language("da")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("da"))
     ),
     CountryConfiguration(
       countryCode = Country("EE"),
       defaultLanguage = Language("et"),
-      supportedLanguages = Seq(Language("et")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("et"))
     ),
     CountryConfiguration(
       countryCode = Country("ES"),
       defaultLanguage = Language("es"),
-      supportedLanguages = Seq(Language("es")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("es"))
     ),
     CountryConfiguration(
       countryCode = Country("FI"),
       defaultLanguage = Language("fi"),
-      supportedLanguages = Seq(Language("fi")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("fi"))
     ),
     CountryConfiguration(
       countryCode = Country("GR"),
       defaultLanguage = Language("el"),
-      supportedLanguages = Seq(Language("el")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("el"))
     ),
     CountryConfiguration(
       countryCode = Country("HR"),
       defaultLanguage = Language("hr"),
-      supportedLanguages = Seq(Language("hr")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("hr"))
     ),
     CountryConfiguration(
       countryCode = Country("HU"),
       defaultLanguage = Language("hu"),
-      supportedLanguages = Seq(Language("hu")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("hu"))
     ),
     CountryConfiguration(
       countryCode = Country("IE"),
       defaultLanguage = Language("en"),
-      supportedLanguages = Seq(Language("en")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("en"))
     ),
     CountryConfiguration(
       countryCode = Country("LT"),
       defaultLanguage = Language("lt"),
-      supportedLanguages = Seq(Language("lt")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("lt"))
     ),
     CountryConfiguration(
       countryCode = Country("LU"),
       defaultLanguage = Language("fr"),
-      supportedLanguages = Seq(Language("fr"), Language("de")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("fr"), Language("de"))
     ),
     CountryConfiguration(
       countryCode = Country("LV"),
       defaultLanguage = Language("lv"),
-      supportedLanguages = Seq(Language("lv")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("lv"))
     ),
     CountryConfiguration(
       countryCode = Country("MT"),
       defaultLanguage = Language("mt"),
-      supportedLanguages = Seq(Language("mt")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("mt"))
     ),
     CountryConfiguration(
       countryCode = Country("NL"),
       defaultLanguage = Language("nl"),
-      supportedLanguages = Seq(Language("nl")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("nl"))
     ),
     CountryConfiguration(
       countryCode = Country("PL"),
       defaultLanguage = Language("pl"),
-      supportedLanguages = Seq(Language("pl")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("pl"))
     ),
     CountryConfiguration(
       countryCode = Country("PT"),
       defaultLanguage = Language("pt"),
-      supportedLanguages = Seq(Language("pt")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("pt"))
     ),
     CountryConfiguration(
       countryCode = Country("RO"),
       defaultLanguage = Language("ro"),
-      supportedLanguages = Seq(Language("ro")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("ro"))
     ),
     CountryConfiguration(
       countryCode = Country("SE"),
       defaultLanguage = Language("sv"),
-      supportedLanguages = Seq(Language("sv")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("sv"))
     ),
     CountryConfiguration(
       countryCode = Country("SI"),
       defaultLanguage = Language("sl"),
-      supportedLanguages = Seq(Language("sl")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("sl"))
     ),
     CountryConfiguration(
       countryCode = Country("SK"),
       defaultLanguage = Language("sk"),
-      supportedLanguages = Seq(Language("sk")),
-      coreIsAvailable = false
+      supportedLanguages = Seq(Language("sk"))
     )
   )
 
-  def validateCountry(country: Country): Country =
-    supportedCountries.map(_.countryCode).find(_ == country).getOrElse(Country("FR"))
-
-  def validateLanguage(country: Country, language: Language): Language =
-    supportedCountries
-      .find(_.countryCode == country)
-      .map { countryConfiguration =>
-        countryConfiguration.supportedLanguages
-          .find(_ == language)
-          .getOrElse(countryConfiguration.defaultLanguage)
-      }
-      .getOrElse(Language("fr"))
-
-  def coreIsAvailableForCountry(country: Country): Boolean = {
-    supportedCountries.find(_.countryCode == country).exists(_.coreIsAvailable)
+  implicit class CountryLanguageOps(val country: Country) extends AnyVal {
+    def language: Language =
+      supportedCountries.find(_.countryCode == country).map(_.defaultLanguage).getOrElse(Language("en"))
   }
 
 }

@@ -24,7 +24,7 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.swagger.annotations.ApiModelProperty
 import org.make.core.CirceFormatters
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult, ProposalsAndVotesCountsByQuestion}
 import org.make.core.user.UserId
 
@@ -43,8 +43,6 @@ final case class OrganisationSearchResponse(
   proposalsCount: Int,
   @(ApiModelProperty @field)(dataType = "int", example = "42")
   votesCount: Int,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
@@ -67,7 +65,6 @@ object OrganisationSearchResponse extends CirceFormatters {
       publicProfile = organisation.publicProfile,
       proposalsCount = organisation.proposalsCount,
       votesCount = organisation.votesCount,
-      language = organisation.language,
       country = organisation.country,
       website = organisation.website,
       countsByQuestion = organisation.countsByQuestion.map(ProposalsAndVotesCountsResponse.fromCounts).toMap

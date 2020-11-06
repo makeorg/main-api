@@ -50,7 +50,7 @@ import org.make.core.profile.Gender.Female
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal.{ProposalId, SearchQuery}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.technical.IdGenerator
 import org.make.core.user._
 import org.make.core.{DateHelper, DateHelperComponent, RequestContext}
@@ -227,7 +227,6 @@ class UserServiceTest
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11")),
           country = Country("FR"),
-          language = Language("fr"),
           gender = Some(Gender.Male),
           socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
           questionId = Some(QuestionId("thequestionid"))
@@ -257,7 +256,6 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
@@ -326,7 +324,6 @@ class UserServiceTest
         facebookId = Some("444444"),
         picture = Some("facebook.com/picture"),
         country = Country("FR"),
-        language = Language("fr"),
         dateOfBirth = None
       )
 
@@ -382,7 +379,6 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
@@ -436,7 +432,6 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         dateOfBirth = Some(now)
       )
 
@@ -465,7 +460,6 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         dateOfBirth = Some(LocalDate.now)
       )
 
@@ -495,7 +489,6 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
@@ -547,8 +540,7 @@ class UserServiceTest
           password = Some("passopasso"),
           lastIp = Some("127.0.0.1"),
           dateOfBirth = Some(LocalDate.parse("1984-10-11")),
-          country = Country("FR"),
-          language = Language("fr")
+          country = Country("FR")
         ),
         RequestContext.empty
       )
@@ -573,7 +565,6 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
@@ -613,7 +604,6 @@ class UserServiceTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         gender = None,
         googleId = None,
         facebookId = Some("444444"),
@@ -646,8 +636,7 @@ class UserServiceTest
           firstName = None,
           password = None,
           lastIp = None,
-          country = Country("FR"),
-          language = Language("fr")
+          country = Country("FR")
         ),
         RequestContext.empty
       )
@@ -675,7 +664,6 @@ class UserServiceTest
           firstName = Some("perso"),
           lastName = Some("nality"),
           country = Country("FR"),
-          language = Language("fr"),
           gender = Some(Gender.Male),
           genderName = None,
           description = None,
@@ -1002,7 +990,7 @@ class UserServiceTest
       when(persistentUserService.findByEmail("yopmail+some-hash@make.org"))
         .thenReturn(Future.successful(Some(user)))
 
-      val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"), Language("fr"))
+      val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"))
 
       whenReady(result, Timeout(5.seconds)) { resultUser =>
         resultUser should be(user)
@@ -1031,7 +1019,7 @@ class UserServiceTest
       when(persistentUserService.emailExists(eqTo("yopmail+some-other-hash@make.org")))
         .thenReturn(Future.successful(false))
 
-      val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"), Language("fr"))
+      val result = userService.retrieveOrCreateVirtualUser(request, Country("FR"))
 
       whenReady(result, Timeout(5.seconds)) { resultUser =>
         resultUser.email should be("yopmail+some-other-hash@make.org")

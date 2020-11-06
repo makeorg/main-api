@@ -157,7 +157,6 @@ class OrganisationServiceTest
           avatar = None,
           description = None,
           country = Country("FR"),
-          language = Language("fr"),
           website = Some("http://example.com")
         ),
         RequestContext.empty
@@ -169,7 +168,7 @@ class OrganisationServiceTest
       }
 
       verify(eventBusService, times(1)).publish(argMatching[AnyRef]({
-        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _, _) =>
+        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _) =>
       }))
     }
 
@@ -185,7 +184,6 @@ class OrganisationServiceTest
           avatar = None,
           description = None,
           country = Country("FR"),
-          language = Language("fr"),
           website = None
         ),
         RequestContext.empty
@@ -194,7 +192,7 @@ class OrganisationServiceTest
       RecoverMethods.recoverToSucceededIf[EmailAlreadyRegisteredException](futureOrganisation)
 
       verify(eventBusService, times(0)).publish(argMatching[AnyRef]({
-        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _, _) =>
+        case OrganisationRegisteredEvent(_, _, returnedOrganisation.userId, _, _, _) =>
       }))
     }
   }

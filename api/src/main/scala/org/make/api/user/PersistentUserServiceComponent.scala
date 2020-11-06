@@ -35,7 +35,7 @@ import org.make.core.{DateHelper, Order}
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user._
 import scalikejdbc._
 import scalikejdbc.interpolation.SQLSyntax._
@@ -82,7 +82,6 @@ object PersistentUserServiceComponent {
     genderName: Option[String],
     postalCode: Option[String],
     country: String,
-    language: String,
     karmaLevel: Option[Int],
     locale: Option[String],
     optInNewsletter: Boolean,
@@ -123,7 +122,6 @@ object PersistentUserServiceComponent {
         resetTokenExpiresAt = resetTokenExpiresAt,
         roles = roles.split(ROLE_SEPARATOR).toIndexedSeq.map(Role.apply),
         country = Country(country),
-        language = Language(language),
         profile = toProfile,
         isHardBounce = isHardBounce,
         lastMailingError = lastMailingErrorMessage.flatMap { message =>
@@ -226,7 +224,6 @@ object PersistentUserServiceComponent {
       "reset_token_expires_at",
       "roles",
       "country",
-      "language",
       "is_hard_bounce",
       "last_mailing_error_date",
       "last_mailing_error_message",
@@ -280,7 +277,6 @@ object PersistentUserServiceComponent {
         genderName = resultSet.stringOpt(userResultName.genderName),
         postalCode = resultSet.stringOpt(userResultName.postalCode),
         country = resultSet.string(userResultName.country),
-        language = resultSet.string(userResultName.language),
         karmaLevel = resultSet.intOpt(userResultName.karmaLevel),
         locale = resultSet.stringOpt(userResultName.locale),
         optInNewsletter = resultSet.boolean(userResultName.optInNewsletter),
@@ -783,7 +779,6 @@ trait DefaultPersistentUserServiceComponent
               column.genderName -> user.profile.flatMap(_.genderName),
               column.postalCode -> user.profile.flatMap(_.postalCode),
               column.country -> user.country.value,
-              column.language -> user.language.value,
               column.karmaLevel -> user.profile.flatMap(_.karmaLevel),
               column.locale -> user.profile.flatMap(_.locale),
               column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
@@ -870,7 +865,6 @@ trait DefaultPersistentUserServiceComponent
               column.genderName -> user.profile.flatMap(_.genderName),
               column.postalCode -> user.profile.flatMap(_.postalCode),
               column.country -> user.country.value,
-              column.language -> user.language.value,
               column.karmaLevel -> user.profile.flatMap(_.karmaLevel),
               column.locale -> user.profile.flatMap(_.locale),
               column.dateOfBirth -> user.profile.flatMap(_.dateOfBirth.map(_.atStartOfDay(ZoneOffset.UTC))),
@@ -1077,7 +1071,6 @@ trait DefaultPersistentUserServiceComponent
               column.gender -> user.profile.flatMap(_.gender),
               column.genderName -> user.profile.flatMap(_.genderName),
               column.country -> user.country.value,
-              column.language -> user.language.value,
               column.socioProfessionalCategory -> user.profile.flatMap(_.socioProfessionalCategory),
               column.emailVerified -> user.emailVerified,
               column.hashedPassword -> user.hashedPassword

@@ -476,7 +476,6 @@ class QuestionApiTest
           publicProfile = true,
           0,
           0,
-          Language("fr"),
           Country("FR"),
           None,
           Seq.empty

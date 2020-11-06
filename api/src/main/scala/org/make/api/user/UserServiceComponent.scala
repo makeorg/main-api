@@ -47,17 +47,10 @@ import org.make.core.profile.Gender.{Female, Male, Other}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.Role.RoleCitizen
 import org.make.core.user._
-import org.make.core.{
-  BusinessConfig,
-  DateHelperComponent,
-  Order,
-  RequestContext,
-  ValidationError,
-  ValidationFailedError
-}
+import org.make.core.{DateHelperComponent, Order, RequestContext, ValidationError, ValidationFailedError}
 import scalaoauth2.provider.AuthInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -123,7 +116,7 @@ trait UserService extends ShortenedNames {
   def getFollowedUsers(userId: UserId): Future[Seq[UserId]]
   def followUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
   def unfollowUser(followedUserId: UserId, userId: UserId, requestContext: RequestContext): Future[UserId]
-  def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country, language: Language): Future[User]
+  def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country): Future[User]
   def adminCountUsers(
     email: Option[String],
     firstName: Option[String],
@@ -154,7 +147,6 @@ final case class UserRegisterData(
   gender: Option[Gender] = None,
   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
   country: Country,
-  language: Language,
   questionId: Option[QuestionId] = None,
   optIn: Option[Boolean] = None,
   optInPartner: Option[Boolean] = None,
@@ -174,7 +166,6 @@ final case class PersonalityRegisterData(
   gender: Option[Gender],
   genderName: Option[String],
   country: Country,
-  language: Language,
   description: Option[String],
   avatarUrl: Option[String],
   website: Option[String],
@@ -243,8 +234,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     private def registerUser(
       userRegisterData: UserRegisterData,
       lowerCasedEmail: String,
-      country: Country,
-      language: Language,
       profile: Option[Profile],
       hashedVerificationToken: String
     ): Future[User] = {
@@ -264,8 +253,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = userRegisterData.roles,
-        country = country,
-        language = language,
+        country = userRegisterData.country,
         profile = profile,
         availableQuestions = userRegisterData.availableQuestions,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
@@ -279,8 +267,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     private def persistPersonality(
       personalityRegisterData: PersonalityRegisterData,
       lowerCasedEmail: String,
-      country: Country,
-      language: Language,
       profile: Option[Profile],
       resetToken: String
     ): Future[User] = {
@@ -300,8 +286,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         resetToken = Some(resetToken),
         resetTokenExpiresAt = Some(dateHelper.now().plusSeconds(resetTokenB2BExpiresIn)),
         roles = Seq(Role.RoleCitizen),
-        country = country,
-        language = language,
+        country = personalityRegisterData.country,
         profile = profile,
         availableQuestions = Seq.empty,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
@@ -346,9 +331,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
 
     override def register(userRegisterData: UserRegisterData, requestContext: RequestContext): Future[User] = {
 
-      val country = BusinessConfig.validateCountry(userRegisterData.country)
-      val language = BusinessConfig.validateLanguage(userRegisterData.country, userRegisterData.language)
-
       val lowerCasedEmail: String = userRegisterData.email.toLowerCase()
       val profile: Option[Profile] =
         Profile.parseProfile(
@@ -369,7 +351,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         canRegister             <- userRegistrationValidator.canRegister(userRegisterData)
         _                       <- validateAccountCreation(emailExists, canRegister, lowerCasedEmail)
         hashedVerificationToken <- generateVerificationToken()
-        user                    <- registerUser(userRegisterData, lowerCasedEmail, country, language, profile, hashedVerificationToken)
+        user                    <- registerUser(userRegisterData, lowerCasedEmail, profile, hashedVerificationToken)
       } yield user
 
       result.map { user =>
@@ -385,7 +367,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             dateOfBirth = user.profile.flatMap(_.dateOfBirth),
             postalCode = user.profile.flatMap(_.postalCode),
             country = user.country,
-            language = user.language,
             gender = user.profile.flatMap(_.gender),
             socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
             optInPartner = user.profile.flatMap(_.optInPartner),
@@ -401,9 +382,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       personalityRegisterData: PersonalityRegisterData,
       requestContext: RequestContext
     ): Future[User] = {
-
-      val country = BusinessConfig.validateCountry(personalityRegisterData.country)
-      val language = BusinessConfig.validateLanguage(personalityRegisterData.country, personalityRegisterData.language)
 
       val lowerCasedEmail: String = personalityRegisterData.email.toLowerCase()
       val profile: Option[Profile] =
@@ -422,7 +400,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         emailExists <- persistentUserService.emailExists(lowerCasedEmail)
         _           <- validateAccountCreation(emailExists, canRegister = true, lowerCasedEmail)
         resetToken  <- generateResetToken()
-        user        <- persistPersonality(personalityRegisterData, lowerCasedEmail, country, language, profile, resetToken)
+        user        <- persistPersonality(personalityRegisterData, lowerCasedEmail, profile, resetToken)
       } yield user
 
       result.map { user =>
@@ -433,7 +411,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             requestContext = requestContext,
             email = user.email,
             country = user.country,
-            language = user.language,
             eventDate = dateHelper.now()
           )
         )
@@ -477,8 +454,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       clientIp: Option[String]
     ): Future[User] = {
 
-      val country = BusinessConfig.validateCountry(userInfo.country)
-      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
       val profile: Option[Profile] =
         Profile.parseProfile(
           facebookId = userInfo.facebookId,
@@ -509,8 +484,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         resetToken = None,
         resetTokenExpiresAt = None,
         roles = getRolesFromSocial(userInfo),
-        country = country,
-        language = language,
+        country = userInfo.country,
         profile = profile,
         availableQuestions = Seq.empty,
         anonymousParticipation = makeSettings.defaultUserAnonymousParticipation,
@@ -524,8 +498,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
     }
 
     private def updateUserFromSocial(user: User, userInfo: UserInfo, clientIp: Option[String]): Future[User] = {
-      val country = BusinessConfig.validateCountry(userInfo.country)
-      val language = BusinessConfig.validateLanguage(userInfo.country, userInfo.language)
       val hashedPassword = if (!user.emailVerified) None else user.hashedPassword
 
       val profile: Option[Profile] = user.profile.orElse(Profile.parseProfile())
@@ -540,8 +512,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         user.copy(
           firstName = userInfo.firstName,
           lastIp = clientIp,
-          country = country,
-          language = language,
+          country = userInfo.country,
           profile = updatedProfile,
           hashedPassword = hashedPassword,
           emailVerified = true
@@ -575,7 +546,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
           dateOfBirth = user.profile.flatMap(_.dateOfBirth),
           postalCode = user.profile.flatMap(_.postalCode),
           country = user.country,
-          language = user.language,
           isSocialLogin = true,
           gender = user.profile.flatMap(_.gender),
           socioProfessionalCategory = user.profile.flatMap(_.socioProfessionalCategory),
@@ -588,7 +558,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         UserValidatedAccountEvent(
           userId = user.userId,
           country = user.country,
-          language = user.language,
           requestContext = requestContext,
           isSocialLogin = true,
           eventDate = dateHelper.now()
@@ -600,7 +569,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             connectedUserId = Some(user.userId),
             userId = user.userId,
             country = user.country,
-            language = user.language,
             requestContext = requestContext,
             avatarUrl = avatarUrl,
             eventDate = dateHelper.now()
@@ -780,7 +748,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 userId = personality.userId,
                 requestContext = requestContext,
                 country = personality.country,
-                language = personality.language,
                 eventDate = dateHelper.now(),
                 oldEmail = oldEmail,
                 newEmail = email
@@ -848,7 +815,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
             requestContext = requestContext,
             country = user.country,
             eventDate = dateHelper.now(),
-            language = user.language,
             adminId = adminId
           )
         )
@@ -893,11 +859,7 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
       }
     }
 
-    override def retrieveOrCreateVirtualUser(
-      userInfo: AuthorRequest,
-      country: Country,
-      language: Language
-    ): Future[User] = {
+    override def retrieveOrCreateVirtualUser(userInfo: AuthorRequest, country: Country): Future[User] = {
       // Take only 50 chars to avoid having values too large for the column
       val fullHash: String = tokenGenerator.tokenToHash(s"$userInfo")
       val hash = fullHash.substring(0, Math.min(50, fullHash.length)).toLowerCase()
@@ -918,7 +880,6 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
                 lastName = userInfo.lastName,
                 profession = userInfo.profession,
                 country = country,
-                language = language,
                 optIn = Some(false)
               ),
               RequestContext.empty

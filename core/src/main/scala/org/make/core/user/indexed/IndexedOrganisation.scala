@@ -63,7 +63,6 @@ final case class IndexedOrganisation(
   publicProfile: Boolean,
   proposalsCount: Int,
   votesCount: Int,
-  language: Language,
   country: Country,
   website: Option[String],
   countsByQuestion: Seq[ProposalsAndVotesCountsByQuestion]
@@ -86,7 +85,6 @@ object IndexedOrganisation extends CirceFormatters {
       publicProfile = organisation.publicProfile,
       proposalsCount = countsByQuestion.map(_.proposalsCount).sum,
       votesCount = countsByQuestion.map(_.votesCount).sum,
-      language = organisation.language,
       country = organisation.country,
       website = organisation.profile.flatMap(_.website),
       countsByQuestion = countsByQuestion

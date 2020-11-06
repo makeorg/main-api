@@ -28,7 +28,7 @@ import com.typesafe.config.ConfigFactory
 import org.make.api.technical.crm.{SendMailPublisherService, SendMailPublisherServiceComponent}
 import org.make.api.userhistory._
 import org.make.api.{KafkaConsumerTest, KafkaTestConsumerActor, TestUtilsIT}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.{User, UserId, UserType}
 import org.make.core.{DateHelper, MakeSerializable, RequestContext}
 
@@ -83,20 +83,19 @@ class UserEmailConsumerActorIT
     .thenReturn(Future.successful(Some(personality1)))
 
   val country: Country = Country("FR")
-  val language: Language = Language("fr")
 
   Feature("consume ResetPasswordEvent") {
     val probeReset: TestProbe = TestProbe("reset")
     Scenario("user reset password") {
       when(
         sendMailPublisherService
-          .publishForgottenPassword(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+          .publishForgottenPassword(eqTo(user), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPassword called"
         Future.successful({})
       }
 
-      val event: ResetPasswordEvent = ResetPasswordEvent(None, user, country, language, RequestContext.empty)
+      val event: ResetPasswordEvent = ResetPasswordEvent(None, user, country, RequestContext.empty)
       val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event)
 
       send(wrappedEvent)
@@ -106,18 +105,14 @@ class UserEmailConsumerActorIT
 
     Scenario("organisation reset password") {
       when(
-        sendMailPublisherService.publishForgottenPasswordOrganisation(
-          eqTo(organisation),
-          eqTo(country),
-          eqTo(language),
-          eqTo(RequestContext.empty)
-        )
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        sendMailPublisherService
+          .publishForgottenPasswordOrganisation(eqTo(organisation), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation called"
         Future.successful({})
       }
       val event: ResetPasswordEvent =
-        ResetPasswordEvent(None, organisation, country, language, RequestContext.empty)
+        ResetPasswordEvent(None, organisation, country, RequestContext.empty)
       val wrappedEvent = UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", event)
 
       send(wrappedEvent)
@@ -127,19 +122,15 @@ class UserEmailConsumerActorIT
 
     Scenario("perso reset password") {
       when(
-        sendMailPublisherService.publishForgottenPasswordOrganisation(
-          eqTo(personality1),
-          eqTo(country),
-          eqTo(language),
-          eqTo(RequestContext.empty)
-        )
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+        sendMailPublisherService
+          .publishForgottenPasswordOrganisation(eqTo(personality1), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         probeReset.ref ! "sendMailPublisherService.publishForgottenPasswordOrganisation perso called"
         Future.successful({})
       }
 
       val eventPerso: ResetPasswordEvent =
-        ResetPasswordEvent(None, personality1, country, language, RequestContext.empty)
+        ResetPasswordEvent(None, personality1, country, RequestContext.empty)
       val wrappedEventPerso =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResetPasswordEvent", eventPerso)
 
@@ -155,8 +146,8 @@ class UserEmailConsumerActorIT
     Scenario("user register") {
       when(
         sendMailPublisherService
-          .publishRegistration(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+          .publishRegistration(eqTo(user), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         probeRegistered.ref ! "sendMailPublisherService.publishRegistration called"
         Future.successful({})
       }
@@ -171,8 +162,7 @@ class UserEmailConsumerActorIT
         profession = None,
         dateOfBirth = None,
         postalCode = None,
-        country = country,
-        language = language
+        country = country
       )
 
       val wrappedEventUser =
@@ -189,8 +179,8 @@ class UserEmailConsumerActorIT
       val orgaProbe: TestProbe = TestProbe()
       when(
         sendMailPublisherService
-          .publishRegistrationB2B(eqTo(organisation), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+          .publishRegistrationB2B(eqTo(organisation), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         orgaProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
         Future.successful({})
       }
@@ -200,8 +190,7 @@ class UserEmailConsumerActorIT
         userId = organisation.userId,
         requestContext = RequestContext.empty,
         email = "some@mail.com",
-        country = country,
-        language = language
+        country = country
       )
       val wrappedEventOrganisation =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "OrganisationRegisteredEvent", eventOrganisation)
@@ -215,8 +204,8 @@ class UserEmailConsumerActorIT
       val persoProbe: TestProbe = TestProbe()
       when(
         sendMailPublisherService
-          .publishRegistrationB2B(eqTo(personality1), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+          .publishRegistrationB2B(eqTo(personality1), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         persoProbe.ref ! "sendMailPublisherService.publishRegistrationB2B called"
         Future.successful({})
       }
@@ -226,8 +215,7 @@ class UserEmailConsumerActorIT
         userId = personality1.userId,
         requestContext = RequestContext.empty,
         email = "some@mail.com",
-        country = country,
-        language = language
+        country = country
       )
       val wrappedEvent =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "PersonalityRegisteredEvent", event)
@@ -241,11 +229,10 @@ class UserEmailConsumerActorIT
   Feature("consume UserValidatedAccountEvent") {
     Scenario("user validate") {
       val userProbe: TestProbe = TestProbe("validate")
-      when(
-        sendMailPublisherService.publishWelcome(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
-        userProbe.ref ! "sendMailPublisherService.publishWelcome called"
-        Future.successful({})
+      when(sendMailPublisherService.publishWelcome(eqTo(user), eqTo(country), eqTo(RequestContext.empty))).thenAnswer {
+        (_: User, _: Country, _: RequestContext) =>
+          userProbe.ref ! "sendMailPublisherService.publishWelcome called"
+          Future.successful({})
       }
 
       val event: UserValidatedAccountEvent = UserValidatedAccountEvent(
@@ -253,8 +240,7 @@ class UserEmailConsumerActorIT
         eventDate = dateNow,
         userId = user.userId,
         requestContext = RequestContext.empty,
-        country = country,
-        language = language
+        country = country
       )
 
       val wrappedEvent =
@@ -272,8 +258,7 @@ class UserEmailConsumerActorIT
         eventDate = dateNow,
         userId = organisation.userId,
         requestContext = RequestContext.empty,
-        country = country,
-        language = language
+        country = country
       )
       val wrappedEvent =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event)
@@ -290,8 +275,7 @@ class UserEmailConsumerActorIT
         eventDate = dateNow,
         userId = personality1.userId,
         requestContext = RequestContext.empty,
-        country = country,
-        language = language
+        country = country
       )
       val wrappedEvent =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "UserValidatedAccountEvent", event)
@@ -308,14 +292,14 @@ class UserEmailConsumerActorIT
     Scenario("user resend") {
       when(
         sendMailPublisherService
-          .resendRegistration(eqTo(user), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+          .resendRegistration(eqTo(user), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
         Future.successful({})
       }
 
       val event: ResendValidationEmailEvent =
-        ResendValidationEmailEvent(None, dateNow, user.userId, country, language, RequestContext.empty)
+        ResendValidationEmailEvent(None, dateNow, user.userId, country, RequestContext.empty)
       val wrappedEvent =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event)
 
@@ -327,14 +311,14 @@ class UserEmailConsumerActorIT
     Scenario("organisation resend") {
       when(
         sendMailPublisherService
-          .resendRegistration(eqTo(organisation), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+          .resendRegistration(eqTo(organisation), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
         Future.successful({})
       }
 
       val event: ResendValidationEmailEvent =
-        ResendValidationEmailEvent(None, dateNow, organisation.userId, country, language, RequestContext.empty)
+        ResendValidationEmailEvent(None, dateNow, organisation.userId, country, RequestContext.empty)
       val wrappedEvent =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event)
 
@@ -346,14 +330,14 @@ class UserEmailConsumerActorIT
     Scenario("personality resend") {
       when(
         sendMailPublisherService
-          .resendRegistration(eqTo(personality1), eqTo(country), eqTo(language), eqTo(RequestContext.empty))
-      ).thenAnswer { (_: User, _: Country, _: Language, _: RequestContext) =>
+          .resendRegistration(eqTo(personality1), eqTo(country), eqTo(RequestContext.empty))
+      ).thenAnswer { (_: User, _: Country, _: RequestContext) =>
         probeValidation.ref ! "sendMailPublisherService.resendRegistration called"
         Future.successful({})
       }
 
       val event: ResendValidationEmailEvent =
-        ResendValidationEmailEvent(None, dateNow, personality1.userId, country, language, RequestContext.empty)
+        ResendValidationEmailEvent(None, dateNow, personality1.userId, country, RequestContext.empty)
       val wrappedEvent =
         UserEventWrapper(MakeSerializable.V1, "some-event", dateNow, "ResendValidationEmailEvent", event)
 

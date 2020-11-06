@@ -29,7 +29,7 @@ import org.make.api.technical.elasticsearch.{
 }
 import org.make.core.{CirceFormatters, Order}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.indexed.{IndexedOrganisation, ProposalsAndVotesCountsByQuestion}
 import org.make.core.user._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -76,7 +76,6 @@ class OrganisationSearchEngineIT
       publicProfile = true,
       proposalsCount = 42,
       votesCount = 70,
-      language = Language("fr"),
       country = Country("FR"),
       website = Some("http://example.com"),
       countsByQuestion = Seq(ProposalsAndVotesCountsByQuestion(QuestionId("question-id-1"), 42, 70))
@@ -90,7 +89,6 @@ class OrganisationSearchEngineIT
       publicProfile = true,
       proposalsCount = 0,
       votesCount = 0,
-      language = Language("fr"),
       country = Country("FR"),
       website = Some("http://example.com"),
       countsByQuestion = Seq.empty
@@ -104,7 +102,6 @@ class OrganisationSearchEngineIT
       publicProfile = true,
       proposalsCount = 4321,
       votesCount = 420123,
-      language = Language("fr"),
       country = Country("FR"),
       website = Some("http://example.com"),
       countsByQuestion = Seq(
@@ -121,7 +118,6 @@ class OrganisationSearchEngineIT
       publicProfile = true,
       proposalsCount = 228,
       votesCount = 1000,
-      language = Language("fr"),
       country = Country("FR"),
       website = Some("http://example.com"),
       countsByQuestion = Seq(

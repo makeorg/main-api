@@ -27,7 +27,7 @@ import org.make.api.{DatabaseTest, TestUtilsIT}
 import org.make.core.{DateHelper, Order}
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -166,7 +166,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     roles = Seq(Role.RoleActor),
     country = Country("RU"),
-    language = Language("ru"),
     organisationName = Some("Federal Security Service"),
     userType = UserType.UserTypeOrganisation
   )
@@ -196,7 +195,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     roles = Seq(Role.RoleActor),
     country = Country("US"),
-    language = Language("en"),
     organisationName = Some("Central Intelligence Agency - CIA"),
     userType = UserType.UserTypeOrganisation
   )
@@ -212,7 +210,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     roles = Seq(Role.RoleActor),
     country = Country("US"),
-    language = Language("en"),
     organisationName = Some("Federal Bureau of Investigation - FBI"),
     userType = UserType.UserTypeOrganisation
   )
@@ -228,7 +225,6 @@ class PersistentUserServiceIT extends DatabaseTest with DefaultPersistentUserSer
     verificationTokenExpiresAt = Some(before),
     roles = Seq(Role.RoleActor),
     country = Country("UK"),
-    language = Language("en"),
     organisationName = Some("Military Intelligence, Section 5 - MI5"),
     userType = UserType.UserTypeOrganisation
   )

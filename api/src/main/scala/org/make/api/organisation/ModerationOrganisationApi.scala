@@ -39,7 +39,7 @@ import org.make.api.technical.{`X-Total-Count`, IdGeneratorComponent, MakeAuthen
 import org.make.api.user.{ProfileRequest, ProfileResponse}
 import org.make.core.Validation.{validateOptional, _}
 import org.make.core.auth.UserRights
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.{User, UserId}
 import org.make.core.{CirceFormatters, HttpCodes, Order, ParameterExtractors}
 import scalaoauth2.provider.AuthInfo
@@ -164,7 +164,6 @@ trait DefaultModerationOrganisationApiComponent
                             avatar = request.avatarUrl.map(_.value),
                             description = request.description.map(_.value),
                             country = request.country.orElse(requestContext.country).getOrElse(Country("FR")),
-                            language = request.language.orElse(requestContext.language).getOrElse(Language("fr")),
                             website = request.website.map(_.value)
                           ),
                           requestContext
@@ -279,8 +278,6 @@ final case class ModerationCreateOrganisationRequest(
   avatarUrl: Option[String Refined And[Url, MaxSize[W.`2048`.T]]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Option[Language],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
@@ -353,9 +350,7 @@ final case class OrganisationResponse(
   organisationName: Option[String],
   profile: Option[ProfileResponse],
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
-  country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language
+  country: Country
 )
 
 object OrganisationResponse extends CirceFormatters {
@@ -367,8 +362,7 @@ object OrganisationResponse extends CirceFormatters {
     email = user.email,
     organisationName = user.organisationName,
     profile = user.profile.map(ProfileResponse.fromProfile),
-    country = user.country,
-    language = user.language
+    country = user.country
   )
 }
 

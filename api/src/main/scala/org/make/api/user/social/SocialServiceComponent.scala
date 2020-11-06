@@ -28,7 +28,7 @@ import org.make.api.user.{SocialLoginResponse, SocialProvider, UserServiceCompon
 import org.make.core.RequestContext
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.UserId
 import scalaoauth2.provider.AuthInfo
 
@@ -45,7 +45,6 @@ trait SocialService {
     provider: SocialProvider,
     token: String,
     country: Country,
-    language: Language,
     clientIp: Option[String],
     questionId: Option[QuestionId],
     requestContext: RequestContext,
@@ -64,7 +63,6 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
       provider: SocialProvider,
       token: String,
       country: Country,
-      language: Language,
       clientIp: Option[String],
       questionId: Option[QuestionId],
       requestContext: RequestContext,
@@ -72,9 +70,9 @@ trait DefaultSocialServiceComponent extends SocialServiceComponent {
     ): Future[(UserId, SocialLoginResponse)] = {
 
       val futureUserInfo: Future[UserInfo] = provider match {
-        case Google       => googleApi.getUserInfo(token).map(_.toUserInfo(country, language))
-        case GooglePeople => googleApi.peopleInfo(token).map(_.toUserInfo(country, language))
-        case Facebook     => facebookApi.getUserInfo(token).map(_.toUserInfo(country, language))
+        case Google       => googleApi.getUserInfo(token).map(_.toUserInfo(country))
+        case GooglePeople => googleApi.peopleInfo(token).map(_.toUserInfo(country))
+        case Facebook     => facebookApi.getUserInfo(token).map(_.toUserInfo(country))
       }
 
       for {

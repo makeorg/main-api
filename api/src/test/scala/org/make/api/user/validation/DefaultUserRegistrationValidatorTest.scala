@@ -25,7 +25,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.make.api.MakeUnitTest
 import org.make.api.user.{UserProfileRequestValidation, UserRegisterData}
 import org.make.core.{Requirement, Validation, ValidationFailedError}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.Future
@@ -34,14 +34,8 @@ import scala.concurrent.duration.DurationInt
 class DefaultUserRegistrationValidatorTest extends MakeUnitTest {
 
   Feature("email validation") {
-    val data = UserRegisterData(
-      email = "test",
-      firstName = None,
-      password = None,
-      lastIp = None,
-      country = Country("FR"),
-      language = Language("fr")
-    )
+    val data =
+      UserRegisterData(email = "test", firstName = None, password = None, lastIp = None, country = Country("FR"))
 
     Scenario("accept-all") {
       val configuration = ConfigFactory.parseString(DefaultUserRegistrationValidatorTest.defaultConfiguration)

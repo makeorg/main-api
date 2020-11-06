@@ -913,7 +913,7 @@ class ProposalServiceTest
           operationId = None
         )
 
-      when(userService.retrieveOrCreateVirtualUser(any[AuthorRequest], any[Country], any[Language]))
+      when(userService.retrieveOrCreateVirtualUser(any[AuthorRequest], any[Country]))
         .thenReturn(Future.successful(user(UserId("user"))))
 
       when(userService.getUser(any[UserId]))

@@ -22,7 +22,7 @@ package org.make.core.user
 import java.time.ZonedDateTime
 
 import org.make.core.MakeUnitTest
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.Role.{RoleActor, RoleAdmin, RoleCitizen, RoleModerator, RolePolitical}
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
@@ -47,7 +47,6 @@ class UserTest extends MakeUnitTest {
     resetTokenExpiresAt = None,
     roles = Seq(Role.RoleAdmin, Role.RoleCitizen),
     country = Country("FR"),
-    language = Language("fr"),
     profile = None,
     availableQuestions = Seq.empty,
     anonymousParticipation = false,
@@ -228,7 +227,6 @@ class UserTest extends MakeUnitTest {
     resetTokenExpiresAt: Option[ZonedDateTime] = None,
     roles: Seq[Role] = Seq(RoleCitizen),
     country: Country = Country("FR"),
-    language: Language = Language("fr"),
     profile: Option[Profile] = None,
     createdAt: Option[ZonedDateTime] = None,
     updatedAt: Option[ZonedDateTime] = None,
@@ -253,7 +251,6 @@ class UserTest extends MakeUnitTest {
       resetTokenExpiresAt = resetTokenExpiresAt,
       roles = roles,
       country = country,
-      language = language,
       profile = profile,
       createdAt = createdAt,
       updatedAt = updatedAt,

@@ -30,7 +30,7 @@ import org.make.api.technical.storage.Content.FileContent
 import org.make.api.technical.storage._
 import org.make.api.user.UserExceptions.EmailAlreadyRegisteredException
 import org.make.api.{ActorSystemComponent, MakeApi, MakeApiTestBase, TestUtils}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.Role.{RoleCitizen, RoleModerator, RolePolitical}
 import org.make.core.user._
 import org.make.core.{RequestContext, ValidationError}
@@ -307,7 +307,6 @@ class AdminUserApiTest
               profession = None,
               postalCode = None,
               country = Country("FR"),
-              language = Language("fr"),
               gender = None,
               socioProfessionalCategory = None,
               optIn = Some(false),
@@ -348,7 +347,7 @@ class AdminUserApiTest
       }
     }
 
-    Scenario("validation failed for missing country and/or language") {
+    Scenario("validation failed for missing country") {
       val request =
         """{
           |  "email": "mod.erator@modo.com",
@@ -466,8 +465,7 @@ class AdminUserApiTest
             user.lastIp.isEmpty &&
             user.hashedPassword.isEmpty &&
             user.roles == Seq(RoleModerator, RolePolitical, RoleCitizen) &&
-            user.country == Country("GB") &&
-            user.language == Language("en")
+            user.country == Country("GB")
           }, any[RequestContext])
       }
     }
@@ -802,8 +800,7 @@ class AdminUserApiTest
             user.lastIp.isEmpty &&
             user.hashedPassword.isEmpty &&
             user.roles == Seq(RoleModerator, RolePolitical, RoleCitizen) &&
-            user.country == Country("GB") &&
-            user.language == Language("en")
+            user.country == Country("GB")
           }, any[RequestContext])
       }
     }

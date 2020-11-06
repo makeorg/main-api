@@ -101,7 +101,6 @@ final case class OrganisationRegisterData(
   avatar: Option[String],
   description: Option[String],
   country: Country,
-  language: Language,
   website: Option[String]
 )
 
@@ -191,7 +190,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
       organisationRegisterData: OrganisationRegisterData,
       lowerCasedEmail: String,
       country: Country,
-      language: Language,
       resetToken: String
     ): Future[User] = {
       val user = User(
@@ -212,7 +210,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         resetTokenExpiresAt = Some(DateHelper.now().plusSeconds(resetTokenB2BExpiresIn)),
         roles = Seq(Role.RoleActor),
         country = country,
-        language = language,
         profile = Profile.parseProfile(
           avatarUrl = organisationRegisterData.avatar,
           description = organisationRegisterData.description,
@@ -232,7 +229,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
     ): Future[User] = {
 
       val country = organisationRegisterData.country
-      val language = organisationRegisterData.language
 
       val lowerCasedEmail: String = organisationRegisterData.email.toLowerCase()
 
@@ -240,7 +236,7 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
         emailExists <- persistentUserService.emailExists(lowerCasedEmail)
         _           <- verifyEmail(lowerCasedEmail, emailExists)
         resetToken  <- userTokenGenerator.generateResetToken().map { case (_, token) => token }
-        user        <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, language, resetToken)
+        user        <- registerOrganisation(organisationRegisterData, lowerCasedEmail, country, resetToken)
       } yield user
 
       result.map { user =>
@@ -251,7 +247,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
             requestContext = requestContext,
             email = user.email,
             country = user.country,
-            language = user.language,
             eventDate = DateHelper.now()
           )
         )
@@ -317,7 +312,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                 userId = organisation.userId,
                 requestContext = requestContext,
                 country = organisation.country,
-                language = organisation.language,
                 eventDate = DateHelper.now(),
                 oldEmail = oldEmail,
                 newEmail = email
@@ -353,7 +347,6 @@ trait DefaultOrganisationServiceComponent extends OrganisationServiceComponent w
                     userId = orga.userId,
                     requestContext = requestContext,
                     country = orga.country,
-                    language = orga.language,
                     eventDate = DateHelper.now()
                   )
                 )

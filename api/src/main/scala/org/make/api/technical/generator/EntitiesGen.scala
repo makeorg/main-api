@@ -77,7 +77,7 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       postalCode                <- Gen.option(CustomGenerators.PostalCode.gen)
       gender                    <- Gen.option(arbitrary[Gender])
       socioProfessionalCategory <- Gen.option(arbitrary[SocioProfessionalCategory])
-      (country, language)       <- genCountryLanguage
+      (country, _)              <- genCountryLanguage
       optIn                     <- Gen.option(Arbitrary.arbitrary[Boolean])
       optInPartner              <- Gen.option(Arbitrary.arbitrary[Boolean])
       roles                     <- genRoles
@@ -95,7 +95,6 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       gender = gender,
       socioProfessionalCategory = socioProfessionalCategory,
       country = country,
-      language = language,
       questionId = questionId,
       optIn = optIn,
       optInPartner = optInPartner,
