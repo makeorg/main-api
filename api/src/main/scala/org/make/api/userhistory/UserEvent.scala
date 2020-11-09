@@ -29,7 +29,7 @@ import org.make.core.history.HistoryActions.VoteAndQualifications
 import org.make.core.profile.{Gender, SocioProfessionalCategory}
 import org.make.core.proposal.ProposalId
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.{User, UserId}
 
 trait UserHistoryActorProtocol extends ActorProtocol
@@ -56,14 +56,12 @@ sealed trait UserEvent extends UserPersistentEvent {
   def eventDate: ZonedDateTime
   def requestContext: RequestContext
   def country: Country
-  def language: Language
   def version(): Int
 }
 
 object UserEvent {
 
   val defaultCountry: Country = Country("FR")
-  val defaultLanguage: Language = Language("fr")
 
   val defaultDate: ZonedDateTime = ZonedDateTime.parse("2017-11-01T09:00:00Z")
 }
@@ -88,8 +86,7 @@ final case class PersonalityRegisteredEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   email: String,
-  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry
 ) extends B2BRegisteredEvent {
   override def version(): Int = MakeSerializable.V1
 }
@@ -101,7 +98,6 @@ final case class PersonalityEmailChangedEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   oldEmail: String,
   newEmail: String
 ) extends UserEvent {
@@ -114,7 +110,6 @@ final case class ResetPasswordEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   override val requestContext: RequestContext
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
@@ -125,14 +120,12 @@ object ResetPasswordEvent {
     connectedUserId: Option[UserId],
     user: User,
     country: Country,
-    language: Language,
     requestContext: RequestContext
   ): ResetPasswordEvent = {
     ResetPasswordEvent(
       userId = user.userId,
       connectedUserId = connectedUserId,
       country = country,
-      language = language,
       requestContext = requestContext,
       eventDate = DateHelper.now()
     )
@@ -145,7 +138,6 @@ final case class ResendValidationEmailEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   override val requestContext: RequestContext
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
@@ -156,7 +148,6 @@ object ResendValidationEmailEvent {
     connectedUserId: UserId,
     userId: UserId,
     country: Country,
-    language: Language,
     requestContext: RequestContext
   ): ResendValidationEmailEvent = {
     ResendValidationEmailEvent(
@@ -164,7 +155,6 @@ object ResendValidationEmailEvent {
       eventDate = DateHelper.now(),
       userId = userId,
       country = country,
-      language = language,
       requestContext = requestContext
     )
   }
@@ -185,7 +175,6 @@ final case class UserRegisteredEvent(
   gender: Option[Gender] = None,
   socioProfessionalCategory: Option[SocioProfessionalCategory] = None,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   isSocialLogin: Boolean = false,
   registerQuestionId: Option[QuestionId] = None,
   optInPartner: Option[Boolean] = None
@@ -199,7 +188,6 @@ final case class UserConnectedEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   override val requestContext: RequestContext
 ) extends UserEvent {
 
@@ -212,7 +200,6 @@ final case class UserValidatedAccountEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId = UserId(value = ""),
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   override val requestContext: RequestContext = RequestContext.empty,
   isSocialLogin: Boolean = false
 ) extends UserEvent {
@@ -225,7 +212,6 @@ final case class UserUpdatedTagEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId = UserId(value = ""),
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   override val requestContext: RequestContext = RequestContext.empty,
   oldTag: String,
   newTag: String
@@ -240,8 +226,7 @@ final case class OrganisationRegisteredEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   email: String,
-  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry
 ) extends B2BRegisteredEvent {
   override def version(): Int = MakeSerializable.V1
 }
@@ -252,8 +237,7 @@ final case class OrganisationUpdatedEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
   override val requestContext: RequestContext,
-  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
 }
@@ -264,8 +248,7 @@ final case class OrganisationInitializationEvent(
   @AvroDefault("2017-11-01T09:00Z") override val eventDate: ZonedDateTime = UserEvent.defaultDate,
   override val userId: UserId,
   override val requestContext: RequestContext,
-  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage
+  @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
 }
@@ -279,7 +262,6 @@ final case class UserUpdatedOptInNewsletterEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   optInNewsletter: Boolean
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
@@ -292,7 +274,6 @@ final case class UserAnonymizedEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   adminId: UserId
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
@@ -305,7 +286,6 @@ final case class UserFollowEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   followedUserId: UserId
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
@@ -318,7 +298,6 @@ final case class UserUnfollowEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   unfollowedUserId: UserId
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
@@ -331,7 +310,6 @@ final case class UserUploadAvatarEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   avatarUrl: String
 ) extends UserEvent {
   override def version(): Int = MakeSerializable.V1
@@ -344,7 +322,6 @@ final case class OrganisationEmailChangedEvent(
   override val userId: UserId,
   override val requestContext: RequestContext,
   @AvroDefault("FR") override val country: Country = UserEvent.defaultCountry,
-  @AvroDefault("fr") override val language: Language = UserEvent.defaultLanguage,
   oldEmail: String,
   newEmail: String
 ) extends UserEvent {

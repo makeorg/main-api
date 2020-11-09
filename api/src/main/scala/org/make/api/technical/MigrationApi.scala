@@ -280,7 +280,6 @@ trait DefaultMigrationApiComponent extends MigrationApiComponent with MakeAuthen
                     connectedUserId = Some(userAuth.user.userId),
                     userId = user.userId,
                     country = user.country,
-                    language = user.language,
                     requestContext = requestContext,
                     avatarUrl = largeAvatarUrl,
                     eventDate = DateHelper.now()

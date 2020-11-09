@@ -147,7 +147,6 @@ class CrmServiceComponentTest
       accountCreationLocation = None,
       countriesActivity = None,
       lastCountryActivity = None,
-      lastLanguageActivity = None,
       totalNumberProposals = None,
       totalNumberVotes = None,
       firstContributionDate = None,
@@ -367,7 +366,6 @@ class CrmServiceComponentTest
     accountCreationLocation = None,
     countriesActivity = None,
     lastCountryActivity = Some("FR"),
-    lastLanguageActivity = Some("fr"),
     totalNumberProposals = Some(42),
     totalNumberVotes = Some(1337),
     firstContributionDate = None,
@@ -575,7 +573,6 @@ class CrmServiceComponentTest
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR")
         maybeProperties.lastCountryActivity shouldBe Some("FR")
-        maybeProperties.lastLanguageActivity shouldBe Some("fr")
         maybeProperties.totalProposals shouldBe Some(0)
         maybeProperties.totalVotes shouldBe Some(0)
         maybeProperties.firstContributionDate shouldBe None
@@ -619,7 +616,6 @@ class CrmServiceComponentTest
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR")
         maybeProperties.lastCountryActivity shouldBe Some("FR")
-        maybeProperties.lastLanguageActivity shouldBe Some("fr")
         maybeProperties.totalProposals shouldBe Some(0)
         maybeProperties.totalVotes shouldBe Some(0)
         maybeProperties.firstContributionDate shouldBe None
@@ -712,7 +708,6 @@ class CrmServiceComponentTest
         maybeProperties.accountCreationCountry shouldBe Some("FR")
         maybeProperties.countriesActivity shouldBe Some("FR,IT,GB")
         maybeProperties.lastCountryActivity shouldBe Some("FR")
-        maybeProperties.lastLanguageActivity shouldBe Some("fr")
         maybeProperties.totalProposals shouldBe Some(1)
         maybeProperties.totalVotes shouldBe Some(5)
         maybeProperties.firstContributionDate shouldBe Some("2017-06-01 12:30:40")
@@ -1377,7 +1372,6 @@ class CrmServiceComponentTest
             accountCreationLocation = Some("search-page"),
             countriesActivity = Some("FR"),
             lastCountryActivity = Some("FR"),
-            lastLanguageActivity = Some("fr"),
             totalProposals = Some(42),
             totalVotes = Some(1337),
             firstContributionDate = Some("2019-04-15 15:24:17"),
@@ -1394,7 +1388,7 @@ class CrmServiceComponentTest
       )
 
       contact.toStringCsv should be(
-        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","search-page","FR","FR","fr","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
+        s""""test@exemple.com","user","test",,"1992-01-01 00:00:00","true","false","false","2019-10-07 10:45:10",,,,"FR","search-page","FR","FR","42","1337","2019-04-15 15:24:17","2019-10-07 10:47:42",,,,,,,"2019-10-06 02:00:00"${String
           .format("%n")}"""
       )
     }
@@ -1440,7 +1434,7 @@ class CrmServiceComponentTest
         val firstLine = fileToSeq.head
         lineCount should be(2)
         firstLine should be(
-          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,,"FR","fr","42","1337",,,,,,,,,"$formattedDate""""
+          s""""foo@example.com","user-id","Foo",,,"true","false","false",,,,,,,,"FR","42","1337",,,,,,,,,"$formattedDate""""
         )
         bufferedFile.close()
       }

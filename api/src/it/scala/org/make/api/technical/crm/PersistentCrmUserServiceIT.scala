@@ -44,7 +44,6 @@ class PersistentCrmUserServiceIT extends DatabaseTest with DefaultPersistentCrmU
     accountCreationLocation = Some("location"),
     countriesActivity = Some("FR,DE"),
     lastCountryActivity = Some("FR"),
-    lastLanguageActivity = Some("fr"),
     totalNumberProposals = Some(5),
     totalNumberVotes = Some(42),
     firstContributionDate = Some("2019-07-01T16:16:16Z"),

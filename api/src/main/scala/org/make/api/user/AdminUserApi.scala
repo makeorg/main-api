@@ -39,7 +39,7 @@ import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.profile.Profile
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
@@ -495,7 +495,6 @@ trait DefaultAdminUserApiComponent
                               firstName = request.firstName.orElse(user.firstName),
                               lastName = request.lastName.orElse(user.lastName),
                               country = request.country.getOrElse(user.country),
-                              language = request.language.getOrElse(user.language),
                               organisationName = request.organisationName,
                               userType = request.userType,
                               roles = request.roles.map(_.map(Role.apply)).getOrElse(user.roles),
@@ -619,7 +618,6 @@ trait DefaultAdminUserApiComponent
                           password = request.password,
                           lastIp = None,
                           country = request.country,
-                          language = request.language,
                           optIn = Some(false),
                           optInPartner = Some(false),
                           roles = request.roles
@@ -675,7 +673,6 @@ trait DefaultAdminUserApiComponent
                                 firstName = request.firstName.orElse(user.firstName),
                                 lastName = request.lastName.orElse(user.lastName),
                                 country = request.country.getOrElse(user.country),
-                                language = request.language.getOrElse(user.language),
                                 roles = roles,
                                 availableQuestions = request.availableQuestions
                               ),
@@ -832,7 +829,6 @@ final case class CreateModeratorRequest(
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Option[Seq[String]],
   password: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
   availableQuestions: Seq[QuestionId]
 ) {
@@ -843,7 +839,6 @@ final case class CreateModeratorRequest(
     mandatoryField("email", email),
     validateEmail("email", email.toLowerCase),
     validateUserInput("email", email, None),
-    mandatoryField("language", language),
     mandatoryField("country", country),
     validateField(
       "password",
@@ -864,21 +859,18 @@ final case class UpdateModeratorRequest(
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Option[Seq[String]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
   availableQuestions: Seq[QuestionId]
 ) {
-  private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
   validateOptional(
-    email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
-    email.map(email       => validateUserInput("email", email, None)),
-    firstName.map(value   => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
-    firstName.map(value   => validateUserInput("firstName", value, None)),
-    lastName.map(value    => validateUserInput("lastName", value, None)),
-    country.map(country   => maxLength("country", maxCountryLength, country.value)),
-    language.map(language => maxLength("language", maxLanguageLength, language.value))
+    email.map(email     => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
+    email.map(email     => validateUserInput("email", email, None)),
+    firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
+    firstName.map(value => validateUserInput("firstName", value, None)),
+    lastName.map(value  => validateUserInput("lastName", value, None)),
+    country.map(country => maxLength("country", maxCountryLength, country.value))
   )
 }
 
@@ -909,7 +901,6 @@ final case class ModeratorResponse(
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "list[string]")
   availableQuestions: Seq[QuestionId]
 ) {
@@ -931,7 +922,6 @@ object ModeratorResponse extends CirceFormatters {
     lastName = user.lastName,
     roles = user.roles,
     country = user.country,
-    language = user.language,
     availableQuestions = user.availableQuestions
   )
 }
@@ -946,7 +936,6 @@ final case class AdminUserResponse(
   @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType,
   @(ApiModelProperty @field)(dataType = "list[string]") roles: Seq[Role],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "list[string]")
   availableQuestions: Seq[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com")
@@ -969,7 +958,6 @@ object AdminUserResponse extends CirceFormatters {
     lastName = user.lastName,
     roles = user.roles.map(role => CustomRole(role.value)),
     country = user.country,
-    language = user.language,
     availableQuestions = user.availableQuestions,
     politicalParty = user.profile.flatMap(_.politicalParty),
     website = user.profile.flatMap(_.website)
@@ -985,7 +973,6 @@ final case class AdminUpdateUserRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "USER") userType: UserType,
   roles: Option[Seq[String]],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "list[string]", example = "d22c8e70-f709-42ff-8a52-9398d159c753")
   availableQuestions: Seq[QuestionId],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[
@@ -993,14 +980,12 @@ final case class AdminUpdateUserRequest(
   ],
   politicalParty: Option[String]
 ) {
-  private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
   validateOptional(
-    email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
-    email.map(email       => validateUserInput("email", email, None)),
-    country.map(country   => maxLength("country", maxCountryLength, country.value)),
-    language.map(language => maxLength("language", maxLanguageLength, language.value))
+    email.map(email     => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
+    email.map(email     => validateUserInput("email", email, None)),
+    country.map(country => maxLength("country", maxCountryLength, country.value))
   )
 }
 

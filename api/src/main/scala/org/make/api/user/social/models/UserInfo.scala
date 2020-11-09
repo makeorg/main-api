@@ -21,13 +21,12 @@ package org.make.api.user.social.models
 
 import java.time.LocalDate
 
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 
 final case class UserInfo(
   email: Option[String] = None,
   firstName: Option[String],
   country: Country,
-  language: Language,
   gender: Option[String] = None,
   googleId: Option[String] = None,
   facebookId: Option[String] = None,

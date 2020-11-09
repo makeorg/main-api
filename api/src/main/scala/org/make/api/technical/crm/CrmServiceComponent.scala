@@ -535,7 +535,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         userB2B = user.userType != UserType.UserTypeUser,
         updatedAt = Some(DateHelper.now()),
         accountCreationCountry = Some(user.country.value),
-        lastLanguageActivity = Some(user.language.value),
         lastCountryActivity = Some(user.country.value),
         countriesActivity = Seq(user.country.value),
         accountCreationSlug = question.map(_.slug),
@@ -560,7 +559,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accountCreationLocation = userProperty.accountCreationLocation,
         countriesActivity = Some(userProperty.countriesActivity.distinct.mkString(",")),
         lastCountryActivity = userProperty.lastCountryActivity,
-        lastLanguageActivity = userProperty.lastLanguageActivity,
         totalProposals = Some(userProperty.totalNumberProposals.getOrElse(0)),
         totalVotes = Some(userProperty.totalNumbervotes.getOrElse(0)),
         firstContributionDate = userProperty.firstContributionDate.map(_.format(dateFormatter)),
@@ -616,7 +614,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           lastContributionDate = Some(event.action.date),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -647,7 +644,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           lastContributionDate = Some(event.action.date),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -677,7 +673,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
           totalNumbervotes = accumulator.totalNumbervotes.map(_ - 1).orElse(Some(-1)),
           lastContributionDate = Some(event.action.date),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -706,7 +701,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           totalNumbervotes = accumulator.totalNumbervotes.map(_ + 1).orElse(Some(1)),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value),
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source,
@@ -739,7 +733,6 @@ trait DefaultCrmServiceComponent extends CrmServiceComponent with StrictLogging 
         accumulator.copy(
           totalNumberProposals = accumulator.totalNumberProposals.map(_ + 1).orElse(Some(1)),
           lastCountryActivity = event.requestContext.country.map(_.value).orElse(accumulator.lastCountryActivity),
-          lastLanguageActivity = event.requestContext.language.map(_.value).orElse(accumulator.lastLanguageActivity),
           countriesActivity = accumulator.countriesActivity ++ event.requestContext.country.map(_.value).toList,
           questionActivity = accumulator.questionActivity ++ maybeQuestion.map(_.slug).toList,
           sourceActivity = accumulator.sourceActivity ++ event.requestContext.source.toList,
@@ -804,7 +797,6 @@ final case class UserProperties(
   accountCreationLocation: Option[String] = None,
   countriesActivity: Seq[String] = Seq.empty,
   lastCountryActivity: Option[String] = None,
-  lastLanguageActivity: Option[String] = None,
   totalNumberProposals: Option[Int] = None,
   totalNumbervotes: Option[Int] = None,
   firstContributionDate: Option[ZonedDateTime] = None,
@@ -833,7 +825,6 @@ final case class UserProperties(
           accountCreationCountry = accountCreationCountry.orElse(Some("FR")),
           countriesActivity = if (countriesActivity.isEmpty) Seq("FR") else countriesActivity,
           lastCountryActivity = lastCountryActivity.orElse(Some("FR")),
-          lastLanguageActivity = lastLanguageActivity.orElse(Some("fr")),
           sourceActivity = (sourceActivity ++ Some("core")).distinct
         )
       case _ => this

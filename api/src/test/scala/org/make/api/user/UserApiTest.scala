@@ -285,7 +285,6 @@ class UserApiTest
               lastIp = Some("192.0.0.1"),
               dateOfBirth = Some(LocalDate.parse("1997-12-02")),
               country = Country("FR"),
-              language = Language("fr"),
               gender = Some(Gender.Male),
               socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
               optInPartner = Some(true),
@@ -336,7 +335,6 @@ class UserApiTest
               lastIp = Some("192.0.0.1"),
               dateOfBirth = Some(dateOfBirth),
               country = Country("FR"),
-              language = Language("fr"),
               gender = Some(Gender.Male),
               socioProfessionalCategory = Some(SocioProfessionalCategory.Employee),
               optInPartner = Some(true),
@@ -387,7 +385,6 @@ class UserApiTest
               postalCode = Some("75011"),
               profession = Some("football player"),
               country = Country("FR"),
-              language = Language("fr"),
               questionId = None,
               politicalParty = Some("PP"),
               website = Some("http://example.com")
@@ -427,7 +424,7 @@ class UserApiTest
       }
     }
 
-    Scenario("validation failed for missing country and/or language") {
+    Scenario("validation failed for missing country") {
       val request =
         """
           |{
@@ -444,8 +441,6 @@ class UserApiTest
         val errors = entityAs[Seq[ValidationError]]
         val countryError = errors.find(_.field == "country")
         countryError should be(Some(ValidationError("country", "mandatory", Some("country is mandatory"))))
-        val languageError = errors.find(_.field == "language")
-        languageError should be(Some(ValidationError("language", "mandatory", Some("language is mandatory"))))
       }
     }
 
@@ -703,7 +698,6 @@ class UserApiTest
             any[SocialProvider],
             eqTo("ABCDEFGHIJK"),
             any[Country],
-            any[Language],
             any[Option[String]],
             any[Option[QuestionId]],
             any[RequestContext],
@@ -746,7 +740,6 @@ class UserApiTest
           eqTo(Google),
           eqTo("ABCDEFGHIJK"),
           eqTo(Country("FR")),
-          eqTo(Language("fr")),
           eqTo(Some("192.0.0.1")),
           any[Option[QuestionId]],
           any[RequestContext],
@@ -795,7 +788,6 @@ class UserApiTest
           eqTo(Google),
           eqTo(token),
           eqTo(Country("FR")),
-          eqTo(Language("fr")),
           any[Option[String]],
           any[Option[QuestionId]],
           any[RequestContext],
@@ -830,7 +822,6 @@ class UserApiTest
           eqTo(Google),
           eqTo(token),
           eqTo(Country("FR")),
-          eqTo(Language("fr")),
           eqTo(Some("192.0.0.2")),
           eqTo(None),
           any[RequestContext],
@@ -860,7 +851,6 @@ class UserApiTest
           eqTo(Google),
           eqTo(token),
           eqTo(Country("FR")),
-          eqTo(Language("fr")),
           any[Option[String]],
           any[Option[QuestionId]],
           any[RequestContext],
@@ -1459,7 +1449,6 @@ class UserApiTest
               firstName = Some("olive"),
               lastName = Some("tom"),
               country = Country("IT"),
-              language = Language("it"),
               profile = Profile.parseProfile(
                 dateOfBirth = Some(LocalDate.parse("1997-12-02")),
                 optInNewsletter = false,
@@ -1500,7 +1489,6 @@ class UserApiTest
               firstName = Some("olive"),
               lastName = Some("tom"),
               country = Country("IT"),
-              language = Language("it"),
               profile = Profile.parseProfile(
                 dateOfBirth = None,
                 optInNewsletter = false,

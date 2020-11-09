@@ -37,7 +37,7 @@ import org.make.core.Validation._
 import org.make.core._
 import org.make.core.auth.UserRights
 import org.make.core.profile.{Gender, Profile}
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.{User, UserId, UserType}
 import scalaoauth2.provider.AuthInfo
 
@@ -240,7 +240,6 @@ trait DefaultAdminPersonalityApiComponent
                           firstName = request.firstName,
                           lastName = request.lastName,
                           country = request.country,
-                          language = request.language,
                           gender = request.gender,
                           genderName = request.genderName,
                           description = request.description,
@@ -289,7 +288,6 @@ trait DefaultAdminPersonalityApiComponent
                               firstName = request.firstName.orElse(personality.firstName),
                               lastName = request.lastName.orElse(personality.lastName),
                               country = request.country.getOrElse(personality.country),
-                              language = request.language.getOrElse(personality.language),
                               profile = personality.profile
                                 .map(
                                   _.copy(
@@ -339,7 +337,6 @@ final case class CreatePersonalityRequest(
   firstName: Option[String],
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
   description: Option[String],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "F,M,O") gender: Option[Gender],
@@ -355,7 +352,6 @@ final case class CreatePersonalityRequest(
     mandatoryField("email", email),
     validateEmail("email", email.toLowerCase),
     validateUserInput("email", email, None),
-    mandatoryField("language", language),
     mandatoryField("country", country)
   )
 }
@@ -369,7 +365,6 @@ final case class UpdatePersonalityRequest(
   firstName: Option[String],
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
   description: Option[String],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "F,M,O") gender: Option[Gender],
@@ -378,17 +373,15 @@ final case class UpdatePersonalityRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website")
   website: Option[String Refined Url]
 ) {
-  private val maxLanguageLength = 3
   private val maxCountryLength = 3
 
   validateOptional(
-    email.map(email       => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
-    email.map(email       => validateUserInput("email", email, None)),
-    firstName.map(value   => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
-    firstName.map(value   => validateUserInput("firstName", value, None)),
-    lastName.map(value    => validateUserInput("lastName", value, None)),
-    country.map(country   => maxLength("country", maxCountryLength, country.value)),
-    language.map(language => maxLength("language", maxLanguageLength, language.value))
+    email.map(email     => validateEmail(fieldName = "email", fieldValue = email.toLowerCase)),
+    email.map(email     => validateUserInput("email", email, None)),
+    firstName.map(value => requireNonEmpty("firstName", value, Some("firstName should not be an empty string"))),
+    firstName.map(value => validateUserInput("firstName", value, None)),
+    lastName.map(value  => validateUserInput("lastName", value, None)),
+    country.map(country => maxLength("country", maxCountryLength, country.value))
   )
 }
 
@@ -402,7 +395,6 @@ final case class PersonalityResponse(
   firstName: Option[String],
   lastName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png") avatarUrl: Option[String],
   description: Option[String],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "F,M,O") gender: Option[Gender],
@@ -428,7 +420,6 @@ object PersonalityResponse extends CirceFormatters {
     firstName = user.firstName,
     lastName = user.lastName,
     country = user.country,
-    language = user.language,
     avatarUrl = user.profile.flatMap(_.avatarUrl),
     description = user.profile.flatMap(_.description),
     gender = user.profile.flatMap(_.gender),

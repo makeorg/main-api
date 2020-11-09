@@ -44,7 +44,7 @@ import org.make.api.{MakeUnitTest, TestUtils}
 import org.make.core.RequestContext
 import org.make.core.auth.{ClientId, UserRights}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.UserId
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scalaoauth2.provider.{AccessToken, AuthInfo}
@@ -131,7 +131,6 @@ class SocialServiceComponentTest
           Google,
           "googleToken-a user logged via google",
           Country("FR"),
-          Language("fr"),
           None,
           None,
           RequestContext.empty,
@@ -145,7 +144,6 @@ class SocialServiceComponentTest
             email = googleData.email,
             firstName = googleData.givenName,
             country = Country("FR"),
-            language = Language("fr"),
             googleId = googleData.iat,
             domain = googleData.hd,
             facebookId = None,
@@ -217,7 +215,6 @@ class SocialServiceComponentTest
           Google,
           "googleToken-a user logged via google",
           Country("FR"),
-          Language("fr"),
           None,
           None,
           RequestContext.empty,
@@ -231,7 +228,6 @@ class SocialServiceComponentTest
             email = googleData.email,
             firstName = googleData.givenName,
             country = Country("FR"),
-            language = Language("fr"),
             googleId = googleData.iat,
             domain = googleData.hd,
             facebookId = None,
@@ -300,16 +296,7 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login(
-          Google,
-          "token",
-          Country("FR"),
-          Language("fr"),
-          None,
-          None,
-          RequestContext.empty,
-          ClientId("client")
-        )
+        socialService.login(Google, "token", Country("FR"), None, None, RequestContext.empty, ClientId("client"))
 
       Then("my program should return a token response")
       whenReady(futureTokenResposnse, Timeout(2.seconds)) {
@@ -330,16 +317,7 @@ class SocialServiceComponentTest
 
       When("login user from google")
       val futureTokenResposnse =
-        socialService.login(
-          Google,
-          "token",
-          Country("FR"),
-          Language("fr"),
-          None,
-          None,
-          RequestContext.empty,
-          ClientId("client")
-        )
+        socialService.login(Google, "token", Country("FR"), None, None, RequestContext.empty, ClientId("client"))
 
       whenReady(futureTokenResposnse.failed, Timeout(3.seconds)) { exception =>
         exception.getMessage should be("invalid token from google")
@@ -403,16 +381,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(
-          GooglePeople,
-          token,
-          Country("FR"),
-          Language("fr"),
-          None,
-          None,
-          RequestContext.empty,
-          ClientId("default")
-        ),
+        socialService.login(GooglePeople, token, Country("FR"), None, None, RequestContext.empty, ClientId("default")),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -484,16 +453,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(
-          GooglePeople,
-          token,
-          Country("FR"),
-          Language("fr"),
-          None,
-          None,
-          RequestContext.empty,
-          ClientId("default")
-        ),
+        socialService.login(GooglePeople, token, Country("FR"), None, None, RequestContext.empty, ClientId("default")),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -575,16 +535,7 @@ class SocialServiceComponentTest
         .thenReturn(Future.successful(AccessToken("token", None, None, None, new Date())))
 
       whenReady(
-        socialService.login(
-          GooglePeople,
-          token,
-          Country("FR"),
-          Language("fr"),
-          None,
-          None,
-          RequestContext.empty,
-          ClientId("default")
-        ),
+        socialService.login(GooglePeople, token, Country("FR"), None, None, RequestContext.empty, ClientId("default")),
         Timeout(3.seconds)
       ) {
         case (userId, response) =>
@@ -629,7 +580,6 @@ class SocialServiceComponentTest
         email = Some("facebook@make.org"),
         firstName = Some("facebook"),
         country = Country("FR"),
-        language = Language("fr"),
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
@@ -651,7 +601,6 @@ class SocialServiceComponentTest
           Facebook,
           "facebookToken-444444",
           Country("FR"),
-          Language("fr"),
           None,
           None,
           RequestContext.empty,
@@ -666,7 +615,6 @@ class SocialServiceComponentTest
             email = facebookData.email,
             firstName = facebookData.firstName,
             country = Country("FR"),
-            language = Language("fr"),
             googleId = None,
             facebookId = Some(facebookData.id),
             picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
@@ -704,7 +652,6 @@ class SocialServiceComponentTest
         email = Some("facebook@make.org"),
         firstName = None,
         country = Country("FR"),
-        language = Language("fr"),
         googleId = None,
         facebookId = Some("444444"),
         picture = Some("https://graph.facebook.com/v7.0/444444/picture?width=512&height=512"),
@@ -728,7 +675,6 @@ class SocialServiceComponentTest
           Facebook,
           "facebookToken-444444",
           Country("FR"),
-          Language("fr"),
           None,
           None,
           RequestContext.empty,
@@ -743,7 +689,6 @@ class SocialServiceComponentTest
             email = facebookData.email,
             firstName = facebookData.firstName,
             country = Country("FR"),
-            language = Language("fr"),
             googleId = None,
             facebookId = Some(facebookData.id),
             picture = Some(s"https://graph.facebook.com/v7.0/${facebookData.id}/picture?width=512&height=512"),
@@ -803,7 +748,6 @@ class SocialServiceComponentTest
           Facebook,
           "facebookToken2",
           Country("FR"),
-          Language("fr"),
           None,
           None,
           RequestContext.empty,
@@ -833,7 +777,6 @@ class SocialServiceComponentTest
           Facebook,
           "facebookToken3",
           Country("FR"),
-          Language("fr"),
           None,
           None,
           RequestContext.empty,

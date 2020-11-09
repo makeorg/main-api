@@ -276,7 +276,7 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
     ): Future[ProposalId] = {
 
       for {
-        user       <- userService.retrieveOrCreateVirtualUser(author, country, question.language)
+        user       <- userService.retrieveOrCreateVirtualUser(author, country)
         proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question, initialProposal = true)
         _ <- validateProposal(
           proposalId = proposalId,

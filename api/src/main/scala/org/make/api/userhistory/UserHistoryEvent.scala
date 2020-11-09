@@ -32,7 +32,7 @@ import org.make.core.history.HistoryActions.VoteTrust
 import org.make.core.operation.OperationId
 import org.make.core.proposal.{ProposalId, QualificationKey, VoteKey}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language, ThemeId}
+import org.make.core.reference.{Country, ThemeId}
 import org.make.core.sequence.{SequenceId, SequenceStatus, SearchQuery => SequenceSearchQuery}
 import org.make.core.user._
 import org.make.core.{MakeSerializable, RequestContext}
@@ -160,13 +160,12 @@ final case class UserRegistered(
   lastName: Option[String],
   profession: Option[String],
   postalCode: Option[String],
-  country: Country = Country("FR"),
-  language: Language = Language("fr")
+  country: Country = Country("FR")
 )
 
 object UserRegistered {
   implicit val userRegisteredFormatted: RootJsonFormat[UserRegistered] =
-    DefaultJsonProtocol.jsonFormat8(UserRegistered.apply)
+    DefaultJsonProtocol.jsonFormat7(UserRegistered.apply)
 
 }
 

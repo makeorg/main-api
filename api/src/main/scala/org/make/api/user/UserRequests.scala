@@ -48,7 +48,7 @@ import org.make.core.Validation.{
 }
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.{CirceFormatters, Validation}
 
 import scala.annotation.meta.field
@@ -190,7 +190,6 @@ final case class RegisterUserRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "12345")
   postalCode: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   @(ApiModelProperty @field)(dataType = "boolean") optIn: Option[Boolean],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[Gender],
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "FARM,AMCD,MHIO,INPR,EMPL,WORK,HSTU,STUD,APRE,O") socioProfessionalCategory: Option[
@@ -224,7 +223,6 @@ final case class RegisterUserRequest(
     validateOptionalUserInput("lastName", lastName, None),
     validateOptionalUserInput("profession", profession, None),
     validateOptionalUserInput("postalCode", postalCode, None),
-    mandatoryField("language", language),
     mandatoryField("country", country),
     validateAge("dateOfBirth", dateOfBirth)
   )
@@ -283,14 +281,12 @@ final case class UpdateUserRequest(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "M,F,O") gender: Option[String],
   genderName: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language],
   socioProfessionalCategory: Option[String],
   politicalParty: Option[String],
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/website") website: Option[
     String Refined Or[Url, Empty]
   ]
 ) {
-  private val maxLanguageLength = 3
   private val maxCountryLength = 3
   private val maxDescriptionLength = 450
 
@@ -302,7 +298,6 @@ final case class UpdateUserRequest(
     ),
     Some(validateOptionalUserInput("organisationName", organisationName, None)),
     postalCode.map(value => validatePostalCode("postalCode", value, None)),
-    language.map(lang    => maxLength("language", maxLanguageLength, lang.value)),
     country.map(country  => maxLength("country", maxCountryLength, country.value)),
     gender.map(
       value =>
@@ -356,10 +351,9 @@ final case class SocialLoginRequest(
   @(ApiModelProperty @field)(dataType = "string", allowableValues = "facebook,google,google_people")
   provider: SocialProvider,
   token: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country],
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Option[Language]
+  @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Option[Country]
 ) {
-  validate(mandatoryField("language", language), mandatoryField("country", country))
+  validate(mandatoryField("country", country))
 }
 
 object SocialLoginRequest {

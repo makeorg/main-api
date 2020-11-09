@@ -45,7 +45,7 @@ import org.make.core.common.indexed.Sort
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.proposal._
 import org.make.core.question.Question
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.Role.RoleAdmin
 import org.make.core.user._
 import scalaoauth2.provider.AuthInfo
@@ -672,7 +672,6 @@ trait DefaultUserApiComponent
                     enabled = user.enabled,
                     emailVerified = user.emailVerified,
                     country = user.country,
-                    language = user.language,
                     avatarUrl = user.profile.flatMap(_.avatarUrl)
                   )
                 )
@@ -692,7 +691,6 @@ trait DefaultUserApiComponent
                 extractClientOrDefault { client =>
                   val ip = clientIp.toOption.map(_.getHostAddress).getOrElse("unknown")
                   val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
-                  val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
 
                   val futureMaybeQuestion: Future[Option[Question]] = requestContext.questionId match {
                     case Some(questionId) => questionService.getQuestion(questionId)
@@ -705,7 +703,6 @@ trait DefaultUserApiComponent
                           request.provider,
                           request.token,
                           country,
-                          language,
                           Some(ip),
                           maybeQuestion.map(_.questionId),
                           requestContext,
@@ -790,7 +787,6 @@ trait DefaultUserApiComponent
             entity(as[RegisterUserRequest]) { request: RegisterUserRequest =>
               Validation.validate(userRegistrationValidator.requirements(request): _*)
               val country: Country = request.country.orElse(requestContext.country).getOrElse(Country("FR"))
-              val language: Language = request.language.orElse(requestContext.language).getOrElse(Language("fr"))
 
               val futureMaybeQuestion: Future[Option[Question]] = request.questionId match {
                 case Some(questionId) => questionService.getQuestion(questionId)
@@ -811,7 +807,6 @@ trait DefaultUserApiComponent
                         profession = request.profession,
                         postalCode = request.postalCode,
                         country = country,
-                        language = language,
                         gender = request.gender,
                         socioProfessionalCategory = request.socioProfessionalCategory,
                         questionId = maybeQuestion.map(_.questionId),
@@ -858,7 +853,6 @@ trait DefaultUserApiComponent
                         UserValidatedAccountEvent(
                           userId = userId,
                           country = user.country,
-                          language = user.language,
                           requestContext = requestContext,
                           eventDate = DateHelper.now()
                         )
@@ -890,7 +884,6 @@ trait DefaultUserApiComponent
                         userId = user.userId,
                         connectedUserId = userAuth.map(_.user.userId),
                         country = user.country,
-                        language = user.language,
                         requestContext = requestContext,
                         eventDate = DateHelper.now()
                       )
@@ -1078,7 +1071,6 @@ trait DefaultUserApiComponent
                           lastName = request.lastName.orElse(user.lastName),
                           organisationName = request.organisationName.orElse(user.organisationName),
                           country = request.country.getOrElse(user.country),
-                          language = request.language.getOrElse(user.language),
                           profile = Some(updatedProfile)
                         ),
                         requestContext
@@ -1092,7 +1084,6 @@ trait DefaultUserApiComponent
                             requestContext = requestContext,
                             eventDate = DateHelper.now(),
                             country = user.country,
-                            language = user.language,
                             optInNewsletter = user.profile.exists(_.optInNewsletter)
                           )
                         )
@@ -1104,7 +1095,6 @@ trait DefaultUserApiComponent
                             userId = user.userId,
                             requestContext = requestContext,
                             country = user.country,
-                            language = user.language,
                             eventDate = DateHelper.now()
                           )
                         )
@@ -1258,7 +1248,6 @@ trait DefaultUserApiComponent
                         eventDate = DateHelper.now(),
                         userId = user.userId,
                         country = user.country,
-                        language = user.language,
                         requestContext = requestContext
                       )
                     )

@@ -28,7 +28,7 @@ import org.make.api.technical.auth.AuthenticationApi.TokenResponse
 import org.make.core.CirceFormatters
 import org.make.core.profile.{Gender, Profile, SocioProfessionalCategory}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.user.{MailingErrorLog, Role, User, UserId, UserType}
 
 import scala.annotation.meta.field
@@ -51,7 +51,6 @@ final case class UserResponse(
   roles: Seq[Role],
   profile: Option[ProfileResponse],
   @(ApiModelProperty @field)(dataType = "string", example = "FR") country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr") language: Language,
   isHardBounce: Boolean,
   @(ApiModelProperty @field)(dataType = "org.make.api.user.MailingErrorLogResponse")
   lastMailingError: Option[MailingErrorLogResponse],
@@ -83,7 +82,6 @@ object UserResponse extends CirceFormatters {
     roles = user.roles,
     profile = user.profile.map(ProfileResponse.fromProfile),
     country = user.country,
-    language = user.language,
     isHardBounce = user.isHardBounce,
     lastMailingError = user.lastMailingError.map(MailingErrorLogResponse(_)),
     hasPassword = user.hashedPassword.isDefined,
@@ -110,8 +108,6 @@ final case class CurrentUserResponse(
   emailVerified: Boolean,
   @(ApiModelProperty @field)(dataType = "string", example = "FR")
   country: Country,
-  @(ApiModelProperty @field)(dataType = "string", example = "fr")
-  language: Language,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/avatar.png")
   avatarUrl: Option[String]
 )

@@ -36,7 +36,7 @@ import org.make.api.{ActorSystemComponent, MakeUnitTest, TestUtils}
 import org.make.core.idea.{IdeaId, TopIdea, TopIdeaId, TopIdeaScores}
 import org.make.core.personality.{Personality, PersonalityId, PersonalityRoleId}
 import org.make.core.question.QuestionId
-import org.make.core.reference.{Country, Language}
+import org.make.core.reference.Country
 import org.make.core.technical.IdGenerator
 import org.make.core.user._
 import org.make.core.user.indexed.{IndexedOrganisation, OrganisationSearchResult, ProposalsAndVotesCountsByQuestion}
@@ -132,7 +132,6 @@ class QuestionServiceTest
         publicProfile = true,
         0,
         0,
-        Language("fr"),
         Country("FR"),
         None,
         Seq(ProposalsAndVotesCountsByQuestion(QuestionId("question-id"), scoreQuestion, 0))

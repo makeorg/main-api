@@ -79,8 +79,7 @@ class UserHistoryConsumerActor(userHistoryCoordinatorService: UserHistoryCoordin
             lastName = event.lastName,
             profession = event.profession,
             postalCode = event.postalCode,
-            country = event.country,
-            language = event.language
+            country = event.country
           )
         )
       )
