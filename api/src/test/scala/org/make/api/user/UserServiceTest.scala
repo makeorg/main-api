@@ -108,6 +108,8 @@ class UserServiceTest
   when(makeSettings.resetTokenExpiresIn).thenReturn(Duration("1 days"))
   when(makeSettings.resetTokenB2BExpiresIn).thenReturn(Duration("3 days"))
 
+  when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.successful {})
+
   when(persistentUserService.updateUser(any[User])).thenAnswer { user: User =>
     Future.successful(user)
   }
@@ -191,6 +193,8 @@ class UserServiceTest
     hashedPassword = Some("passpass"),
     userType = UserType.UserTypePersonality
   )
+
+  when(persistentUserService.get(fooUser.userId)).thenReturn(Future.successful(Some(fooUser)))
 
   Feature("Get personality") {
     Scenario("get personality") {
@@ -861,6 +865,26 @@ class UserServiceTest
         )
       }
     }
+
+    Scenario("change user email") {
+      Given("a user")
+      val userId = UserId("change user email")
+      val user = fooUser.copy(userId = userId, email = "original-email@example.com")
+
+      when(proposalService.searchForUser(eqTo(Some(userId)), any[SearchQuery], any[RequestContext]))
+        .thenReturn(Future.successful(ProposalsResultSeededResponse(0, Seq.empty, None)))
+
+      when(persistentUserService.get(userId)).thenReturn(Future.successful(Some(user)))
+
+      When("I update email")
+      val newEmail = "modified-email@example.com"
+      val futureUser = userService.update(user.copy(email = newEmail), RequestContext.empty)
+
+      Then("email is added to usersToAnonymize")
+      whenReady(futureUser, Timeout(3.seconds)) { _ =>
+        verify(persistentUserToAnonymizeService).create(user.email)
+      }
+    }
   }
 
   Feature("update personality user") {
@@ -914,7 +938,6 @@ class UserServiceTest
   }
 
   Feature("anonymize user") {
-    when(persistentUserToAnonymizeService.create(any[String])).thenReturn(Future.successful({}))
     Scenario("anonymize user") {
       clearInvocations(eventBusService)
 
@@ -1030,7 +1053,7 @@ class UserServiceTest
   Feature("get reconnect info") {
     Scenario("reconnect info") {
 
-      when(persistentUserService.get(any[UserId])).thenReturn(Future.successful(Some(fooUser)))
+      when(persistentUserService.get(UserId("userId"))).thenReturn(Future.successful(Some(fooUser)))
       when(userTokenGenerator.generateReconnectToken()).thenReturn(Future.successful(("token", "hashedToken")))
       when(persistentUserService.updateReconnectToken(any[UserId], any[String], any[ZonedDateTime]))
         .thenReturn(Future.successful(true))
@@ -1205,8 +1228,6 @@ class UserServiceTest
   Feature("update user email") {
     Scenario("it works") {
       val user = fooUser.copy(email = "foo+ineedauniqueemail@example.com")
-      when(persistentUserToAnonymizeService.create("foo+ineedauniqueemail@example.com"))
-        .thenReturn(Future.successful({}))
       whenReady(userService.adminUpdateUserEmail(user, "bar@example.com"), Timeout(2.seconds)) { _ =>
         verify(persistentUserService).updateUser(user.copy(email = "bar@example.com"))
         verify(persistentUserToAnonymizeService).create("foo+ineedauniqueemail@example.com")

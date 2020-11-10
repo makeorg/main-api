@@ -724,11 +724,21 @@ trait DefaultUserServiceComponent extends UserServiceComponent with ShortenedNam
         )
     }
 
+    private def handleEmailChangeIfNecessary(oldEmail: String, newEmail: String): Future[Unit] = {
+      if (oldEmail == newEmail) {
+        Future.successful {}
+      } else {
+        persistentUserToAnonymizeService.create(oldEmail)
+      }
+    }
+
     override def update(user: User, requestContext: RequestContext): Future[User] = {
       for {
-        updatedUser <- persistentUserService.updateUser(user)
-        _           <- updateProposalVotedByOrganisation(updatedUser)
-        _           <- updateProposalsSubmitByUser(updatedUser, requestContext)
+        previousUser <- persistentUserService.get(user.userId)
+        updatedUser  <- persistentUserService.updateUser(user)
+        _            <- handleEmailChangeIfNecessary(previousUser.map(_.email).getOrElse(user.email), user.email)
+        _            <- updateProposalVotedByOrganisation(updatedUser)
+        _            <- updateProposalsSubmitByUser(updatedUser, requestContext)
       } yield updatedUser
     }
 
