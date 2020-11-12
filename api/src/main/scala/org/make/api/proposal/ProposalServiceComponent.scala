@@ -53,7 +53,7 @@ import org.make.core.question.TopProposalsMode.IdeaMode
 import org.make.core.question.{Question, QuestionId, TopProposalsMode}
 import org.make.core.tag.{Tag, TagId}
 import org.make.core.user._
-import org.make.core.{CirceFormatters, DateHelper, RequestContext}
+import org.make.core.{BusinessConfig, CirceFormatters, CountryConfiguration, DateHelper, RequestContext}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -275,9 +275,23 @@ trait DefaultProposalServiceComponent extends ProposalServiceComponent with Circ
       moderatorRequestContext: RequestContext
     ): Future[ProposalId] = {
 
+      def buildRequestContext(user: User): Future[RequestContext] = Future.successful(
+        RequestContext.empty.copy(
+          userId = Some(user.userId),
+          country = Some(country),
+          language = BusinessConfig.supportedCountries.collectFirst {
+            case CountryConfiguration(`country`, language, _) => language
+          },
+          operationId = question.operationId,
+          questionId = Some(question.questionId),
+          applicationName = moderatorRequestContext.applicationName
+        )
+      )
+
       for {
-        user       <- userService.retrieveOrCreateVirtualUser(author, country)
-        proposalId <- propose(user, RequestContext.empty, DateHelper.now(), content, question, initialProposal = true)
+        user           <- userService.retrieveOrCreateVirtualUser(author, country)
+        requestContext <- buildRequestContext(user)
+        proposalId     <- propose(user, requestContext, DateHelper.now(), content, question, initialProposal = true)
         _ <- validateProposal(
           proposalId = proposalId,
           moderator = moderator,
