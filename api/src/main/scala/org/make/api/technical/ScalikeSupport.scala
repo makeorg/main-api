@@ -20,12 +20,22 @@
 package org.make.api.technical
 
 import enumeratum.values.{StringEnum, StringEnumEntry}
+import enumeratum.{Enum, EnumEntry}
 import eu.timepit.refined.api.{RefType, Refined, Validate}
 import eu.timepit.refined.refineV
 import org.make.core.StringValue
+import org.make.core.crmTemplate.{CrmLanguageTemplateId, CrmTemplateKind, TemplateId}
+import org.make.core.operation.OperationId
+import org.make.core.question.QuestionId
+import org.make.core.reference.Language
+import org.make.core.sequence.SequenceId
 import scalikejdbc.{Binders, ParameterBinderFactory, TypeBinder}
 
 object ScalikeSupport {
+
+  def enumBinders[A <: EnumEntry](implicit enum: Enum[A]): Binders[A] = Binders.string.xmap(enum.withName, _.entryName)
+
+  implicit val crmTemplateKindBinders: Binders[CrmTemplateKind] = enumBinders
 
   implicit def stringEnumBinders[A <: StringEnumEntry](implicit enum: StringEnum[A]): Binders[A] =
     Binders.string.xmap(enum.withValue, _.value)
@@ -33,8 +43,16 @@ object ScalikeSupport {
   implicit def stringEnumEntryParameterBinderFactory[A <: StringEnumEntry, B <: A]: ParameterBinderFactory[B] =
     ParameterBinderFactory.stringParameterBinderFactory.contramap(_.value)
 
-  implicit def stringValueParameterBinderFactory[A <: StringValue]: ParameterBinderFactory[A] =
-    ParameterBinderFactory.stringParameterBinderFactory.contramap(_.value)
+  def stringValueBinders[A <: StringValue](f: String => A): Binders[A] = Binders.string.xmap(f, _.value)
+
+  implicit val crmLanguageTemplateIdBinders: Binders[CrmLanguageTemplateId] = stringValueBinders(
+    CrmLanguageTemplateId.apply
+  )
+  implicit val languageBinders: Binders[Language] = stringValueBinders(Language.apply)
+  implicit val operationIdBinders: Binders[OperationId] = stringValueBinders(OperationId.apply)
+  implicit val questionIdBinders: Binders[QuestionId] = stringValueBinders(QuestionId.apply)
+  implicit val sequenceIdBinders: Binders[SequenceId] = stringValueBinders(SequenceId.apply)
+  implicit val templateIdBinders: Binders[TemplateId] = stringValueBinders(TemplateId.apply)
 
   /*
    * The following code is a copy-paste from https://github.com/katainaka0503/scalikejdbc-refined

@@ -34,6 +34,7 @@ object Dependencies {
   val kanelaVersion: String = "1.0.7"
   val swaggerUiVersion: String = "3.20.9"
   private val refinedVersion: String = "0.9.17"
+  private val scalikeVersion = "3.5.0"
   private val staminaVersion: String = "0.1.5+1-74109b8e"
   private val calibanVersion = "0.9.1"
   private val zioVersion = "1.0.1"
@@ -94,9 +95,10 @@ object Dependencies {
   val scalaOAuth: ModuleID = "com.nulab-inc"      %% "scala-oauth2-core" % "1.5.0"
   val scalaBcrypt: ModuleID = "com.github.t3hnar" %% "scala-bcrypt"      % "4.1"
 
-  val scalike: ModuleID = "org.scalikejdbc"   %% "scalikejdbc" % "3.5.0"
-  val postgresql: ModuleID = "org.postgresql" % "postgresql"   % "42.2.14"
-  val flywaydb: ModuleID = "org.flywaydb"     % "flyway-core"  % "6.5.0"
+  val scalike: ModuleID = "org.scalikejdbc"       %% "scalikejdbc"                      % scalikeVersion
+  val scalikeMacros: ModuleID = "org.scalikejdbc" %% "scalikejdbc-syntax-support-macro" % scalikeVersion
+  val postgresql: ModuleID = "org.postgresql"     % "postgresql"                        % "42.2.14"
+  val flywaydb: ModuleID = "org.flywaydb"         % "flyway-core"                       % "6.5.0"
 
   val slugify: ModuleID = "com.github.slugify" % "slugify" % "2.4"
 

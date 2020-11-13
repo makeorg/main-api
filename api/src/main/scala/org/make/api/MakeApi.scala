@@ -37,6 +37,7 @@ import org.make.api.crmTemplates.{
   AdminCrmTemplateApi,
   DefaultAdminCrmTemplatesApiComponent,
   DefaultCrmTemplatesServiceComponent,
+  DefaultPersistentCrmLanguageTemplateServiceComponent,
   DefaultPersistentCrmTemplatesServiceComponent
 }
 import org.make.api.extensions._
@@ -204,6 +205,7 @@ trait MakeApi
     with DefaultPersistentActiveFeatureServiceComponent
     with DefaultPersistentAuthCodeServiceComponent
     with DefaultPersistentClientServiceComponent
+    with DefaultPersistentCrmLanguageTemplateServiceComponent
     with DefaultPersistentCrmTemplatesServiceComponent
     with DefaultPersistentCrmUserServiceComponent
     with DefaultPersistentFeatureServiceComponent
