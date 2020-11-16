@@ -346,10 +346,23 @@ trait DefaultModerationOperationOfQuestionApiComponent
               decodeRequest {
                 entity(as[ModifyOperationOfQuestionRequest]) { request =>
                   provideAsyncOrNotFound(questionService.getQuestion(questionId)) { question =>
+                    val condition =
+                      question.countries.toList.intersect(request.countries.toList) == question.countries.toList
+                    Validation.validate(
+                      validateField(
+                        "countries",
+                        "invalid_value",
+                        condition,
+                        s"You can not remove existing countries: ${question.countries.toList.mkString(", ")}"
+                      )
+                    )
                     provideAsyncOrNotFound(operationOfQuestionService.findByQuestionId(questionId)) {
                       operationOfQuestion =>
-                        val updatedQuestion =
-                          question.copy(question = request.question, shortTitle = request.shortTitle.map(_.value))
+                        val updatedQuestion = question.copy(
+                          countries = request.countries,
+                          question = request.question,
+                          shortTitle = request.shortTitle.map(_.value)
+                        )
                         val updatedSequenceCardsConfiguration =
                           request.sequenceCardsConfiguration.copy(
                             pushProposalCard = PushProposalCard(enabled = request.canPropose &&
@@ -460,6 +473,8 @@ final case class ModifyOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "dateTime")
   endDate: ZonedDateTime,
   operationTitle: String,
+  @(ApiModelProperty @field)(dataType = "list[string]")
+  countries: NonEmptyList[Country],
   question: String,
   @(ApiModelProperty @field)(dataType = "string")
   shortTitle: Option[String Refined MaxSize[W.`30`.T]],
@@ -528,7 +543,7 @@ final case class CreateOperationOfQuestionRequest(
   @(ApiModelProperty @field)(dataType = "dateTime")
   endDate: ZonedDateTime,
   operationTitle: String,
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  @(ApiModelProperty @field)(dataType = "list[string]")
   countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,
@@ -587,7 +602,7 @@ final case class OperationOfQuestionResponse(
   slug: String,
   question: String,
   shortTitle: Option[String],
-  @(ApiModelProperty @field)(dataType = "string", example = "FR")
+  @(ApiModelProperty @field)(dataType = "list[string]")
   countries: NonEmptyList[Country],
   @(ApiModelProperty @field)(dataType = "string", example = "fr")
   language: Language,

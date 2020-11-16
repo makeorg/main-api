@@ -146,7 +146,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         Question(
           questionId = questionId,
           slug = "some-question",
-          countries = NonEmptyList.of(Country("FR")),
+          countries = NonEmptyList.of(Country("BE"), Country("FR")),
           language = Language("fr"),
           question = "what's that?",
           shortTitle = None,
@@ -523,49 +523,77 @@ class DefaultModerationOperationOfQuestionApiComponentTest
   }
 
   Feature("update operationOfQuestion") {
+
+    val updateRequest = ModifyOperationOfQuestionRequest(
+      startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+      endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+      canPropose = true,
+      question = "question ?",
+      operationTitle = "new title",
+      countries = NonEmptyList.of(Country("BE"), Country("FR")),
+      shortTitle = None,
+      sequenceCardsConfiguration = SequenceCardsConfiguration(
+        introCard = IntroCard(enabled = true, title = None, description = None),
+        pushProposalCard = PushProposalCard(enabled = true),
+        signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+        finalCard = FinalCard(
+          enabled = true,
+          sharingEnabled = false,
+          title = None,
+          shareDescription = None,
+          learnMoreTitle = None,
+          learnMoreTextButton = None,
+          linkUrl = None
+        )
+      ),
+      aboutUrl = None,
+      metas = Metas(title = None, description = None, picture = None),
+      theme = QuestionTheme.default,
+      description = OperationOfQuestion.defaultDescription,
+      displayResults = true,
+      consultationImage = None,
+      consultationImageAlt = None,
+      descriptionImage = None,
+      descriptionImageAlt = None,
+      resultsLink = Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
+      actions = Some("some actions"),
+      featured = false
+    )
+
     Scenario("update as moderator") {
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(ContentTypes.`application/json`, updateRequest.asJson.toString()) ~> routes ~> check {
+
+        status should be(StatusCodes.OK)
+      }
+    }
+
+    Scenario("add a country") {
       Put("/moderation/operations-of-questions/my-question")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
           ContentTypes.`application/json`,
-          ModifyOperationOfQuestionRequest(
-            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
-            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
-            canPropose = true,
-            question = "question ?",
-            operationTitle = "new title",
-            shortTitle = None,
-            sequenceCardsConfiguration = SequenceCardsConfiguration(
-              introCard = IntroCard(enabled = true, title = None, description = None),
-              pushProposalCard = PushProposalCard(enabled = true),
-              signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
-              finalCard = FinalCard(
-                enabled = true,
-                sharingEnabled = false,
-                title = None,
-                shareDescription = None,
-                learnMoreTitle = None,
-                learnMoreTextButton = None,
-                linkUrl = None
-              )
-            ),
-            aboutUrl = None,
-            metas = Metas(title = None, description = None, picture = None),
-            theme = QuestionTheme.default,
-            description = OperationOfQuestion.defaultDescription,
-            displayResults = true,
-            consultationImage = None,
-            consultationImageAlt = None,
-            descriptionImage = None,
-            descriptionImageAlt = None,
-            resultsLink =
-              Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
-            actions = Some("some actions"),
-            featured = false
-          ).asJson.toString()
+          updateRequest.copy(countries = updateRequest.countries :+ Country("DE")).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
+      }
+    }
+
+    Scenario("try removing a country") {
+      Put("/moderation/operations-of-questions/my-question")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          ContentTypes.`application/json`,
+          updateRequest.copy(countries = NonEmptyList.of(Country("FR"))).asJson.toString()
+        ) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        errors shouldBe Seq(
+          ValidationError("countries", "invalid_value", Some("You can not remove existing countries: BE, FR"))
+        )
       }
     }
 
@@ -579,6 +607,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
             | "canPropose": true,
             | "question": "question ?",
             | "operationTitle": "title",
+            | "countries": ["BE", "FR"],
             | "sequenceCardsConfiguration": {
             |   "introCard": { "enabled": true },
             |   "pushProposalCard": { "enabled": true },
@@ -620,6 +649,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
            | "canPropose": true,
            | "question": "question ?",
            | "operationTitle": "title",
+           | "countries": ["BE", "FR"],
            | "shortTitle": "Il s'agit d'un short title de plus de 30 charactères !",
            | "sequenceCardsConfiguration": {
            |   "introCard": { "enabled": true },
@@ -660,6 +690,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
                                                        | "canPropose": true,
                                                        | "question": "question ?",
                                                        | "operationTitle": "title",
+                                                       | "countries": ["BE", "FR"],
                                                        | "sequenceCardsConfiguration": {
                                                        |   "introCard": { "enabled": true },
                                                        |   "pushProposalCard": { "enabled": true },
