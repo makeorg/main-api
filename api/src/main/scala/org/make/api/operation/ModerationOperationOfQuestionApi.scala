@@ -365,6 +365,18 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         )
                         val updatedSequenceCardsConfiguration =
                           request.sequenceCardsConfiguration.copy(
+                            introCard = request.sequenceCardsConfiguration.introCard.copy(
+                              title = if (request.sequenceCardsConfiguration.introCard.enabled) {
+                                request.sequenceCardsConfiguration.introCard.title
+                              } else {
+                                None
+                              },
+                              description = if (request.sequenceCardsConfiguration.introCard.enabled) {
+                                request.sequenceCardsConfiguration.introCard.description
+                              } else {
+                                None
+                              }
+                            ),
                             pushProposalCard = PushProposalCard(enabled = request.canPropose &&
                               request.sequenceCardsConfiguration.pushProposalCard.enabled
                             ),
@@ -382,10 +394,10 @@ trait DefaultModerationOperationOfQuestionApiComponent
                                 operationTitle = request.operationTitle,
                                 canPropose = request.canPropose,
                                 sequenceCardsConfiguration = updatedSequenceCardsConfiguration,
-                                aboutUrl = request.aboutUrl,
+                                aboutUrl = request.aboutUrl.map(_.value),
                                 metas = request.metas,
                                 theme = request.theme,
-                                description = request.description,
+                                description = request.description.getOrElse(OperationOfQuestion.defaultDescription),
                                 consultationImage = request.consultationImage.map(_.value),
                                 consultationImageAlt = request.consultationImageAlt,
                                 descriptionImage = request.descriptionImage.map(_.value),
@@ -432,28 +444,34 @@ trait DefaultModerationOperationOfQuestionApiComponent
             requireAdminRole(auth.user) {
               decodeRequest {
                 entity(as[CreateOperationOfQuestionRequest]) { body =>
-                  provideAsync(
-                    operationOfQuestionService.create(
-                      CreateOperationOfQuestion(
-                        operationId = body.operationId,
-                        startDate = body.startDate,
-                        endDate = body.endDate,
-                        operationTitle = body.operationTitle,
-                        slug = body.questionSlug,
-                        countries = body.countries,
-                        language = body.language,
-                        question = body.question,
-                        shortTitle = body.shortTitle.map(_.value),
-                        consultationImage = body.consultationImage.map(_.value),
-                        consultationImageAlt = body.consultationImageAlt,
-                        descriptionImage = body.descriptionImage.map(_.value),
-                        descriptionImageAlt = body.descriptionImageAlt,
-                        actions = body.actions
-                      )
+                  provideAsync(operationOfQuestionService.findByQuestionSlug(body.questionSlug)) { maybeQuestion =>
+                    Validation.validate(
+                      Validation
+                        .requireNotPresent("slug", maybeQuestion, Some(s"Slug '${body.questionSlug}' already exists"))
                     )
-                  ) { operationOfQuestion =>
-                    provideAsyncOrNotFound(questionService.getQuestion(operationOfQuestion.questionId)) { question =>
-                      complete(StatusCodes.Created -> OperationOfQuestionResponse(operationOfQuestion, question))
+                    provideAsync(
+                      operationOfQuestionService.create(
+                        CreateOperationOfQuestion(
+                          operationId = body.operationId,
+                          startDate = body.startDate,
+                          endDate = body.endDate,
+                          operationTitle = body.operationTitle,
+                          slug = body.questionSlug,
+                          countries = body.countries,
+                          language = body.language,
+                          question = body.question,
+                          shortTitle = body.shortTitle.map(_.value),
+                          consultationImage = body.consultationImage.map(_.value),
+                          consultationImageAlt = body.consultationImageAlt,
+                          descriptionImage = body.descriptionImage.map(_.value),
+                          descriptionImageAlt = body.descriptionImageAlt,
+                          actions = body.actions
+                        )
+                      )
+                    ) { operationOfQuestion =>
+                      provideAsyncOrNotFound(questionService.getQuestion(operationOfQuestion.questionId)) { question =>
+                        complete(StatusCodes.Created -> OperationOfQuestionResponse(operationOfQuestion, question))
+                      }
                     }
                   }
                 }
@@ -481,10 +499,10 @@ final case class ModifyOperationOfQuestionRequest(
   canPropose: Boolean,
   sequenceCardsConfiguration: SequenceCardsConfiguration,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/about")
-  aboutUrl: Option[String],
+  aboutUrl: Option[String Refined Url],
   metas: Metas,
   theme: QuestionTheme,
-  description: String,
+  description: Option[String],
   displayResults: Boolean,
   @(ApiModelProperty @field)(dataType = "string", example = "https://example.com/consultation-image.png")
   consultationImage: Option[String Refined Url],
@@ -504,7 +522,7 @@ final case class ModifyOperationOfQuestionRequest(
       validateUserInput("question", question, None),
       validateUserInput("operationTitle", operationTitle, None),
       validateOptionalUserInput("shortTitle", shortTitle.map(_.value), None),
-      validateUserInput("description", description, None),
+      validateOptionalUserInput("description", description, None),
       validateColor("gradientStart", theme.gradientStart, None),
       validateColor("gradientEnd", theme.gradientEnd, None),
       validateColor("color", theme.color, None),

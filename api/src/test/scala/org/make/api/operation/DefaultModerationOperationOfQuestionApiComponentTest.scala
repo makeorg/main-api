@@ -475,6 +475,10 @@ class DefaultModerationOperationOfQuestionApiComponentTest
 
   Feature("create operationOfQuestion") {
     Scenario("create as moderator") {
+
+      when(operationOfQuestionService.findByQuestionSlug("make-the-world-great-again"))
+        .thenReturn(Future.successful(None))
+
       Post("/moderation/operations-of-questions")
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
@@ -500,6 +504,80 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         status should be(StatusCodes.Created)
         val operationOfQuestion = entityAs[OperationOfQuestionResponse]
         operationOfQuestion.canPropose shouldBe true
+      }
+    }
+
+    Scenario("slug already exists") {
+      when(operationOfQuestionService.findByQuestionSlug("existing-question")).thenReturn(
+        Future.successful(
+          Some(
+            OperationOfQuestion(
+              questionId = QuestionId("existing-question"),
+              operationId = OperationId("operation"),
+              startDate = ZonedDateTime.parse("1968-07-03T00:00:00.000Z"),
+              endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+              operationTitle = "opération en Français",
+              landingSequenceId = SequenceId("landing-1"),
+              canPropose = true,
+              sequenceCardsConfiguration = SequenceCardsConfiguration(
+                introCard = IntroCard(enabled = true, title = None, description = None),
+                pushProposalCard = PushProposalCard(enabled = true),
+                signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+                finalCard = FinalCard(
+                  enabled = true,
+                  sharingEnabled = false,
+                  title = None,
+                  shareDescription = None,
+                  learnMoreTitle = None,
+                  learnMoreTextButton = None,
+                  linkUrl = None
+                )
+              ),
+              aboutUrl = None,
+              metas = Metas(title = None, description = None, picture = None),
+              theme = QuestionTheme.default,
+              description = OperationOfQuestion.defaultDescription,
+              consultationImage = None,
+              consultationImageAlt = None,
+              descriptionImage = None,
+              descriptionImageAlt = None,
+              resultsLink = None,
+              proposalsCount = 42,
+              participantsCount = 84,
+              actions = None,
+              featured = true
+            )
+          )
+        )
+      )
+      Post("/moderation/operations-of-questions")
+        .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
+        .withEntity(
+          ContentTypes.`application/json`,
+          CreateOperationOfQuestionRequest(
+            operationId = OperationId("some-operation"),
+            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+            operationTitle = "my-operation",
+            countries = NonEmptyList.of(Country("FR")),
+            language = Language("fr"),
+            question = "how to save the world?",
+            shortTitle = None,
+            questionSlug = "existing-question",
+            consultationImage = Some("https://example.com/image"),
+            consultationImageAlt = Some("image alternative"),
+            descriptionImage = Some("https://example.com/image-desc"),
+            descriptionImageAlt = Some("image-desc alternative"),
+            actions = None
+          ).asJson.toString()
+        ) ~> routes ~> check {
+
+        status should be(StatusCodes.BadRequest)
+        val errors = entityAs[Seq[ValidationError]]
+        val contentError = errors.find(_.field == "slug")
+        contentError should be(
+          Some(ValidationError("slug", "non_empty", Some("Slug 'existing-question' already exists")))
+        )
       }
     }
 
@@ -549,7 +627,7 @@ class DefaultModerationOperationOfQuestionApiComponentTest
       aboutUrl = None,
       metas = Metas(title = None, description = None, picture = None),
       theme = QuestionTheme.default,
-      description = OperationOfQuestion.defaultDescription,
+      description = None,
       displayResults = true,
       consultationImage = None,
       consultationImageAlt = None,
@@ -574,7 +652,42 @@ class DefaultModerationOperationOfQuestionApiComponentTest
         .withHeaders(Authorization(OAuth2BearerToken(tokenAdmin)))
         .withEntity(
           ContentTypes.`application/json`,
-          updateRequest.copy(countries = updateRequest.countries :+ Country("DE")).asJson.toString()
+          ModifyOperationOfQuestionRequest(
+            startDate = ZonedDateTime.parse("2018-12-01T10:15:30+00:00"),
+            endDate = ZonedDateTime.parse("2068-07-03T00:00:00.000Z"),
+            canPropose = true,
+            question = "question ?",
+            operationTitle = "new title",
+            countries = updateRequest.countries :+ Country("DE"),
+            shortTitle = None,
+            sequenceCardsConfiguration = SequenceCardsConfiguration(
+              introCard = IntroCard(enabled = true, title = None, description = None),
+              pushProposalCard = PushProposalCard(enabled = true),
+              signUpCard = SignUpCard(enabled = true, title = None, nextCtaText = None),
+              finalCard = FinalCard(
+                enabled = true,
+                sharingEnabled = false,
+                title = None,
+                shareDescription = None,
+                learnMoreTitle = None,
+                learnMoreTextButton = None,
+                linkUrl = None
+              )
+            ),
+            aboutUrl = None,
+            metas = Metas(title = None, description = None, picture = None),
+            theme = QuestionTheme.default,
+            description = None,
+            displayResults = true,
+            consultationImage = None,
+            consultationImageAlt = None,
+            descriptionImage = None,
+            descriptionImageAlt = None,
+            resultsLink =
+              Some(ResultsLinkRequest(ResultsLinkRequest.ResultsLinkKind.External, "https://example.com/results")),
+            actions = Some("some actions"),
+            featured = false
+          ).asJson.toString()
         ) ~> routes ~> check {
 
         status should be(StatusCodes.OK)
