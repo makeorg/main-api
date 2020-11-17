@@ -34,7 +34,11 @@ import enumeratum.values.scalacheck._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.{refineV, W}
+import org.make.api.organisation.OrganisationRegisterData
+import org.make.api.partner.CreatePartnerRequest
+import org.make.core.partner.PartnerKind
 import org.make.core.technical.generator.CustomGenerators
+import org.make.core.user.User
 
 trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
 
@@ -69,7 +73,7 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
 
   def genUserRegisterData(questionId: Option[QuestionId]): Gen[UserRegisterData] =
     for {
-      email                     <- CustomGenerators.Mail.gen
+      email                     <- CustomGenerators.Mail.gen()
       firstName                 <- Gen.option(CustomGenerators.LoremIpsumGen.word)
       lastName                  <- Gen.option(CustomGenerators.LoremIpsumGen.word)
       dateOfBirth               <- Gen.option(Gen.calendar.map(_.toZonedDateTime.toLocalDate))
@@ -103,6 +107,46 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       politicalParty = politicalParty,
       website = None,
       publicProfile = publicProfile
+    )
+
+  def genOrganisationRegisterData: Gen[OrganisationRegisterData] =
+    for {
+      name         <- CustomGenerators.LoremIpsumGen.word
+      email        <- CustomGenerators.Mail.gen(Some("organisation"))
+      avatar       <- CustomGenerators.ImageUrl.gen(width = 100, height = 100)
+      description  <- Gen.option(CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(300)))
+      (country, _) <- genCountryLanguage
+      website      <- Gen.option(CustomGenerators.URL.gen)
+    } yield OrganisationRegisterData(
+      name = name,
+      email = email,
+      password = Some(email),
+      avatar = Some(avatar),
+      description = description,
+      country = country,
+      website = website
+    )
+
+  def genCreatePartnerRequest(orga: Option[User], questionId: QuestionId): Gen[CreatePartnerRequest] =
+    for {
+      name <- CustomGenerators.LoremIpsumGen.word
+      logo <- CustomGenerators.ImageUrl.gen(width = 100, height = 100)
+      link <- CustomGenerators.URL.gen
+      partnerKind <- Gen.frequency(
+        (2, PartnerKind.Media),
+        (7, PartnerKind.ActionPartner),
+        (1, PartnerKind.Founder),
+        (4, PartnerKind.Actor)
+      )
+      weight <- Gen.posNum[Float]
+    } yield CreatePartnerRequest(
+      name = orga.flatMap(_.displayName).getOrElse(name),
+      logo = orga.flatMap(_.profile.flatMap(_.avatarUrl)).orElse(Some(logo)),
+      link = orga.flatMap(_.profile.flatMap(_.website)).orElse(Some(link)),
+      organisationId = orga.map(_.userId),
+      partnerKind = partnerKind,
+      questionId = questionId,
+      weight = weight
     )
 
 }

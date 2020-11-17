@@ -60,7 +60,10 @@ object CustomGenerators {
   }
 
   object Mail {
-    def gen: Gen[String] = Gen.uuid.map(id => s"yopmail+$id@make.org")
+    def gen(prefix: Option[String] = None): Gen[String] = Gen.uuid.map { id =>
+      val tag: String = prefix.map(p => s"$p-$id").getOrElse(id.toString)
+      s"yopmail+$tag@make.org"
+    }
   }
 
   object PostalCode {
@@ -74,4 +77,9 @@ object CustomGenerators {
           ZonedDateTime.ofInstant(calendar.toInstant, ZoneId.systemDefault()).toUTC.truncatedTo(ChronoUnit.MILLIS)
       )
   }
+
+  object URL {
+    def gen: Gen[String] = Gen.uuid.map(id => s"https://example.com/$id")
+  }
+
 }

@@ -29,6 +29,8 @@ import org.make.api.operation.{
   OperationOfQuestionServiceComponent,
   OperationServiceComponent
 }
+import org.make.api.organisation.OrganisationServiceComponent
+import org.make.api.partner.PartnerServiceComponent
 import org.make.api.proposal.{
   ProposalServiceComponent,
   RefuseProposalRequest,
@@ -36,13 +38,18 @@ import org.make.api.proposal.{
   UpdateVoteRequest
 }
 import org.make.api.question.QuestionServiceComponent
+import org.make.api.sessionhistory.SessionHistoryCoordinatorServiceComponent
+import org.make.api.tag.TagServiceComponent
 import org.make.api.technical.ExecutorServiceHelper._
 import org.make.api.technical.generator.EntitiesGen
+import org.make.api.technical.security.{SecurityConfigurationComponent, SecurityHelper}
 import org.make.api.user.UserServiceComponent
 import org.make.core.operation.{OperationId, SimpleOperation}
-import org.make.core.proposal.{ProposalId, ProposalStatus}
+import org.make.core.partner.Partner
+import org.make.core.proposal.{ProposalId, ProposalStatus, VoteKey}
 import org.make.core.question.{Question, QuestionId}
-import org.make.core.tag.TagId
+import org.make.core.session.SessionId
+import org.make.core.tag.{Tag, TagId}
 import org.make.core.user.{User, UserId}
 import org.make.core.{DateHelper, RequestContext}
 import org.scalacheck.Gen
@@ -52,11 +59,7 @@ import org.scalacheck.rng.Seed
 import scala.concurrent.{ExecutionContext, Future}
 
 trait FixturesService {
-  def generate(
-    maybeOperationId: Option[OperationId],
-    maybeQuestionId: Option[QuestionId],
-    proposalFillMode: Option[FillMode]
-  ): Future[Map[String, Int]]
+  def generate(maybeOperationId: Option[OperationId], maybeQuestionId: Option[QuestionId]): Future[FixtureResponse]
 }
 
 trait FixturesServiceComponent {
@@ -69,6 +72,11 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
     with QuestionServiceComponent
     with OperationOfQuestionServiceComponent
     with ProposalServiceComponent
+    with TagServiceComponent
+    with OrganisationServiceComponent
+    with PartnerServiceComponent
+    with SecurityConfigurationComponent
+    with SessionHistoryCoordinatorServiceComponent
     with ActorSystemComponent =>
   override lazy val fixturesService: FixturesService = new DefaultFixturesService
 
@@ -109,19 +117,38 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         .runWith(Sink.seq)
     }
 
+    def generateOrganisations: Future[Seq[User]] = {
+      val parameters = Parameters.default.withSize(20)
+      val orgasData = Gen.listOf(EntitiesGen.genOrganisationRegisterData).pureApply(parameters, Seed.random())
+      logger.info(s"generating: ${orgasData.size} organisations")
+      Source(orgasData.distinctBy(_.email))
+        .mapAsync(16) { data =>
+          organisationService.register(data, RequestContext.empty)
+        }
+        .runWith(Sink.seq)
+    }
+
+    def generatePartners(questionId: QuestionId, organisations: Seq[User]): Future[Seq[Partner]] = {
+      val parameters = Parameters.default.withSize(20)
+      val partnersData =
+        Gen.listOf(EntitiesGen.genCreatePartnerRequest(None, questionId)).pureApply(parameters, Seed.random()) ++
+          organisations.map(orga => EntitiesGen.genCreatePartnerRequest(Some(orga), questionId).value)
+      logger.info(s"generating: ${partnersData.size} partners")
+      Source(partnersData)
+        .mapAsync(16) { data =>
+          partnerService.createPartner(data)
+        }
+        .runWith(Sink.seq)
+    }
+
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     def generateProposals(
       question: Question,
-      mode: Option[FillMode],
       users: Seq[User],
       tagsIds: Seq[TagId],
       adminUserId: UserId
     ): Future[Seq[ProposalId]] = {
-      val parameters: Parameters = mode match {
-        case None                => Parameters.default.withSize(0)
-        case Some(FillMode.Tiny) => Parameters.default.withSize(20)
-        case Some(FillMode.Big)  => Parameters.default.withSize(2000)
-      }
+      val parameters: Parameters = Parameters.default.withSize(2000)
       val proposalsData =
         Gen.listOf(EntitiesGen.genProposal(question, users, tagsIds)).pureApply(parameters, Seed.random())
       logger.info(s"generating: ${proposalsData.size} proposals")
@@ -211,24 +238,88 @@ trait DefaultFixturesServiceComponent extends FixturesServiceComponent with Stri
         .runWith(Sink.seq)
     }
 
+    def generateTags(question: Question): Future[Seq[Tag]] = {
+      val tagsData: Seq[Tag] = Gen.listOf(EntitiesGen.genTag(question.operationId, Some(question.questionId))).value
+      logger.info(s"generating: ${tagsData.size} tags")
+      Source(tagsData.distinctBy(_.label))
+        .mapAsync(16) { tag =>
+          tagService.createTag(
+            label = tag.label,
+            tagTypeId = tag.tagTypeId,
+            question = question,
+            display = tag.display,
+            weight = tag.weight
+          )
+        }
+        .runWith(Sink.seq)
+    }
+
+    def generateOrganisationVotes(orgas: Seq[User], proposals: Seq[ProposalId]): Future[Int] = {
+      val sampleSize = if (proposals.size > 50) 50 else proposals.size
+      val proposalsSample = Gen.pick(sampleSize, proposals).value
+      def proposalKey(proposalId: ProposalId, sessionId: SessionId): String =
+        SecurityHelper.generateProposalKeyHash(proposalId, sessionId, None, securityConfiguration.secureVoteSalt)
+      def requestContext(sessionId: SessionId) =
+        RequestContext.empty.copy(sessionId = sessionId, location = Some("fixtures"))
+
+      Source(orgas)
+        .mapAsync(16) { orga =>
+          val sessionId = SessionId(orga.userId.value)
+          sessionHistoryCoordinatorService
+            .convertSession(sessionId, orga.userId, requestContext(sessionId))
+            .map(_ => orga)
+        }
+        .map(_ -> Gen.pick(sampleSize / 5, proposalsSample).value)
+        .mapAsync(16) {
+          case (orga, sample) =>
+            val sessionId = SessionId(orga.userId.value)
+            Source(sample.toSeq)
+              .mapAsync(16) { proposalId =>
+                proposalService.voteProposal(
+                  proposalId = proposalId,
+                  maybeUserId = Some(orga.userId),
+                  requestContext = requestContext(sessionId),
+                  voteKey = Gen.frequency((6, VoteKey.Agree), (3, VoteKey.Disagree), (1, VoteKey.Neutral)).value,
+                  proposalKey = Some(proposalKey(proposalId, sessionId))
+                )
+              }
+              .runWith(Sink.seq)
+              .map(_.size)
+        }
+        .runWith(Sink.seq)
+        .map(_.sum)
+    }
+
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     override def generate(
       maybeOperationId: Option[OperationId],
-      maybeQuestionId: Option[QuestionId],
-      proposalFillMode: Option[FillMode]
-    ): Future[Map[String, Int]] = {
+      maybeQuestionId: Option[QuestionId]
+    ): Future[FixtureResponse] = {
       val futureAdmin: Future[User] = userService.getUserByEmail("admin@make.org").flatMap {
         case Some(user) => Future.successful(user)
         case None       => Future.failed(new IllegalStateException())
       }
       for {
-        admin       <- futureAdmin
-        operationId <- generateOperation(maybeOperationId, admin.userId)
-        questionId  <- generateQuestion(maybeQuestionId, operationId)
-        users       <- generateUsers(questionId)
-        question    <- questionService.getQuestion(questionId).map(_.get)
-        proposals   <- generateProposals(question, proposalFillMode, users, Seq.empty, admin.userId)
-      } yield Map("users" -> users.size, "proposals" -> proposals.size)
+        admin          <- futureAdmin
+        operationId    <- generateOperation(maybeOperationId, admin.userId)
+        questionId     <- generateQuestion(maybeQuestionId, operationId)
+        users          <- generateUsers(questionId)
+        orgas          <- generateOrganisations
+        partners       <- generatePartners(questionId, orgas)
+        question       <- questionService.getQuestion(questionId).map(_.get)
+        tags           <- generateTags(question)
+        proposals      <- generateProposals(question, users ++ orgas, tags.map(_.tagId), admin.userId)
+        orgasVoteCount <- generateOrganisationVotes(orgas, proposals)
+      } yield FixtureResponse(
+        operationId = operationId,
+        questionId = questionId,
+        userCount = users.size,
+        organisationCount = orgas.size,
+        partnerCount = partners.size,
+        tagCount = tags.size,
+        proposalCount = proposals.size,
+        organisationsVoteCount = orgasVoteCount
+      )
     }
   }
 }

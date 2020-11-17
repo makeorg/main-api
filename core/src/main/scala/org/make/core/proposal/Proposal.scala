@@ -196,7 +196,7 @@ object Vote {
   def empty(key: VoteKey): Vote = Vote(key, 0, 0, 0, 0, Seq.empty)
 }
 
-sealed abstract class VoteKey(val value: String) extends StringEnumEntry
+sealed abstract class VoteKey(val value: String) extends StringEnumEntry with Product with Serializable
 
 object VoteKey extends StringEnum[VoteKey] with StringCirceEnum[VoteKey] {
 
