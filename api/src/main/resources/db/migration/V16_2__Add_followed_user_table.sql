@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS followed_user(
     user_id STRING(256) NOT NULL,
     followed_user_id STRING(256) NOT NULL,

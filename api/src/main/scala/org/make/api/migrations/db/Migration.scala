@@ -1,6 +1,6 @@
 /*
  *  Make.org Core API
- *  Copyright (C) 2018 Make.org
+ *  Copyright (C) 2020 Make.org
  *
  * This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -21,18 +21,19 @@ package org.make.api.migrations.db
 
 import java.sql.Connection
 
-class V84__crm_templates_registration_b2b_data extends Migration {
+import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 
-  override def migrate(connection: Connection): Unit = {
-    val isProd = System.getenv("ENV_NAME") == "prod"
+abstract class Migration extends BaseJavaMigration {
 
-    val registrationB2BTemplateId = if (isProd) "1395993" else "1393409"
-
-    val statement =
-      connection.prepareStatement(
-        s"ALTER TABLE crm_templates ADD COLUMN IF NOT EXISTS registration_b2b STRING NOT NULL DEFAULT '$registrationB2BTemplateId'"
-      )
-    statement.execute()
+  override def migrate(context: Context): Unit = {
+    val connection = context.getConnection
+    val autoCommit = connection.getAutoCommit
+    connection.setAutoCommit(false)
+    migrate(connection)
+    connection.commit()
+    connection.setAutoCommit(autoCommit)
   }
+
+  def migrate(connection: Connection): Unit
 
 }

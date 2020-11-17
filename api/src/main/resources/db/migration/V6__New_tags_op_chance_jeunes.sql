@@ -1,3 +1,5 @@
+BEGIN;
+
 INSERT INTO tag (slug, label, enabled, created_at, updated_at) VALUES
     ('action--des-associations', e'action : des associations', true, NOW(), NOW()),
     ('action--des-entreprises', e'action : des entreprises', true, NOW(), NOW()),

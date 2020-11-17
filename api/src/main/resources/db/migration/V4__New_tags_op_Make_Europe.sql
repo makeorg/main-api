@@ -1,3 +1,5 @@
+BEGIN;
+
 INSERT INTO tag (slug, label, enabled, created_at, updated_at) VALUES
 	('european-commission', 'european commission', true, NOW(), NOW()),
 	('social', 'social', true, NOW(), NOW()),

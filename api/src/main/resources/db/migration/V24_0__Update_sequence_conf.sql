@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE sequence_configuration
     ADD COLUMN max_tested_proposal_count INTEGER,
     ADD COLUMN sequence_size INTEGER,

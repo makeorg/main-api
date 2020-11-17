@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE operation_of_question
     ADD COLUMN gradient_start STRING NOT NULL DEFAULT '#000000',
     ADD COLUMN gradient_end STRING NOT NULL DEFAULT '#000000',

@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS tag_type(
     id STRING(256) NOT NULL,
     label STRING(256) NULL,

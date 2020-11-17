@@ -1,3 +1,5 @@
+BEGIN;
+
 INSERT INTO make_user ("uuid", created_at, updated_at, email, first_name, last_name, last_ip, hashed_password, enabled, verified, last_connection, verification_token, verification_token_expires_at, reset_token, reset_token_expires_at, roles, date_of_birth, avatar_url, profession, phone_number, twitter_id, facebook_id, google_id, gender, gender_name, postal_code, karma_level, locale, opt_in_newsletter, country, language) VALUES
 	('11111111-1111-1111-1111-111111111111', TIMESTAMPTZ '2017-09-15T08:43:30Z', TIMESTAMPTZ '2017-09-15T08:43:30Z', '${adminEmail}', '${adminFirstName}', NULL, NULL, '${adminEncryptedPassword}', true, false, TIMESTAMPTZ '2017-09-15 08:43:30Z', NULL, '2017-10-15 08:43:30Z', NULL, NULL, 'ROLE_ADMIN,ROLE_CITIZEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 'FR', 'fr');
 

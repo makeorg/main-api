@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE question ALTER COLUMN slug DROP DEFAULT;
 ALTER TABLE question ADD CONSTRAINT question_slug_unique UNIQUE (slug);
 

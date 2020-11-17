@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE active_feature(
   id STRING NOT NULL PRIMARY KEY,
   feature_id STRING NOT NULL,

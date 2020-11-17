@@ -19,13 +19,12 @@
 
 package org.make.api.migrations.db
 
-import org.flywaydb.core.api.migration._
+import java.sql.Connection
 
-class V24_1__Populate_question_id_for_sequence_configuration extends BaseJavaMigration {
+class V24_1__Populate_question_id_for_sequence_configuration extends Migration {
 
   @SuppressWarnings(Array("org.wartremover.warts.While"))
-  override def migrate(context: Context): Unit = {
-    val connection = context.getConnection
+  override def migrate(connection: Connection): Unit = {
     val resultSet = connection
       .prepareStatement(
         "SELECT landing_sequence_id, question_id FROM operation_country_configuration " +
@@ -42,8 +41,5 @@ class V24_1__Populate_question_id_for_sequence_configuration extends BaseJavaMig
       statement.setString(2, sequenceId)
       statement.execute()
     }
-
-    connection.commit()
-
   }
 }

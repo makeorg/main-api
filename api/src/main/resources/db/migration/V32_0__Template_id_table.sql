@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE crm_templates(
   id STRING NOT NULL PRIMARY KEY,
   question_id STRING,

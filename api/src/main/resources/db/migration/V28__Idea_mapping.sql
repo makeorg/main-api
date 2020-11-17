@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE idea_mapping(
   id STRING NOT NULL PRIMARY KEY,
   question_id  STRING NOT NULL,

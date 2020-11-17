@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE crm_user ADD COLUMN full_name STRING;
 
 COMMIT;

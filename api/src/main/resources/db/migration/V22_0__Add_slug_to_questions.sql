@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE question ADD COLUMN slug STRING(512) NOT NULL DEFAULT 'unknown';
 
 COMMIT;

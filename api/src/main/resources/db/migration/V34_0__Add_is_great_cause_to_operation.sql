@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE IF EXISTS operation ADD COLUMN operation_kind STRING(256);
 
 COMMIT;

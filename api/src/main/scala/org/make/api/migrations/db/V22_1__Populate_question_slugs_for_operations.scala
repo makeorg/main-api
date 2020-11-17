@@ -19,13 +19,12 @@
 
 package org.make.api.migrations.db
 
-import org.flywaydb.core.api.migration._
+import java.sql.Connection
 
-class V22_1__Populate_question_slugs_for_operations extends BaseJavaMigration {
+class V22_1__Populate_question_slugs_for_operations extends Migration {
 
   @SuppressWarnings(Array("org.wartremover.warts.While"))
-  override def migrate(context: Context): Unit = {
-    val connection = context.getConnection
+  override def migrate(connection: Connection): Unit = {
     val resultSet = connection
       .prepareStatement(
         "SELECT slug, country, operation.uuid AS operation_id " +
@@ -49,8 +48,5 @@ class V22_1__Populate_question_slugs_for_operations extends BaseJavaMigration {
       statement.setString(3, country)
       statement.execute()
     }
-
-    connection.commit()
-
   }
 }

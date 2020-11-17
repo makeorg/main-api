@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE IF EXISTS operation_of_question ADD COLUMN can_propose BOOLEAN NOT NULL DEFAULT true;
 
 COMMIT;

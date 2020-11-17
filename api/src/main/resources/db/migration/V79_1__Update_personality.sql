@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE personality ADD COLUMN IF NOT EXISTS personality_role_id STRING NOT NULL DEFAULT '0c3cbbf4-42c1-4801-b08a-d0e60d136041';
 ALTER TABLE personality DROP COLUMN IF EXISTS personality_role;
 

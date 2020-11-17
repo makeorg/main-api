@@ -19,13 +19,12 @@
 
 package org.make.api.migrations.db
 
-import org.flywaydb.core.api.migration._
+import java.sql.Connection
 
-class V39_1__Migrate_start_end_date extends BaseJavaMigration {
+class V39_1__Migrate_start_end_date extends Migration {
 
   @SuppressWarnings(Array("org.wartremover.warts.While"))
-  override def migrate(context: Context): Unit = {
-    val connection = context.getConnection
+  override def migrate(connection: Connection): Unit = {
     val resultSet = connection
       .prepareStatement("SELECT question_id, start_date, end_date FROM operation_of_question")
       .executeQuery()
@@ -43,7 +42,5 @@ class V39_1__Migrate_start_end_date extends BaseJavaMigration {
       statement.setString(3, questionId)
       statement.execute()
     }
-
-    connection.commit()
   }
 }

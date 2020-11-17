@@ -1,3 +1,5 @@
+BEGIN;
+
 ALTER TABLE operation_of_question
   ADD COLUMN intro_card_enabled BOOLEAN DEFAULT false,
   ADD COLUMN intro_card_title STRING(256),

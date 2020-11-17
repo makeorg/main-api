@@ -1,3 +1,5 @@
+BEGIN;
+
 SAVEPOINT cockroach_restart;
 
 CREATE TABLE make_user (
