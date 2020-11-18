@@ -166,7 +166,9 @@ trait MakeDirectives
                 value = token.accessToken,
                 secure = makeSettings.SecureCookie.isSecure,
                 httpOnly = true,
-                maxAge = Some(token.expiresIn),
+                // In order to have auto-refresh work we need to keep this cookie until the refresh token expires
+                // Since the refresh is not mandatory, we need to take the one with the longest lifetime
+                maxAge = Some(Math.max(token.refreshExpiresIn, token.expiresIn)),
                 path = Some("/"),
                 domain = Some(makeSettings.SecureCookie.domain)
               )
@@ -538,7 +540,9 @@ trait MakeDirectives
               value = token.accessToken,
               secure = makeSettings.SecureCookie.isSecure,
               httpOnly = true,
-              maxAge = Some(token.expiresIn),
+              // In order to have auto-refresh work we need to keep this cookie until the refresh token expires
+              // Since the refresh is not mandatory, we need to take the one with the longest lifetime
+              maxAge = Some(Math.max(token.refreshExpiresIn.getOrElse(token.expiresIn), token.expiresIn)),
               path = Some("/"),
               domain = Some(makeSettings.SecureCookie.domain)
             )
