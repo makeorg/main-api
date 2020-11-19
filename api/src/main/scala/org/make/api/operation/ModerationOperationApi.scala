@@ -165,7 +165,7 @@ trait DefaultModerationOperationApiComponent
                     provideAsync(operationService.findOneBySlug(request.slug)) { maybeOperation =>
                       Validation.validate(
                         Validation
-                          .requireNotPresent("slug", maybeOperation, Some(s"Slug '${request.slug}' already exist"))
+                          .requireNotPresent("slug", maybeOperation, Some(s"Slug '${request.slug}' already exists"))
                       )
                       onSuccess(
                         operationService

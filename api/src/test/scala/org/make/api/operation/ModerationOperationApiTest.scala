@@ -408,7 +408,7 @@ class ModerationOperationApiTest
         val errors = entityAs[Seq[ValidationError]]
         val contentError = errors.find(_.field == "slug")
         contentError should be(
-          Some(ValidationError("slug", "non_empty", Some("Slug 'existing-operation-slug' already exist")))
+          Some(ValidationError("slug", "non_empty", Some("Slug 'existing-operation-slug' already exists")))
         )
       }
     }
