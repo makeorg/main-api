@@ -49,7 +49,9 @@ trait FixturesApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Created, message = "Ok", response = classOf[FixtureResponse])))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.Created, message = "Ok", response = classOf[FixtureResponse]))
+  )
   @Path(value = "/generate")
   def generateFixtures: Route
 
@@ -95,7 +97,7 @@ final case class GenerateFixturesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "b924bb35-9e49-43c5-bf63-da4f56b13a5e")
   operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "ad27fa8e-9cd4-4986-b1b4-7969c064322f")
-  questionId: Option[QuestionId],
+  questionId: Option[QuestionId]
 )
 
 object GenerateFixturesRequest {

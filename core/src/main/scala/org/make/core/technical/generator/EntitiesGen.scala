@@ -21,6 +21,7 @@ package org.make.core.technical
 package generator
 
 import java.net.URL
+import java.time.Period
 import java.time.temporal.ChronoUnit
 
 import _root_.enumeratum.values.scalacheck._
@@ -55,7 +56,7 @@ import org.scalacheck.Arbitrary.arbitrary
 
 import scala.concurrent.duration.FiniteDuration
 
-trait EntitiesGen {
+trait EntitiesGen extends DateGenerators {
 
   def genCountryLanguage: Gen[(Country, Language)] =
     Gen.oneOf(for {
@@ -96,13 +97,17 @@ trait EntitiesGen {
 
   def genOperationOfQuestion: Gen[OperationOfQuestion] =
     for {
-      operation         <- genSimpleOperation
-      question          <- genQuestion(Some(operation.operationId))
-      startDate         <- CustomGenerators.Time.zonedDateTime
-      endDate           <- CustomGenerators.Time.zonedDateTime.suchThat(date => startDate.isBefore(date))
+      operation <- genSimpleOperation
+      question  <- genQuestion(Some(operation.operationId))
+      startDate <- genDateWithOffset(lowerOffset = Period.ofYears(-3), upperOffset = Period.ofYears(1))
+      endDate <- genDateWithOffset(
+        lowerOffset = Period.ofMonths(1),
+        upperOffset = Period.ofMonths(6),
+        fromDate = startDate
+      )
       title             <- CustomGenerators.LoremIpsumGen.sentence()
       canPropose        <- arbitrary[Boolean]
-      resultsLink       <- Gen.option(genResultsLink)
+      resultsLink       <- genResultsLink.asOption
       proposalsCount    <- arbitrary[NonNegInt]
       participantsCount <- arbitrary[NonNegInt]
       featured          <- arbitrary[Boolean]
@@ -272,7 +277,7 @@ trait EntitiesGen {
       tags            <- Gen.someOf(tagsIds)
       votes           <- genProposalVotes
       organisationIds <- Gen.someOf(users.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId))
-      date            <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
+      date            <- Gen.calendar.map(_.toZonedDateTime).asOption
       initialProposal <- Gen.frequency((9, false), (1, true))
     } yield Proposal(
       proposalId = IdGenerator.uuidGenerator.nextProposalId(),
@@ -304,7 +309,7 @@ trait EntitiesGen {
     for {
       id        <- Gen.uuid
       status    <- genJobStatus
-      createdAt <- Gen.option(CustomGenerators.Time.zonedDateTime)
+      createdAt <- genDateWithOffset(lowerOffset = Period.ofYears(-2), upperOffset = Period.ZERO).asOption
       update <- Arbitrary
         .arbitrary[Option[FiniteDuration]]
         .map(_.flatMap(u => createdAt.map(_.plusNanos(u.toNanos).truncatedTo(ChronoUnit.MILLIS))))
