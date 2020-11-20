@@ -125,14 +125,26 @@ trait DefaultSessionHistoryCoordinatorServiceComponent extends SessionHistoryCoo
           Source(proposalsIds)
             .sliding(proposalsPerPage, proposalsPerPage)
             .mapAsync(5) { someProposalsIds =>
-              (sessionHistoryCoordinator ? requestPaginate(Some(someProposalsIds)))
-                .mapTo[VotedProposals]
-                .map(_.proposals)
+              doRequestVotedProposalsPage(requestPaginate(Some(someProposalsIds)))
             }
             .mapConcat(identity)
             .runWith(Sink.seq)
         case _ =>
-          (sessionHistoryCoordinator ? requestPaginate(request.proposalsIds)).mapTo[VotedProposals].map(_.proposals)
+          doRequestVotedProposalsPage(requestPaginate(request.proposalsIds))
+      }
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    private def doRequestVotedProposalsPage(request: RequestSessionVotedProposalsPaginate): Future[Seq[ProposalId]] = {
+      (sessionHistoryCoordinator ? request).flatMap {
+        case SessionIsExpired(newSessionId) => doRequestVotedProposalsPage(request.copy(sessionId = newSessionId))
+        case response: VotedProposals       => Future.successful(response.proposals)
+        case other =>
+          Future.failed(
+            new IllegalStateException(
+              s"Unknown response from session history actor: ${other.toString} of class ${other.getClass.getName}}"
+            )
+          )
       }
     }
 
