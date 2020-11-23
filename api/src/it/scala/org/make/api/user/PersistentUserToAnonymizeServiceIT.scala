@@ -21,10 +21,9 @@ package org.make.api.user
 
 import org.make.api.DatabaseTest
 import org.make.api.technical.DefaultIdGeneratorComponent
-import org.postgresql.util.PSQLException
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class PersistentUserToAnonymizeServiceIT
@@ -42,13 +41,20 @@ class PersistentUserToAnonymizeServiceIT
     }
 
     Scenario("create an already existing entry") {
+      Given("an email that is marked for deletion")
+      When("I want to mark it for deletion again")
+      Then("I shouldn't get any error")
+
+      val email = "tata-mail@example.com"
+
       val futureCreate: Future[String] =
         for {
-          _ <- persistentUserToAnonymizeService.create("tata-mail")
-          _ <- persistentUserToAnonymizeService.create("tata-mail")
-        } yield "tata-mail"
-      intercept[PSQLException] {
-        Await.result(futureCreate, 3.seconds)
+          _ <- persistentUserToAnonymizeService.create(email)
+          _ <- persistentUserToAnonymizeService.create(email)
+        } yield email
+
+      whenReady(futureCreate, Timeout(3.seconds)) {
+        _ should be(email)
       }
     }
   }

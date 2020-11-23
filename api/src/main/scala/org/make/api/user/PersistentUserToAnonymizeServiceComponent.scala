@@ -27,6 +27,7 @@ import org.make.api.technical.DatabaseTransactions._
 import org.make.api.technical.ShortenedNames
 import org.make.api.user.DefaultPersistentUserToAnonymizeServiceComponent.PersistentUserToAnonymize
 import org.make.core.DateHelper
+import org.postgresql.util.{PSQLException, PSQLState}
 import scalikejdbc._
 
 import scala.concurrent.Future
@@ -65,7 +66,11 @@ trait DefaultPersistentUserToAnonymizeServiceComponent extends PersistentUserToA
             .into(PersistentUserToAnonymize)
             .namedValues(column.email -> email, column.requestDate -> DateHelper.now())
         }.execute().apply()
-      }).map(_ => ())
+      }).map(_ => ()).recoverWith {
+        case e: PSQLException if e.getSQLState == PSQLState.UNIQUE_VIOLATION.getState =>
+          Future.successful {}
+        case other => Future.failed(other)
+      }
     }
 
     override def findAll(): Future[Seq[String]] = {
