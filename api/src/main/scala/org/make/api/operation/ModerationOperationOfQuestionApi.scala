@@ -43,6 +43,7 @@ import org.make.api.technical.CsvReceptacle._
 import org.make.core.Validation.{validate, validateColor, validateField, validateOptionalUserInput, validateUserInput}
 import org.make.core._
 import org.make.core.auth.UserRights
+import org.make.core.operation.OperationOfQuestion.{Status => QuestionStatus}
 import org.make.core.operation._
 import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
@@ -92,7 +93,8 @@ trait ModerationOperationOfQuestionApi extends Directives {
         allowableValues = "GREAT_CAUSE,PRIVATE_CONSULTATION,BUSINESS_CONSULTATION",
         allowMultiple = true
       ),
-      new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string")
+      new ApiImplicitParam(name = "openAt", paramType = "query", required = false, dataType = "string"),
+      new ApiImplicitParam(name = "endAfter", paramType = "query", required = false, dataType = "string")
     )
   )
   @Path(value = "/")
@@ -249,7 +251,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                 "questionId".as[Seq[QuestionId]].?,
                 "operationId".as[OperationId].?,
                 "operationKind".csv[OperationKind],
-                "openAt".as[ZonedDateTime].?
+                "openAt".as[ZonedDateTime].?,
+                "endAfter".as[ZonedDateTime].?
               ) {
                 (
                   start: Option[Start],
@@ -259,7 +262,8 @@ trait DefaultModerationOperationOfQuestionApiComponent
                   questionIds,
                   operationId,
                   operationKinds,
-                  openAt
+                  openAt,
+                  endAfter
                 ) =>
                   val resolvedQuestions: Option[Seq[QuestionId]] = {
                     if (auth.user.roles.contains(RoleAdmin)) {
@@ -278,10 +282,11 @@ trait DefaultModerationOperationOfQuestionApiComponent
                         sort,
                         order,
                         SearchOperationsOfQuestions(
-                          resolvedQuestions,
-                          operationId.map(opId => Seq(opId)),
-                          operationKinds,
-                          openAt
+                          questionIds = resolvedQuestions,
+                          operationIds = operationId.map(opId => Seq(opId)),
+                          operationKind = operationKinds,
+                          openAt = openAt,
+                          endAfter = endAfter
                         )
                       )
                   ) { result: Seq[OperationOfQuestion] =>
@@ -289,10 +294,11 @@ trait DefaultModerationOperationOfQuestionApiComponent
                       operationOfQuestionService
                         .count(
                           SearchOperationsOfQuestions(
-                            resolvedQuestions,
-                            operationId.map(opId => Seq(opId)),
-                            operationKinds,
-                            openAt
+                            questionIds = resolvedQuestions,
+                            operationIds = operationId.map(opId => Seq(opId)),
+                            operationKind = operationKinds,
+                            openAt = openAt,
+                            endAfter = endAfter
                           )
                         )
                     ) { count =>
@@ -642,7 +648,9 @@ final case class OperationOfQuestionResponse(
   displayResults: Boolean,
   resultsLink: Option[ResultsLinkResponse],
   actions: Option[String],
-  featured: Boolean
+  featured: Boolean,
+  @(ApiModelProperty @field)(dataType = "string", allowableValues = "upcoming,open,finished")
+  status: QuestionStatus
 )
 
 object OperationOfQuestionResponse extends CirceFormatters {
@@ -675,7 +683,8 @@ object OperationOfQuestionResponse extends CirceFormatters {
       displayResults = operationOfQuestion.resultsLink.isDefined,
       resultsLink = operationOfQuestion.resultsLink.map(ResultsLinkResponse.apply),
       actions = operationOfQuestion.actions,
-      featured = operationOfQuestion.featured
+      featured = operationOfQuestion.featured,
+      status = operationOfQuestion.status
     )
   }
 }

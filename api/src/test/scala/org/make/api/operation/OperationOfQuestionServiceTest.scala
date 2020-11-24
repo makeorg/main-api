@@ -88,14 +88,15 @@ class OperationOfQuestionServiceTest
 
       verify(persistentOperationOfQuestionService)
         .search(
-          Start(42),
-          Some(End(84)),
-          None,
-          Some(Order.asc),
-          Some(Seq(QuestionId("q-id"))),
-          Some(Seq(OperationId("o-id"))),
-          None,
-          None
+          start = Start(42),
+          end = Some(End(84)),
+          sort = None,
+          order = Some(Order.asc),
+          questionIds = Some(Seq(QuestionId("q-id"))),
+          operationIds = Some(Seq(OperationId("o-id"))),
+          operationKind = None,
+          openAt = None,
+          endAfter = None
         )
     }
 
