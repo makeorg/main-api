@@ -27,6 +27,8 @@ import org.make.api.technical._
 import org.make.core.crmTemplate.{
   CrmLanguageTemplate,
   CrmLanguageTemplateId,
+  CrmQuestionTemplate,
+  CrmQuestionTemplateId,
   CrmTemplateKind,
   CrmTemplates,
   CrmTemplatesId,
@@ -64,10 +66,17 @@ trait CrmTemplatesService extends ShortenedNames {
   def get(language: Language): Future[Option[CrmTemplateKind => CrmLanguageTemplate]]
   def create(language: Language, values: CrmTemplateKind => TemplateId): Future[CrmTemplateKind => CrmLanguageTemplate]
   def update(language: Language, values: CrmTemplateKind => TemplateId): Future[CrmTemplateKind => CrmLanguageTemplate]
+
+  def list(questionId: QuestionId): Future[Seq[CrmQuestionTemplate]]
+  def get(id: CrmQuestionTemplateId): Future[Option[CrmQuestionTemplate]]
+  def create(template: CrmQuestionTemplate): Future[CrmQuestionTemplate]
+  def update(template: CrmQuestionTemplate): Future[CrmQuestionTemplate]
+  def delete(id: CrmQuestionTemplateId): Future[Unit]
 }
 
 trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
   this: PersistentCrmLanguageTemplateServiceComponent
+    with PersistentCrmQuestionTemplateServiceComponent
     with PersistentCrmTemplatesServiceComponent
     with IdGeneratorComponent =>
 
@@ -240,6 +249,28 @@ trait DefaultCrmTemplatesServiceComponent extends CrmTemplatesServiceComponent {
           new IllegalStateException(s"Missing CRM language templates for ${language.value}: ${missing.mkString(", ")}")
         )
       }
+    }
+
+    // Question templates
+
+    override def list(questionId: QuestionId): Future[Seq[CrmQuestionTemplate]] = {
+      persistentCrmQuestionTemplateService.list(questionId)
+    }
+
+    override def get(id: CrmQuestionTemplateId): Future[Option[CrmQuestionTemplate]] = {
+      persistentCrmQuestionTemplateService.get(id)
+    }
+
+    override def create(template: CrmQuestionTemplate): Future[CrmQuestionTemplate] = {
+      persistentCrmQuestionTemplateService.persist(template)
+    }
+
+    override def update(template: CrmQuestionTemplate): Future[CrmQuestionTemplate] = {
+      persistentCrmQuestionTemplateService.modify(template)
+    }
+
+    override def delete(id: CrmQuestionTemplateId): Future[Unit] = {
+      persistentCrmQuestionTemplateService.remove(id)
     }
 
   }

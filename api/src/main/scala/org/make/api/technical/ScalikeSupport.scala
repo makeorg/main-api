@@ -24,7 +24,7 @@ import enumeratum.{Enum, EnumEntry}
 import eu.timepit.refined.api.{RefType, Refined, Validate}
 import eu.timepit.refined.refineV
 import org.make.core.StringValue
-import org.make.core.crmTemplate.{CrmLanguageTemplateId, CrmTemplateKind, TemplateId}
+import org.make.core.crmTemplate.{CrmLanguageTemplateId, CrmQuestionTemplateId, CrmTemplateKind, TemplateId}
 import org.make.core.operation.OperationId
 import org.make.core.question.QuestionId
 import org.make.core.reference.Language
@@ -47,6 +47,9 @@ object ScalikeSupport {
 
   implicit val crmLanguageTemplateIdBinders: Binders[CrmLanguageTemplateId] = stringValueBinders(
     CrmLanguageTemplateId.apply
+  )
+  implicit val crmQuestionTemplateIdBinders: Binders[CrmQuestionTemplateId] = stringValueBinders(
+    CrmQuestionTemplateId.apply
   )
   implicit val languageBinders: Binders[Language] = stringValueBinders(Language.apply)
   implicit val operationIdBinders: Binders[OperationId] = stringValueBinders(OperationId.apply)
