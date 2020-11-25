@@ -38,6 +38,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import org.make.core.technical.Pagination.Start
+import org.postgresql.util.{PSQLException, PSQLState}
 
 class IdeaMappingServiceTest
     extends MakeUnitTest
@@ -409,6 +410,63 @@ class IdeaMappingServiceTest
       )
 
       when(persistentIdeaMappingService.persist(ideaMapping)).thenReturn(Future.successful(ideaMapping))
+
+      val mapping =
+        ideaMappingService.getOrCreateMapping(QuestionId("my-question"), Some(TagId("tag-5")), Some(TagId("tag-6")))
+
+      whenReady(mapping, Timeout(5.seconds)) { ideaMapping =>
+        ideaMapping.id should be(IdeaMappingId("mapping-2"))
+      }
+    }
+
+    Scenario("retries") {
+
+      val ideaMapping = IdeaMapping(
+        IdeaMappingId("mapping-2"),
+        QuestionId("my-question"),
+        Some(TagId("tag-5")),
+        Some(TagId("tag-6")),
+        IdeaId("my-ultimate-idea")
+      )
+
+      when(
+        persistentIdeaMappingService
+          .find(
+            start = Start.zero,
+            end = None,
+            sort = None,
+            order = None,
+            questionId = Some(QuestionId("my-question")),
+            stakeTagId = Some(Right(TagId("tag-5"))),
+            solutionTypeTagId = Some(Right(TagId("tag-6"))),
+            ideaId = None
+          )
+      ).thenReturn(Future.successful(Seq.empty), Future.successful(Seq(ideaMapping)))
+
+      when(persistentQuestionService.getById(QuestionId("my-question"))).thenReturn(
+        Future.successful(
+          Some(
+            Question(
+              questionId = QuestionId("my-question"),
+              slug = "my-question",
+              countries = NonEmptyList.of(Country("FR")),
+              language = Language("fr"),
+              question = "my question ?",
+              shortTitle = None,
+              operationId = None
+            )
+          )
+        )
+      )
+
+      when(tagService.findByTagIds(Seq(TagId("tag-5"), TagId("tag-6"))))
+        .thenReturn(Future.successful(Seq(createTag(TagId("tag-5"), "tag 5"), createTag(TagId("tag-6"), "tag 6"))))
+
+      when(idGenerator.nextIdeaId()).thenReturn(IdeaId("my-ultimate-idea"))
+      when(idGenerator.nextIdeaMappingId()).thenReturn(IdeaMappingId("mapping-2"))
+
+      when(persistentIdeaMappingService.persist(ideaMapping))
+        .thenReturn(Future.failed(new PSQLException("duplicate key", PSQLState.UNIQUE_VIOLATION)))
 
       val mapping =
         ideaMappingService.getOrCreateMapping(QuestionId("my-question"), Some(TagId("tag-5")), Some(TagId("tag-6")))

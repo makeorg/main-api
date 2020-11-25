@@ -21,6 +21,7 @@ package org.make.core.technical
 package generator
 
 import java.net.URL
+import java.time.Period
 import java.time.temporal.ChronoUnit
 
 import _root_.enumeratum.values.scalacheck._
@@ -45,9 +46,9 @@ import org.make.core.operation.{
   SimpleOperation
 }
 import org.make.core.proposal.{Proposal, ProposalStatus, Qualification, QualificationKey, Vote, VoteKey}
-import org.make.core.question.Question
+import org.make.core.question.{Question, QuestionId}
 import org.make.core.reference.{Country, Language}
-import org.make.core.tag.TagId
+import org.make.core.tag.{Tag, TagDisplay, TagId, TagTypeId}
 import org.make.core.technical.generator.CustomGenerators.ImageUrl
 import org.make.core.user.{Role, User, UserType}
 import org.scalacheck.{Arbitrary, Gen}
@@ -55,7 +56,7 @@ import org.scalacheck.Arbitrary.arbitrary
 
 import scala.concurrent.duration.FiniteDuration
 
-trait EntitiesGen {
+trait EntitiesGen extends DateGenerators {
 
   def genCountryLanguage: Gen[(Country, Language)] =
     Gen.oneOf(for {
@@ -96,13 +97,17 @@ trait EntitiesGen {
 
   def genOperationOfQuestion: Gen[OperationOfQuestion] =
     for {
-      operation         <- genSimpleOperation
-      question          <- genQuestion(Some(operation.operationId))
-      startDate         <- CustomGenerators.Time.zonedDateTime
-      endDate           <- CustomGenerators.Time.zonedDateTime.suchThat(date => startDate.isBefore(date))
+      operation <- genSimpleOperation
+      question  <- genQuestion(Some(operation.operationId))
+      startDate <- genDateWithOffset(lowerOffset = Period.ofYears(-3), upperOffset = Period.ofYears(1))
+      endDate <- genDateWithOffset(
+        lowerOffset = Period.ofMonths(1),
+        upperOffset = Period.ofMonths(6),
+        fromDate = startDate
+      )
       title             <- CustomGenerators.LoremIpsumGen.sentence()
       canPropose        <- arbitrary[Boolean]
-      resultsLink       <- Gen.option(genResultsLink)
+      resultsLink       <- genResultsLink.asOption
       proposalsCount    <- arbitrary[NonNegInt]
       participantsCount <- arbitrary[NonNegInt]
       featured          <- arbitrary[Boolean]
@@ -272,7 +277,7 @@ trait EntitiesGen {
       tags            <- Gen.someOf(tagsIds)
       votes           <- genProposalVotes
       organisationIds <- Gen.someOf(users.filter(_.userType == UserType.UserTypeOrganisation).map(_.userId))
-      date            <- Gen.option(Gen.calendar.map(_.toZonedDateTime))
+      date            <- Gen.calendar.map(_.toZonedDateTime).asOption
       initialProposal <- Gen.frequency((9, false), (1, true))
     } yield Proposal(
       proposalId = IdGenerator.uuidGenerator.nextProposalId(),
@@ -304,12 +309,35 @@ trait EntitiesGen {
     for {
       id        <- Gen.uuid
       status    <- genJobStatus
-      createdAt <- Gen.option(CustomGenerators.Time.zonedDateTime)
+      createdAt <- genDateWithOffset(lowerOffset = Period.ofYears(-2), upperOffset = Period.ZERO).asOption
       update <- Arbitrary
         .arbitrary[Option[FiniteDuration]]
         .map(_.flatMap(u => createdAt.map(_.plusNanos(u.toNanos).truncatedTo(ChronoUnit.MILLIS))))
     } yield Job(JobId(id.toString), status, createdAt, update)
   }
+
+  private val stake = TagTypeId("c0d8d858-8b04-4dd9-add6-fa65443b622b")
+  private val solution = TagTypeId("cc6a16a5-cfa7-495b-a235-08affb3551af")
+  private val moment = TagTypeId("5e539923-c265-45d2-9d0b-77f29c8b0a06")
+  private val target = TagTypeId("226070ac-51b0-4e92-883a-f0a24d5b8525")
+  private val actor = TagTypeId("982e6860-eb66-407e-bafb-461c2d927478")
+  private val legacy = TagTypeId("8405aba4-4192-41d2-9a0d-b5aa6cb98d37")
+
+  def genTag(operationId: Option[OperationId], questionId: Option[QuestionId]): Gen[Tag] =
+    for {
+      label     <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(20))
+      weight    <- Gen.posNum[Float]
+      display   <- Gen.frequency((8, TagDisplay.Inherit), (1, TagDisplay.Displayed), (1, TagDisplay.Hidden))
+      tagTypeId <- Gen.oneOf(Seq(stake, solution, moment, target, actor, legacy))
+    } yield Tag(
+      tagId = IdGenerator.uuidGenerator.nextTagId(),
+      label = label,
+      display = display,
+      tagTypeId = tagTypeId,
+      weight = weight,
+      operationId = operationId,
+      questionId = questionId
+    )
 
 }
 

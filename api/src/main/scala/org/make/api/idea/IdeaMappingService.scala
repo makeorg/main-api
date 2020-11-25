@@ -20,6 +20,7 @@
 package org.make.api.idea
 import java.util.concurrent.Executors
 
+import com.typesafe.scalalogging.StrictLogging
 import org.make.api.proposal.{
   ModerationProposalResponse,
   PatchProposalRequest,
@@ -43,6 +44,7 @@ import scala.Ordering.Float.TotalOrdering
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import org.make.core.technical.Pagination._
+import org.postgresql.util.{PSQLException, PSQLState}
 
 trait IdeaMappingService {
   def create(
@@ -85,7 +87,7 @@ trait IdeaMappingServiceComponent {
   def ideaMappingService: IdeaMappingService
 }
 
-trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
+trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent with StrictLogging {
   self: PersistentIdeaMappingServiceComponent
     with PersistentIdeaServiceComponent
     with TagServiceComponent
@@ -234,6 +236,7 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
       persistentIdeaMappingService.find(start, end, sort, order, questionId, stakeTagId, solutionTypeTagId, ideaId)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     override def getOrCreateMapping(
       questionId: QuestionId,
       stakeTagId: Option[TagId],
@@ -254,6 +257,14 @@ trait DefaultIdeaMappingServiceComponent extends IdeaMappingServiceComponent {
         .flatMap {
           case Seq()        => createMapping(questionId, stakeTagId, solutionTypeTagId)
           case mapping +: _ => Future.successful(mapping)
+        }
+        .recoverWith {
+          case e: PSQLException if e.getSQLState == PSQLState.UNIQUE_VIOLATION.getState =>
+            logger.debug(
+              s"Retried IdeaMappingService.getOrCreateMapping with questionId ${questionId.value}, stakeTagId: ${stakeTagId.toString}, solutionTypeTagId ${solutionTypeTagId.toString}"
+            )
+            getOrCreateMapping(questionId, stakeTagId, solutionTypeTagId)
+          case other => Future.failed(other)
         }
     }
 

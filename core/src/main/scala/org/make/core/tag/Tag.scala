@@ -43,7 +43,7 @@ object TagId {
 
 }
 
-sealed abstract class TagDisplay(val value: String) extends StringEnumEntry
+sealed abstract class TagDisplay(val value: String) extends StringEnumEntry with Product with Serializable
 
 object TagDisplay extends StringEnum[TagDisplay] with FallbackingStringCirceEnum[TagDisplay] {
 

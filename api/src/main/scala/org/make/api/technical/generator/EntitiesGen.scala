@@ -19,28 +19,43 @@
 
 package org.make.api.technical.generator
 
+import java.time.Period
+
 import cats.data.NonEmptyList
-import org.make.api.operation.CreateOperationOfQuestion
-import org.make.api.technical.{DefaultIdGeneratorComponent, IdGeneratorComponent}
-import org.make.api.user.UserRegisterData
-import org.make.core.operation.OperationId
-import org.make.core.profile.{Gender, SocioProfessionalCategory}
-import org.make.core.question.QuestionId
-import org.scalacheck.{Arbitrary, Gen}
-import org.scalacheck.Arbitrary.arbitrary
-import org.make.core.DateHelper._
-import org.make.core.technical.generator.{EntitiesGen => CoreEntitiesGen}
 import enumeratum.values.scalacheck._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.MaxSize
 import eu.timepit.refined.{refineV, W}
-import org.make.core.technical.generator.CustomGenerators
+import org.make.api.operation.CreateOperationOfQuestion
+import org.make.api.organisation.OrganisationRegisterData
+import org.make.api.partner.CreatePartnerRequest
+import org.make.api.technical.{DefaultIdGeneratorComponent, IdGeneratorComponent}
+import org.make.api.user.UserRegisterData
+import org.make.core.operation.OperationId
+import org.make.core.partner.PartnerKind
+import org.make.core.profile.{Gender, SocioProfessionalCategory}
+import org.make.core.question.QuestionId
+import org.make.core.technical.generator.{
+  CustomGenerators,
+  DateGenerators,
+  RichGenerators,
+  EntitiesGen => CoreEntitiesGen
+}
+import org.make.core.user.User
+import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.{Arbitrary, Gen}
 
-trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
+trait EntitiesGen extends CoreEntitiesGen with DateGenerators { self: IdGeneratorComponent =>
 
-  def genCreateOperationOfQuestion(operationId: OperationId): Gen[CreateOperationOfQuestion] =
+  def genCreateOperationOfQuestion(operationId: OperationId): Gen[CreateOperationOfQuestion] = {
+
     for {
-      date                 <- Gen.calendar.map(_.toZonedDateTime)
+      startDate <- genDateWithOffset(lowerOffset = Period.ofYears(-3), upperOffset = Period.ofYears(1))
+      endDate <- genDateWithOffset(
+        lowerOffset = Period.ofMonths(1),
+        upperOffset = Period.ofMonths(6),
+        fromDate = startDate
+      )
       operationTitle       <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(150))
       shortTitle           <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(30))
       slug                 <- CustomGenerators.LoremIpsumGen.slug(maxLength = Some(30))
@@ -52,8 +67,8 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       descriptionImageAlt  <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(130))
     } yield CreateOperationOfQuestion(
       operationId = operationId,
-      startDate = date,
-      endDate = date.plusMonths(3),
+      startDate = startDate,
+      endDate = endDate,
       operationTitle = operationTitle,
       slug = slug,
       countries = NonEmptyList.of(country),
@@ -66,27 +81,27 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       descriptionImageAlt = Some(refineV[MaxSize[W.`130`.T]](descriptionImageAlt).getOrElse("")),
       actions = None
     )
+  }
 
   def genUserRegisterData(questionId: Option[QuestionId]): Gen[UserRegisterData] =
     for {
-      email                     <- CustomGenerators.Mail.gen
-      firstName                 <- Gen.option(CustomGenerators.LoremIpsumGen.word)
-      lastName                  <- Gen.option(CustomGenerators.LoremIpsumGen.word)
-      dateOfBirth               <- Gen.option(Gen.calendar.map(_.toZonedDateTime.toLocalDate))
-      profession                <- Gen.option(CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(15)))
-      postalCode                <- Gen.option(CustomGenerators.PostalCode.gen)
-      gender                    <- Gen.option(arbitrary[Gender])
-      socioProfessionalCategory <- Gen.option(arbitrary[SocioProfessionalCategory])
+      email                     <- CustomGenerators.Mail.gen()
+      firstName                 <- CustomGenerators.FirstName.gen.asOption
+      dateOfBirth               <- genBirthDate.asOption
+      profession                <- CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(15)).asOption
+      postalCode                <- CustomGenerators.PostalCode.gen.asOption
+      gender                    <- arbitrary[Option[Gender]]
+      socioProfessionalCategory <- arbitrary[Option[SocioProfessionalCategory]]
       (country, _)              <- genCountryLanguage
-      optIn                     <- Gen.option(Arbitrary.arbitrary[Boolean])
-      optInPartner              <- Gen.option(Arbitrary.arbitrary[Boolean])
+      optIn                     <- Arbitrary.arbitrary[Option[Boolean]]
+      optInPartner              <- Arbitrary.arbitrary[Option[Boolean]]
       roles                     <- genRoles
-      politicalParty            <- Gen.option(CustomGenerators.LoremIpsumGen.word)
+      politicalParty            <- CustomGenerators.LoremIpsumGen.word.asOption
       publicProfile             <- Arbitrary.arbitrary[Boolean]
     } yield UserRegisterData(
       email = email,
       firstName = firstName,
-      lastName = lastName,
+      lastName = None,
       password = Some(email),
       lastIp = None,
       dateOfBirth = dateOfBirth,
@@ -103,6 +118,46 @@ trait EntitiesGen extends CoreEntitiesGen { self: IdGeneratorComponent =>
       politicalParty = politicalParty,
       website = None,
       publicProfile = publicProfile
+    )
+
+  def genOrganisationRegisterData: Gen[OrganisationRegisterData] =
+    for {
+      name         <- CustomGenerators.LoremIpsumGen.word
+      email        <- CustomGenerators.Mail.gen(Some("organisation"))
+      avatar       <- CustomGenerators.ImageUrl.gen(width = 100, height = 100)
+      description  <- Gen.option(CustomGenerators.LoremIpsumGen.sentence(maxLength = Some(300)))
+      (country, _) <- genCountryLanguage
+      website      <- Gen.option(CustomGenerators.URL.gen)
+    } yield OrganisationRegisterData(
+      name = name,
+      email = email,
+      password = Some(email),
+      avatar = Some(avatar),
+      description = description,
+      country = country,
+      website = website
+    )
+
+  def genCreatePartnerRequest(orga: Option[User], questionId: QuestionId): Gen[CreatePartnerRequest] =
+    for {
+      name <- CustomGenerators.LoremIpsumGen.word
+      logo <- CustomGenerators.ImageUrl.gen(width = 100, height = 100)
+      link <- CustomGenerators.URL.gen
+      partnerKind <- Gen.frequency(
+        (2, PartnerKind.Media),
+        (7, PartnerKind.ActionPartner),
+        (1, PartnerKind.Founder),
+        (4, PartnerKind.Actor)
+      )
+      weight <- Gen.posNum[Float]
+    } yield CreatePartnerRequest(
+      name = orga.flatMap(_.displayName).getOrElse(name),
+      logo = orga.flatMap(_.profile.flatMap(_.avatarUrl)).orElse(Some(logo)),
+      link = orga.flatMap(_.profile.flatMap(_.website)).orElse(Some(link)),
+      organisationId = orga.map(_.userId),
+      partnerKind = partnerKind,
+      questionId = questionId,
+      weight = weight
     )
 
 }

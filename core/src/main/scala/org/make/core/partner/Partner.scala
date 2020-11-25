@@ -48,7 +48,7 @@ object PartnerId {
   implicit val partnerIdFormatter: JsonFormat[PartnerId] = SprayJsonFormatters.forStringValue(PartnerId.apply)
 }
 
-sealed abstract class PartnerKind(val value: String) extends StringEnumEntry
+sealed abstract class PartnerKind(val value: String) extends StringEnumEntry with Product with Serializable
 
 object PartnerKind extends StringEnum[PartnerKind] with StringCirceEnum[PartnerKind] {
 

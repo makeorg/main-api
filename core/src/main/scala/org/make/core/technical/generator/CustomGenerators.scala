@@ -19,12 +19,8 @@
 
 package org.make.core.technical.generator
 
-import java.time.temporal.ChronoUnit
-import java.time.{ZoneId, ZonedDateTime}
-
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.numeric.PosInt
-import org.make.core.DateHelper._
 import org.make.core.SlugHelper
 import org.scalacheck.Gen
 
@@ -60,18 +56,26 @@ object CustomGenerators {
   }
 
   object Mail {
-    def gen: Gen[String] = Gen.uuid.map(id => s"yopmail+$id@make.org")
+    def gen(prefix: Option[String] = None): Gen[String] = Gen.uuid.map { id =>
+      val tag: String = prefix.map(p => s"$p-$id").getOrElse(id.toString)
+      s"yopmail+$tag@make.org"
+    }
   }
 
   object PostalCode {
     def gen: Gen[String] = Gen.listOfN(5, Gen.numChar).map(_.mkString)
   }
 
-  object Time {
-    def zonedDateTime: Gen[ZonedDateTime] =
-      Gen.calendar.map(
-        calendar =>
-          ZonedDateTime.ofInstant(calendar.toInstant, ZoneId.systemDefault()).toUTC.truncatedTo(ChronoUnit.MILLIS)
-      )
+  object FirstName {
+    private lazy val dictionary: Seq[String] = Source.fromResource("first_names.csv").getLines().toSeq
+
+    lazy val gen: Gen[String] = {
+      Gen.oneOf(dictionary).map(_.trim.toLowerCase.capitalize)
+    }
   }
+
+  object URL {
+    def gen: Gen[String] = Gen.uuid.map(id => s"https://example.com/$id")
+  }
+
 }

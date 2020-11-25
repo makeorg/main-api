@@ -22,7 +22,6 @@ package org.make.api.technical.generator.fixtures
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.StrictLogging
-import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.swagger.annotations._
@@ -50,7 +49,9 @@ trait FixturesApi extends Directives {
       )
     )
   )
-  @ApiResponses(value = Array(new ApiResponse(code = HttpCodes.Created, message = "Ok")))
+  @ApiResponses(
+    value = Array(new ApiResponse(code = HttpCodes.Created, message = "Ok", response = classOf[FixtureResponse]))
+  )
   @Path(value = "/generate")
   def generateFixtures: Route
 
@@ -73,17 +74,15 @@ trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenti
   class DefaultFixturesApi extends FixturesApi {
     override def generateFixtures: Route = post {
       path("fixtures" / "generate") {
-        makeOperation("GenerateFixtures") { _ =>
-          decodeRequest {
-            entity(as[GenerateFixturesRequest]) { request =>
-              provideAsync(
-                fixturesService.generate(
-                  maybeOperationId = request.operationId,
-                  maybeQuestionId = request.questionId,
-                  proposalFillMode = request.fillMode
-                )
-              ) { result =>
-                complete(StatusCodes.Created -> result)
+        makeOperation("GenerateFixtures") { requestContext =>
+          withoutRequestTimeout {
+            decodeRequest {
+              entity(as[GenerateFixturesRequest]) { request =>
+                provideAsync(
+                  fixturesService.generate(maybeOperationId = request.operationId, maybeQuestionId = request.questionId)
+                ) { result =>
+                  complete(StatusCodes.Created -> result)
+                }
               }
             }
           }
@@ -91,28 +90,33 @@ trait DefaultFixturesApiComponent extends FixturesApiComponent with MakeAuthenti
       }
     }
   }
+
 }
 
 final case class GenerateFixturesRequest(
   @(ApiModelProperty @field)(dataType = "string", example = "b924bb35-9e49-43c5-bf63-da4f56b13a5e")
   operationId: Option[OperationId],
   @(ApiModelProperty @field)(dataType = "string", example = "ad27fa8e-9cd4-4986-b1b4-7969c064322f")
-  questionId: Option[QuestionId],
-  @(ApiModelProperty @field)(dataType = "string", allowableValues = "TINY,BIG")
-  fillMode: Option[FillMode]
+  questionId: Option[QuestionId]
 )
+
 object GenerateFixturesRequest {
   implicit val decoder: Decoder[GenerateFixturesRequest] = deriveDecoder[GenerateFixturesRequest]
-  implicit val encoder: Encoder[GenerateFixturesRequest] = deriveEncoder[GenerateFixturesRequest]
 }
 
-sealed abstract class FillMode(val value: String) extends StringEnumEntry
+final case class FixtureResponse(
+  @(ApiModelProperty @field)(dataType = "string", example = "92f8877d-a514-4b0e-adbe-b9906c431156")
+  operationId: OperationId,
+  @(ApiModelProperty @field)(dataType = "string", example = "1f1d9f32-de98-47ea-9e44-79e95e91b6cc")
+  questionId: QuestionId,
+  userCount: Int,
+  organisationCount: Int,
+  partnerCount: Int,
+  tagCount: Int,
+  proposalCount: Int,
+  organisationsVoteCount: Int
+)
 
-object FillMode extends StringEnum[FillMode] with StringCirceEnum[FillMode] {
-
-  case object Tiny extends FillMode("TINY")
-  case object Big extends FillMode("BIG")
-
-  override def values: IndexedSeq[FillMode] = findValues
-
+object FixtureResponse {
+  implicit val encoder: Encoder[FixtureResponse] = deriveEncoder[FixtureResponse]
 }
