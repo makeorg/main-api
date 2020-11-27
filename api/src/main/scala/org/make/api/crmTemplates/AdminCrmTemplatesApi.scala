@@ -39,7 +39,7 @@ import org.make.core.technical.Pagination._
 
 @Api(value = "Admin Crm Templates")
 @Path(value = "/admin/crm/templates")
-trait AdminCrmTemplateApi extends Directives {
+trait AdminCrmTemplatesApi extends Directives {
 
   @ApiOperation(
     value = "create-crm-templates",
@@ -142,12 +142,12 @@ trait AdminCrmTemplateApi extends Directives {
   def routes: Route = adminCreateCrmTemplates ~ adminUpdateCrmTemplates ~ adminGetCrmTemplates ~ adminListCrmTemplates
 }
 
-trait AdminCrmTemplateApiComponent {
-  def adminCrmTemplateApi: AdminCrmTemplateApi
+trait AdminCrmTemplatesApiComponent {
+  def adminCrmTemplatesApi: AdminCrmTemplatesApi
 }
 
 trait DefaultAdminCrmTemplatesApiComponent
-    extends AdminCrmTemplateApiComponent
+    extends AdminCrmTemplatesApiComponent
     with MakeAuthenticationDirectives
     with ParameterExtractors {
   this: CrmTemplatesServiceComponent
@@ -159,9 +159,9 @@ trait DefaultAdminCrmTemplatesApiComponent
 
   val crmTemplatesId: PathMatcher1[CrmTemplatesId] = Segment.map(id => CrmTemplatesId(id))
 
-  override lazy val adminCrmTemplateApi: AdminCrmTemplateApi = new DefaultAdminCrmTemplateApi
+  override lazy val adminCrmTemplatesApi: AdminCrmTemplatesApi = new DefaultAdminCrmTemplatesApi
 
-  class DefaultAdminCrmTemplateApi extends AdminCrmTemplateApi {
+  class DefaultAdminCrmTemplatesApi extends AdminCrmTemplatesApi {
 
     override def adminCreateCrmTemplates: Route = post {
       path("admin" / "crm" / "templates") {

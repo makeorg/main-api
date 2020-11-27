@@ -149,7 +149,7 @@ class AdminCrmTemplatesApiTest
   when(crmTemplatesService.getDefaultTemplate(locale = Some("en_GB")))
     .thenReturn(Future.successful(None))
 
-  val routes: Route = sealRoute(adminCrmTemplateApi.routes)
+  val routes: Route = sealRoute(adminCrmTemplatesApi.routes)
 
   Feature("create a crmTemplates") {
     val crmTemplateData =
